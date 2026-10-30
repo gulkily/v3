@@ -23,6 +23,10 @@ try {
   const page=await context.newPage();await page.goto(base+'/recent/');
   assert.equal(await page.locator('html').getAttribute('data-resolved-theme'),theme);
   assert.equal(await page.locator('.recent-entry').count(),50);
+  if(width===390 && theme===themes[0]) {
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   console.log('Local Recent timing: '+JSON.stringify(await page.evaluate(()=>({responseMs:performance.getEntriesByType('navigation')[0].responseEnd,paintMs:performance.getEntriesByName('first-contentful-paint')[0]?.startTime}))))
+  }
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,`${theme} ${width} overflow`);
   const nav=page.locator('.site-header a[href="/recent/"]');await nav.scrollIntoViewIfNeeded();assert.equal(await nav.isVisible(),true);
   if(['word97','chicago','midnight'].includes(theme)) {
@@ -38,7 +42,15 @@ try {
  assert.equal(await page.locator('.recent-entry').count(),50);
  await page.getByRole('link',{name:'Next',exact:true}).focus();await page.keyboard.press('Enter');await page.waitForURL(/position=/);
  assert.ok(await page.locator('.recent-entry').count()>0);assert.ok(await page.locator('.recent-entry').count()<50);
+ const cursorUrl=page.url();const ids=await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId));
+ await page.reload();assert.deepEqual(await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId)),ids);
+ await page.locator('.recent-excerpt a').first().click();await page.waitForURL(/\/posts\//);assert.equal(await page.locator('h1').count()>0,true);
+ await page.goBack();assert.equal(page.url(),cursorUrl);
+ assert.deepEqual(await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId)),ids);
+ await context.setOffline(true);let failed=false;try{await page.reload()}catch{failed=true}assert.equal(failed,true);
+ await context.setOffline(false);await page.goto(cursorUrl);
+ assert.deepEqual(await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId)),ids);
  await page.getByRole('link',{name:'Previous',exact:true}).click();assert.equal(await page.locator('.recent-entry').count(),50);
- console.log(`PASS Recent navigation, ${themes.length} themes x 2 widths, icons and no-JavaScript keyboard paging`);
+ console.log(`PASS Recent navigation, ${themes.length} themes x 2 widths, icons, no-JavaScript keyboard paging, exact post/Back/reload and offline reconnect`);
  await context.close();
 } finally {await browser.close();server.kill('SIGTERM');await rm(parent,{recursive:true,force:true});if(process.env.RECENT_DEBUG)console.log(logs)}

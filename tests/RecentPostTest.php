@@ -92,4 +92,28 @@ final class RecentPostTest
         unset($pdo,$app);@unlink($file);
     }
 
+    public function testHighTrafficModeFallsThroughToRecent(): void
+    {
+        $root = sys_get_temp_dir() . '/recent-high-traffic-' . bin2hex(random_bytes(5));
+        mkdir($root . '/public', 0700, true);
+        symlink(dirname(__DIR__) . '/templates', $root . '/templates');
+        symlink(dirname(__DIR__) . '/public/assets', $root . '/public/assets');
+        $repository = __DIR__ . '/fixtures/parity_minimal_v1';
+        $cache = new \ForumRewrite\Host\HighTrafficCache($root, $repository, $root . '/read.sqlite3', $root . '/public');
+        try {
+            $cache->initialize();
+            symlink($cache->root . '/pages', $root . '/public/.high-traffic');
+            $cache->atomic($cache->root . '/state.json', json_encode(['enabled'=>true], JSON_THROW_ON_ERROR));
+            assertTrue($cache->enabled());
+            assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical('/recent/'));
+            $controller = new \ForumRewrite\Host\FrontController($root, $repository, $root . '/read.sqlite3', $root . '/static');
+            ob_start();$controller->handle('GET', '/recent/');$html=(string)ob_get_clean();
+            assertStringContains('class="recent-entry"', $html);
+            assertSame(200, http_response_code());
+        } finally {
+            unlink($root . '/public/assets');unlink($root . '/templates');unlink($root . '/public/.high-traffic');
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($root);
+        }
+    }
+
 }

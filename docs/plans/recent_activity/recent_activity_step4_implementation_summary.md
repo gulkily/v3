@@ -63,3 +63,15 @@ Request: Delete mockups rather than save them in repository. Disposition: Entire
 - Notes: No deployment performed. Shared browser acceptance and high-traffic fallback follow in S6. Estimates unchanged; no dependencies.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 6 - End-to-end acceptance
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes: Browser exact-post/Back/reload/offline reconnect acceptance; high-traffic-enabled ordinary fallback test; reproducible bounded-reader probe. Updated two shared-build progress assertions for the additional page. S5 commit 4c0ff293c.
+- Verification: `node tests/browser/recent.mjs` passes 13 themes at 390/1280px, icons, long-text overflow, ordinary entry and no-JavaScript keyboard pagination/recovery. Local cold request responseEnd 380ms / first contentful paint 752ms (single Chromium observation). `php tests/Support/recent_scale.php`: 1k/10k/40k posts, 50 rows and 51,200 projected body bytes throughout, PHP peak 2MiB; 6.55/2.05/4.50ms per read during concurrent checks. SQLite memory is outside PHP allocator measurement. Index query plan uses posts_recent_idx; no production latency claim.
+- Regression command: `php tests/run.php RecentPostTest ReadModelSchemaTest AppNavigationPlacementTest AuthNavigationTest LocalAppSmokeTest StandardActivityPaginationTest ForteActivityReadModelRecoveryTest ProfilePublicDetailsTest PresentationProfileMatrixTest OfflineNavigationWorkerTest HighTrafficTest` ran 213 checks: 208 passed, five failed. Two progress-count assertions corrected and rerun 2/2. Three remaining failures independently reproduced at original baseline 3a21fab67 in an isolated worktree: private lobby pending-copy assertion, private Forte approval-copy assertion, and missing InstancePageController::repositoryArchiveDownloadFilename reflection target. They remain outside this feature. Additional new high-traffic fallback test passed 1/1.
+- Limits: This is affected-suite coverage, not the full repository suite. Guest/pending/approved navigation and shared profile consumers covered by renderer/navigation suites; physical phones, production latency and production deployment remain unverified. No additional first-paint personalization introduced. Existing standard/Forte Activity contracts pass; their separate live latency report is not resolved by this work. Estimates unchanged.
+
+*— Codex · 2026-10-30 UTC*
