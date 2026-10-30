@@ -418,6 +418,8 @@ final class LocalAppSmokeTest
             assertStringNotContains('Reusing documentation', $text);
             assertStringContains('./v3 docs publish', $text);
             assertStringContains('Skipping individual thread and post pages', $text);
+            assertStringContains('Skipping profile pages', $text);
+            assertSame([], glob($artifactRoot . '/current/profiles/*.html') ?: []);
             assertStringNotContains('Rendering thread pages', $text);
             assertStringNotContains('Rendering post pages', $text);
             assertFalse(is_file($artifactRoot . '/current/threads/root-001.html'));
@@ -4635,6 +4637,8 @@ PHP;
 
     public function testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout(): void
     {
+        $previousStaticProfiles = getenv('FORUM_STATIC_PROFILE_PAGES_ENABLED');
+        putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED=true');
         $previousStaticDetails = getenv('FORUM_STATIC_DETAIL_PAGES_ENABLED');
         putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=true');
         try {
@@ -4727,6 +4731,7 @@ PHP;
                 $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = 'thread-zenmemes-rules'")->fetchColumn()
             );
         } finally {
+            putenv($previousStaticProfiles === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $previousStaticProfiles);
             putenv($previousStaticDetails === false
                 ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED'
                 : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $previousStaticDetails);
@@ -4906,13 +4911,15 @@ PHP;
                 putenv('FORUM_STATIC_DETAIL_PAGES_ENABLED=' . ($mode === 'off' ? 'true' : 'false'));
                 $target = $root . '/' . $mode;
                 (new StaticArtifactBuilder(dirname(__DIR__), $this->repositoryRoot, $this->databasePath, $target))->buildFromReadModel();
-                assertSame($mode === 'off' ? 0 : count($before), count(glob($target . '/profiles/*.html') ?: []));
+                assertSame($mode === 'on' ? count($before) : 0, count(glob($target . '/profiles/*.html') ?: []));
                 assertSame($mode === 'off', is_file($target . '/threads/root-001.html'));
                 assertSame($before, $pdo->query('SELECT * FROM profiles')->fetchAll(PDO::FETCH_ASSOC));
                 assertTrue(is_file($target . '/offline/snapshot.sqlite3'));
             }
             $slug = $before[0]['profile_slug'];
-            assertSame(file_get_contents($root . '/default/profiles/' . $slug . '.html'), file_get_contents($root . '/on/profiles/' . $slug . '.html'));
+            assertTrue(is_file($root . '/on/profiles/' . $slug . '.html'));
+            assertFalse(is_dir($root . '/default/profiles'));
+            assertFalse(is_dir($root . '/off/profiles'));
         } finally {
             putenv($oldProfile === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $oldProfile);
             putenv($oldDetail === false ? 'FORUM_STATIC_DETAIL_PAGES_ENABLED' : 'FORUM_STATIC_DETAIL_PAGES_ENABLED=' . $oldDetail);

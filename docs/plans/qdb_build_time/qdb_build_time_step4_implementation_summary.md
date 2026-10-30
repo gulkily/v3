@@ -109,3 +109,11 @@ Known limitations: Supplemental small-commit evidence has a measured 0.0407s/8.7
 Study: Same v3/qdb_build_time v2/C, baseline 4abda3db, R1/P2, single exposed Codex rater. Original v1/A 0.50 and v2/C entry 1.25 preserved; prospective cycle revision 1.35 and S7 0.22 recorded at discovery. Retrospective whole-cycle 1.40 is independent of non-additive stage assessments. Actual labor and independent rating unavailable; no invented maintainer judgment or accepted-outcome increment. Unrelated audit drafts, their ledger entries and the previous cycle's host-report edit remain uncommitted and preserved.
 
 *— Codex · 2026-10-30 UTC*
+
+## Direct follow-up — Profile prebuilding off by default
+
+User request: Make Static profile pages off by default. This supersedes the original cycle's enabled-default decision above; historical measurements and approval records remain intact.
+Implementation: Changed only the default and shortened guidance in the existing FeatureFlagRegistry definition; existing evaluator, static builder, frontend and release publisher contracts are reused. Explicit site/environment values retain precedence. Updated current operator/concept guidance and static-only fixtures to opt in explicitly. No new component, dependency, schema or canonical record change; small Direct follow-up, not a new Railspike cycle.
+Verification: Focused PHP suite 38/38; normal CLI build test rerun after adding explicit skip/zero-profile-artifact assertions, 1/1. Real Chromium default-runtime profile/control flow passes JS on/off, phone/desktop and 16 themes; explicit-static profile/public-key/pagination/recovery flow passes 13 themes at phone/desktop, clipboard denial, empty/missing states and JS on/off. Whitespace checks pass. Existing explicit true overrides remain supported; production deployment/replay not performed in this follow-up.
+
+*— Codex · 2026-10-30 UTC*

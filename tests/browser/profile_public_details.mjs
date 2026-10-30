@@ -8,7 +8,7 @@ import { once } from 'node:events';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-core');
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const root = await mkdtemp(join(tmpdir(), 'profile-public-browser-'));
-const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', FORUM_APPROVED_MEMBERS_ONLY: 'false', SIGNED_REACTION_TEST_ROOT: root,
+const env = { ...process.env, FORUM_STATIC_PROFILE_PAGES_ENABLED: 'true', FORUM_SITE_ID: 'zenmemes', FORUM_APPROVED_MEMBERS_ONLY: 'false', SIGNED_REACTION_TEST_ROOT: root,
   FORUM_SECRETS_PATH: join(root, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') };
 const seed = spawnSync('php', [join(project, 'tests/Support/profile_public_details_fixture.php'), root], { env, encoding: 'utf8' });
 assert.equal(seed.status, 0, seed.stderr);

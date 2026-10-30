@@ -118,26 +118,32 @@ final class UserAccessTest
 
     public function testHostServesRegeneratedMemberPagesAndNeverCachesAccessViews(): void
     {
-        $this->fixture(function ($workspace, $root, $db): void {
-            $public = $workspace->root . '/public';
-            $static = $workspace->root . '/static';
-            (new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $root, $db, $public))->buildFromReadModel();
-            $pdo = new PDO('sqlite:' . $db);
-            $user = $pdo->query('SELECT * FROM profiles WHERE is_approved = 1 LIMIT 1')->fetch(PDO::FETCH_ASSOC);
-            assertStringNotContains('/users/pending/', file_get_contents($public . '/users.html'));
-            $profile = file_get_contents($public . '/profiles/' . $user['profile_slug'] . '.html');
-            assertStringContains('<summary>Public key</summary>', $profile);
-            assertStringContains('/tools/user-access/profiles/', $profile);
-            foreach (['/tools/user-access/index.html', '/tools/user-access/pending/index.html', '/users/pending/index.html'] as $path) $workspace->put($public . $path, 'STALE ACCESS');
-            $host = new \ForumRewrite\Host\FrontController(dirname(__DIR__), $root, $db, $static, $public);
-            foreach (['/tools/user-access/', '/tools/user-access/pending/', '/users/pending/', '/users/'] as $url) {
-                ob_start();
-                try { $host->handle('GET', $url, []); $html = (string) ob_get_contents(); }
-                finally { ob_end_clean(); }
-                assertStringNotContains('STALE ACCESS', $html);
-                assertSame(str_contains($url, 'pending') ? 403 : 200, http_response_code());
-            }
-        });
+        $previous = getenv('FORUM_STATIC_PROFILE_PAGES_ENABLED');
+        putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED=true');
+        try {
+            $this->fixture(function ($workspace, $root, $db): void {
+                $public = $workspace->root . '/public';
+                $static = $workspace->root . '/static';
+                (new \ForumRewrite\Host\StaticArtifactBuilder(dirname(__DIR__), $root, $db, $public))->buildFromReadModel();
+                $pdo = new PDO('sqlite:' . $db);
+                $user = $pdo->query('SELECT * FROM profiles WHERE is_approved = 1 LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+                assertStringNotContains('/users/pending/', file_get_contents($public . '/users.html'));
+                $profile = file_get_contents($public . '/profiles/' . $user['profile_slug'] . '.html');
+                assertStringContains('<summary>Public key</summary>', $profile);
+                assertStringContains('/tools/user-access/profiles/', $profile);
+                foreach (['/tools/user-access/index.html', '/tools/user-access/pending/index.html', '/users/pending/index.html'] as $path) $workspace->put($public . $path, 'STALE ACCESS');
+                $host = new \ForumRewrite\Host\FrontController(dirname(__DIR__), $root, $db, $static, $public);
+                foreach (['/tools/user-access/', '/tools/user-access/pending/', '/users/pending/', '/users/'] as $url) {
+                    ob_start();
+                    try { $host->handle('GET', $url, []); $html = (string) ob_get_contents(); }
+                    finally { ob_end_clean(); }
+                    assertStringNotContains('STALE ACCESS', $html);
+                    assertSame(str_contains($url, 'pending') ? 403 : 200, http_response_code());
+                }
+            });
+        } finally {
+            putenv($previous === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $previous);
+        }
     }
 
     private function fixture(callable $test): void

@@ -250,8 +250,8 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::STATIC_PROFILE_PAGES_ENABLED,
                 'Static profile pages',
-                'Pre-build profiles for static hosting. Disable to render profiles at runtime. Run a full static build after changing this flag.',
-                true,
+                'Enable to pre-build profiles for static hosting. Run a full static build after changing this flag.',
+                false,
                 self::STATIC_PROFILE_PAGES_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',

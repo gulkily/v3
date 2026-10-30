@@ -8,7 +8,8 @@ import {once} from 'node:events';
 const {chromium}=await import('playwright-core');
 const project=resolve(new URL('../..',import.meta.url).pathname);
 const root=await mkdtemp(join(tmpdir(),'profile-delivery-'));
-const env={...process.env,FORUM_SITE_ID:'zenmemes',FORUM_STATIC_PROFILE_PAGES_ENABLED:'false',SIGNED_REACTION_TEST_ROOT:root,FORUM_SECRETS_PATH:join(root,'absent.php'),VISITOR_STATISTICS_DATABASE_PATH:join(root,'visitors.sqlite')};
+const env={...process.env,FORUM_SITE_ID:'zenmemes',SIGNED_REACTION_TEST_ROOT:root,FORUM_SECRETS_PATH:join(root,'absent.php'),VISITOR_STATISTICS_DATABASE_PATH:join(root,'visitors.sqlite')};
+delete env.FORUM_STATIC_PROFILE_PAGES_ENABLED;
 const seed=spawnSync('php',[join(project,'tests/Support/profile_delivery_fixture.php'),root],{env,encoding:'utf8'});
 assert.equal(seed.status,0,seed.stderr); const {slug,themes}=JSON.parse(seed.stdout);
 const socket=createServer().listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));
@@ -35,7 +36,8 @@ try {
       const row=page.locator('[data-flag-key="FORUM_STATIC_PROFILE_PAGES_ENABLED"]');
       await row.locator('.feature-flag-name').waitFor();
       assert.ok((await row.locator('.feature-flag-name').innerText()).includes('Static profile pages'));
-      assert.ok((await row.innerText()).includes('runtime'));
+      assert.equal(await row.getAttribute('data-flag-default'),'false');
+      assert.equal(await row.getAttribute('data-flag-locked'),'false');
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`Flag overflow ${width}`);
     }
     await context.close();

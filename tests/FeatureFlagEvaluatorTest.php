@@ -24,13 +24,16 @@ final class FeatureFlagEvaluatorTest
         });
     }
 
-    public function testStaticProfilesDefaultOnWithIndependentSiteAndEnvironmentOverrides(): void
+    public function testStaticProfilesDefaultOffWithIndependentSiteAndEnvironmentOverrides(): void
     {
         $key = FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED;
         $this->withEnvironment([], function () use ($key): void {
-            assertTrue((new FeatureFlagEvaluator())->isEnabled($key));
-            assertFalse((new FeatureFlagEvaluator(siteValues: [$key => false]))->isEnabled($key));
+            assertFalse((new FeatureFlagEvaluator())->isEnabled($key));
+            assertTrue((new FeatureFlagEvaluator(siteValues: [$key => true]))->isEnabled($key));
             assertFalse((new FeatureFlagEvaluator())->isEnabled(FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED));
+        });
+        $this->withEnvironment([$key => 'true'], function () use ($key): void {
+            assertTrue((new FeatureFlagEvaluator(siteValues: [$key => false]))->isEnabled($key));
         });
         $this->withEnvironment([$key => 'false'], function () use ($key): void {
             assertFalse((new FeatureFlagEvaluator(siteValues: [$key => true]))->isEnabled($key));
