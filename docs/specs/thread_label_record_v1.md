@@ -1,5 +1,7 @@
 # Thread Label Record V1
 
+> **Legacy format.** New thread-label records use [Reaction Record V1](reaction_record_v1.md). Records in this format remain valid and are read as stored through the deprecated legacy adapter. The application no longer builds them; it only stores legacy-layout signed submissions from cached older browsers exactly as signed.
+
 This document defines the canonical append-only thread-label record family for the current PHP implementation slice.
 
 ## Scope

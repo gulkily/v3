@@ -26,6 +26,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Unified reaction records](unified_reaction_records/unified_reaction_records_step1_solution_assessment.md)
 - [Unified removal format](unified_removal_format/unified_removal_format_step1_solution_assessment.md)
 
 - [Activity load performance](activity_load_performance/)
