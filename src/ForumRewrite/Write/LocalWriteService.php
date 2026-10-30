@@ -509,7 +509,7 @@ class LocalWriteService
             $post = $bundle['post'];
             $path = CanonicalPathResolver::datedPost($post->postId, $post->createdAt);
             $tx = new SignedPostTransaction($this->repositoryRoot);
-            $removal = \ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $post->postId);
+            $removal = \ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $post->postId);
             if (($removal['operation'] ?? null) === 'delete') throw new RuntimeException('Post was removed; replay cannot restore it.', 410);
             $committed = $tx->git(['show', 'HEAD:' . $path], true);
             $replayed = $committed !== null;
@@ -527,7 +527,7 @@ class LocalWriteService
                 if ($post->isReply()) $this->assertReplyTarget($post->threadId, $post->parentId);
                 if (!$bundle['known']) {
                     $validator->assertFresh($bundle['bootstrap']);
-                    if ($this->postTargetExists($bundle['bootstrap']->postId)) throw new RuntimeException('Bootstrap ID is already reserved.', 409);
+                    if (\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $bundle['bootstrap']->postId) !== null || $this->postTargetExists($bundle['bootstrap']->postId)) throw new RuntimeException('Bootstrap ID is already reserved.', 409);
                 }
                 $files = $bundle['files'];
                 $files[$path] = $input['canonical_record'];

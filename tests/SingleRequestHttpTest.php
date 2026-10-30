@@ -68,6 +68,23 @@ final class SingleRequestHttpTest
             \ForumRewrite\Security\GpgHomeCleaner::dispose($root.'/bundle/keyring');
         } finally { $server->close(); }
     }
+    public function testUnicodeRoundTripAndSymbolRejection(): void
+    {
+        [$server,$repo]=self::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true','FORUM_EMOJI_AUTHORED_TEXT'=>'false']);
+        try {
+            $input=SignedPostIdentityTest::bundle();
+            $input['canonical_record']=str_replace('Hello', 'Café — 5 µg, “quoted”, Привет', $input['canonical_record']);
+            $input['detached_signature']=SignedPostIdentityTest::helper('signCanonicalRecord',SignedPostIdentityTest::$home,$input['canonical_record']);
+            [$headers,$result]=self::request($server,$input); assertStringContains('200',$headers[0]);
+            assertSame($input['canonical_record'],file_get_contents($repo.'/'.$result['record_path']));
+            $body=file_get_contents($server->url.'/api/get_post?post_id='.urlencode($result['post_id']));
+            assertStringContains('Café — 5 µg, “quoted”, Привет',$body);
+            $input['canonical_record']=preg_replace('/(-[a-f0-9]{32})\n/','-'.bin2hex(random_bytes(16))."\n",$input['canonical_record'],1);
+            $input['canonical_record']=str_replace('Café','→',$input['canonical_record']);
+            $input['detached_signature']=SignedPostIdentityTest::helper('signCanonicalRecord',SignedPostIdentityTest::$home,$input['canonical_record']);
+            [$headers,$error]=self::request($server,$input); assertStringContains('400',$headers[0]); assertStringContains('unsupported Unicode symbols',$error['error']);
+        } finally { $server->close(); }
+    }
     public function testMembersOnlyDenialIsJson(): void
     {
         [$server]=self::server(['FORUM_APPROVED_MEMBERS_ONLY'=>'true']);

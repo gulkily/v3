@@ -21,8 +21,9 @@ final class SignedPostIdentity
         $publicKey = (string) ($input['public_key'] ?? '');
         $inspected = null;
         if ($publicKey !== '') {
+            $this->assertArmor($publicKey, 'PUBLIC KEY BLOCK');
             if (strlen($publicKey) > \ForumRewrite\Canonical\RecordLimits::ARMOR || preg_match('/[^\x0A\x0D\x20-\x7E]/', $publicKey)) throw new RuntimeException('Invalid public key armor.');
-            $inspected = (new OpenPgpKeyInspector())->inspect($publicKey);
+            $inspected = $this->inspect($publicKey);
             if ($inspected['fingerprint'] !== $fingerprint) throw new RuntimeException('Public key does not match Author-Identity-ID.');
         }
         $known = is_file($this->root . '/' . $identityPath);
@@ -32,7 +33,7 @@ final class SignedPostIdentity
             if (!is_file($this->root . '/' . $keyPath)) $keyPath = 'records/public-keys/openpgp-' . strtolower($fingerprint) . '.asc';
             if (!is_file($this->root . '/' . $keyPath)) throw new RuntimeException('Stored identity is incomplete; restore its public key before retrying.');
             $publicKey = (string) file_get_contents($this->root . '/' . $keyPath);
-            $stored = (new OpenPgpKeyInspector())->inspect($publicKey);
+            $stored = $this->inspect($publicKey);
             if ($stored['fingerprint'] !== $fingerprint || $identity->identityId !== $post->authorIdentityId) throw new RuntimeException('Stored identity key mismatch.');
         } elseif ($publicKey === '') {
             throw new RuntimeException('Unknown identity requires public_key and a signed bootstrap.');
@@ -62,8 +63,28 @@ final class SignedPostIdentity
         return ['post'=>$post, 'bootstrap'=>$bootstrap, 'identity'=>$identity, 'known'=>$known, 'files'=>$files, 'identity_path'=>$identityPath];
     }
 
+    private function inspect(string $publicKey): array
+    {
+        try { return (new OpenPgpKeyInspector())->inspect($publicKey); }
+        catch (RuntimeException $error) {
+            throw new RuntimeException('Unable to inspect public key. Supply one armored public key with a valid user ID.', 0, $error);
+        }
+    }
+
+    private function assertArmor(string $value, string $kind): void
+    {
+        $value = trim($value);
+        if (!str_starts_with($value, '-----BEGIN PGP ' . $kind . "-----\n")
+            && !str_starts_with($value, '-----BEGIN PGP ' . $kind . "-----\r\n")) throw new RuntimeException('Expected one armored OpenPGP ' . $kind . '.');
+        if (!str_ends_with($value, '-----END PGP ' . $kind . '-----')
+            || substr_count($value, '-----BEGIN PGP ') !== 1 || substr_count($value, '-----END PGP ') !== 1) {
+            throw new RuntimeException('Supply exactly one public key or signature armor block, without extra material.');
+        }
+    }
+
     private function verify(OpenPgpSignatureVerifier $verifier, string $key, string $text, string $signature, string $fingerprint): void
     {
+        $this->assertArmor($signature, 'SIGNATURE');
         if (!$verifier->verifyDetached($key,$text,$signature,$fingerprint)['ok']) throw new RuntimeException('Detached signature verification failed.');
     }
 }

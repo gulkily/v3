@@ -94,7 +94,7 @@ final class SignedPostTransaction
                 $this->checkpoint('file');
             }
             $this->git(['add','--',...array_keys($files)]); $this->checkpoint('staged');
-            $this->git(['-c','user.name=Forum Rewrite','-c','user.email=forum-rewrite@example.invalid','commit','-m','Accept signed post bundle']);
+            $this->git(['-c','user.name=Forum Rewrite','-c','user.email=forum-rewrite@example.invalid','commit','-m','Accept signed post bundle','--only','--',...array_keys($files)]);
             $this->checkpoint('committed');
             $sha=trim($this->git(['rev-parse','HEAD']));
             $this->clear($dir);

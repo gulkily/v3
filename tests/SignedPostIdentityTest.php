@@ -20,6 +20,8 @@ final class SignedPostIdentityTest
     {
         $root=sys_get_temp_dir().'/bundle-resolve-'.bin2hex(random_bytes(6)); mkdir($root);
         $input=self::bundle(); $resolver=new SignedPostIdentity($root,new SignedPostBundleValidator());
+        $extra=$input; $extra['public_key'].="-----BEGIN PGP PRIVATE KEY BLOCK-----\nprivate\n-----END PGP PRIVATE KEY BLOCK-----\n";
+        try { $resolver->resolve($extra); throw new LogicException('Expected extra material refusal'); } catch(RuntimeException $e) { assertStringContains('extra material',$e->getMessage()); }
         $first=$resolver->resolve($input); assertSame(false,$first['known']); assertSame(4,count($first['files']));
         foreach($first['files'] as $path=>$bytes) { @mkdir(dirname($root.'/'.$path),0777,true); file_put_contents($root.'/'.$path,$bytes); }
         $known=$resolver->resolve($input); assertSame(true,$known['known']); assertSame([],$known['files']);

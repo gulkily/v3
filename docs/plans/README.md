@@ -334,4 +334,4 @@ and repair its navigation and affected references. See the
 
 - [Background sign-in](background_sign_in/)
 
-- [Single-request signed posting](single_request_posting/single_request_posting_step3_development_plan.md) — separate signed bootstrap and post; Step 3 approved.
+- [Single-request signed posting](single_request_posting/single_request_posting_step3_development_plan.md) — separate signed bootstrap and post; implemented locally, release verification pending.
