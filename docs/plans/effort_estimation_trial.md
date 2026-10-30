@@ -1072,3 +1072,13 @@ Relationship: Reuses QDB audit M02/M04, follows direct tags-index fix 16465fed, 
 2026-10-30 UTC, v3/qdb_rebuild_scope Step 3 handoff: Step 2 approved; all-site tag behavior explicitly confirmed in scope. [Development plan/checkpoint](./qdb_rebuild_scope/qdb_rebuild_scope_step3_development_plan.md#execution-and-study-checkpoint) has six stages through bounded live selection, traversal/recovery, static serving, offline saved paging, incident/scaling checks and UI/catalog/operator handoff. Same v1/B/baseline/R1/P2/exposed rater; frozen hashes reverified; whole-cycle 0.85 reaffirmed. Original stage-work estimates 0.20/0.12/0.12/0.18/0.15/0.14 are non-additive, not measured work. No implementation or host recovery; await Approved Step 3. Uncommitted plans and cycle-scoped closeout bookkeeping preserve unrelated drafts.
 
 2026-10-30 UTC, v3/qdb_rebuild_scope Step 4 closeout: [Entry, stages and outcome](./qdb_rebuild_scope/qdb_rebuild_scope_step4_implementation_summary.md#closeout). Step 3 approved; entry 0.85 reaffirmed, separate retrospective cycle 0.85. Same v1/B/baseline/R1/P2 and single exposed rater. Six stages complete, originals 0.20/0.12/0.12/0.18/0.15/0.14 retained; retrospectives 0.20/0.12/0.12/0.18/0.15/0.16, non-additive. Final focused 63/63 plus online/offline real-browser acceptance and 16 theme styles at phone/desktop; fixed-result scaling 6 MiB through 40000 threads, one exact-limit record 38 MiB. Early merge/push c4933cc5 explicitly requested before final tests. No dependencies, full-suite/physical-device/live-host claim, measured work or accepted outcome; maintainer fit/acceptance pending. Optional prebuilding and other memory findings remain separate.
+
+## Cycle v3/history_purge
+
+Status: Step 1 proposed; standing enrollment P2
+Canonical checkpoint: [Step 1 handoff](./history_purge_step1_solution_assessment.md#study-snapshots-and-approval), 2026-10-30T20:30:04Z
+Scope: v1 / Option A; baseline 2e17c971308a710a540c905e738048c4f51e53ca; R1 / P2
+Projected total: 0.80; alternatives B 0.60 and C 0.35, not additive
+Exposure: Claude single exposed rater; handoff, receipt spec, exporter, import, source-route and read-model history consumers inspected before rating while writing the Nostr comparison; pristine intake missing, not reconstructed. All three frozen R1 hashes verified. Extended estimates and debug enabled.
+Relationship: Release 2 of the retraction simplification direction; follows `v3/unified_removal_format` (receipt format) and `v3/retraction_effects`; same stable ID across worktrees.
+Authorization: Step 1 requested by the user; awaiting Approved Step 1. No implementation, history rewrite, measured labor, acceptance or accepted-count increment. Planning, debug log and this ledger entry uncommitted.
