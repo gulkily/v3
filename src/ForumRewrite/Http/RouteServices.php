@@ -638,6 +638,10 @@ final class RouteServices
     /** @param string[] $headers */
     public function sendText(string $text, int $statusCode, array $headers = []): void
     {
+        if ($statusCode >= 400 && ApiErrors::isApi($_SERVER['REQUEST_URI'] ?? '') && ApiErrors::isBusy($text)) {
+            $this->sendJson(ApiErrors::busy(), 503, ['Retry-After: 10']);
+            return;
+        }
         http_response_code($statusCode);
         header('Content-Type: text/plain; charset=utf-8');
         foreach ($headers as $headerValue) {
@@ -646,10 +650,18 @@ final class RouteServices
         echo $text;
     }
 
+    public function errorPayload(\Throwable $error): array
+    {
+        return ['status' => 'error', 'error' => $error->getMessage()] + ($error instanceof \ForumRewrite\Support\TextValidationException ? $error->details() : []);
+    }
+
     /** @param array<string, mixed> $payload
      * @param string[] $headers */
     public function sendJson(array $payload, int $statusCode, array $headers = []): void
     {
+        if ($statusCode >= 400 && ApiErrors::isBusy((string) ($payload['error'] ?? ''))) {
+            $payload = ApiErrors::busy(); $statusCode = 503; $headers[] = 'Retry-After: 10';
+        }
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');
         foreach ($headers as $headerValue) {

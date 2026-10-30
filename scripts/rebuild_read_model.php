@@ -60,6 +60,11 @@ $phase = 'scanning source record counts';
 $failure = null;
 $readModelPromoted = false;
 try {
+    if (is_dir($repositoryRoot . '/.git/signed-post-pending')) {
+        (new \ForumRewrite\Support\ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
+            static fn () => (new \ForumRewrite\Write\SignedPostTransaction($repositoryRoot))->recover()
+        );
+    }
     fwrite(STDOUT, "[1/3] Scanning source record counts...\n");
     $sourceCounts = [
         'posts' => countPostRecords($repositoryRoot),

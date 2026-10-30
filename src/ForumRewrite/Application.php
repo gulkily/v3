@@ -130,12 +130,21 @@ final class Application
 
     public function handle(string $method, string $requestUri): void
     {
+        if (\ForumRewrite\Http\ClientDownload::serve($method, $requestUri, $this->projectRoot . "/public")) return;
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $docsPage = $path === '/docs' || str_starts_with($path, '/docs/');
         if ($docsPage !== $this->docsPage) {
             $this->routeServices = null;
         }
         $this->docsPage = $docsPage;
+        if ($path === '/api/text_rules') {
+            if ($method !== 'GET') { $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405); return; }
+            $this->sendJson(\ForumRewrite\Support\UnicodeTextPolicy::rules(
+                $this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
+                $this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EMOJI_AUTHORED_TEXT)
+            ), 200);
+            return;
+        }
         if ($path === '/api/docs-version') {
             (new \ForumRewrite\Docs\DocsResponder($this->projectRoot, $this->docsStaticRoot()))->serve($method, $requestUri);
             return;
@@ -179,6 +188,11 @@ final class Application
             return;
         }
 
+        if (is_dir($this->repositoryRoot . '/.git/signed-post-pending')) {
+            $this->executionLock()->withExclusiveLock(function (): void {
+                (new \ForumRewrite\Write\SignedPostTransaction($this->repositoryRoot))->recover();
+            });
+        }
         $this->ensureReadModel();
 
         if ($securityReviewRequest) {
@@ -226,6 +240,10 @@ final class Application
         }
 
         if ($this->approvedMembersOnlyEnabled() && !$this->membersOnlyRequestAllowed($method, $path)) {
+            if (\ForumRewrite\Http\ApiErrors::isApi($path)) {
+                $this->sendJson(['status'=>'error','code'=>'access_denied','error'=>'This instance requires an authenticated approved session. Use the existing registration, approval and authentication flow first.'],403);
+                return;
+            }
             if (!$this->isApplicationRoute($path)) {
                 $this->notFound();
                 return;
@@ -383,6 +401,11 @@ final class Application
 
         if ($path === '/api/prepare_reply') {
             $this->writePostAndIdentityApiController()->prepareReply($method, $query);
+            return;
+        }
+
+        if ($path === '/api/create_signed_post') {
+            $this->writePostAndIdentityApiController()->createSignedPost($method, $query);
             return;
         }
 
@@ -1070,6 +1093,10 @@ final class Application
             return;
         }
 
+        if (\ForumRewrite\Http\ApiErrors::isApi($path)) {
+            $this->sendJson(['status' => 'error', 'error' => 'Unknown API route. See /api/.'], 404);
+            return;
+        }
         $this->notFound();
     }
 
@@ -2123,7 +2150,7 @@ final class Application
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
-            '/api/prepare_reply', '/api/create_prepared_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
+            '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',

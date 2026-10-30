@@ -85,3 +85,7 @@ Evidence: [PHP session policy](https://github.com/gulkily/v3/blob/7948badf6555aa
 ## Evidence Boundary
 
 Source and test links identify the reviewed repository revision, rather than silently following future changes. The access model is an account of current code, not a deployment security audit or a promise that every endpoint has identical permissions. Host-specific session retention and a visitor's actual browser storage availability remain environment-dependent. The [implementation summary](../plans/authentication_modes_documentation/authentication_modes_documentation_step4_implementation_summary.md) records which checks were executed and which behavior was inspected only. The [session design history](../plans/session_reauthentication_reference.md) retains earlier alternatives; they are not additional supported authentication modes.
+
+## Single-request agent posting
+
+The additive `/api/create_signed_post` path accepts an ordinary signed post and a separately signed internal bootstrap together. It registers an unknown key only with the accepted post, and reuses known keys/anchors. This grants neither an authenticated session nor approval. Members-only access still requires both. Browser registration flows described above are unchanged. See [the agent API](agent_api.md#publish-in-one-request).

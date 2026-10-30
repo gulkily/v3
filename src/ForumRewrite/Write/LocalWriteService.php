@@ -498,6 +498,70 @@ class LocalWriteService
         });
     }
 
+    /** Accept exact client-signed text, with optional atomic first-use bootstrap. */
+    public function createSignedPost(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $validator = new SignedPostBundleValidator(
+                $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
+                $this->emojiAuthoredTextEnabled(),
+            );
+            $bundle = (new SignedPostIdentity($this->repositoryRoot, $validator))->resolve($input);
+            $post = $bundle['post'];
+            $path = CanonicalPathResolver::datedPost($post->postId, $post->createdAt);
+            $tx = new SignedPostTransaction($this->repositoryRoot);
+            $removal = \ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $post->postId);
+            if (($removal['operation'] ?? null) === 'delete') throw new RuntimeException('Post was removed; replay cannot restore it.', 410);
+            $committed = $tx->git(['show', 'HEAD:' . $path], true);
+            $replayed = $committed !== null;
+            if ($replayed) {
+                if ($committed !== $input['canonical_record'] || !$bundle['known'] || $tx->git(['show','HEAD:' . $path . '.asc'], true) === null) {
+                    throw new RuntimeException('Post ID conflicts with existing content.', 409);
+                }
+                $history = trim($tx->git(['log','--diff-filter=A','--format=%H','--reverse','--',$path]));
+                $commit = explode("\n", $history)[0];
+                if ($commit === '') throw new RuntimeException('Unable to identify accepted post commit.');
+            } else {
+                $validator->validateRecord($input['canonical_record']);
+                $validator->assertFresh($post);
+                if ($this->postTargetExists($post->postId)) throw new RuntimeException('Post ID is already reserved.', 409);
+                if ($post->isReply()) $this->assertReplyTarget($post->threadId, $post->parentId);
+                if (!$bundle['known']) {
+                    $validator->assertFresh($bundle['bootstrap']);
+                    if (\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $bundle['bootstrap']->postId) !== null || $this->postTargetExists($bundle['bootstrap']->postId)) throw new RuntimeException('Bootstrap ID is already reserved.', 409);
+                }
+                $files = $bundle['files'];
+                $files[$path] = $input['canonical_record'];
+                $files[$path . '.asc'] = $input['detached_signature'];
+                $labels = $this->extractThreadLabelsFromBody($post->body);
+                if ($labels !== []) {
+                    [$labelPath,$labelBytes] = $this->buildThreadLabelRecord($post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
+                    $files[$labelPath] = $labelBytes;
+                }
+                $commit = $tx->accept($files);
+            }
+            $result = ['status'=>'ok', 'post_id'=>$post->postId, 'thread_id'=>$post->threadId ?? $post->postId,
+                'identity_id'=>$post->authorIdentityId, 'profile_slug'=>$bundle['identity']->identitySlug(),
+                'bootstrap_post_id'=>$bundle['identity']->bootstrapByPost, 'record_path'=>$path,
+                'signature_path'=>$path . '.asc', 'commit_sha'=>$commit, 'replayed'=>$replayed,
+                'fastmod_new_post'=>!$replayed];
+            try {
+                // A single rebuild sees both registration and post, without double counting.
+                // Use current HEAD on retries, not the historical acceptance commit.
+                $this->refreshDerivedStateAfterCommit(trim($tx->git(['rev-parse','HEAD'])));
+                $this->invalidator()->invalidateIdentityLink($result['profile_slug'],$bundle['identity']->bootstrapByThread,$bundle['identity']->bootstrapByPost);
+                if ($post->isReply()) $this->invalidator()->invalidateReply($post->threadId,$post->postId);
+                else $this->invalidator()->invalidateBoardThread($post->postId);
+            } catch (\Throwable $error) {
+                error_log('Signed post accepted; refresh failed: ' . $error->getMessage());
+                $result['refresh_pending'] = true;
+                $result['recovery'] = 'Post is committed. Resend the same signed bundle to retry refresh; do not generate a new post ID.';
+            }
+            return $result;
+        });
+    }
+
     private function assertImageAuthor(string $body, string $identity): ?array
     {
         $image = ImageReference::fromBody($body);
@@ -3333,6 +3397,7 @@ class LocalWriteService
     private function withTimedWriteLock(callable $callback): array
     {
         $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
+            (new SignedPostTransaction($this->repositoryRoot))->recover();
             $this->recoverSignedReactionWrites();
             return \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot,$callback);
         });
@@ -3961,14 +4026,13 @@ class LocalWriteService
 
     private function normalizeAsciiLine(string $value, string $field): string
     {
+        $original = $value;
         $value = trim($value);
         if ($value === '') {
             return '';
         }
 
-        if (preg_match('/[^\x20-\x7E]/', $value)) {
-            throw new RuntimeException("{$field} must be printable ASCII.");
-        }
+        \ForumRewrite\Support\TextValidationException::ascii($original, $value, $field, false, "{$field} must be printable ASCII.");
 
         return $value;
     }
@@ -4106,14 +4170,13 @@ class LocalWriteService
 
     private function normalizeAsciiBody(string $value, string $field): string
     {
+        $original = $value;
         $value = str_replace("\r\n", "\n", trim($value));
         if ($value === '') {
             throw new RuntimeException("{$field} is required.");
         }
 
-        if (preg_match('/[^\x0A\x20-\x7E]/', $value)) {
-            throw new RuntimeException("{$field} must be ASCII only.");
-        }
+        \ForumRewrite\Support\TextValidationException::ascii($original, $value, $field, true, "{$field} must be ASCII only.");
 
         return $value . "\n";
     }

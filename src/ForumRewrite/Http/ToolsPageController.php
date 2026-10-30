@@ -293,7 +293,7 @@ final class ToolsPageController
             }
             $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -371,7 +371,7 @@ final class ToolsPageController
             }
             $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         }
     }
 

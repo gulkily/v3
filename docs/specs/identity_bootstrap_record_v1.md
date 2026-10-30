@@ -84,3 +84,15 @@ Bootstrap-By-Thread: thread-20260321175707-asdf-7197c7be
 ...
 -----END PGP PUBLIC KEY BLOCK-----
 ```
+
+## Bundled signed registration
+
+Single-request posting retains a separate signed internal bootstrap post. The
+client signs both that fixed bootstrap and its ordinary post locally. The server
+derives the identity metadata and key paths from the inspected signing key; it
+never points the identity at the ordinary post. New registration is committed
+with the ordinary post, including both detached signatures.
+
+For known fingerprints, existing identity metadata and bootstrap pointers win.
+A supplied valid bootstrap proposal is verified but not stored again. This also
+applies when another concurrent first submission registered the key first.
