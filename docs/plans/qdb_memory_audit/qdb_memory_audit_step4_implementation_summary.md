@@ -39,3 +39,28 @@ Allowed work is documentation-only. Runtime/UI/migration/deployment tests and ne
 - Notes: Stage 1 commit 4000874a. Original estimate unchanged; host recovery and proposed budgets remain unverified. Runtime/UI/deployment tests are inapplicable; manual guidance supplies the approved documentation outcome without claiming live acceptance.
 
 *— Codex · 2026-10-30 UTC*
+
+
+## Stage 3 — Documentation handoff
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.08**
+
+- Changes: Finalized scope/evidence boundaries, index and this cycle's ledger. Unpublished capacity/selection assessments are labeled pending references in committed documents; their working copies retain repaired links to the organized audit. Other cycle ledger additions remain unstaged.
+- Verification: Passed ten-finding field/source checks, immutable probe-source comparison, committed-tree Markdown link checks, staged path/whitespace checks and zero application/dependency delta. Rechecked stage commits include their summary updates. No full-suite or live-host pass is claimed.
+- Notes: Stage 2 commit 7ac4ee39. Original estimate unchanged. This stage owns shared document-integrity verification; runtime/UI/deployment/migration checks are inapplicable because no executable behavior changed.
+
+*— Codex · 2026-10-30 UTC*
+
+## Closeout
+
+**Retrospective cycle scope: 0.40**
+
+Status: Three stages complete; approved documentation contract met. Whole-cycle entry/projection 0.40 and original stage estimates retained without revisions; retrospective stage assessments 0.15/0.10/0.08 are separate, non-additive judgments. R1/P2, v2/A, original application baseline and single exposed rater unchanged. Measured work is unknown; maintainer comfortable-fit/acceptance remains pending.
+
+Delivered: [Findings and operator guide](./qdb_memory_audit_findings.txt), [historical source snapshot](./qdb_memory_audit_probe_source.txt), concepts and index. All M01–M10 IDs retained, with source-only, direct synthetic and added-memory-pressure evidence distinguished. Prior incident fixes 074deea6/cfb8364f are application changes from before this cycle, not new audit implementation.
+
+Unverified: QDB PHP 8.3 host recovery, production corpus capacity and proposed 32/64 MiB ceilings. Follow-ups: independently approved fixes and the separately proposed capacity/selection audits. This branch has not been merged, pushed or deployed. Runtime changes and dependency additions: zero.
+
+*— Codex · 2026-10-30 UTC*

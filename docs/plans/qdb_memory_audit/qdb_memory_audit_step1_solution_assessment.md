@@ -45,11 +45,11 @@ Measure every major command/request family, concurrency and native/child-process
 
 [Audit findings and reproductions](./qdb_memory_audit_findings.txt) record ten findings. Rebuild and QDB rendering fail with 40000 synthetic quotes without padding; offline selection alone peaks at 94.01 MiB; large commit manifests, high-traffic reads and malformed headers expose further risks. The [archived probe source](./qdb_memory_audit_probe_source.txt) preserves repeatable cases.
 
-Selection, 2026-10-30: The user chose Option A and requested a separate plan for expanding to Option C. This task owns the source inventory, ranked allocation risks and remediation boundaries. The diagnostic inventory is complete. Existing probes remain evidence; no further workload campaign is included here. The broader measurement/acceptance work is proposed in [Application capacity study](../application_capacity_study_step1_solution_assessment.md). No fixes or next-step approval are implied by this selection.
+Selection, 2026-10-30: The user chose Option A and requested a separate plan for expanding to Option C. This task owns the source inventory, ranked allocation risks and remediation boundaries. The diagnostic inventory is complete. Existing probes remain evidence; no further workload campaign is included here. The broader measurement/acceptance work is proposed in Application capacity study (pending separate assessment: application_capacity_study_step1_solution_assessment.md). No fixes or next-step approval are implied by this selection.
 
 Budget proposal carried to the expansion: Ordinary peaks at or below 16/48 MiB and test ceilings of 32/64 MiB for public/maintenance work, plus scaling, edge-case and recovery measurements. These remain proposals, not verified production limits. The original 128 MiB failures and tiny fixture's 6 MiB peak remain unchanged evidence. Never meet budgets by dropping records or changing content limits.
 
-Overlap: M02/M04/M09 seed the separate [load-before-selection assessment](../load_before_selection_audit_step1_solution_assessment.md), which owns codebase-wide unnecessary-work discovery. This task retains the original memory findings; the capacity-study expansion owns proposed broader measurements. Link shared causes and fixes once. The selection audit's own option remains unchanged.
+Overlap: M02/M04/M09 seed the separate load-before-selection assessment (pending separate assessment: load_before_selection_audit_step1_solution_assessment.md), which owns codebase-wide unnecessary-work discovery. This task retains the original memory findings; the capacity-study expansion owns proposed broader measurements. Link shared causes and fixes once. The selection audit's own option remains unchanged.
 
 ## Study checkpoint
 

@@ -26,7 +26,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [QDB memory audit](qdb_memory_audit/qdb_memory_audit_step1_solution_assessment.md) — documentation-only source audit; execution in progress.
+- [QDB memory audit](qdb_memory_audit/qdb_memory_audit_step1_solution_assessment.md) — documentation-only source audit complete; fixes and host capacity acceptance remain separate.
 
 - [Unified reaction records](unified_reaction_records/unified_reaction_records_step1_solution_assessment.md)
 - [Unified removal format](unified_removal_format/unified_removal_format_step1_solution_assessment.md)

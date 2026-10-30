@@ -61,3 +61,5 @@ Release after field, reference, ownership and scope checks. Correct stale claims
 Concepts: Stage 2 adds read-model/static-publication entries; reaction-record entry unchanged. Step 2 approved. Step 3: 2026-10-30 UTC, v2/A, baseline cfb8364f6db03cc09e27cd26afb93c109c723a08, R1/P2; hashes reverified, single exposed Codex rater. Total 0.40 reaffirmed; S1/S2/S3 0.15/0.10/0.08 are non-additive stage work including verification/correction. Prior estimates preserved; no measured labor or accepted outcome. Await Approved Step 3.
 
 *— Codex · 2026-10-30 UTC*
+
+Approval update: User approved Step 3, 2026-10-30 UTC; execution is recorded in the linked Step 4 summary.
