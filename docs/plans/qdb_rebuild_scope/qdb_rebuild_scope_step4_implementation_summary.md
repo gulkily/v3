@@ -57,3 +57,15 @@ Entry: Step 3 approved, 2026-10-30 UTC; branch feature/bounded-tag-pages; planni
 - Notes: Original scope/estimate unchanged. Existing saved grouping remains; this stage bounds rendered cards, not snapshot generation. Full browser offline/reconnect evidence belongs to Stage 6.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 5 - Memory and incident regression
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes: Added isolated real-route/24-tag artifact resource fixtures and repeatable scaling/maximum-record tests. [Measurements](./qdb_rebuild_scope_memory_evidence.txt) retain dimensions and limitations. Stage 4 commit: 70a4f1b1.
+- Verification: Resource test plus tags-index regressions and normal static-command smoke 4/4. All 1000/10000/40000 samples peak at 6 MiB under 32 MiB public/64 MiB artifact ceilings; exact-limit 16 MiB record plus 24 ordinary records peaks at 38 MiB under 128 MiB. Every tag artifact contains at most 25 cards. Initial fixture assertion assumed quote-card markup; corrected to the existing tag page's thread-card presentation and reran.
+- Notes: Original scope/estimate unchanged. Hydration/output bounded; SQLite candidate examination not instrumented and may scale with corpus. Legacy index failure reproduced in predecessor fix; current index and first-tag paths both exercised. Live failing tag is unknown, production retry pending; no full-scale build capacity claim.
+
+*— Codex · 2026-10-30 UTC*

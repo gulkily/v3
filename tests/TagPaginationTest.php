@@ -158,6 +158,27 @@ final class TagPaginationTest
         } finally { $prior === false ? putenv('FORUM_SITE_ID') : putenv('FORUM_SITE_ID=' . $prior); }
     }
 
+
+    public function testResourceUseStaysBoundedAcrossCorpusSizesAndLargeRecord(): void
+    {
+        foreach (['route' => '32M', 'artifacts' => '64M', 'large' => '128M'] as $mode => $limit) {
+            $peaks = [];
+            foreach ($mode === 'large' ? [25] : [1000, 10000, 40000] as $count) {
+                $root = sys_get_temp_dir() . '/tag-memory-' . bin2hex(random_bytes(6));
+                mkdir($root, 0700);
+                try {
+                    $result = \ForumRewrite\Support\BoundedProcess::run(
+                        [PHP_BINARY, '-d', 'memory_limit=' . $limit, __DIR__ . '/Support/tag_page_memory.php', $root, (string) $count, $mode],
+                        new \ForumRewrite\Support\OperationBudget(120), 8192, 'tag resource regression');
+                    assertSame(0, $result['exit_code'], $result['stderr'] . $result['stdout']);
+                    assertTrue(preg_match('/Peak bytes: (\d+)/', $result['stdout'], $match) === 1);
+                    $peaks[] = (int) $match[1];
+                } finally { $this->removeTree($root); }
+            }
+            assertTrue(max($peaks) - min($peaks) <= 4 * 1024 * 1024, $mode . ' memory grows with corpus size');
+        }
+    }
+
     private function removeTree(string $root): void
     {
         if (is_link($root) || is_file($root)) { unlink($root); return; }

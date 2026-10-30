@@ -1,0 +1,55 @@
+Evidence: Bounded tag page resource checks
+Date: 2026-10-30 UTC
+Environment: Local PHP 8.1.2 CLI, SQLite; fresh subprocess per sample; synthetic fixtures, not QDB host
+Dimensions: 2 KiB bodies, 1 KiB previews, fixed 25 selected rows; 24 populated generated tags
+Candidate rows examined: Not instrumented; tag membership predicates may examine the corpus. Hydrated rows are bounded independently. No claim of constant CPU or I/O.
+Large record: Exact 16 MiB canonical source parsed before inserting its body; one such record among 25. Peak includes fixture preparation; tag template preserves its existing preview presentation. Not a guarantee for 25 simultaneous maximum-size records or all HTML-escaping distributions.
+
+Limit: 32M
+Mode: route
+Records: 1000
+Peak bytes: 6291456
+Elapsed seconds: 0.072
+Hydrated rows per page: 25
+
+Limit: 32M
+Mode: route
+Records: 10000
+Peak bytes: 6291456
+Elapsed seconds: 0.028
+Hydrated rows per page: 25
+
+Limit: 32M
+Mode: route
+Records: 40000
+Peak bytes: 6291456
+Elapsed seconds: 0.032
+Hydrated rows per page: 25
+
+Limit: 64M
+Mode: artifacts
+Records: 1000
+Peak bytes: 6291456
+Elapsed seconds: 0.588
+Hydrated rows per page: 25
+
+Limit: 64M
+Mode: artifacts
+Records: 10000
+Peak bytes: 6291456
+Elapsed seconds: 0.649
+Hydrated rows per page: 25
+
+Limit: 64M
+Mode: artifacts
+Records: 40000
+Peak bytes: 6291456
+Elapsed seconds: 0.745
+Hydrated rows per page: 25
+
+Limit: 128M
+Mode: large
+Records: 25
+Peak bytes: 39845888
+Elapsed seconds: 0.047
+Hydrated rows per page: 25
