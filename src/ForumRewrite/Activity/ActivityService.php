@@ -61,6 +61,7 @@ final class ActivityService
         private readonly string $databasePath,
         private readonly bool $showProfileNameChanges = false,
         private readonly ?\Closure $authorizeSecurity = null,
+        private readonly ?CommitEvidenceLookup $evidenceLookup = null,
     ) {
     }
 
@@ -906,7 +907,8 @@ final class ActivityService
         } finally { @unlink($input); }
     }
 
-    private static function parseCommitFiles(array $output): array
+    /** @internal Shared with the operation-local streaming evidence loader. */
+    public static function parseCommitFiles(array $output): array
     {
         $files = [];
         foreach ($output as $line) {
@@ -952,10 +954,6 @@ final class ActivityService
         $sourcePath = (string) $item['source_path'];
         if ($sourcePath === '') return [];
         $sha = (string) $item['source_commit_sha'];
-        if (!array_key_exists($sha, $this->relevantCommitFileIndex)) {
-            $this->relevantCommitFileIndex[$sha] = array_column($this->sourceCommitFiles($sha) ?? [], null, 'path');
-        }
-        $byPath = $this->relevantCommitFileIndex[$sha];
         $paths = [$sourcePath];
         if ($item['record_family'] === 'identity_bootstrap') {
             $identity = $this->signatureSignerIdentityId($sourcePath);
@@ -967,6 +965,14 @@ final class ActivityService
             $paths[] = $signaturePath;
             $signature = $this->activityCommitSignatureMetadata($signaturePath);
             if ($signature['public_key_path'] !== '') $paths[] = $signature['public_key_path'];
+        }
+        if ($this->evidenceLookup !== null) {
+            $byPath = $this->evidenceLookup->filesForPaths($sha, $paths);
+        } else {
+            if (!array_key_exists($sha, $this->relevantCommitFileIndex)) {
+                $this->relevantCommitFileIndex[$sha] = array_column($this->sourceCommitFiles($sha) ?? [], null, 'path');
+            }
+            $byPath = $this->relevantCommitFileIndex[$sha];
         }
         $files = [];
         foreach (array_unique($paths) as $path) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace ForumRewrite\ReadModel;
 
 use ForumRewrite\Activity\ActivityService;
+use ForumRewrite\Activity\CommitEvidenceLookup;
 use PDO;
 
 /** Called within the existing indexing transaction; readers never populate missing evidence. */
@@ -28,17 +29,20 @@ final class ActivityEvidenceIndex
         $update = $pdo->prepare('UPDATE activity SET evidence_json = ? WHERE id = ?');
         // Completed rows leave the existing pending-evidence index. Fetch a
         // bounded batch and close its cursor before updating the same table.
-        while (true) {
-            $query = $pdo->query('SELECT * FROM activity WHERE evidence_json IS NULL ORDER BY source_commit_sha, id LIMIT 200');
-            $rows = $query->fetchAll(PDO::FETCH_ASSOC);
-            $query->closeCursor();
-            if ($rows === []) return;
-            self::refreshBatch($pdo, $root, $database, $rows, $update);
-            unset($rows);
-        }
+        $lookup = new CommitEvidenceLookup($root);
+        try {
+            while (true) {
+                $query = $pdo->query('SELECT * FROM activity WHERE evidence_json IS NULL ORDER BY source_commit_sha, id LIMIT 200');
+                $rows = $query->fetchAll(PDO::FETCH_ASSOC);
+                $query->closeCursor();
+                if ($rows === []) return;
+                self::refreshBatch($pdo, $root, $database, $rows, $update, $lookup);
+                unset($rows);
+            }
+        } finally { $lookup->close(); }
     }
 
-    private static function refreshBatch(PDO $pdo, string $root, string $database, array $rows, \PDOStatement $update): void
+    private static function refreshBatch(PDO $pdo, string $root, string $database, array $rows, \PDOStatement $update, CommitEvidenceLookup $lookup): void
     {
         $signatures = [];
         foreach (array_chunk(array_unique(array_column($rows, 'source_path')), 200) as $paths) {
@@ -50,8 +54,8 @@ final class ActivityEvidenceIndex
         foreach ($rows as $row) $groups[(string) $row['source_commit_sha']][] = $row;
         // Bound manifest lifetime to a small commit batch, independent of total repository size.
         foreach (array_chunk($groups, 32, true) as $batch) {
-            $service = new ActivityService(static fn (): PDO => $pdo, $root, $database);
-            $service->primeCommitEvidence(array_keys($batch));
+            $service = new ActivityService(static fn (): PDO => $pdo, $root, $database, evidenceLookup: $lookup);
+            $lookup->prepareCommits(array_keys($batch));
             foreach ($batch as $group) foreach ($group as $row) {
                 $update->execute([$service->buildIndexedEvidence($row, $signatures), $row['id']]);
             }

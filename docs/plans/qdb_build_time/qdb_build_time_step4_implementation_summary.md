@@ -50,3 +50,14 @@ Study: railspike-effort, R1/P2, v3/qdb_build_time; original v1/A 0.50 retained, 
 - Notes: Temporary spool prevents partial output on Git failure and retains heap bounds; no rename/merge-policy overrides. Dependency delta zero; original scope/estimate unchanged; labor unmeasured.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 5 — Bounded manifest reuse in evidence refresh
+
+**Original stage-work estimate: 0.23**
+**Retrospective stage-work assessment: 0.22**
+
+- Changes: Operation-local file-backed SQLite lookup streams batched Git manifests, retains current small commit group on disk, and fetches only source/signature/key paths into PHP. Shared commits survive adjacent 200-row batches. Transactions prevent partial manifests; failed batches retain per-commit fallback. Full commit-detail requests keep their existing path.
+- Verification: All eight ActivityProjection tests pass. Frozen 10000-event/20000-path output is byte-identical; preliminary optimized run 0.579404s, 4 MiB PHP peak versus baseline 16 MiB. New tests pass exact 501-row evidence across three batches with one traced manifest process, small-commit batching, explicit/destructor cleanup and an injected partial-output/nonzero Git failure with no partial evidence or repeated per-event retry.
+- Notes: No core read-model queries/schema changed; scratch is private and not exported. Temporary-store cache budget is 1 MiB; final matched acceptance remains Stage 7. Dependencies zero; original scope/estimate unchanged; labor unmeasured.
+
+*— Codex · 2026-10-30 UTC*
