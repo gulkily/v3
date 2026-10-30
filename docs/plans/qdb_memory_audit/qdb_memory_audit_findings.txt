@@ -1,0 +1,157 @@
+Audit: QDB and shared PHP memory growth
+Date: 2026-10-30 UTC
+Baseline: cfb8364f6db03cc09e27cd26afb93c109c723a08
+Status: Diagnostic audit complete; Option A selected; broader capacity study separately proposed; remediation unimplemented
+Related fixes: 074deea6 removed ceiling-sized canonical read buffers; cfb8364f bounded activity row batches and released late rebuild projections.
+Constraint: PHP memory_limit=128M; raising it is unavailable.
+Scope: Rebuild, static publication, QDB public readers, offline snapshot and activity evidence; adjacent scoring/import/image/high-traffic paths screened for the same allocation patterns. This is a focused audit, not a proof that every application path fits 128 MiB.
+Environment: PHP 8.1.2 CLI, SQLite, Git, local synthetic fixtures. Host PHP 8.3 and live corpus were not accessed. PHP peak allocation figures exclude native-library and child-process RSS. Synthetic record counts and padding are reproduction conditions, not measured production thresholds.
+Changes: Approved completion is documentation-only. Historical probe source is archived verbatim as text; no runtime changes, new benchmarks, dependencies, push or deployment. Diagnostic-stage measurements below were collected before Option A selection.
+
+Finding: M01
+Priority: High; full rebuild
+Evidence: Reproduced at 128 MiB with no artificial retained memory.
+Location: src/ForumRewrite/ReadModel/ReadModelBuilder.php:199-275 and rebuild():85-101
+Entry points: ./v3 rebuild and build-static candidate creation; delete-record post-removal refresh -> ReadModelBuilder::rebuild -> indexPosts.
+Problem: indexPosts accumulates every parsed post including full prose, sorts the collection, then creates another array of post rows plus thread summaries. The returned corpus remains live through approval/profile/reaction/activity work. The previous fix releases it only after activity insertion, so it does not bound these earlier phases.
+Reproduction: 40000 canonical posts, each with a 2048-byte body and ordinary headers, exhaust memory during indexPosts at line 211. The test repository has no Git history, isolating this from history-buffer costs.
+Direction: Stream source records into the derived database; retain only the metadata required by each subsequent pass. Use bounded database passes for ordering and derivation. Preserve sequence ordering, author attribution, approvals and removal structure; do not drop content to meet the budget.
+
+Finding: M02
+Priority: High; static rendering and ordinary QDB reading
+Evidence: Reproduced through both the shared reader and QDB buildFromReadModel at 128 MiB without padding.
+Location: src/ForumRewrite/ReadModel/ThreadRepository.php:20-45; src/ForumRewrite/Http/BoardPageController.php:300-310; src/ForumRewrite/Qdb/QdbExperience.php:151-162,186-190,238-240; src/ForumRewrite/Qdb/QdbBoardPolicy.php:49-61
+Entry points: QDB welcome/latest/top/leetness/random/search; build-static shared/QDB routes -> BoardPageController or QdbExperience -> ThreadRepository. Shared RSS also uses the reader; its output contract needs separate review.
+Problem: All thread rows, full root bodies and previews are fetched before filtering, sorting and pagination. Hydration/filtering also constructs arrays. Welcome, latest/top/leetness, random, search and related shared readers inherit this shape; selecting 5, 10 or 25 displayed quotes does not limit query memory.
+Reproduction: 40000 quotes with 2048-byte bodies and 1024-byte previews exhaust memory at ThreadRepository.php:26. Actual QDB static rendering reaches the same failure. This is not dependent on detail-page prebuilding.
+Direction: Select/count/order eligible quote IDs in SQLite and hydrate only the displayed set. Preserve exact sort tie-breaks, quote eligibility, search, random behavior, scores and pagination. Audit RSS separately rather than silently truncating it.
+
+Finding: M03
+Priority: High for large archive commits; residual risk in the just-fixed evidence phase
+Evidence: Measured growth and reproduced failure under explicit headroom pressure.
+Location: src/ForumRewrite/Activity/ActivityService.php:856-941; src/ForumRewrite/ReadModel/ActivityEvidenceIndex.php:28-58
+Entry points: Rebuild and incremental activity indexing -> ActivityEvidenceIndex::refreshBatch -> ActivityService::primeCommitEvidence; selected Activity commit detail uses sourceCommitFiles.
+Problem: 200-row and 32-commit batches do not bound a single commit's manifest. primeCommitEvidence captures all diff-tree lines, groups them, then retains parsed per-file arrays. sourceCommitFiles similarly captures a whole manifest. A large import commit may be loaded again in subsequent row batches.
+Reproduction: One synthetic 100000-path commit peaks at 60.01 MiB for priming alone. With 80 MiB retained to simulate other application state, it fails in parseCommitFiles at line 934. This does not claim the live QDB commit has 100000 paths.
+Direction: Stream Git output and select evidence relevant to the current activity batch; preserve rename/signature/key evidence and missing-history behavior. Full commit-detail views need their own bounded delivery contract.
+
+Finding: M04
+Priority: High for static publication growth
+Evidence: Measured peak and reproduced failure with explicit headroom pressure.
+Location: src/ForumRewrite/Offline/PublicOfflineSnapshotBuilder.php:247-289,303-337
+Entry points: build-static -> StaticArtifactBuilder::buildFromReadModel -> PublicOfflineSnapshotBuilder::build -> snapshotThreadRows / visiblePostsForThread / insertUnavailableExpansions.
+Problem: The default 200 recent threads are selected only after every visible thread has been fetched. All pinned threads are retained. A selected thread's full post set and all reply-agent expansion candidates are also fetched as arrays. The 100 MiB output-file limit applies after these input allocations and therefore is not a PHP memory limit.
+Reproduction: Selecting 200 recent plus one fixture-pinned thread from the 40000-quote dataset peaks at 94.01 MiB. With 64 MiB retained, it fails at line 259 before limiting the result. Huge individual threads and expansion corpora were inspected but not separately executed.
+Direction: Select bounded recent rows and stream pinned rows; process thread posts/expansion checks without materializing entire candidate collections. Preserve pinned-content and snapshot-size behavior.
+
+Finding: M05
+Priority: Medium; rebuild growth beyond post bodies
+Evidence: Source inspection, not an independently reproduced failure.
+Location: src/ForumRewrite/ReadModel/ReadModelBuilder.php:358-484,501-574,580-724; src/ForumRewrite/ReadModel/VerifiedAttribution.php:94-112
+Entry points: Rebuild/delete-record/static candidate creation -> ReadModelBuilder label/subject/reaction passes and VerifiedAttribution::markActivity.
+Problem: Label/reaction/subject passes retain complete row sets and parsed records alongside lookup maps, viewer-tag rows and accumulated activity events. Attribution marking fetches every relevant named-identity reaction. Some builder queries use PDO's default FETCH_BOTH, adding numeric keys as well as associative keys. Releasing the outer post collection later does not remove these intra-phase peaks.
+Direction: Stream row iteration and insertions, bound grouping/sorting, avoid redundant associative/numeric row storage, and move retained derivation state to the existing derived database where appropriate.
+
+Finding: M06
+Priority: Medium; long-history repositories
+Evidence: Source inspection, not an independently reproduced failure.
+Location: src/ForumRewrite/ReadModel/ReadModelBuilder.php:1103-1140,1335-1394; src/ForumRewrite/Canonical/CanonicalRecordRepository.php:70-103
+Entry points: Rebuild/static candidate creation -> preloadSourceCommitShas / indexCommits; indexPosts -> CanonicalRecordRepository::preloadLegacyPostCreatedAts.
+Problem: Git log output is captured completely in PHP arrays for commit indexing, source-commit lookup and legacy timestamps. Source lookup can read the entire relevant history even when current paths would be resolved by an early portion. Memory grows with history length and changed paths, not only current corpus size.
+Direction: Consume Git output incrementally; bound error output and retain only unresolved-path/result metadata. Preserve merge/rename semantics and normal actionable errors.
+
+Finding: M07
+Priority: Medium; high-traffic maintenance
+Evidence: Reproduced oversized allocation on a tiny input under explicit headroom pressure.
+Location: src/ForumRewrite/Host/HighTrafficRefresh.php:19; default in HighTrafficCache.php:22
+Entry points: ./v3 high-traffic run -> HighTrafficRefresh::run -> popular.
+Problem: popular() uses stream_get_contents with the configured 16 MiB read ceiling even for a one-line access log. This repeats the exact temporary-buffer pattern fixed in RecordLimits. The configuration permits up to 10 times that default, so configured bounds alone are not a 128 MiB safety guarantee.
+Reproduction: A one-line access log with 114 MiB retained fails attempting to allocate 16777248 bytes. No production log was read.
+Direction: Read only available suffix bytes with small chunks, preserving suffix/line bounds and partial-line handling.
+
+Finding: M08
+Priority: Medium; Fastmod historical audit/backfill preparation
+Evidence: Reproduced at 128 MiB without padding.
+Location: src/ForumRewrite/Scoring/FastmodHistoricalAuditService.php:22-55
+Entry points: ./v3 fast-score audit and backfill preparation -> scripts/fast_score.php -> FastmodHistoricalAuditService::audit.
+Problem: audit() fetches every post body and accumulates unrated candidates. Even when fetchAll narrowly fits, the retained corpus leaves insufficient space for normal per-row work and candidate growth.
+Reproduction: The 40000-quote dataset exhausts memory during score lookup at SqliteFastScoreStore.php:22 while the all-post array is retained. That allocation site is not evidence that the individual lookup is large.
+Direction: Stream posts and batch/persist candidate selection, preserving content hashes and exact work-state counts.
+
+Finding: M09
+Priority: Lower; static route enumeration
+Evidence: Measured overhead, no failure in the exercised case.
+Location: src/ForumRewrite/Host/StaticArtifactBuilder.php:290-326,701-725
+Entry points: build-static -> StaticArtifactBuilder::buildFromReadModel -> fetchVisibleTagRoutes and optional detail-ID enumeration; detail routes depend on the existing prebuild flag.
+Problem: Thread/post IDs and tag routes are discovered using whole-table arrays followed by filters/maps. Their rows are much smaller than full quote rows, but memory still scales with corpus size.
+Reproduction: Tag-route discovery for 40000 threads peaks at 22 MiB to return five routes. It is not the largest observed allocation.
+Direction: Stream enumeration/deduplication and use count queries for progress reporting; preserve route inventory and all themes.
+
+Finding: M10
+Priority: Medium; malformed canonical/imported record handling
+Evidence: Reproduced below the existing 16 MiB record ceiling without padding.
+Location: src/ForumRewrite/Canonical/GenericTextRecordParser.php:20-28
+Entry points: Canonical record reads during rebuild/import -> typed parser -> GenericTextRecordParser::parse; malformed headers fail before ordinary duplicate-header rejection.
+Problem: explode creates an array for every header line before duplicate/invalid headers are rejected. The byte limit does not bound PHP per-element overhead.
+Reproduction: 2500000 repeated short header lines plus a body total 12500006 bytes. Parsing fails with memory exhaustion at line 28, rather than the intended duplicate-header exception. This is deliberately invalid input, not a representative ordinary quote.
+Direction: Iterate header lines without first allocating all of them, preserving existing record limits and exact validation behavior.
+
+Secondary screening: ContentImportPlanner retains whole import plans; RepositoryArchive bounds byte reads but retains up to 100000 entry records, and score-supplement decoding retains bounded-by-count arrays. These are scale risks needing dedicated acceptance cases, not reproduced findings in this audit. Image ZIP restore bounds individual entry sizes before allocating and uploads bound dimensions before decoding; do not classify every file read as unbounded. High-traffic renderer output has byte/time checks; tiny metadata/schema fetchAll calls are not corpus-sized reads. SignatureCheckCache uses SQLite rather than an unbounded PHP result map. Existing Forte lazy-pane work does not fix the QDB whole-list reader.
+
+Recommended order: First address M01/M02/M03/M04 as separate bounded work slices across rebuild, evidence and rendering/offline publication, using the proposed lower-budget acceptance matrix below. M07/M10 are small independent fixes. Then address history/reaction/scoring/route growth (M05/M06/M08/M09). Preserve the 128 MiB incident reproductions as historical evidence. Do not treat another successful tiny fixture build as production-scale acceptance.
+Verification contract proposed: Record phase peaks on representative quote, reaction and Git-history fixtures; exercise one large commit, one large thread, malformed-but-byte-bounded input and retry after interrupted candidate builds. Verify identical visible content, scores, signatures, ordering, pagination and artifact inventory. Tests use explicit per-process limits; changing the host configuration is a separate operational decision. Preserve canonical formats and content-size limits. Apply CONTRIBUTING schema-change requirements if a selected fix introduces new schema or query dependencies.
+
+Historical harness: Originally docs/plans/qdb_memory_audit_probe.php, preserved verbatim in qdb_memory_audit_probe_source.txt. The executable is not shipped by this documentation-only cycle. Commands below record the original reproduction procedure and are not a newly verified operator command. The snapshot assumes its original project-relative location; adaptation/reruns belong to the separate capacity study.
+Workspace: A fresh temporary directory outside the repository; setup refuses a nonempty directory. All writes are synthetic fixtures under that workspace. Setup consumes several hundred MiB of temporary disk when all cases are prepared. Deliberate failure cases exit nonzero and must run as separate PHP processes.
+Commands:
+  audit_workspace=$(mktemp -d /tmp/qdb-memory-audit-XXXXXX)
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php setup "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php board "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php qdb-static "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php offline-select "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php offline-select "$audit_workspace" 64
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php static-tags "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php fastmod-audit "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php access-log "$audit_workspace" 114
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php parser-headers "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php setup-records "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php rebuild "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php setup-commit "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php commit-evidence "$audit_workspace"
+  php -d memory_limit=128M docs/plans/qdb_memory_audit_probe.php commit-evidence "$audit_workspace" 80
+
+Author: Codex, 2026-10-30 UTC
+
+Budget discussion: 2026-10-30 UTC
+User question: for the qdb audit, it feels like 128mb is still way too high for this applicatin, what do you think a reasonable limit is that we should target?
+Proposed targets: Ordinary public requests should normally peak at or below 16 MiB with a 32 MiB test ceiling; rebuild/static maintenance should normally stay at or below 48 MiB with a 64 MiB test ceiling. These are engineering proposals, not approved requirements or measured production guarantees. The existing 128 MiB ceiling remains the incident reproduction condition.
+Design requirement proposed: For a fixed requested page/batch size and comparable individual record sizes, memory should remain approximately flat as total corpus size grows. Track CPU/I/O separately; bounded PHP memory does not excuse reading the whole corpus for each small result.
+New measurement: Isolated QDB parity_minimal_v1 full static build at memory_limit=64M completed all four phases, producing 26 HTML files and 55 assets with a peak PHP allocation of 6 MiB. This is a tiny fixture, demonstrating baseline overhead only; it does not establish large-corpus capacity.
+Boundary: A valid canonical record can be up to 16 MiB and downstream parsing/rendering can hold multiple representations. Maximum-size valid records, large threads and commits require separate tests before adopting a blanket lower limit. No content-size limits or server settings changed.
+Related assessment: load_before_selection_audit_step1_solution_assessment.md proposes a separate codebase-wide investigation of selecting after whole-collection work; it includes non-memory costs and preserves overlap with this audit.
+
+Task clarification: 2026-10-30 UTC
+Status distinction: Finding the causes is complete. Fixes, representative workload acceptance, PHP 8.3 host verification and any deployment-setting change remain outstanding. No remediation approval or successful lower-budget production run is implied by this update.
+Acceptance matrix proposed: Public QDB welcome/latest/top/leetness/random/search and a selected quote detail at memory_limit=32M; rebuild, static render/publication, offline snapshot and high-traffic refresh at memory_limit=64M. Exercise each relevant entry point, not only private helper probes. Keep score semantics, quote eligibility, ordering/ties, pagination and random behavior intact.
+Ordinary targets proposed: Public request peaks at or below 16 MiB and maintenance peaks at or below 48 MiB, leaving headroom beneath their respective ceilings. Record exceptions explicitly and resolve them before claiming the target achieved.
+Growth cases proposed: Compare 1000, 10000 and 40000 records with fixed body/preview size, page/batch size and pinned count; vary reaction volume and history separately. Record data loaded versus returned and peak memory. Memory should follow the selected batch and largest individual input, not total archive size. The numerical tolerance for approximately flat growth must be specified in the implementation test plan, not invented after results are seen.
+Edge cases proposed: A maximum-size valid record, a large single thread, a large import commit, many pinned threads, malformed-but-byte-bounded input and interruption/retry. These must preserve existing valid-content behavior; lower targets do not authorize silently truncating feeds, skipping records or lowering the canonical file limit. Report any incompatible budget requirement for review.
+Measurement protocol proposed: Use fresh PHP processes for ceiling tests; record PHP version, dataset dimensions, cold/warm state, per-phase current/peak PHP allocation and exit status. Capture process/child RSS separately where available; PHP's memory_limit does not cap total host RSS. The current single 6 MiB fixture measurement is not evidence for the full matrix.
+Completion evidence proposed: End-to-end runs under the lower ceilings and correctness parity, plus consistent scaling measurements. Confirm retry leaves the previously active release usable and permits a successful later build. Existing 128 MiB synthetic failures remain documented and do not become passes by changing test expectations.
+Cross-audit ownership: M02 (QDB selection), M04 (offline selection) and M09 (route enumeration) are shared seed findings for load_before_selection_audit. Keep their memory evidence here; link later broad-audit findings back to these IDs. Share root-cause fixes and verification rather than duplicating work or counting the same finding twice. Other overlaps require call-path evidence.
+Selected scope update: 2026-10-30 UTC. User chose Option A for this audit and requested a separate plan expanding to Option C. The inventory and already-executed probes above remain intact; proposed future capacity measurements and the acceptance matrix now belong to application_capacity_study_step1_solution_assessment.md. They are not new commitments within the selected source-only audit. The load-before-selection audit remains separate and its option selection is unchanged.
+
+Source reconciliation: 2026-10-30 UTC, Stage 1
+Reviewed application revision: cfb8364f6db03cc09e27cd26afb93c109c723a08; source/scripts are unchanged at the documentation planning commit 6a824006. All ten locations and caller paths were rechecked. Earlier PHP 8.1 synthetic outputs were retained, not rerun. Source-only findings M05/M06 remain unmeasured. M03/M04/M07 failures used explicit retained-memory pressure; M09 is measured overhead without a reproduced failure. No new production-capacity claim is made.
+Traversal classification: Rebuilding every canonical record and exporting complete content legitimately require complete traversal; holding every record simultaneously is a separate question. Fixed-page QDB readers and recent offline selection unnecessarily hydrate broad candidate sets. Large single-record/commit overhead remains relevant even with bounded row batches. Tiny schema/metadata fetchAll calls and SQLite-backed signature caching are not treated as corpus-retaining defects.
+
+Operator incident guide: Stage 2, 2026-10-30 UTC
+Incident 1: build-static phase 1, index thread labels, RecordLimits.php:37, 16781312-byte allocation at the 128 MiB ceiling. Delivered code fix: 074deea6 reads actual content in small chunks. The report's line is from the deployed pre-fix version, not a current line reference. M01/M05 are separate remaining corpus-retention risks in early rebuild work.
+Incident 2: build-static phase 1, index activity evidence, ActivityEvidenceIndex.php:28, 2097152-byte allocation at the same ceiling. Delivered code fix: cfb8364f selects 200 pending rows per batch and releases finished rebuild projections. M03 remains a distinct large-single-commit risk. Neither delivered fix proves full production build completion.
+Incident 3: delete-record timed out waiting for forum-rewrite.lock; the reported holder was php83.cgi PID 1081675 at that time. This is lock contention, not proof of memory exhaustion. Re-query ownership before acting; do not reuse that historical PID. Persistent FastCGI worker age alone does not show request progress. ExecutionLock releases the operation's lock when its protected work ends.
+Operator inspection: Record git rev-parse HEAD, php -v, and php -r 'echo ini_get("memory_limit"), PHP_EOL;' from the same CLI used for the failed command. CLI settings may differ from FastCGI. Compare deployed ancestry with the two fix commits; absence identifies an undelivered fix, not a need to change PHP limits.
+Operator retry: After the applicable fix has been deployed through the site's normal process, rerun ./v3 build-static with the original repository/database/artifact settings and existing limit. Success requires exit status 0, all four phases through static-release activation, and checking the affected public pages. Preserve the last progress phase and complete fatal error on failure; route a new failure to the matching finding or an unclassified follow-up rather than claiming this audit fixed it.
+Lock recovery: Use lslocks -o PID,COMMAND,TYPE,MODE,PATH and inspect the current holder with ps -p PID -o pid,ppid,etime,time,stat,args; if unavailable, fuser -v identifies openers but not necessarily owners. Let progressing work finish before retrying the original operation. Establish a stuck request before using the host's normal worker recovery. Never unlink an active lock file. Reference: docs/runbooks/operator_recovery.md, Lock Contention.
+Publication boundary: scripts/build_static_artifacts.php builds/validates a candidate in phase 1 and renders in phase 2; promotion/activation follow in phases 3/4. A phase-1 failure is not a successful publication. A prior delete-record can already have committed deletion before its refresh, so failure output must not be interpreted as undoing the canonical change. Inspect acceptance separately when removal was the original operation; see docs/reference/v3_cli.md, Delete a canonical record.
+Host acceptance: Pending. This guide was checked against the reported incident sequence and current source; no PHP 8.3 host commands or live retry were executed in this cycle. Synthetic PHP 8.1 evidence is not host recovery evidence.
+Follow-up ownership: This audit owns M01–M10 evidence and source diagnosis. The separately proposed load-before-selection audit reuses M02/M04/M09 to investigate unnecessary work broadly. The separately proposed application capacity study owns future scaling/concurrency and lower-budget measurements. Each root-cause fix needs one independently approved work scope; these proposals do not approve remediation or duplicate an already delivered result.

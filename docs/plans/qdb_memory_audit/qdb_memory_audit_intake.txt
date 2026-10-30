@@ -1,0 +1,17 @@
+Cycle: v3/qdb_memory_audit
+Date: 2026-10-30 UTC
+Baseline: cfb8364f6db03cc09e27cd26afb93c109c723a08
+Original query: can you also please audit for anywhere else this may be an issue?
+Scope: Audit the 128 MiB memory-failure class across rebuild, static publication and their shared readers; screen adjacent maintenance/import code. Use isolated synthetic probes, rank findings, document limits and propose follow-up boundaries. No production fixes, deployment or live data access authorized by this audit.
+Workflow: Railspike Step 1; full audit findings accompany the assessment. Later planning steps require their normal approvals.
+Debug mode: enabled (project marker present at intake)
+Effort study: railspike-effort / v3/qdb_memory_audit / P2 / R1
+Extended estimates: enabled
+Intake checkpoint: 2026-10-30 UTC; initial pre-inspection estimate missing. Existing incident fixes and source screening preceded this record. Do not reconstruct an uninformed score.
+Current projection: 0.40 total for focused audit with executable reproductions and ranked follow-up, including documentation. Codex single exposed rater; no independent rating or measured-work claim.
+Reference verification: All three frozen R1 SHA-256 values match docs/plans/effort_estimation_trial.md.
+Relationship: Follow-up to direct incident fixes 074deea6 and cfb8364f; those were outside Railspike and are not retroactively enrolled.
+Outcome: Audit delivered at Step 1; no maintainer acceptance or implementation approval. Handoff projection 0.40 reaffirmed, same v1/B scope and baseline; detailed findings and probe accompany the assessment.
+Task update: 2026-10-30 UTC. Diagnostic completion is separate from remediation/capacity acceptance. Proposed 32/64 MiB ceilings, 16/48 MiB normal peaks, growth/edge/recovery measurements and ownership links now appear in the assessment/findings. Prior 128 MiB evidence is retained. Targets remain proposals; audit scope v1/B and total projection 0.40 are reaffirmed, not an estimate for implementing all fixes.
+Selection update: 2026-10-30 UTC. User selected Option A and requested a separate Option C expansion plan. Current scope v2/A owns the source inventory and retains already-collected evidence; no further measurement campaign here. application_capacity_study_step1_solution_assessment.md owns the proposed expansion. Original A alternative 0.20 and v1/B 0.40 retained; current whole-cycle projection 0.40 includes work already performed. No Step 2 or implementation approval inferred.
+Approval update: 2026-10-30 UTC. User explicitly clarified Approved Step 1 for QDB memory audit Option A. Step 2 describes documentation-only completion of the source inventory, with no application changes or new probes. v2/A total 0.40 reaffirmed; awaiting Approved Step 2. Separate capacity and selection assessments remain unapproved at Step 1.
