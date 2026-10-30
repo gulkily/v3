@@ -147,3 +147,41 @@ Observation: Findings already exist, so expected edits are concise reconciliatio
 Suggestion: Recheck stage size before execution and preserve the approved document boundary.
 
 *— Codex · 2026-10-30 UTC*
+
+
+Entry: 2026-10-30 UTC, Step 4 completed handoff
+Commits: Planning 6a824006; Stage 1 4000874a; Stage 2 7ac4ee39; Stage 3 46e85b70. This diagnostic is a separate log-only handoff commit.
+
+## Necessary/useful instructions
+
+Source: Step 4 Before, planning-commit gate and approved scope.
+Observation: Kept the summary out of the planning commit, preserved the approved documentation-only boundary and excluded two unapproved plans plus the executable probe from all cycle commits.
+Suggestion: Retain explicit staged-scope checks in mixed planning workspaces.
+
+Source: Step 4 Do/After, stage-boundary verification and known-environment limits.
+Observation: Each stage has a summary-bearing commit and document/evidence checks. The operator guide maps both original failures and lock contention without claiming production recovery. Historical probes remain distinct from new verification.
+Suggestion: Retain separate document-integrity and runtime/host evidence statuses.
+
+Source: Experimental effort estimation, closeout.
+Observation: Preserved original estimates, reaffirmed the 0.40 total, recorded separate stage/cycle retrospectives and left maintainer acceptance pending.
+Suggestion: Retain historical scope/exposure and acceptance separation.
+
+## Redundant/unnecessary instructions
+
+No supported findings.
+
+## Inapplicable instructions
+
+Source: Runtime/UI/migration/deployment verification gates.
+Observation: No executable application behavior changed; no new runtime tests, host workload or deployment was run. Source-path, finding-field, archive-byte, link, staged-file and whitespace checks supplied the applicable evidence.
+Suggestion: Continue labeling those runtime gates inapplicable rather than claiming a test-suite pass.
+
+## Uncertain assessments
+
+Source: Link/path verification and artifact organization.
+Observation: Working-directory links initially resolved to other unapproved artifacts, but would fail in the committed tree. Pending plain-text references and selective ledger staging were needed for an independently reviewable branch.
+Suggestion: Explicitly recommend committed-tree link checks where unrelated untracked plans coexist.
+
+Final boundary: Documentation contract complete; application changes/dependency delta zero. QDB host recovery, lower memory-budget acceptance, merge/push/deployment and maintainer acceptance remain unverified or pending as stated. Other draft plans, their ledger entries and the unchanged probe remain outside this branch's committed scope.
+
+*— Codex · 2026-10-30 UTC*
