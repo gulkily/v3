@@ -355,4 +355,4 @@ and repair its navigation and affected references. See the
 
 - [Agent posting](agent_posting/agent_posting_step3_development_plan.md): Seven stages complete locally: frm.py, text diagnostics and API recovery; deployment/live acceptance pending.
 
-- [Recent conversation](recent_activity/recent_activity_step1_solution_assessment.md) — approved Steps 1–3; implementation in progress.
+- [Recent conversation](recent_activity/recent_activity_step1_solution_assessment.md) — implemented locally; [verification and release handoff](recent_activity/recent_activity_step4_implementation_summary.md).

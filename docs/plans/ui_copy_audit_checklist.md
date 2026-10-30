@@ -773,6 +773,11 @@ Change: no copy change. Account's testing-only "Approve current account" could a
 Verification: `testing_self_approval` (now passes from a first visit; adds Remove → Continue → Approve without a refresh, reusing Continue's sign-in, and Approve after the session is signed out behind the page), `account_states`, `background_sign_in`, `lobby_local_key`, `compose_layout_stability`, `private_message_redesign`, `TestingSelfApprovalTest`, `AccountKeyPageHooksTest`, `BrowserSigningNormalizationTest`, `LocalAppSmokeTest` (one long-standing unrelated failure).
 Limits and follow-up: signing in regenerates the session ID and deletes the old session (`AuthApiController`, `session_regenerate_id(true)`). A request already in flight with the old ID (seen with Remove right after a background sign-in) gets a new empty session under strict mode, and its cookie replaces the signed-in one, so the browser is quietly signed out. Approve now recovers from this, but other signed-in actions may not; fixing the rotation itself is not done here.
 
+## 2026-10-30 — Recent conversation
+
+Change: Compact author/time, thread context and excerpt with exact-post links; shared Previous/Next controls. Essential empty/invalid-position recovery retained. No technical event details or redundant feed explanation. Reuses contentMeta, ThreadTitle and PageNavigation.
+Verification: 13 themes at 390/1280px, three icon themes visually reviewed, long-content overflow, keyboard/no-JavaScript paging, exact-post/Back/reload and offline reconnect passed. PHP checks cover empty, invalid, unavailable context and escaping. [Evidence and limits](recent_activity/recent_activity_step4_implementation_summary.md). Physical phone and production acceptance pending; mockups deleted, screenshots outside repository.
+
 ## Next phase — new candidates
 
 Current queue, reconciled October 29, 2026. These observations need rendered review before deciding what to remove. Keep this section at the end of the file. A decision to retain useful copy can close a review; source matches alone cannot.

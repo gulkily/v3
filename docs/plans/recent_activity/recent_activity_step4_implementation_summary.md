@@ -75,3 +75,33 @@ Request: Delete mockups rather than save them in repository. Disposition: Entire
 - Limits: This is affected-suite coverage, not the full repository suite. Guest/pending/approved navigation and shared profile consumers covered by renderer/navigation suites; physical phones, production latency and production deployment remain unverified. No additional first-paint personalization introduced. Existing standard/Forte Activity contracts pass; their separate live latency report is not resolved by this work. Estimates unchanged.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 7 - Release documentation and closeout
+
+**Original estimate: 0.05**
+**Retrospective stage work: 0.05**
+
+- Changes: Recent/post-presentation concepts, static publication/read-model notes, planning index, UI verification record and PF-20261021-F04 local evidence. Study ledger reconciled; no production closure. S6 commit 183b9ddf7.
+- Verification: Touched concept/source and plan links resolve; whitespace/scope checks passed; dependency delta zero. Recent mockups absent from repository. All seven stages retain original and retrospective estimates with corresponding commits; final stage commit completes the required planning-plus-seven-stage sequence.
+- Notes: No merge, push or deployment. Three reproduced baseline test failures remain as recorded in S6. Maintainer fit/acceptance and physical-device/production evidence pending.
+
+*— Codex · 2026-10-30 UTC*
+
+## Release and recovery
+
+Status: Implemented locally on feature/recent-activity; deployment not performed.
+Upgrade: Schema 39 changes only derived SQLite state. Ordinary live startup detects older schema/fingerprint and rebuilds; canonical records need no migration. Deploy code and use the full static build for a consistent read model and navigation/assets release.
+Command: `./v3 build-static [repository_root] [database_path] [artifact_root]` using the instance's configured paths. Defaults come from FORUM_REPOSITORY_ROOT, FORUM_DATABASE_PATH and FORUM_STATIC_HTML_ROOT (otherwise the CLI's documented local defaults); the artifact root is the release root containing current, not the public source-assets directory. Run under the deployed site's existing profile/environment.
+Later shell refresh: Once the read model is current and a complete release is active, `./v3 build-static --shared-only [repository_root] [database_path] [artifact_root]` republishes navigation/shared pages/assets. It does not upgrade the model; do not substitute it for the full upgrade build.
+Failure recovery: Inspect a failed build's phase/error, correct the cause, then rerun the same full build. Candidate rendering failure leaves the prior active release in place. Never hand-edit or point current at an incomplete candidate. Missing/invalidated Recent artifacts fall back to PHP; cursor URLs always use live pagination. Verify `/recent/`, a Next URL, exact-post opening and Back after release activation.
+Reader recovery: Invalid positions expose First page. After a network failure, reconnect and reload or use Back; an uncached Recent URL does not fall back to an unrelated offline first page. New contributions appear on a fresh first-page read under existing publication rules.
+Limits: Production and physical phones unverified; no production Activity latency resolution, no full-suite-green claim. Existing QDB navigation remains unchanged. No dependencies, live polling, read tracking, RSS or filtering added.
+
+## Study closeout
+
+**Entry projection: 0.85**
+**Retrospective whole-cycle scope assessment: 0.85**
+
+Checkpoint: 2026-10-30 UTC; v3/recent_activity, v1/A, original baseline 3a21fab67708c07ef77712790218e12a92c61bcd, frozen R1/P2; Codex single exposed rater. Original 0.75 and feedback-only 0.5 preserved; pristine intake missing. Frozen R1 hashes reverified at closeout.
+Stages: S1–S7 originals and separate retrospectives 0.10/0.18/0.15/0.10/0.15/0.15/0.05; unchanged, non-additive. Seven local stages complete; stage verification and omissions above. Measured labor unknown; test durations are not labor measurements.
+Acceptance: Maintainer comfortable-fit judgment and user acceptance pending; no accepted-outcome increment or duplicate worktree observation. Study snapshot is retrospective scope assessment, not a claim of production recovery.
