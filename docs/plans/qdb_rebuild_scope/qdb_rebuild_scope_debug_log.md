@@ -89,3 +89,35 @@ Observation: Required six-stage contracts, estimates and verification details ex
 Suggestion: Clarify whether one-page guidance is a scanability target when every stage has mandatory fields.
 
 *— Codex · 2026-10-30 UTC*
+
+## Step 4 handoff — 2026-10-30 UTC
+
+### Necessary/useful instructions
+
+Source: Step 4 stage boundaries, summary-bearing commits and final verification.
+Observation: Planning 08dcb973 precedes six stage commits; user explicitly requested integration before Stage 6 finished. Preserved that checkpoint c4933cc5 and completed testing afterward in c367bf78 instead of labeling the early push complete.
+Suggestion: Retain explicit user-directed release exceptions and unfinished acceptance state.
+
+Source: Completion contract, known environment and independent effort snapshots.
+Observation: Final focused checks pass 63/63, with real-browser online/offline recovery and 16 theme styles. Memory evidence is scoped to tag rendering; the live PHP 8.3 build and maintainer acceptance remain pending. Retrospective stage work and cycle scope remain separate from original estimates and measured labor.
+Suggestion: Keep production recovery distinct from synthetic/local success.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Source: Dependency approval and navigation icon mapping.
+Observation: No dependencies or navigation destinations added; shared pagination controls reused. No new dependency/icon approval applies.
+Suggestion: Continue reporting zero dependency delta rather than inventing additional review gates.
+
+### Uncertain assessments
+
+Source: Browser acceptance.
+Observation: Initial offline browser test hung because the fixture router omitted static favicon serving; worker installation required it. Dedicated fixture routing and finite readiness timeouts resolved this, and the full real-worker recovery test passed. This does not prove host asset configuration.
+Suggestion: Make test-server static delivery match normal hosting and bound asynchronous setup waits.
+
+Final checks: Six completed stages and separate planning commit verified in history; final closeout c367bf78 includes scoped ledger updates, leaving unrelated drafts uncommitted. Plan/concept link targets and whitespace pass. No full-suite, physical-device, deployment, production recovery or accepted study outcome claimed.
+
+*— Codex · 2026-10-30 UTC*
