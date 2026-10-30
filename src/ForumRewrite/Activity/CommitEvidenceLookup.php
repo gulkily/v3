@@ -15,6 +15,8 @@ final class CommitEvidenceLookup
     private string $path;
     /** @var array<string,true> At most the current small batch, including failed/missing commits. */
     private array $loaded = [];
+    /** Bounded cache of requested paths only; includes misses. */
+    private array $requested = [];
     private int $manifestReads = 0;
     private int $processes = 0;
 
@@ -26,8 +28,15 @@ final class CommitEvidenceLookup
         try {
             $this->pdo = new PDO('sqlite:' . $path, null, null, [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
             $this->pdo->exec('PRAGMA cache_size = -1024');
+            // This operation-local file is discarded after any crash; logical rollback
+            // still uses the journal, but durable fsync of scratch data has no value.
+            $this->pdo->exec('PRAGMA synchronous = OFF');
+            $this->pdo->exec('PRAGMA locking_mode = EXCLUSIVE');
             $this->pdo->exec('CREATE TABLE files (sha TEXT NOT NULL, path TEXT NOT NULL, status TEXT NOT NULL, previous_path TEXT NOT NULL, PRIMARY KEY (sha,path)) WITHOUT ROWID');
             $this->select = $this->pdo->prepare('SELECT status,path,previous_path FROM files WHERE sha = ? AND path = ?');
+            // Nothing in this database is published. One operation transaction
+            // avoids a disk commit for every small batch; savepoints isolate loads.
+            $this->pdo->beginTransaction();
         } catch (\Throwable $error) { $this->close(); throw $error; }
     }
 
@@ -39,6 +48,7 @@ final class CommitEvidenceLookup
     /** Keep batching small commits while retaining a shared commit across adjacent activity batches. */
     public function prepareCommits(array $commits): void
     {
+        $this->requested = [];
         $commits = array_values(array_filter(array_unique($commits), SourcePathValidator::isValidCommitSha(...)));
         $keep = array_fill_keys($commits, true);
         $delete = $this->pdo->prepare('DELETE FROM files WHERE sha = ?');
@@ -61,9 +71,14 @@ final class CommitEvidenceLookup
         $this->prepareCommit($sha);
         $files = [];
         foreach (array_unique($paths) as $path) {
-            $this->select->execute([$sha, $path]);
-            $row = $this->select->fetch();
-            $this->select->closeCursor();
+            $key = $sha . ':' . $path;
+            if (!array_key_exists($key, $this->requested)) {
+                if (count($this->requested) >= 512) $this->requested = [];
+                $this->select->execute([$sha, $path]);
+                $this->requested[$key] = $this->select->fetch();
+                $this->select->closeCursor();
+            }
+            $row = $this->requested[$key];
             if ($row !== false) $files[$path] = $row;
         }
         return $files;
@@ -73,7 +88,7 @@ final class CommitEvidenceLookup
     {
         $input = tmpfile();
         if ($input === false) throw new RuntimeException('Cannot prepare Activity commit input.');
-        $process = null; $output = null;
+        $process = null; $output = null; $savepoint = false;
         try {
             $text = implode("\n", $commits) . "\n";
             if (fwrite($input, $text) !== strlen($text)) throw new RuntimeException('Cannot write Activity commit input.');
@@ -84,7 +99,7 @@ final class CommitEvidenceLookup
             if (!is_resource($process)) return false;
             $this->processes++;
             $output = $pipes[1];
-            $this->pdo->beginTransaction();
+            $this->pdo->exec('SAVEPOINT manifest'); $savepoint = true;
             $insert = $this->pdo->prepare('INSERT OR REPLACE INTO files (sha,path,status,previous_path) VALUES (?,?,?,?)');
             $known = array_fill_keys($commits, true);
             $sha = $batch ? null : $commits[0];
@@ -99,14 +114,17 @@ final class CommitEvidenceLookup
             if (!feof($output)) throw new RuntimeException('Cannot read Activity commit output.');
             fclose($output); $output = null;
             $code = proc_close($process); $process = null;
-            if ($code !== 0) { $this->pdo->rollBack(); return false; }
-            $this->pdo->commit();
+            if ($code !== 0) return false;
+            $this->pdo->exec('RELEASE manifest'); $savepoint = false;
             $this->manifestReads += count($commits);
             return true;
         } finally {
             if (is_resource($output)) fclose($output);
             if (is_resource($process)) { proc_terminate($process); proc_close($process); }
-            if ($this->pdo?->inTransaction()) $this->pdo->rollBack();
+            if ($savepoint) {
+                $this->pdo->exec('ROLLBACK TO manifest');
+                $this->pdo->exec('RELEASE manifest');
+            }
             fclose($input);
         }
     }
@@ -117,8 +135,10 @@ final class CommitEvidenceLookup
     public function close(): void
     {
         $this->select = null;
+        if ($this->pdo?->inTransaction()) $this->pdo->rollBack();
         $this->pdo = null;
         $this->loaded = [];
+        $this->requested = [];
         if (isset($this->path)) { @unlink($this->path); @unlink($this->path . '-journal'); }
     }
 

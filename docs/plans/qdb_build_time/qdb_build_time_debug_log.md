@@ -119,3 +119,7 @@ Observation: Eight required stage contracts and the measurement protocol exceed 
 Suggestion: Treat scanability separately from mandatory evidence fields.
 
 *— Codex · 2026-10-30 UTC*
+
+Checkpoint: Step 4 Stage 7, 2026-10-30 UTC
+Observation: S1–S6 committed. Initial matched evidence measurements expose many-small-commit scratch overhead despite exact output parity. Retain all samples; tune only disposable scratch transaction/locking/requested-path retention, preserving journal rollback and bounded memory, then repeat before acceptance.
+Estimate: S7 original 0.15 retained, revised whole-stage 0.22; independent cycle 1.25 revised 1.35, same v2/C scope, R1/P2, single exposed Codex rater. No measured labor or successful acceptance inferred.

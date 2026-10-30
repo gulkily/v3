@@ -85,7 +85,7 @@ final class CommitEvidenceLookupTest
             $failed=false;
             try {$lookup->prepareCommit($f->git('rev-parse','HEAD'));}
             catch (PDOException $error) {$failed=true;}
-            assertTrue($failed);assertFalse($pdo->inTransaction());assertSame(0,$lookup->manifestReads());
+            assertTrue($failed);assertSame(0,(int)$pdo->query('SELECT COUNT(*) FROM files')->fetchColumn());assertSame(0,$lookup->manifestReads());
             unset($pdo);$lookup->close();assertFalse(file_exists($path));assertFalse(file_exists($path.'-journal'));
         } finally {$f->remove();}
     }

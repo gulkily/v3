@@ -1,0 +1,2659 @@
+Record: Local build-time comparison samples
+Date: 2026-10-30 UTC
+Environment: PHP 8.1.2, Git 2.34.1, WSL2; 128 MiB PHP cap
+Baseline: 4abda3db
+Protocol: Three serial fresh-process runs, alternated baseline and variant on fixed prepared corpus; setup excluded, no cache flush. First sample is first in its set, not a claim of cold OS cache. Parent benchmark orchestration was paused between phases for serial supplemental measurements.
+Limitation: Early profile runs overlapped brief verification/tuning work; all samples retained and primary timing differences exceed measured ranges. Production PHP 8.3 replay pending.
+
+Sample set: Initial matched samples; evidence predates scratch tuning; direct Application runtime superseded by frontend sample
+
+Sample: commits-ordinary-baseline-1
+Exit: 0
+Mode: commits
+Seconds: 0.932236548
+PHP peak bytes: 2097152
+utime: 0.006677
+stime: 0.01175
+Max RSS KiB: 31480
+Process tree RSS KiB: 31480
+Process tree user seconds: 0.70
+Process tree system seconds: 0.25
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: commits-ordinary-commit-only-1
+Exit: 0
+Mode: commits
+Seconds: 0.018750422
+PHP peak bytes: 2097152
+utime: 0.006342
+stime: 0.000727
+Max RSS KiB: 31480
+Process tree RSS KiB: 31608
+Process tree user seconds: 0.03
+Process tree system seconds: 0.01
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: commits-ordinary-combined-1
+Exit: 0
+Mode: commits
+Seconds: 0.027047998
+PHP peak bytes: 2097152
+utime: 0.005379
+stime: 0.000896
+Max RSS KiB: 31220
+Process tree RSS KiB: 31220
+Process tree user seconds: 0.02
+Process tree system seconds: 0.01
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: commits-ordinary-combined-2
+Exit: 0
+Mode: commits
+Seconds: 0.019503515
+PHP peak bytes: 2097152
+utime: 0.003609
+stime: 0.003609
+Max RSS KiB: 31348
+Process tree RSS KiB: 31476
+Process tree user seconds: 0.02
+Process tree system seconds: 0.01
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: commits-ordinary-commit-only-2
+Exit: 0
+Mode: commits
+Seconds: 0.030452628
+PHP peak bytes: 2097152
+utime: 0.006399
+stime: 0.000497
+Max RSS KiB: 31444
+Process tree RSS KiB: 31572
+Process tree user seconds: 0.02
+Process tree system seconds: 0.01
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: commits-ordinary-baseline-2
+Exit: 0
+Mode: commits
+Seconds: 1.036226662
+PHP peak bytes: 2097152
+utime: 0.015547
+stime: 0.007706
+Max RSS KiB: 31352
+Process tree RSS KiB: 31352
+Process tree user seconds: 0.81
+Process tree system seconds: 0.24
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: commits-ordinary-baseline-3
+Exit: 0
+Mode: commits
+Seconds: 1.335188039
+PHP peak bytes: 2097152
+utime: 0.019765
+stime: 0.008248
+Max RSS KiB: 30964
+Process tree RSS KiB: 31092
+Process tree user seconds: 1.08
+Process tree system seconds: 0.30
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: commits-ordinary-commit-only-3
+Exit: 0
+Mode: commits
+Seconds: 0.03437843
+PHP peak bytes: 2097152
+utime: 0.008667
+stime: 0.000188
+Max RSS KiB: 30712
+Process tree RSS KiB: 30712
+Process tree user seconds: 0.02
+Process tree system seconds: 0.02
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: commits-ordinary-combined-3
+Exit: 0
+Mode: commits
+Seconds: 0.021860544
+PHP peak bytes: 2097152
+utime: 0.002749
+stime: 0.004929
+Max RSS KiB: 31352
+Process tree RSS KiB: 31480
+Process tree user seconds: 0.01
+Process tree system seconds: 0.03
+Output SHA-256: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Git diff-tree processes: 0
+
+Sample: evidence-large-baseline-1
+Exit: 0
+Mode: evidence
+Seconds: 1.623605505
+PHP peak bytes: 16777216
+utime: 0.612858
+stime: 0.080977
+Max RSS KiB: 46584
+Process tree RSS KiB: 46584
+Process tree user seconds: 1.26
+Process tree system seconds: 0.47
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-evidence-only-1
+Exit: 0
+Mode: evidence
+Seconds: 0.33498891
+PHP peak bytes: 2097152
+utime: 0.214774
+stime: 0.072118
+Max RSS KiB: 34788
+Process tree RSS KiB: 34788
+Process tree user seconds: 0.27
+Process tree system seconds: 0.10
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-1
+Exit: 0
+Mode: evidence
+Seconds: 0.309810257
+PHP peak bytes: 4194304
+utime: 0.231602
+stime: 0.037147
+Max RSS KiB: 35064
+Process tree RSS KiB: 35064
+Process tree user seconds: 0.29
+Process tree system seconds: 0.06
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-2
+Exit: 0
+Mode: evidence
+Seconds: 0.312766599
+PHP peak bytes: 4194304
+utime: 0.218488
+stime: 0.053504
+Max RSS KiB: 35188
+Process tree RSS KiB: 35316
+Process tree user seconds: 0.27
+Process tree system seconds: 0.08
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-evidence-only-2
+Exit: 0
+Mode: evidence
+Seconds: 0.324889201
+PHP peak bytes: 2097152
+utime: 0.250299
+stime: 0.036307
+Max RSS KiB: 34936
+Process tree RSS KiB: 34936
+Process tree user seconds: 0.28
+Process tree system seconds: 0.08
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-baseline-2
+Exit: 0
+Mode: evidence
+Seconds: 1.808267608
+PHP peak bytes: 16777216
+utime: 0.699046
+stime: 0.073791
+Max RSS KiB: 46324
+Process tree RSS KiB: 46324
+Process tree user seconds: 1.38
+Process tree system seconds: 0.54
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-baseline-3
+Exit: 0
+Mode: evidence
+Seconds: 1.699586804
+PHP peak bytes: 16777216
+utime: 0.610403
+stime: 0.113847
+Max RSS KiB: 46780
+Process tree RSS KiB: 46780
+Process tree user seconds: 1.27
+Process tree system seconds: 0.54
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-evidence-only-3
+Exit: 0
+Mode: evidence
+Seconds: 0.321703231
+PHP peak bytes: 2097152
+utime: 0.227862
+stime: 0.052587
+Max RSS KiB: 34808
+Process tree RSS KiB: 34936
+Process tree user seconds: 0.26
+Process tree system seconds: 0.09
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-3
+Exit: 0
+Mode: evidence
+Seconds: 0.446619387
+PHP peak bytes: 4194304
+utime: 0.315073
+stime: 0.076018
+Max RSS KiB: 35064
+Process tree RSS KiB: 35064
+Process tree user seconds: 0.37
+Process tree system seconds: 0.11
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-small-baseline-1
+Exit: 0
+Mode: evidence
+Seconds: 0.562357285
+PHP peak bytes: 4194304
+utime: 0.277145
+stime: 0.045304
+Max RSS KiB: 33912
+Process tree RSS KiB: 33912
+Process tree user seconds: 0.47
+Process tree system seconds: 0.14
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-1
+Exit: 0
+Mode: evidence
+Seconds: 4.993178307
+PHP peak bytes: 2097152
+utime: 0.36486
+stime: 0.57053
+Max RSS KiB: 33528
+Process tree RSS KiB: 33528
+Process tree user seconds: 0.47
+Process tree system seconds: 0.73
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-1
+Exit: 0
+Mode: evidence
+Seconds: 3.740296089
+PHP peak bytes: 4194304
+utime: 0.251179
+stime: 0.461691
+Max RSS KiB: 33780
+Process tree RSS KiB: 33780
+Process tree user seconds: 0.34
+Process tree system seconds: 0.67
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-2
+Exit: 0
+Mode: evidence
+Seconds: 5.737305366
+PHP peak bytes: 4194304
+utime: 0.360835
+stime: 0.739142
+Max RSS KiB: 33912
+Process tree RSS KiB: 33912
+Process tree user seconds: 0.46
+Process tree system seconds: 1.28
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-2
+Exit: 0
+Mode: evidence
+Seconds: 5.308317305
+PHP peak bytes: 2097152
+utime: 0.367416
+stime: 0.589447
+Max RSS KiB: 33380
+Process tree RSS KiB: 33508
+Process tree user seconds: 0.45
+Process tree system seconds: 0.76
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-baseline-2
+Exit: 0
+Mode: evidence
+Seconds: 0.435926056
+PHP peak bytes: 4194304
+utime: 0.190128
+stime: 0.064866
+Max RSS KiB: 33396
+Process tree RSS KiB: 33396
+Process tree user seconds: 0.34
+Process tree system seconds: 0.13
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-baseline-3
+Exit: 0
+Mode: evidence
+Seconds: 0.446423265
+PHP peak bytes: 4194304
+utime: 0.204556
+stime: 0.061053
+Max RSS KiB: 33528
+Process tree RSS KiB: 33528
+Process tree user seconds: 0.33
+Process tree system seconds: 0.16
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-3
+Exit: 0
+Mode: evidence
+Seconds: 3.610576964
+PHP peak bytes: 2097152
+utime: 0.268879
+stime: 0.414021
+Max RSS KiB: 33268
+Process tree RSS KiB: 33268
+Process tree user seconds: 0.38
+Process tree system seconds: 0.52
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-3
+Exit: 0
+Mode: evidence
+Seconds: 3.667340425
+PHP peak bytes: 4194304
+utime: 0.264663
+stime: 0.43862
+Max RSS KiB: 33656
+Process tree RSS KiB: 33784
+Process tree user seconds: 0.37
+Process tree system seconds: 0.54
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: runtime-profiles-baseline-1
+Exit: 0
+Mode: runtime
+Seconds: 0.116797025
+PHP peak bytes: 4194304
+utime: 0.021208
+stime: 0.075972
+Max RSS KiB: 33784
+Process tree RSS KiB: 33912
+Process tree user seconds: 0.04
+Process tree system seconds: 0.08
+
+Sample: runtime-profiles-profile-only-1
+Exit: 0
+Mode: runtime
+Seconds: 0.033041664
+PHP peak bytes: 4194304
+utime: 0.025979
+stime: 0.00127
+Max RSS KiB: 33784
+Process tree RSS KiB: 33784
+Process tree user seconds: 0.04
+Process tree system seconds: 0.01
+
+Sample: runtime-profiles-combined-1
+Exit: 0
+Mode: runtime
+Seconds: 0.03178871
+PHP peak bytes: 4194304
+utime: 0.02646
+stime: 0
+Max RSS KiB: 33652
+Process tree RSS KiB: 33780
+Process tree user seconds: 0.03
+Process tree system seconds: 0.01
+
+Sample: runtime-profiles-combined-2
+Exit: 0
+Mode: runtime
+Seconds: 0.033338954
+PHP peak bytes: 4194304
+utime: 0.017673
+stime: 0.009657
+Max RSS KiB: 33784
+Process tree RSS KiB: 33784
+Process tree user seconds: 0.02
+Process tree system seconds: 0.02
+
+Sample: runtime-profiles-profile-only-2
+Exit: 0
+Mode: runtime
+Seconds: 0.030703482
+PHP peak bytes: 4194304
+utime: 0.024697
+stime: 0.002131
+Max RSS KiB: 34036
+Process tree RSS KiB: 34164
+Process tree user seconds: 0.02
+Process tree system seconds: 0.02
+
+Sample: runtime-profiles-baseline-2
+Exit: 0
+Mode: runtime
+Seconds: 0.034765557
+PHP peak bytes: 4194304
+utime: 0.025621
+stime: 0.004346
+Max RSS KiB: 33528
+Process tree RSS KiB: 33528
+Process tree user seconds: 0.04
+Process tree system seconds: 0.01
+
+Sample: runtime-profiles-baseline-3
+Exit: 0
+Mode: runtime
+Seconds: 0.035913589
+PHP peak bytes: 4194304
+utime: 0.025012
+stime: 0.004208
+Max RSS KiB: 33836
+Process tree RSS KiB: 33964
+Process tree user seconds: 0.04
+Process tree system seconds: 0.01
+
+Sample: runtime-profiles-profile-only-3
+Exit: 0
+Mode: runtime
+Seconds: 0.035172438
+PHP peak bytes: 4194304
+utime: 0.02578
+stime: 0.002508
+Max RSS KiB: 34040
+Process tree RSS KiB: 34040
+Process tree user seconds: 0.03
+Process tree system seconds: 0.02
+
+Sample: runtime-profiles-combined-3
+Exit: 0
+Mode: runtime
+Seconds: 0.036695873
+PHP peak bytes: 4194304
+utime: 0.026206
+stime: 0.004428
+Max RSS KiB: 33400
+Process tree RSS KiB: 33400
+Process tree user seconds: 0.04
+Process tree system seconds: 0.00
+
+Sample: profiles-profiles-baseline-1
+Exit: 0
+Mode: profiles
+Seconds: 69.00145054
+PHP peak bytes: 10485760
+utime: 28.730318
+stime: 9.195667
+Max RSS KiB: 40688
+Process tree RSS KiB: 40688
+Process tree user seconds: 28.73
+Process tree system seconds: 9.22
+HTML artifacts: 5215
+Profile artifacts: 5215
+
+Sample: profiles-profiles-profile-only-1
+Exit: 0
+Mode: profiles
+Seconds: 0.000602498
+PHP peak bytes: 2097152
+utime: 0.000267
+stime: 0.000334
+Max RSS KiB: 30320
+Process tree RSS KiB: 31088
+Process tree user seconds: 0.02
+Process tree system seconds: 0.02
+
+Sample: profiles-profiles-combined-1
+Exit: 0
+Mode: profiles
+Seconds: 0.002676348
+PHP peak bytes: 2097152
+utime: 0.002657
+stime: 0
+Max RSS KiB: 30584
+Process tree RSS KiB: 31224
+Process tree user seconds: 0.01
+Process tree system seconds: 0.02
+
+Sample: profiles-profiles-combined-2
+Exit: 0
+Mode: profiles
+Seconds: 0.002425843
+PHP peak bytes: 2097152
+utime: 0.000303
+stime: 0.002122
+Max RSS KiB: 30140
+Process tree RSS KiB: 30908
+Process tree user seconds: 0.01
+Process tree system seconds: 0.02
+
+Sample: profiles-profiles-profile-only-2
+Exit: 0
+Mode: profiles
+Seconds: 0.000756496
+PHP peak bytes: 2097152
+utime: 0.000683
+stime: 0
+Max RSS KiB: 30452
+Process tree RSS KiB: 31092
+Process tree user seconds: 0.01
+Process tree system seconds: 0.01
+
+Sample: profiles-profiles-baseline-2
+Exit: 0
+Mode: profiles
+Seconds: 78.839296589
+PHP peak bytes: 10485760
+utime: 26.704678
+stime: 5.390522
+Max RSS KiB: 40752
+Process tree RSS KiB: 40752
+Process tree user seconds: 26.72
+Process tree system seconds: 5.40
+HTML artifacts: 5215
+Profile artifacts: 5215
+
+Sample: profiles-profiles-baseline-3
+Exit: 0
+Mode: profiles
+Seconds: 57.722874744
+PHP peak bytes: 10485760
+utime: 24.592526
+stime: 4.870802
+Max RSS KiB: 41020
+Process tree RSS KiB: 41020
+Process tree user seconds: 24.60
+Process tree system seconds: 4.88
+HTML artifacts: 5215
+Profile artifacts: 5215
+
+Sample: profiles-profiles-profile-only-3
+Exit: 0
+Mode: profiles
+Seconds: 0.000544418
+PHP peak bytes: 2097152
+utime: 9.1E-5
+stime: 0.000452
+Max RSS KiB: 30328
+Process tree RSS KiB: 30968
+Process tree user seconds: 0.00
+Process tree system seconds: 0.02
+
+Sample: profiles-profiles-combined-3
+Exit: 0
+Mode: profiles
+Seconds: 0.001771944
+PHP peak bytes: 2097152
+utime: 0.001772
+stime: 0
+Max RSS KiB: 30456
+Process tree RSS KiB: 31224
+Process tree user seconds: 0.01
+Process tree system seconds: 0.01
+
+Sample: full-profiles-baseline-1
+Exit: 0
+Mode: full
+Seconds: 85.601950329
+PHP peak bytes: 18874368
+utime: 24.317302
+stime: 6.640774
+Max RSS KiB: 53296
+Process tree RSS KiB: 53296
+Process tree user seconds: 24.32
+Process tree system seconds: 6.65
+HTML artifacts: 5234
+Profile artifacts: 5215
+
+Sample: full-profiles-combined-1
+Exit: 0
+Mode: full
+Seconds: 13.773023251
+PHP peak bytes: 16777216
+utime: 0.421803
+stime: 1.25787
+Max RSS KiB: 51148
+Process tree RSS KiB: 51148
+Process tree user seconds: 0.42
+Process tree system seconds: 1.27
+HTML artifacts: 19
+Profile artifacts: 0
+
+Sample: full-profiles-combined-2
+Exit: 0
+Mode: full
+Seconds: 15.996409339
+PHP peak bytes: 16777216
+utime: 0.543214
+stime: 1.442323
+Max RSS KiB: 51204
+Process tree RSS KiB: 51204
+Process tree user seconds: 0.55
+Process tree system seconds: 1.45
+HTML artifacts: 19
+Profile artifacts: 0
+
+Sample: full-profiles-baseline-2
+Exit: 0
+Mode: full
+Seconds: 99.845967107
+PHP peak bytes: 18874368
+utime: 25.631479
+stime: 10.145012
+Max RSS KiB: 53164
+Process tree RSS KiB: 53164
+Process tree user seconds: 25.65
+Process tree system seconds: 10.14
+HTML artifacts: 5234
+Profile artifacts: 5215
+
+Sample: full-profiles-baseline-3
+Exit: 0
+Mode: full
+Seconds: 62.906033636
+PHP peak bytes: 18874368
+utime: 23.26015
+stime: 5.60231
+Max RSS KiB: 53412
+Process tree RSS KiB: 53412
+Process tree user seconds: 23.27
+Process tree system seconds: 5.61
+HTML artifacts: 5234
+Profile artifacts: 5215
+
+Sample: full-profiles-combined-3
+Exit: 0
+Mode: full
+Seconds: 19.851740729
+PHP peak bytes: 16777216
+utime: 0.462228
+stime: 1.406129
+Max RSS KiB: 51084
+Process tree RSS KiB: 51084
+Process tree user seconds: 0.47
+Process tree system seconds: 1.41
+HTML artifacts: 19
+Profile artifacts: 0
+
+
+Sample set: First scratch tuning; superseded
+
+Sample: evidence-large-baseline-1
+Exit: 0
+Mode: evidence
+Seconds: 1.237135156
+PHP peak bytes: 16777216
+utime: 0.437673
+stime: 0.056199
+Max RSS KiB: 46584
+Process tree RSS KiB: 46712
+Process tree user seconds: 0.93
+Process tree system seconds: 0.35
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-evidence-only-1
+Exit: 0
+Mode: evidence
+Seconds: 0.180237516
+PHP peak bytes: 4194304
+utime: 0.12809
+stime: 0.032481
+Max RSS KiB: 35320
+Process tree RSS KiB: 35320
+Process tree user seconds: 0.16
+Process tree system seconds: 0.05
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-1
+Exit: 0
+Mode: evidence
+Seconds: 0.270680295
+PHP peak bytes: 4194304
+utime: 0.205231
+stime: 0.044285
+Max RSS KiB: 35060
+Process tree RSS KiB: 35060
+Process tree user seconds: 0.25
+Process tree system seconds: 0.06
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-2
+Exit: 0
+Mode: evidence
+Seconds: 0.222364171
+PHP peak bytes: 4194304
+utime: 0.164693
+stime: 0.032965
+Max RSS KiB: 35192
+Process tree RSS KiB: 35192
+Process tree user seconds: 0.19
+Process tree system seconds: 0.07
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-evidence-only-2
+Exit: 0
+Mode: evidence
+Seconds: 0.24142901
+PHP peak bytes: 4194304
+utime: 0.147717
+stime: 0.070925
+Max RSS KiB: 34936
+Process tree RSS KiB: 34936
+Process tree user seconds: 0.19
+Process tree system seconds: 0.10
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-baseline-2
+Exit: 0
+Mode: evidence
+Seconds: 1.35103727
+PHP peak bytes: 16777216
+utime: 0.502227
+stime: 0.067617
+Max RSS KiB: 46712
+Process tree RSS KiB: 46712
+Process tree user seconds: 1.02
+Process tree system seconds: 0.42
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-baseline-3
+Exit: 0
+Mode: evidence
+Seconds: 1.724769466
+PHP peak bytes: 16777216
+utime: 0.628929
+stime: 0.104542
+Max RSS KiB: 46572
+Process tree RSS KiB: 46572
+Process tree user seconds: 1.24
+Process tree system seconds: 0.60
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-evidence-only-3
+Exit: 0
+Mode: evidence
+Seconds: 0.602213604
+PHP peak bytes: 4194304
+utime: 0.498052
+stime: 0.064051
+Max RSS KiB: 34968
+Process tree RSS KiB: 34968
+Process tree user seconds: 0.59
+Process tree system seconds: 0.11
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-3
+Exit: 0
+Mode: evidence
+Seconds: 0.671786807
+PHP peak bytes: 4194304
+utime: 0.528909
+stime: 0.094925
+Max RSS KiB: 34820
+Process tree RSS KiB: 34948
+Process tree user seconds: 0.64
+Process tree system seconds: 0.15
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-small-baseline-1
+Exit: 0
+Mode: evidence
+Seconds: 0.678991698
+PHP peak bytes: 4194304
+utime: 0.257063
+stime: 0.143344
+Max RSS KiB: 33652
+Process tree RSS KiB: 33652
+Process tree user seconds: 0.44
+Process tree system seconds: 0.33
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-1
+Exit: 0
+Mode: evidence
+Seconds: 1.070274554
+PHP peak bytes: 2097152
+utime: 0.290953
+stime: 0.208963
+Max RSS KiB: 33400
+Process tree RSS KiB: 33400
+Process tree user seconds: 0.40
+Process tree system seconds: 0.43
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-1
+Exit: 0
+Mode: evidence
+Seconds: 0.586924486
+PHP peak bytes: 4194304
+utime: 0.169143
+stime: 0.118798
+Max RSS KiB: 33908
+Process tree RSS KiB: 33908
+Process tree user seconds: 0.28
+Process tree system seconds: 0.22
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-2
+Exit: 0
+Mode: evidence
+Seconds: 0.614343061
+PHP peak bytes: 4194304
+utime: 0.192333
+stime: 0.126669
+Max RSS KiB: 33908
+Process tree RSS KiB: 33908
+Process tree user seconds: 0.33
+Process tree system seconds: 0.20
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-2
+Exit: 0
+Mode: evidence
+Seconds: 0.40583536
+PHP peak bytes: 2097152
+utime: 0.154923
+stime: 0.117081
+Max RSS KiB: 33784
+Process tree RSS KiB: 33784
+Process tree user seconds: 0.25
+Process tree system seconds: 0.21
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-baseline-2
+Exit: 0
+Mode: evidence
+Seconds: 0.403292937
+PHP peak bytes: 4194304
+utime: 0.185745
+stime: 0.051836
+Max RSS KiB: 33736
+Process tree RSS KiB: 33736
+Process tree user seconds: 0.32
+Process tree system seconds: 0.11
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-baseline-3
+Exit: 0
+Mode: evidence
+Seconds: 0.429282054
+PHP peak bytes: 4194304
+utime: 0.179277
+stime: 0.068459
+Max RSS KiB: 33912
+Process tree RSS KiB: 33912
+Process tree user seconds: 0.31
+Process tree system seconds: 0.15
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-3
+Exit: 0
+Mode: evidence
+Seconds: 0.528321561
+PHP peak bytes: 2097152
+utime: 0.20875
+stime: 0.104323
+Max RSS KiB: 33652
+Process tree RSS KiB: 33652
+Process tree user seconds: 0.33
+Process tree system seconds: 0.20
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-3
+Exit: 0
+Mode: evidence
+Seconds: 0.5144262
+PHP peak bytes: 4194304
+utime: 0.172685
+stime: 0.115141
+Max RSS KiB: 34220
+Process tree RSS KiB: 34220
+Process tree user seconds: 0.24
+Process tree system seconds: 0.25
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+
+Sample set: Final operation-transaction evidence samples
+
+Sample: evidence-large-baseline-1
+Exit: 0
+Mode: evidence
+Seconds: 1.192077601
+PHP peak bytes: 16777216
+utime: 0.43148
+stime: 0.048551
+Max RSS KiB: 46968
+Process tree RSS KiB: 46968
+Process tree user seconds: 0.88
+Process tree system seconds: 0.37
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-evidence-only-1
+Exit: 0
+Mode: evidence
+Seconds: 0.193566202
+PHP peak bytes: 4194304
+utime: 0.131229
+stime: 0.028018
+Max RSS KiB: 35064
+Process tree RSS KiB: 35064
+Process tree user seconds: 0.16
+Process tree system seconds: 0.05
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-1
+Exit: 0
+Mode: evidence
+Seconds: 0.18746787
+PHP peak bytes: 4194304
+utime: 0.129301
+stime: 0.033611
+Max RSS KiB: 35188
+Process tree RSS KiB: 35188
+Process tree user seconds: 0.17
+Process tree system seconds: 0.05
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-2
+Exit: 0
+Mode: evidence
+Seconds: 0.197008024
+PHP peak bytes: 4194304
+utime: 0.151904
+stime: 0.017045
+Max RSS KiB: 35064
+Process tree RSS KiB: 35064
+Process tree user seconds: 0.19
+Process tree system seconds: 0.04
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-evidence-only-2
+Exit: 0
+Mode: evidence
+Seconds: 0.180785177
+PHP peak bytes: 4194304
+utime: 0.117958
+stime: 0.036599
+Max RSS KiB: 35192
+Process tree RSS KiB: 35320
+Process tree user seconds: 0.15
+Process tree system seconds: 0.05
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-baseline-2
+Exit: 0
+Mode: evidence
+Seconds: 1.464512502
+PHP peak bytes: 16777216
+utime: 0.506563
+stime: 0.079871
+Max RSS KiB: 46712
+Process tree RSS KiB: 46712
+Process tree user seconds: 1.00
+Process tree system seconds: 0.47
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-baseline-3
+Exit: 0
+Mode: evidence
+Seconds: 1.929059378
+PHP peak bytes: 16777216
+utime: 0.684644
+stime: 0.112515
+Max RSS KiB: 46456
+Process tree RSS KiB: 46584
+Process tree user seconds: 1.42
+Process tree system seconds: 0.56
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 50
+
+Sample: evidence-large-evidence-only-3
+Exit: 0
+Mode: evidence
+Seconds: 0.368587908
+PHP peak bytes: 4194304
+utime: 0.205887
+stime: 0.033484
+Max RSS KiB: 34936
+Process tree RSS KiB: 34936
+Process tree user seconds: 0.25
+Process tree system seconds: 0.07
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-large-combined-3
+Exit: 0
+Mode: evidence
+Seconds: 0.302272727
+PHP peak bytes: 4194304
+utime: 0.175302
+stime: 0.020205
+Max RSS KiB: 35188
+Process tree RSS KiB: 35316
+Process tree user seconds: 0.23
+Process tree system seconds: 0.04
+Output SHA-256: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Git diff-tree processes: 1
+
+Sample: evidence-small-baseline-1
+Exit: 0
+Mode: evidence
+Seconds: 0.436261176
+PHP peak bytes: 4194304
+utime: 0.148879
+stime: 0.055169
+Max RSS KiB: 33700
+Process tree RSS KiB: 33700
+Process tree user seconds: 0.27
+Process tree system seconds: 0.11
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-1
+Exit: 0
+Mode: evidence
+Seconds: 0.526486786
+PHP peak bytes: 2097152
+utime: 0.150279
+stime: 0.128442
+Max RSS KiB: 33912
+Process tree RSS KiB: 33912
+Process tree user seconds: 0.28
+Process tree system seconds: 0.21
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-1
+Exit: 0
+Mode: evidence
+Seconds: 0.5068066
+PHP peak bytes: 4194304
+utime: 0.143911
+stime: 0.154954
+Max RSS KiB: 34040
+Process tree RSS KiB: 34040
+Process tree user seconds: 0.25
+Process tree system seconds: 0.25
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-2
+Exit: 0
+Mode: evidence
+Seconds: 0.520654967
+PHP peak bytes: 4194304
+utime: 0.141307
+stime: 0.173959
+Max RSS KiB: 33784
+Process tree RSS KiB: 33784
+Process tree user seconds: 0.26
+Process tree system seconds: 0.26
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-2
+Exit: 0
+Mode: evidence
+Seconds: 0.507331194
+PHP peak bytes: 2097152
+utime: 0.159623
+stime: 0.116757
+Max RSS KiB: 33784
+Process tree RSS KiB: 33784
+Process tree user seconds: 0.24
+Process tree system seconds: 0.22
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-baseline-2
+Exit: 0
+Mode: evidence
+Seconds: 0.46611177
+PHP peak bytes: 4194304
+utime: 0.191278
+stime: 0.028905
+Max RSS KiB: 34028
+Process tree RSS KiB: 34028
+Process tree user seconds: 0.32
+Process tree system seconds: 0.09
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-baseline-3
+Exit: 0
+Mode: evidence
+Seconds: 0.467943406
+PHP peak bytes: 4194304
+utime: 0.182038
+stime: 0.039007
+Max RSS KiB: 33652
+Process tree RSS KiB: 33652
+Process tree user seconds: 0.32
+Process tree system seconds: 0.10
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-evidence-only-3
+Exit: 0
+Mode: evidence
+Seconds: 0.430574336
+PHP peak bytes: 2097152
+utime: 0.147569
+stime: 0.14356
+Max RSS KiB: 33656
+Process tree RSS KiB: 33656
+Process tree user seconds: 0.25
+Process tree system seconds: 0.24
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+Sample: evidence-small-combined-3
+Exit: 0
+Mode: evidence
+Seconds: 0.489635273
+PHP peak bytes: 4194304
+utime: 0.203952
+stime: 0.127299
+Max RSS KiB: 33784
+Process tree RSS KiB: 33784
+Process tree user seconds: 0.30
+Process tree system seconds: 0.24
+Output SHA-256: 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Git diff-tree processes: 50
+
+
+Sample set: Final normal CLI builds
+
+Sample: cli-ordinary-baseline-1
+Exit: 0
+Starting static HTML release build
+Repository: /tmp/qdb-build-time-corpus/ordinary
+Database: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-1.sqlite
+Static artifact root: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-1.output
+[1/4] Building and validating a read-model candidate...
+[1/4] Read model: drop schema...
+[1/4] Read model: drop schema complete (0.4 ms).
+[1/4] Read model: create schema...
+[1/4] Read model: create schema complete (2.6 ms).
+[1/4] Read model: resolve attribution cutoff...
+[1/4] Read model: resolve attribution cutoff complete (0.4 ms).
+[1/4] Read model: index posts...
+[1/4] Read model: resolve legacy post creation times...
+[1/4] Read model: resolve legacy post creation times complete (9.1 ms).
+[1/4] Read model: resolve post source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (6.6 ms).
+[1/4] Read model: resolve post source commits complete (6.7 ms).
+[1/4] Read model: parsing post records (0/3).
+[1/4] Read model: parsing post records (3/3).
+[1/4] Read model: parsing post records complete (3.0 ms).
+[1/4] Read model: sort posts...
+[1/4] Read model: sort posts complete (0.0 ms).
+[1/4] Read model: writing post records (0/3).
+[1/4] Read model: writing post records (3/3).
+[1/4] Read model: writing post records complete (0.1 ms).
+[1/4] Read model: writing thread summaries (0/2).
+[1/4] Read model: writing thread summaries (2/2).
+[1/4] Read model: writing thread summaries complete (0.0 ms).
+[1/4] Read model: index posts complete (21.2 ms).
+[1/4] Read model: index profiles...
+[1/4] Read model: parsing identity records (0/1).
+[1/4] Read model: parsing identity records (1/1).
+[1/4] Read model: parsing identity records complete (1.3 ms).
+[1/4] Read model: index profiles complete (1.8 ms).
+[1/4] Read model: derive approval state...
+[1/4] Read model: approval pass 1.
+[1/4] Read model: checking approval posts (0/3).
+[1/4] Read model: checking approval posts (3/3).
+[1/4] Read model: checking approval posts complete (0.0 ms).
+[1/4] Read model: checking invitation candidates (0/0).
+[1/4] Read model: checking invitation candidates complete (0.0 ms).
+[1/4] Read model: derive approval state complete (1.0 ms).
+[1/4] Read model: index thread labels...
+[1/4] Read model: parsing thread label records (0/2).
+[1/4] Read model: parsing thread label records (2/2).
+[1/4] Read model: parsing thread label records complete (0.1 ms).
+[1/4] Read model: sort thread labels...
+[1/4] Read model: sort thread labels complete (0.0 ms).
+[1/4] Read model: resolve thread label source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (6.3 ms).
+[1/4] Read model: resolve thread label source commits complete (6.4 ms).
+[1/4] Read model: deriving thread label records (0/2).
+[1/4] Read model: deriving thread label records (2/2).
+[1/4] Read model: deriving thread label records complete (0.8 ms).
+[1/4] Read model: writing thread labels (0/2).
+[1/4] Read model: writing thread labels (2/2).
+[1/4] Read model: writing thread labels complete (0.0 ms).
+[1/4] Read model: index thread labels complete (10.5 ms).
+[1/4] Read model: index thread subjects...
+[1/4] Read model: parsing thread subject records (0/1).
+[1/4] Read model: parsing thread subject records (1/1).
+[1/4] Read model: parsing thread subject records complete (0.5 ms).
+[1/4] Read model: sort thread subjects...
+[1/4] Read model: sort thread subjects complete (0.0 ms).
+[1/4] Read model: deriving thread subject records (0/1).
+[1/4] Read model: deriving thread subject records (1/1).
+[1/4] Read model: deriving thread subject records complete (0.0 ms).
+[1/4] Read model: index thread subjects complete (0.9 ms).
+[1/4] Read model: derive post attribution...
+[1/4] Read model: deriving post attribution (0/3).
+[1/4] Read model: deriving post attribution (3/3).
+[1/4] Read model: deriving post attribution complete (0.0 ms).
+[1/4] Read model: derive post attribution complete (0.0 ms).
+[1/4] Read model: derive profile counts...
+[1/4] Read model: initializing profile counts (0/1).
+[1/4] Read model: initializing profile counts (1/1).
+[1/4] Read model: initializing profile counts complete (0.0 ms).
+[1/4] Read model: counting profile posts (0/3).
+[1/4] Read model: counting profile posts (3/3).
+[1/4] Read model: counting profile posts complete (0.0 ms).
+[1/4] Read model: derive profile counts complete (0.0 ms).
+[1/4] Read model: link post authors...
+[1/4] Read model: linking author profiles (0/1).
+[1/4] Read model: linking author profiles (1/1).
+[1/4] Read model: linking author profiles complete (0.1 ms).
+[1/4] Read model: link post authors complete (0.2 ms).
+[1/4] Read model: index post reactions...
+[1/4] Read model: parsing post reaction records (0/0).
+[1/4] Read model: parsing post reaction records complete (0.0 ms).
+[1/4] Read model: sort post reactions...
+[1/4] Read model: sort post reactions complete (0.0 ms).
+[1/4] Read model: resolve post reaction source commits...
+[1/4] Read model: resolve post reaction source commits complete (0.0 ms).
+[1/4] Read model: deriving post reaction records (0/0).
+[1/4] Read model: deriving post reaction records complete (0.0 ms).
+[1/4] Read model: writing post reactions (0/3).
+[1/4] Read model: writing post reactions (3/3).
+[1/4] Read model: writing post reactions complete (0.1 ms).
+[1/4] Read model: index post reactions complete (0.3 ms).
+[1/4] Read model: index instance...
+[1/4] Read model: index instance complete (0.4 ms).
+[1/4] Read model: index activity...
+[1/4] Read model: writing post activity (0/3).
+[1/4] Read model: writing post activity (3/3).
+[1/4] Read model: writing post activity complete (0.2 ms).
+[1/4] Read model: writing thread label activity (0/2).
+[1/4] Read model: writing thread label activity (2/2).
+[1/4] Read model: writing thread label activity complete (0.1 ms).
+[1/4] Read model: writing post reaction activity (0/0).
+[1/4] Read model: writing post reaction activity complete (0.0 ms).
+[1/4] Read model: writing profile name activity (0/0).
+[1/4] Read model: writing profile name activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity...
+[1/4] Read model: resolve feature flag source commits...
+[1/4] Read model: resolve feature flag source commits complete (0.0 ms).
+[1/4] Read model: parsing feature flag changes (0/0).
+[1/4] Read model: parsing feature flag changes complete (0.0 ms).
+[1/4] Read model: sort feature flag activity...
+[1/4] Read model: sort feature flag activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity complete (0.0 ms).
+[1/4] Read model: writing signed flag activity (0/0).
+[1/4] Read model: writing signed flag activity complete (0.0 ms).
+[1/4] Read model: read legacy flag activity...
+[1/4] Read model: read legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing legacy flag activity (0/0).
+[1/4] Read model: writing legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing handoff activity (0/0).
+[1/4] Read model: writing handoff activity complete (0.0 ms).
+[1/4] Read model: index activity complete (0.7 ms).
+[1/4] Read model: mark activity attribution...
+[1/4] Read model: mark activity attribution complete (0.2 ms).
+[1/4] Read model: index commits...
+[1/4] Read model: read commit history...
+[1/4] Read model: read commit history complete (1242.3 ms).
+[1/4] Read model: processing commit history lines (0/3003).
+[1/4] Read model: processing commit history lines (100/3003).
+[1/4] Read model: processing commit history lines (200/3003).
+[1/4] Read model: processing commit history lines (300/3003).
+[1/4] Read model: processing commit history lines (400/3003).
+[1/4] Read model: processing commit history lines (500/3003).
+[1/4] Read model: processing commit history lines (600/3003).
+[1/4] Read model: processing commit history lines (700/3003).
+[1/4] Read model: processing commit history lines (800/3003).
+[1/4] Read model: processing commit history lines (900/3003).
+[1/4] Read model: processing commit history lines (1000/3003).
+[1/4] Read model: processing commit history lines (1100/3003).
+[1/4] Read model: processing commit history lines (1200/3003).
+[1/4] Read model: processing commit history lines (1300/3003).
+[1/4] Read model: processing commit history lines (1400/3003).
+[1/4] Read model: processing commit history lines (1500/3003).
+[1/4] Read model: processing commit history lines (1600/3003).
+[1/4] Read model: processing commit history lines (1700/3003).
+[1/4] Read model: processing commit history lines (1800/3003).
+[1/4] Read model: processing commit history lines (1900/3003).
+[1/4] Read model: processing commit history lines (2000/3003).
+[1/4] Read model: processing commit history lines (2100/3003).
+[1/4] Read model: processing commit history lines (2200/3003).
+[1/4] Read model: processing commit history lines (2300/3003).
+[1/4] Read model: processing commit history lines (2400/3003).
+[1/4] Read model: processing commit history lines (2500/3003).
+[1/4] Read model: processing commit history lines (2600/3003).
+[1/4] Read model: processing commit history lines (2700/3003).
+[1/4] Read model: processing commit history lines (2800/3003).
+[1/4] Read model: processing commit history lines (2900/3003).
+[1/4] Read model: processing commit history lines (3000/3003).
+[1/4] Read model: processing commit history lines (3003/3003).
+[1/4] Read model: processing commit history lines complete (7.4 ms).
+[1/4] Read model: index commits complete (1250.0 ms).
+[1/4] Read model: index reaction signatures...
+[1/4] Read model: index reaction signatures complete (0.5 ms).
+[1/4] Read model: index activity evidence...
+[1/4] Read model: index activity evidence complete (5.4 ms).
+[1/4] Read model: write metadata...
+[1/4] Read model: write metadata complete (2.8 ms).
+[1/4] Read model: apply verified attribution...
+[1/4] Read model: apply verified attribution complete (1.6 ms).
+[1/4] Read model: commit read model...
+[1/4] Read model: commit read model complete (8.3 ms).
+[1/4] Read model: validating candidate...
+[1/4] Read model: validating candidate complete (5.2 ms).
+[1/4] Read-model candidate is ready.
+[2/4] Rendering static HTML and fingerprinted assets...
+[2/4] Fingerprinting and copying assets referenced by rendered pages...
+[2/4] Rendering shared pages (0/10).
+[2/4] Rendering shared pages (1/10): /.
+[2/4] Rendering shared pages (2/10): /threads/.
+[2/4] Rendering shared pages (3/10): /about/.
+[2/4] Rendering shared pages (4/10): /instance/.
+[2/4] Rendering shared pages (5/10): /activity/.
+[2/4] Rendering shared pages (6/10): /users/.
+[2/4] Rendering shared pages (7/10): /tools/.
+[2/4] Rendering shared pages (8/10): /tools/bookmarklets/.
+[2/4] Rendering shared pages (9/10): /tools/feature-flags/.
+[2/4] Rendering shared pages (10/10): /tags/.
+[2/4] Rendering shared pages complete (10/10).
+[2/4] Static docs are not published; run ./v3 docs publish with the same destination/profile.
+[2/4] Rendering tag pages (0/5).
+[2/4] Rendering tag pages (5/5).
+[2/4] Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).
+[2/4] Rendering profile pages (0/1).
+[2/4] Rendering profile pages (1/1).
+[2/4] Building public offline reading snapshot...
+[2/4] Fingerprinting and copying referenced assets complete.
+[2/4] Static release is ready: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-1.output/releases/release-20261030210302-4a49148f
+Static artifacts: 20 HTML files, 54 asset files
+[3/4] Promoting the read model...
+[3/4] Read model promoted.
+[4/4] Activating the static release...
+[4/4] Static release activated.
+Built and activated static HTML release /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-1.output/releases/release-20261030210302-4a49148f
+Elapsed: 1.703 seconds
+Process tree RSS KiB: 36384
+Process tree seconds: 1.73
+Process tree user seconds: 1.21
+Process tree system seconds: 0.36
+Table posts rows: 3
+Table posts SHA-256: ecc32c514222ccfb4229a5b3398b60d64f206c192bb0cf34ea91eb3ee59c754a
+Table profiles rows: 1
+Table profiles SHA-256: 86a8f9cd2ab46234a70111156f8dc66d562cd5f80e4acefbcabed879fcbe416b
+Table activity rows: 5
+Table activity SHA-256: c3fa985807a714de69ccfed162ba356136ccd1dd58c7e3dd2b17f18790be17c3
+Table commits rows: 1001
+Table commits SHA-256: 6da6b7ab393bf1d77f46ba8ba4df881a55b72a1f586b87c9b91279f3c5cd75c1
+HTML artifacts: 20
+Profile artifacts: 1
+Git diff-tree processes: 2
+
+Sample: cli-ordinary-combined-1
+Exit: 0
+Starting static HTML release build
+Repository: /tmp/qdb-build-time-corpus/ordinary
+Database: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-1.sqlite
+Static artifact root: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-1.output
+[1/4] Building and validating a read-model candidate...
+[1/4] Read model: drop schema...
+[1/4] Read model: drop schema complete (0.5 ms).
+[1/4] Read model: create schema...
+[1/4] Read model: create schema complete (4.2 ms).
+[1/4] Read model: resolve attribution cutoff...
+[1/4] Read model: resolve attribution cutoff complete (0.5 ms).
+[1/4] Read model: index posts...
+[1/4] Read model: resolve legacy post creation times...
+[1/4] Read model: resolve legacy post creation times complete (10.9 ms).
+[1/4] Read model: resolve post source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (8.7 ms).
+[1/4] Read model: resolve post source commits complete (8.8 ms).
+[1/4] Read model: parsing post records (0/3).
+[1/4] Read model: parsing post records (3/3).
+[1/4] Read model: parsing post records complete (2.8 ms).
+[1/4] Read model: sort posts...
+[1/4] Read model: sort posts complete (0.0 ms).
+[1/4] Read model: writing post records (0/3).
+[1/4] Read model: writing post records (3/3).
+[1/4] Read model: writing post records complete (0.2 ms).
+[1/4] Read model: writing thread summaries (0/2).
+[1/4] Read model: writing thread summaries (2/2).
+[1/4] Read model: writing thread summaries complete (0.0 ms).
+[1/4] Read model: index posts complete (24.5 ms).
+[1/4] Read model: index profiles...
+[1/4] Read model: parsing identity records (0/1).
+[1/4] Read model: parsing identity records (1/1).
+[1/4] Read model: parsing identity records complete (0.9 ms).
+[1/4] Read model: index profiles complete (1.6 ms).
+[1/4] Read model: derive approval state...
+[1/4] Read model: approval pass 1.
+[1/4] Read model: checking approval posts (0/3).
+[1/4] Read model: checking approval posts (3/3).
+[1/4] Read model: checking approval posts complete (0.0 ms).
+[1/4] Read model: checking invitation candidates (0/0).
+[1/4] Read model: checking invitation candidates complete (0.0 ms).
+[1/4] Read model: derive approval state complete (1.2 ms).
+[1/4] Read model: index thread labels...
+[1/4] Read model: parsing thread label records (0/2).
+[1/4] Read model: parsing thread label records (2/2).
+[1/4] Read model: parsing thread label records complete (0.1 ms).
+[1/4] Read model: sort thread labels...
+[1/4] Read model: sort thread labels complete (0.0 ms).
+[1/4] Read model: resolve thread label source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (8.7 ms).
+[1/4] Read model: resolve thread label source commits complete (8.8 ms).
+[1/4] Read model: deriving thread label records (0/2).
+[1/4] Read model: deriving thread label records (2/2).
+[1/4] Read model: deriving thread label records complete (1.0 ms).
+[1/4] Read model: writing thread labels (0/2).
+[1/4] Read model: writing thread labels (2/2).
+[1/4] Read model: writing thread labels complete (0.1 ms).
+[1/4] Read model: index thread labels complete (11.8 ms).
+[1/4] Read model: index thread subjects...
+[1/4] Read model: parsing thread subject records (0/1).
+[1/4] Read model: parsing thread subject records (1/1).
+[1/4] Read model: parsing thread subject records complete (0.2 ms).
+[1/4] Read model: sort thread subjects...
+[1/4] Read model: sort thread subjects complete (0.0 ms).
+[1/4] Read model: deriving thread subject records (0/1).
+[1/4] Read model: deriving thread subject records (1/1).
+[1/4] Read model: deriving thread subject records complete (0.0 ms).
+[1/4] Read model: index thread subjects complete (0.4 ms).
+[1/4] Read model: derive post attribution...
+[1/4] Read model: deriving post attribution (0/3).
+[1/4] Read model: deriving post attribution (3/3).
+[1/4] Read model: deriving post attribution complete (0.0 ms).
+[1/4] Read model: derive post attribution complete (0.0 ms).
+[1/4] Read model: derive profile counts...
+[1/4] Read model: initializing profile counts (0/1).
+[1/4] Read model: initializing profile counts (1/1).
+[1/4] Read model: initializing profile counts complete (0.0 ms).
+[1/4] Read model: counting profile posts (0/3).
+[1/4] Read model: counting profile posts (3/3).
+[1/4] Read model: counting profile posts complete (0.0 ms).
+[1/4] Read model: derive profile counts complete (0.0 ms).
+[1/4] Read model: link post authors...
+[1/4] Read model: linking author profiles (0/1).
+[1/4] Read model: linking author profiles (1/1).
+[1/4] Read model: linking author profiles complete (0.1 ms).
+[1/4] Read model: link post authors complete (0.2 ms).
+[1/4] Read model: index post reactions...
+[1/4] Read model: parsing post reaction records (0/0).
+[1/4] Read model: parsing post reaction records complete (0.0 ms).
+[1/4] Read model: sort post reactions...
+[1/4] Read model: sort post reactions complete (0.0 ms).
+[1/4] Read model: resolve post reaction source commits...
+[1/4] Read model: resolve post reaction source commits complete (0.0 ms).
+[1/4] Read model: deriving post reaction records (0/0).
+[1/4] Read model: deriving post reaction records complete (0.0 ms).
+[1/4] Read model: writing post reactions (0/3).
+[1/4] Read model: writing post reactions (3/3).
+[1/4] Read model: writing post reactions complete (0.2 ms).
+[1/4] Read model: index post reactions complete (0.5 ms).
+[1/4] Read model: index instance...
+[1/4] Read model: index instance complete (0.3 ms).
+[1/4] Read model: index activity...
+[1/4] Read model: writing post activity (0/3).
+[1/4] Read model: writing post activity (3/3).
+[1/4] Read model: writing post activity complete (0.3 ms).
+[1/4] Read model: writing thread label activity (0/2).
+[1/4] Read model: writing thread label activity (2/2).
+[1/4] Read model: writing thread label activity complete (0.2 ms).
+[1/4] Read model: writing post reaction activity (0/0).
+[1/4] Read model: writing post reaction activity complete (0.0 ms).
+[1/4] Read model: writing profile name activity (0/0).
+[1/4] Read model: writing profile name activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity...
+[1/4] Read model: resolve feature flag source commits...
+[1/4] Read model: resolve feature flag source commits complete (0.0 ms).
+[1/4] Read model: parsing feature flag changes (0/0).
+[1/4] Read model: parsing feature flag changes complete (0.0 ms).
+[1/4] Read model: sort feature flag activity...
+[1/4] Read model: sort feature flag activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity complete (0.0 ms).
+[1/4] Read model: writing signed flag activity (0/0).
+[1/4] Read model: writing signed flag activity complete (0.0 ms).
+[1/4] Read model: read legacy flag activity...
+[1/4] Read model: read legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing legacy flag activity (0/0).
+[1/4] Read model: writing legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing handoff activity (0/0).
+[1/4] Read model: writing handoff activity complete (0.0 ms).
+[1/4] Read model: index activity complete (0.8 ms).
+[1/4] Read model: mark activity attribution...
+[1/4] Read model: mark activity attribution complete (0.2 ms).
+[1/4] Read model: index commits...
+[1/4] Read model: read commit history...
+[1/4] Read model: processing commit history lines...
+[1/4] Read model: processing commit history lines complete (20.2 ms).
+[1/4] Read model: read commit history complete (20.3 ms).
+[1/4] Read model: index commits complete (20.3 ms).
+[1/4] Read model: index reaction signatures...
+[1/4] Read model: index reaction signatures complete (0.5 ms).
+[1/4] Read model: index activity evidence...
+[1/4] Read model: index activity evidence complete (8.2 ms).
+[1/4] Read model: write metadata...
+[1/4] Read model: write metadata complete (3.5 ms).
+[1/4] Read model: apply verified attribution...
+[1/4] Read model: apply verified attribution complete (1.9 ms).
+[1/4] Read model: commit read model...
+[1/4] Read model: commit read model complete (8.6 ms).
+[1/4] Read model: validating candidate...
+[1/4] Read model: validating candidate complete (5.1 ms).
+[1/4] Read-model candidate is ready.
+[2/4] Rendering static HTML and fingerprinted assets...
+[2/4] Fingerprinting and copying assets referenced by rendered pages...
+[2/4] Rendering shared pages (0/10).
+[2/4] Rendering shared pages (1/10): /.
+[2/4] Rendering shared pages (2/10): /threads/.
+[2/4] Rendering shared pages (3/10): /about/.
+[2/4] Rendering shared pages (4/10): /instance/.
+[2/4] Rendering shared pages (5/10): /activity/.
+[2/4] Rendering shared pages (6/10): /users/.
+[2/4] Rendering shared pages (7/10): /tools/.
+[2/4] Rendering shared pages (8/10): /tools/bookmarklets/.
+[2/4] Rendering shared pages (9/10): /tools/feature-flags/.
+[2/4] Rendering shared pages (10/10): /tags/.
+[2/4] Rendering shared pages complete (10/10).
+[2/4] Static docs are not published; run ./v3 docs publish with the same destination/profile.
+[2/4] Rendering tag pages (0/5).
+[2/4] Rendering tag pages (5/5).
+[2/4] Rendering tag pages complete (62.5 ms).
+[2/4] Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).
+[2/4] Skipping profile pages (FORUM_STATIC_PROFILE_PAGES_ENABLED is disabled).
+[2/4] Building public offline reading snapshot...
+[2/4] Fingerprinting and copying referenced assets complete.
+[2/4] Static release is ready: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-1.output/releases/release-20261030210303-0627540b
+Static artifacts: 19 HTML files, 52 asset files
+[3/4] Promoting the read model...
+[3/4] Read model promoted.
+[4/4] Activating the static release...
+[4/4] Static release activated.
+Built and activated static HTML release /tmp/qdb-build-time-results/cli/cli-ordinary-combined-1.output/releases/release-20261030210303-0627540b
+Elapsed: 0.432 seconds
+Process tree RSS KiB: 36584
+Process tree seconds: 0.46
+Process tree user seconds: 0.24
+Process tree system seconds: 0.08
+Table posts rows: 3
+Table posts SHA-256: ecc32c514222ccfb4229a5b3398b60d64f206c192bb0cf34ea91eb3ee59c754a
+Table profiles rows: 1
+Table profiles SHA-256: 86a8f9cd2ab46234a70111156f8dc66d562cd5f80e4acefbcabed879fcbe416b
+Table activity rows: 5
+Table activity SHA-256: c3fa985807a714de69ccfed162ba356136ccd1dd58c7e3dd2b17f18790be17c3
+Table commits rows: 1001
+Table commits SHA-256: 6da6b7ab393bf1d77f46ba8ba4df881a55b72a1f586b87c9b91279f3c5cd75c1
+HTML artifacts: 19
+Profile artifacts: 0
+Git diff-tree processes: 1
+
+Sample: cli-ordinary-combined-2
+Exit: 0
+Starting static HTML release build
+Repository: /tmp/qdb-build-time-corpus/ordinary
+Database: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-2.sqlite
+Static artifact root: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-2.output
+[1/4] Building and validating a read-model candidate...
+[1/4] Read model: drop schema...
+[1/4] Read model: drop schema complete (0.5 ms).
+[1/4] Read model: create schema...
+[1/4] Read model: create schema complete (4.0 ms).
+[1/4] Read model: resolve attribution cutoff...
+[1/4] Read model: resolve attribution cutoff complete (0.4 ms).
+[1/4] Read model: index posts...
+[1/4] Read model: resolve legacy post creation times...
+[1/4] Read model: resolve legacy post creation times complete (11.2 ms).
+[1/4] Read model: resolve post source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (8.6 ms).
+[1/4] Read model: resolve post source commits complete (8.8 ms).
+[1/4] Read model: parsing post records (0/3).
+[1/4] Read model: parsing post records (3/3).
+[1/4] Read model: parsing post records complete (1.5 ms).
+[1/4] Read model: sort posts...
+[1/4] Read model: sort posts complete (0.0 ms).
+[1/4] Read model: writing post records (0/3).
+[1/4] Read model: writing post records (3/3).
+[1/4] Read model: writing post records complete (0.4 ms).
+[1/4] Read model: writing thread summaries (0/2).
+[1/4] Read model: writing thread summaries (2/2).
+[1/4] Read model: writing thread summaries complete (0.0 ms).
+[1/4] Read model: index posts complete (23.0 ms).
+[1/4] Read model: index profiles...
+[1/4] Read model: parsing identity records (0/1).
+[1/4] Read model: parsing identity records (1/1).
+[1/4] Read model: parsing identity records complete (0.3 ms).
+[1/4] Read model: index profiles complete (0.6 ms).
+[1/4] Read model: derive approval state...
+[1/4] Read model: approval pass 1.
+[1/4] Read model: checking approval posts (0/3).
+[1/4] Read model: checking approval posts (3/3).
+[1/4] Read model: checking approval posts complete (0.0 ms).
+[1/4] Read model: checking invitation candidates (0/0).
+[1/4] Read model: checking invitation candidates complete (0.0 ms).
+[1/4] Read model: derive approval state complete (0.4 ms).
+[1/4] Read model: index thread labels...
+[1/4] Read model: parsing thread label records (0/2).
+[1/4] Read model: parsing thread label records (2/2).
+[1/4] Read model: parsing thread label records complete (0.1 ms).
+[1/4] Read model: sort thread labels...
+[1/4] Read model: sort thread labels complete (0.0 ms).
+[1/4] Read model: resolve thread label source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (8.2 ms).
+[1/4] Read model: resolve thread label source commits complete (8.3 ms).
+[1/4] Read model: deriving thread label records (0/2).
+[1/4] Read model: deriving thread label records (2/2).
+[1/4] Read model: deriving thread label records complete (0.9 ms).
+[1/4] Read model: writing thread labels (0/2).
+[1/4] Read model: writing thread labels (2/2).
+[1/4] Read model: writing thread labels complete (0.0 ms).
+[1/4] Read model: index thread labels complete (10.1 ms).
+[1/4] Read model: index thread subjects...
+[1/4] Read model: parsing thread subject records (0/1).
+[1/4] Read model: parsing thread subject records (1/1).
+[1/4] Read model: parsing thread subject records complete (0.2 ms).
+[1/4] Read model: sort thread subjects...
+[1/4] Read model: sort thread subjects complete (0.0 ms).
+[1/4] Read model: deriving thread subject records (0/1).
+[1/4] Read model: deriving thread subject records (1/1).
+[1/4] Read model: deriving thread subject records complete (0.0 ms).
+[1/4] Read model: index thread subjects complete (0.3 ms).
+[1/4] Read model: derive post attribution...
+[1/4] Read model: deriving post attribution (0/3).
+[1/4] Read model: deriving post attribution (3/3).
+[1/4] Read model: deriving post attribution complete (0.0 ms).
+[1/4] Read model: derive post attribution complete (0.0 ms).
+[1/4] Read model: derive profile counts...
+[1/4] Read model: initializing profile counts (0/1).
+[1/4] Read model: initializing profile counts (1/1).
+[1/4] Read model: initializing profile counts complete (0.0 ms).
+[1/4] Read model: counting profile posts (0/3).
+[1/4] Read model: counting profile posts (3/3).
+[1/4] Read model: counting profile posts complete (0.0 ms).
+[1/4] Read model: derive profile counts complete (0.0 ms).
+[1/4] Read model: link post authors...
+[1/4] Read model: linking author profiles (0/1).
+[1/4] Read model: linking author profiles (1/1).
+[1/4] Read model: linking author profiles complete (0.1 ms).
+[1/4] Read model: link post authors complete (0.2 ms).
+[1/4] Read model: index post reactions...
+[1/4] Read model: parsing post reaction records (0/0).
+[1/4] Read model: parsing post reaction records complete (0.0 ms).
+[1/4] Read model: sort post reactions...
+[1/4] Read model: sort post reactions complete (0.0 ms).
+[1/4] Read model: resolve post reaction source commits...
+[1/4] Read model: resolve post reaction source commits complete (0.0 ms).
+[1/4] Read model: deriving post reaction records (0/0).
+[1/4] Read model: deriving post reaction records complete (0.0 ms).
+[1/4] Read model: writing post reactions (0/3).
+[1/4] Read model: writing post reactions (3/3).
+[1/4] Read model: writing post reactions complete (0.2 ms).
+[1/4] Read model: index post reactions complete (0.5 ms).
+[1/4] Read model: index instance...
+[1/4] Read model: index instance complete (0.1 ms).
+[1/4] Read model: index activity...
+[1/4] Read model: writing post activity (0/3).
+[1/4] Read model: writing post activity (3/3).
+[1/4] Read model: writing post activity complete (0.2 ms).
+[1/4] Read model: writing thread label activity (0/2).
+[1/4] Read model: writing thread label activity (2/2).
+[1/4] Read model: writing thread label activity complete (0.2 ms).
+[1/4] Read model: writing post reaction activity (0/0).
+[1/4] Read model: writing post reaction activity complete (0.0 ms).
+[1/4] Read model: writing profile name activity (0/0).
+[1/4] Read model: writing profile name activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity...
+[1/4] Read model: resolve feature flag source commits...
+[1/4] Read model: resolve feature flag source commits complete (0.0 ms).
+[1/4] Read model: parsing feature flag changes (0/0).
+[1/4] Read model: parsing feature flag changes complete (0.0 ms).
+[1/4] Read model: sort feature flag activity...
+[1/4] Read model: sort feature flag activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity complete (0.0 ms).
+[1/4] Read model: writing signed flag activity (0/0).
+[1/4] Read model: writing signed flag activity complete (0.0 ms).
+[1/4] Read model: read legacy flag activity...
+[1/4] Read model: read legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing legacy flag activity (0/0).
+[1/4] Read model: writing legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing handoff activity (0/0).
+[1/4] Read model: writing handoff activity complete (0.0 ms).
+[1/4] Read model: index activity complete (0.8 ms).
+[1/4] Read model: mark activity attribution...
+[1/4] Read model: mark activity attribution complete (0.2 ms).
+[1/4] Read model: index commits...
+[1/4] Read model: read commit history...
+[1/4] Read model: processing commit history lines...
+[1/4] Read model: processing commit history lines complete (20.6 ms).
+[1/4] Read model: read commit history complete (20.7 ms).
+[1/4] Read model: index commits complete (20.7 ms).
+[1/4] Read model: index reaction signatures...
+[1/4] Read model: index reaction signatures complete (0.4 ms).
+[1/4] Read model: index activity evidence...
+[1/4] Read model: index activity evidence complete (7.1 ms).
+[1/4] Read model: write metadata...
+[1/4] Read model: write metadata complete (3.1 ms).
+[1/4] Read model: apply verified attribution...
+[1/4] Read model: apply verified attribution complete (1.8 ms).
+[1/4] Read model: commit read model...
+[1/4] Read model: commit read model complete (12.0 ms).
+[1/4] Read model: validating candidate...
+[1/4] Read model: validating candidate complete (4.8 ms).
+[1/4] Read-model candidate is ready.
+[2/4] Rendering static HTML and fingerprinted assets...
+[2/4] Fingerprinting and copying assets referenced by rendered pages...
+[2/4] Rendering shared pages (0/10).
+[2/4] Rendering shared pages (1/10): /.
+[2/4] Rendering shared pages (2/10): /threads/.
+[2/4] Rendering shared pages (3/10): /about/.
+[2/4] Rendering shared pages (4/10): /instance/.
+[2/4] Rendering shared pages (5/10): /activity/.
+[2/4] Rendering shared pages (6/10): /users/.
+[2/4] Rendering shared pages (7/10): /tools/.
+[2/4] Rendering shared pages (8/10): /tools/bookmarklets/.
+[2/4] Rendering shared pages (9/10): /tools/feature-flags/.
+[2/4] Rendering shared pages (10/10): /tags/.
+[2/4] Rendering shared pages complete (10/10).
+[2/4] Static docs are not published; run ./v3 docs publish with the same destination/profile.
+[2/4] Rendering tag pages (0/5).
+[2/4] Rendering tag pages (5/5).
+[2/4] Rendering tag pages complete (54.9 ms).
+[2/4] Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).
+[2/4] Skipping profile pages (FORUM_STATIC_PROFILE_PAGES_ENABLED is disabled).
+[2/4] Building public offline reading snapshot...
+[2/4] Fingerprinting and copying referenced assets complete.
+[2/4] Static release is ready: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-2.output/releases/release-20261030210303-6717acca
+Static artifacts: 19 HTML files, 52 asset files
+[3/4] Promoting the read model...
+[3/4] Read model promoted.
+[4/4] Activating the static release...
+[4/4] Static release activated.
+Built and activated static HTML release /tmp/qdb-build-time-results/cli/cli-ordinary-combined-2.output/releases/release-20261030210303-6717acca
+Elapsed: 0.385 seconds
+Process tree RSS KiB: 36584
+Process tree seconds: 0.41
+Process tree user seconds: 0.22
+Process tree system seconds: 0.07
+Table posts rows: 3
+Table posts SHA-256: ecc32c514222ccfb4229a5b3398b60d64f206c192bb0cf34ea91eb3ee59c754a
+Table profiles rows: 1
+Table profiles SHA-256: 86a8f9cd2ab46234a70111156f8dc66d562cd5f80e4acefbcabed879fcbe416b
+Table activity rows: 5
+Table activity SHA-256: c3fa985807a714de69ccfed162ba356136ccd1dd58c7e3dd2b17f18790be17c3
+Table commits rows: 1001
+Table commits SHA-256: 6da6b7ab393bf1d77f46ba8ba4df881a55b72a1f586b87c9b91279f3c5cd75c1
+HTML artifacts: 19
+Profile artifacts: 0
+Git diff-tree processes: 1
+
+Sample: cli-ordinary-baseline-2
+Exit: 0
+Starting static HTML release build
+Repository: /tmp/qdb-build-time-corpus/ordinary
+Database: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-2.sqlite
+Static artifact root: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-2.output
+[1/4] Building and validating a read-model candidate...
+[1/4] Read model: drop schema...
+[1/4] Read model: drop schema complete (0.5 ms).
+[1/4] Read model: create schema...
+[1/4] Read model: create schema complete (3.6 ms).
+[1/4] Read model: resolve attribution cutoff...
+[1/4] Read model: resolve attribution cutoff complete (0.4 ms).
+[1/4] Read model: index posts...
+[1/4] Read model: resolve legacy post creation times...
+[1/4] Read model: resolve legacy post creation times complete (9.5 ms).
+[1/4] Read model: resolve post source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (7.2 ms).
+[1/4] Read model: resolve post source commits complete (7.3 ms).
+[1/4] Read model: parsing post records (0/3).
+[1/4] Read model: parsing post records (3/3).
+[1/4] Read model: parsing post records complete (0.9 ms).
+[1/4] Read model: sort posts...
+[1/4] Read model: sort posts complete (0.0 ms).
+[1/4] Read model: writing post records (0/3).
+[1/4] Read model: writing post records (3/3).
+[1/4] Read model: writing post records complete (0.1 ms).
+[1/4] Read model: writing thread summaries (0/2).
+[1/4] Read model: writing thread summaries (2/2).
+[1/4] Read model: writing thread summaries complete (0.0 ms).
+[1/4] Read model: index posts complete (18.8 ms).
+[1/4] Read model: index profiles...
+[1/4] Read model: parsing identity records (0/1).
+[1/4] Read model: parsing identity records (1/1).
+[1/4] Read model: parsing identity records complete (0.2 ms).
+[1/4] Read model: index profiles complete (0.5 ms).
+[1/4] Read model: derive approval state...
+[1/4] Read model: approval pass 1.
+[1/4] Read model: checking approval posts (0/3).
+[1/4] Read model: checking approval posts (3/3).
+[1/4] Read model: checking approval posts complete (0.0 ms).
+[1/4] Read model: checking invitation candidates (0/0).
+[1/4] Read model: checking invitation candidates complete (0.0 ms).
+[1/4] Read model: derive approval state complete (0.3 ms).
+[1/4] Read model: index thread labels...
+[1/4] Read model: parsing thread label records (0/2).
+[1/4] Read model: parsing thread label records (2/2).
+[1/4] Read model: parsing thread label records complete (0.1 ms).
+[1/4] Read model: sort thread labels...
+[1/4] Read model: sort thread labels complete (0.0 ms).
+[1/4] Read model: resolve thread label source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (7.3 ms).
+[1/4] Read model: resolve thread label source commits complete (7.4 ms).
+[1/4] Read model: deriving thread label records (0/2).
+[1/4] Read model: deriving thread label records (2/2).
+[1/4] Read model: deriving thread label records complete (1.3 ms).
+[1/4] Read model: writing thread labels (0/2).
+[1/4] Read model: writing thread labels (2/2).
+[1/4] Read model: writing thread labels complete (0.0 ms).
+[1/4] Read model: index thread labels complete (9.5 ms).
+[1/4] Read model: index thread subjects...
+[1/4] Read model: parsing thread subject records (0/1).
+[1/4] Read model: parsing thread subject records (1/1).
+[1/4] Read model: parsing thread subject records complete (0.2 ms).
+[1/4] Read model: sort thread subjects...
+[1/4] Read model: sort thread subjects complete (0.0 ms).
+[1/4] Read model: deriving thread subject records (0/1).
+[1/4] Read model: deriving thread subject records (1/1).
+[1/4] Read model: deriving thread subject records complete (0.0 ms).
+[1/4] Read model: index thread subjects complete (0.3 ms).
+[1/4] Read model: derive post attribution...
+[1/4] Read model: deriving post attribution (0/3).
+[1/4] Read model: deriving post attribution (3/3).
+[1/4] Read model: deriving post attribution complete (0.0 ms).
+[1/4] Read model: derive post attribution complete (0.0 ms).
+[1/4] Read model: derive profile counts...
+[1/4] Read model: initializing profile counts (0/1).
+[1/4] Read model: initializing profile counts (1/1).
+[1/4] Read model: initializing profile counts complete (0.0 ms).
+[1/4] Read model: counting profile posts (0/3).
+[1/4] Read model: counting profile posts (3/3).
+[1/4] Read model: counting profile posts complete (0.0 ms).
+[1/4] Read model: derive profile counts complete (0.0 ms).
+[1/4] Read model: link post authors...
+[1/4] Read model: linking author profiles (0/1).
+[1/4] Read model: linking author profiles (1/1).
+[1/4] Read model: linking author profiles complete (0.1 ms).
+[1/4] Read model: link post authors complete (0.2 ms).
+[1/4] Read model: index post reactions...
+[1/4] Read model: parsing post reaction records (0/0).
+[1/4] Read model: parsing post reaction records complete (0.0 ms).
+[1/4] Read model: sort post reactions...
+[1/4] Read model: sort post reactions complete (0.0 ms).
+[1/4] Read model: resolve post reaction source commits...
+[1/4] Read model: resolve post reaction source commits complete (0.0 ms).
+[1/4] Read model: deriving post reaction records (0/0).
+[1/4] Read model: deriving post reaction records complete (0.0 ms).
+[1/4] Read model: writing post reactions (0/3).
+[1/4] Read model: writing post reactions (3/3).
+[1/4] Read model: writing post reactions complete (0.1 ms).
+[1/4] Read model: index post reactions complete (0.4 ms).
+[1/4] Read model: index instance...
+[1/4] Read model: index instance complete (0.1 ms).
+[1/4] Read model: index activity...
+[1/4] Read model: writing post activity (0/3).
+[1/4] Read model: writing post activity (3/3).
+[1/4] Read model: writing post activity complete (0.2 ms).
+[1/4] Read model: writing thread label activity (0/2).
+[1/4] Read model: writing thread label activity (2/2).
+[1/4] Read model: writing thread label activity complete (0.1 ms).
+[1/4] Read model: writing post reaction activity (0/0).
+[1/4] Read model: writing post reaction activity complete (0.0 ms).
+[1/4] Read model: writing profile name activity (0/0).
+[1/4] Read model: writing profile name activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity...
+[1/4] Read model: resolve feature flag source commits...
+[1/4] Read model: resolve feature flag source commits complete (0.0 ms).
+[1/4] Read model: parsing feature flag changes (0/0).
+[1/4] Read model: parsing feature flag changes complete (0.0 ms).
+[1/4] Read model: sort feature flag activity...
+[1/4] Read model: sort feature flag activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity complete (0.0 ms).
+[1/4] Read model: writing signed flag activity (0/0).
+[1/4] Read model: writing signed flag activity complete (0.0 ms).
+[1/4] Read model: read legacy flag activity...
+[1/4] Read model: read legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing legacy flag activity (0/0).
+[1/4] Read model: writing legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing handoff activity (0/0).
+[1/4] Read model: writing handoff activity complete (0.0 ms).
+[1/4] Read model: index activity complete (0.7 ms).
+[1/4] Read model: mark activity attribution...
+[1/4] Read model: mark activity attribution complete (0.2 ms).
+[1/4] Read model: index commits...
+[1/4] Read model: read commit history...
+[1/4] Read model: read commit history complete (1199.9 ms).
+[1/4] Read model: processing commit history lines (0/3003).
+[1/4] Read model: processing commit history lines (100/3003).
+[1/4] Read model: processing commit history lines (200/3003).
+[1/4] Read model: processing commit history lines (300/3003).
+[1/4] Read model: processing commit history lines (400/3003).
+[1/4] Read model: processing commit history lines (500/3003).
+[1/4] Read model: processing commit history lines (600/3003).
+[1/4] Read model: processing commit history lines (700/3003).
+[1/4] Read model: processing commit history lines (800/3003).
+[1/4] Read model: processing commit history lines (900/3003).
+[1/4] Read model: processing commit history lines (1000/3003).
+[1/4] Read model: processing commit history lines (1100/3003).
+[1/4] Read model: processing commit history lines (1200/3003).
+[1/4] Read model: processing commit history lines (1300/3003).
+[1/4] Read model: processing commit history lines (1400/3003).
+[1/4] Read model: processing commit history lines (1500/3003).
+[1/4] Read model: processing commit history lines (1600/3003).
+[1/4] Read model: processing commit history lines (1700/3003).
+[1/4] Read model: processing commit history lines (1800/3003).
+[1/4] Read model: processing commit history lines (1900/3003).
+[1/4] Read model: processing commit history lines (2000/3003).
+[1/4] Read model: processing commit history lines (2100/3003).
+[1/4] Read model: processing commit history lines (2200/3003).
+[1/4] Read model: processing commit history lines (2300/3003).
+[1/4] Read model: processing commit history lines (2400/3003).
+[1/4] Read model: processing commit history lines (2500/3003).
+[1/4] Read model: processing commit history lines (2600/3003).
+[1/4] Read model: processing commit history lines (2700/3003).
+[1/4] Read model: processing commit history lines (2800/3003).
+[1/4] Read model: processing commit history lines (2900/3003).
+[1/4] Read model: processing commit history lines (3000/3003).
+[1/4] Read model: processing commit history lines (3003/3003).
+[1/4] Read model: processing commit history lines complete (6.0 ms).
+[1/4] Read model: index commits complete (1206.1 ms).
+[1/4] Read model: index reaction signatures...
+[1/4] Read model: index reaction signatures complete (0.3 ms).
+[1/4] Read model: index activity evidence...
+[1/4] Read model: index activity evidence complete (13.0 ms).
+[1/4] Read model: write metadata...
+[1/4] Read model: write metadata complete (2.9 ms).
+[1/4] Read model: apply verified attribution...
+[1/4] Read model: apply verified attribution complete (1.6 ms).
+[1/4] Read model: commit read model...
+[1/4] Read model: commit read model complete (12.2 ms).
+[1/4] Read model: validating candidate...
+[1/4] Read model: validating candidate complete (4.5 ms).
+[1/4] Read-model candidate is ready.
+[2/4] Rendering static HTML and fingerprinted assets...
+[2/4] Fingerprinting and copying assets referenced by rendered pages...
+[2/4] Rendering shared pages (0/10).
+[2/4] Rendering shared pages (1/10): /.
+[2/4] Rendering shared pages (2/10): /threads/.
+[2/4] Rendering shared pages (3/10): /about/.
+[2/4] Rendering shared pages (4/10): /instance/.
+[2/4] Rendering shared pages (5/10): /activity/.
+[2/4] Rendering shared pages (6/10): /users/.
+[2/4] Rendering shared pages (7/10): /tools/.
+[2/4] Rendering shared pages (8/10): /tools/bookmarklets/.
+[2/4] Rendering shared pages (9/10): /tools/feature-flags/.
+[2/4] Rendering shared pages (10/10): /tags/.
+[2/4] Rendering shared pages complete (10/10).
+[2/4] Static docs are not published; run ./v3 docs publish with the same destination/profile.
+[2/4] Rendering tag pages (0/5).
+[2/4] Rendering tag pages (5/5).
+[2/4] Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).
+[2/4] Rendering profile pages (0/1).
+[2/4] Rendering profile pages (1/1).
+[2/4] Building public offline reading snapshot...
+[2/4] Fingerprinting and copying referenced assets complete.
+[2/4] Static release is ready: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-2.output/releases/release-20261030210305-0c1f6c08
+Static artifacts: 20 HTML files, 54 asset files
+[3/4] Promoting the read model...
+[3/4] Read model promoted.
+[4/4] Activating the static release...
+[4/4] Static release activated.
+Built and activated static HTML release /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-2.output/releases/release-20261030210305-0c1f6c08
+Elapsed: 1.724 seconds
+Process tree RSS KiB: 36428
+Process tree seconds: 1.74
+Process tree user seconds: 1.17
+Process tree system seconds: 0.29
+Table posts rows: 3
+Table posts SHA-256: ecc32c514222ccfb4229a5b3398b60d64f206c192bb0cf34ea91eb3ee59c754a
+Table profiles rows: 1
+Table profiles SHA-256: 86a8f9cd2ab46234a70111156f8dc66d562cd5f80e4acefbcabed879fcbe416b
+Table activity rows: 5
+Table activity SHA-256: c3fa985807a714de69ccfed162ba356136ccd1dd58c7e3dd2b17f18790be17c3
+Table commits rows: 1001
+Table commits SHA-256: 6da6b7ab393bf1d77f46ba8ba4df881a55b72a1f586b87c9b91279f3c5cd75c1
+HTML artifacts: 20
+Profile artifacts: 1
+Git diff-tree processes: 1
+
+Sample: cli-ordinary-baseline-3
+Exit: 0
+Starting static HTML release build
+Repository: /tmp/qdb-build-time-corpus/ordinary
+Database: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-3.sqlite
+Static artifact root: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-3.output
+[1/4] Building and validating a read-model candidate...
+[1/4] Read model: drop schema...
+[1/4] Read model: drop schema complete (0.5 ms).
+[1/4] Read model: create schema...
+[1/4] Read model: create schema complete (3.2 ms).
+[1/4] Read model: resolve attribution cutoff...
+[1/4] Read model: resolve attribution cutoff complete (0.3 ms).
+[1/4] Read model: index posts...
+[1/4] Read model: resolve legacy post creation times...
+[1/4] Read model: resolve legacy post creation times complete (8.9 ms).
+[1/4] Read model: resolve post source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (7.0 ms).
+[1/4] Read model: resolve post source commits complete (7.1 ms).
+[1/4] Read model: parsing post records (0/3).
+[1/4] Read model: parsing post records (3/3).
+[1/4] Read model: parsing post records complete (1.0 ms).
+[1/4] Read model: sort posts...
+[1/4] Read model: sort posts complete (0.0 ms).
+[1/4] Read model: writing post records (0/3).
+[1/4] Read model: writing post records (3/3).
+[1/4] Read model: writing post records complete (0.1 ms).
+[1/4] Read model: writing thread summaries (0/2).
+[1/4] Read model: writing thread summaries (2/2).
+[1/4] Read model: writing thread summaries complete (0.0 ms).
+[1/4] Read model: index posts complete (18.1 ms).
+[1/4] Read model: index profiles...
+[1/4] Read model: parsing identity records (0/1).
+[1/4] Read model: parsing identity records (1/1).
+[1/4] Read model: parsing identity records complete (0.2 ms).
+[1/4] Read model: index profiles complete (0.4 ms).
+[1/4] Read model: derive approval state...
+[1/4] Read model: approval pass 1.
+[1/4] Read model: checking approval posts (0/3).
+[1/4] Read model: checking approval posts (3/3).
+[1/4] Read model: checking approval posts complete (0.0 ms).
+[1/4] Read model: checking invitation candidates (0/0).
+[1/4] Read model: checking invitation candidates complete (0.0 ms).
+[1/4] Read model: derive approval state complete (0.3 ms).
+[1/4] Read model: index thread labels...
+[1/4] Read model: parsing thread label records (0/2).
+[1/4] Read model: parsing thread label records (2/2).
+[1/4] Read model: parsing thread label records complete (0.1 ms).
+[1/4] Read model: sort thread labels...
+[1/4] Read model: sort thread labels complete (0.0 ms).
+[1/4] Read model: resolve thread label source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (6.7 ms).
+[1/4] Read model: resolve thread label source commits complete (6.8 ms).
+[1/4] Read model: deriving thread label records (0/2).
+[1/4] Read model: deriving thread label records (2/2).
+[1/4] Read model: deriving thread label records complete (0.7 ms).
+[1/4] Read model: writing thread labels (0/2).
+[1/4] Read model: writing thread labels (2/2).
+[1/4] Read model: writing thread labels complete (0.0 ms).
+[1/4] Read model: index thread labels complete (8.2 ms).
+[1/4] Read model: index thread subjects...
+[1/4] Read model: parsing thread subject records (0/1).
+[1/4] Read model: parsing thread subject records (1/1).
+[1/4] Read model: parsing thread subject records complete (0.1 ms).
+[1/4] Read model: sort thread subjects...
+[1/4] Read model: sort thread subjects complete (0.0 ms).
+[1/4] Read model: deriving thread subject records (0/1).
+[1/4] Read model: deriving thread subject records (1/1).
+[1/4] Read model: deriving thread subject records complete (0.0 ms).
+[1/4] Read model: index thread subjects complete (0.2 ms).
+[1/4] Read model: derive post attribution...
+[1/4] Read model: deriving post attribution (0/3).
+[1/4] Read model: deriving post attribution (3/3).
+[1/4] Read model: deriving post attribution complete (0.0 ms).
+[1/4] Read model: derive post attribution complete (0.0 ms).
+[1/4] Read model: derive profile counts...
+[1/4] Read model: initializing profile counts (0/1).
+[1/4] Read model: initializing profile counts (1/1).
+[1/4] Read model: initializing profile counts complete (0.0 ms).
+[1/4] Read model: counting profile posts (0/3).
+[1/4] Read model: counting profile posts (3/3).
+[1/4] Read model: counting profile posts complete (0.0 ms).
+[1/4] Read model: derive profile counts complete (0.0 ms).
+[1/4] Read model: link post authors...
+[1/4] Read model: linking author profiles (0/1).
+[1/4] Read model: linking author profiles (1/1).
+[1/4] Read model: linking author profiles complete (0.1 ms).
+[1/4] Read model: link post authors complete (0.2 ms).
+[1/4] Read model: index post reactions...
+[1/4] Read model: parsing post reaction records (0/0).
+[1/4] Read model: parsing post reaction records complete (0.0 ms).
+[1/4] Read model: sort post reactions...
+[1/4] Read model: sort post reactions complete (0.0 ms).
+[1/4] Read model: resolve post reaction source commits...
+[1/4] Read model: resolve post reaction source commits complete (0.0 ms).
+[1/4] Read model: deriving post reaction records (0/0).
+[1/4] Read model: deriving post reaction records complete (0.0 ms).
+[1/4] Read model: writing post reactions (0/3).
+[1/4] Read model: writing post reactions (3/3).
+[1/4] Read model: writing post reactions complete (0.1 ms).
+[1/4] Read model: index post reactions complete (0.4 ms).
+[1/4] Read model: index instance...
+[1/4] Read model: index instance complete (0.1 ms).
+[1/4] Read model: index activity...
+[1/4] Read model: writing post activity (0/3).
+[1/4] Read model: writing post activity (3/3).
+[1/4] Read model: writing post activity complete (0.2 ms).
+[1/4] Read model: writing thread label activity (0/2).
+[1/4] Read model: writing thread label activity (2/2).
+[1/4] Read model: writing thread label activity complete (0.1 ms).
+[1/4] Read model: writing post reaction activity (0/0).
+[1/4] Read model: writing post reaction activity complete (0.0 ms).
+[1/4] Read model: writing profile name activity (0/0).
+[1/4] Read model: writing profile name activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity...
+[1/4] Read model: resolve feature flag source commits...
+[1/4] Read model: resolve feature flag source commits complete (0.0 ms).
+[1/4] Read model: parsing feature flag changes (0/0).
+[1/4] Read model: parsing feature flag changes complete (0.0 ms).
+[1/4] Read model: sort feature flag activity...
+[1/4] Read model: sort feature flag activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity complete (0.0 ms).
+[1/4] Read model: writing signed flag activity (0/0).
+[1/4] Read model: writing signed flag activity complete (0.0 ms).
+[1/4] Read model: read legacy flag activity...
+[1/4] Read model: read legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing legacy flag activity (0/0).
+[1/4] Read model: writing legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing handoff activity (0/0).
+[1/4] Read model: writing handoff activity complete (0.0 ms).
+[1/4] Read model: index activity complete (0.6 ms).
+[1/4] Read model: mark activity attribution...
+[1/4] Read model: mark activity attribution complete (0.2 ms).
+[1/4] Read model: index commits...
+[1/4] Read model: read commit history...
+[1/4] Read model: read commit history complete (1263.5 ms).
+[1/4] Read model: processing commit history lines (0/3003).
+[1/4] Read model: processing commit history lines (100/3003).
+[1/4] Read model: processing commit history lines (200/3003).
+[1/4] Read model: processing commit history lines (300/3003).
+[1/4] Read model: processing commit history lines (400/3003).
+[1/4] Read model: processing commit history lines (500/3003).
+[1/4] Read model: processing commit history lines (600/3003).
+[1/4] Read model: processing commit history lines (700/3003).
+[1/4] Read model: processing commit history lines (800/3003).
+[1/4] Read model: processing commit history lines (900/3003).
+[1/4] Read model: processing commit history lines (1000/3003).
+[1/4] Read model: processing commit history lines (1100/3003).
+[1/4] Read model: processing commit history lines (1200/3003).
+[1/4] Read model: processing commit history lines (1300/3003).
+[1/4] Read model: processing commit history lines (1400/3003).
+[1/4] Read model: processing commit history lines (1500/3003).
+[1/4] Read model: processing commit history lines (1600/3003).
+[1/4] Read model: processing commit history lines (1700/3003).
+[1/4] Read model: processing commit history lines (1800/3003).
+[1/4] Read model: processing commit history lines (1900/3003).
+[1/4] Read model: processing commit history lines (2000/3003).
+[1/4] Read model: processing commit history lines (2100/3003).
+[1/4] Read model: processing commit history lines (2200/3003).
+[1/4] Read model: processing commit history lines (2300/3003).
+[1/4] Read model: processing commit history lines (2400/3003).
+[1/4] Read model: processing commit history lines (2500/3003).
+[1/4] Read model: processing commit history lines (2600/3003).
+[1/4] Read model: processing commit history lines (2700/3003).
+[1/4] Read model: processing commit history lines (2800/3003).
+[1/4] Read model: processing commit history lines (2900/3003).
+[1/4] Read model: processing commit history lines (3000/3003).
+[1/4] Read model: processing commit history lines (3003/3003).
+[1/4] Read model: processing commit history lines complete (7.6 ms).
+[1/4] Read model: index commits complete (1271.4 ms).
+[1/4] Read model: index reaction signatures...
+[1/4] Read model: index reaction signatures complete (0.4 ms).
+[1/4] Read model: index activity evidence...
+[1/4] Read model: index activity evidence complete (6.5 ms).
+[1/4] Read model: write metadata...
+[1/4] Read model: write metadata complete (3.1 ms).
+[1/4] Read model: apply verified attribution...
+[1/4] Read model: apply verified attribution complete (1.8 ms).
+[1/4] Read model: commit read model...
+[1/4] Read model: commit read model complete (11.2 ms).
+[1/4] Read model: validating candidate...
+[1/4] Read model: validating candidate complete (4.9 ms).
+[1/4] Read-model candidate is ready.
+[2/4] Rendering static HTML and fingerprinted assets...
+[2/4] Fingerprinting and copying assets referenced by rendered pages...
+[2/4] Rendering shared pages (0/10).
+[2/4] Rendering shared pages (1/10): /.
+[2/4] Rendering shared pages (2/10): /threads/.
+[2/4] Rendering shared pages (3/10): /about/.
+[2/4] Rendering shared pages (4/10): /instance/.
+[2/4] Rendering shared pages (5/10): /activity/.
+[2/4] Rendering shared pages (6/10): /users/.
+[2/4] Rendering shared pages (7/10): /tools/.
+[2/4] Rendering shared pages (8/10): /tools/bookmarklets/.
+[2/4] Rendering shared pages (9/10): /tools/feature-flags/.
+[2/4] Rendering shared pages (10/10): /tags/.
+[2/4] Rendering shared pages complete (10/10).
+[2/4] Static docs are not published; run ./v3 docs publish with the same destination/profile.
+[2/4] Rendering tag pages (0/5).
+[2/4] Rendering tag pages (5/5).
+[2/4] Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).
+[2/4] Rendering profile pages (0/1).
+[2/4] Rendering profile pages (1/1).
+[2/4] Building public offline reading snapshot...
+[2/4] Fingerprinting and copying referenced assets complete.
+[2/4] Static release is ready: /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-3.output/releases/release-20261030210307-a4a79bc6
+Static artifacts: 20 HTML files, 54 asset files
+[3/4] Promoting the read model...
+[3/4] Read model promoted.
+[4/4] Activating the static release...
+[4/4] Static release activated.
+Built and activated static HTML release /tmp/qdb-build-time-results/cli/cli-ordinary-baseline-3.output/releases/release-20261030210307-a4a79bc6
+Elapsed: 1.804 seconds
+Process tree RSS KiB: 36384
+Process tree seconds: 1.82
+Process tree user seconds: 1.23
+Process tree system seconds: 0.32
+Table posts rows: 3
+Table posts SHA-256: ecc32c514222ccfb4229a5b3398b60d64f206c192bb0cf34ea91eb3ee59c754a
+Table profiles rows: 1
+Table profiles SHA-256: 86a8f9cd2ab46234a70111156f8dc66d562cd5f80e4acefbcabed879fcbe416b
+Table activity rows: 5
+Table activity SHA-256: c3fa985807a714de69ccfed162ba356136ccd1dd58c7e3dd2b17f18790be17c3
+Table commits rows: 1001
+Table commits SHA-256: 6da6b7ab393bf1d77f46ba8ba4df881a55b72a1f586b87c9b91279f3c5cd75c1
+HTML artifacts: 20
+Profile artifacts: 1
+Git diff-tree processes: 1
+
+Sample: cli-ordinary-combined-3
+Exit: 0
+Starting static HTML release build
+Repository: /tmp/qdb-build-time-corpus/ordinary
+Database: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-3.sqlite
+Static artifact root: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-3.output
+[1/4] Building and validating a read-model candidate...
+[1/4] Read model: drop schema...
+[1/4] Read model: drop schema complete (0.5 ms).
+[1/4] Read model: create schema...
+[1/4] Read model: create schema complete (3.7 ms).
+[1/4] Read model: resolve attribution cutoff...
+[1/4] Read model: resolve attribution cutoff complete (0.4 ms).
+[1/4] Read model: index posts...
+[1/4] Read model: resolve legacy post creation times...
+[1/4] Read model: resolve legacy post creation times complete (9.6 ms).
+[1/4] Read model: resolve post source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (7.7 ms).
+[1/4] Read model: resolve post source commits complete (7.8 ms).
+[1/4] Read model: parsing post records (0/3).
+[1/4] Read model: parsing post records (3/3).
+[1/4] Read model: parsing post records complete (0.9 ms).
+[1/4] Read model: sort posts...
+[1/4] Read model: sort posts complete (0.0 ms).
+[1/4] Read model: writing post records (0/3).
+[1/4] Read model: writing post records (3/3).
+[1/4] Read model: writing post records complete (0.1 ms).
+[1/4] Read model: writing thread summaries (0/2).
+[1/4] Read model: writing thread summaries (2/2).
+[1/4] Read model: writing thread summaries complete (0.0 ms).
+[1/4] Read model: index posts complete (19.4 ms).
+[1/4] Read model: index profiles...
+[1/4] Read model: parsing identity records (0/1).
+[1/4] Read model: parsing identity records (1/1).
+[1/4] Read model: parsing identity records complete (0.2 ms).
+[1/4] Read model: index profiles complete (0.5 ms).
+[1/4] Read model: derive approval state...
+[1/4] Read model: approval pass 1.
+[1/4] Read model: checking approval posts (0/3).
+[1/4] Read model: checking approval posts (3/3).
+[1/4] Read model: checking approval posts complete (0.0 ms).
+[1/4] Read model: checking invitation candidates (0/0).
+[1/4] Read model: checking invitation candidates complete (0.0 ms).
+[1/4] Read model: derive approval state complete (0.3 ms).
+[1/4] Read model: index thread labels...
+[1/4] Read model: parsing thread label records (0/2).
+[1/4] Read model: parsing thread label records (2/2).
+[1/4] Read model: parsing thread label records complete (0.1 ms).
+[1/4] Read model: sort thread labels...
+[1/4] Read model: sort thread labels complete (0.0 ms).
+[1/4] Read model: resolve thread label source commits...
+[1/4] Read model: read source history...
+[1/4] Read model: read source history complete (7.1 ms).
+[1/4] Read model: resolve thread label source commits complete (7.2 ms).
+[1/4] Read model: deriving thread label records (0/2).
+[1/4] Read model: deriving thread label records (2/2).
+[1/4] Read model: deriving thread label records complete (0.7 ms).
+[1/4] Read model: writing thread labels (0/2).
+[1/4] Read model: writing thread labels (2/2).
+[1/4] Read model: writing thread labels complete (0.1 ms).
+[1/4] Read model: index thread labels complete (8.8 ms).
+[1/4] Read model: index thread subjects...
+[1/4] Read model: parsing thread subject records (0/1).
+[1/4] Read model: parsing thread subject records (1/1).
+[1/4] Read model: parsing thread subject records complete (0.2 ms).
+[1/4] Read model: sort thread subjects...
+[1/4] Read model: sort thread subjects complete (0.0 ms).
+[1/4] Read model: deriving thread subject records (0/1).
+[1/4] Read model: deriving thread subject records (1/1).
+[1/4] Read model: deriving thread subject records complete (0.0 ms).
+[1/4] Read model: index thread subjects complete (0.3 ms).
+[1/4] Read model: derive post attribution...
+[1/4] Read model: deriving post attribution (0/3).
+[1/4] Read model: deriving post attribution (3/3).
+[1/4] Read model: deriving post attribution complete (0.0 ms).
+[1/4] Read model: derive post attribution complete (0.0 ms).
+[1/4] Read model: derive profile counts...
+[1/4] Read model: initializing profile counts (0/1).
+[1/4] Read model: initializing profile counts (1/1).
+[1/4] Read model: initializing profile counts complete (0.0 ms).
+[1/4] Read model: counting profile posts (0/3).
+[1/4] Read model: counting profile posts (3/3).
+[1/4] Read model: counting profile posts complete (0.0 ms).
+[1/4] Read model: derive profile counts complete (0.1 ms).
+[1/4] Read model: link post authors...
+[1/4] Read model: linking author profiles (0/1).
+[1/4] Read model: linking author profiles (1/1).
+[1/4] Read model: linking author profiles complete (0.1 ms).
+[1/4] Read model: link post authors complete (0.2 ms).
+[1/4] Read model: index post reactions...
+[1/4] Read model: parsing post reaction records (0/0).
+[1/4] Read model: parsing post reaction records complete (0.0 ms).
+[1/4] Read model: sort post reactions...
+[1/4] Read model: sort post reactions complete (0.0 ms).
+[1/4] Read model: resolve post reaction source commits...
+[1/4] Read model: resolve post reaction source commits complete (0.0 ms).
+[1/4] Read model: deriving post reaction records (0/0).
+[1/4] Read model: deriving post reaction records complete (0.0 ms).
+[1/4] Read model: writing post reactions (0/3).
+[1/4] Read model: writing post reactions (3/3).
+[1/4] Read model: writing post reactions complete (0.1 ms).
+[1/4] Read model: index post reactions complete (0.5 ms).
+[1/4] Read model: index instance...
+[1/4] Read model: index instance complete (0.1 ms).
+[1/4] Read model: index activity...
+[1/4] Read model: writing post activity (0/3).
+[1/4] Read model: writing post activity (3/3).
+[1/4] Read model: writing post activity complete (0.2 ms).
+[1/4] Read model: writing thread label activity (0/2).
+[1/4] Read model: writing thread label activity (2/2).
+[1/4] Read model: writing thread label activity complete (0.2 ms).
+[1/4] Read model: writing post reaction activity (0/0).
+[1/4] Read model: writing post reaction activity complete (0.0 ms).
+[1/4] Read model: writing profile name activity (0/0).
+[1/4] Read model: writing profile name activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity...
+[1/4] Read model: resolve feature flag source commits...
+[1/4] Read model: resolve feature flag source commits complete (0.0 ms).
+[1/4] Read model: parsing feature flag changes (0/0).
+[1/4] Read model: parsing feature flag changes complete (0.0 ms).
+[1/4] Read model: sort feature flag activity...
+[1/4] Read model: sort feature flag activity complete (0.0 ms).
+[1/4] Read model: derive signed flag activity complete (0.0 ms).
+[1/4] Read model: writing signed flag activity (0/0).
+[1/4] Read model: writing signed flag activity complete (0.0 ms).
+[1/4] Read model: read legacy flag activity...
+[1/4] Read model: read legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing legacy flag activity (0/0).
+[1/4] Read model: writing legacy flag activity complete (0.0 ms).
+[1/4] Read model: writing handoff activity (0/0).
+[1/4] Read model: writing handoff activity complete (0.0 ms).
+[1/4] Read model: index activity complete (0.8 ms).
+[1/4] Read model: mark activity attribution...
+[1/4] Read model: mark activity attribution complete (0.2 ms).
+[1/4] Read model: index commits...
+[1/4] Read model: read commit history...
+[1/4] Read model: processing commit history lines...
+[1/4] Read model: processing commit history lines complete (19.6 ms).
+[1/4] Read model: read commit history complete (19.7 ms).
+[1/4] Read model: index commits complete (19.8 ms).
+[1/4] Read model: index reaction signatures...
+[1/4] Read model: index reaction signatures complete (0.4 ms).
+[1/4] Read model: index activity evidence...
+[1/4] Read model: index activity evidence complete (7.1 ms).
+[1/4] Read model: write metadata...
+[1/4] Read model: write metadata complete (3.1 ms).
+[1/4] Read model: apply verified attribution...
+[1/4] Read model: apply verified attribution complete (1.6 ms).
+[1/4] Read model: commit read model...
+[1/4] Read model: commit read model complete (16.9 ms).
+[1/4] Read model: validating candidate...
+[1/4] Read model: validating candidate complete (5.3 ms).
+[1/4] Read-model candidate is ready.
+[2/4] Rendering static HTML and fingerprinted assets...
+[2/4] Fingerprinting and copying assets referenced by rendered pages...
+[2/4] Rendering shared pages (0/10).
+[2/4] Rendering shared pages (1/10): /.
+[2/4] Rendering shared pages (2/10): /threads/.
+[2/4] Rendering shared pages (3/10): /about/.
+[2/4] Rendering shared pages (4/10): /instance/.
+[2/4] Rendering shared pages (5/10): /activity/.
+[2/4] Rendering shared pages (6/10): /users/.
+[2/4] Rendering shared pages (7/10): /tools/.
+[2/4] Rendering shared pages (8/10): /tools/bookmarklets/.
+[2/4] Rendering shared pages (9/10): /tools/feature-flags/.
+[2/4] Rendering shared pages (10/10): /tags/.
+[2/4] Rendering shared pages complete (10/10).
+[2/4] Static docs are not published; run ./v3 docs publish with the same destination/profile.
+[2/4] Rendering tag pages (0/5).
+[2/4] Rendering tag pages (5/5).
+[2/4] Rendering tag pages complete (56.2 ms).
+[2/4] Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).
+[2/4] Skipping profile pages (FORUM_STATIC_PROFILE_PAGES_ENABLED is disabled).
+[2/4] Building public offline reading snapshot...
+[2/4] Fingerprinting and copying referenced assets complete.
+[2/4] Static release is ready: /tmp/qdb-build-time-results/cli/cli-ordinary-combined-3.output/releases/release-20261030210307-081b514e
+Static artifacts: 19 HTML files, 52 asset files
+[3/4] Promoting the read model...
+[3/4] Read model promoted.
+[4/4] Activating the static release...
+[4/4] Static release activated.
+Built and activated static HTML release /tmp/qdb-build-time-results/cli/cli-ordinary-combined-3.output/releases/release-20261030210307-081b514e
+Elapsed: 0.379 seconds
+Process tree RSS KiB: 36372
+Process tree seconds: 0.40
+Process tree user seconds: 0.19
+Process tree system seconds: 0.08
+Table posts rows: 3
+Table posts SHA-256: ecc32c514222ccfb4229a5b3398b60d64f206c192bb0cf34ea91eb3ee59c754a
+Table profiles rows: 1
+Table profiles SHA-256: 86a8f9cd2ab46234a70111156f8dc66d562cd5f80e4acefbcabed879fcbe416b
+Table activity rows: 5
+Table activity SHA-256: c3fa985807a714de69ccfed162ba356136ccd1dd58c7e3dd2b17f18790be17c3
+Table commits rows: 1001
+Table commits SHA-256: 6da6b7ab393bf1d77f46ba8ba4df881a55b72a1f586b87c9b91279f3c5cd75c1
+HTML artifacts: 19
+Profile artifacts: 0
+Git diff-tree processes: 1
+
+
+Sample set: Final frontend forced-runtime samples
+
+Sample: runtime-profiles-baseline-1
+Exit: 0
+Mode: runtime
+Seconds: 0.065598668
+PHP peak bytes: 4194304
+utime: 0.017376
+stime: 0.006512
+Max RSS KiB: 34172
+Process tree RSS KiB: 34172
+Process tree user seconds: 0.02
+Process tree system seconds: 0.01
+HTML artifacts: 0
+Profile artifacts: 0
+
+Sample: runtime-profiles-profile-only-1
+Exit: 0
+Mode: runtime
+Seconds: 0.025334942
+PHP peak bytes: 4194304
+utime: 0.016818
+stime: 0.003738
+Max RSS KiB: 34040
+Process tree RSS KiB: 34040
+Process tree user seconds: 0.03
+Process tree system seconds: 0.00
+HTML artifacts: 0
+Profile artifacts: 0
+
+Sample: runtime-profiles-combined-1
+Exit: 0
+Mode: runtime
+Seconds: 0.029767605
+PHP peak bytes: 4194304
+utime: 0.016535
+stime: 0.008213
+Max RSS KiB: 33916
+Process tree RSS KiB: 33916
+Process tree user seconds: 0.03
+Process tree system seconds: 0.01
+HTML artifacts: 0
+Profile artifacts: 0
+
+Sample: runtime-profiles-combined-2
+Exit: 0
+Mode: runtime
+Seconds: 0.039244938
+PHP peak bytes: 4194304
+utime: 0.017123
+stime: 0.0045
+Max RSS KiB: 33912
+Process tree RSS KiB: 33912
+Process tree user seconds: 0.02
+Process tree system seconds: 0.02
+HTML artifacts: 0
+Profile artifacts: 0
+
+Sample: runtime-profiles-profile-only-2
+Exit: 0
+Mode: runtime
+Seconds: 0.027573526
+PHP peak bytes: 4194304
+utime: 0.019239
+stime: 0.002554
+Max RSS KiB: 34172
+Process tree RSS KiB: 34172
+Process tree user seconds: 0.02
+Process tree system seconds: 0.01
+HTML artifacts: 0
+Profile artifacts: 0
+
+Sample: runtime-profiles-baseline-2
+Exit: 0
+Mode: runtime
+Seconds: 0.025044522
+PHP peak bytes: 4194304
+utime: 0.01988
+stime: 0.000463
+Max RSS KiB: 33864
+Process tree RSS KiB: 33864
+Process tree user seconds: 0.03
+Process tree system seconds: 0.00
+HTML artifacts: 0
+Profile artifacts: 0
+
+Sample: runtime-profiles-baseline-3
+Exit: 0
+Mode: runtime
+Seconds: 0.042272388
+PHP peak bytes: 4194304
+utime: 0.021357
+stime: 0.004461
+Max RSS KiB: 33916
+Process tree RSS KiB: 33916
+Process tree user seconds: 0.02
+Process tree system seconds: 0.02
+HTML artifacts: 0
+Profile artifacts: 0
+
+Sample: runtime-profiles-profile-only-3
+Exit: 0
+Mode: runtime
+Seconds: 0.02657212
+PHP peak bytes: 4194304
+utime: 0.021903
+stime: 0
+Max RSS KiB: 34040
+Process tree RSS KiB: 34040
+Process tree user seconds: 0.02
+Process tree system seconds: 0.01
+HTML artifacts: 0
+Profile artifacts: 0
+
+Sample: runtime-profiles-combined-3
+Exit: 0
+Mode: runtime
+Seconds: 0.028885031
+PHP peak bytes: 4194304
+utime: 0.020108
+stime: 0.00385
+Max RSS KiB: 33784
+Process tree RSS KiB: 33784
+Process tree user seconds: 0.02
+Process tree system seconds: 0.01
+HTML artifacts: 0
+Profile artifacts: 0
+
+
+Sample set: Baseline static-hit samples
+
+Sample: static-hit-1
+Exit: 0
+Mode: static-hit
+Seconds: 0.010013571
+PHP peak bytes: 4194304
+utime: 0.000753
+stime: 0.004077
+Max RSS KiB: 31468
+
+Sample: static-hit-2
+Exit: 0
+Mode: static-hit
+Seconds: 0.009322768
+PHP peak bytes: 4194304
+utime: 0.003152
+stime: 0.00211
+Max RSS KiB: 31480
+
+Sample: static-hit-3
+Exit: 0
+Mode: static-hit
+Seconds: 0.008730071
+PHP peak bytes: 4194304
+utime: 0.003433
+stime: 0.001716
+Max RSS KiB: 31352
+
+

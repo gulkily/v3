@@ -72,3 +72,19 @@ Study: railspike-effort, R1/P2, v3/qdb_build_time; original v1/A 0.50 retained, 
 - Notes: Core table definitions and queries are unchanged; only private scratch has a new schema, so deployed schema stays 39. No dependency delta, trust decision or export-format change. Original scope/estimate unchanged; labor unmeasured.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 7 — Separate and combined performance acceptance
+
+**Original stage-work estimate: 0.15**
+**Revised stage-work estimate: 0.22**
+**Retrospective stage-work assessment: 0.27**
+
+- Changes: Serial matched fresh-process baseline/isolated/combined harness, retaining CPU/RSS/phase/artifact/hash/process records. Initial many-small-commit evidence samples exposed scratch fsync and per-query locking overhead (0.56s baseline versus 3.74–4.99s new first samples), despite identical outputs. Correcting within the approved bounded-scratch target: one operation transaction with per-load savepoints, disposable-store synchronous-off/exclusive locking, and at most 512 requested-path results including misses. Journal rollback remains enabled; no durable data uses these settings.
+- Verification: Initial failed/regressing samples remain in /tmp/qdb-build-time-results/matched/samples.txt and are not acceptance. Final scratch variant must repeat large/small evidence comparisons and failure tests. Profile/commit/runtime samples do not execute scratch and remain independently usable.
+- Estimate revision: 2026-10-30 UTC, same v2/C scope and single exposed Codex rater, R1/P2; revised entire S7 0.22 due to observed scratch overhead and repeat measurement work, not scope growth. Independent cycle projection revised from 1.25 to 1.35; originals retained, labor unmeasured. No outcome claimed before gates.
+
+*— Codex · 2026-10-30 UTC*
+
+Stage 7 completion: Three fixed target gates pass with exact output equality: ordinary commit indexing 1.0362 → 0.0219s combined median; large shared-commit evidence 1.4645 → 0.1970s; profile enumeration/rendering 69.0015 → 0.0024s with zero profile files. Prepared-model full publication 85.6020 → 15.9964s and normal full CLI 1.74 → 0.41s, with exact posts/profiles/activity/commits parity and activation. Runtime profile budget passes (0.0298s versus 0.0565s allowed), while static hits remain faster (0.0093s). PHP peaks never exceed matched baseline; all runs capped at 128 MiB, maximum externally measured RSS 53412 KiB. The supplemental 1000-small-commit evidence case costs 0.0407s (8.7%) more and has no demonstrated improvement; this limitation is retained rather than generalized away. Final tuned lookup/projection/transition/all-site runtime-asset suite 14/14 passes. See [measurements](./qdb_build_time_measurements.txt) and [all retained samples](./qdb_build_time_samples.txt). No production replay or full-suite claim.
+
+*— Codex · 2026-10-30 UTC*
