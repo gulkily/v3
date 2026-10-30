@@ -47,3 +47,13 @@ Verification: php tests/run.php SingleRequestPostingTest SignedPostBundleValidat
 Notes: S3 commit 35c23c142. No schema or scope change. Text policy applies to new submissions; committed replay remains independent of later mode changes.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 5 - Expose the single-request HTTP path
+
+Original estimate: 0.10
+Retrospective stage work: 0.10
+Changes: POST /api/create_signed_post, route catalog, structured validation/access/conflict/removal errors and endpoint-specific outer-host failures. Busy returns JSON 503 with Retry-After 10. Only newly published ordinary posts enqueue fast-score work.
+Verification: php tests/run.php SingleRequestHttpTest ApiRouteCatalogTest — 6/6 passed over real HTTP, including fresh submission/retry, wrong method, non-text fields, held execution lock, broken startup database, sanitized server error and members-only denial. PHP lint and diff whitespace checks pass.
+Notes: S4 commit 03f538a4c. Existing route error contracts unchanged. Failures before PHP FrontController entry remain outside this handler's control.
+
+*— Codex · 2026-10-30 UTC*

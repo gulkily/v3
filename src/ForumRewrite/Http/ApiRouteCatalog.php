@@ -54,6 +54,7 @@ final class ApiRouteCatalog
             ['POST', '/api/prepare_thread', 'signed', 'json', 'Prepare a signed thread: send author_identity_id and body, receive the bytes to sign.'],
             ['POST', '/api/prepare_reply', 'signed', 'json', 'Prepare a signed reply to thread_id.'],
             ['POST', '/api/prepare_quote', 'signed', 'json', 'Prepare a signed quote (QDB sites only).'],
+            ['POST', '/api/create_signed_post', 'signed', 'json', 'Publish client-signed post and optional separately signed bootstrap in one request; reuse known keys.'],
             ['POST', '/api/create_prepared_post', 'signed', 'json', 'Publish a prepared post: send prepare_token and signature.'],
             ['POST', '/api/create_thread', 'anonymous', 'text', 'Unsigned thread; anonymous unless author_identity_id is sent.'],
             ['POST', '/api/create_reply', 'anonymous', 'text', 'Unsigned reply; anonymous unless author_identity_id is sent.'],

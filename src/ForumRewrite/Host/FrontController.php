@@ -46,6 +46,22 @@ final class FrontController
      */
     public function handle(string $method, string $requestUri, array $cookies = []): void
     {
+        try { $this->handleRequest($method,$requestUri,$cookies); }
+        catch (Throwable $error) {
+            if (parse_url($requestUri,PHP_URL_PATH) !== '/api/create_signed_post') throw $error;
+            error_log('Signed posting host failure: ' . $error->getMessage());
+            $busy = str_contains($error->getMessage(),'Timed out waiting for execution lock:');
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-store');
+            http_response_code(503);
+            $payload=['status'=>$busy ? 'busy' : 'error','code'=>$busy ? 'busy' : 'temporarily_unavailable','error'=>'Posting is temporarily unavailable. Keep and retry the same signed bundle.'];
+            if($busy) { header('Retry-After: 10'); $payload['retry_after']=10; }
+            echo json_encode($payload, JSON_THROW_ON_ERROR);
+        }
+    }
+
+    private function handleRequest(string $method, string $requestUri, array $cookies = []): void
+    {
         if ((new \ForumRewrite\Docs\DocsResponder($this->projectRoot, $this->staticHtmlRoot))->serve($method, $requestUri)) {
             return;
         }
@@ -179,6 +195,7 @@ final class FrontController
             );
             $application->handle($method, $requestUri);
         } catch (Throwable $throwable) {
+            if (parse_url($requestUri,PHP_URL_PATH) === '/api/create_signed_post') throw $throwable;
             if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')) {
                 $this->sendHtml($this->renderBusyError(), 503);
                 return;
