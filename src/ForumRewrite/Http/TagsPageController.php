@@ -28,13 +28,13 @@ final class TagsPageController
     {
         $view = BoardViewOptions::normalizeView('all');
         $sort = BoardViewOptions::normalizeSort('newest');
-        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
+        $threads = ThreadRepository::iterateThreads($this->routeServices->pdo());
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
 
         return $this->routeServices->renderPageTemplate(
             'tags.php',
             [
-                'tagGroups' => TagGrouping::limitPreview(TagGrouping::byTag($threads), self::TAG_GROUP_PREVIEW_LIMIT),
+                'tagGroups' => TagGrouping::previewsFromUniqueThreads($threads, self::TAG_GROUP_PREVIEW_LIMIT),
                 'viewOptions' => BoardViewOptions::viewOptions($view, $sort),
                 'sortOptions' => $sortOptions,
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
