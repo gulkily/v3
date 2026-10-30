@@ -357,4 +357,4 @@ and repair its navigation and affected references. See the
 
 - [Bounded tag pages and QDB rebuild catalog](./qdb_rebuild_scope/qdb_rebuild_scope_step1_solution_assessment.md) — implemented and locally verified; all sites; live-host acceptance pending.
 
-- [QDB build-time reduction](./qdb_build_time/qdb_build_time_step1_solution_assessment.md) — combined profile publication and history optimization, approved implementation plan.
+- [QDB build-time reduction](./qdb_build_time/qdb_build_time_step1_solution_assessment.md) — combined profile publication and history optimization, locally implemented and measured; production replay pending.

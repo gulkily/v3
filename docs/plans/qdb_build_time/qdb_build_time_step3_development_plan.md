@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./qdb_build_time_step1_solution_assessment.md) · [Step 2](./qdb_build_time_step2_feature_description.md) · Step 3 · Step 4 (not started)
+> **Feature plan:** [Step 1](./qdb_build_time_step1_solution_assessment.md) · [Step 2](./qdb_build_time_step2_feature_description.md) · Step 3 · [Step 4](./qdb_build_time_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/qdb_build_time; [P2 ledger](../effort_estimation_trial.md#cycle-v3qdb_build_time)
@@ -116,3 +116,5 @@ Before implementation: new feature branch; organize this cycle under docs/plans/
 Step 2 Option C approved, 2026-10-30 UTC. Scope v2/C, baseline 4abda3dbd144370a3353781b29e8690e46d47d88, R1/P2 and single exposed Codex rater retained; frozen hashes reverified. Whole-cycle 1.25 reaffirmed, independently judged; original stage-work estimates 0.15/0.16/0.15/0.20/0.23/0.16/0.15/0.10 are non-additive. Earlier v1/A 0.50 preserved. Combined scope preference honored with explicit eight-stage ceiling; no implementation, measured labor, benchmark results or accepted outcome. Await Approved Step 3.
 
 *— Codex · 2026-10-30 UTC*
+
+Implementation approval: User approved Step 3 on 2026-10-30 UTC; eight-stage implementation recorded in the linked summary. Earlier awaiting-approval checkpoint above is retained as history.

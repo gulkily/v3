@@ -52,3 +52,8 @@ Frozen output SHA-256 ordinary: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d
 Frozen output SHA-256 evidence: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
 Empty/missing Git: Baseline produces no commit rows and succeeds; retained zero-byte expected streams.
 Valid preliminary profiles baseline: 5215 successful profile artifacts, 115.463300506 seconds, PHP peak 10485760 bytes; synthetic model retained. Matched repeated acceptance is deferred to Stage 7, not inferred from this one sample.
+
+Implementation outcome: Eight-stage local implementation, 2026-10-30 UTC; profile default preserved, all three selected targets delivered without dependencies, canonical changes or core schema changes.
+Accepted local targets: See qdb_build_time_measurements.txt and qdb_build_time_samples.txt for fixed-workload medians, ranges, complete parity hashes, CPU/RSS and artifact/process counts. Initial unsuccessful/noisy samples remain recorded above and in raw samples.
+Known tradeoff: Supplemental small-commit evidence adds 0.0407 seconds (8.7 percent) median; no universal history speedup claimed. Runtime profiles preserve access/data but have greater latency than static hits.
+Outstanding: QDB PHP 8.3 host replay and maintainer fit/acceptance. One timing-progress regression test fails identically in the frozen baseline and branch; not a new failure or a full-suite pass. Separate capacity/load-before-selection audits remain pending.

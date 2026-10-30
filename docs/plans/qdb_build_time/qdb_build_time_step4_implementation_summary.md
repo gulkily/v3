@@ -1,11 +1,13 @@
 > **Feature plan:** [Step 1](./qdb_build_time_step1_solution_assessment.md) · [Step 2](./qdb_build_time_step2_feature_description.md) · [Step 3](./qdb_build_time_step3_development_plan.md) · Step 4
 
-State: Approved Step 3 received; implementation in progress on feature/qdb-build-time.
+State: Eight approved stages locally complete on feature/qdb-build-time; production replay and maintainer acceptance pending.
 Planning commit: f526da98. Frozen baseline: 4abda3db, /tmp/qdb-build-time-baseline.
 Inherited state: Prior pagination cycle complete; preserve unrelated audit drafts, ledger edits and prior-cycle host report. No merge, push or production changes in this cycle yet.
 Study: railspike-effort, R1/P2, v3/qdb_build_time; original v1/A 0.50 retained, selected v2/C 1.25. Single exposed Codex rater; reliable measured labor unavailable.
 
 **Entry cycle estimate: 1.25**
+**Revised cycle estimate: 1.35** (S7, same scope)
+**Retrospective cycle assessment: 1.40**
 
 ## Stage 1 — Reproducible baselines and parity fixtures
 
@@ -86,5 +88,24 @@ Study: railspike-effort, R1/P2, v3/qdb_build_time; original v1/A 0.50 retained, 
 *— Codex · 2026-10-30 UTC*
 
 Stage 7 completion: Three fixed target gates pass with exact output equality: ordinary commit indexing 1.0362 → 0.0219s combined median; large shared-commit evidence 1.4645 → 0.1970s; profile enumeration/rendering 69.0015 → 0.0024s with zero profile files. Prepared-model full publication 85.6020 → 15.9964s and normal full CLI 1.74 → 0.41s, with exact posts/profiles/activity/commits parity and activation. Runtime profile budget passes (0.0298s versus 0.0565s allowed), while static hits remain faster (0.0093s). PHP peaks never exceed matched baseline; all runs capped at 128 MiB, maximum externally measured RSS 53412 KiB. The supplemental 1000-small-commit evidence case costs 0.0407s (8.7%) more and has no demonstrated improvement; this limitation is retained rather than generalized away. Final tuned lookup/projection/transition/all-site runtime-asset suite 14/14 passes. See [measurements](./qdb_build_time_measurements.txt) and [all retained samples](./qdb_build_time_samples.txt). No production replay or full-suite claim.
+
+*— Codex · 2026-10-30 UTC*
+
+## Stage 8 — Documentation and host replay handoff
+
+**Original stage-work estimate: 0.10**
+**Retrospective stage-work assessment: 0.12**
+
+- Changes: Final findings, feature-cost catalog, profile-delivery and history-evidence concepts, operator toggle/rebuild/recovery/host replay guidance, plan navigation and scoped study ledger. Stage commits: planning f526da98; S1 cded5a7f; S2 e145fbfa; S3 bed764ef; S4 8f4f4905; S5 42e9867e; S6 38c41ea6; S7 5d78849d; S8 is this documentation closeout commit (exact hash recorded in final debug handoff).
+- Verification: Final focused PHP suite **80/80**; previously recorded real Chromium profile/control flow passes JS on/off, phone/desktop and 16 profile themes. All touched concept/plan local link targets resolve; PHP/Python syntax and diff whitespace checks pass. All three frozen R1 hashes reverified. Dependency inventory delta zero; schema 39 retained. No production deployment, full-suite or physical-device claim.
+- Notes: Original scope/estimate unchanged; reliable labor unavailable. User's original build argument list was not supplied, so host guidance preserves their command/settings rather than inventing it. QDB PHP 8.3 replay compares recorded 314.961s total, 39.1605s commits and 44.503s evidence, with corpus/configuration differences recorded.
+
+## Closeout
+
+Local implementation and primary timing/memory/runtime gates pass; normal CLI build/activation and data parity are verified. Default profile prebuilding remains enabled for every site; PHP-hosted operators can disable **Static profile pages** or set `FORUM_STATIC_PROFILE_PAGES_ENABLED=false` consistently for builder and frontend. Static-only hosting retains enabled mode. No canonical records, trust requirements or existing profile routes were removed.
+
+Known limitations: Supplemental small-commit evidence has a measured 0.0407s/8.7% overhead, and runtime profiles remain slower than static hits. `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` fails identically in the frozen baseline and branch; it is outside the passing 80-test focused final suite. Production timing and maintainer comfortable-fit/acceptance are pending. No merge or push performed in this cycle.
+
+Study: Same v3/qdb_build_time v2/C, baseline 4abda3db, R1/P2, single exposed Codex rater. Original v1/A 0.50 and v2/C entry 1.25 preserved; prospective cycle revision 1.35 and S7 0.22 recorded at discovery. Retrospective whole-cycle 1.40 is independent of non-additive stage assessments. Actual labor and independent rating unavailable; no invented maintainer judgment or accepted-outcome increment. Unrelated audit drafts, their ledger entries and the previous cycle's host-report edit remain uncommitted and preserved.
 
 *— Codex · 2026-10-30 UTC*
