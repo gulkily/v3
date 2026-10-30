@@ -80,6 +80,34 @@ Branch: `feat/unified-reaction-records`; planning commit `59c663e4`
 
 *— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
 
+## Stage 5 - Documentation, concept entry and release verification
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - Legacy notes at the top of `thread_label_record_v1.md` and `post_reaction_record_v1.md` pointing to `reaction_record_v1.md`; wording corrected so it doesn't claim nothing writes legacy bytes (cached older browsers' signed submissions are still stored as signed).
+  - Concept entry [`docs/concepts/reaction_record.md`](../../concepts/reaction_record.md) (created); [effective tags](../../concepts/effective_tags.md) used unchanged. Its source paths resolve.
+  - Study ledger closeout below.
+- Verification:
+  - Full suite `php tests/run.php`: **1661 run, 1657 passed, 4 failed**. Three failures match the baseline (`LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `PlatformDocsStaticTest::testStaticReleaseIncludesCompleteInventoryAndSafeAssets`, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`). The fourth, `CheckoutsCommandTest::testRealGitOperatorAcceptance` (a 60-second real-git timing test), passed when rerun alone on this branch and on the baseline. The baseline's `TaskQueueCommandTest::testRebuildWorkerRecordsPrivateProgressCheckpoints` failure passed this time. Both are treated as intermittent and unrelated; this is **not** a globally green suite.
+  - Output parity (scratch script, not committed): legacy and unified repositories render byte-identical `/`, `/threads/`, `/threads/root-001`, `/tags/`, `/tags/like`, `/top`, `/board/`, `/forte/`, `/api/get_thread`, `/api/get_post`, `/api/list_index` and `/llms.txt`. `/posts/*` differ only in the short commit hash of each scratch repository. The offline snapshot is built from the read model, which `ReactionRecordFormatParityTest` shows is identical; it was not separately diffed. Effective tags are part of the identical read model.
+  - `git diff --check` passed.
+- Notes: no deployment; deployment, migration and external checks are not applicable. Cross-version behavior (older instances rejecting unified records) is documented from code reading, not tested against an older checkout.
+
+*— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
+
+## Study closeout and release limits
+
+- Cycle `v3/unified_reaction_records`, scope v1 / Option A with ER1 in-scope refinement; baseline `60d17174`; R1 / P2; Claude (claude-opus-5-5), single exposed rater.
+- Commits: planning `59c663e4`, S1 `f50534bb`, S2 `0012ca21`, S3 `1c67b412`, S4 `2eed99b8`, S5 (this commit). Five of five stages complete.
+- Entry projection **0.75** retained. **Retrospective cycle scope: 0.75** — the reader breadth was smaller than feared, offset by the ER1 adapter refactor, the clock-skew layout discovery and the browser matrix. Stage originals/retrospectives 0.15/0.12, 0.15/0.15, 0.15/0.15, 0.20/0.15, 0.10/0.12; not additive.
+- Corrective work vs new requests: ER1 (deprecation-ready isolation) was a user request handled in scope; the skew-layout fix was ordinary correction found during Stage 3.
+- Omissions: no older-checkout cross-version test; offline snapshot not separately diffed; full suite has 3 baseline + 1 intermittent failures.
+- Maintainer comfortable-fit judgment and acceptance: **pending**. No accepted-count increment. No merge, push or deployment.
+
+*— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
+
 ## Enhancement requests
 
 - **ER1 — easy deprecation and later removal of legacy support** (2026-10-30, during Stage 2)

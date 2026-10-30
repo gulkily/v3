@@ -68,7 +68,8 @@ records are verified over their original bytes and are never rewritten.
 
 Legacy header sets are deprecated. They are read only through
 `LegacyReactionHeaders`, which also accepts the exact legacy bytes signed by
-older cached browser clients. No producer writes them. Removing legacy support
+older cached browser clients and stores them unchanged. The application builds
+only the unified format. Removing legacy support
 later means deleting that class and its callers; what then happens to existing
 legacy records, especially signed ones, is a separate decision.
 
