@@ -58,3 +58,23 @@
 ### Uncertain assessments
 
 - "Stages ≤ 1 hour or ≤ 50 lines": Stage 4 (browser matrix) may exceed an hour of wall time though its diff is small.
+
+## 2026-10-30 UTC — Step 4
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md` Enhancement Requests: the mid-Stage-2 deprecation request was recorded before acting and classified only after the user chose an end state; this kept a principle conflict (removing support for signed legacy records) out of the cycle. Retain.
+- `step4_implementation_do.md` Stage Boundary Protocol: per-stage verification exposed the clock-skew layout break in Stage 3 before the browser change. Retain.
+- `step4_implementation_after.md` item 7 (identify reproduced baseline failures): led to recording a baseline in a separate worktree and rerunning the one non-baseline failure on both trees. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_before.md` asks for the entry projection "only after the planning commit and creation of the summary, before implementation". When the summary is created alongside Stage 1, this ordering is easy to miss without adding value if the Step 3 value is simply reaffirmed. Suggest allowing reaffirmation to be recorded with the Stage 1 commit.
+
+### Inapplicable instructions
+
+- Follow-up Cycles Before Merge; one-shot transition; documentation-only checks; known-user replay.
+
+### Uncertain assessments
+
+- Whether a full-suite baseline should be required at Step 4 entry. It was essential here (intermittent failures in both runs), but Railspike doesn't state it.
