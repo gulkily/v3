@@ -23,7 +23,15 @@ final class PrivateMessageStore
 
     public function unreadStateFor(string $viewer, array $counterparts = []): array
     {
-        return $this->readState->state($viewer, $counterparts);
+        return $this->readState->state($viewer, $counterparts) + ['has_history' => $this->hasHistory($viewer)];
+    }
+
+    private function hasHistory(string $account): bool
+    {
+        $q=$this->pdo->prepare('SELECT 1 FROM private_messages WHERE sender_username_token=? OR recipient_username_token=? LIMIT 1');
+        $account=strtolower(trim($account));
+        $q->execute([$account,$account]);
+        return $q->fetchColumn() !== false;
     }
 
     public function markSeenThrough(string $viewer, string $counterpart, string $messageId): void

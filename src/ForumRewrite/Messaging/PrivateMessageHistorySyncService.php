@@ -64,7 +64,30 @@ final class PrivateMessageHistorySyncService
         return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$keys[$target], 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
             'checkpoint'=>$next,'cycle_end'=>!$page['more'] && $next['target']===$targets[0], 'total'=>$this->messages->historySyncCount($account)];
     }
-    private function senderWork(array $viewer): array
+    public function combinedWork(array $viewer, mixed $finished = []): array
+    {
+        if (!is_array($finished) || !array_is_list($finished) || count($finished)>2 || array_filter($finished,fn($mode)=>!is_string($mode) || !in_array($mode,['account','sender'],true))!==[]) throw new InvalidArgumentException('Invalid completed modes.');
+        [$account,$source]=$this->context($viewer);
+        $bundles=[];$complete=$finished;
+        foreach (['account','sender'] as $mode) {
+            if (in_array($mode,$finished,true)) continue;
+            // Bounded discovery can advance covered pages, but never client work or access receipts.
+            for ($page=0;$page<8;$page++) {
+                $work=$mode==='sender'?$this->senderWork($viewer,true):$this->work($viewer);
+                if ($mode==='account' && $work['target']!==$source) {
+                    $work['messages']=array_values(array_filter($work['messages'],fn($row)=>!$this->sync->hasContribution($account,$source,$work['target'],$row['message_id'],$row['digest'])));
+                }
+                $work['mode']=$mode;
+                if ($work['messages']!==[]) { $bundles[]=$work;break; }
+                $next=$work['checkpoint'];
+                $this->sync->advance($account,$source,$next['target'],$next['after_id'],$mode==='sender');
+                if ($work['cycle_end']) { $complete[]=$mode;break; }
+            }
+        }
+        return ['mode'=>'combined','account'=>$account,'source'=>$source,'work'=>$bundles,
+            'complete'=>array_values(array_unique($complete)), 'continuation'=>count(array_unique($complete))<2];
+    }
+    private function senderWork(array $viewer, bool $skipContributed = false): array
     {
         [$account,$source,$keys]=$this->context($viewer);
         $position=$this->sync->checkpoint($account,$source,true);
@@ -89,7 +112,7 @@ final class PrivateMessageHistorySyncService
         $next=$nextKey!==null?['target'=>$nextKey,'after_id'=>$position['after_id']]:['target'=>'','after_id'=>$end?'':$last];
         // Never consult recipient coverage: sender work must not reveal recovery or read activity.
         return ['mode'=>'sender','source_account'=>$account,'account'=>$destination,'source'=>$source,'target'=>$target,
-            'target_key'=>$targetKeys[$target]??null,'messages'=>$target===''?[]:$messages,'checkpoint'=>$next,'cycle_end'=>$end];
+            'target_key'=>$targetKeys[$target]??null,'messages'=>$target===''?[]:array_values(array_filter($messages, fn($row)=>!$skipContributed || !$this->sync->hasContribution($destination,$source,$target,$row['message_id'],$row['digest']))),'checkpoint'=>$next,'cycle_end'=>$end];
     }
     private function items(string $account, mixed $items): array
     {

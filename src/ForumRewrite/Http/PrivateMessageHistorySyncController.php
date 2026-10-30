@@ -12,7 +12,7 @@ final class PrivateMessageHistorySyncController
     {
         $viewer=($this->viewer)();
         if (!$viewer || ($viewer['is_approved']??0)!=1) { $this->respond(['status'=>'error','error'=>'Approved authentication required.'], $viewer?403:401); return; }
-        if (!in_array([$method,$action],[['GET','work'],['GET','transfers'],['POST','transfers'],['POST','acknowledge']],true)) { $this->respond(['status'=>'error','error'=>'Method not allowed.'],405); return; }
+        if (!in_array([$method,$action],[['POST','work'],['GET','work'],['GET','transfers'],['POST','transfers'],['POST','acknowledge']],true)) { $this->respond(['status'=>'error','error'=>'Method not allowed.'],405); return; }
         try {
             if ($method==='POST') {
                 if (($_SERVER['HTTP_X_REQUESTED_WITH']??'')!=='ForumPrivateMessages'
@@ -32,6 +32,7 @@ final class PrivateMessageHistorySyncController
                 if(!is_array($input) || array_is_list($input)) throw new InvalidArgumentException('Invalid history request.');
             }
             $result=match([$method,$action]) {
+                ['POST','work']=>$service->combinedWork($viewer,$input['complete']??[]),
                 ['GET','work']=>$service->work($viewer,$query['mode']??'account'),
                 ['GET','transfers']=>$service->transfers($viewer,$input),
                 ['POST','transfers']=>$service->upload($viewer,$input),

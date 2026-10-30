@@ -12,14 +12,15 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
  global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),addEventListener:(name,fn)=>{events[name]=fn},dispatchEvent:()=>{}};
  global.window={localStorage,addEventListener:()=>{},__forumBrowserIdentity:{ensureOpenPgpApi:async()=>openpgp}};
  vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_crypto.js','utf8'));
+ window.ForumPrivateMessageUnread={historyEligibility:()=>true};
  const c=window.ForumPrivateMessageHistoryCrypto,requests=[];let loseReceipt=true;
  global.fetch=async(url,options)=>{
    const body=options.body?JSON.parse(options.body):null;requests.push({url,body});
    if(url.endsWith('/acknowledge') && loseReceipt) {loseReceipt=false;throw Error('Response lost after commit');}
    const row={message_id:'m1',encrypted_envelope:envelope,digest:c.digest(envelope),sender_keys:[sender.publicKey]};
    const work={status:'ok',account:'alice',source:donor.fp,target:target.fp,target_key:target.publicKey,messages:senderMode?[]:[row],checkpoint:{target:donor.fp,after_id:''},cycle_end:true};
-   if(senderMode && url.endsWith('/work?mode=sender'))Object.assign(work,{mode:'sender',source_account:'alice',account:'bob',messages:[row],checkpoint:{target:'',after_id:''}});
-   return {ok:true,json:async()=>url.includes('/work')?work:{status:'ok',transfer_id:'uploaded'}};
+   if(senderMode)Object.assign(work,{mode:'sender',source_account:'alice',account:'bob',messages:[row],checkpoint:{target:'',after_id:''}});
+   return {ok:true,json:async()=>url.includes('/work')?{status:'ok',mode:'combined',account:'alice',source:donor.fp,work:[{...work,mode:senderMode?'sender':'account'}],complete:[senderMode?'account':'sender'],continuation:true}:{status:'ok',transfer_id:'uploaded'}};
  };
  vm.runInThisContext(fs.readFileSync('public/assets/private_message_availability.js','utf8'));vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));
  events.DOMContentLoaded();await window.ForumPrivateMessageHistorySync.refresh();
@@ -30,12 +31,12 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
  const recovered=await c.unwrapHistoryKeys({account:senderMode?'bob':'alice',source_account:'alice',source:donor.fp,target:target.fp,sourceKey:donor.publicKey,privateKey:target.privateKey,ciphertext:uploaded.ciphertext});
  assert.equal(await c.readOriginal(envelope,recovered[0].keys,[sender.publicKey]),'private historical text');
  assert.equal(window.ForumPrivateMessageHistorySync.state().contributed,1);
- assert.equal(requests.filter(r=>r.url.endsWith('/acknowledge')).length,senderMode?3:2);
+ assert.equal(requests.filter(r=>r.url.endsWith('/acknowledge')).length,2);
  if(senderMode) {
    assert.equal(uploaded.account,'bob');
    const receipt=requests.find(r=>r.body?.mode==='sender').body;
    assert.equal(receipt.items[0].message_id,'m1');assert(!('account' in receipt));
-   assert(requests.some(r=>r.url.endsWith('/work')));assert(requests.some(r=>r.url.endsWith('/work?mode=sender')));
+   assert.equal(requests.filter(r=>r.url.endsWith('/work')).length,1);
  }
  // Cancel a response arriving after the saved identity changes: no stale-key upload/receipt.
  const before=requests.length;

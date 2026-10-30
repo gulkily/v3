@@ -20,6 +20,67 @@ final class PrivateMessageHistorySyncTest
         $syncDb=new PDO('sqlite::memory:');$sync=new PrivateMessageHistorySyncStore($syncDb);
         return [$profiles,$messages,$sync,new PrivateMessageHistorySyncService($messages,$sync,$profiles),$db,$syncDb];
     }
+    public function testCombinedDiscoveryIsBoundedAndPreservesNecessaryContinuation(): void
+    {
+        [$profiles,$messages,$sync,$service,$db,$syncDb]=$this->fixture();
+        $work=$service->combinedWork($this->viewer());
+        assertSame('combined',$work['mode']);assertSame(2,count($work['work']));
+        assertSame(true,$work['continuation']);
+        assertSame(['target'=>'','after_id'=>''],$sync->checkpoint('alice',str_repeat('a',40)),'Do not advance unprocessed work');
+        foreach ($db->query("SELECT * FROM private_messages WHERE sender_username_token='alice' OR recipient_username_token='alice'")->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            foreach (['a','b'] as $key) $sync->acknowledge('alice',str_repeat($key,40),[['message_id'=>$row['message_id'],'digest'=>hash('sha256',$row['encrypted_envelope'])]]);
+            if($row['sender_username_token']==='alice') $sync->upload('bob',str_repeat('a',40),str_repeat('c',40),'cipher',[['message_id'=>$row['message_id'],'digest'=>hash('sha256',$row['encrypted_envelope'])]]);
+        }
+        $idle=$service->combinedWork($this->viewer());
+        assertSame([],$idle['work']);assertSame(false,$idle['continuation']);
+        assertSame(['account','sender'],$idle['complete']);
+        // Many covered pages must yield bounded continuation, without access acknowledgments.
+        for($i=100;$i<220;$i++) {
+            $messages->storeEnvelope('m'.$i,'now','bob','alice','source','cipher');
+            foreach(['a','b'] as $key)$sync->acknowledge('alice',str_repeat($key,40),[['message_id'=>'m'.$i,'digest'=>hash('sha256','cipher')]]);
+        }
+        $partial=$service->combinedWork($this->viewer());
+        assertSame([],$partial['work']);assertSame(true,$partial['continuation']);
+        $count=0;
+        do {$partial=$service->combinedWork($this->viewer(),$partial['complete']);assertSame([],$partial['work']);assertSame(true,++$count<10);} while($partial['continuation']);
+        $profiles->exec("INSERT INTO profiles (identity_id,username_token,public_key,is_approved) VALUES ('openpgp:".str_repeat('f',40)."','alice','KEY-f',1)");
+        $found=false;
+        for($i=0;$i<10;$i++) {
+            $new=$service->combinedWork($this->viewer());
+            foreach($new['work'] as $bundle)if($bundle['target']===str_repeat('f',40))$found=true;
+            if($found)break;
+        }
+        assertSame(true,$found,'Newly approved target must reopen work');
+    }
+    public function testContributionEvidenceIsDonorOwnedAndDoesNotPreventRepair(): void
+    {
+        [,,$sync,$service,,$db]=$this->fixture();
+        $input=array_replace($this->uploadInput('bad'),['account'=>'bob','target'=>str_repeat('c',40)]);
+        $bad=$service->upload($this->viewer(),$input);
+        $discover=new ReflectionMethod($service,'senderWork');
+        $before=$discover->invoke($service,$this->viewer(),true);
+        assertSame(false,in_array('m01',array_column($before['messages'],'message_id'),true));
+        assertSame(true,in_array('m01',array_column($service->work($this->viewer(),'sender')['messages'],'message_id'),true),'Legacy explicit discovery permits repair');
+        $service->acknowledge($this->viewer('c','bob'),['items'=>[$input['items'][0]+$bad]]);
+        assertSame($before,$discover->invoke($service,$this->viewer(),true));
+        assertSame(true,in_array('m01',array_column($discover->invoke($service,$this->viewer('b'),true)['messages'],'message_id'),true),'Another donor is not suppressed');
+        $db->exec('DELETE FROM history_sync_coverage');
+        $input['ciphertext']=$this->uploadInput('good')['ciphertext'];
+        $good=$service->upload($this->viewer(),$input);
+        assertSame($good['transfer_id'],$service->transfers($this->viewer('c','bob'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        $db->exec('DELETE FROM history_sync_transfers');
+        assertSame(true,in_array('m01',array_column($discover->invoke($service,$this->viewer(),true)['messages'],'message_id'),true));
+    }
+    public function testUnreadEligibilityUsesAccountHistory(): void
+    {
+        [, $messages] = $this->fixture();
+        assertSame(false, $messages->unreadStateFor('unused')['has_history']);
+        assertSame(true, $messages->unreadStateFor('alice')['has_history']);
+        assertSame(true, $messages->unreadStateFor('mallory')['has_history']);
+        $messages->storeEnvelope('first', '2026-10-29', 'unused', 'newrecipient', 'source', 'cipher');
+        assertSame(true, $messages->unreadStateFor('unused')['has_history']);
+        assertSame(true, $messages->unreadStateFor('newrecipient')['has_history']);
+    }
     private function viewer(string $key='a',string $account='alice'): array { return ['identity_id'=>'openpgp:'.str_repeat($key,40),'username_token'=>$account,'is_approved'=>1]; }
     public function testEligibilityUsesOriginalDirectionAndCurrentMembership(): void
     {
