@@ -130,6 +130,7 @@ final class Application
 
     public function handle(string $method, string $requestUri): void
     {
+        if (\ForumRewrite\Http\ClientDownload::serve($method, $requestUri, $this->projectRoot . "/public")) return;
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         $docsPage = $path === '/docs' || str_starts_with($path, '/docs/');
         if ($docsPage !== $this->docsPage) {

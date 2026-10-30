@@ -29,3 +29,13 @@ Verification: AgentPostingApiTest, ApiRouteCatalogTest and SingleRequestHttpTest
 Notes: PHP-controlled responses only; upstream proxy/runtime failures can still be non-JSON. No estimate revision.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 3 - Downloadable client and reads
+
+Original estimate: 0.12
+Retrospective stage work: 0.12
+Changes: Versioned standalone public/frm.py, explicit site selection, curl transport without redirects/config inheritance, index/read/check and recognizable-catalog protocol discovery. Public GET/HEAD delivery uses UTF-8 text and nosniff through normal host and Application routes; public packaging already includes public assets. Read operations create no identity state.
+Verification: FrmClientTest and AgentPostingApiTest: 4/4 passed. Downloaded bytes executed from isolated workspace against two instances; real index/read/check, missing and members-only unknown status, MIME and HEAD verified. Corrected initial Application delivery call to use projectRoot/public (Application has no publicRoot property). Apache routes through this same host; no separate Python execution handler added.
+Notes: Plain HTTP remains supported for legacy compatibility. Transport errors remain unknown, and authored data is never redirected. No estimate revision.
+
+*— Codex · 2026-10-30 UTC*

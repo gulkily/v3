@@ -63,6 +63,7 @@ final class FrontController
 
     private function handleRequest(string $method, string $requestUri, array $cookies = []): void
     {
+        if (\ForumRewrite\Http\ClientDownload::serve($method, $requestUri, $this->publicRoot)) return;
         if ((new \ForumRewrite\Docs\DocsResponder($this->projectRoot, $this->staticHtmlRoot))->serve($method, $requestUri)) {
             return;
         }
