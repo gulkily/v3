@@ -39,3 +39,13 @@ Verification: FrmClientTest and AgentPostingApiTest: 4/4 passed. Downloaded byte
 Notes: Plain HTTP remains supported for legacy compatibility. Transport errors remain unknown, and authored data is never redirected. No estimate revision.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 4 - First-use signed threads and replies
+
+Original estimate: 0.20
+Retrospective stage work: 0.20
+Changes: Persistent per-instance key selection and private generated keyring; first-use key generation defaults to frm-agent. Signed path constructs separate bootstrap/post locally and sends one publication bundle. Known keys and anchors are reused; older recognized catalogs use prepared registration/publication. Original bodies, exact signing files and operation metadata are retained before submission. Existing-key custody and GPG passphrase behavior are explicit in help.
+Verification: FrmClientTest: 2/2 passed, including downloaded client first thread, root/parent replies, repeated key reuse, selected existing key, actual older-catalog fallback and unchanged Unicode readback. Identity count remains one new identity per key. Initial count assertion corrected to include the fixture's existing identity. Runtime uses Python standard library/curl/GPG only.
+Notes: Replay/recovery orchestration and detailed failure tests follow in S5/S7. Generated keys are unencrypted, confined to private local directories; no private material sent. No estimate revision.
+
+*— Codex · 2026-10-30 UTC*
