@@ -39,3 +39,14 @@ Study: railspike-effort, R1/P2, v3/qdb_build_time; original v1/A 0.50 retained, 
 - Notes: Direct physical HTML requests bypass PHP, documented for old exported public trees. No dependency delta, no UI navigation additions. Original scope/estimate unchanged; labor unmeasured.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 4 — Cheaper streamed commit indexing
+
+**Original stage-work estimate: 0.20**
+**Retrospective stage-work assessment: 0.18**
+
+- Changes: CommitHistoryReader streams raw tree changes from a file-backed process spool, counts files without line diffs, and yields one metadata row at a time. Git must finish successfully before rows are inserted; failed/empty/missing history preserves the former empty result. Existing SQL and schema unchanged.
+- Verification: Exact complete rows match frozen edge and 1001-commit outputs. Two new tests pass across rename settings true/false/copies and four merge settings, including mode-only, empty-file, binary, Unicode/tab/newline names, corrupt objects and absent/empty Git. Initial integrated ordinary measurement: 0.023859s, 2 MiB PHP peak (acceptance repeats remain Stage 7). Three timing checks pass; testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts fails identically in untouched baseline and branch and is recorded as pre-existing, not a pass.
+- Notes: Temporary spool prevents partial output on Git failure and retains heap bounds; no rename/merge-policy overrides. Dependency delta zero; original scope/estimate unchanged; labor unmeasured.
+
+*— Codex · 2026-10-30 UTC*
