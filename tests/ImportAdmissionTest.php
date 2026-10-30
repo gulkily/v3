@@ -5,6 +5,32 @@ use ForumRewrite\Canonical\{RecordLimits, RecordSizeException};
 use ForumRewrite\Import\{ContentImportPlanner, RepositoryArchive};
 final class ImportAdmissionTest
 {
+    public function testSmallRecordReadWithin128MiBWithLimitedHeadroom(): void
+    {
+        $w = new ImportTestWorkspace();
+        $path = $w->root . '/small.txt';
+        $w->put($path, "Thread-ID: example\nLabels: spam\n");
+        $code = <<<'PHP'
+require $argv[1];
+$retained = str_repeat('x', 114 * 1024 * 1024);
+echo \ForumRewrite\Canonical\RecordLimits::read($argv[2]);
+PHP;
+        [$status, $output] = $w->command([PHP_BINARY, '-d', 'memory_limit=128M', '-r', $code, dirname(__DIR__) . '/autoload.php', $path]);
+        assertSame(0, $status, $output);
+        assertSame(file_get_contents($path), $output);
+    }
+
+    public function testChunkedRecordReadsPreserveBytes(): void
+    {
+        $w = new ImportTestWorkspace();
+        foreach ([0, 8191, 8192, 8193, 24577] as $length) {
+            $path = $w->root . '/bytes.txt';
+            $bytes = substr(str_repeat("a\0\r\n", 6145), 0, $length);
+            $w->put($path, $bytes);
+            assertSame($bytes, RecordLimits::read($path, $length));
+        }
+    }
+
     public function testMalformedHeaderDiagnosticsAreBounded(): void
     {
         $w = new ImportTestWorkspace(); $source = $w->repository('source'); $target = $w->repository('target');
