@@ -502,6 +502,13 @@ final class FrontController
             ]);
         }
 
+        if ($path === '/recent/' || $path === '/recent') {
+            return $this->firstExistingPath([
+                $this->publicRoot . '/recent.html',
+                $this->staticHtmlRoot . '/recent/index.html',
+            ]);
+        }
+
         if ($path === '/activity/' || $path === '/activity') {
             return $this->firstExistingPath([
                 $this->publicRoot . '/activity.html',

@@ -52,3 +52,14 @@ Request: Delete mockups rather than save them in repository. Disposition: Entire
 - Notes: Initial browser fixture omitted the templates symlink and failed; corrected fixture, complete rerun passed. No production/iPhone-device claim. Zero dependencies; estimates unchanged.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 5 - Publication and invalidation
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes: Recent first-page static artifact, targeted builds and front-controller lookup; invalidation for post/reply/profile/identity/approval/history and generated-presentation removal. Reuses existing release activation and query bypass. HighTrafficRoute and worker cache allowlists unchanged. S4 commit e90a9ff5c.
+- Verification: Static build/targeted rebuild, actual cursor bypass and write invalidation plus offline suite 13/13. Expanded removal/history invalidation and failed release retention 2/2; uncached Recent first/cursor URLs reject unrelated offline shell (1/1). Existing failed-release test now asserts Recent remains served from prior active release.
+- Notes: No deployment performed. Shared browser acceptance and high-traffic fallback follow in S6. Estimates unchanged; no dependencies.
+
+*— Codex · 2026-10-30 UTC*

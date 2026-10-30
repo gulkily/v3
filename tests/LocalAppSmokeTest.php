@@ -4241,6 +4241,27 @@ PHP;
         }
     }
 
+    public function testRecentStaticArtifactBypassesCursorRequests(): void
+    {
+        @unlink($this->databasePath);
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/recent.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Recent</h1></body></html>');
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/recent/', []);
+
+            assertStringContains('Static Recent', $response);
+            assertStringContains('route-source: static-html', $response);
+            $cursor = $this->renderFrontController($controller, 'GET', '/recent/?position=invalid', []);
+            assertFalse(str_contains($cursor, 'Static Recent'));
+            assertStringContains('First page', $cursor);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerServesPublicOfflineSnapshotFromActiveRelease(): void
     {
         ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
@@ -4657,6 +4678,9 @@ PHP;
             assertTrue(is_file($artifactRoot . '/about/index.html'));
             assertTrue(is_file($artifactRoot . '/instance.html'));
             assertTrue(is_file($artifactRoot . '/activity.html'));
+            assertTrue(is_file($artifactRoot . '/recent.html'));
+            assertTrue($builder->buildSingleRoute('/recent/'));
+            assertStringContains('Recent', (string) file_get_contents($artifactRoot . '/recent.html'));
             assertTrue(is_file($artifactRoot . '/users.html'));
             assertTrue(is_file($artifactRoot . '/tools.html'));
             assertTrue(is_file($artifactRoot . '/tools/index.html'));
@@ -4820,6 +4844,8 @@ PHP;
             assertTrue($failed);
             assertSame($runtimeRelease, realpath($staticRoot . '/current'));
             assertSame([], glob($staticRoot . '/.candidate-*'));
+            assertStringContains('route-source: static-html',
+                $this->renderFrontController($controller, 'GET', '/recent/', []));
             $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
             assertSame(200, http_response_code());
             $pdo = new PDO('sqlite:' . $this->databasePath);
@@ -5038,6 +5064,57 @@ PHP;
                 assertFalse(is_file($publicRoot . '/users/index.html'));
                 assertFalse(is_file($staticHtmlRoot . '/users.html'));
                 assertFalse(is_file($staticHtmlRoot . '/users/index.html'));
+            }
+        } finally {
+            $this->deleteTree($publicRoot);
+            $this->deleteTree($staticHtmlRoot);
+        }
+    }
+
+    public function testRecentStaticArtifactsAreInvalidatedByContentAndIdentityWrites(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/recent', 0777, true);
+        mkdir($staticHtmlRoot . '/recent', 0777, true);
+
+        $invalidations = [
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateBoardThread('thread-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateReply('thread-001', 'reply-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateProfile('openpgp-example');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateApproval('openpgp-example', 'thread-001', 'post-001', 'approval-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateAllGeneratedPresentation();
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateAccountHistory('alice', ['openpgp-example']);
+            },
+        ];
+
+        try {
+            foreach ($invalidations as $invalidate) {
+                file_put_contents($publicRoot . '/recent.html', 'stale public users');
+                file_put_contents($publicRoot . '/recent/index.html', 'stale public users index');
+                file_put_contents($staticHtmlRoot . '/recent.html', 'stale alternate users');
+                file_put_contents($staticHtmlRoot . '/recent/index.html', 'stale alternate users index');
+
+                $invalidate(new StaticArtifactInvalidator($publicRoot, $staticHtmlRoot));
+
+                assertFalse(is_file($publicRoot . '/recent.html'));
+                assertFalse(is_file($publicRoot . '/recent/index.html'));
+                assertFalse(is_file($staticHtmlRoot . '/recent.html'));
+                assertFalse(is_file($staticHtmlRoot . '/recent/index.html'));
             }
         } finally {
             $this->deleteTree($publicRoot);

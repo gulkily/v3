@@ -157,7 +157,7 @@ final class StaticArtifactBuilder
     {
         $this->reportProgress('Fingerprinting and copying assets referenced by rendered pages...');
         $this->copyOfflineRuntimeFiles();
-        $totalSharedPages = 10;
+        $totalSharedPages = 11;
         $this->reportProgress("Rendering shared pages (0/{$totalSharedPages}).");
         $this->reportProgress("Rendering shared pages (1/{$totalSharedPages}): /.");
         $this->writeRouteArtifact($application, '/', $this->artifactRoot . '/index.html');
@@ -191,6 +191,8 @@ final class StaticArtifactBuilder
             $this->artifactRoot . '/tags.html',
             $this->artifactRoot . '/tags/index.html',
         ]);
+        $this->reportProgress("Rendering shared pages (11/{$totalSharedPages}): /recent/.");
+        $this->writeRouteArtifact($application, '/recent/', $this->artifactRoot . '/recent.html');
         $this->reportProgress("Rendering shared pages complete ({$totalSharedPages}/{$totalSharedPages}).");
     }
 
@@ -547,6 +549,10 @@ final class StaticArtifactBuilder
             return '/instance/';
         }
 
+        if ($path === '/recent' || $path === '/recent/') {
+            return '/recent/';
+        }
+
         if ($path === '/activity' || $path === '/activity/') {
             return '/activity/';
         }
@@ -638,6 +644,10 @@ final class StaticArtifactBuilder
 
         if ($route === '/instance/') {
             return [$this->artifactRoot . '/instance.html'];
+        }
+
+        if ($route === '/recent/') {
+            return [$this->artifactRoot . '/recent.html'];
         }
 
         if ($route === '/activity/') {
