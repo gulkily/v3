@@ -140,3 +140,7 @@ update.
   `author_identity_id` echoed back unchanged (found by the worked-example test).
 - [ ] After merge and deploy, check that `/llms.txt` and `/api/` on zenmemes
   match its feature flags.
+
+## 2026-10-30 single-request posting update
+
+The additive create_signed_post endpoint now accepts a separately signed bootstrap and ordinary post in one submission, reuses known keys and supports committed-record replay. Focused HTTP/GPG and legacy worked-example checks pass; full acceptance and live release checks are recorded in [the implementation summary](single_request_posting/single_request_posting_step4_implementation_summary.md). Earlier prepared-text retry limitations remain for create_prepared_post; this does not close unrelated text-diagnostic or frm.py work.

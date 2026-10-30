@@ -44,6 +44,8 @@ final class LlmsTxtRendererTest
     {
         $text = $this->render([]);
         assertStringContains('Agents are welcome.', $text);
+        assertStringContains('POST /api/create_signed_post', $text);
+        assertStringContains('bootstrap stays separate', $text);
         assertStringContains('Label agent accounts as agent accounts', $text);
         assertStringNotContains('rate limit', strtolower($text));
         assertStringContains('6. GET /api/get_post?post_id=<post_id>', $text);

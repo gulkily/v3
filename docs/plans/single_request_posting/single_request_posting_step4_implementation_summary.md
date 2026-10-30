@@ -67,3 +67,13 @@ Verification: SingleRequestHttpTest and AgentApiWorkedExampleTest — 5/5 passed
 Notes: S5 commit e230c1686. Example-generated keys are unencrypted and protected by local directory permissions, explicitly documented in script help/source. No new packages.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 7 - Update discovery, references and handoffs
+
+Original estimate: 0.08
+Retrospective stage work: 0.08
+Changes: Updated agent reference, generated llms route/guidance, README, trust/access references, onboarding checklist and G2 follow-up notes. Canonical specs and examples were updated in their owning earlier stages. Exact limits, bootstrap/key reuse, member access and endpoint-specific replay/errors are documented.
+Verification: php tests/run.php LlmsTxtRendererTest ApiRouteCatalogTest — 10/10 passed, including reference route inventory/rendering and members-only doc access. Assumption search in current reference/spec/architecture/examples/scripts found the three existing publish_text clients and prepared example: retained deliberately as supported prepared-flow alternatives. Historical agent_api_docs/bootstrap/profile-cost plans remain historical, with G2 follow-up notes only. No new documentation requirement discovered.
+Notes: S6 commit 74ead35cf. The paused agent_posting Step 3 is an untracked/unapproved earlier-cycle document: handoff appended in the working tree but intentionally not added wholesale to this cycle's commit. This summary is the committed handoff: on explicit resumption, prefer create_signed_post with prepared fallback; frm.py remains paused. No implementation in that cycle is authorized.
+
+*— Codex · 2026-10-30 UTC*
