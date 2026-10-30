@@ -367,6 +367,37 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testUnsignedReactionsWriteUnifiedFormatAndDeduplicateAcrossFormats(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            @mkdir($root . '/records/post-reactions', 0777, true);
+            file_put_contents($root . '/records/thread-labels/thread-label-legacy-like.txt',
+                "Record-ID: thread-label-legacy-like\nCreated-At: 2026-04-15T15:31:00Z\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: {$identity}\n\n");
+            file_put_contents($root . '/records/post-reactions/post-reaction-legacy-like.txt',
+                "Record-ID: post-reaction-legacy-like\nCreated-At: 2026-04-15T15:31:00Z\nPost-ID: reply-001\nOperation: add\nTags: like\nAuthor-Identity-ID: {$identity}\n\n");
+            $this->runCommand($root, 'git add records && git commit -qm "legacy reactions"');
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+
+            assertSame('no', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $identity])['wrote_record']);
+            assertSame('no', $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'like', 'author_identity_id' => $identity])['wrote_record']);
+
+            $before = glob($root . '/records/{thread-labels,post-reactions}/*.txt', GLOB_BRACE) ?: [];
+            assertSame('yes', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'upvote', 'author_identity_id' => $identity])['wrote_record']);
+            assertSame('yes', $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'flag', 'author_identity_id' => $identity])['wrote_record']);
+            $written = array_values(array_diff(glob($root . '/records/{thread-labels,post-reactions}/*.txt', GLOB_BRACE) ?: [], $before));
+            sort($written);
+            assertSame(2, count($written));
+            assertTrue(preg_match("/\\ARecord-ID: post-reaction-[^\\n]+\\nCreated-At: [^\\n]+\\nTarget-Kind: post\\nTarget-ID: reply-001\\nOperation: add\\nTags: flag\\nAuthor-Identity-ID: {$identity}\\n\\n\\z/", (string) file_get_contents($written[0])) === 1);
+            assertTrue(preg_match("/\\ARecord-ID: thread-label-[^\\n]+\\nCreated-At: [^\\n]+\\nTarget-Kind: thread\\nTarget-ID: root-001\\nOperation: add\\nTags: upvote\\nAuthor-Identity-ID: {$identity}\\n\\n\\z/", (string) file_get_contents($written[1])) === 1);
+            assertSame('no', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'upvote', 'author_identity_id' => $identity])['wrote_record']);
+        } finally {
+            $this->deleteTree($root);
+        }
+    }
+
     public function testSignedPostReactionsThroughApiPreserveModerationAndDuplicates(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();
@@ -3935,8 +3966,10 @@ NODE;
         $author = $this->createAuthoredThread($app, 'legacy-label-retract', "Old source\n#pinned");
         foreach (glob($root . '/records/thread-labels/*.txt') as $path) {
             $bytes = file_get_contents($path);
-            if (!str_contains($bytes, 'Thread-ID: ' . $author['thread_id'])) continue;
+            if (!str_contains($bytes, 'Target-ID: ' . $author['thread_id'])) continue;
+            // Rewrite as a legacy label without source provenance.
             $bytes = preg_replace('/^Source-Post-(?:ID|SHA256):.*\n/m', '', $bytes);
+            $bytes = str_replace(["Target-Kind: thread\n", 'Target-ID: ', 'Tags: '], ['', 'Thread-ID: ', 'Labels: '], $bytes);
             file_put_contents($path, $bytes);
         }
         $this->gitOutput($root, 'add records'); $this->gitOutput($root, 'commit -m legacy-label-fixture');
@@ -5479,13 +5512,13 @@ NODE;
 
         assertStringContains('status=ok', $response);
         assertStringContains('Labels: bug, needs-review', $threadPage);
-        assertSame(1, count(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId))));
+        assertSame(1, count(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), "Target-Kind: thread\nTarget-ID: " . $threadId))));
 
-        $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId)))[0];
+        $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), "Target-Kind: thread\nTarget-ID: " . $threadId)))[0];
         $recordContents = (string) file_get_contents($recordPath);
         assertStringContains('Source-Post-ID: ' . $threadId, $recordContents);
         assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect((new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse($recordContents), $repositoryRoot)['status']);
-        assertStringContains('Labels: bug needs-review', $recordContents);
+        assertStringContains('Tags: bug needs-review', $recordContents);
         assertStringNotContains('ignored', $recordContents);
     }
 
@@ -5503,8 +5536,8 @@ NODE;
         $records = glob($repositoryRoot . '/records/thread-labels/*.txt');
         $matchingRecords = array_values(array_filter(
             $records,
-            static fn (string $path): bool => str_contains((string) file_get_contents($path), "Thread-ID: root-001\n")
-                && str_contains((string) file_get_contents($path), 'Labels: answered')
+            static fn (string $path): bool => str_contains((string) file_get_contents($path), "Target-Kind: thread\nTarget-ID: root-001\n")
+                && str_contains((string) file_get_contents($path), 'Tags: answered')
         ));
 
         assertStringContains('status=ok', $response);
@@ -6065,6 +6098,7 @@ NODE;
             $record = (string) file_get_contents($recordPaths[0]);
             assertStringContains('Action-At: 2026-10-01T12:00:00.000Z', $record);
             assertStringContains('Intent-ID: outbox-reaction-signed-like-1', $record);
+            assertStringContains("Target-Kind: post\nTarget-ID: reply-001\nOperation: add\nTags: like\n", $record);
         } finally {
             $_POST = [];
             $this->deleteTree($key['home']);

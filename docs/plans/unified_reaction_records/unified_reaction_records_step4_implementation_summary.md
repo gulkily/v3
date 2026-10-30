@@ -49,6 +49,20 @@ Branch: `feat/unified-reaction-records`; planning commit `59c663e4`
 
 *— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
 
+## Stage 3 - Server producers write the unified format
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `LocalWriteService::buildReactionRecord()` replaces `buildThreadLabelRecord()` and `buildPostReactionRecord()`; it serves keyless thread/post tags, hashtag labels (thread, reply and signed-post paths) and offline signed-intent replay. ID prefixes and paths are unchanged.
+  - Clock-skew fallback: the prepared record now keeps the client's submitted layout and replaces only `Record-ID` and `Created-At`. Otherwise current browsers (still signing the legacy layout until Stage 4) would reject the prepared record, because their check compares everything after line 2.
+  - Tests: new `testUnsignedReactionsWriteUnifiedFormatAndDeduplicateAcrossFormats` (exact unified bytes for both kinds; a legacy vote blocks a same-author/target/tag write; a unified vote blocks a repeat). The offline-intent test asserts unified headers. Hashtag tests now assert `Target-ID`/`Tags`, and the legacy-label retraction test now rewrites its fixture to genuine legacy headers to keep its intent.
+- Verification: `WriteApiSmokeTest` 190/190, `OfflineOutboxSendTest` 4/4, `ImportedQuoteSeedScoringTest` 4/4, `HighTrafficTest` 6/6, `ArchiveThreadCommandTest` 3/3, `ActivityProjectionTest` 7/7, `RemovalReceiptTest` 3/3, `RetractionReceiptTest` 4/4, `AcceptedRetractionTest` 4/4, `ImportInstanceCommandTest` 9/9, `ReactionRecordFormatParityTest` 2/2 passed. `LocalAppSmokeTest` 154/155; the one failure (`testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`) is in the recorded baseline.
+- Notes: browser-signed submissions still use the legacy layout until Stage 4.
+
+*— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
+
 ## Enhancement requests
 
 - **ER1 — easy deprecation and later removal of legacy support** (2026-10-30, during Stage 2)

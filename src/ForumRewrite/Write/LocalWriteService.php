@@ -15,6 +15,7 @@ use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRetractionRecordParser;
+use ForumRewrite\Canonical\ReactionRecordParser;
 use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
@@ -127,7 +128,7 @@ class LocalWriteService
             $phaseStartedAt = hrtime(true);
             $this->writeFile($recordPath, $contents);
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($postId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
+                [$labelRecordPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $postId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -223,7 +224,7 @@ class LocalWriteService
                 $this->writeFile($recordPath . '.asc', $signature);
             }
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
+                [$labelRecordPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -453,7 +454,7 @@ class LocalWriteService
             $this->writeFile($recordPath, $canonicalRecord);
             $this->writeFile($recordPath . '.asc', $signature);
             if ($threadLabels !== []) {
-                [$labelRecordPath, $labelContents] = $this->buildThreadLabelRecord($threadId, $threadLabels, $authorIdentityId, $record->createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $canonicalRecord));
+                [$labelRecordPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, $threadLabels, $authorIdentityId, $record->createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $canonicalRecord));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -955,7 +956,7 @@ class LocalWriteService
             }
 
             $phaseStartedAt = hrtime(true);
-            [$recordPath, $contents] = $signed ?? $this->buildThreadLabelRecord($threadId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
+            [$recordPath, $contents] = $signed ?? $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
             if ($signed === null) {
                 $this->writeFile($recordPath, $contents);
             } else {
@@ -1077,7 +1078,7 @@ class LocalWriteService
             }
 
             $phaseStartedAt = hrtime(true);
-            [$recordPath, $contents] = $signed ?? $this->buildPostReactionRecord($postId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
+            [$recordPath, $contents] = $signed ?? $this->buildReactionRecord(ReactionRecordParser::POST, $postId, [$tag], $authorIdentityId, $createdAt, $actionAt, $intentId);
             if ($signed === null) {
                 $this->writeFile($recordPath, $contents);
             } else {
@@ -3543,9 +3544,11 @@ class LocalWriteService
                 throw new RuntimeException('Prepared reaction is expired or does not match this action.');
             }
         } elseif (abs(time() - strtotime($record->createdAt)) > 300) {
-            [$preparedPath, $preparedContents] = $kind === 'thread'
-                ? $this->buildThreadLabelRecord($target, [$tag], $author, $this->canonicalTimestampNow())
-                : $this->buildPostReactionRecord($target, [$tag], $author, $this->canonicalTimestampNow());
+            // Keep the client's layout: only Record-ID and Created-At change.
+            $preparedId = $this->generateRecordId($prefix);
+            $preparedContents = "Record-ID: {$preparedId}\nCreated-At: {$this->canonicalTimestampNow()}\n"
+                . implode("\n", array_slice(explode("\n", $contents), 2));
+            $preparedPath = $kind === 'thread' ? CanonicalPathResolver::threadLabel($preparedId) : CanonicalPathResolver::postReaction($preparedId);
             $prepared = $this->storePreparedPost($preparedPath, $preparedContents, [
                 'kind' => 'reaction-' . $kind, 'author_identity_id' => $author,
             ]);
@@ -3562,27 +3565,22 @@ class LocalWriteService
     }
 
     /**
-     * @param list<string> $labels
+     * Builds a unified-format reaction record in its family directory.
+     *
+     * @param list<string> $tags
      * @return array{string,string}
      */
-    private function buildThreadLabelRecord(string $threadId, array $labels, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null, ?string $sourcePostId = null, ?string $sourcePostSha256 = null): array
+    private function buildReactionRecord(string $kind, string $targetId, array $tags, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null, ?string $sourcePostId = null, ?string $sourcePostSha256 = null): array
     {
-        $recordId = $this->generateRecordId('thread-label');
-        $contents = "Record-ID: {$recordId}\n"
-            . "Created-At: {$createdAt}\n"
-            . "Thread-ID: {$threadId}\n"
-            . "Operation: add\n"
-            . 'Labels: ' . implode(' ', $labels) . "\n"
-            . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
-            . ($actionAt !== null ? "Action-At: {$actionAt}\n" : '')
-            . ($intentId !== null ? "Intent-ID: {$intentId}\n" : '')
-            . ($sourcePostId !== null ? "Source-Post-ID: {$sourcePostId}\nSource-Post-SHA256: {$sourcePostSha256}\n" : '')
-            . "\n";
+        $thread = $kind === ReactionRecordParser::THREAD;
+        $recordId = $this->generateRecordId($thread ? 'thread-label' : 'post-reaction');
+        $contents = ReactionRecordParser::build($kind, $recordId, $createdAt, $targetId, $tags, $authorIdentityId,
+            $actionAt, $intentId, $sourcePostId, $sourcePostSha256);
 
-        (new ThreadLabelRecordParser())->parse($contents);
+        $thread ? (new ThreadLabelRecordParser())->parse($contents) : (new PostReactionRecordParser())->parse($contents);
 
         return [
-            CanonicalPathResolver::threadLabel($recordId),
+            $thread ? CanonicalPathResolver::threadLabel($recordId) : CanonicalPathResolver::postReaction($recordId),
             $contents,
         ];
     }
@@ -3606,27 +3604,6 @@ class LocalWriteService
 
         return [
             CanonicalPathResolver::threadSubject($recordId),
-            $contents,
-        ];
-    }
-
-    private function buildPostReactionRecord(string $postId, array $tags, ?string $authorIdentityId, string $createdAt, ?string $actionAt = null, ?string $intentId = null): array
-    {
-        $recordId = $this->generateRecordId('post-reaction');
-        $contents = "Record-ID: {$recordId}\n"
-            . "Created-At: {$createdAt}\n"
-            . "Post-ID: {$postId}\n"
-            . "Operation: add\n"
-            . 'Tags: ' . implode(' ', $tags) . "\n"
-            . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
-            . ($actionAt !== null ? "Action-At: {$actionAt}\n" : '')
-            . ($intentId !== null ? "Intent-ID: {$intentId}\n" : '')
-            . "\n";
-
-        (new PostReactionRecordParser())->parse($contents);
-
-        return [
-            CanonicalPathResolver::postReaction($recordId),
             $contents,
         ];
     }
