@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./qdb_rebuild_scope_step1_solution_assessment.md) · [Step 2](./qdb_rebuild_scope_step2_feature_description.md) · Step 3 · Step 4 (not started)
+> **Feature plan:** [Step 1](./qdb_rebuild_scope_step1_solution_assessment.md) · [Step 2](./qdb_rebuild_scope_step2_feature_description.md) · Step 3 · [Step 4](./qdb_rebuild_scope_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/qdb_rebuild_scope; [P2 ledger](../effort_estimation_trial.md#cycle-v3qdb_rebuild_scope)

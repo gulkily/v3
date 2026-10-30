@@ -81,3 +81,25 @@ Verification so far: Browser online checks pass with JavaScript disabled/enabled
 Next: Complete offline/browser checks, fix findings, finish catalog/concepts/ledger and final focused regression evidence. Unrelated audit drafts remain outside integration.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 6 - Completed UI, catalog and operator handoff
+
+**Original estimate: 0.14**
+
+**Retrospective stage work: 0.16**
+
+- Changes: Completed catalog/outcome documentation and browser acceptance. Dedicated fixture router now serves the favicon like a normal static web server; added worker-readiness timeouts. The initial test router's favicon 404 prevented installation, not a product pagination failure. Stage 5 commit: 43e1c196; explicitly requested early merge/push checkpoint c4933cc5 is preserved.
+- Verification: Final focused PHP/Node-backed suite 63/63; real Chromium online JS-off/JS-on keyboard, all boundaries, reload/history, invalid-position recovery and failed-request retry; shared pagination under 16 theme styles at phone/desktop passes long-content overflow and settled-layout stability. Real installed worker verifies online-position rejection offline, saved 25/25/15 traversal, reload/Back, and reconnect-to-live recovery. Existing tests cover missing saved content, stale snapshot fingerprints and malformed cursors. Schema startup and isolated CLI rebuild passed earlier; local full static builds and failed-candidate recovery passed. Documentation paths and whitespace checked.
+- Notes: Recovery copy is essential and limited to failed positions; no explanatory UI added elsewhere. Dependency delta zero. No full-suite, physical-device, production PHP 8.3 or deployment acceptance claimed. Original stage estimate retained; separate retrospective 0.16 reflects fixture diagnosis, not measured labor.
+
+## Closeout
+
+**Retrospective cycle scope: 0.85**
+
+Status: All six stages complete locally. Original projection 0.85 and baseline/v1/B/R1/P2 retained; stages original 0.20/0.12/0.12/0.18/0.15/0.14 and retrospective 0.20/0.12/0.12/0.18/0.15/0.16 are separate non-additive judgments. Measured work unknown; maintainer comfortable-fit/acceptance pending, no accepted-outcome increment.
+
+Delivered: Catalog plus all-site bounded tag browsing, native traversal/recovery, static first-page serving, offline saved pagination and schema 39 startup recovery. No optional prebuild policy or selective trust derivation. Planning 08dcb973, S1 fface7d9, S2 c076581a, S3 1f6ee8b5, S4 70a4f1b1, S5 43e1c196; S6 early integration c4933cc5 followed by this closeout commit. User authorized merge/push before final testing; implementation is already on origin/main, with verification closeout to follow.
+
+Production recovery: Not verified. After normal deployment, run the original ./v3 build-static with unchanged settings at /home/qdb/v3, require all four phases and check tag/news first/later pages. Preserve the exact next failure if a different known allocation problem appears. Local tag-phase results are not a guarantee for the entire production corpus or every maximum-record distribution.
+
+*— Codex · 2026-10-30 UTC*

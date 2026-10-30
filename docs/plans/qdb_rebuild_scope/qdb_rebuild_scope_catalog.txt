@@ -1,7 +1,7 @@
 Catalog: QDB interface exposure and rebuild cost
 Date: 2026-10-30 UTC
 Baseline: 0392dd59c0646bebc37042455ecaccf825b13889
-Status: Initial source-backed inventory; live configuration, production costs and complete indirect-consumer coverage unverified
+Status: Source-backed catalog completed with bounded-tag implementation; live configuration, production costs and complete indirect-consumer coverage unverified
 Scope: Distinguish read-model rebuild from static rendering inside build-static. Navigation visibility is not permission to remove data or functionality.
 
 Feature: Quote reading, ranking, search, random and submission
@@ -73,3 +73,8 @@ Source: src/ForumRewrite/ReadModel/ReadModelBuilder.php; src/ForumRewrite/Host/S
 
 Priority: First bound per-tag input and output. Then propose optional prebuilding for secondary HTML, preserving direct access. Treat selective read-model derivation as a separate higher-risk change after tracing all consumers.
 Verification needed: Production phase timings and memory, route/dependency matrix, profile switches, full rebuild versus incremental parity, static/runtime/offline serving, and interrupted-build recovery. No runtime changes or new capacity measurements were made for this catalog.
+
+Delivered update: 2026-10-30 UTC. Shared tag pages now select at most 25 matching roots before hydration and retain all results through native links. Static artifacts contain first pages; position requests use runtime rendering. Offline pages show 25 saved results with separate snapshot-bound positions and explicit recovery. Applies to all site profiles.
+Measured tag cost: 6 MiB PHP peak for both public tag route and 24-tag artifact generation at 1000/10000/40000 synthetic threads; 38 MiB with one exact-limit 16 MiB canonical record among 25. See qdb_rebuild_scope_memory_evidence.txt. CPU/I/O and whole-production-build capacity are not established by these measurements.
+Remaining work: Profile-aware optional HTML prebuilding, read-model consumer/dependency tracing, other QDB reader selection and offline snapshot generation remain independently scoped follow-ups. No optional feature was disabled by this cycle.
+Operator handoff: Deploy normally and rerun the original ./v3 build-static command at /home/qdb/v3 with unchanged repository/database/artifact arguments and memory_limit=128M. Require all four phases through activation, then open a populous tag and /tags/news and traverse Next/Previous. Report the next exact phase/error if any. No production command was run here.

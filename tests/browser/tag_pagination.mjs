@@ -16,7 +16,7 @@ const { themes } = JSON.parse(seed.stdout);
 const socket = createServer().listen(0,'127.0.0.1'); await once(socket,'listening');
 const port=socket.address().port; await new Promise(r=>socket.close(r));
 const base=`http://127.0.0.1:${port}`;
-const server=spawn('php',['-d',`session.save_path=${root}/sessions`,'-S',`127.0.0.1:${port}`,join(project,'tests/Support/signed_reaction_browser_router.php')],{env,stdio:['ignore','ignore','pipe']});
+const server=spawn('php',['-d',`session.save_path=${root}/sessions`,'-S',`127.0.0.1:${port}`,join(project,'tests/Support/tag_pagination_browser_router.php')],{env,stdio:['ignore','ignore','pipe']});
 let logs=''; server.stderr.on('data',v=>logs+=v);
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/google-chrome',headless:true,args:['--no-sandbox']});
 const cards='main article.thread-card';
@@ -72,8 +72,10 @@ try {
   const page=await context.newPage(); await page.goto(base+'/tags/paging');
   const onlineNext=await page.getByRole('link',{name:'Next',exact:true}).getAttribute('href');
   await page.evaluate(async()=>{
-    const registration=await navigator.serviceWorker.ready;
+    const registration=await Promise.race([navigator.serviceWorker.ready,
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error("Offline worker did not become ready")),15000))]);
     await new Promise((resolve,reject)=>{
+      setTimeout(()=>reject(new Error("Offline refresh did not respond")),15000);
       const channel=new MessageChannel(); channel.port1.onmessage=e=>e.data.status==='error'?reject(new Error(e.data.error)):resolve();
       registration.active.postMessage({type:'refresh-offline-reader',force:true},[channel.port2]);
     });
