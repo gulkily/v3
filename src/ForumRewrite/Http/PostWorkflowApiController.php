@@ -376,7 +376,7 @@ final class PostWorkflowApiController
 
             $this->routeServices->sendJson($service->codexHandoffResponse($handoff), 200, $headersWithTimings());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $headersWithTimings());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $headersWithTimings());
         }
     }
 
@@ -449,7 +449,7 @@ final class PostWorkflowApiController
 
             $this->routeServices->sendJson($service->codexHandoffResponse($handoff), 200, $headersWithTimings());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $headersWithTimings());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $headersWithTimings());
         }
     }
 

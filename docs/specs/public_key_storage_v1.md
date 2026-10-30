@@ -49,3 +49,8 @@ records/public-keys/openpgp-0168FF20EB09C3EA6193BD3C92A73AA7D20A0954.asc
 ...
 -----END PGP PUBLIC KEY BLOCK-----
 ```
+
+Single-request posting may always receive a public key. For a known fingerprint
+it verifies using the stored key and does not replace packets, add subkeys,
+rename the identity or change approval. Missing identity/key pairs are reported
+as inconsistent state requiring recovery, not silently overwritten.

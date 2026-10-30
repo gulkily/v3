@@ -6,6 +6,41 @@ use ForumRewrite\Support\UnicodeTextPolicy;
 
 final class UnicodeTextPolicyTest
 {
+    public function testComposedClusterRetainsFormatCharacterPosition(): void
+    {
+        if (!class_exists(\Normalizer::class)) return;
+        try { (new UnicodeTextPolicy())->normalizeBody("e\u{0301}\u{200D}x", 'body'); }
+        catch (\ForumRewrite\Support\TextValidationException $error) {
+            assertSame(2, $error->chars[0]['index']); return;
+        }
+        throw new RuntimeException('Expected joiner rejection.');
+    }
+
+    public function testDiagnosticsUseOriginalCodePointPositions(): void
+    {
+        $prefix = class_exists(\Normalizer::class) ? "  Cafe\u{0301}\r\n" : "  Café\r\n";
+        foreach (["→" => 'symbols', "\u{00A0}" => 'spacing', "\u{200B}" => 'control'] as $char => $message) {
+            $input = $prefix . 'x' . $char . 'y' . $char . 'z ';
+            try { (new UnicodeTextPolicy())->normalizeBody($input, 'body'); }
+            catch (\ForumRewrite\Support\TextValidationException $error) {
+                assertSame('body', $error->field);
+                assertStringContains($message, $error->getMessage());
+                assertSame(mb_strlen($prefix) + 1, $error->chars[0]['index']);
+                assertSame(mb_strlen($prefix) + 3, $error->chars[1]['index']);
+                assertSame($char, $error->chars[0]['char']);
+                continue;
+            }
+            throw new RuntimeException('Expected detailed rejection.');
+        }
+        try { \ForumRewrite\Support\TextValidationException::ascii("  a\r\né→ ", "a\né→", 'body', true, 'body must be ASCII only.'); }
+        catch (\ForumRewrite\Support\TextValidationException $error) {
+            assertSame([5, 6], array_column($error->chars, 'index'));
+            assertSame(['U+00E9', 'U+2192'], array_column($error->chars, 'codepoint'));
+            return;
+        }
+        throw new RuntimeException('Expected ASCII diagnostics.');
+    }
+
     public function testCombiningMarksRequireNormalizationSupport(): void
     {
         $policy = new UnicodeTextPolicy();

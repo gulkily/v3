@@ -9,6 +9,13 @@ require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 $testFiles = [
     __DIR__ . '/FastmodScoreTransferTest.php',
     __DIR__ . '/FastmodDerivedTagsTest.php',
+    __DIR__ . '/FrmClientTest.php',
+    __DIR__ . '/AgentPostingApiTest.php',
+    __DIR__ . '/SingleRequestHttpTest.php',
+    __DIR__ . '/SingleRequestPostingTest.php',
+    __DIR__ . '/SignedPostTransactionTest.php',
+    __DIR__ . '/SignedPostIdentityTest.php',
+    __DIR__ . '/SignedPostBundleValidatorTest.php',
     __DIR__ . '/ActivityProjectionTest.php',
     __DIR__ . '/BackupFeatureFlagTest.php',
     __DIR__ . '/ProfilePublicDetailsTest.php',

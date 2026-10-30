@@ -350,3 +350,7 @@ and repair its navigation and affected references. See the
 
 - [Agent response text](agent_response_text/agent_response_text_step4_implementation_summary.md) — F05; implemented and verified, maintainer acceptance pending.
 - [Private-message idle synchronization](private_message_sync_idle/private_message_sync_idle_step1_solution_assessment.md) — account history gate and combined work check.
+
+- [Single-request signed posting](single_request_posting/single_request_posting_step3_development_plan.md) — separate signed bootstrap and post; implemented locally, release verification pending.
+
+- [Agent posting](agent_posting/agent_posting_step3_development_plan.md): Seven stages complete locally: frm.py, text diagnostics and API recovery; deployment/live acceptance pending.

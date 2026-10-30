@@ -41,9 +41,9 @@ final class PrivateMessageApiController
             $message = $this->service()->send($viewer, $this->routeServices->requestData($query));
             $this->routeServices->sendJson(['status' => 'ok', 'message' => $message], 201, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 403, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -79,7 +79,7 @@ final class PrivateMessageApiController
         } catch (InvalidArgumentException $exception) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage(), 'restart' => true], 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 403, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -104,9 +104,9 @@ final class PrivateMessageApiController
         } catch (InvalidHistoryCursor $exception) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage(), 'restart' => true], 400, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 403, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -127,9 +127,9 @@ final class PrivateMessageApiController
             $keys = $this->service()->recipientKeys($viewer, (string) ($query['username_token'] ?? ''));
             $this->routeServices->sendJson(['status' => 'ok', 'keys' => $keys], 200, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 400, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 403, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -152,7 +152,7 @@ final class PrivateMessageApiController
                 : $this->service()->sent($viewer);
             $this->routeServices->sendJson(['status' => 'ok', 'messages' => $messages], 200, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $exception->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 403, $this->routeServices->noStoreHeaders());
         }
     }
 

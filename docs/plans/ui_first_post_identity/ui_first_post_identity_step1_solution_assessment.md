@@ -159,3 +159,7 @@ Option A. It removes every dialog and moves library loading and key creation off
 | G2 note | 2026-10-28 | G1 0.80 reaffirmed; G2 0.60 (from 0.55) | v1.2 / R1 / P2 | Same, plus the reaction and post request paths | User chose one request for a first vote (browser-built bootstrap record); G2 only |
 
 Option estimates are separate alternatives and are not summed. R1 hashes verified 2026-10-28T18:13:41Z.
+
+## Follow-up API note — 2026-10-30
+
+[Single-request posting](../single_request_posting/single_request_posting_step4_implementation_summary.md) adds an agent endpoint bundling a separate signed bootstrap with the ordinary post. It does not implement G2 browser or vote integration or change this cycle’s historical decisions.
