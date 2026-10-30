@@ -80,3 +80,28 @@ No supported findings.
 ## Uncertain assessments
 
 Source: step3_development_plan_after.md, one-page sizing. Seven stages, preserved history and study/documentation inventory exceed a conventional page. Retain reviewable failure contracts and distinguish plan body guidance from required historical evidence. No measured stage-duration claim is supported.
+
+Timestamp: 2026-10-30T12:00:31Z
+Step: 4 completed handoff, scope v1.3/A
+Debug mode: enabled (inherited)
+Completion: Planning 17395d9bb followed by seven stage-scoped commits through 4c32bd43c; each stage includes its summary. Local implementation complete, release and maintainer acceptance pending.
+
+## Necessary/useful instructions
+
+Source: step4_implementation_do.md, Stage Boundary Protocol. Contribution: isolated text diagnostics, HTTP behavior, downloaded reads, signing, recovery, documentation and shared acceptance in reviewable commits, with verification recorded before advancement. Suggestion: retain stage-scoped evidence and preserve corrective findings rather than claiming the first implementation was final.
+
+Source: step4_implementation_after.md, ordinary-flow completion and verification boundaries. Contribution: actual HTTP-downloaded client tests exposed a wrong Application delivery property and a fixture identity-count assumption; response-loss, registration recovery, invalid tokens and redirects were verified through the CLI. Suggestion: retain ordinary-entry testing and explicit local-versus-release limits.
+
+Source: RAILSPIKE.md, effort-study history and separate retrospective assessment. Contribution: retained the paused cycle's original baseline/projections and excluded already-recorded protocol prerequisite work from its outcome. Stage and cycle retrospective judgments remain separate from measured labor and maintainer acceptance. Suggestion: retain stable cycle identity across interruptions.
+
+## Redundant/unnecessary instructions
+
+No supported findings.
+
+## Inapplicable instructions
+
+Source: step4_implementation_after.md, scoped deployment and external-system verification. No deployment or production posting was authorized; live ZenMemes acceptance remains pending. Phone/theme/icon checks do not apply to this CLI/API/documentation change; existing browser HTML and rendered reference checks passed.
+
+## Uncertain assessments
+
+Source: stage-sizing guidance and extended estimates. The dual-protocol client and recovery tests exceed the line heuristic despite staying within bounded stage outcomes. No measured duration or comfortable-fit judgment is available. Retain outcome/recovery boundaries as the primary review evidence; retrospective scope 1.00 versus projected 0.95 is a single exposed judgment, not an independently measured cost.
