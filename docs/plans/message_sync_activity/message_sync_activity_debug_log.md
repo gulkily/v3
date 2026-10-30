@@ -58,3 +58,5 @@ Verification: Restored selected cycle, debug/extended-estimate state, Step 1 dir
 Verification: Restored Step 2 approval, debug and extended-estimate state; inspected authentication entry and existing sync/key-resolution paths. Checked stage identities, preserved budgets, contribution attribution, ledger link and document whitespace. No runtime tests or implementation changes. Step 4 remains gated on Approved Step 3.
 
 *— Codex · 2026-10-30 UTC*
+
+2026-10-30 UTC — Step 4 compatibility checkpoint: Stage 3 exact submission-identity key selection failed the added regression for another approved original signer. Full focused tests had not covered that semantic boundary. Withdrew experimental product/schema changes; preserved committed admission/activity work and the regression. Step 2 compatibility revision proposed; Stages 3–8 incomplete. No debug-mode change, dependency change, deployment or accepted outcome.

@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/message_sync_activity — [ledger](../effort_estimation_trial.md#cycle-v3message_sync_activity)
 Extended estimates: enabled
-Status: Step 3 approved; implementation in progress
+Status: Stages 1–2 committed; Stage 3 paused at compatibility gate; proposed Step 2 revision awaits approval
 
 **Cycle estimate: 0.95**
 
@@ -30,5 +30,18 @@ Entry: 2026-10-30 UTC; projection 0.95 reaffirmed, scope v1/A, baseline 4b14e622
 - Changes: Add private coalesced activity keyed by authenticated account/fingerprint, ordered by server time. Record on approved sign-in and explicit foreground unread refresh; no extra heartbeat. Background unread refresh, sync and acknowledgments do not promote activity. A sync-store outage cannot block sign-in or unread status, and disabled messaging does not touch sync storage.
 - Verification: 33/33 focused history/feature-flag/mailbox tests pass; shared-page gate test checks activity on visible entry but not background refresh. Tests cover five-second coalescing, account isolation and no activity promotion by combined discovery. Static shared-page identity checks remain passing.
 - Notes: Prior stage 68167edd2; additive private activity table/index, no canonical record or public read-model changes. No estimate revision. Cross-account sender activity is not exposed.
+
+*— Codex · 2026-10-30 UTC*
+
+## Stage 3 - Bounded identity and payload retrieval: compatibility gate
+
+**Original estimate: 0.15**
+**Retrospective stage work: unavailable — stage incomplete**
+
+- Finding: Submission identity does not prove the original encrypted signer. The proposed exact-key shortcut excluded another currently approved signer. A bounded all-key fallback returned a permanent-data failure as transient unavailability for large accounts. Neither behavior is acceptable.
+- Verification: The new submission/signature-identity regression fails against the experiment and passes with the committed implementation. The original 21 focused tests (including two proposed schema checks) passed the experiment, demonstrating why that evidence alone was insufficient. After withdrawal, all 20 history-service tests pass. Existing real-key crypto verification confirms correct-signer success and wrong-signer rejection. See the compatibility proposal for the boundary and remaining verification.
+- Disposition: Removed the experimental service/schema/startup-test changes; retained the new compatibility regression. Stages 1–2 remain committed (68167edd2, f2c3a8a98). Stage 3 is not complete; Stages 4–8 have not started. No release, idle-traffic, activity-priority, browser-continuation or full recovery claim.
+- Proposed decision: [Reviewable Step 2 revision](./message_sync_activity_compatibility_revision.md) keeps all ceilings, introduces bounded modern verification continuation and explicitly requests approval for upgrade-required errors on legacy requests that cannot fit. This is a proposed compatibility change, not an approved implementation refinement.
+- Study: Original estimates retained; no stage/cycle completion assessment or accepted outcome. Dependency delta zero. No merge, push, deployment or full-suite verification.
 
 *— Codex · 2026-10-30 UTC*

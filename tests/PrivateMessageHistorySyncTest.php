@@ -25,6 +25,16 @@ final class PrivateMessageHistorySyncTest
         $syncDb=new PDO('sqlite::memory:');$sync=new PrivateMessageHistorySyncStore($syncDb);
         return [$profiles,$messages,$sync,new PrivateMessageHistorySyncService($messages,$sync,$profiles),$db,$syncDb];
     }
+    public function testSubmissionIdentityDoesNotExcludeOtherApprovedOriginalSigners(): void
+    {
+        [,,$sync,$service,$db]=$this->fixture();
+        // The send endpoint records the authenticated transport identity without
+        // inspecting the encrypted signature. Another approved account key may sign.
+        $db->exec("UPDATE private_messages SET sender_identity_id='openpgp:".str_repeat('a',40)."' WHERE sender_username_token='alice'");
+        $work=$service->work($this->viewer());
+        $outgoing=array_values(array_filter($work['messages'],static fn($row)=>$row['sender_username_token']==='alice'));
+        assertSame(true,in_array('KEY-b',$outgoing[0]['sender_keys'],true),'Submission identity must not exclude another approved original signer');
+    }
     public function testActivityIsPrivateCoalescedAndNotPromotedBySync(): void
     {
         [,,$sync,$service]=$this->fixture();
