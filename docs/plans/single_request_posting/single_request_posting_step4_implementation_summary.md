@@ -27,3 +27,13 @@ Verification: php tests/run.php SignedPostIdentityTest — 1/1 passed with actua
 Notes: Stage 1 commit efa0734f1. No estimate revision or dependencies. Transaction lock and atomic storage follow in S3.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 3 - Commit registration and post atomically
+
+Original estimate: 0.20
+Retrospective stage work: 0.20
+Changes: Private readable pending manifest with exact payload files; owned-path checks, isolated staging, canonical-commit detection and rollback/recovery. Recovery runs before later writes and before Application read-model startup. No unrelated index reset or key overwrite.
+Verification: php tests/run.php SignedPostTransactionTest — 2/2 passed; injected failures at journal/file/staged/committed boundaries, unrelated staged content preservation and symlink refusal. Abrupt process termination is reserved for integrated S8 replay.
+Notes: S2 commit 4191c636f. No scope/estimate revision. Journal is private recovery state, not a new canonical record family. No schema/dependency delta.
+
+*— Codex · 2026-10-30 UTC*

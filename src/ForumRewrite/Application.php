@@ -179,6 +179,11 @@ final class Application
             return;
         }
 
+        if (is_dir($this->repositoryRoot . '/.git/signed-post-pending')) {
+            $this->executionLock()->withExclusiveLock(function (): void {
+                (new \ForumRewrite\Write\SignedPostTransaction($this->repositoryRoot))->recover();
+            });
+        }
         $this->ensureReadModel();
 
         if ($securityReviewRequest) {

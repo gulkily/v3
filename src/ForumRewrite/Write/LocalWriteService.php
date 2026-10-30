@@ -3330,6 +3330,7 @@ class LocalWriteService
     private function withTimedWriteLock(callable $callback): array
     {
         $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
+            (new SignedPostTransaction($this->repositoryRoot))->recover();
             $this->recoverSignedReactionWrites();
             return \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot,$callback);
         });
