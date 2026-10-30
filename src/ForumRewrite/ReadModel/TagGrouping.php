@@ -14,6 +14,50 @@ namespace ForumRewrite\ReadModel;
 final class TagGrouping
 {
     /**
+     * Count all tags while retaining only their first previews. Input must
+     * contain one row per root, in display order (as iterateThreads yields).
+     *
+     * @param iterable<array<string, mixed>> $threads
+     * @return array<int, array<string, mixed>>
+     */
+    public static function previewsFromUniqueThreads(iterable $threads, int $limit): array
+    {
+        $groups = [];
+        foreach ($threads as $thread) {
+            $tags = [];
+            foreach (['board_tags', 'thread_labels'] as $field) {
+                foreach ($thread[$field] ?? [] as $tag) {
+                    if (is_string($tag) && $tag !== '') {
+                        $tags[strtolower($tag)] = true;
+                    }
+                }
+            }
+            foreach ($tags as $tag => $_) {
+                $tag = (string) $tag;
+                $groups[$tag] ??= [
+                    'tag' => $tag,
+                    'count' => 0,
+                    'preview_threads' => [],
+                    'href' => '/tags/' . $tag,
+                    'has_more' => false,
+                ];
+                $groups[$tag]['count']++;
+                if (count($groups[$tag]['preview_threads']) < $limit) {
+                    $preview = $thread;
+                    // The tags index uses body_preview for titles, never the full body.
+                    unset($preview['root_post_body']);
+                    $groups[$tag]['preview_threads'][] = $preview;
+                }
+                $groups[$tag]['has_more'] = $groups[$tag]['count'] > $limit;
+            }
+        }
+        uasort($groups, static fn (array $left, array $right): int =>
+            ($right['count'] <=> $left['count']) ?: ($left['tag'] <=> $right['tag'])
+        );
+        return array_values($groups);
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $threads
      * @return array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}>
      */

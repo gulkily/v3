@@ -21,16 +21,22 @@ final class ThreadRepository
      */
     public static function fetchThreads(PDO $pdo): array
     {
-        $rows = $pdo->query(
-            self::boardRowsSql()
-        )->fetchAll();
+        return iterator_to_array(self::iterateThreads($pdo), false);
+    }
 
-        $rows = array_values(array_filter(
-            $rows,
-            static fn (array $thread): bool => !ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $thread['board_tags_json'])
-        ));
-
-        return ThreadRowSupport::hydrateThreadRows($rows);
+    /** @return \Generator<int, array<string, mixed>> */
+    public static function iterateThreads(PDO $pdo): \Generator
+    {
+        $statement = $pdo->query(self::boardRowsSql());
+        try {
+            while (($row = $statement->fetch()) !== false) {
+                if (!ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])) {
+                    yield ThreadRowSupport::hydrateThreadRow($row);
+                }
+            }
+        } finally {
+            $statement->closeCursor();
+        }
     }
 
     /** Base row selection shared with the editable listing query; retracted threads are not listed. */

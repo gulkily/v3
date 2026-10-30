@@ -1,0 +1,25 @@
+Task: Fix shared /tags/ rendering memory exhaustion
+Date: 2026-10-30 UTC
+Authorization: User requested fixing the reported phase-2 /tags/ fatal before continuing the load-before-selection audit.
+Workflow: Small direct bug fix; no new Railspike cycle. The separate audit option selection remains unresolved; no audit execution or automated detection is authorized by this fix.
+Branch: fix/tags-index-memory
+Related finding: QDB memory audit M02; docs/plans/qdb_memory_audit/qdb_memory_audit_findings.txt
+
+Incident: Rendering shared pages (10/10): /tags/ exhausted PHP's 134217728-byte limit at ThreadRepository.php:28.
+Cause: TagsPageController loaded all thread rows and full root bodies, grouped every thread by tag, then retained the complete groups alongside five displayed previews.
+Change: Stream the existing board query through ThreadRepository::iterateThreads. The tags index counts every eligible thread and retains only the first five previews per normalized tag. Full root bodies are not retained in previews. Existing fetchThreads callers still receive the complete array.
+Semantics: Preserve hidden-bootstrap and retracted-thread exclusions, board-tag/label union, case-insensitive duplicate handling, count-descending/tag tie ordering, existing thread ordering, preview links, authors, titles and totals. No template or UI changes.
+Schema: Existing SQL is reused verbatim; no changed tables, columns, indexes, constraints or query dependencies. No schema migration/version change needed.
+Dependency delta: Zero.
+
+Verification environment: Local PHP 8.1.2 CLI, SQLite; fresh subprocesses for memory checks. Not the live PHP 8.3 host.
+Synthetic workload: 1000 and 40000 extra threads, 2048-byte root bodies and 1024-byte previews; fixed tag count; real Application GET /tags/ route after preparing its read model.
+Result: Both workload sizes pass under memory_limit=32M, with peak PHP allocation 6291456 bytes (6 MiB). Regression allows at most 4 MiB growth between the two sizes.
+Failure reproduction: The legacy full-array grouping path on 40000 rows exhausts memory_limit=128M in a separate process. This reproduction uses the same synthetic rows, not the production corpus.
+Parity: Streaming previews match the previous grouping for mixed-case and numeric tags, duplicate board tags/labels, hidden/retracted exclusions, ordering and empty results. Actual rendered-route checks verify counts, five previews and newest selection.
+Focused checks: 31 passed, zero failed: TagsIndexMemoryTest; BoardListingQueryTest; QuoteCardDisplayNumberTest; LocalAppSmokeTest methods testTagBrowsingCombinesCaseVariantsWithoutDuplicateThreads, testBuildStaticCommandReportsProgressAndArtifactSummary, testSharedStaticRefreshCommandKeepsDetailArtifactsWithoutRebuildingTheReadModel and testFullReleaseSwitchesStaticDetailsToRuntimeAndPreservesFailedBuildRecovery.
+Source checks: git diff --check passed.
+
+Limits: Still scans all eligible rows to compute exact tag totals. PHP retention grows with distinct tags, displayed previews and the largest current row, rather than the full corpus for fixed tag counts. This is not the broader select-before-load optimization. Per-tag full listings, other fetchThreads callers, offline snapshots and other audit findings remain separate. Full suite, new browser/device checks and production build recovery are not claimed.
+Recovery: Deploy through the normal process, then rerun the original ./v3 build-static with its existing settings and memory limit. Confirm all four phases complete and the published /tags/ page is usable. This local fix does not establish successful host publication or repair unrelated later failures.
+Delivery: Scoped local fix only; merge, push and deployment not performed in this task.
