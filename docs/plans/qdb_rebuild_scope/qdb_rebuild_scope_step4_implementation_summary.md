@@ -33,3 +33,15 @@ Entry: Step 3 approved, 2026-10-30 UTC; branch feature/bounded-tag-pages; planni
 - Notes: Existing Stage 1 primitives satisfy these cases; no duplicate paginator added. Original scope/estimate unchanged; no production acceptance claimed.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 3 - Static and runtime serving
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.12**
+
+- Changes: Added actual release/frontend tests for QDB and forum profiles; documented bounded tag artifacts. Existing query bypass and static enumeration already satisfy the contract, so no replacement routing introduced. Stage 2 commit: c076581a.
+- Verification: 2/2 focused tests pass: fresh full release, mixed-case first route served statically, cursor route bypasses a sentinel first-page artifact, shared refresh retains tags, and existing failed-build recovery keeps the active release.
+- Notes: Original scope/estimate unchanged. Publication is verified locally with fixtures; live host remains pending.
+
+*— Codex · 2026-10-30 UTC*

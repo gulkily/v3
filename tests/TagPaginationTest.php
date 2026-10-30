@@ -122,4 +122,49 @@ final class TagPaginationTest
         } finally { @unlink($database); }
     }
 
+    public function testStaticFirstPageAndRuntimeContinuationAcrossProfiles(): void
+    {
+        $prior = getenv('FORUM_SITE_ID');
+        try {
+            foreach (['zenmemes', 'qdb'] as $profile) {
+                putenv('FORUM_SITE_ID=' . $profile);
+                [$app, $pdo, $database] = $this->environment();
+                $root = sys_get_temp_dir() . '/tag-static-' . bin2hex(random_bytes(6));
+                mkdir($root . '/public', 0700, true);
+                try {
+                    $publisher = new \ForumRewrite\Host\StaticArtifactReleasePublisher(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $root . '/static');
+                    $release = $publisher->build($database);
+                    $publisher->activate($release);
+                    $artifact = (string) file_get_contents($release . '/tags/page.html');
+                    assertStringContains('paged-064', $artifact);
+                    assertStringNotContains('paged-000', $artifact);
+                    assertTrue(preg_match('/rel="next" href="([^"]+)"/', $artifact, $match) === 1);
+                    $url = html_entity_decode($match[1], ENT_QUOTES);
+                    file_put_contents($release . '/tags/page.html', $artifact . '<!-- first-page-sentinel -->');
+                    $front = new \ForumRewrite\Host\FrontController(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $database, $root . '/static', $root . '/public');
+                    ob_start(); $front->handle('GET', '/tags/PaGe'); $first = (string) ob_get_clean();
+                    assertStringContains('first-page-sentinel', $first);
+                    ob_start(); $front->handle('GET', $url); $later = (string) ob_get_clean();
+                    assertStringNotContains('first-page-sentinel', $later);
+                    assertStringContains('paged-039', $later);
+                    assertStringNotContains('paged-064', $later);
+                    $refresh = $publisher->buildSharedRefresh($database);
+                    assertSame((string) file_get_contents($release . '/tags/page.html'), (string) file_get_contents($refresh . '/tags/page.html'));
+                } finally {
+                    $this->removeTree($root);
+                    @unlink($database);
+                }
+            }
+        } finally { $prior === false ? putenv('FORUM_SITE_ID') : putenv('FORUM_SITE_ID=' . $prior); }
+    }
+
+    private function removeTree(string $root): void
+    {
+        if (is_link($root) || is_file($root)) { unlink($root); return; }
+        foreach (scandir($root) ?: [] as $name) {
+            if ($name !== '.' && $name !== '..') $this->removeTree($root . '/' . $name);
+        }
+        rmdir($root);
+    }
+
 }
