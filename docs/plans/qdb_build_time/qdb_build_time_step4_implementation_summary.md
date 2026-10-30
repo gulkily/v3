@@ -61,3 +61,14 @@ Study: railspike-effort, R1/P2, v3/qdb_build_time; original v1/A 0.50 retained, 
 - Notes: No core read-model queries/schema changed; scratch is private and not exported. Temporary-store cache budget is 1 MiB; final matched acceptance remains Stage 7. Dependencies zero; original scope/estimate unchanged; labor unmeasured.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 6 — History maintenance and failure parity
+
+**Original stage-work estimate: 0.16**
+**Retrospective stage-work assessment: 0.14**
+
+- Changes: Added complete signed-event/manifest equivalence checks (record, signature and key), rename/new-operation isolation and injected scratch-write failure/rollback/cleanup coverage. Updated rebuild concept with operation lifecycle and failure behavior.
+- Verification: Focused maintenance/reader/candidate suite 48/48 passes: full and incremental refresh, key arrival/removal, missing/broken history, bootstrap fallback, standard and Forte activity/RSS, current/blob/commit source routes, normal rebuild CLI, candidate promotion failure/rollback/retry, provenance batching, exact signed evidence and scratch cleanup. Existing schema recovery tests remain green.
+- Notes: Core table definitions and queries are unchanged; only private scratch has a new schema, so deployed schema stays 39. No dependency delta, trust decision or export-format change. Original scope/estimate unchanged; labor unmeasured.
+
+*— Codex · 2026-10-30 UTC*
