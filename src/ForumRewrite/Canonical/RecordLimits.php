@@ -33,10 +33,20 @@ final class RecordLimits
         $handle = @fopen($path, 'rb');
         if ($handle === false) throw new RecordReadException('Unable to open canonical file: ' . $path);
         try {
-            // Also bound the actual read, including a file that grows after stat.
-            $bytes = stream_get_contents($handle, $limit + 1);
-            if ($bytes === false) throw new RecordReadException('Unable to read canonical file: ' . $path);
-            if (strlen($bytes) > $limit) throw new RecordSizeException('Record exceeds ' . $limit . ' byte limit: ' . $path);
+            // A limit-sized stream_get_contents buffer costs 16 MiB even for a
+            // tiny record. Grow with the actual content, still detecting files
+            // that grow beyond the limit after the initial stat.
+            $bytes = '';
+            while (!feof($handle)) {
+                $chunk = fread($handle, min(8192, $limit - strlen($bytes) + 1));
+                if ($chunk === false || ($chunk === '' && !feof($handle))) {
+                    throw new RecordReadException('Unable to read canonical file: ' . $path);
+                }
+                if (strlen($bytes) + strlen($chunk) > $limit) {
+                    throw new RecordSizeException('Record exceeds ' . $limit . ' byte limit: ' . $path);
+                }
+                $bytes .= $chunk;
+            }
             return $bytes;
         } finally { fclose($handle); }
     }

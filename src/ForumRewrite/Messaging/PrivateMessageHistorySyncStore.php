@@ -36,6 +36,13 @@ final class PrivateMessageHistorySyncStore
         $q=$this->pdo->prepare('SELECT t.* FROM history_sync_items i JOIN history_sync_transfers t ON t.transfer_id=i.transfer_id WHERE i.account=? AND i.target=? AND i.message_id=? AND i.digest=? AND t.transfer_id>? ORDER BY t.transfer_id LIMIT 11');
         $q->execute([$account,$target,$id,$digest,$after]);return $q->fetchAll();
     }
+    // Donor-owned evidence only: recipient coverage must never affect this answer.
+    public function hasContribution(string $account, string $source, string $target, string $id, string $digest): bool
+    {
+        $q=$this->pdo->prepare('SELECT 1 FROM history_sync_items i JOIN history_sync_transfers t ON t.transfer_id=i.transfer_id AND t.account=i.account AND t.source=i.source AND t.target=i.target WHERE i.account=? AND i.source=? AND i.target=? AND i.message_id=? AND i.digest=? LIMIT 1');
+        $q->execute([$account,$source,$target,$id,$digest]);
+        return $q->fetchColumn() !== false;
+    }
     public function receipt(string $account, string $target, string $id, string $digest): ?array
     {
         $q=$this->pdo->prepare('SELECT c.transfer_id,t.source FROM history_sync_coverage c LEFT JOIN history_sync_transfers t ON c.transfer_id=t.transfer_id AND t.account=c.account AND t.target=c.target WHERE c.account=? AND c.target=? AND c.message_id=? AND c.digest=?');

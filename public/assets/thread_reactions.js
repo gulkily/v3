@@ -681,6 +681,11 @@
     root.hidden = state.hidden;
   }
 
+  // Unified reaction record bytes; must match ReactionRecordParser::build() exactly.
+  function reactionRecord(kind, recordId, created, target, tag, author) {
+    return `Record-ID: ${recordId}\nCreated-At: ${created}\nTarget-Kind: ${kind}\nTarget-ID: ${target}\nOperation: add\nTags: ${tag}\nAuthor-Identity-ID: ${author}\n\n`;
+  }
+
   async function signedReactionFields(kind, target, tag) {
     const storage = reactionStorage();
     if (!storage || !storage.getItem("forum_pki_private_key")) return {};
@@ -694,10 +699,8 @@
     window.crypto.getRandomValues(random);
     const suffix = Array.from(random, byte => byte.toString(16).padStart(2, "0")).join("");
     const prefix = kind === "thread" ? "thread-label" : "post-reaction";
-    const targetHeader = kind === "thread" ? "Thread-ID" : "Post-ID";
-    const tagHeader = kind === "thread" ? "Labels" : "Tags";
     const created = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-    const record = `Record-ID: ${prefix}-${suffix}\nCreated-At: ${created}\n${targetHeader}: ${target}\nOperation: add\n${tagHeader}: ${tag}\nAuthor-Identity-ID: ${author}\n\n`;
+    const record = reactionRecord(kind, `${prefix}-${suffix}`, created, target, tag, author);
     return { canonical_record: record, detached_signature: await signing.signCanonicalRecord(record) };
   }
 
@@ -1030,7 +1033,7 @@
   }
 
   if (typeof window !== "undefined") {
-    window.ForumThreadReactions = { bindWithin: bindWithin, hydrateRememberedReactions: hydrateRememberedReactions };
+    window.ForumThreadReactions = { bindWithin: bindWithin, hydrateRememberedReactions: hydrateRememberedReactions, reactionRecord: reactionRecord };
   }
 
   document.addEventListener("DOMContentLoaded", function () {

@@ -3,14 +3,18 @@
 Explicit online votes use the existing `/api/apply_thread_tag` and
 `/api/apply_post_tag` endpoints. Thread likes and QDB captions remain thread-label
 records; post/reply likes and all Flags remain post-reaction records. Both share
-browser signing and server verification. See the corresponding V1 format specs.
+browser signing and server verification. See [Reaction Record V1](reaction_record_v1.md).
 
 ## Request and fallback
 
 Alongside the existing target ID and `tag`, signed clients submit
 `canonical_record` and `detached_signature`. The record has an empty body, one
 label/tag, LF endings, and these ordered headers: Record-ID, Created-At,
-Thread-ID/Post-ID, Operation, Labels/Tags, Author-Identity-ID. Operation is `add`.
+Target-Kind, Target-ID, Operation, Tags, Author-Identity-ID. Target-Kind is
+`thread` or `post` for the endpoint used; Operation is `add`. The server also
+accepts, byte-exact and unrewritten, the deprecated legacy layout (Thread-ID/
+Post-ID and Labels/Tags in place of the Target and Tags headers) still signed by
+cached older clients; see `LegacyReactionHeaders`.
 The browser uses 128 random bits in the family-prefixed identifier. The server
 accepts a bounded safe identifier, requires exact correspondence with the
 requested action and resolved viewer identity, and verifies the detached
@@ -21,15 +25,16 @@ The server accepts creation times within 300 seconds of its clock. Otherwise,
 it returns HTTP 409 with a JSON `error_code` of `clock_skew`, `canonical_record`,
 `prepare_token`, `canonical_sha256`, and `expires_at`. The browser checks that
 only the identifier/time changed, signs the replacement, and resubmits to the
-same endpoint with the token. There is one automatic fallback. Tokens expire
+same endpoint with the token. The prepared record keeps the layout the client
+submitted. There is one automatic fallback. Tokens expire
 in ten server-clock minutes and bind exact bytes, author, and record family.
 Normal success retains the existing text response and score/moderation fields.
 
 Legacy requests without signing fields retain unsigned behavior and existing
 eligibility rules. Automatic guest identity setup can produce signed votes.
-Hashtag-generated labels and existing offline signed intents retain their prior
-formats; an intent signature is not presented as a signature over the final
-reaction record. Historical import/rebuild verification has no live clock limit.
+Hashtag-generated labels and offline signed-intent replays are written in the
+unified format without a record signature; an intent signature is not presented
+as a signature over the final reaction record. Historical import/rebuild verification has no live clock limit.
 
 ## Evidence and recovery
 

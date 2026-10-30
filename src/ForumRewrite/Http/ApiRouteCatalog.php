@@ -91,6 +91,7 @@ final class ApiRouteCatalog
             ['GET', '/api/private_messages/unread?counterparts[]=<optional-username>', 'member', 'json', 'Unread state.'],
             ['POST', '/api/private_messages', 'member', 'json', 'Send an encrypted message.'],
             ['POST', '/api/private_messages/read', 'member', 'json', 'Acknowledge read messages.'],
+            ['POST', '/api/private_messages/history_sync/work', 'member', 'json', 'Combined bounded history-sync discovery and scan progress.'],
             ['GET', '/api/private_messages/history_sync/work', 'member', 'json', 'Pending history-sync work.'],
             ['GET', '/api/private_messages/history_sync/transfers?message_id=<id>&after=<optional-transfer-id>', 'member', 'json', 'History-sync transfers.'],
             ['POST', '/api/private_messages/history_sync/transfers', 'member', 'json', 'Upload a history-sync transfer.'],

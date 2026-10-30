@@ -13,6 +13,7 @@ use ForumRewrite\Canonical\InstancePublicRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRetractionRecordParser;
+use ForumRewrite\Canonical\ReactionRecordParser;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PublicKeyRecordParser;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
@@ -504,6 +505,68 @@ final class CanonicalRecordParsersTest
             static fn () => (new PostReactionRecordParser())->parse($contents),
             'Invalid tag token: Needs-Review'
         );
+    }
+
+    public function testParsesUnifiedReactionRecordsInBothScopes(): void
+    {
+        $author = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $thread = ReactionRecordParser::build('thread', 'thread-label-abc', '2026-04-15T15:30:00Z', 'root-001', ['bug', 'bug', 'like'],
+            $author, sourcePostId: 'root-001', sourcePostSha256: str_repeat('a', 64));
+        assertSame("Record-ID: thread-label-abc\nCreated-At: 2026-04-15T15:30:00Z\nTarget-Kind: thread\nTarget-ID: root-001\nOperation: add\nTags: bug bug like\nAuthor-Identity-ID: {$author}\nSource-Post-ID: root-001\nSource-Post-SHA256: " . str_repeat('a', 64) . "\n\n", $thread);
+        $label = (new ThreadLabelRecordParser())->parse($thread);
+        assertSame('root-001', $label->threadId);
+        assertSame(['bug', 'like'], $label->labels);
+        assertSame($author, $label->authorIdentityId);
+        assertSame('root-001', $label->sourcePostId);
+
+        $post = ReactionRecordParser::build('post', 'post-reaction-abc', '2026-04-15T15:30:00Z', 'reply-001', ['flag'],
+            $author, '2026-04-15T15:29:00.123Z', 'intent-1');
+        $reaction = (new PostReactionRecordParser())->parse($post);
+        assertSame('reply-001', $reaction->postId);
+        assertSame(['flag'], $reaction->tags);
+        assertSame('2026-04-15T15:29:00.123Z', $reaction->actionAt);
+        assertSame('intent-1', $reaction->intentId);
+    }
+
+    public function testUnifiedReactionScopeMustMatchFamily(): void
+    {
+        $thread = ReactionRecordParser::build('thread', 'thread-label-abc', '2026-04-15T15:30:00Z', 'root-001', ['like']);
+        $post = ReactionRecordParser::build('post', 'post-reaction-abc', '2026-04-15T15:30:00Z', 'reply-001', ['flag']);
+
+        assertThrows(static fn () => (new PostReactionRecordParser())->parse($thread),
+            'Reaction Target-Kind must be post in the post-reaction family.');
+        assertThrows(static fn () => (new ThreadLabelRecordParser())->parse($post),
+            'Reaction Target-Kind must be thread in the thread-label family.');
+        assertThrows(static fn () => (new ThreadLabelRecordParser())->parse(str_replace('Target-Kind: thread', 'Target-Kind: Thread', $thread)),
+            'Reaction Target-Kind must be thread in the thread-label family.');
+    }
+
+    public function testUnifiedReactionRejectsMixedOrMisplacedHeaders(): void
+    {
+        $head = "Record-ID: thread-label-abc\nCreated-At: 2026-04-15T15:30:00Z\n";
+        foreach (['Thread-ID: root-001', 'Post-ID: root-001', 'Labels: like'] as $legacy) {
+            $contents = $head . "Target-Kind: thread\nTarget-ID: root-001\nOperation: add\nTags: like\n{$legacy}\n\n";
+            assertThrows(static fn () => (new ThreadLabelRecordParser())->parse($contents),
+                'Reaction record mixes unified and legacy headers: ' . explode(':', $legacy)[0]);
+        }
+        assertThrows(static fn () => (new ThreadLabelRecordParser())->parse($head . "Target-ID: root-001\nOperation: add\nTags: like\n\n"),
+            'Missing required thread-label header: Target-Kind');
+        assertThrows(static fn () => (new ThreadLabelRecordParser())->parse($head . "Thread-ID: root-001\nTarget-Kind: thread\nOperation: add\nLabels: like\n\n"),
+            'Reaction record mixes unified and legacy headers: Thread-ID');
+
+        $post = "Record-ID: post-reaction-abc\nCreated-At: 2026-04-15T15:30:00Z\nTarget-Kind: post\nTarget-ID: reply-001\nOperation: add\nTags: flag\nSource-Post-ID: reply-001\nSource-Post-SHA256: " . str_repeat('a', 64) . "\n\n";
+        assertThrows(static fn () => (new PostReactionRecordParser())->parse($post),
+            'Label source headers apply only to thread scope.');
+    }
+
+    public function testLegacyReactionFamiliesStillRejectEachOthersHeaders(): void
+    {
+        $threadInPost = "Record-ID: post-reaction-abc\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: add\nLabels: like\n\n";
+        assertThrows(static fn () => (new PostReactionRecordParser())->parse($threadInPost),
+            'Missing required post-reaction header: Post-ID');
+        $postInThread = "Record-ID: thread-label-abc\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: flag\n\n";
+        assertThrows(static fn () => (new ThreadLabelRecordParser())->parse($postInThread),
+            'Missing required thread-label header: Thread-ID');
     }
 
     public function testParsesInstanceFixture(): void

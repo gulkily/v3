@@ -1,5 +1,7 @@
 # Post Reaction Record V1
 
+> **Legacy format.** New post-reaction records use [Reaction Record V1](reaction_record_v1.md). Records in this format remain valid and are read as stored through the deprecated legacy adapter. The application no longer builds them; it only stores legacy-layout signed submissions from cached older browsers exactly as signed.
+
 This document defines the canonical append-only post-reaction record family for post and comment flagging.
 
 ## Scope

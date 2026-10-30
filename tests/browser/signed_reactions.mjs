@@ -65,6 +65,7 @@ try {
         const record = fields.get('canonical_record');
         const id = /^Record-ID: (.+)$/m.exec(record)[1];
         const family = id.startsWith('thread-label-') ? 'thread-labels' : 'post-reactions';
+        assert.match(record, new RegExp(`\nTarget-Kind: ${family === 'thread-labels' ? 'thread' : 'post'}\nTarget-ID: `));
         assert.equal(await readFile(join(root, 'repository/records', family, id + '.txt'), 'utf8'), record);
         assert.equal(await readFile(join(root, 'repository/records', family, id + '.txt.asc'), 'utf8'), fields.get('detached_signature'));
         const source = await context.request.get(base + `/source/current/records/${family}/${id}.txt`);

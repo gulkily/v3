@@ -166,3 +166,8 @@ Only one reference is supported per post. Uploads require a verified approved
 author and `FORUM_IMAGE_CONTENT_ENABLED`; JPEG/PNG are limited to 5 MiB and
 4096 pixels per side. Storage is outside the repository, with a separate image
 backup required for restoration. Images are not public presentation assets.
+
+## Optional agent-response metadata
+
+Generated scripture replies use [named agent-response headers](agent_response_metadata_v1.md).
+Legacy signed JSON headers remain readable without rewriting their bytes.

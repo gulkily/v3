@@ -10,6 +10,7 @@ use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Agent\AgentIdentityService;
 use ForumRewrite\Agent\SqliteAgentReplyGenerationStore;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\ReactionRecordParser;
 use ForumRewrite\Security\AttributionCutoff;
 use ForumRewrite\ReadModel\VerifiedAttribution;
 use ForumRewrite\Canonical\CanonicalPathResolver;
@@ -338,9 +339,17 @@ final class WriteApiSmokeTest
         try {
             $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
-            $id = 'thread-label-signed-test';
+            foreach (['legacy', 'unified'] as $layout) {
+            $id = 'thread-label-signed-' . $layout;
             $created = gmdate('Y-m-d\TH:i:s\Z');
-            $record = "Record-ID: {$id}\nCreated-At: {$created}\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: {$identity}\n\n";
+            $record = $layout === 'legacy'
+                ? "Record-ID: {$id}\nCreated-At: {$created}\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: {$identity}\n\n"
+                : ReactionRecordParser::build('thread', $id, $created, 'root-001', ['like'], $identity);
+            if ($layout === 'unified') {
+                // The legacy record already counted this vote; clear it so the unified one is new.
+                unlink($root . '/records/thread-labels/thread-label-signed-legacy.txt');
+                unlink($root . '/records/thread-labels/thread-label-signed-legacy.txt.asc');
+            }
             $signature = $this->signCanonicalRecord($key['home'], $record);
             $input = ['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $identity,
                 'canonical_record' => $record, 'detached_signature' => $signature];
@@ -352,17 +361,52 @@ final class WriteApiSmokeTest
             foreach ([
                 ['canonical_record' => str_replace($id, 'thread-label-changed', $record)],
                 ['canonical_record' => str_replace($id, 'thread-label-../bad', $record)],
-                ['canonical_record' => str_replace('Labels: like', 'Labels: flag', $record)],
+                ['canonical_record' => str_replace(['Labels: like', 'Tags: like'], ['Labels: flag', 'Tags: flag'], $record)],
+                ['canonical_record' => str_replace('Target-Kind: thread', 'Target-Kind: post', $record)],
+                ['canonical_record' => str_replace("Target-Kind: thread\nTarget-ID: root-001\n", "Thread-ID: root-001\n", $record)],
                 ['detached_signature' => 'invalid'],
                 ['detached_signature' => ''],
             ] as $change) {
+                if (($change['canonical_record'] ?? null) === $record) continue;
                 $rejected = false;
                 try { $writer->applyThreadTag(array_replace($input, $change)); }
                 catch (RuntimeException) { $rejected = true; }
                 assertTrue($rejected);
             }
+            }
         } finally {
             $this->deleteTree($key['home']);
+            $this->deleteTree($root);
+        }
+    }
+
+    public function testUnsignedReactionsWriteUnifiedFormatAndDeduplicateAcrossFormats(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        try {
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $identity = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+            @mkdir($root . '/records/post-reactions', 0777, true);
+            file_put_contents($root . '/records/thread-labels/thread-label-legacy-like.txt',
+                "Record-ID: thread-label-legacy-like\nCreated-At: 2026-04-15T15:31:00Z\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: {$identity}\n\n");
+            file_put_contents($root . '/records/post-reactions/post-reaction-legacy-like.txt',
+                "Record-ID: post-reaction-legacy-like\nCreated-At: 2026-04-15T15:31:00Z\nPost-ID: reply-001\nOperation: add\nTags: like\nAuthor-Identity-ID: {$identity}\n\n");
+            $this->runCommand($root, 'git add records && git commit -qm "legacy reactions"');
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+
+            assertSame('no', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'like', 'author_identity_id' => $identity])['wrote_record']);
+            assertSame('no', $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'like', 'author_identity_id' => $identity])['wrote_record']);
+
+            $before = glob($root . '/records/{thread-labels,post-reactions}/*.txt', GLOB_BRACE) ?: [];
+            assertSame('yes', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'upvote', 'author_identity_id' => $identity])['wrote_record']);
+            assertSame('yes', $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'flag', 'author_identity_id' => $identity])['wrote_record']);
+            $written = array_values(array_diff(glob($root . '/records/{thread-labels,post-reactions}/*.txt', GLOB_BRACE) ?: [], $before));
+            sort($written);
+            assertSame(2, count($written));
+            assertTrue(preg_match("/\\ARecord-ID: post-reaction-[^\\n]+\\nCreated-At: [^\\n]+\\nTarget-Kind: post\\nTarget-ID: reply-001\\nOperation: add\\nTags: flag\\nAuthor-Identity-ID: {$identity}\\n\\n\\z/", (string) file_get_contents($written[0])) === 1);
+            assertTrue(preg_match("/\\ARecord-ID: thread-label-[^\\n]+\\nCreated-At: [^\\n]+\\nTarget-Kind: thread\\nTarget-ID: root-001\\nOperation: add\\nTags: upvote\\nAuthor-Identity-ID: {$identity}\\n\\n\\z/", (string) file_get_contents($written[1])) === 1);
+            assertSame('no', $writer->applyThreadTag(['thread_id' => 'root-001', 'tag' => 'upvote', 'author_identity_id' => $identity])['wrote_record']);
+        } finally {
             $this->deleteTree($root);
         }
     }
@@ -412,16 +456,20 @@ final class WriteApiSmokeTest
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
             $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
             $_COOKIE = ['identity_hint' => $identity];
-            foreach (['thread', 'post'] as $kind) {
+            foreach ([['thread', 'legacy'], ['post', 'legacy'], ['thread', 'unified'], ['post', 'unified']] as [$kind, $layout]) {
                 $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
                 $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
                 $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
                 $created = gmdate('Y-m-d\TH:i:s\Z', time() - 3600);
-                $record = "Record-ID: {$family}-skew\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n";
-                $_POST = [$kind . '_id' => 'root-001', 'tag' => 'like', 'canonical_record' => $record,
+                $tag = $layout === 'legacy' ? 'like' : 'upvote';
+                $record = $layout === 'legacy'
+                    ? "Record-ID: {$family}-skew\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: {$tag}\nAuthor-Identity-ID: {$identity}\n\n"
+                    : ReactionRecordParser::build($kind, $family . '-skew-unified', $created, 'root-001', [$tag], $identity);
+                $_POST = [$kind . '_id' => 'root-001', 'tag' => $tag, 'canonical_record' => $record,
                     'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
                 $prepared = json_decode($this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'), true, 512, JSON_THROW_ON_ERROR);
                 assertSame('clock_skew', $prepared['error_code']);
+                assertSame(array_slice(explode("\n", $record), 2), array_slice(explode("\n", $prepared['canonical_record']), 2));
                 $_POST['canonical_record'] = $prepared['canonical_record'];
                 $_POST['prepare_token'] = $prepared['prepare_token'];
                 $_POST['detached_signature'] = $this->signCanonicalRecord($key['home'], $_POST['canonical_record']);
@@ -460,12 +508,18 @@ final class WriteApiSmokeTest
                 $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
                 $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
                 $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
-                $record = "Record-ID: {$family}-historical\nCreated-At: 2020-01-01T00:00:00Z\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n";
-                $path = 'records/' . $family . 's/' . $family . '-historical.txt';
-                if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0777, true);
-                file_put_contents($root . '/' . $path, $record);
-                file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($key['home'], $record));
-                $paths[] = $path;
+                $records = [
+                    $family . '-historical' => "Record-ID: {$family}-historical\nCreated-At: 2020-01-01T00:00:00Z\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: like\nAuthor-Identity-ID: {$identity}\n\n",
+                    $family . '-historical-unified' => \ForumRewrite\Canonical\ReactionRecordParser::build($kind, $family . '-historical-unified',
+                        '2020-01-01T00:00:01Z', 'root-001', ['like'], $identity),
+                ];
+                foreach ($records as $id => $record) {
+                    $path = 'records/' . $family . 's/' . $id . '.txt';
+                    if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0777, true);
+                    file_put_contents($root . '/' . $path, $record);
+                    file_put_contents($root . '/' . $path . '.asc', $this->signCanonicalRecord($key['home'], $record));
+                    $paths[] = $path;
+                }
             }
             $planner = new \ForumRewrite\Import\ContentImportPlanner();
             $plan = $planner->plan($root, $destination);
@@ -493,7 +547,7 @@ final class WriteApiSmokeTest
             $builder->rebuild();
             assertSame(0, (int) $pdo->query("SELECT post_score_total FROM posts WHERE post_id = 'root-001'")->fetchColumn());
             foreach (['thread_label_invalid_count', 'post_reaction_invalid_count'] as $metric) {
-                assertSame('1', $pdo->query("SELECT value FROM metadata WHERE key = '{$metric}'")->fetchColumn());
+                assertSame('2', $pdo->query("SELECT value FROM metadata WHERE key = '{$metric}'")->fetchColumn());
             }
             $plan = $planner->plan($root, $destination);
             foreach ($paths as $path) {
@@ -526,7 +580,14 @@ final class WriteApiSmokeTest
                 $kind === 'thread' ? $writer->applyThreadTag($input) : $writer->applyPostTag($input);
                 $path = 'records/' . $family . 's/' . $family . '-archive.txt';
                 $pairs[$path] = $record; $pairs[$path . '.asc'] = $signature;
+                $unified = \ForumRewrite\Canonical\ReactionRecordParser::build($kind, $family . '-archive-unified', $created, 'root-001', ['like'], $identity);
+                $unifiedPath = 'records/' . $family . 's/' . $family . '-archive-unified.txt';
+                $pairs[$unifiedPath] = $unified;
+                $pairs[$unifiedPath . '.asc'] = $this->signCanonicalRecord($key['home'], $unified);
+                file_put_contents($root . '/' . $unifiedPath, $unified);
+                file_put_contents($root . '/' . $unifiedPath . '.asc', $pairs[$unifiedPath . '.asc']);
             }
+            $this->runCommand($root, 'git add records && git commit -qm "unified reaction fixtures"');
             $output = $this->runCommand($root, 'php ' . escapeshellarg(__DIR__ . '/../scripts/archive_thread.php')
                 . ' root-001 ' . escapeshellarg($root) . ' ' . escapeshellarg($database)
                 . ' ' . escapeshellarg($artifacts) . ' ' . escapeshellarg($archive));
@@ -536,7 +597,7 @@ final class WriteApiSmokeTest
             foreach ($pairs as $path => $bytes) assertSame($bytes, file_get_contents($root . '/' . $path));
             (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
             $pdo = new PDO('sqlite:' . $database);
-            assertSame(2, (int) $pdo->query("SELECT COUNT(*) FROM reaction_signatures WHERE signature_status = 'verified'")->fetchColumn());
+            assertSame(4, (int) $pdo->query("SELECT COUNT(*) FROM reaction_signatures WHERE signature_status = 'verified'")->fetchColumn());
         } finally {
             $this->deleteTree($key['home']); $this->deleteTree($root);
         }
@@ -2690,6 +2751,117 @@ NODE;
         } finally { putenv($previous === false ? 'SCRIPTURE_RESPONSE_GUIDANCE' : 'SCRIPTURE_RESPONSE_GUIDANCE=' . $previous); }
     }
 
+    public function testReadableSignedExpansionOfLegacyInitialPreservesHistoricalBytes(): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts): void {
+            $repository = new CanonicalRecordRepository($root);
+            $record = $repository->loadPost('records/posts/' . $initial . '.txt');
+            $path = \ForumRewrite\Canonical\CanonicalPathResolver::datedPost($initial, $record->createdAt);
+            $text = file_get_contents($root . '/' . $path);
+            assertStringContains('Agent-Response-Type: scripture_oriented_analysis', $text);
+            assertStringNotContains('Agent-Response: {', $text);
+            assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $text, $record->authorIdentityId));
+            // Construct a historical signed fixture; production never converts signed input.
+            $legacy = preg_replace('/^Agent-Response-[^\n]*\n/m', '', $text);
+            $legacy = str_replace("\n\n", "\nAgent-Response: " . json_encode($record->agentResponse) . "\n\n", $legacy);
+            $identity = new \ForumRewrite\Agent\AgentIdentityService($root, $db, $artifacts,
+                dirname(__DIR__) . '/state/private/agent-reply', $repository);
+            $signature = $identity->signAsReplyAgent($record->authorIdentityId, $legacy);
+            file_put_contents($root . '/' . $path, $legacy);
+            file_put_contents($root . '/' . $path . '.asc', $signature);
+            $this->runCommand($root, 'git add .');
+            $this->runCommand($root, 'git commit -m "Historical signed initial fixture"');
+            (new ReadModelBuilder($root, $db, $repository))->rebuild();
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            assertSame('requested', json_decode($this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial), true)['generation_status']);
+            $claim = $store->claimRequestedForPost($initial);
+            $done = $app->fulfillAgentReplyRequest($claim);
+            assertSame('generated', $done['generation_status']);
+            $expansionPath = 'records/posts/' . $done['agent_post_id'] . '.txt';
+            $expanded = file_get_contents($root . '/' . $expansionPath);
+            assertStringContains('Agent-Response-Expansion-Of: ' . $initial, $expanded);
+            assertStringNotContains('Agent-Response: {', $expanded);
+            assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $expansionPath, $expanded, $record->authorIdentityId));
+            assertSame($done['agent_post_id'], $app->fulfillAgentReplyRequest($claim)['agent_post_id']);
+            assertSame($legacy, file_get_contents($root . '/' . $path));
+            assertSame($signature, file_get_contents($root . '/' . $path . '.asc'));
+            assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $legacy, $record->authorIdentityId));
+        });
+    }
+
+    public function testReadableResponseTransferRoundTrip(): void
+    {
+        $this->checkResponseTransfer(false, false);
+    }
+
+    public function testLegacyResponseTransferMatrix(): void
+    {
+        foreach ([[true, false], [false, true], [true, true]] as [$oldInitial, $oldExpansion]) {
+            $this->checkResponseTransfer($oldInitial, $oldExpansion);
+        }
+    }
+
+    private function checkResponseTransfer(bool $oldInitial, bool $oldExpansion): void
+    {
+        $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial, $root, $db, $artifacts, $directory) use ($oldInitial, $oldExpansion): void {
+            $this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial);
+            $done = $app->fulfillAgentReplyRequest($store->claimRequestedForPost($initial));
+            assertSame('generated', $done['generation_status']);
+            $repository = new CanonicalRecordRepository($root);
+            $identity = new \ForumRewrite\Agent\AgentIdentityService($root, $db, $artifacts,
+                dirname(__DIR__) . '/state/private/agent-reply', $repository);
+            $bytes = [];
+            foreach ([$initial => $oldInitial, $done['agent_post_id'] => $oldExpansion] as $id => $old) {
+                $record = $repository->loadPost('records/posts/' . $id . '.txt');
+                $path = $id === $initial ? \ForumRewrite\Canonical\CanonicalPathResolver::datedPost($id, $record->createdAt) : 'records/posts/' . $id . '.txt';
+                $text = file_get_contents($root . '/' . $path);
+                if ($old) {
+                    $text = preg_replace('/^Agent-Response-[^\n]*\n/m', '', $text);
+                    $text = str_replace("\n\n", "\nAgent-Response: " . json_encode($record->agentResponse) . "\n\n", $text);
+                    file_put_contents($root . '/' . $path, $text);
+                    file_put_contents($root . '/' . $path . '.asc', $identity->signAsReplyAgent($record->authorIdentityId, $text));
+                }
+                $bytes[$path] = $text;
+                $bytes[$path . '.asc'] = file_get_contents($root . '/' . $path . '.asc');
+                assertSame('verified', \ForumRewrite\Security\ReactionSignature::status($root, $path, $text, $record->authorIdentityId));
+                $sourceView = $this->renderMethod($app, 'GET', '/source/current/' . $path);
+                assertStringContains($old ? 'Agent-Response:' : 'Agent-Response-Type:', $sourceView);
+            }
+            if ($oldInitial || $oldExpansion) {
+                $this->runCommand($root, 'git add .');
+                $this->runCommand($root, 'git commit -m "Signed historical representation fixture"');
+            }
+            $query = 'SELECT post_id, agent_response_json FROM posts WHERE agent_response_json IS NOT NULL ORDER BY post_id';
+            $incremental = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
+            (new ReadModelBuilder($root, $db, $repository))->rebuild();
+            assertSame($incremental, $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC));
+            $export = (new \ForumRewrite\Images\ImageBackup($root, $db))->export('tar.gz');
+            try {
+                $target = $directory . '/import-target';
+                mkdir($target . '/records', 0700, true);
+                foreach (['init -q', 'config user.email test@example.invalid', 'config user.name Test', 'commit --allow-empty -qm Seed'] as $args) {
+                    $this->runCommand($target, 'git ' . $args);
+                }
+                $targetDb = $directory . '/import.sqlite3';
+                $extracted = (new \ForumRewrite\Import\RepositoryArchive())->extract($export['path'], $directory . '/extracted');
+                $prepared = $directory . '/records.tar.gz';
+                $this->runCommand($extracted['root'], 'tar -czf ' . escapeshellarg($prepared) . ' records');
+                $this->runCommand(dirname(__DIR__), './v3 import-repository ' . escapeshellarg($prepared)
+                    . ' ' . escapeshellarg($target) . ' ' . escapeshellarg($targetDb));
+                foreach ($bytes as $path => $expected) { assertSame($expected, file_get_contents($target . '/' . $path)); }
+                $imported = new PDO('sqlite:' . $targetDb);
+                assertSame($incremental, $imported->query($query)->fetchAll(PDO::FETCH_ASSOC));
+                $offline = $directory . '/transfer-offline.sqlite3';
+                (new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder())->build($targetDb, $offline);
+                $copy = new PDO('sqlite:' . $offline);
+                assertSame($incremental, $copy->query($query)->fetchAll(PDO::FETCH_ASSOC));
+                $importedApp = new Application(dirname(__DIR__), $target, $targetDb, $directory . '/import-artifacts');
+                assertStringContains('Further scripture reflection', $this->renderMethod($importedApp, 'GET', '/posts/' . $initial));
+            } finally { unlink($export['path']); }
+        });
+    }
+
     public function testScriptureInitialStatusReadsStoredResultsAndHonorsVisibility(): void
     {
         $this->withScriptureExpansionFixture(function ($app, $pdo, $store, $source, $initial): void {
@@ -3922,8 +4094,10 @@ NODE;
         $author = $this->createAuthoredThread($app, 'legacy-label-retract', "Old source\n#pinned");
         foreach (glob($root . '/records/thread-labels/*.txt') as $path) {
             $bytes = file_get_contents($path);
-            if (!str_contains($bytes, 'Thread-ID: ' . $author['thread_id'])) continue;
+            if (!str_contains($bytes, 'Target-ID: ' . $author['thread_id'])) continue;
+            // Rewrite as a legacy label without source provenance.
             $bytes = preg_replace('/^Source-Post-(?:ID|SHA256):.*\n/m', '', $bytes);
+            $bytes = str_replace(["Target-Kind: thread\n", 'Target-ID: ', 'Tags: '], ['', 'Thread-ID: ', 'Labels: '], $bytes);
             file_put_contents($path, $bytes);
         }
         $this->gitOutput($root, 'add records'); $this->gitOutput($root, 'commit -m legacy-label-fixture');
@@ -5466,13 +5640,13 @@ NODE;
 
         assertStringContains('status=ok', $response);
         assertStringContains('Labels: bug, needs-review', $threadPage);
-        assertSame(1, count(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId))));
+        assertSame(1, count(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), "Target-Kind: thread\nTarget-ID: " . $threadId))));
 
-        $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), 'Thread-ID: ' . $threadId)))[0];
+        $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), "Target-Kind: thread\nTarget-ID: " . $threadId)))[0];
         $recordContents = (string) file_get_contents($recordPath);
         assertStringContains('Source-Post-ID: ' . $threadId, $recordContents);
         assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect((new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse($recordContents), $repositoryRoot)['status']);
-        assertStringContains('Labels: bug needs-review', $recordContents);
+        assertStringContains('Tags: bug needs-review', $recordContents);
         assertStringNotContains('ignored', $recordContents);
     }
 
@@ -5490,8 +5664,8 @@ NODE;
         $records = glob($repositoryRoot . '/records/thread-labels/*.txt');
         $matchingRecords = array_values(array_filter(
             $records,
-            static fn (string $path): bool => str_contains((string) file_get_contents($path), "Thread-ID: root-001\n")
-                && str_contains((string) file_get_contents($path), 'Labels: answered')
+            static fn (string $path): bool => str_contains((string) file_get_contents($path), "Target-Kind: thread\nTarget-ID: root-001\n")
+                && str_contains((string) file_get_contents($path), 'Tags: answered')
         ));
 
         assertStringContains('status=ok', $response);
@@ -6052,6 +6226,7 @@ NODE;
             $record = (string) file_get_contents($recordPaths[0]);
             assertStringContains('Action-At: 2026-10-01T12:00:00.000Z', $record);
             assertStringContains('Intent-ID: outbox-reaction-signed-like-1', $record);
+            assertStringContains("Target-Kind: post\nTarget-ID: reply-001\nOperation: add\nTags: like\n", $record);
         } finally {
             $_POST = [];
             $this->deleteTree($key['home']);

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/Support/RebuildHistoryFixture.php';
+require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 
 use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
@@ -11,6 +12,37 @@ use ForumRewrite\ReadModel\ReadModelMetadata;
 
 final class ActivityProjectionTest
 {
+    public function testEvidenceRefreshBatchesLargeHistoryWithin128MiB(): void
+    {
+        $w = new ImportTestWorkspace();
+        $root = $w->repository('source', true);
+        $database = $w->root . '/model.sqlite';
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        $code = <<<'PHP'
+require $argv[1];
+$pdo = new PDO('sqlite:' . $argv[3], null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->beginTransaction();
+$pdo->exec('DELETE FROM activity');
+$insert = $pdo->prepare("INSERT INTO activity(created_at,kind,label,board_tags_json,author_label,source_path) VALUES ('now','post',?,'[]','guest','records/posts/root-001.txt')");
+for ($i = 0; $i < 1001; $i++) $insert->execute([str_repeat('x', 32768)]);
+$row = $pdo->query('SELECT * FROM activity LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+$service = new \ForumRewrite\Activity\ActivityService(static fn (): PDO => $pdo, $argv[2], $argv[3]);
+$expected = $service->buildIndexedEvidence($row, []);
+unset($row, $service);
+$retained = str_repeat('x', 104 * 1024 * 1024);
+\ForumRewrite\ReadModel\ActivityEvidenceIndex::refresh($pdo, $argv[2], $argv[3]);
+$check = $pdo->prepare('SELECT COUNT(*) FROM activity WHERE evidence_json = ?');
+$check->execute([$expected]);
+if ((int) $check->fetchColumn() !== 1001) throw new RuntimeException('Skipped or changed evidence across batches');
+\ForumRewrite\ReadModel\ActivityEvidenceIndex::refresh($pdo, $argv[2], $argv[3]);
+$pdo->rollBack();
+echo 'ok';
+PHP;
+        [$status, $output] = $w->command([PHP_BINARY, '-d', 'memory_limit=128M', '-r', $code, dirname(__DIR__) . '/autoload.php', $root, $database]);
+        assertSame(0, $status, $output);
+        assertSame('ok', $output);
+    }
+
     private function legacyCount(PDO $pdo, ActivityService $service, string $view): int
     {
         $view = $service->normalizeActivityView($view);
