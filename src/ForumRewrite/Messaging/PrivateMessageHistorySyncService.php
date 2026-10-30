@@ -8,6 +8,10 @@ final class PrivateMessageHistorySyncService
 {
     public const BATCH_SIZE = 10;
     public function __construct(private readonly PrivateMessageStore $messages, private readonly PrivateMessageHistorySyncStore $sync, private readonly PDO $profiles) {}
+    public function admit(array $viewer, ?float $now = null): float
+    {
+        return $this->sync->admit(strtolower((string)$viewer['username_token']), (string)$viewer['identity_id'], $now ?? microtime(true));
+    }
     private function context(array $viewer): array
     {
         $account=strtolower(trim((string)($viewer['username_token']??'')));

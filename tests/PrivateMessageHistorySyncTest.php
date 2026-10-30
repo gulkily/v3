@@ -4,7 +4,7 @@ require_once __DIR__.'/../autoload.php';
 use ForumRewrite\Messaging\{PrivateMessageStore,PrivateMessageHistorySyncStore,PrivateMessageHistorySyncService,PrivateMessageHistorySyncDatabaseConfig};
 final class PrivateMessageHistorySyncTest
 {
-    private function fixture(): array
+    private function fixture(int $accountKeys = 2): array
     {
         $profiles=new PDO('sqlite::memory:');
         $profiles->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_ASSOC);
@@ -14,11 +14,48 @@ final class PrivateMessageHistorySyncTest
             $q=$profiles->prepare('INSERT INTO profiles (identity_id,profile_slug,username,username_token,public_key,is_approved) VALUES (?,?,?,?,?,1)');
             $q->execute(['openpgp:'.$fp,'openpgp-'.$fp,$account,$account,'KEY-'.$key]);
         }
+        for($i=2;$i<$accountKeys;$i++) {
+            $fp=sha1('fixture-key-'.$i);
+            $q=$profiles->prepare('INSERT INTO profiles (identity_id,username_token,public_key,is_approved) VALUES (?,?,?,1)');
+            $q->execute(['openpgp:'.$fp,'alice','KEY-'.$i]);
+        }
         $db=new PDO('sqlite::memory:');$messages=new PrivateMessageStore($db);
         for($i=1;$i<=31;$i++) $messages->storeEnvelope(sprintf('m%02d',$i),'2026-10-10',$i%2?'alice':'bob',$i%2?'bob':'alice','source','cipher-'.$i);
         $messages->storeEnvelope('foreign','2026-10-10','mallory','bob','source','secret');
         $syncDb=new PDO('sqlite::memory:');$sync=new PrivateMessageHistorySyncStore($syncDb);
         return [$profiles,$messages,$sync,new PrivateMessageHistorySyncService($messages,$sync,$profiles),$db,$syncDb];
+    }
+    public function testLargeAccountFixtureAndConcurrentAdmission(): void
+    {
+        [$profiles]=$this->fixture(115);
+        assertSame(115,(int)$profiles->query("SELECT count(*) FROM profiles WHERE username_token='alice'")->fetchColumn());
+        $path=tempnam(sys_get_temp_dir(),'sync-admission-');
+        $pdo=new PDO('sqlite:'.$path);new PrivateMessageHistorySyncStore($pdo);unset($pdo);
+        try {
+            foreach([false,true] as $sameKey) {
+                $jobs=[];
+                for($i=0;$i<8;$i++) {
+                    $code='require '.var_export(dirname(__DIR__).'/autoload.php',true).'; $p=new PDO("sqlite:".$argv[1]);$p->exec("PRAGMA busy_timeout=1000");$s=new ForumRewrite\\Messaging\\PrivateMessageHistorySyncStore($p);$n=0;for($i=0;$i<16;$i++)if($s->admit($argv[2],$argv[3],100.0)===0.0)$n++;echo $n;';
+                    $proc=proc_open(['php','-r',$code,$path,$sameKey?'shared':'distinct',$sameKey?'one':'key'.$i],[1=>['pipe','w'],2=>['pipe','w']],$pipes);
+                    $jobs[]=[$proc,$pipes];
+                }
+                $total=0;
+                foreach($jobs as [$proc,$pipes]) {$out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);assertSame(0,proc_close($proc),$err);$total+=(int)$out;}
+                assertSame($sameKey?16:64,$total);
+            }
+        } finally {unlink($path);}
+    }
+    public function testAdmissionIsRollingAndSharedAcrossKeys(): void
+    {
+        [,,,$service]=$this->fixture();
+        for($i=0;$i<16;$i++) assertSame(0.0,$service->admit($this->viewer(),100.0));
+        assertSame(10.0,$service->admit($this->viewer(),100.0));
+        assertSame(0.5,$service->admit($this->viewer(),109.5));
+        assertSame(0.0,$service->admit($this->viewer(),110.0));
+        for($i=0;$i<63;$i++) assertSame(0.0,$service->admit($this->viewer('key'.$i),110.0));
+        assertSame(10.0,$service->admit($this->viewer('fresh'),110.0));
+        assertSame(0.0,$service->admit($this->viewer('c','bob'),110.0));
+        assertSame(0.0,$service->admit($this->viewer('fresh'),120.0));
     }
     public function testCombinedDiscoveryIsBoundedAndPreservesNecessaryContinuation(): void
     {

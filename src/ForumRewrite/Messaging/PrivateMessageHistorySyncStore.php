@@ -8,6 +8,7 @@ final class PrivateMessageHistorySyncStore
     {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_admission (account TEXT PRIMARY KEY, events TEXT NOT NULL)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_transfers (transfer_id TEXT PRIMARY KEY, account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, ciphertext TEXT NOT NULL)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_items (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, message_id TEXT NOT NULL, digest TEXT NOT NULL, transfer_id TEXT NOT NULL, PRIMARY KEY(account,source,target,message_id))');
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_items_target ON history_sync_items(account,target,message_id)');
@@ -16,6 +17,24 @@ final class PrivateMessageHistorySyncStore
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_coverage_transfer ON history_sync_coverage(transfer_id)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_sender_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
+    }
+    /** One bounded row per account; rejected attempts do not extend a lockout. */
+    public function admit(string $account, string $source, float $now): float
+    {
+        $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            $q=$this->pdo->prepare('SELECT events FROM history_sync_admission WHERE account=?');
+            $q->execute([$account]);
+            $events=json_decode($q->fetchColumn() ?: '[]',true,8,JSON_THROW_ON_ERROR);
+            $events=array_values(array_filter($events,static fn($event)=>$event[1]>$now-10 && $event[1]<=$now));
+            $own=array_values(array_filter($events,static fn($event)=>$event[0]===$source));
+            $retry=max(count($events)>=64?$events[0][1]+10-$now:0, count($own)>=16?$own[0][1]+10-$now:0);
+            if ($retry<=0) $events[]=[$source,$now];
+            $q=$this->pdo->prepare('INSERT INTO history_sync_admission VALUES (?,?) ON CONFLICT(account) DO UPDATE SET events=excluded.events');
+            $q->execute([$account,json_encode($events,JSON_THROW_ON_ERROR)]);
+            $this->pdo->exec('COMMIT');
+            return max(0,$retry);
+        } catch (\Throwable $e) { $this->pdo->exec('ROLLBACK');throw $e; }
     }
     public function checkpoint(string $account, string $source, bool $sender = false): array
     {
