@@ -52,3 +52,10 @@ CLI: Final ./v3 rebuild, ./v3 build-static and ./v3 offline publish all passed w
 Commit: This offline-only fix commit, after 2c0c1fb2. QDB source unchanged in this commit; no additional schema/dependency changes. Lint, local document links and whitespace passed. No production run, merge or push; full application suite and physical-browser verification not performed (UI output contract unchanged).
 
 *— Codex · 2026-10-31 UTC*
+
+## Main integration — 2026-10-31 UTC
+
+Authorization: User requested merge and push. Merged into updated main at f4f275cf, preserving remote invite changes through 2ee0d198 and the separate fix commits 2c0c1fb2/e5fb84b1.
+Verification: Combined QDB/offline suite passed 33/33 on the merged tree with FASTMOD_AUTOMATIC_TAGGING_ENABLED=false for legacy CLI fixtures; dedicated effective-tag test enables tagging internally. Log: /tmp/v3-selection-merge-tests.log. Removed trailing blank lines from the two audit output archives without changing samples. Integration whitespace check passed; full suite/live deployment not claimed. Unrelated working drafts excluded.
+
+*— Codex · 2026-10-31 UTC*
