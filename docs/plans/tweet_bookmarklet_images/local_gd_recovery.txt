@@ -1,0 +1,30 @@
+Issue: Approved account cannot import/upload images on http://localhost:8000
+Date: 2026-10-31 UTC
+Status: Diagnosed; operator install/restart and actual user retry pending
+
+Observed-Web-Entry: GET /compose/thread returns 200 with image-content-state 1 and current image assets
+Observed-Browser: Chromium localhost isSecureContext true, crypto.subtle available, online true
+Observed-Profile: Public approved profile reports Approved yes and Image-Upload-Allowed no
+Observed-Runtime: Port 8000 runs /usr/bin/php8.3 built-in server from this checkout; PHP CLI GD absent and ImageUploadValidator.available false
+Cause: ApiTextController requires approval, enabled image feature and a GD JPEG/PNG decoder; missing GD forces Image-Upload-Allowed no for every identity
+Scope: Server capability; unrelated to root-approval provenance or HTTP localhost security
+Separate-Correction: Overlapping client permission-check race fixed in d6a7e5d5; it does not install the missing decoder
+
+Proposed-Dependency: Ubuntu php8.3-gd 8.3.6-0ubuntu0.24.04.13 amd64
+Purpose: PHP GD extension enabling existing server-side JPEG/PNG upload validation
+Origin: archive.ubuntu.com / security.ubuntu.com, Ubuntu Noble updates/security, source package php8.3
+License: PHP-3.01 plus upstream bundled notices, distributed with php8.3-common copyright
+Delivery: APT distribution package; 31146 download bytes, about 140 KiB installed, six packaged files/symlinks plus generated module configuration
+Affected-Paths: /usr/lib/php/20230831/gd.so; /etc/php/8.3/mods-available/gd.ini; enabled PHP SAPI conf.d links; /usr/share/php8.3-gd and package metadata
+Resolved-Transaction: apt-get -s --no-remove install php8.3-gd: one new package; zero upgrades, removals or transitive additions
+Existing-Dependencies: Matching php8.3-cli/php8.3-common 8.3.6-0ubuntu0.24.04.13 and libgd3 2.3.3-9ubuntu5 already installed
+Maintainer-Script: Registers gd.ini via ucf and enables GD for installed PHP 8.3 SAPIs; existing running PHP processes require restart to load extension
+Maintenance: Normal Ubuntu PHP security updates; keep extension matched to installed PHP runtime
+Alternative: Keep GD absent and post text/source links; a browser-only preparation path cannot satisfy existing server validation. Temporary extracted libraries used for tests do not repair the running server
+Approval: No system dependency change authorized or performed by agent. CONTRIBUTING.md requires explicit dependency approval; operator may review and authorize APT transaction in their own terminal
+Privilege: sudo -n true reports a password is required; agent cannot perform install without operator's local authentication. Never request password in chat
+Recovery-Command: sudo apt-get install php8.3-gd
+Restart: Stop existing ./v3 start terminal with Ctrl+C, then run ./v3 start using the same options/environment
+Draft: Keep composer tab open; after server restart use Retry instead of reloading away editable text
+Verification-After-Install: New PHP process ImageUploadValidator.available true; restart port 8000; approved profile Image-Upload-Allowed yes; actual signed import/post retry
+Outcome: Diagnosis and reviewed recovery only. No install, server restart, system configuration or repository dependency changes performed
