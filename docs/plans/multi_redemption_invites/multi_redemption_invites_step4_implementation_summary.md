@@ -70,3 +70,29 @@ Completion: Signed APIs admit N distinct keys, refuse N+1, recover same-key retr
 - Notes: S4 commit 60766d25. No import-policy expansion, dependencies, schema or frontend edits. Original estimate unchanged; no measured labor.
 
 *— Codex · 2026-10-31 UTC*
+
+## Stage 6 - S6/v2: Backend release verification
+
+**Original estimate: 0.08**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes: Added invitation lifecycle concept, completed API/operator documentation, plan navigation/index and study records. Confirmed approval acceptance/review concepts remain aligned; replay changes documented in S2.
+- Verification: Final focused PHP run 77/77 passed (canonical parsers, acceptance, policy, history, receipt maintenance, import recovery and three signed-write integration flows). Earlier client checks 92/92 and export/import checks 26/26 passed; counts overlap and are not summed as unique tests. Real Chrome public/members-only capped and legacy suites passed, including normal CLI rebuild. All six changed production PHP files lint; browser fixture syntax and whitespace checks pass. Current plan/spec/reference links and concept source paths resolve. Broad scan of 650 local Markdown links found four historical missing targets: three superseded v1 mockup PNGs and one unrelated ledger link; preserved, not current deliverables.
+- Scope: Zero changes to public/, templates/, schema, manifests, locks or dependencies. No todo.txt edit. No full-suite, physical-device, live-site, deployment, old-reader rollback or full-history archive-restore claim.
+- Notes: S5 commit da3454a4. Stage original unchanged; retrospective reflects final cross-consumer checks/documentation, not measured labor.
+
+## Closeout and study outcome
+
+Status: Six of six stages implemented and locally verified against backend-only v2; release/maintainer acceptance pending.
+Authorization: Approved Step 3; no merge, push or deployment requested.
+Planning commit: 465d3b38
+Stage commits: S1 7a33faee; S2 5701a13b; S3 3e2130a0; S4 60766d25; S5 da3454a4; S6 is the closeout commit containing this record.
+Original baseline: 2e17c971308a710a540c905e738048c4f51e53ca plus separately authorized invitation cleanup, preserved from intake.
+Study checkpoint: 2026-10-31 UTC; railspike-effort / v3/multi_redemption_invites; v2; original baseline/R1/P2; Codex single exposed rater. Step 4 entry projection 0.70 retained, no prospective revision. V1 0.85 and original stage scopes remain in history.
+**Retrospective cycle scope assessment: 0.80**
+Assessment: Independent whole-cycle judgment, not stage sum or measured labor; replay/receipt recovery and full browser/restore proof required more ordinary correction than projected. No independent rater or reliable active-work measurement.
+Maintainer comfortable-fit judgment: Pending; no accepted-outcome increment. Deduplicate worktree copies under the same cycle ID.
+Remaining limitations: First browser run's members-only manual acceptance-time error did not recur on full replay; cause remains unexplained, not fixed. Export-to-import wrapper mismatch requires documented repacking. Full suite, production-scale behavior and deployment remain unverified. No follow-up implementation or scope expansion authorized.
+Debug report: [Step 4 diagnostics](multi_redemption_invites_debug_log.md#step-4-local-closeout--2026-10-31-utc).
+
+*— Codex · 2026-10-31 UTC*

@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./multi_redemption_invites_step1_solution_assessment.md) · [Step 2](./multi_redemption_invites_step2_feature_description.md) · [Step 3](./multi_redemption_invites_step3_development_plan.md) · Step 4 (not authorized)
+> **Feature plan:** [Step 1](./multi_redemption_invites_step1_solution_assessment.md) · [Step 2](./multi_redemption_invites_step2_feature_description.md) · [Step 3](./multi_redemption_invites_step3_development_plan.md) · [Step 4](./multi_redemption_invites_step4_implementation_summary.md)
 Debug mode: enabled
 Effort study: railspike-effort / v3/multi_redemption_invites; [ledger](../effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2)
 Extended estimates: enabled
@@ -81,3 +81,7 @@ Each stage targets ≤1 hour; split before implementation if needed; >8 stages/d
 Scope v2/original baseline/R1/P2: **0.70 projected total**, independently judged, not the stage sum. Reduction reflects removed frontend work; atomic admission/replay risks remain. Frozen hashes reverified; Codex single exposed rater; no measured work/accepted outcome. Planning only; links/diff checked, no runtime tests. Step 3 handoff reaffirmed 2026-10-31 UTC after explicit v2 Step 2 approval; total 0.70 and all six stage estimates unchanged. Await Approved Step 3; no implementation or new commit/push authorized.
 
 *— Revised by Codex · 2026-10-31 UTC*
+
+Approval update: User explicitly said “approved step 3” on 2026-10-31. Step 4 executed against backend-only scope v2; see the linked implementation summary for commits, verification and limitations. Earlier handoff statements above retain their historical status.
+
+*— Codex · 2026-10-31 UTC*

@@ -112,3 +112,26 @@ No new supported findings; prior scope-revision report remains applicable.
 Source: effort checkpoints. Observation: no new implementation evidence; 0.70 and stage estimates are reaffirmed, not independent ratings or measured effort.
 
 *— Codex · 2026-10-31 UTC*
+
+## Step 4 local closeout — 2026-10-31 UTC
+
+Debug mode: enabled, inherited
+
+### Necessary/useful instructions
+
+Source: Step 4 Do, Completion Contract and stage verification. Observation: real signed acceptance plus failed-refresh and concurrent-process tests exposed a line-based Git comparison that failed on invitation trailing blank lines. Reusing existing approval recovery with exact blob verification fixed that condition; browser and trusted-restore checks exercised the ordinary entry and recovery. Suggestion: retain vertical completion and explicit recovery evidence.
+Source: Step 4 Before, planning commit gate. Observation: plans were organized and committed before implementation, with the ledger held to closeout. Suggestion: retain clear file boundaries and stable cycle history.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Source: Step 4 verification and host UI/theme rules. Observation: no frontend, navigation, theme, dependency or read-model schema changes occurred. Existing-client real-browser tests remain relevant, but redesign/icon/migration matrices do not apply. Suggestion: keep conditional scope.
+
+### Uncertain assessments
+
+Source: Step 4 closeout and effort checkpoint. Observation: an initial members-only manual browser flow reported an invalid acceptance time; full same-condition replay passed without a code change. Record this as unexplained and maintainer acceptance pending rather than infer a fix. Separate 0.80 retrospective cycle judgment from original 0.70 projection and measured work.
+
+*— Codex · 2026-10-31 UTC*

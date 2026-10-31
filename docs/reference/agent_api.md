@@ -302,6 +302,13 @@ and explicitly correct the named character when necessary.
   and send it with later requests.
 - Image attachments need images enabled and an approved identity.
 
+Approved API clients may issue a capped link with `max_redemptions` (1–1000) on
+`POST /api/prepare_invitation`, then sign the exact canonical record and finalize
+through `POST /api/create_prepared_invitation`. Omission remains single-use.
+Recipients use the existing redemption endpoints; same-key recovery consumes no
+extra slot. See [invitation API and recovery](invitation_entry.md#capped-invitations-through-the-api)
+for request fields, revocation and upgrade requirements.
+
 ## Text file publisher scripts
 
 Publish a UTF-8 text file anonymously with Python 3 (standard library only):

@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./multi_redemption_invites_step1_solution_assessment.md) · [Step 2](./multi_redemption_invites_step2_feature_description.md) · [Step 3](./multi_redemption_invites_step3_development_plan.md) · Step 4 (not authorized)
+> **Feature plan:** [Step 1](./multi_redemption_invites_step1_solution_assessment.md) · [Step 2](./multi_redemption_invites_step2_feature_description.md) · [Step 3](./multi_redemption_invites_step3_development_plan.md) · [Step 4](./multi_redemption_invites_step4_implementation_summary.md)
 Debug mode: enabled
 Effort study: railspike-effort / v3/multi_redemption_invites; [P2 ledger](../effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2)
 Extended estimates: enabled
