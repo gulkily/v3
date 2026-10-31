@@ -815,3 +815,10 @@ search instructions because they were deliberately added and rendered-verified.
 Also retained copy/revocation confirmations and backup download feedback as
 potentially necessary signals for effects outside the visible page. The scan itself was documentation
 only; subsequent implementation and verification are recorded separately above.
+
+## System State codebase Git information — 2026-10-31
+
+- [x] Added a separate Codebase facts table with application commit, branch, latest commit date/subject and clean/modified working-tree status. App version now uses the application checkout rather than the content repository. No remote URLs or changed file paths are exposed.
+- [x] Source-only deployments and failed Git commands show unavailable; detached HEAD is identified. Linked-worktree .git files are accepted. Existing content-repository and read-model details remain separate.
+- [x] Core-route rendered HTML smoke check passed; PHP syntax and diff whitespace checks passed. Reused the existing wrapping facts table. Dependency delta: zero.
+- [ ] Browser verification remains outstanding for phone/desktop, affected themes, long commit subjects, source-only deployments and detached HEAD; the HTML smoke check does not establish visual layout.

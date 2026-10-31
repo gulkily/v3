@@ -50,7 +50,7 @@ $rowCountSources = [
     <h1>System State</h1>
     <p class="codebase-status" data-status="<?= $e($state['overall_status']) ?>"><?= $e($state['overall_status']) ?></p>
     <p class="meta">App version <code><?= $e($state['app_version']) ?></code></p>
-    <p class="meta codebase-source"><code>git -C state/local_repository rev-parse HEAD</code></p>
+
   </article>
   <article class="card" data-role="codebase-state">
     <h2>Instance</h2>
@@ -66,6 +66,19 @@ $rowCountSources = [
 <?php endif; ?>
     </p>
 <?= $partial('partials/query_action.php', ['queryCompact' => true, 'queryKey' => 'codebase-admins', 'queryLabel' => 'Instance admins', 'querySql' => "SELECT username_token, MIN(username) AS username FROM profiles WHERE approved_by_label = 'root' GROUP BY username_token ORDER BY username_token ASC;"]) ?>
+  </article>
+  <article class="card" data-role="codebase-state">
+    <h2>Codebase</h2>
+    <table class="codebase-facts">
+      <tbody>
+<?php foreach ($state['codebase'] as $label => $value): ?>
+        <tr>
+          <th scope="row"><?= $e($label) ?></th>
+          <td><code><?= $e($value) ?></code></td>
+        </tr>
+<?php endforeach; ?>
+      </tbody>
+    </table>
   </article>
   <article class="card" data-role="codebase-state">
     <h2>Repository</h2>

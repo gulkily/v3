@@ -44,6 +44,7 @@ final class CodebaseStateController
         private readonly string $queuePath,
         private readonly ExecutionLock $executionLock,
         private readonly ReadModelStaleMarker $staleMarker,
+        private readonly string $projectRoot,
     ) {
     }
 
@@ -121,7 +122,13 @@ final class CodebaseStateController
 
         return [
             'overall_status' => $overallStatus,
-            'app_version' => ReadModelMetadata::repositoryHead($this->repositoryRoot),
+            'app_version' => $this->codebaseGitValue('rev-parse --verify HEAD'),
+            'codebase' => [
+                'Commit' => $this->codebaseGitValue('rev-parse --verify HEAD'),
+                'Branch' => $this->codebaseGitValue('symbolic-ref --quiet --short HEAD', 'detached or unavailable'),
+                'Latest commit' => $this->codebaseGitValue('log -1 --format=%cI%x20%s'),
+                'Working tree' => $this->codebaseGitValue('status --porcelain --untracked-files=normal', 'unavailable', 'clean', true),
+            ],
             'repository' => [
                 'root_label' => basename($this->repositoryRoot),
                 'git_exists' => is_dir($this->repositoryRoot . '/.git') ? 'yes' : 'no',
@@ -155,6 +162,24 @@ final class CodebaseStateController
                 ['href' => '/downloads/read_model.sqlite3', 'label' => 'SQLite index database'],
             ],
         ];
+    }
+
+    private function codebaseGitValue(string $arguments, string $fallback = 'unavailable', string $empty = 'unavailable', bool $status = false): string
+    {
+        // A .git file is valid for linked worktrees and submodules. Do not
+        // accidentally report an enclosing repository for a source-only deploy.
+        if (!is_dir($this->projectRoot . '/.git') && !is_file($this->projectRoot . '/.git')) {
+            return 'unavailable';
+        }
+        $output = [];
+        $exitCode = 0;
+        exec('git --no-optional-locks -C ' . escapeshellarg($this->projectRoot) . ' ' . $arguments . ' 2>/dev/null', $output, $exitCode);
+        if ($exitCode !== 0) {
+            return $fallback;
+        }
+        $value = trim(implode("\n", $output));
+
+        return $value === '' ? $empty : ($status ? 'modified' : $value);
     }
 
     private function operatorStatus(): OperatorStatusCollector

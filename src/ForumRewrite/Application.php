@@ -1196,6 +1196,7 @@ final class Application
             TaskQueueDatabaseConfig::path($this->projectRoot),
             $this->executionLock(),
             $this->staleMarker(),
+            $this->projectRoot,
         );
     }
 
