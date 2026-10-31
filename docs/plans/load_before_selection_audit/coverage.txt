@@ -1,0 +1,37 @@
+Audit: Load before selection
+Source revision: ade35a65d2488bcfc280277e4bbf0bc8beae76a4
+Planning commit: 5983cbf2
+Environment: PHP 8.1.2 CLI; local SQLite/Git; production PHP 8.3 and corpus unavailable
+Scope: Documentation-only; consumer-family coverage, not exhaustive path coverage
+Evidence vocabulary: Measured = executed current method on synthetic fixture; traced = source/caller inspected; historical = earlier audit only; unresolved = no supported conclusion
+Counters: Examined = database/source work, unknown without instrumentation; materialized = PHP rows/objects instantiated; transferred = rows/bytes crossing SQLite/PHP or server/browser; used = final selected rows. Do not conflate these.
+Integrity checks: Relative local link/path targets, git diff --check, approved file scope, cited symbol existence; anchors/remote links are not automatically checked
+Ownership: M02/M04/M09 are inherited, not new independent discoveries
+
+Seed: M02 / LBS01
+Source: src/ForumRewrite/ReadModel/ThreadRepository.php fetchThreads/iterateThreads; src/ForumRewrite/Qdb/QdbExperience.php welcome/eligibleQuotes; src/ForumRewrite/ReadModel/TagPage.php page
+Disposition: Partially mitigated, residual active. fetchThreads still converts the generator to a complete array. QDB still filters/slices after loading. TagPage now selects at most 25 IDs before body hydration; tags index can stream. Separate tag fix is not a whole-reader fix.
+
+Seed: M04 / LBS02
+Source: src/ForumRewrite/Offline/PublicOfflineSnapshotBuilder.php visibleThreadRows/snapshotThreadRows
+Disposition: Still active by source. All visible rows precede recent/pinned selection. Full selected-thread posts and expansion scans remain separate dimensions. Output-byte cap is not an input-allocation bound.
+
+Seed: M09 / LBS03
+Source: src/ForumRewrite/Host/StaticArtifactBuilder.php fetchVisibleTagRoutes/fetchVisibleThreadIds/fetchVisiblePostIds/fetchIds/prebuildProfilePages
+Disposition: Residual active by source. Route arrays remain. Profile enumeration/rendering is now skipped by default; thread/post enumeration is conditional on detail prebuilding. Tag route enumeration remains unconditional. Do not credit disabled profile work as a general streaming fix.
+
+Related delivered work: ReadModelBuilder indexCommits delegates to CommitHistoryReader; activity evidence uses operation-scoped lookup. Prior history timings are historical, not new measurements here. Broader canonical parsing/derivation remains separate from selection findings.
+
+Family: QDB welcome/list/search/random; shared boards/RSS
+Status: Traced; LBS01/LBS04, 18 local reader samples; RSS full-result exception
+Family: Tags/profiles/directories/Forte/detail APIs/browser
+Status: Traced named entry points; LBS04/LBS05/LBS06 and bounded/full-result exceptions in findings.txt; browser source-only, no network/heap measurements
+Family: Offline publisher/reader and static enumeration
+Status: Traced; LBS02 measured six samples, LBS03 source-traced; offline JS snapshot-wide materialization documented
+Family: Rebuild/canonical files/Git
+Status: Traced main full-rebuild/source-history and commit/evidence readers; LBS07 residual; full rebuild traversal necessary, retained collections remain capacity risks
+Family: CLI imports/exports/scoring/queue
+Status: Traced import planner/archive, ImageBackup export, scoring audit/backfill and task claim/dispatch; LBS08 plus complete-import/export and bounded-claim exceptions. Specialized archive import scripts and every job handler deferred, see findings.txt
+
+Author: Codex
+Date: 2026-10-31 UTC

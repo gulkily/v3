@@ -82,6 +82,71 @@ final class PublicOfflineSnapshotBuilderTest
         }
     }
 
+    public function testSelectionKeepsAllPinsBeforeRecentAndPreservesVisibility(): void
+    {
+        $source = tempnam(sys_get_temp_dir(), 'offline-selection-');
+        $target = $source . '.snapshot';
+        try {
+            $this->createSource($source);
+            $pdo = new PDO('sqlite:' . $source);
+            $pdo->exec("UPDATE posts SET is_hidden=1 WHERE post_id='thread-055'");
+            $pdo->exec("UPDATE threads SET board_tags_json='{\"tag\":\"identity\"}' WHERE root_post_id='thread-054'");
+            $pdo->exec("UPDATE threads SET thread_labels_json='{\"tag\":\"pinned\"}' WHERE root_post_id='thread-010'");
+            $pdo->exec("UPDATE threads SET board_tags_json='broken',thread_labels_json='broken' WHERE root_post_id='thread-053'");
+            $builder = new PublicOfflineSnapshotBuilder();
+            $method = new ReflectionMethod($builder, 'snapshotThreadRows');
+            $method->setAccessible(true);
+            assertSame(['thread-010','thread-001','thread-053','thread-052','thread-051'], array_column($method->invoke($builder,$pdo,3),'root_post_id'));
+            $result = $builder->build($source,$target,3);
+            assertSame(5,$result['thread_count']);
+            assertSame(['thread-001','thread-010','thread-051','thread-052','thread-053'], (new PDO('sqlite:'.$target))->query('SELECT root_post_id FROM threads ORDER BY root_post_id')->fetchAll(PDO::FETCH_COLUMN));
+            $pdo->exec("UPDATE threads SET thread_labels_json='[\"pinned\"]'");
+            assertSame(53,count($method->invoke($builder,$pdo,3)), 'Pins must not be capped by recent-thread limit.');
+            $pdo->exec('DELETE FROM threads');
+            assertSame([],$method->invoke($builder,$pdo,3));
+        } finally { foreach (glob($source.'*') ?: [] as $path) @unlink($path); }
+    }
+
+    public function testPinnedSizeFailureKeepsPublishedSnapshot(): void
+    {
+        $source = tempnam(sys_get_temp_dir(), 'offline-pin-limit-');
+        $target = $source . '.snapshot';
+        try {
+            $this->createSource($source);
+            $builder = new PublicOfflineSnapshotBuilder();
+            $builder->build($source,$target,3);
+            $before = hash_file('sha256',$target);
+            $manifest = file_get_contents($target.'.manifest.json');
+            (new PDO('sqlite:'.$source))->prepare("UPDATE posts SET body=? WHERE post_id='thread-001'")->execute([str_repeat('x',1024*1024)]);
+            $failed = false;
+            try {
+                $builder->build($source,$target,3,65536);
+            } catch (RuntimeException $error) {
+                // SQLite may auto-rollback on SQLITE_FULL; existing error wording varies.
+                $failed = true;
+            }
+            assertTrue($failed);
+            assertSame($before,hash_file('sha256',$target));
+            assertSame($manifest,file_get_contents($target.'.manifest.json'));
+            assertSame([],glob($target.'.tmp-*'));
+        } finally { foreach (glob($source.'*') ?: [] as $path) @unlink($path); }
+    }
+
+    public function testFullSnapshotMemoryStaysBoundedWithFixedPinsAndRecentSelection(): void
+    {
+        $peaks=[];
+        foreach ([1000,10000] as $count) {
+            $source=tempnam(sys_get_temp_dir(),'offline-memory-');
+            try {
+                $result=\ForumRewrite\Support\BoundedProcess::run([PHP_BINARY,'-d','memory_limit=32M',__DIR__.'/Support/offline_selection_memory.php',$source,(string)$count],new \ForumRewrite\Support\OperationBudget(60),8192,'offline memory regression');
+                assertSame(0,$result['exit_code'],$result['stderr'].$result['stdout']);
+                assertTrue(preg_match('/Peak bytes: (\d+)/',$result['stdout'],$match)===1,$result['stdout']);
+                $peaks[]=(int)$match[1];
+            } finally { foreach (glob($source.'*') ?: [] as $path) @unlink($path); }
+        }
+        assertTrue($peaks[1] <= $peaks[0]+4*1024*1024,'Fixed snapshot selection must not retain all candidate rows.');
+    }
+
     private function createSource(string $path): void
     {
         $pdo = new PDO('sqlite:' . $path);

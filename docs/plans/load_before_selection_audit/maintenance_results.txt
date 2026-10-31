@@ -1,0 +1,93 @@
+Evidence: Current offline selection method, synthetic fixture
+Date: 2026-10-31 UTC
+
+Sample: 1
+Mode: offline200
+Candidates: 1000
+Selected: 201
+PDO rows transferred: 1000
+Bodies materialized: 0
+Root body bytes transferred: 0
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 9.388722
+PHP baseline bytes: 2097152
+PHP peak bytes: 4194304
+Process peak RSS KiB: 34412
+Exit: 0
+
+Sample: 2
+Mode: offline200
+Candidates: 1000
+Selected: 201
+PDO rows transferred: 1000
+Bodies materialized: 0
+Root body bytes transferred: 0
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 9.739235
+PHP baseline bytes: 2097152
+PHP peak bytes: 4194304
+Process peak RSS KiB: 34160
+Exit: 0
+
+Sample: 3
+Mode: offline200
+Candidates: 1000
+Selected: 201
+PDO rows transferred: 1000
+Bodies materialized: 0
+Root body bytes transferred: 0
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 10.423797
+PHP baseline bytes: 2097152
+PHP peak bytes: 4194304
+Process peak RSS KiB: 34288
+Exit: 0
+
+Sample: 1
+Mode: offline200
+Candidates: 10000
+Selected: 201
+PDO rows transferred: 10000
+Bodies materialized: 0
+Root body bytes transferred: 0
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 86.491564
+PHP baseline bytes: 2097152
+PHP peak bytes: 25165824
+Process peak RSS KiB: 55024
+Exit: 0
+
+Sample: 2
+Mode: offline200
+Candidates: 10000
+Selected: 201
+PDO rows transferred: 10000
+Bodies materialized: 0
+Root body bytes transferred: 0
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 52.510869
+PHP baseline bytes: 2097152
+PHP peak bytes: 25165824
+Process peak RSS KiB: 54896
+Exit: 0
+
+Sample: 3
+Mode: offline200
+Candidates: 10000
+Selected: 201
+PDO rows transferred: 10000
+Bodies materialized: 0
+Root body bytes transferred: 0
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 54.57037
+PHP baseline bytes: 2097152
+PHP peak bytes: 25165824
+Process peak RSS KiB: 54892
+Exit: 0
+

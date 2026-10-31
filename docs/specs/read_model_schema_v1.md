@@ -595,3 +595,14 @@ and retracted roots excluded before pagination. Membership is case-insensitive a
 deduplicated per root. Activity time and root ID descending are stable page boundaries;
 only 25 selected roots are hydrated. Tables are unchanged. Prior-version startup
 rebuilds before the new query executes, following the core-query version contract.
+
+## Version 40 — QDB welcome selection
+
+QdbWelcomeSelection streams root ID, authored date and board-tag metadata in
+activity/ID descending order. It applies the existing hidden-bootstrap and quote-ID
+rules in PHP, counts all eligible quotes, and retains five recent quote IDs plus
+three news IDs (authored date/ID descending). Only those selected roots are hydrated,
+sharing a loaded row when a quote is also news. News More state reflects the complete
+eligible news count. Tables and indexes are unchanged; prior-version startup rebuilds
+before this new core query executes. Full metadata examination/sorting is still
+required; this bounds PHP retention and body transfer, not SQLite scan work.
