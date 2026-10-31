@@ -28,6 +28,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Deployment config](deployment_config/deployment_config_step1_solution_assessment.md)
 - [QDB memory audit](qdb_memory_audit/qdb_memory_audit_step1_solution_assessment.md) — documentation-only source audit complete; fixes and host capacity acceptance remain separate.
 
 - [Unified reaction records](unified_reaction_records/unified_reaction_records_step1_solution_assessment.md)
