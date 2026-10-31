@@ -27,3 +27,19 @@ Branch: `feat/deployment-config`; planning commit `e51751cf`
 - Notes: the per-checkout file is used only when it exists, so existing single-site deployments are unaffected.
 
 *— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Deployment settings lookup
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - New `DeploymentSettings` with `value($key, ?$projectRoot)`, `source(...)` and `projectRoot()` for `FORUM_SITE_ID`, `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, `FORUM_STATIC_HTML_ROOT`, `FORUM_PUBLIC_ARTIFACT_ROOT` and `FORUM_IMAGE_ROOT`. A non-empty environment variable wins, then the checkout's private file, else `null` so the caller applies its existing default. File paths must be absolute strings. Without an explicit root, the lookup uses the checkout containing the code. The parsed file is cached per process, keyed by path, mtime and size.
+  - The six keys were added to `PrivateConfigSchema` as non-template settings, so `./v3 private-config view` lists them with their source and generated templates are unchanged.
+  - `SiteProfileRegistry::active()` reads through the lookup. An unknown profile set in the private file is an error naming the file and the known profiles; an unknown environment value keeps today's fallback to the default profile, for compatibility.
+  - Plan deviation, same outcome: `LocalRepositoryBootstrap` and `PresentationPathResolver` stay unchanged because they produce the fallback defaults. Callers in Stages 3–4 use `DeploymentSettings::value(...) ?: <existing default>`, which keeps every caller's current default exactly.
+  - New `DeploymentSettingsTest` (registered in `tests/run.php`): precedence and source for every key, empty environment values ignored, file-driven QDB profile, unknown file profile error, unknown environment fallback, relative and non-string path rejection, per-checkout selection, keys absent from the template.
+- Verification (all passed): `DeploymentSettingsTest` 7/7, `SiteProfileRegistryTest` 8/8, `PrivateConfigSchemaTest` 5/5, `PrivateConfigCommandTest` 8/8.
+- Notes: this developer machine's private file sets none of the new keys (checked), so local test behavior is unchanged. Baselines still running; recorded in Stage 3.
+
+*— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*

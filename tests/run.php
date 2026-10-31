@@ -231,6 +231,7 @@ $testFiles = [
     __DIR__ . '/ReadModelPostRetractionsTest.php',
     __DIR__ . '/LocalWriteServiceThreadSubjectTest.php',
     __DIR__ . '/ResumeTargetTest.php',
+    __DIR__ . '/DeploymentSettingsTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',
     __DIR__ . '/ThemeRegistryTest.php',
     __DIR__ . '/TestRunnerBehaviorTest.php',

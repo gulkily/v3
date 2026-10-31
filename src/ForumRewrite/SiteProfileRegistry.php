@@ -86,9 +86,16 @@ final class SiteProfileRegistry
     public static function active(): array
     {
         $profiles = self::all();
-        $siteId = getenv('FORUM_SITE_ID');
+        $siteId = \ForumRewrite\Support\DeploymentSettings::value('FORUM_SITE_ID');
+        if ($siteId !== null && !isset($profiles[$siteId])
+            && str_starts_with(\ForumRewrite\Support\DeploymentSettings::source('FORUM_SITE_ID'), 'private file')) {
+            // A deliberate file setting must not silently become another site.
+            throw new \RuntimeException('Unknown FORUM_SITE_ID "' . $siteId . '" in '
+                . substr(\ForumRewrite\Support\DeploymentSettings::source('FORUM_SITE_ID'), strlen('private file ')) . '; known profiles: '
+                . implode(', ', array_keys($profiles)) . '.');
+        }
 
-        if ($siteId === false || $siteId === '' || !isset($profiles[$siteId])) {
+        if ($siteId === null || !isset($profiles[$siteId])) {
             $siteId = self::DEFAULT_SITE_ID;
         }
 
