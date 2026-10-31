@@ -82,3 +82,16 @@ Verification: Documentation diff and local relative-link targets checked; runtim
 - Limitations: This establishes server scheduling/quietness; browser turn deduplication, automatic continuation and natural-flow acceptance remain Stages 5–7. No production replay, full suite, dependency change, merge or push. Original estimate retained; retrospective reflects revision and scheduler interaction tests, not measured labor.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 5 - Deduplicate recovery and receipts
+
+**Original estimate: 0.13**
+**Retrospective stage work: 0.13**
+
+- Changes: Share extracted/verified originals across destinations in one visible turn (ten entries, 64 KiB retained key-material encoding limit); clear transient results on turn completion/cancellation and identity/visibility boundaries. Separate missing decryption from failed signer subsets. Background candidate processing streams past bad donors and retains only a usable candidate. Server discovery supplies candidate availability and a revision token; absent candidates avoid lookup requests, and revisions invalidate reused evidence. Missing decryption can finish its verification scan without an access receipt.
+- Receipts: Coalesce foreground confirmations for 50 ms into batches of ten; suppress already confirmed or in-flight confirmations with bounded non-secret sets. Work acknowledgments reuse server-validated existing receipts instead of writing them repeatedly. No receipt is inferred from upload or a failed signature. Lost acknowledgments remain retryable.
+- Verification: 32/32 focused service/crypto tests pass. Coordinator tests assert exactly two extractions/verifications across repeated two-original destination work and two first-time receipts; reader test checks ten foreground confirmations coalesce into one request. Real 115-key mismatch recovery retains zero modern candidate lookups. Missing-access scan test confirms no fabricated receipt; original-binding, invalid donor, lost receipt, unsigned content, revocation and restore tests pass.
+- Refinement: Concurrent tests exposed unnecessary repeated schema DDL on existing history stores under load. Constructor now checks the final installed-schema index before attempting DDL; admission and concurrent-message responsiveness tests pass afterward. New/old-schema initialization retains the additive path.
+- Limits: Secret caches are in memory only; this stage does not yet establish the 16-attempt/10-original turn ceiling or natural automatic continuation (Stage 6). No dependencies, UI copy, send restriction, production replay, merge or push. Estimate unchanged; no measured labor.
+
+*— Codex · 2026-10-30 UTC*

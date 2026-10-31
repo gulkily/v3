@@ -132,6 +132,19 @@ foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements
         $db->exec("UPDATE private_messages SET encrypted_envelope='changed' WHERE message_id='m01'");
         assertSame(true,$before!==$revision());
     }
+    public function testMissingDecryptionSkipsVerifierPagesWithoutCreatingAReceipt(): void
+    {
+        [,,$sync,$service,$db]=$this->fixture(115);
+        $db->exec("DELETE FROM private_messages WHERE message_id!='m01'");
+        $work=$service->combinedWork($this->viewer(),['sender'])['work'][0];
+        assertSame(false,$work['messages'][0]['candidate_available']);
+        assertSame(true,$work['messages'][0]['verification_more']);
+        $item=['message_id'=>'m01','digest'=>hash('sha256','cipher-1')];
+        $service->acknowledge($this->viewer(),['checkpoint'=>$work['checkpoint'],'unavailable'=>[$item]]);
+        assertSame(null,$sync->receipt('alice',str_repeat('a',40),'m01',$item['digest']));
+        $next=$service->combinedWork($this->viewer(),['sender'])['work'][0];
+        assertSame(true,$next['target']!==$work['target']);
+    }
     public function testActivityIsPrivateCoalescedAndNotPromotedBySync(): void
     {
         [,,$sync,$service]=$this->fixture();

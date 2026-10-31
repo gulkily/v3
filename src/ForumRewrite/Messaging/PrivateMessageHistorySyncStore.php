@@ -8,6 +8,11 @@ final class PrivateMessageHistorySyncStore
     {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        // The final index is installed only after this additive schema is complete.
+        // Existing stores need no DDL/write-lock attempts on every heartbeat.
+        $ready=$pdo->query("SELECT 1 FROM sqlite_master WHERE type='index' AND name='history_sync_pending'");
+        $installed=$ready->fetchColumn()!==false;$ready->closeCursor();
+        if($installed)return;
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_verification (account TEXT NOT NULL, source TEXT NOT NULL, mode TEXT NOT NULL, state TEXT NOT NULL, PRIMARY KEY(account,source,mode))');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_activity (account TEXT NOT NULL, source TEXT NOT NULL, active_at INTEGER NOT NULL, PRIMARY KEY(account,source))');
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_activity_recent ON history_sync_activity(account,active_at DESC,source)');
@@ -111,6 +116,11 @@ final class PrivateMessageHistorySyncStore
         $table=$sender?'history_sync_sender_scan':'history_sync_scan';
         $q=$this->pdo->prepare('INSERT INTO '.$table.' VALUES (?,?,?,?) ON CONFLICT(account,source) DO UPDATE SET target=excluded.target,after_id=excluded.after_id WHERE target!=excluded.target OR after_id!=excluded.after_id');
         $q->execute([$account,$source,$target,$after]);
+    }
+    public function hasCandidate(string $account, string $target, string $id, string $digest): bool
+    {
+        $q=$this->pdo->prepare('SELECT 1 FROM history_sync_items i JOIN history_sync_transfers t ON t.transfer_id=i.transfer_id WHERE i.account=? AND i.target=? AND i.message_id=? AND i.digest=? LIMIT 1');
+        $q->execute([$account,$target,$id,$digest]);return $q->fetchColumn()!==false;
     }
     public function candidates(string $account, string $target, string $id, string $digest, string $after = ''): array
     {

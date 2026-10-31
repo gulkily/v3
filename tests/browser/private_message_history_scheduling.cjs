@@ -2,7 +2,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
 const combined=process.argv.includes('--combined'),paired=process.argv.includes('--paired');
 const events={},values=new Map(),requests=[];
 const source='a'.repeat(40),target='b'.repeat(40);
-let clock=100000,slow=false,interrupt=false,shutdown=false;
+let clock=100000,slow=false,interrupt=false,shutdown=false,extractions=0,verifications=0;
 const realNow=Date.now;Date.now=()=>clock;
 global.sessionStorage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
 global.localStorage={getItem:k=>k==='forum_pki_username'?'alice':'saved-key'};
@@ -11,7 +11,7 @@ global.MutationObserver=class {observe(){} disconnect(){}};
 global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),querySelectorAll:()=>[],addEventListener:(k,v)=>events[k]=v,dispatchEvent:event=>{if(events[event.type])events[event.type](event)}};
 global.window={addEventListener:()=>{},__forumBrowserIdentity:{ensureOpenPgpApi:async()=>({readPrivateKey:async()=>({getFingerprint:()=>source})})}};
 window.ForumPrivateMessageUnread={historyEligibility:()=>true};
-window.ForumPrivateMessageHistoryCrypto={digest:()=> 'digest',extractKeys:async()=>{if(slow){clock+=10001;slow=false;}return ['secret'];},readOriginal:async()=> 'verified',wrapHistoryKeys:async()=> 'encrypted'};
+window.ForumPrivateMessageHistoryCrypto={digest:()=> 'digest',extractKeys:async()=>{extractions++;if(slow){clock+=10001;slow=false;}return ['secret'];},readOriginal:async()=> {verifications++;return 'verified';},wrapHistoryKeys:async()=> 'encrypted'};
 global.fetch=async(url,options)=>{
  const body=options.body?JSON.parse(options.body):null;
  if(!combined && url.endsWith('/work') && options.method==='POST')return {ok:false,status:405,json:async()=>({status:'error'})};
@@ -26,6 +26,9 @@ global.fetch=async(url,options)=>{
 function install(){vm.runInThisContext(fs.readFileSync('public/assets/private_message_availability.js','utf8'));vm.runInThisContext(fs.readFileSync('public/assets/private_message_history_sync.js','utf8'));events.DOMContentLoaded();return window.ForumPrivateMessageHistorySync.refresh();}
 (async()=>{
  await install();
+ assert.equal(extractions,2,'Each original is extracted once across destinations');
+ assert.equal(verifications,2,'Each original is verified once across destinations');
+ assert.equal(requests.flatMap(r=>r.body?.items||[]).filter(r=>r.transfer_id!==undefined).length,2,'Confirmed receipts are not resent');
  assert.equal(requests.filter(r=>r.url.includes('/work')).length,paired?4:8);
  if(!combined) {assert.equal(requests.filter(r=>r.url.endsWith('?mode=sender')).length,4);assert.equal(requests.filter(r=>r.url.endsWith('/work')).length,4);}
  // Short visit: a delayed response must not upload/acknowledge after visibility cancellation.
@@ -43,7 +46,7 @@ function install(){vm.runInThisContext(fs.readFileSync('public/assets/private_me
  assert.equal(requests.filter(r=>r.url.includes('/work')).length,1);
  requests.length=0;await window.ForumPrivateMessageHistorySync.refresh();
  const resumed=requests.find(r=>r.body?.mode==='sender').body;
- assert.deepEqual(resumed.items.map(r=>r.message_id),['one','two']);assert.equal(resumed.checkpoint.after_id,'two');
+ assert.deepEqual(resumed.verified.map(r=>r.message_id),['one','two']);assert.equal(resumed.checkpoint.after_id,'two');
  assert([...values.values()].every(v=>['account','sender'].includes(v)));
  requests.length=0;shutdown=true;await install();
  assert.equal(requests.length,1,'Disabled response must not be retried');

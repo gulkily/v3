@@ -30,7 +30,7 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
    if(action==='work')body.complete=['sender'];
    const out=await call({action,body});assert.equal(out.status,'ok',out.error);
    assert(Buffer.byteLength(JSON.stringify(out))<=4*1048576);assert(out.usage.keys<=64);assert(out.usage.decisions<=160);
-   if(action==='transfers')lookups++;
+   if(action==='transfers' && !body.ciphertext)lookups++;
    if(action==='work')pages++;
    if(action==='acknowledge' && body.items?.length)verified=true;
    return {ok:true,json:async()=>out};

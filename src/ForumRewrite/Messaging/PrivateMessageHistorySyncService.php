@@ -50,6 +50,7 @@ final class PrivateMessageHistorySyncService
             $page=$this->verificationKeys($row,$prior['after']);
             $row['sender_keys']=$page['keys'];$row['digest']=$digest;
             $row['verification_more']=$page['more'];
+            $row['candidate_available']=$this->sync->hasCandidate($account,$source,$row['message_id'],$digest);
             $size=strlen(json_encode($row,JSON_THROW_ON_ERROR));
             // Canonical armor is ASCII; reserve a maximum target key and framing.
             if ($bytes+$size>3*1048576-32768) break;
@@ -240,7 +241,7 @@ final class PrivateMessageHistorySyncService
                 }
             }
         }
-        return ['mode'=>'combined','account'=>$account,'source'=>$source,'work'=>$bundles,
+        return ['mode'=>'combined','account'=>$account,'source'=>$source,'revision'=>$revision,'work'=>$bundles,
             'complete'=>array_values(array_unique($complete)), 'continuation'=>count(array_unique($complete))<2];
     }
     private function senderWork(array $viewer, bool $skipContributed = false): array
@@ -328,6 +329,13 @@ final class PrivateMessageHistorySyncService
         $this->resetBudget();
         [$account,$source]=$this->context($viewer);
         $items=$this->items($account,$input['items']??[]);
+        $unavailable=$this->items($account,$input['unavailable']??[]);
+        $verified=$this->items($account,$input['verified']??[]);
+        $knownVerified=[];
+        foreach($verified as $item) {
+            $receipt=$this->sync->receipt($account,$source,$item['message_id'],$item['digest']);
+            if($receipt!==null && ($receipt['transfer_id']==='' || $this->eligibleSource($this->messages->historySyncMessage($account,$item['message_id']),$account,$receipt['source']??'')!==null))$knownVerified[]=$item['message_id'];
+        }
         foreach($items as $item) {
             if($item['transfer_id']==='') continue; // authenticated target reports verified direct access
             $candidate=$this->sync->candidate($account,$source,$item['message_id'],$item['digest'],$item['transfer_id']);
@@ -350,8 +358,8 @@ final class PrivateMessageHistorySyncService
             $state=$this->sync->verification($account,$source,$mode);$pending=false;
             foreach($state as $binding=>&$entry) {
                 $token=$checkpoint['verification'][$binding]??null;
-                $verified=in_array($entry['id'],array_column($items,'message_id'),true);
-                if($verified) {$entry['more']=false;continue;}
+                $verified=in_array($entry['id'],array_column($items,'message_id'),true) || in_array($entry['id'],$knownVerified,true);
+                if($verified || in_array($entry['id'],array_column($unavailable,'message_id'),true)) {$entry['more']=false;continue;}
                 if($entry['more']) {
                     $pending=true;
                     if(is_string($token) && hash_equals($entry['token'],$token)) $entry['after']=$entry['pending'];
