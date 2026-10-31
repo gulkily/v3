@@ -23,9 +23,9 @@ Disposition: Residual active by source. Route arrays remain. Profile enumeration
 Related delivered work: ReadModelBuilder indexCommits delegates to CommitHistoryReader; activity evidence uses operation-scoped lookup. Prior history timings are historical, not new measurements here. Broader canonical parsing/derivation remains separate from selection findings.
 
 Family: QDB welcome/list/search/random; shared boards/RSS
-Status: Seed traced; consumer details and probes pending Stage 2
+Status: Traced; LBS01/LBS04, 18 local reader samples; RSS full-result exception
 Family: Tags/profiles/directories/Forte/detail APIs/browser
-Status: Tag-page bound traced; remaining consumer details pending Stage 2
+Status: Traced named entry points; LBS04/LBS05/LBS06 and bounded/full-result exceptions in findings.txt; browser source-only, no network/heap measurements
 Family: Offline publisher/reader and static enumeration
 Status: Seeds traced; measurement and complete traversal exceptions pending Stage 3
 Family: Rebuild/canonical files/Git

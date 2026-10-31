@@ -27,3 +27,15 @@ Runtime/UI/deployment/migration checks are inapplicable to documentation changes
 - Estimate details: Original scope/uncertainty unchanged; no revisions. Shared conventions owned here; retrospective judgment includes source reconciliation and document checks, not measured labor.
 
 *— Codex · 2026-10-31 UTC*
+
+## Stage 2 — Public readers and consumers
+
+**Original estimate: 0.18**
+**Retrospective stage work: 0.18**
+
+- Changes: [Findings](findings.txt) LBS01/LBS04–06 and current-contract exceptions; reader [method/commands](measurements.txt), [archived disposable source](reader_probe_source.txt) and [raw results](reader_results.txt). Traced shared readers through controllers, templates and browser consumers.
+- Verification: 18 fresh-process samples at 128 MiB, three per 1000/10000 shape/mode; all exact selected-ID/count checks pass. QDB slices load 1000/10000 bodies for 25 or 5 results, PHP peak 8/60 MiB. Delivered TagPage loads 25 bodies at 2 MiB. Verified cited paths/symbols, cycle links and whitespace; approved documentation scope only.
+- Notes: QDB probes isolate reader/policy slices, omit board sort/rendering and do not establish full-route parity. SQL examined rows, browser cost and production PHP 8.3 are unknown. Large timing variance retained, not converted into savings. No failed measured samples; mistaken exploratory file paths corrected. Existing effective-tag/reaction concepts remain accurate and unchanged. Full RSS/text/directory results must not be silently truncated.
+- Estimate details: Original scope unchanged; no revisions. Retrospective stage judgment includes isolated probes and consumer tracing, not independent measured labor. Untraced extensions/custom clients remain coverage gaps.
+
+*— Codex · 2026-10-31 UTC*

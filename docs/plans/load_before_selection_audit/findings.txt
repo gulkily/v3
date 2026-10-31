@@ -1,0 +1,42 @@
+Audit: Load before selection
+Revision: ade35a65d2488bcfc280277e4bbf0bc8beae76a4
+Status: Public-reader stage complete; maintenance findings and final ranking pending
+Evidence: measurements.txt, reader_results.txt; inherited memory evidence remains in ../qdb_memory_audit/qdb_memory_audit_findings.txt
+
+Finding: LBS01
+Ownership: Inherited M02, same root cause; not a new discovery
+Status: Measured reader/policy slice; broader consumers source-traced
+Source: src/ForumRewrite/ReadModel/ThreadRepository.php fetchThreads/boardRowsSql; src/ForumRewrite/Qdb/QdbExperience.php welcome/random/search/eligibleQuotes; src/ForumRewrite/Qdb/QdbBoardPolicy.php paginate; src/ForumRewrite/Http/BoardPageController.php board/fetchBoardThreads/boardList/listPage
+Consumers: Application -> QdbExperience -> welcome, random, search; latest/top/leetness -> BoardPageController. Standard list board selects 50 non-pinned rows after fetching/sorting all rows. StaticArtifactBuilder renders shared/QDB routes through Application. Shared method use does not mean identical selection rules.
+Work: Complete joined rows including bodies before eligibility/filter/sort/slice; 10000 body rows/20,480,000 body bytes for 25 results (60 MiB PHP peak). Welcome first-five slice has same materialization. SQL scanned rows and end-to-end wall time remain unknown.
+Invariants: Exact QDB suffix regex eligibility; retracted and identity-tag exclusion; liked-view root score; pinned precedence; top/oldest/newest/leetness tie-breaking; welcome recent order differs from board creation order; news creation order; clamped numbered pages/counts; search stripos semantics; random sampling without replacement. Preserve existing links and viewer reaction lookups after selection.
+Smallest correction: QDB welcome bounded recent/news hydration plus exact count first, without changing other ThreadRepository consumers. Later independent slices for numbered lists, random and search; standard list board separately. Do not replace all fetchThreads calls with a universal LIMIT.
+Required checks: IDs/order/count parity against current logic on mixed eligibility, malformed tags, pins, equal dates/scores, page boundaries and news; fixed-result body-transfer scaling, real welcome/build-static flow, failed-build leaves active release intact. Random distribution and non-ASCII search need their own tests before changing those paths.
+
+Finding: LBS04
+Status: Source-traced unnecessary projection; unmeasured
+Source: src/ForumRewrite/Http/TagsPageController.php index; src/ForumRewrite/ReadModel/TagGrouping.php summaries; ThreadRepository::iterateThreads; Http/ApiTextController.php listIndex; Http/BoardPageController.php rss; Http/ForteBoardController.php board
+Work: Tags index streams rows but still transfers every full root body, then discards it; summaries use body_preview for titles. Text index/RSS enumerate complete results yet also use the broad full-body query. Forte loads all board roots before selection; only selected-thread detail/replies are lazy.
+Exceptions: Complete RSS/text index and Forte folder/row lists currently expose the whole eligible collection. Full enumeration is necessary for that contract; full body projection is separable. Replacing with a capped result would change behavior. Native/browser bytes and body dependencies of custom editable listing queries remain unmeasured.
+Smallest correction: A narrow tags-index projection retaining exact tags, preview/title/order/count semantics; leave editable queries and full-detail readers untouched. Audit RSS/text title dependencies separately before sharing it.
+Required checks: Tag grouping counts/order/three previews, malformed JSON/object tags, media title fallback, complete RSS/text output and Forte selected direct-link behavior. Per-tag pages already use TagPage; do not duplicate that fix.
+
+Finding: LBS05
+Status: Source-traced count-only overfetch; unmeasured
+Source: src/ForumRewrite/Http/ProfilePageController.php directory; src/ForumRewrite/ReadModel/ProfileRepository.php pendingDirectoryProfiles
+Work: /users/ counts a fully hydrated pending-profile list with latest-activity subqueries and ordering, although only pendingCount is used.
+Consumers: The same repository method returns real rows to the approved-only pending directory and UserAccessController; those consumers need row data and access checks.
+Smallest correction: Dedicated pending count query matching is_approved=0; keep row-returning method for actual directory consumers.
+Required checks: Count parity with zero/many pending profiles, name-change feature settings and missing/multiple activity rows; pending-page authorization unchanged. No need to change profile schema for this audit.
+
+Finding: LBS06
+Status: Source-traced inactive-tab overfetch; unmeasured
+Source: src/ForumRewrite/Http/ProfilePageController.php username; src/ForumRewrite/ReadModel/AuthoredContentRepository.php visibleThreads/visiblePosts; templates/pages/username.php
+Work: /user/{username} loads both full identity-group thread and post collections before choosing Threads versus Replies tab; template filters replies from all posts even for the Threads tab. Identity-specific /profiles/{slug} uses a different bounded page path and is not this finding.
+Consumers: ForteProfileController::username and ForteContentAndUserDetailApiController::userDetail render both collections; their contract differs. AuthoredContentRepository queries already select identities but returned collection can be large.
+Smallest correction: Load only the active standard username tab, preserving existing count totals and signed attribution eligibility. Separate pagination proposal if desired, rather than silently truncating history.
+Required checks: Multi-key username aggregation, root-versus-reply handling, hidden/retracted/expansion exclusions, tab links/counts, fallback titles, Forte full-detail consumers and complete text/API history unaffected.
+
+Exceptions: ActivityService fetchActivityPage/fetchActivityRows/fetchCommits use SQL selection and limits; detail calls are separate. Source-traced bounded result materialization, not proven bounded SQLite scan cost. TagPage similarly bounds body hydration. Profile identity history visibleIdentityPage caps 100 (default 50) and uses scalar counts; username histories differ.
+Browser coverage: paned_board_reader.js filters already-delivered rows but fetches selected detail from /api/forte_thread_detail; paned_users_reader.js selects categories and fetches user detail; paned_activity_reader.js fetches more cursor pages and specific details. Complete board/directory rows remain a current contract, not a safe automatic truncation target. Browser heap/network/time were not measured; custom plugins/third-party clients were not traced.
+Other directory coverage: ForteUserDirectoryController loads approved/pending summary rows for category counts/sorting, with SQL MIN/MAX activity aggregation rather than all post bodies. Its complete directory is an exception, not evidence that all directory queries are efficient. Large selected-user histories remain a separate size dimension.

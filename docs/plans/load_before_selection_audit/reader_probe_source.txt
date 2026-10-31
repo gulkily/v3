@@ -1,0 +1,65 @@
+Artifact: Disposable reader measurement source
+Execution: Extract from the PHP opening line into an external temporary file; commands are in measurements.txt
+
+<?php
+// Disposable measurement; archive as text, not an application/test entry point.
+require $argv[1] . '/autoload.php';
+use ForumRewrite\ReadModel\ThreadRepository;
+use ForumRewrite\ReadModel\TagPage;
+use ForumRewrite\Qdb\QdbBoardPolicy;
+use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
+final class CountedStatement extends PDOStatement {
+    public static int $rows=0, $bodies=0, $bodyBytes=0;
+    private static function record(mixed $row): void {
+        if (!is_array($row)) return;
+        self::$rows++;
+        if (array_key_exists('root_post_body',$row)) { self::$bodies++; self::$bodyBytes+=strlen($row['root_post_body']); }
+    }
+    public function fetch(int $mode=PDO::FETCH_DEFAULT,int $cursorOrientation=PDO::FETCH_ORI_NEXT,int $cursorOffset=0): mixed {
+        $row=parent::fetch($mode,$cursorOrientation,$cursorOffset); self::record($row); return $row;
+    }
+    public function fetchAll(int $mode=PDO::FETCH_DEFAULT,mixed ...$args): array {
+        $rows=parent::fetchAll($mode,...$args); foreach($rows as $row) self::record($row); return $rows;
+    }
+}
+[$script,$project,$dir,$mode,$count]=$argv;
+$count=(int)$count;
+if (!is_dir($dir) || str_starts_with(realpath($dir),realpath($project).'/')) throw new RuntimeException('Use external temporary directory');
+$db="$dir/model-$count.sqlite";
+if($mode==='setup') {
+    if(file_exists($db)) throw new RuntimeException('Do not overwrite fixture');
+    $root="$dir/records-$count"; mkdir($root);
+    $src="$project/tests/fixtures/parity_minimal_v1";
+    foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($src,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::SELF_FIRST) as $file) {
+        $target=$root.substr($file->getPathname(),strlen($src)); $file->isDir()?mkdir($target):copy($file->getPathname(),$target);
+    }
+    (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+    $pdo=new PDO('sqlite:'.$db,null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+    $pdo->exec('DELETE FROM threads'); $pdo->exec('DELETE FROM posts');
+    $pdo->beginTransaction();
+    $post=$pdo->prepare("INSERT INTO posts(post_id,thread_id,created_at,subject,body,board_tags_json,sequence_number,author_label) VALUES (?,?,'2026-10-30T00:00:00Z','quote',?,'[\"general\"]',1,'guest')");
+    $thread=$pdo->prepare("INSERT INTO threads(root_post_id,root_post_created_at,last_activity_at,subject,body_preview,board_tags_json,thread_labels_json,reply_count,last_post_id,score_total,vote_count) VALUES (?,'2026-10-30T00:00:00Z','2026-10-30T00:00:00Z','quote',?,'[\"general\"]',?,0,?,0,0)");
+    for($i=1;$i<=$count;$i++) {
+        $id=sprintf('thread-20261030000000-qdb-%06d',$i);
+        $post->execute([$id,$id,str_repeat('q',2048)]);
+        $thread->execute([$id,str_repeat('q',1024),$i===1?'["pinned"]':'[]',$id]);
+    }
+    $pdo->commit(); echo "Setup candidates: $count\n"; exit;
+}
+$pdo=new PDO('sqlite:'.$db,null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_STATEMENT_CLASS=>[CountedStatement::class]]);
+$base=memory_get_usage(true); $start=hrtime(true);
+if($mode==='qdb25' || $mode==='welcome5') {
+    $policy=new QdbBoardPolicy($dir,static fn()=>null);
+    $all=$policy->eligibleQuotes(ThreadRepository::fetchThreads($pdo));
+    $selected=$mode==='qdb25'?$policy->paginate($all,'latest',1)['threads']:array_slice($all,0,5);
+    $total=count($all);
+} elseif($mode==='tag25') {
+    $selected=TagPage::page($pdo,'general')['items']; $total=$count;
+} else throw new RuntimeException('Unknown mode');
+$elapsed=(hrtime(true)-$start)/1e6;
+$ids=array_column($selected,'root_post_id'); $expected=[];
+$used=$mode==='welcome5'?5:25;
+for($i=$count;$i>$count-$used;$i--) $expected[]=sprintf('thread-20261030000000-qdb-%06d',$i);
+if($ids!==$expected || $total!==$count) throw new RuntimeException('Identity/count mismatch');
+echo "Mode: $mode\nCandidates: $count\nSelected: ".count($selected)."\nPDO rows transferred: ".CountedStatement::$rows."\nBodies materialized: ".CountedStatement::$bodies."\nRoot body bytes transferred: ".CountedStatement::$bodyBytes."\nSource rows examined: unknown\nIdentity and total checks: pass\nWall milliseconds: $elapsed\nPHP baseline bytes: $base\nPHP peak bytes: ".memory_get_peak_usage(true)."\n";

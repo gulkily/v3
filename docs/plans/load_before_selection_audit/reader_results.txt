@@ -1,0 +1,273 @@
+Evidence: Current reader methods on synthetic fixture
+Date: 2026-10-31 UTC
+
+Sample: 1
+Mode: qdb25
+Candidates: 1000
+Selected: 25
+PDO rows transferred: 1000
+Bodies materialized: 1000
+Root body bytes transferred: 2048000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 456.873536
+PHP baseline bytes: 2097152
+PHP peak bytes: 8388608
+Process peak RSS KiB: 37780
+Exit: 0
+
+Sample: 2
+Mode: qdb25
+Candidates: 1000
+Selected: 25
+PDO rows transferred: 1000
+Bodies materialized: 1000
+Root body bytes transferred: 2048000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 232.388102
+PHP baseline bytes: 2097152
+PHP peak bytes: 8388608
+Process peak RSS KiB: 37820
+Exit: 0
+
+Sample: 3
+Mode: qdb25
+Candidates: 1000
+Selected: 25
+PDO rows transferred: 1000
+Bodies materialized: 1000
+Root body bytes transferred: 2048000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 165.648672
+PHP baseline bytes: 2097152
+PHP peak bytes: 8388608
+Process peak RSS KiB: 38252
+Exit: 0
+
+Sample: 1
+Mode: qdb25
+Candidates: 10000
+Selected: 25
+PDO rows transferred: 10000
+Bodies materialized: 10000
+Root body bytes transferred: 20480000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 1874.599071
+PHP baseline bytes: 2097152
+PHP peak bytes: 62914560
+Process peak RSS KiB: 90648
+Exit: 0
+
+Sample: 2
+Mode: qdb25
+Candidates: 10000
+Selected: 25
+PDO rows transferred: 10000
+Bodies materialized: 10000
+Root body bytes transferred: 20480000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 915.805239
+PHP baseline bytes: 2097152
+PHP peak bytes: 62914560
+Process peak RSS KiB: 90608
+Exit: 0
+
+Sample: 3
+Mode: qdb25
+Candidates: 10000
+Selected: 25
+PDO rows transferred: 10000
+Bodies materialized: 10000
+Root body bytes transferred: 20480000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 3105.732265
+PHP baseline bytes: 2097152
+PHP peak bytes: 62914560
+Process peak RSS KiB: 90736
+Exit: 0
+
+Sample: 1
+Mode: welcome5
+Candidates: 1000
+Selected: 5
+PDO rows transferred: 1000
+Bodies materialized: 1000
+Root body bytes transferred: 2048000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 144.017392
+PHP baseline bytes: 2097152
+PHP peak bytes: 8388608
+Process peak RSS KiB: 37992
+Exit: 0
+
+Sample: 2
+Mode: welcome5
+Candidates: 1000
+Selected: 5
+PDO rows transferred: 1000
+Bodies materialized: 1000
+Root body bytes transferred: 2048000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 199.187655
+PHP baseline bytes: 2097152
+PHP peak bytes: 8388608
+Process peak RSS KiB: 37872
+Exit: 0
+
+Sample: 3
+Mode: welcome5
+Candidates: 1000
+Selected: 5
+PDO rows transferred: 1000
+Bodies materialized: 1000
+Root body bytes transferred: 2048000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 73.991385
+PHP baseline bytes: 2097152
+PHP peak bytes: 8388608
+Process peak RSS KiB: 37996
+Exit: 0
+
+Sample: 1
+Mode: welcome5
+Candidates: 10000
+Selected: 5
+PDO rows transferred: 10000
+Bodies materialized: 10000
+Root body bytes transferred: 20480000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 635.317195
+PHP baseline bytes: 2097152
+PHP peak bytes: 62914560
+Process peak RSS KiB: 91064
+Exit: 0
+
+Sample: 2
+Mode: welcome5
+Candidates: 10000
+Selected: 5
+PDO rows transferred: 10000
+Bodies materialized: 10000
+Root body bytes transferred: 20480000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 406.683844
+PHP baseline bytes: 2097152
+PHP peak bytes: 62914560
+Process peak RSS KiB: 90616
+Exit: 0
+
+Sample: 3
+Mode: welcome5
+Candidates: 10000
+Selected: 5
+PDO rows transferred: 10000
+Bodies materialized: 10000
+Root body bytes transferred: 20480000
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 1143.823405
+PHP baseline bytes: 2097152
+PHP peak bytes: 62914560
+Process peak RSS KiB: 90860
+Exit: 0
+
+Sample: 1
+Mode: tag25
+Candidates: 1000
+Selected: 25
+PDO rows transferred: 51
+Bodies materialized: 25
+Root body bytes transferred: 51200
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 39.449974
+PHP baseline bytes: 2097152
+PHP peak bytes: 2097152
+Process peak RSS KiB: 30320
+Exit: 0
+
+Sample: 2
+Mode: tag25
+Candidates: 1000
+Selected: 25
+PDO rows transferred: 51
+Bodies materialized: 25
+Root body bytes transferred: 51200
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 20.906285
+PHP baseline bytes: 2097152
+PHP peak bytes: 2097152
+Process peak RSS KiB: 30316
+Exit: 0
+
+Sample: 3
+Mode: tag25
+Candidates: 1000
+Selected: 25
+PDO rows transferred: 51
+Bodies materialized: 25
+Root body bytes transferred: 51200
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 28.358455
+PHP baseline bytes: 2097152
+PHP peak bytes: 2097152
+Process peak RSS KiB: 30132
+Exit: 0
+
+Sample: 1
+Mode: tag25
+Candidates: 10000
+Selected: 25
+PDO rows transferred: 51
+Bodies materialized: 25
+Root body bytes transferred: 51200
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 41.0209
+PHP baseline bytes: 2097152
+PHP peak bytes: 2097152
+Process peak RSS KiB: 31728
+Exit: 0
+
+Sample: 2
+Mode: tag25
+Candidates: 10000
+Selected: 25
+PDO rows transferred: 51
+Bodies materialized: 25
+Root body bytes transferred: 51200
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 36.909541
+PHP baseline bytes: 2097152
+PHP peak bytes: 2097152
+Process peak RSS KiB: 31576
+Exit: 0
+
+Sample: 3
+Mode: tag25
+Candidates: 10000
+Selected: 25
+PDO rows transferred: 51
+Bodies materialized: 25
+Root body bytes transferred: 51200
+Source rows examined: unknown
+Identity and total checks: pass
+Wall milliseconds: 34.093034
+PHP baseline bytes: 2097152
+PHP peak bytes: 2097152
+Process peak RSS KiB: 31692
+Exit: 0
+
