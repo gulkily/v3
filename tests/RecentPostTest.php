@@ -76,8 +76,10 @@ final class RecentPostTest
         $render=static function(string $uri) use ($app): string {ob_start();$app->handle('GET',$uri);return (string)ob_get_clean();};
         $render('/recent/');$pdo=new PDO('sqlite:'.$file);$pdo->exec('DELETE FROM posts');RecentPostFixture::seed($pdo);
         $html=$render('/recent/');
-        assertSame(12,substr_count($html,'class="recent-entry"'));
-        assertStringContains('/posts/reply-5',$html);
+        assertSame(12,substr_count($html,'class="thread-row recent-entry"'));
+        assertStringContains('href="/threads/old-thread#post-reply-5"',$html);
+        assertStringContains('href="/threads/new-thread"',$html);
+        assertStringContains('href="/posts/missing-context"',$html);
         assertStringContains('(unsigned)',$html);
         assertStringContains('Unavailable thread',$html);
         assertStringContains('>Image</a>',$html);
@@ -88,7 +90,7 @@ final class RecentPostTest
         assertStringContains('&lt;script&gt;', $render('/recent/'));
         assertStringContains('First page',$render('/recent/?position=broken'));
         assertStringContains('role="alert"',$render('/recent/?position[]=x'));
-        $pdo->exec('DELETE FROM posts');assertStringContains('No posts yet.', $render('/recent/'));
+        $pdo->exec('DELETE FROM posts');assertStringContains('No posts yet', $render('/recent/'));
         unset($pdo,$app);@unlink($file);
     }
 
@@ -108,7 +110,7 @@ final class RecentPostTest
             assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical('/recent/'));
             $controller = new \ForumRewrite\Host\FrontController($root, $repository, $root . '/read.sqlite3', $root . '/static');
             ob_start();$controller->handle('GET', '/recent/');$html=(string)ob_get_clean();
-            assertStringContains('class="recent-entry"', $html);
+            assertStringContains('class="thread-row recent-entry"', $html);
             assertSame(200, http_response_code());
         } finally {
             unlink($root . '/public/assets');unlink($root . '/templates');unlink($root . '/public/.high-traffic');

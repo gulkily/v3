@@ -1,14 +1,16 @@
-<section class="recent">
-  <h1>Recent</h1>
+<section class="stack">
 <?php if ($paginationError !== null): ?>
   <p role="alert"><?= $e($paginationError) ?></p>
 <?php elseif ($items === []): ?>
-  <p>No posts<?= $pagination['previous_href'] !== null ? ' on this page' : ' yet' ?>.</p>
-<?php endif; ?>
-  <div class="recent-list">
+  <div class="board-empty">
+    <h2>No posts<?= $pagination['previous_href'] !== null ? ' on this page' : ' yet' ?></h2>
+  </div>
+<?php else: ?>
+  <div class="thread-rows">
 <?php foreach ($items as $item): ?>
-<?= $partial('partials/recent_entry.php', ['item' => $item]) ?>
+<?= $indent($partial('partials/recent_entry.php', ['item' => $item]), 2) ?>
 <?php endforeach; ?>
   </div>
-<?= $partial('partials/page_navigation.php', ['pagination' => $pagination]) ?>
+<?php endif; ?>
+<?= $indent($partial('partials/page_navigation.php', ['pagination' => $pagination]), 1) ?>
 </section>

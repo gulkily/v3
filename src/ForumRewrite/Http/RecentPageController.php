@@ -24,8 +24,10 @@ final class RecentPageController
             $page = ['items'=>[], 'previous'=>null, 'next'=>null];
         }
         foreach ($page['items'] as &$item) {
-            $item['href'] = '/posts/' . rawurlencode($item['post_id']);
             $item['is_reply'] = $item['post_id'] !== $item['thread_id'];
+            // Open the thread, anchored to the reply's card; a post whose thread is unavailable keeps its own page.
+            $item['href'] = $item['context_id'] === null ? '/posts/' . rawurlencode($item['post_id'])
+                : '/threads/' . rawurlencode($item['thread_id']) . ($item['is_reply'] ? '#post-' . rawurlencode($item['post_id']) : '');
             $item['context_title'] = $item['context_id'] === null ? 'Unavailable thread'
                 : ThreadTitle::displayTitle((string)$item['context_subject'], (string)$item['context_body'], '', 100);
             $item['excerpt'] = ThreadTitle::displayTitle('', (string)$item['body'], '', 280);

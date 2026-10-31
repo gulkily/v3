@@ -775,8 +775,8 @@ Limits and follow-up: signing in regenerates the session ID and deletes the old 
 
 ## 2026-10-30 — Recent conversation
 
-Change: Compact author/time, thread context and excerpt with exact-post links; shared Previous/Next controls. Essential empty/invalid-position recovery retained. No technical event details or redundant feed explanation. Reuses contentMeta, ThreadTitle and PageNavigation.
-Verification: 13 themes at 390/1280px, three icon themes visually reviewed, long-content overflow, keyboard/no-JavaScript paging, exact-post/Back/reload and offline reconnect passed. PHP checks cover empty, invalid, unavailable context and escaping. [Evidence and limits](recent_activity/recent_activity_step4_implementation_summary.md). Physical phone and production acceptance pending; mockups deleted, screenshots outside repository.
+Change: Recent reuses the board's thread rows: thread title linking to the thread anchored at the reply (own page only when the thread is unavailable), one-line excerpt, compact "guest · Oct 30 · Reply" meta; shared Previous/Next controls and the board's empty block. Removed the page heading, the long byline, the separate thread link and the page's own stylesheet. Essential empty/invalid-position recovery retained; no technical event details or feed explanation.
+Verification: 13 themes at 390/1280px, six themes visually reviewed at both widths plus invalid-position recovery, long-content overflow, keyboard/no-JavaScript paging, anchored reply, thread open/Back/reload and offline reconnect passed. PHP checks cover empty, invalid, unavailable context and escaping. [Evidence and limits](recent_activity/recent_activity_step4_implementation_summary.md#design-revision--2026-10-30-direct-work). Physical phone and production acceptance pending; screenshots outside repository.
 
 ## Next phase — new candidates
 

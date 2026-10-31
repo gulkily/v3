@@ -44,13 +44,16 @@ try {
  assert.ok(await page.locator('.recent-entry').count()>0);assert.ok(await page.locator('.recent-entry').count()<50);
  const cursorUrl=page.url();const ids=await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId));
  await page.reload();assert.deepEqual(await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId)),ids);
- await page.locator('.recent-excerpt a').first().click();await page.waitForURL(/\/posts\//);assert.equal(await page.locator('h1').count()>0,true);
+ const anchored=page.locator('.recent-entry a[href*="#post-"]').first();const anchorId=(await anchored.getAttribute('href')).split('#post-')[1];
+ await anchored.click();await page.waitForURL(/#post-/);assert.equal(await page.locator('.post-card:target').getAttribute('data-post-id'),anchorId);
+ await page.goBack();assert.equal(page.url(),cursorUrl);
+ await page.locator('.recent-entry a').first().click();await page.waitForURL(/\/threads\//);assert.equal(await page.locator('h1').count()>0,true);
  await page.goBack();assert.equal(page.url(),cursorUrl);
  assert.deepEqual(await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId)),ids);
  await context.setOffline(true);let failed=false;try{await page.reload()}catch{failed=true}assert.equal(failed,true);
  await context.setOffline(false);await page.goto(cursorUrl);
  assert.deepEqual(await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId)),ids);
  await page.getByRole('link',{name:'Previous',exact:true}).click();assert.equal(await page.locator('.recent-entry').count(),50);
- console.log(`PASS Recent navigation, ${themes.length} themes x 2 widths, icons, no-JavaScript keyboard paging, exact post/Back/reload and offline reconnect`);
+ console.log(`PASS Recent navigation, ${themes.length} themes x 2 widths, icons, no-JavaScript keyboard paging, anchored reply, thread open/Back/reload and offline reconnect`);
  await context.close();
 } finally {await browser.close();server.kill('SIGTERM');await rm(parent,{recursive:true,force:true});if(process.env.RECENT_DEBUG)console.log(logs)}
