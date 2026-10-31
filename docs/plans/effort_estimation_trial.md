@@ -1115,3 +1115,17 @@ Canonical checkpoints: [Step 1 snapshots](multi_redemption_invites_step1_solutio
 Alternatives: A/v1 0.85; B/v1 0.70; independent alternative whole-cycle projections, not additive
 Relationship: New cycle; related invitation-entry and approval-acceptance work, no split outcome
 Outcome: Planning only; no measured effort, independent rating, implementation approval or accepted outcome. Records uncommitted; deduplicate worktree copies by stable cycle ID.
+
+## Cycle v3/ui_tools_launcher
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/ui_tools_launcher` | Step 3 proposed | v1 / R1 / P2 | 0.40 intake; 0.40 Step 1 (Option A); 0.45 Step 2; 0.45 Step 3 | [Step 1 and snapshots](./ui_tools_launcher/ui_tools_launcher_step1_solution_assessment.md#study-snapshots) · [Step 2](./ui_tools_launcher/ui_tools_launcher_step2_feature_description.md#study-checkpoint) · [Step 3](./ui_tools_launcher/ui_tools_launcher_step3_development_plan.md#execution-and-study-checkpoint) | UI redesign Cycle 9; awaiting Approved Step 3 |
+
+2026-10-31T00:34:06Z intake, standing enrollment P2, baseline `main` `41a6dbe9c`, R1 hashes verified. Scope v1: checklist Cycle 9 (grouped Tools launcher, each tool once, `data-tone`/`data-shape` hooks, icon themes). **0.40** recorded before source inspection; exposure: checklist item, mockup notes from earlier sessions, AGENTS.md icon rule. Claude (claude-opus-5-5) single exposed rater.
+
+2026-10-31 Step 1 handoff: [assessment](./ui_tools_launcher/ui_tools_launcher_step1_solution_assessment.md) recommends Option A (one grouped launcher, same tools for everyone); **0.40 reaffirmed**. Extended options A 0.40, B 0.75 (hide by access before paint), C 0.45 (back link instead of subnavigation), not additive. No implementation, measurement or accepted outcome; planning and ledger uncommitted.
+
+2026-10-31 Step 2 handoff: Step 1 Option A approved ("approved step 1"). [Feature description/checkpoint](./ui_tools_launcher/ui_tools_launcher_step2_feature_description.md#study-checkpoint): 15 tools once in four groups, Account removed, Tools bar in the same order on every tool page, `data-tone`/`data-shape` hooks, every site and permitted theme. **0.45** (new understanding: Tools bar on 15 pages and launcher styles shared with Bookmarklets); 0.40 Step 1 retained. Same rater/R1/P2/baseline. No implementation; awaiting Approved Step 2.
+
+2026-10-31 Step 3 handoff: Step 2 approved ("approved step 2"). [Four-stage plan/checkpoint](./ui_tools_launcher/ui_tools_launcher_step3_development_plan.md#execution-and-study-checkpoint): registry and bar, grouped launcher, site/theme matrix, records. **0.45 reaffirmed**; stage work S1 0.10, S2 0.15, S3 0.15, S4 0.05, not additive. Same rater/R1/P2/baseline. No implementation; awaiting Approved Step 3.

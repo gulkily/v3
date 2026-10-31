@@ -1,0 +1,84 @@
+> **Feature plan:** [Step 1](./ui_tools_launcher_step1_solution_assessment.md) · [Step 2](./ui_tools_launcher_step2_feature_description.md) · [Step 3](./ui_tools_launcher_step3_development_plan.md) · [Step 4](./ui_tools_launcher_step4_implementation_summary.md)
+
+Debug mode: enabled
+Effort study: `railspike-effort` / `v3/ui_tools_launcher` — [ledger](../effort_estimation_trial.md#cycle-v3ui_tools_launcher) (standing P2 enrollment)
+Extended estimates: enabled
+
+**Cycle estimate: 0.45**
+
+Branch `feat/ui-tools-launcher` from `main` `41a6dbe9c`; planning commit `58f8906cc` (Steps 1–3 and debug log, folder organization, plan index entry).
+
+## Step 4 entry checkpoint
+
+- 2026-10-31: Step 3 approved ("approved step 3"). Whole-cycle projection **0.45 reaffirmed** before implementation. Stage originals copied from Step 3 (not new ratings): S1 0.10, S2 0.15, S3 0.15, S4 0.05, not additive.
+- Same rater (Claude, claude-opus-5-5, single exposed), R1 (hashes verified 2026-10-31), P2, scope v1 / Option A.
+- Early validation from Key Risks: Bookmarklets baseline captured before any change (the Bookmarklets card, excluding its Tools bar) in default, Word97, Chicago and Midnight at 390px and 1280px; a second capture was byte-identical, so later comparisons are exact.
+
+## Enhancement requests
+
+None.
+
+## Stage 1 - Tool list and Tools bar
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - `ToolsPageSupport`: new `groups()` (device, reading, community, operator, in order; keys double as `data-shape`); `registry()` reordered by group, each tool with `group`, a stable `tone` and a one-line description (mockup wording); Account removed; Operations under Operator; "System State" → "System status".
+  - `navOptions()` returns tools in registry order with `tone` and `group_start` (first tool of each later group); the old in-page/standalone split is gone.
+  - `partials/tools_nav.php`: a divider at each group boundary (three), `data-tone` on each link; ↗ markers on full-page tools kept.
+  - System status page title and heading renamed (`CodebaseStateController`, `codebase_state.php`).
+  - Tests: `LocalAppSmokeTest` assertions moved to the new descriptions, "System status", no Account entry, and the bar's group order and three dividers; new `ToolsRegistryTest` (15 tools, unique keys/links/tones, groups in order, one-line descriptions, a divider per group boundary, current tool marked), registered in `tests/run.php`.
+- Verification:
+  - `php tests/run.php ToolsRegistryTest`: 2/2 passed.
+  - `php tests/run.php LocalAppSmokeTest AppNavigationPlacementTest HighTrafficTest BackupFeatureFlagTest InvitationIssuanceTest UserAccessTest PlatformDocsPageTest`: 206/209. The three failures also fail without this stage: `testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp` (long-standing), and `testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces` / `testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound`, which fail on GitHub's `main` `93cea640e` and pass on `05e43912e`, so they came with the newer upstream commits.
+  - Bookmarklets card: byte-identical to its baseline in default, Word97, Chicago and Midnight at 390px and 1280px. The comparison script removes the Tools bar card and hides fixed bars first; without that, the phone captures differed only by a sub-pixel shift because the bar above changed height.
+  - Browser checks of the Tools bar layout belong to Stage 3.
+- Notes:
+  - "System status" follows the approved Step 2 wording; other labels keep their current Title Case. Whether to move every label to sentence case (as the mockup shows) is left for review at Stage 3.
+  - Account's icon rules in `theme-nav-icons.css` stay; they are now unused by Tools but harmless, and the plan keeps that file unchanged.
+- Estimate details: original scope as planned; no revision. Retrospective unchanged: test updates were as expected; the two upstream Lobby failures cost a bisect but are not this stage's work.
+
+*— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - The grouped /tools/ page
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `pages/tools.php`: one card with the page heading (`<h1>Tools</h1>`), then each group as a labelled section with an `<h2 data-shape="{group}">` heading and its tools; each item carries `data-tone`, the existing `tool-launcher-button` class and its unchanged link, and the one-line description. The Tools bar card is gone from /tools/. Backup still drops out when both backups are disabled; an empty group would be skipped.
+  - `ToolsPageController::index` passes the registry and `groups()` directly.
+  - `tools.css`: rules scoped to `.tools-launcher-page` (group spacing, group headings in the UI font). On phone, the list fits as many tools to a row as have room without breaking a word, and buttons no longer stretch to match a taller neighbour.
+  - Tests: `LocalAppSmokeTest` checks /tools/ has no Tools bar, lists every tool once with its tone, and shows the four headings with `data-shape` in order. `backup_feature_flags.mjs` expects the bar only on tool pages and checks the bar icon on /tools/sqlite/. `docs_discovery.mjs` checks the bar's Docs icon on /tools/bookmarklets/.
+- Verification:
+  - Screenshots of /tools/ in default, Word97, Chicago and Midnight (ZenMemes) and QDB, at 390px and 1280px, reviewed: groups, headings and descriptions present; icons in all three icon themes; no overflow.
+  - `php tests/run.php ToolsRegistryTest LocalAppSmokeTest`: 156/159; the same three failures that also fail on main (see Stage 1).
+  - `backup_feature_flags.mjs`: passed (240 theme/viewport/page states).
+  - `bookmarklet_copy_ui.mjs` (against its fixture server): passed.
+  - `docs_discovery.mjs`, dynamic half (`DOCS_ONLY_MODE=dynamic`, fixture server): passed, 8 width/theme cases. The static half needs a full built release and was not run.
+  - Bookmarklets card: byte-identical to its baseline in all eight captures.
+  - `high_traffic_control.mjs` fails waiting for the auth-resume marker on /tools/operations/; it fails the same way on main, so it was already broken. `access_history.mjs` and `account_key_approval.mjs` already fail on main (recorded in earlier cycles); their Tools selectors use the bar only on tool pages and the launcher on /tools/, which this stage keeps working.
+- Notes:
+  - Deviation from the Step 3 line "phone: two-up": at 390px Midnight's bold buttons split "Bookmarklets" mid-word in two columns. The list now uses two columns only where labels fit whole, so 390px phones get one column. In-scope layout refinement; no requirement changed.
+- Estimate details: original scope as planned; no revision. Retrospective unchanged: the phone layout needed one extra pass.
+
+*— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*
+
+## Review findings after Stage 2 (2026-10-31)
+
+User review of the Stage 2 page, fixed in the same cycle before Stage 3's matrix:
+
+- **Not every tool was in view.** The grouped list was one tool to a row with the description beside it, so at 1280×900 the last four to six tools (the tail of Operator) sat below the fold in every theme, and at 1280×720 eight did. The old page had kept every tool in view through the Tools bar card, which Stage 2 removed. Fix in `tools.css` (rules still scoped to `.tools-launcher-page`): the list is a tile grid at every width (`repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr))`, the phone rule promoted), group spacing and heading margins tightened. The desktop shell is a fixed 760px with no wider variant, so three columns is the ceiling there; Midnight's wider window gets four.
+- **Descriptions removed from /tools/** (user request: "get rid of the text bits under the buttons"). `pages/tools.php` renders the button only; the description rule in `tools.css` is gone. With descriptions, mono-font themes wrapped most of them to two lines and the last Operator tile still fell below a 720px-high window; without them every tool is in view at 1280×720 in every permitted theme (last button bottom 511–663px). The one-line descriptions stay in `ToolsPageSupport::registry()` (still covered by `ToolsRegistryTest`) but are no longer shown anywhere; Step 2's "each tool has a one-line description" requirement is superseded by this review, and the descriptions can be dropped from the registry in a later cleanup if nothing else wants them.
+- **Group heading icons in the icon themes** (user request). `theme-nav-icons.css`: a 16px pixel-art glyph before each `.tool-launcher-group-heading[data-shape]` in Word97, Chicago and Midnight: a monitor (device), an open book (reading), the existing Users glyph (community) and a gear (operator). The gear was first drawn in the dark grey of the Tools wrench and was invisible on Midnight's panel; it is mid-grey with a white ring so it reads on both light and dark panels.
+- Tests: `LocalAppSmokeTest` no longer expects description text on /tools/ and asserts there is none; `tools_launcher.mjs` asserts no description element per tool and a non-empty heading icon per group in the three icon themes.
+- Verification:
+  - Fold measurement (every permitted ZenMemes theme, 1280×900 and 1280×720, scratch script, buttons whose bottom edge is past the viewport): before the fix 4–6 of 15 below at 900 and 8 at 720; tiles with descriptions 0 at 900, 1–4 at 720; buttons only 0 at both.
+  - `php tests/run.php ToolsRegistryTest LocalAppSmokeTest`: only the same three long-standing failures as Stage 1 (two Lobby tests that fail on upstream `main`, the archive filename test).
+  - `tools_launcher.mjs` (all permitted themes, 390px and 1280px): passed on ZenMemes (28 cases) and QDB (30 cases) with the tile layout and descriptions, and again without descriptions; passed in Word97/Chicago/Midnight with the heading icons; the full run with the final icons passed on ZenMemes (28 cases) and QDB (30 cases).
+  - Screenshots reviewed at 1280×900: default, Console, Word97, Chicago, Midnight (and Midnight at 390px): every tool in view, icons on headings and tools, no clipped labels.
+  - Bookmarklets: every changed selector is scoped to `.tools-launcher-page` or `.tool-launcher-group-heading`, neither of which Bookmarklets renders; its baseline comparison was not re-run.
+- Estimate details: no score revision recorded here; this pass was made by a different model (claude-fable-5-1) than the cycle's single rater, and the Stage 2 retrospective above is left as rated. The work is in-scope layout refinement plus two review-requested changes (descriptions removed, heading icons), not new scope for the study.
+
+*— Claude · 2026-10-31 UTC · Model: claude-fable-5-1*

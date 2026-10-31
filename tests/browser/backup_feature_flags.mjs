@@ -105,18 +105,25 @@ try {
           page.on('request', count);
           await page.goto(base + path); await page.evaluate(() => document.fonts.ready);
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${path}/${theme}/${width} overflow`);
-          assert.equal(await page.locator('.tools-nav a[href="/tools/backup/"]').count(), text || images ? 1 : 0);
+          // /tools/ is the grouped launcher without a Tools bar; every tool page has the bar.
+          assert.equal(await page.locator('.tools-nav a[href="/tools/backup/"]').count(), path !== '/tools/' && (text || images) ? 1 : 0);
           if (path === '/tools/') {
             const link = page.locator('.tool-launcher-button[href="/tools/backup/"]');
             assert.equal(await link.count(), text || images ? 1 : 0);
             if ((text || images) && ['word97', 'chicago', 'midnight'].includes(theme)) {
-              for (const selector of ['.tool-launcher-button[href="/tools/backup/"]', '.tools-nav a[href="/tools/backup/"]']) {
+              for (const selector of ['.tool-launcher-button[href="/tools/backup/"]']) {
                 const icon = await page.locator(selector).evaluate(node => {
                   const style = getComputedStyle(node, '::before'); return { content: style.content, background: style.backgroundImage, width: style.width };
                 });
                 assert.ok(icon.background !== 'none' && parseFloat(icon.width) > 0, JSON.stringify({ theme, selector, icon }));
               }
             }
+          }
+          if (path === '/tools/sqlite/' && (text || images) && ['word97', 'chicago', 'midnight'].includes(theme)) {
+            const icon = await page.locator('.tools-nav a[href="/tools/backup/"]').evaluate(node => {
+              const style = getComputedStyle(node, '::before'); return { background: style.backgroundImage, width: style.width };
+            });
+            assert.ok(icon.background !== 'none' && parseFloat(icon.width) > 0, JSON.stringify({ theme, bar: true, icon }));
           }
           if (path === '/tools/backup/') {
             assert.equal(await page.locator('a[href^="/downloads/repository.zip"]').count(), text ? 1 : 0);

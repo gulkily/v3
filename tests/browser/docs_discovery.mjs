@@ -51,7 +51,14 @@ try {
     const failures = []; page.on('pageerror', error => failures.push(error.message));
     await page.goto(base + '/tools/'); await applyTheme(page, theme);
     const launcher = theme === 'default' ? null : await icon(page, '.tool-launcher-button[href="/docs/"]');
-    const subnav = theme === 'default' ? null : await icon(page, '.tools-nav .nav-link[href="/docs/"]');
+    // /tools/ is the grouped launcher; the Tools bar (the second Docs icon surface) is on each tool page.
+    const subnav = theme === 'default' ? null : await (async () => {
+      const toolPage = await context.newPage();
+      await toolPage.goto(base + '/tools/bookmarklets/'); await applyTheme(toolPage, theme);
+      const result = await icon(toolPage, '.tools-nav .nav-link[href="/docs/"]');
+      await toolPage.close();
+      return result;
+    })();
     if (theme !== 'default') await page.screenshot({ path: `${output}/${mode}-${theme}-${width}-tools.png` });
     const retryIndex = mode === 'dynamic' && width === 1280 && theme === 'default';
     let failedIndex = false;

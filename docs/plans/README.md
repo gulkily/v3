@@ -59,6 +59,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [UI account states](ui_account_states/)
 - [UI first post identity](ui_first_post_identity/)
 - [UI messages](ui_messages/)
+- [UI tools launcher](ui_tools_launcher/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
