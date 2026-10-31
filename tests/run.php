@@ -50,6 +50,7 @@ $testFiles = [
 
     __DIR__ . '/TestingSelfApprovalTest.php',
     __DIR__ . '/SessionRotationTest.php',
+    __DIR__ . '/ToolsRegistryTest.php',
     __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/TagsIndexMemoryTest.php',
     __DIR__ . '/TagPaginationTest.php',

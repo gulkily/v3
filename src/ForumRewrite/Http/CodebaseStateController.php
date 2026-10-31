@@ -57,7 +57,7 @@ final class CodebaseStateController
                 'siteName' => SiteConfig::displayName(),
                 'admins' => ProfileRepository::approvedDirectoryUsers($this->routeServices->pdo()),
             ],
-            'System State',
+            'System status',
             'tools',
         );
     }

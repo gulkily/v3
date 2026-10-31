@@ -2164,27 +2164,29 @@ PHP;
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
         assertStringContains('/activity/', $tools);
-        assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
+        assertStringContains('Everything that changed', $tools);
         assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
         assertStringContains('class="nav"', $tools);
         assertSame(1, substr_count($tools, 'href="/tools/">Tools</a>'));
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
-        assertStringContains('Current application version, repository head, and read-model health.', $tools);
+        assertStringContains('Version and health', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
-        assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
+        assertStringContains('Turn site features on or off', $tools);
         assertStringContains('tool-launcher-button" href="/tools/operations/"', $tools);
-        assertStringContains('Control how the site is served, including high-traffic mode.', $tools);
+        assertStringContains('How the site is served', $tools);
         assertStringContains('/tools/visitor-statistics/', $tools);
-        assertStringContains('Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.', $tools);
+        assertStringContains('Aggregate visit counts', $tools);
         assertStringContains('/forte', $tools);
-        assertStringContains('Classic three-pane newsreader view of the whole board - folders, thread list, and preview.', $tools);
-        assertStringContains('tool-launcher-button" href="/account/key/"', $tools);
+        assertStringContains('Three-pane newsreader view', $tools);
+        // Account is in the main navigation, not Tools.
+        assertStringNotContains('tool-launcher-button" href="/account/key/"', $tools);
+        assertStringNotContains('tools-nav .nav-link[href="/account/key/"]', $tools);
         assertStringContains('tools-nav-divider', $tools);
         assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $tools);
         assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $tools);
-        assertStringContains('System State', $codebase);
+        assertStringContains('System status', $codebase);
         assertStringContains('<strong>Name:</strong> zenmemes', $codebase);
         assertStringContains('<strong>Admin:</strong>', $codebase);
         assertStringContains('grep &#039;^Instance-Name:&#039; state/local_repository/records/instance/public.txt', $codebase);
@@ -2218,7 +2220,15 @@ PHP;
         assertStringNotContains('high_traffic_control', $operations);
         assertFingerprintedAsset($operations, 'tool-details.css');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
-        assertStringContains('tools-nav-divider', $featureFlags);
+        // The Tools bar follows the launcher's groups, with a divider between each.
+        $toolsBar = substr($featureFlags, (int) strpos($featureFlags, '<div class="nav tools-nav">'));
+        $toolsBar = substr($toolsBar, 0, (int) strpos($toolsBar, '</div>'));
+        assertSame(3, substr_count($toolsBar, 'tools-nav-divider'));
+        $order = ['href="/tools/outbox/"', 'href="/activity/"', 'href="/tools/user-access/"', 'href="/tools/feature-flags/"', 'href="/tools/operations/"'];
+        for ($i = 1; $i < count($order); $i++) {
+            assertOrdered($toolsBar, $order[$i - 1], $order[$i]);
+        }
+        assertStringNotContains('href="/account/key/"', $toolsBar);
         assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $featureFlags);
         assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $featureFlags);
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
@@ -5290,7 +5300,7 @@ PHP;
 
         assertStringContains('status=ready', $status);
         assertStringContains('lock_status=locked', $status);
-        assertStringContains('System State', $codebase);
+        assertStringContains('System status', $codebase);
         assertStringContains('locked', $codebase);
         assertStringContains('Lock status', $codebase);
     }
@@ -5316,7 +5326,7 @@ PHP;
         assertStringContains('status=ready', $status);
         assertStringContains('stale_marker=absent', $status);
         assertStringContains('rebuild_reason=stale_marker', $status);
-        assertStringContains('System State', $codebase);
+        assertStringContains('System status', $codebase);
         assertStringContains('Stale marker', $codebase);
         assertStringContains('absent', $codebase);
     }
