@@ -87,3 +87,33 @@ Observation: Indirect consumers may exceed the bounded trace/probe budget. Cover
 Suggestion: Replan oversized stages before proceeding, retain failed probes, and avoid exhaustive-coverage claims.
 
 *— Codex · 2026-10-31 UTC*
+
+## Step 4 handoff — 2026-10-31 UTC
+
+### Necessary/useful instructions
+
+Source: Approved documentation scope, shared-contract tracing and stage commit gates.
+Observation: Planning 5983cbf2 preceded summary creation; stages af95cf65, ea0de69b, 7a2294f2 and a44abf16 each include their summary. Runtime source/tests/configuration remain unchanged. Ranked findings preserve RSS/export completeness, pins, selection semantics and explicitly deferred paths.
+Suggestion: Use the narrow proposed slices as separate remediation scopes; do not turn this audit into a universal LIMIT change.
+
+Source: Evidence boundaries and P2/extended checkpoints.
+Observation: Twenty-four direct-method samples retain raw output, external probe source, exact selected-ID checks, memory and timing variance. SQL examined rows/browser/host costs remain unknown. Original cycle/stage estimates and separate retrospectives are retained; maintainer fit pending, no accepted-count increment.
+Suggestion: Prefer measured transfer/retention evidence over extrapolated production timings, and preserve inherited findings as shared causes.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Source: Runtime/UI/migration/deployment verification.
+Observation: Output is an audit report and concept entry, not application behavior. No new dependencies, schema changes, release or UI work require those checks. Production PHP 8.3 and current corpus were unavailable.
+Suggestion: Apply normal runtime/recovery checks when a separately approved fix changes those contracts; retain operator handoff rather than claim recovery from isolated probes.
+
+### Uncertain assessments
+
+Source: Coverage and source-review completeness.
+Observation: Every planned family has a disposition, but specialized import scripts, every queue handler/client and browser performance were not exhaustively traced. Early draft used an incorrect tag-group method label/preview count; final source review corrected both before closeout. Large local timing variance prevents credible host speedup predictions.
+Suggestion: Recheck exact source symbols and dimensions during remediation; explicitly expand coverage when a proposed change reaches deferred consumers.
+
+*— Codex · 2026-10-31 UTC*
