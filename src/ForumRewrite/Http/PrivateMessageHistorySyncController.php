@@ -23,6 +23,12 @@ final class PrivateMessageHistorySyncController
                 if((int)($_SERVER['CONTENT_LENGTH']??0)>100000) throw new InvalidArgumentException('History request too large.');
             }
             $service=($this->service)();
+            $retry=$service->admit($viewer);
+            if ($retry>0) {
+                $this->routes->sendJson(['status'=>'error','code'=>'history_rate_limited','error'=>'History synchronization is busy. Retry later.'],429,
+                    array_merge($this->routes->noStoreHeaders(),['Retry-After: '.max(1,(int)ceil($retry))]));
+                return;
+            }
             $input=$query;
             if ($method==='POST') {
                 $raw=file_get_contents('php://input',false,null,0,100001);
