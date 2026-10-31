@@ -1063,7 +1063,7 @@ Authorization: Plan only; await Approved Step 1. No implementation, tests, commi
 
 Status: Step 1 proposed; audit execution and remediation not started.
 Scope: v1/B codebase-wide audit of loading whole collections before selection; baseline cfb8364f6db03cc09e27cd26afb93c109c723a08; R1/P2.
-Canonical checkpoints: [Intake and Step 1](./load_before_selection_audit_step1_solution_assessment.md#study-checkpoint), 2026-10-30 UTC; 0.55 total reaffirmed. Alternatives A 0.20 / C 0.90, non-additive whole-audit projections.
+Canonical checkpoints: [Intake and Step 1](./load_before_selection_audit/load_before_selection_audit_step1_solution_assessment.md#study-checkpoint), 2026-10-30 UTC; 0.55 total reaffirmed. Alternatives A 0.20 / C 0.90, non-additive whole-audit projections.
 Rater: Codex, single exposed rater; prior memory-audit exposure explicit; all three frozen hashes verified. Debug and extended estimates enabled. No measured labor, independent rating or accepted outcome.
 Relationship: Related to v3/qdb_memory_audit, broadening from memory to unnecessary work before selection. Seed findings overlap and must not be counted as independent discoveries. No application changes, dependency additions, commits or deployment.
 
