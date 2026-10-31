@@ -96,16 +96,8 @@ final class ToolsPageController
         return $this->routeServices->renderPageTemplate(
             'tools.php',
             [
-                'toolPages' => array_map(
-                    static fn (array $tool): array => [
-                        'key' => $tool['key'],
-                        'label' => $tool['label'],
-                        'href' => $tool['href'],
-                        'description' => $tool['description'],
-                    ],
-                    ToolsPageSupport::registry(),
-                ),
-                'toolNavOptions' => ToolsPageSupport::navOptions(null),
+                'toolPages' => ToolsPageSupport::registry(),
+                'toolGroups' => ToolsPageSupport::groups(),
             ],
             'Tools',
             'tools',

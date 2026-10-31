@@ -229,3 +229,33 @@
   width: auto;
   margin: 0;
 }
+
+/* /tools/ launcher: one list grouped by who uses the tools. Scoped to
+   .tools-launcher-page so the shared launcher rules above (also used by
+   Bookmarklets) and the themes' button rules apply unchanged. */
+.tools-launcher-page .tool-launcher-group + .tool-launcher-group {
+  margin-top: 1.4rem;
+}
+
+.tools-launcher-page .tool-launcher-group-heading {
+  margin: 0 0 0.6rem;
+  font-family: var(--ui-font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, inherit);
+}
+
+@media (max-width: 560px) {
+  /* Two to a row only where labels fit whole; bold theme fonts drop to one. */
+  .tools-launcher-page .tool-launcher-list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
+    gap: 0.9rem 0.7rem;
+  }
+
+  /* A longer description beside a tool must not stretch its button. */
+  .tools-launcher-page .tool-launcher-button {
+    flex: 0 0 auto;
+  }
+}

@@ -40,3 +40,27 @@ None.
 - Estimate details: original scope as planned; no revision. Retrospective unchanged: test updates were as expected; the two upstream Lobby failures cost a bisect but are not this stage's work.
 
 *— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - The grouped /tools/ page
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `pages/tools.php`: one card with the page heading (`<h1>Tools</h1>`), then each group as a labelled section with an `<h2 data-shape="{group}">` heading and its tools; each item carries `data-tone`, the existing `tool-launcher-button` class and its unchanged link, and the one-line description. The Tools bar card is gone from /tools/. Backup still drops out when both backups are disabled; an empty group would be skipped.
+  - `ToolsPageController::index` passes the registry and `groups()` directly.
+  - `tools.css`: rules scoped to `.tools-launcher-page` (group spacing, group headings in the UI font). On phone, the list fits as many tools to a row as have room without breaking a word, and buttons no longer stretch to match a taller neighbour.
+  - Tests: `LocalAppSmokeTest` checks /tools/ has no Tools bar, lists every tool once with its tone, and shows the four headings with `data-shape` in order. `backup_feature_flags.mjs` expects the bar only on tool pages and checks the bar icon on /tools/sqlite/. `docs_discovery.mjs` checks the bar's Docs icon on /tools/bookmarklets/.
+- Verification:
+  - Screenshots of /tools/ in default, Word97, Chicago and Midnight (ZenMemes) and QDB, at 390px and 1280px, reviewed: groups, headings and descriptions present; icons in all three icon themes; no overflow.
+  - `php tests/run.php ToolsRegistryTest LocalAppSmokeTest`: 156/159; the same three failures that also fail on main (see Stage 1).
+  - `backup_feature_flags.mjs`: passed (240 theme/viewport/page states).
+  - `bookmarklet_copy_ui.mjs` (against its fixture server): passed.
+  - `docs_discovery.mjs`, dynamic half (`DOCS_ONLY_MODE=dynamic`, fixture server): passed, 8 width/theme cases. The static half needs a full built release and was not run.
+  - Bookmarklets card: byte-identical to its baseline in all eight captures.
+  - `high_traffic_control.mjs` fails waiting for the auth-resume marker on /tools/operations/; it fails the same way on main, so it was already broken. `access_history.mjs` and `account_key_approval.mjs` already fail on main (recorded in earlier cycles); their Tools selectors use the bar only on tool pages and the launcher on /tools/, which this stage keeps working.
+- Notes:
+  - Deviation from the Step 3 line "phone: two-up": at 390px Midnight's bold buttons split "Bookmarklets" mid-word in two columns. The list now uses two columns only where labels fit whole, so 390px phones get one column. In-scope layout refinement; no requirement changed.
+- Estimate details: original scope as planned; no revision. Retrospective unchanged: the phone layout needed one extra pass.
+
+*— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*

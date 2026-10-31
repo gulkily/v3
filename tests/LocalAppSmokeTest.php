@@ -2183,9 +2183,16 @@ PHP;
         // Account is in the main navigation, not Tools.
         assertStringNotContains('tool-launcher-button" href="/account/key/"', $tools);
         assertStringNotContains('tools-nav .nav-link[href="/account/key/"]', $tools);
-        assertStringContains('tools-nav-divider', $tools);
-        assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $tools);
-        assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $tools);
+        // One grouped launcher: no Tools bar on /tools/, each tool once, group headings with theme hooks.
+        assertStringNotContains('class="nav tools-nav"', $tools);
+        foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
+            assertSame(1, substr_count($tools, 'class="tool-launcher-button" href="' . $tool['href'] . '"'), $tool['href']);
+            assertStringContains('data-tone="' . $tool['tone'] . '"', $tools);
+        }
+        foreach (\ForumRewrite\Tools\ToolsPageSupport::groups() as $key => $label) {
+            assertStringContains('data-shape="' . $key . '">' . $label . '</h2>', $tools);
+        }
+        assertOrdered($tools, '>Your device</h2>', '>Operator</h2>');
         assertStringContains('System status', $codebase);
         assertStringContains('<strong>Name:</strong> zenmemes', $codebase);
         assertStringContains('<strong>Admin:</strong>', $codebase);
