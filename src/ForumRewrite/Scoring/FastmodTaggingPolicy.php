@@ -11,7 +11,7 @@ final class FastmodTaggingPolicy
 {
     public static function enabled(string $projectRoot, ?string $repositoryRoot = null): bool
     {
-        $repositoryRoot ??= getenv('FORUM_REPOSITORY_ROOT') ?: $projectRoot.'/state/local_repository';
+        $repositoryRoot ??= \ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT', $projectRoot) ?: $projectRoot.'/state/local_repository';
         return FeatureFlagEvaluator::forApplication($repositoryRoot,$projectRoot)
             ->isEnabled(FeatureFlagRegistry::FASTMOD_AUTOMATIC_TAGGING_ENABLED);
     }

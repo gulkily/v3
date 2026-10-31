@@ -10,7 +10,7 @@ final class HighTrafficSafety
     {
         if (str_ends_with($relativePath,'.asc')) return;
         $project = dirname(__DIR__,3);
-        $cache = new HighTrafficCache($project,$repository,$database,getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $project . '/public');
+        $cache = new HighTrafficCache($project,$repository,$database,\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT', $project) ?: $project . '/public');
         if (!is_file($cache->root . '/state.json')) return;
         // Restrictions/feature changes retire the bypass before canonical publication.
         $withdraw = preg_match('~(?:feature-flags|approval-seeds|approvals)/|feature-flags\.txt|site-feature-flags~', $relativePath) === 1;

@@ -43,3 +43,19 @@ Branch: `feat/deployment-config`; planning commit `e51751cf`
 - Notes: this developer machine's private file sets none of the new keys (checked), so local test behavior is unchanged. Baselines still running; recorded in Stage 3.
 
 *— Claude · 2026-10-30 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Web app and shared classes
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `public/index.php`, `Application`, `RouteServices`, `HighTrafficSafety`, `RetractionSweepFactory`, `FastmodTaggingPolicy`, `LocalWriteService` and `ImageStore` read the six settings through `DeploymentSettings::value(..., <project root>)`, each keeping its existing default. The high-traffic worker still receives the resolved profile as an argument.
+  - `tests/high_traffic_apache_test.py`: new scenario after the existing `SetEnv` one. It restores `.htaccess` without `SetEnv`, puts `FORUM_SITE_ID => 'qdb'` only in the private file, restarts Apache and the CLI without `FORUM_SITE_ID`, and checks that normal, cold, warm (no PHP) and CLI-refreshed homepages are QDB's.
+- Verification:
+  - Full Apache harness: **blocked** at its existing native-import step (line 191, exit 255) before reaching either profile scenario. This is the same pre-existing failure recorded in the QDB diagnosis; the baseline result is pending.
+  - Scratch copy running only setup plus the two profile scenarios (not committed): **passed** both the request-scoped `SetEnv` scenario and the new private-file-only scenario; the script stopped afterwards only on its summary line, which refers to a timing variable from the cut section.
+  - `HighTrafficTest` 6/6, `DeploymentSettingsTest` 7/7, `SiteProfileRegistryTest` 8/8, `WriteApiSmokeTest` 193/193 passed. `LocalAppSmokeTest` 154/157; all three failures also occur in the baseline at `2ee0d198` (`testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces`, `testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound`).
+- Notes: an unknown profile in the private file makes web requests fail with an error in the server log; status in Stage 5 surfaces the same message to the operator.
+
+*— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*
