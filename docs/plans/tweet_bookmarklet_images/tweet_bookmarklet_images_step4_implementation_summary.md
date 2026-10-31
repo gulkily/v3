@@ -68,3 +68,17 @@ Request disposition: approved first-photo scope delivered; no gallery/picker or 
 Dependency inventory: zero added/upgraded external components, packages, manifests/locks or repository evaluation artifacts; temporary OS tool recovery remained under /tmp. No migration. Rollback: restore the application revision through normal deployment and regenerate shared pages; source URLs remain editable text and existing Image-v1 records stay compatible. Deployment is outside this cycle.
 
 *— Codex · 2026-10-31 UTC*
+
+## Direct corrective follow-up — approved-account error, 2026-10-31 UTC
+
+Request: user reports “Image uploading is unavailable for this identity or connection…” and confirms a root-approved account. Site URL/connection/runtime details requested; actual user environment remains unverified.
+Disposition: bounded direct correction to the existing feature; no new Railspike cycle or changed upload policy. Before editing, a disposable VM replay demonstrated the exact error with secure/online browser state and two server responses both reporting Approved: yes / Image-Upload-Allowed: yes. A later overlapping refresh sets eligibility true, while the earlier assert fails solely because its serial was superseded.
+Reuse: extend canonical `public/assets/image_upload.js` assertion, preserve server profile/identity checks, existing preparation/signing and draft recovery; no new UI, uploader, APIs or dependencies. A superseded result must cause a fresh authoritative check, never permission from a cached allowed flag.
+Completion: reproduce the overlap, verify approval permits import and later denial still rejects; run existing normal bookmarklet→composer→publication/recovery browser flow. Diagnose/replay the user's actual site once its URL is known; local checks alone do not establish their recovery. No server installs/config changes or deployment authorized by this correction.
+Status: implementing serial-race correction; original four-stage history and estimates remain unchanged. Actual user recovery pending.
+
+*— Codex · 2026-10-31 UTC*
+
+Corrective outcome: `assertEligible` now discards a superseded result and starts a fresh authoritative check; it still rejects a current denial, offline/insecure connection or network error without repeated retries for those real failures. PASS `node tests/browser/image_eligibility.cjs` reproduces overlapping approved/denied checks and verifies stale approval cannot bypass a later denial. PASS existing normal tweet import/publication/recovery browser suite (`/tmp/tweet-eligibility-browser.log`, fixture `/tmp/tweet-image-browser-IMYahk`), existing multipart transport check, 84/84 focused signing/upload-validation PHP checks (`/tmp/tweet-eligibility-php.log`), JS syntax and whitespace. No UI/dependency/schema/publication-policy changes; no theme matrix repeated for this behavior-only correction. Actual user's URL/environment and recovery remain pending; do not infer their cause from this reproduction. Server operations/deployment not performed.
+
+*— Codex · 2026-10-31 UTC*

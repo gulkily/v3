@@ -159,7 +159,16 @@
     } finally { clearTimeout(timer); }
   }
   async function assertEligible(form) {
-    if (!await refreshEligibility(form)) throw new Error('Image uploading is unavailable for this identity or connection. Your draft is retained; reconnect or remove the attachment to post text.');
+    // Focus/visibility/profile refreshes can supersede this check. A discarded
+    // result says nothing about permission; check again rather than deny it.
+    while (true) {
+      const check = refreshEligibility(form);
+      const serial = form.__imageEligibilitySerial;
+      const allowed = await check;
+      if (serial !== form.__imageEligibilitySerial) continue;
+      if (!allowed) throw new Error('Image uploading is unavailable for this identity or connection. Your draft is retained; reconnect or remove the attachment to post text.');
+      return;
+    }
   }
   window.ForumImageUpload = {bind,select,clear,ready,lock,assertEligible,refreshEligibility,has:form=>Boolean(form.__imageState || form.__tweetImageImport)};
 })();
