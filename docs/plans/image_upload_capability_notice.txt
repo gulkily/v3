@@ -1,0 +1,29 @@
+Task: Explain the GD image-upload requirement on Feature Flags and System State
+Date: 2026-10-31 UTC
+Authorization: User requested “we should mention this on the feature flags page and the system state page” after diagnosing missing GD on localhost:8000
+Workflow: Direct; bounded presentation of an existing requirement, no new behavior/policy or Railspike cycle
+Scope: Existing image flag description; current serving-runtime decoder status and missing-capability recovery on System State; relevant UI verification/record
+
+Canonical-Requirement: src/ForumRewrite/Images/ImageUploadValidator.php::available(), already used by profile upload eligibility and publication validation
+Reuse-Feature-Flags: FeatureFlagRegistry Image attachments description; retain canonical grouping/order, toggles, role/access and flag state
+Reuse-System-State: CodebaseStateController.collectState() and codebase_state.php; use existing card/codebase-facts/feedback components
+Presentation-Decision: Feature Flags gets static requirement copy because that page can be prebuilt. System State is dynamic and reports live capability from the serving PHP process. Do not add a stale runtime status to static Feature Flags artifacts
+New-Components: None; no new CSS, JavaScript, APIs or duplicate uploader/check
+Completion: Ordinary Tools navigation shows requirement next to Image attachments, System State shows available/unavailable decoder truthfully, missing state provides enable/restart recovery, and available state omits failure warning
+Risks: CLI PHP may differ from web PHP; probe inside page request. Runtime capability is separate from enabled flag and approved identity; do not relabel configured flag state as decoder capability. Keep warning visible and server HTML viewer-independent
+Verification-Plan: Existing flag/order/core-route checks; actual localhost missing-GD condition; isolated GD-enabled server; phone/desktop themes and no-JS rendering/overflow/first-paint checks; static Feature Flags regeneration if current local artifact is stale
+Boundaries: No dependency installation, system configuration, account/flag changes, schema/API changes, navigation/icon additions or production deployment; todo.txt untouched
+Status: Implementing
+
+Outcome: Complete; Feature Flags description states required PHP GD JPEG/PNG support in web runtime; System State includes live Image upload support facts card and conditional enable/restart guidance
+Changed-Paths: FeatureFlagRegistry.php; CodebaseStateController.php; templates/pages/codebase_state.php
+PHP-Checks: PASS 28/28 FeatureFlagsBehaviorTest, FeatureFlagEvaluatorTest, FeatureFlagChangePageTest, ImageUploadValidatorTest and LocalAppSmokeTest::testApplicationRendersCoreRoutes; /tmp/image-capability-php.log
+Browser-Checks: PASS actual http://localhost:8000 missing-GD condition and isolated serving-runtime GD-enabled condition, through Tools navigation; warning visible only when missing; no-JS on both pages/capabilities; 104 page/theme/width combinations (13 themes, phone 390 and desktop 1280, two pages, two capability states); no overflow or browser page errors
+Browser-Evidence: /tmp/image-capability-browser.log; /tmp/image-capability-ZH0YTr; screenshots inspected for Chicago missing-GD phone and light available-GD desktop
+Initial-Paint: Requirement and current capability rendered in initial HTML; no added client initialization, personalization or post-paint UI changes
+Recovery-Check: Missing local runtime now visibly instructs enabling GD in serving PHP and restarting PHP; isolated GD-enabled runtime reports available and omits warning
+Static-Check: Actual localhost Feature Flags response already contains new requirement; no static regeneration necessary locally. Prebuilt deployments need normal shared-page refresh to pick up changed descriptions
+Integrity: PHP syntax and git diff --check passed; existing flag grouping/order/roles preserved; source paths verified
+Dependency-Delta: Zero; no external components/system installs, schema/API changes, new assets, navigation/icons, flag/account writes or production deployment
+Limits: Full application suite and physical devices not tested; GD installation/server restart and the original user's upload retry remain pending separate operator actions
+Todo: Existing unrelated todo.txt edits preserved, not staged

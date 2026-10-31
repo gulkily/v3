@@ -122,7 +122,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::IMAGE_CONTENT_ENABLED,
                 'Image attachments',
-                'Allow approved members to attach JPEG/PNG images. Disabling blocks image delivery and authoring; retained images can still be backed up when image backups are enabled.',
+                'Allow approved members to attach JPEG/PNG images. Requires PHP GD with JPEG/PNG support in the web PHP runtime. Disabling blocks image delivery and authoring; retained images can still be backed up when image backups are enabled.',
                 false,
                 self::IMAGE_CONTENT_ENABLED,
                 siteMutable: true,

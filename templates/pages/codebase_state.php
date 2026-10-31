@@ -81,6 +81,20 @@ $rowCountSources = [
     </table>
   </article>
   <article class="card" data-role="codebase-state">
+    <h2>Image upload support</h2>
+    <table class="codebase-facts">
+      <tbody>
+        <tr>
+          <th scope="row">PHP GD (JPEG/PNG)</th>
+          <td><?= $state['image_upload_decoder_available'] ? 'available' : 'unavailable' ?></td>
+        </tr>
+      </tbody>
+    </table>
+<?php if (!$state['image_upload_decoder_available']): ?>
+    <p class="feedback feedback-error">Image uploads require PHP GD with JPEG/PNG support. Enable it in the PHP runtime serving this site, then restart PHP.</p>
+<?php endif; ?>
+  </article>
+  <article class="card" data-role="codebase-state">
     <h2>Repository</h2>
     <table class="codebase-facts">
       <tbody>

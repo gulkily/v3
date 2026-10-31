@@ -123,6 +123,7 @@ final class CodebaseStateController
         return [
             'overall_status' => $overallStatus,
             'app_version' => $this->codebaseGitValue('rev-parse --verify HEAD'),
+            'image_upload_decoder_available' => \ForumRewrite\Images\ImageUploadValidator::available(),
             'codebase' => [
                 'Commit' => $this->codebaseGitValue('rev-parse --verify HEAD'),
                 'Branch' => $this->codebaseGitValue('symbolic-ref --quiet --short HEAD', 'detached or unavailable'),
