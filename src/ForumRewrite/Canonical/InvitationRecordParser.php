@@ -40,6 +40,12 @@ final class InvitationRecordParser
             throw new CanonicalRecordParseException('Verification-Hash must be a lowercase sha256 hash.');
         }
 
+        $maxRedemptions = $details->headers['Max-Redemptions'] ?? null;
+        if ($maxRedemptions !== null && ($action !== 'issue'
+            || preg_match('/^[1-9][0-9]{0,3}$/D', $maxRedemptions) !== 1 || (int) $maxRedemptions > 1000)) {
+            throw new CanonicalRecordParseException('Max-Redemptions must be an integer from 1 to 1000 on issuance only.');
+        }
+
         $expiresAt = $details->headers['Expires-At'] ?? null;
         $destination = $details->headers['Destination'] ?? null;
         if ($action === 'issue') {
@@ -53,7 +59,7 @@ final class InvitationRecordParser
             throw new CanonicalRecordParseException('Only issued invitations may include Expires-At or Destination.');
         }
 
-        return new InvitationRecord($post, $id, $action, $verificationHash, $expiresAt, $destination);
+        return new InvitationRecord($post, $id, $action, $verificationHash, $expiresAt, $destination, (int) ($maxRedemptions ?? 1));
     }
 
     private function isUtcTimestamp(string $value): bool

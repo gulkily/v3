@@ -446,6 +446,27 @@ final class CanonicalRecordParsersTest
         assertSame('/threads/root-001', $record->destination);
     }
 
+    public function testInvitationLimitsAreBoundedAndLegacyBytesArePreserved(): void
+    {
+        $parser = new InvitationRecordParser();
+        $legacy = $this->invitationContents('issue', 'openpgp:' . str_repeat('a', 40));
+        assertSame(1, $parser->parse($legacy)->maxRedemptions);
+        foreach (['1', '2', '1000'] as $value) {
+            $contents = str_replace('Expires-At:', "Max-Redemptions: {$value}\nExpires-At:", $legacy);
+            assertSame((int) $value, $parser->parse($contents)->maxRedemptions);
+        }
+        foreach (['0', '-1', '01', '1.5', '1001', '999999999999999999999', '2 ', "2\nMax-Redemptions: 3"] as $value) {
+            $contents = str_replace('Expires-At:', "Max-Redemptions: {$value}\nExpires-At:", $legacy);
+            $failed = false;
+            try { $parser->parse($contents); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { $failed = true; }
+            assertTrue($failed, 'Invalid limit accepted: ' . $value);
+        }
+        $redeem = $this->invitationContents('redeem', 'openpgp:' . str_repeat('b', 40));
+        assertThrows(fn () => $parser->parse(str_replace('Verification-Hash:', "Max-Redemptions: 2\nVerification-Hash:", $redeem)),
+            'Max-Redemptions must be an integer from 1 to 1000 on issuance only.');
+        assertSame(1, $parser->parse($legacy)->maxRedemptions);
+    }
+
     public function testRejectsExternalInvitationDestination(): void
     {
         assertThrows(

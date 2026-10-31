@@ -13,6 +13,7 @@ final class InvitationRecord
         public readonly string $verificationHash,
         public readonly ?string $expiresAt,
         public readonly ?string $destination,
+        public readonly int $maxRedemptions = 1,
     ) {
     }
 }
