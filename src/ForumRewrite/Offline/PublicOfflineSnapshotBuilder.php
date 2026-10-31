@@ -244,10 +244,10 @@ final class PublicOfflineSnapshotBuilder
         }
     }
 
-    /** @return list<array<string, mixed>> */
-    private function visibleThreadRows(PDO $source): array
+    /** @return \Generator<int, array<string, mixed>> */
+    private function visibleThreadRows(PDO $source): \Generator
     {
-        $rows = $source->query(
+        $statement = $source->query(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at,
                     threads.subject, threads.body_preview, threads.board_tags_json,
                     threads.thread_labels_json, threads.score_total, posts.author_label,
@@ -256,12 +256,16 @@ final class PublicOfflineSnapshotBuilder
              JOIN posts ON posts.post_id = threads.root_post_id
              WHERE posts.is_hidden = 0
              ORDER BY threads.last_activity_at DESC, threads.root_post_id DESC'
-        )->fetchAll(PDO::FETCH_ASSOC);
-
-        return array_values(array_filter(
-            $rows,
-            static fn (array $row): bool => !ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])
-        ));
+        );
+        try {
+            while (($row = $statement->fetch(PDO::FETCH_ASSOC)) !== false) {
+                if (!ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $row['board_tags_json'])) {
+                    yield $row;
+                }
+            }
+        } finally {
+            $statement->closeCursor();
+        }
     }
 
     /**
