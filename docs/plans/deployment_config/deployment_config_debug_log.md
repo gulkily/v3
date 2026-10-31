@@ -55,3 +55,27 @@
 ### Uncertain assessments
 
 - The known-environment rule says "a pass only on another supported platform does not complete it". The plan meets this by leaving QDB acceptance pending, but Railspike doesn't say whether a cycle may close technically with it pending.
+
+## 2026-10-31 UTC — Step 4
+
+### Necessary/useful instructions
+
+- Stage commit cadence with the summary in the same commit: kept each stage's record honest about what was verified at that point (Stage 2 recorded baselines as still running; Stage 3 closed them). Retain.
+- `step4_implementation_after.md` "a focused pass is never reported as a full-suite result": prompted the Step 4 baseline full-suite comparison in Stage 6 rather than relying on the passing focused suites. Retain.
+- Known-user replay rule: kept QDB host acceptance explicitly pending with an operator checklist instead of claiming it from local tests. Retain.
+- Concept guidance "verify touched entries and their paths": checking the runbook against code found two documentation errors (missing `mitrapclub` profile; over-specific `<title>` assertion). Retain.
+
+### Redundant/unnecessary instructions
+
+- Extended-mode stage retrospectives: with a single exposed rater and no measured labor, six retrospective stage values add little beyond the whole-cycle assessment. Low confidence; kept for protocol consistency.
+
+### Inapplicable instructions
+
+- Documentation-only cycle rules (the cycle changed runtime code); Follow-up Cycles Before Merge; one-shot checkpoints.
+
+### Uncertain assessments
+
+- The retrospective cycle assessment was made by a different model (claude-fable-5-1) from the prospective rater (claude-opus-5-5). The protocol speaks of a "single exposed rater"; whether a model change within one agent name counts as a rater change is recorded in the closeout but not resolved by the instructions.
+- Whether a cycle may be reported "locally complete" with the known-environment acceptance pending (same question as Step 3).
+
+Handoff: Stage 6 closeout commit `38c99d35`; this log entry is committed separately as the log-only handoff commit.
