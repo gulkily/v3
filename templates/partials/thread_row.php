@@ -11,7 +11,7 @@ $replyCount = (int) $thread['reply_count'];
 $excerpt = trim((string) preg_replace('/^' . preg_quote(\ForumRewrite\Images\ImageReference::PREFIX, '/') . '.*$/m', '', (string) $thread['body_preview']));
 $showExcerpt = $excerpt !== '' && $excerpt !== trim($subject) && ($thread['retracted_at'] ?? null) === null;
 ?>
-<article class="thread-row" data-heat="<?= $heat($thread['last_activity_at'] ?? null, $replyCount) ?>">
+<article class="thread-row" data-thread-id="<?= $e($thread['root_post_id']) ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? null, $replyCount) ?>">
   <h3 class="thread-row__title"><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a></h3>
   <p class="thread-row__count"><?php if ($replyCount > 0): ?><span class="thread-row__count-number"><?= $replyCount ?></span> <span class="thread-row__count-label"><?= $replyCount === 1 ? 'reply' : 'replies' ?></span><?php endif; ?></p>
 <?php if ($showExcerpt): ?>

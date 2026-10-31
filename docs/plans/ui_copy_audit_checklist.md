@@ -822,3 +822,13 @@ only; subsequent implementation and verification are recorded separately above.
 - [x] Source-only deployments and failed Git commands show unavailable; detached HEAD is identified. Linked-worktree .git files are accepted. Existing content-repository and read-model details remain separate.
 - [x] Core-route rendered HTML smoke check passed; PHP syntax and diff whitespace checks passed. Reused the existing wrapping facts table. Dependency delta: zero.
 - [ ] Browser verification remains outstanding for phone/desktop, affected themes, long commit subjects, source-only deployments and detached HEAD; the HTML smoke check does not establish visual layout.
+
+### Version reload notice and navigation — 2026-10-31
+
+- Reused existing reload notice; fixed bottom-right placement follows the offline indicator's out-of-flow pattern. Removed Feature Flags toolbar's old banner offset.
+- Reload compares canonical post cards and scrolls to the first new visible post on the loaded page.
+- Implementation and verification record: `docs/plans/version_reload_navigation.txt`.
+- PHP test syntax and diff whitespace checks passed. Behavior tests and rendered phone/desktop/theme verification remain blocked by missing Node/browser executables; no rendered-layout pass claimed.
+- Reload follow-up: Extended identity comparison to standard card/list and paned board thread rows; deferred scrolling until a task after pageshow/native restoration. Asset fingerprint tests passed (2/2); Node behavior suite and rendered recovery remain unverified due to unavailable runtime/browser. Exact reported page still unknown.
+- Anchor follow-up: New-content navigation now replaces the URL fragment and uses native anchor scrolling; stable targets reuse post IDs and initialize missing thread/quote anchors. No extra history entry. Browser recovery remains unverified; PHP lint and whitespace checks passed.
+- Reload investigation: Located cached runtimes and ran verification. Behavior tests 9/9; browser reload cases 14/14; existing Feature Flags browser suite passed. Found actual phone navigation intercepting Reload and positioned notice above shared tabbar height; Word97/Midnight desktop status bars cleared. Actual rendered thread-shell test with simulated new reply passed normal clicks/anchors/visible result/no overflow/no layout shift across five themes at 390/1280 (10 states); phone screenshot reviewed. Exact original no-anchor report remains unresolved pending page URL/expected new item. No dependency additions.

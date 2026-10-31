@@ -4,6 +4,61 @@ declare(strict_types=1);
 
 final class VersionCheckBehaviorTest
 {
+    public function testReloadScrollsOnlyToNewContentOnTheSamePage(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const source = require('fs').readFileSync(process.argv[1], 'utf8');
+const vm = require('vm');
+const store = {}, scrolled = [], anchors = [];
+function load(ids, path = '/threads/root', brokenStorage = false, attribute = 'data-post-id') {
+  const handlers = {}, tasks = [];
+  const cards = ids.map(id => ({getAttribute: name => name === attribute ? id : null, getClientRects: () => [1],
+    scrollIntoView() {scrolled.push(id);}}));
+  const window = {
+    sessionStorage: {getItem(k) {return store[k];}, setItem(k,v) {if(brokenStorage) throw Error('blocked'); store[k]=v;}, removeItem(k) {delete store[k];}},
+    location: {href: 'https://example.test' + path, origin: 'https://example.test', assign(url) {handlers.assigned=url;}, replace(url) {anchors.push(url); scrolled.push(decodeURIComponent(new URL(url).hash.slice(1)).replace(/^(post|thread)-/, ''));}},
+    fetch() {}, setTimeout(fn, delay) {if(delay === 0) tasks.push(fn);}, addEventListener(name, fn) {handlers[name]=fn;}
+  };
+  const banner = {querySelector() {return {addEventListener(name, fn) {handlers.click=fn;}};}};
+  const document = {readyState: 'loading', addEventListener() {}, querySelectorAll(selector) {
+      const required = attribute === 'data-paned-thread-id' ? '[data-paned-thread-id]'
+        : attribute === 'data-thread-id' ? '.thread-row[data-thread-id]' : '.post-card[data-post-id]';
+      if(!selector.includes(required)) throw Error('Missing content selector: ' + required);
+      return cards;
+    },
+    querySelector(selector) {
+      if(selector === '[data-role="app-version-banner"]') return banner;
+      if(selector === 'meta[name="app-version"]') return {getAttribute: () => 'current'};
+      return null;
+    }};
+  vm.runInNewContext(source, {window, document, URL});
+  handlers.finish = () => {handlers.pageshow(); tasks.forEach(fn => fn());};
+  return handlers;
+}
+load(['old']).click();
+const landing = load(['old', 'new', 'newer']);
+if(scrolled.length) throw Error('Scrolled before restoration');
+landing.finish();
+load(['old']).click(); load(['old']).finish();
+load(['old']).click(); load(['elsewhere'], '/threads/other').finish();
+load(['old']).click(); store.forum_pending_app_version_content = 'invalid'; load(['old']).finish();
+for (const attribute of ['data-thread-id', 'data-paned-thread-id']) {
+  load(['old'], '/threads/', false, attribute).click();
+  load(['old', attribute], '/threads/', false, attribute).finish();
+}
+const blocked = load(['old'], '/threads/root', true); blocked.click();
+process.stdout.write(JSON.stringify({scrolled, anchors, assigned: blocked.assigned, remaining: store.forum_pending_app_version_content || ''}));
+NODE);
+        assertSame(['new', 'data-thread-id', 'data-paned-thread-id'], $result['scrolled']);
+        assertSame([
+            'https://example.test/threads/root#post-new',
+            'https://example.test/threads/#thread-data-thread-id',
+            'https://example.test/threads/#thread-data-paned-thread-id',
+        ], $result['anchors']);
+        assertStringContains('__v=current', $result['assigned']);
+        assertSame('', $result['remaining']);
+    }
+
     public function testThreadNavigationHintsAreConsumedWithoutLosingAnchorOrHistoryState(): void
     {
         $result = $this->runScript(<<<'NODE'

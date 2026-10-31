@@ -19,7 +19,7 @@ if (($mediaEmbedsEnabled ?? false) && $subject === 'Untitled') {
     }
 }
 ?>
-<article class="card thread-card" data-heat="<?= $heat($thread['last_activity_at'] ?? null, (int) ($thread['reply_count'] ?? 0)) ?>">
+<article class="card thread-card" data-thread-id="<?= $e($thread['root_post_id']) ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? null, (int) ($thread['reply_count'] ?? 0)) ?>">
   <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a><?php if ($isPinned): ?> <span class="pinned-thread-marker">Pinned</span><?php endif; ?></h2>
 <?= $bareMediaEmbedWarmBeacon ?>
   <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>

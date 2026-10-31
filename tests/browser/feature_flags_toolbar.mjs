@@ -78,13 +78,12 @@ try {
       await page.evaluate(() => window.scrollTo(0, document.querySelector('[data-feature-flags-toolbar]').getBoundingClientRect().top + scrollY + 20));
       assert(Math.abs((await page.locator('[data-feature-flags-toolbar]').boundingBox()).y) < 1);
       await page.evaluate(() => { document.querySelector('.app-version-banner').hidden = false; });
-      await page.waitForFunction(() => parseFloat(document.querySelector('[data-feature-flags-toolbar]').style.top) > 0);
       const banner = await page.locator('.app-version-banner').boundingBox();
       const toolbar = await page.locator('[data-feature-flags-toolbar]').boundingBox();
-      assert(toolbar.y >= banner.y + banner.height - 1, `${theme}/${width} banner overlap`);
+      assert(Math.abs(toolbar.y) < 1, `${theme}/${width} toolbar shifted`);
+      assert(banner.y >= toolbar.y + toolbar.height, `${theme}/${width} banner overlap`);
       await page.screenshot({ path: `/tmp/feature-flags-${theme}-${width}.png`, fullPage: true });
       await page.evaluate(() => { document.querySelector('.app-version-banner').hidden = true; });
-      await page.waitForFunction(() => document.querySelector('[data-feature-flags-toolbar]').style.top === '0px');
     }
   }
   // Exercise the existing signed-save lifecycle with controlled success, failure,

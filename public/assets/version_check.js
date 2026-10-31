@@ -76,7 +76,84 @@
     banner.hidden = false;
   }
 
+  var reloadContentStorageKey = pendingVersionStorageKey + '_content';
+
+  function contentUrl() {
+    var url = new URL(window.location.href, window.location.origin);
+    url.searchParams.delete('__v');
+    url.hash = '';
+    return url.toString();
+  }
+
+  function contentCards() {
+    return document.querySelectorAll ? document.querySelectorAll(
+      '.post-card[data-post-id], .thread-card[data-thread-id], .thread-row[data-thread-id], [data-paned-thread-id]'
+    ) : [];
+  }
+
+  function contentId(card) {
+    return card.getAttribute('data-post-id') || card.getAttribute('data-thread-id')
+      || card.getAttribute('data-paned-thread-id');
+  }
+
+  function ensureContentAnchor(card) {
+    if (!card.id) {
+      var prefix = card.getAttribute('data-post-id') ? 'post-' : 'thread-';
+      card.id = prefix + contentId(card);
+    }
+    return card.id;
+  }
+
+  // Give list and quote cards stable fragment targets too. Reuse existing
+  // post anchors, and recreate these targets on refresh before restoration.
+  var initialCards = contentCards();
+  for (var cardIndex = 0; cardIndex < initialCards.length; cardIndex += 1) {
+    ensureContentAnchor(initialCards[cardIndex]);
+  }
+
+  function rememberContent() {
+    if (!storage) return;
+    try {
+      var ids = [];
+      var cards = contentCards();
+      for (var i = 0; i < cards.length; i += 1) {
+        ids.push(contentId(cards[i]));
+      }
+      storage.setItem(reloadContentStorageKey, JSON.stringify({url: contentUrl(), ids: ids}));
+    } catch (error) {
+    }
+  }
+
+  function scrollToNewContent() {
+    if (!storage) return;
+    try {
+      var saved = storage.getItem(reloadContentStorageKey);
+      if (!saved) return;
+      storage.removeItem(reloadContentStorageKey);
+      var previous = JSON.parse(saved);
+      if (previous.url !== contentUrl() || !Array.isArray(previous.ids)) return;
+      var cards = contentCards();
+      for (var i = 0; i < cards.length; i += 1) {
+        if (previous.ids.indexOf(contentId(cards[i])) === -1
+            && cards[i].getClientRects().length) {
+          var target = new URL(window.location.href, window.location.origin);
+          target.hash = ensureContentAnchor(cards[i]);
+          if (target.toString() !== window.location.href) {
+            // Same-document fragment navigation uses the browser's native
+            // anchor scrolling without adding another history entry.
+            window.location.replace(target.toString());
+          } else {
+            cards[i].scrollIntoView({block: 'start'});
+          }
+          return;
+        }
+      }
+    } catch (error) {
+    }
+  }
+
   function reloadForNewVersion() {
+    rememberContent();
     var version = nextVersion || currentVersion;
     persistPendingVersion(version);
     window.location.assign(withVersionBypass(window.location.href, version));
@@ -112,6 +189,18 @@
 
   if (ensurePendingVersionSatisfied()) {
     return;
+  }
+
+  // pageshow precedes native scroll restoration. Run in the next task so
+  // restoration cannot overwrite the new-content target.
+  var contentScrollScheduled = false;
+  function scheduleContentScroll() {
+    if (contentScrollScheduled) return;
+    contentScrollScheduled = true;
+    window.setTimeout(scrollToNewContent, 0);
+  }
+  if (document.readyState === 'complete') {
+    scheduleContentScroll();
   }
 
   // The thread response has already consumed these one-time navigation hints.
@@ -185,7 +274,9 @@
   });
 
   window.addEventListener('pageshow', function () {
-    ensurePendingVersionSatisfied();
+    if (!ensurePendingVersionSatisfied()) {
+      scheduleContentScroll();
+    }
   });
 
   scheduleNextVersionCheck();

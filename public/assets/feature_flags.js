@@ -47,12 +47,6 @@
       event.preventDefault();
       search.focus();
     });
-    var banner = document.querySelector('.app-version-banner');
-    if (banner) {
-      var offset = function () { toolbar.style.top = banner.getBoundingClientRect().height + 'px'; };
-      offset();
-      new ResizeObserver(offset).observe(banner);
-    }
     refresh();
     toolbar.hidden = false;
     return refresh;
