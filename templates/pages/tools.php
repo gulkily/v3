@@ -10,7 +10,6 @@
 <?php foreach ($groupTools as $toolPage): ?>
         <li class="tool-launcher-item" data-tone="<?= $e($toolPage['tone']) ?>">
           <a class="tool-launcher-button" href="<?= $e($toolPage['href']) ?>"><?= $e($toolPage['label']) ?></a>
-          <p class="tool-launcher-description"><?= $e($toolPage['description']) ?></p>
         </li>
 <?php endforeach; ?>
       </ul>

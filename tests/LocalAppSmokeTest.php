@@ -2164,27 +2164,22 @@ PHP;
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
         assertStringContains('/activity/', $tools);
-        assertStringContains('Everything that changed', $tools);
         assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
         assertStringContains('class="nav"', $tools);
         assertSame(1, substr_count($tools, 'href="/tools/">Tools</a>'));
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
-        assertStringContains('Version and health', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
-        assertStringContains('Turn site features on or off', $tools);
         assertStringContains('tool-launcher-button" href="/tools/operations/"', $tools);
-        assertStringContains('How the site is served', $tools);
         assertStringContains('/tools/visitor-statistics/', $tools);
-        assertStringContains('Aggregate visit counts', $tools);
         assertStringContains('/forte', $tools);
-        assertStringContains('Three-pane newsreader view', $tools);
         // Account is in the main navigation, not Tools.
         assertStringNotContains('tool-launcher-button" href="/account/key/"', $tools);
         assertStringNotContains('tools-nav .nav-link[href="/account/key/"]', $tools);
         // One grouped launcher: no Tools bar on /tools/, each tool once, group headings with theme hooks.
         assertStringNotContains('class="nav tools-nav"', $tools);
+        assertStringNotContains('tool-launcher-description', $tools);
         foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
             assertSame(1, substr_count($tools, 'class="tool-launcher-button" href="' . $tool['href'] . '"'), $tool['href']);
             assertStringContains('data-tone="' . $tool['tone'] . '"', $tools);

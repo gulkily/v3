@@ -232,13 +232,16 @@
 
 /* /tools/ launcher: one list grouped by who uses the tools. Scoped to
    .tools-launcher-page so the shared launcher rules above (also used by
-   Bookmarklets) and the themes' button rules apply unchanged. */
+   Bookmarklets) and the themes' button rules apply unchanged. Buttons only,
+   as many to a row as fit with whole labels (bold theme fonts give phones
+   one column), so every tool is in view in a desktop window without
+   scrolling. */
 .tools-launcher-page .tool-launcher-group + .tool-launcher-group {
-  margin-top: 1.4rem;
+  margin-top: 1.1rem;
 }
 
 .tools-launcher-page .tool-launcher-group-heading {
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.4rem;
   font-family: var(--ui-font);
   font-size: 0.85rem;
   font-weight: 600;
@@ -247,15 +250,11 @@
   color: var(--muted, inherit);
 }
 
-@media (max-width: 560px) {
-  /* Two to a row only where labels fit whole; bold theme fonts drop to one. */
-  .tools-launcher-page .tool-launcher-list {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
-    gap: 0.9rem 0.7rem;
-  }
+.tools-launcher-page .tool-launcher-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
+  gap: 0.7rem;
+}
 
-  /* A longer description beside a tool must not stretch its button. */
-  .tools-launcher-page .tool-launcher-button {
-    flex: 0 0 auto;
-  }
+.tools-launcher-page .tool-launcher-button {
+  flex: 1 1 auto;
 }

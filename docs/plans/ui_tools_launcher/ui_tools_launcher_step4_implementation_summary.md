@@ -64,3 +64,21 @@ None.
 - Estimate details: original scope as planned; no revision. Retrospective unchanged: the phone layout needed one extra pass.
 
 *— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*
+
+## Review findings after Stage 2 (2026-10-31)
+
+User review of the Stage 2 page, fixed in the same cycle before Stage 3's matrix:
+
+- **Not every tool was in view.** The grouped list was one tool to a row with the description beside it, so at 1280×900 the last four to six tools (the tail of Operator) sat below the fold in every theme, and at 1280×720 eight did. The old page had kept every tool in view through the Tools bar card, which Stage 2 removed. Fix in `tools.css` (rules still scoped to `.tools-launcher-page`): the list is a tile grid at every width (`repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr))`, the phone rule promoted), group spacing and heading margins tightened. The desktop shell is a fixed 760px with no wider variant, so three columns is the ceiling there; Midnight's wider window gets four.
+- **Descriptions removed from /tools/** (user request: "get rid of the text bits under the buttons"). `pages/tools.php` renders the button only; the description rule in `tools.css` is gone. With descriptions, mono-font themes wrapped most of them to two lines and the last Operator tile still fell below a 720px-high window; without them every tool is in view at 1280×720 in every permitted theme (last button bottom 511–663px). The one-line descriptions stay in `ToolsPageSupport::registry()` (still covered by `ToolsRegistryTest`) but are no longer shown anywhere; Step 2's "each tool has a one-line description" requirement is superseded by this review, and the descriptions can be dropped from the registry in a later cleanup if nothing else wants them.
+- **Group heading icons in the icon themes** (user request). `theme-nav-icons.css`: a 16px pixel-art glyph before each `.tool-launcher-group-heading[data-shape]` in Word97, Chicago and Midnight: a monitor (device), an open book (reading), the existing Users glyph (community) and a gear (operator). The gear was first drawn in the dark grey of the Tools wrench and was invisible on Midnight's panel; it is mid-grey with a white ring so it reads on both light and dark panels.
+- Tests: `LocalAppSmokeTest` no longer expects description text on /tools/ and asserts there is none; `tools_launcher.mjs` asserts no description element per tool and a non-empty heading icon per group in the three icon themes.
+- Verification:
+  - Fold measurement (every permitted ZenMemes theme, 1280×900 and 1280×720, scratch script, buttons whose bottom edge is past the viewport): before the fix 4–6 of 15 below at 900 and 8 at 720; tiles with descriptions 0 at 900, 1–4 at 720; buttons only 0 at both.
+  - `php tests/run.php ToolsRegistryTest LocalAppSmokeTest`: only the same three long-standing failures as Stage 1 (two Lobby tests that fail on upstream `main`, the archive filename test).
+  - `tools_launcher.mjs` (all permitted themes, 390px and 1280px): passed on ZenMemes (28 cases) and QDB (30 cases) with the tile layout and descriptions, and again without descriptions; passed in Word97/Chicago/Midnight with the heading icons; the full run with the final icons passed on ZenMemes (28 cases) and QDB (30 cases).
+  - Screenshots reviewed at 1280×900: default, Console, Word97, Chicago, Midnight (and Midnight at 390px): every tool in view, icons on headings and tools, no clipped labels.
+  - Bookmarklets: every changed selector is scoped to `.tools-launcher-page` or `.tool-launcher-group-heading`, neither of which Bookmarklets renders; its baseline comparison was not re-run.
+- Estimate details: no score revision recorded here; this pass was made by a different model (claude-fable-5-1) than the cycle's single rater, and the Stage 2 retrospective above is left as rated. The work is in-scope layout refinement plus two review-requested changes (descriptions removed, heading icons), not new scope for the study.
+
+*— Claude · 2026-10-31 UTC · Model: claude-fable-5-1*
