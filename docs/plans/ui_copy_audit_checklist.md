@@ -822,3 +822,11 @@ only; subsequent implementation and verification are recorded separately above.
 - [x] Source-only deployments and failed Git commands show unavailable; detached HEAD is identified. Linked-worktree .git files are accepted. Existing content-repository and read-model details remain separate.
 - [x] Core-route rendered HTML smoke check passed; PHP syntax and diff whitespace checks passed. Reused the existing wrapping facts table. Dependency delta: zero.
 - [ ] Browser verification remains outstanding for phone/desktop, affected themes, long commit subjects, source-only deployments and detached HEAD; the HTML smoke check does not establish visual layout.
+
+
+## Tweet bookmarklet first photo — 2026-10-31
+
+- [x] Both Tweet descriptions now say “Tweet and first photo from x.com.” No navigation destination, icon or instructional panel added.
+- [x] Import reuses attachment preview/removal/replacement and signing. Essential pending, failure, source-link, retry and explicit-removal controls remain visible; no routine success notice added. Parser-time initialization establishes pending intent before actions paint; updates reflect real import/eligibility changes.
+- [x] Chromium verified 13 themes at 390/1280 widths, 157 state checks plus delayed-signing first paint, overflow and primary-action stability. Covered empty, pending, attached, expanded, failed/retry and removal; inspected Word97 pending phone, Chicago failure phone and Midnight attached desktop screenshots. Existing image thread/reply/Forte/QDB checks and static Bookmarklets clipboard/keyboard/theme checks passed; native no-JS text posting passed.
+- [ ] Live X page markup/CSP, physical devices and qutebrowser remain unverified. [Implementation evidence and deployment limits](tweet_bookmarklet_images/tweet_bookmarklet_images_step4_implementation_summary.md); [installation/recovery](../reference/tweet_bookmarklet.md). Existing installed bookmarklets must be replaced; no deployment performed.

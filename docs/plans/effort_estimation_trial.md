@@ -1115,3 +1115,21 @@ Canonical checkpoints: [Step 1 snapshots](multi_redemption_invites_step1_solutio
 Alternatives: A/v1 0.85; B/v1 0.70; independent alternative whole-cycle projections, not additive
 Relationship: New cycle; related invitation-entry and approval-acceptance work, no split outcome
 Outcome: Planning only; no measured effort, independent rating, implementation approval or accepted outcome. Records uncommitted; deduplicate worktree copies by stable cycle ID.
+
+## Cycle v3/tweet_bookmarklet_images
+
+Status: Step 1 awaiting review; implementation unapproved.
+Scope: v1 / recommended B; one imported photo with selection for multiple photos and retained remaining source links.
+Reference: R1 / P2; extended estimates enabled; frozen report/review/feedback hashes verified.
+Cycle estimate: 0.65; option A 0.25; option B 0.65; independent whole-cycle judgments, not additive.
+Checkpoint: [Step 1 and exposure](./tweet_bookmarklet_images/tweet_bookmarklet_images_step1_solution_assessment.md#study-checkpoint-and-request-record).
+Baseline: a1164752242c3acd0105c91d635100720ebe84ef.
+Exposure: Codex single exposed rater; source inspection preceded scoring; pristine intake missing, not reconstructed.
+Parent: none. Maintainer acceptance pending; no implementation, measured labor, independent rating or accepted outcome.
+
+2026-10-31T07:37:24Z — v3/tweet_bookmarklet_images Step 2: Step 1 approved; user confirmed one image initially. [Requirements/checkpoint](./tweet_bookmarklet_images/tweet_bookmarklet_images_step2_feature_description.md#requests-and-study-checkpoint) narrows B to first-photo import without a picker, retaining additional photo links, scope v2. Whole-cycle projection revised from 0.65 to 0.55; original baseline/R1/P2, missing pristine intake and single exposed Codex rater preserved. Frozen report/review/feedback hashes reverified. Debug/extended estimates enabled. Cross-origin transfer and live X behavior unverified; no application changes, tests, measured labor or accepted outcome. Await Approved Step 2.
+
+2026-10-31T07:41:46Z — v3/tweet_bookmarklet_images Step 3: Step 2 explicitly approved. [Plan/checkpoint](./tweet_bookmarklet_images/tweet_bookmarklet_images_step3_development_plan.md#checkpoint-and-execution-discipline) retains v2/B first-photo scope and whole-cycle 0.55 (original v1/B 0.65 preserved); original stage work S1 0.10 / S2 0.10 / S3 0.20 / S4 0.12 is non-additive. Stage 1 gates browser photo-transfer feasibility; Stage 4 owns shared final validation/documentation. Original baseline/R1/P2, missing pristine intake, single exposed Codex rater, debug/extended enabled preserved; frozen report/review/feedback hashes reverified. No code, runtime probes/tests, measured labor or accepted outcome. Await Approved Step 3; plans uncommitted.
+
+
+2026-10-31 UTC — v3/tweet_bookmarklet_images Step 4 local closeout: [stage evidence and limits](./tweet_bookmarklet_images/tweet_bookmarklet_images_step4_implementation_summary.md). Approved v2/B delivered: first photo via existing preview/signed publication, other source links retained, import/submission recovery preserved. Planning 616ba190; S1 9659ac0b, S2 5712e7d1, S3 a4413dc8; S4 completion commit carries this record. Entry total 0.55 reaffirmed; independently assessed retrospective cycle scope 0.60. Original stage work 0.10/0.10/0.20/0.12 retained; retrospectives 0.12/0.10/0.24/0.16, non-additive, not measured labor. Frozen R1 report/review/feedback hashes reverified; baseline/R1/P2/single exposed Codex rater/missing pristine intake retained. Shared PHP 98/98 plus route/static checks 8/8; existing image browser/preparation/transport and bookmarklet copy checks passed; new capture/import/retry plus 13-theme/two-width UI checks passed. Real public photo-host access/preparation passed; live X page access failed, leaving live markup/CSP acceptance unverified. Physical devices/qutebrowser/full suite/deployment not verified. Zero dependency/schema delta. Four stages locally complete; maintainer fit/live acceptance pending, no independent accepted-count increment or upload.

@@ -70,11 +70,57 @@ try {
  gate=new Promise(r=>release=r);await page.goto(destination());await page.waitForFunction(()=>Boolean(document.querySelector('[data-compose-form]').__tweetImageImport?.controller));await page.locator('[name="image"]').setInputFiles({name:'replacement.png',mimeType:'image/png',buffer:png});await ready(page);release();gate=null;assert.equal(await page.evaluate(()=>document.querySelector('[data-compose-form]').__imageState.sourceFile.name),'replacement.png');
  await page.getByRole('button',{name:'Remove image',exact:true}).click();assert.equal(new URL(page.url()).hash,'');
  for(const mode of ['blocked','redirect','oversized','broken']){console.log('Recovery '+mode);download=mode;await page.goto(destination());await failed(page);download='ok';await page.locator('[data-tweet-image-retry]').click();await ready(page)}
+ if(process.env.TWEET_EDGE==='1') {
+   gate=new Promise(r=>release=r);download='ok';await page.goto(destination());await failed(page);assert.match(await page.locator('[data-tweet-image-status]').textContent(),/timed out/);release();gate=null;await page.locator('[data-tweet-image-retry]').click();await ready(page);console.log('PASS real download timeout and retry');
+ }
  // Invalid destinations never download, but keep explicit intent/recovery.
  const before=downloads;await page.goto(destination('https://example.com/image.png'));await failed(page);assert.equal(downloads,before);assert.match(await page.locator('[data-tweet-image-status]').textContent(),/Invalid/);await page.locator('[data-tweet-image-remove]').click();
+ // A missing import asset still retains attachment intent and explicit recovery.
+ await page.route(/\/assets\/tweet_image_import[.-]/,r=>r.abort('failed'));
+ await page.goto(destination());await page.locator('[data-tweet-image-status]').filter({hasText:'Photo import is unavailable.'}).waitFor();assert((await page.locator('[name="body"]').inputValue()).startsWith('Captured tweet'));
+ assert.equal(await page.evaluate(()=>{const e=new SubmitEvent('submit',{bubbles:true,cancelable:true});return document.querySelector('[data-compose-form]').dispatchEvent(e)}),false);
+ await page.locator('[data-tweet-image-remove]').click();assert.equal(new URL(page.url()).hash,'');await page.unroute(/\/assets\/tweet_image_import[.-]/);
  // Eligibility loss preserves attachment and recovery; disabled feature has import recovery too.
  await page.route('**/api/get_profile?*',r=>r.fulfill({body:'Identity-ID: openpgp:'+fingerprint+'\nApproved: no\nImage-Upload-Allowed: no\n'}));await page.goto(destination());await failed(page);assert.match(await page.locator('[data-tweet-image-status]').textContent(),/unavailable/);await page.unroute('**/api/get_profile?*');await page.locator('[data-tweet-image-retry]').click();await ready(page);
  await setFlags({images:false});await page.goto(destination());await failed(page);assert.match(await page.locator('[data-tweet-image-status]').textContent(),/unavailable/);await page.locator('[data-tweet-image-remove]').click();await setFlags({images:true});
+ // Optional full UI matrix: saved theme before navigation; pending then actual completion/failure.
+ if(process.env.TWEET_UI==='1') {
+   await page.goto(base+'/compose/thread');
+   const themes=await page.locator('[data-theme-option]').evaluateAll(es=>es.map(e=>e.dataset.themeOption).filter(t=>t!=='auto'));
+   const themeKey=await page.evaluate(()=>window.forumBrowserRuntime.themeStorageKey);
+   let states=0;
+   const check=async state=>{
+     assert(await page.locator('[data-compose-form] button[type="submit"]').first().isVisible());
+     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${state}: overflow`);
+     const box=await page.locator('[data-compose-form] button[type="submit"]').first().boundingBox();assert(box.x>=0&&box.x+box.width<=await page.evaluate(()=>innerWidth));states++;
+   };
+   // Hold signing code: the parsed composer must already show pending intent before it loads.
+   let releaseSigning;const signingGate=new Promise(r=>releaseSigning=r);
+   await page.route(/\/assets\/browser_signing[.-]/,async route=>{await signingGate;await route.continue()});
+   await page.goto(destination(),{waitUntil:'commit'});
+   await page.waitForFunction(()=>Boolean(document.querySelector('[data-compose-form] button[type="submit"]')));
+   assert.equal(await page.locator('[data-tweet-image-import]').isVisible(),true);
+   assert.equal(await page.evaluate(()=>Boolean(document.querySelector('[data-compose-form]').__tweetImageImport)),true);
+   await check('pre-signing pending');releaseSigning();await ready(page);await page.unroute(/\/assets\/browser_signing[.-]/);
+   for(const width of [390,1280]) for(const theme of themes) {
+     console.log('UI '+width+'/'+theme);
+     await page.setViewportSize({width,height:900});await page.evaluate(({themeKey,theme})=>localStorage.setItem(themeKey,theme),{themeKey,theme});
+     await page.goto(base+'/compose/thread');assert.equal(await page.locator('[data-tweet-image-import]').isVisible(),false);await check('empty '+theme);
+     gate=new Promise(r=>release=r);download='ok';await page.goto(destination());await page.waitForFunction(()=>Boolean(document.querySelector('[data-compose-form]').__tweetImageImport?.controller));assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),theme);await check('pending '+theme);
+     const y=await page.locator('[data-compose-form] button[type="submit"]').first().evaluate(e=>e.getBoundingClientRect().top);await page.waitForTimeout(40);assert.equal(await page.locator('[data-compose-form] button[type="submit"]').first().evaluate(e=>e.getBoundingClientRect().top),y,'pending initialization shifted primary action');
+     if(theme==='word97'&&width===390)await page.screenshot({path:join(root,'pending-word97-phone.png'),fullPage:true});
+     release();gate=null;await ready(page);await check('attached '+theme);
+     await page.locator('.compose-action-menu-toggle').click();await check('expanded '+theme);
+     if(theme==='midnight'&&width===1280)await page.screenshot({path:join(root,'attached-midnight-desktop.png'),fullPage:true});
+     download='blocked';await page.goto(destination());await failed(page);await check('failed '+theme);
+     if(theme==='chicago'&&width===390)await page.screenshot({path:join(root,'failed-chicago-phone.png'),fullPage:true});
+     download='ok';await page.locator('[data-tweet-image-retry]').click();await ready(page);await page.getByRole('button',{name:'Remove image',exact:true}).click();await check('removed '+theme);
+   }
+   console.log('PASS UI '+themes.length+' themes x two widths; '+states+' state checks and delayed-signing first paint');
+   await page.evaluate(themeKey=>localStorage.removeItem(themeKey),themeKey);
+   // JS-disabled baseline remains an ordinary native text form.
+   const plain=await browser.newContext({javaScriptEnabled:false});const plainPage=await plain.newPage();await plainPage.goto(base+'/compose/thread');await plainPage.locator('[name="body"]').fill('No JavaScript baseline');await plainPage.locator('[data-compose-form] button[type="submit"]').first().click();await plainPage.waitForURL(/\/threads\//);assert((await plainPage.locator('body').innerText()).includes('No JavaScript baseline'));await plain.close();
+ }
  // Posting retry uses the existing signed upload; an aborted first finalize retains the draft/photo.
  await page.goto(destination());await ready(page);let finalizes=0;
  await page.route('**/api/create_prepared_post',async route=>{finalizes++;if(finalizes===1)return route.abort('failed');return route.continue()});

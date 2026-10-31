@@ -28,7 +28,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [Tweet bookmarklet images](tweet_bookmarklet_images/tweet_bookmarklet_images_step3_development_plan.md) — approved first-photo import plan.
+- [Tweet bookmarklet images](tweet_bookmarklet_images/tweet_bookmarklet_images_step4_implementation_summary.md) — first-photo capture and signed attachment integration verified locally; live X acceptance pending.
 
 - [Load-before-selection audit](load_before_selection_audit/load_before_selection_audit_step4_implementation_summary.md) — completed documentation audit; ranked findings and 24 local selection samples, fixes pending.
 

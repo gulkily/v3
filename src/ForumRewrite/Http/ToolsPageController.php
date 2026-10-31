@@ -151,13 +151,13 @@ final class ToolsPageController
                     [
                         'label' => 'Tweet',
                         'mode' => 'same-window',
-                        'description' => 'Tweet text, author, and link from x.com.',
+                        'description' => 'Tweet and first photo from x.com.',
                         'bookmarklet_kind' => 'tweet',
                     ],
                     [
                         'label' => 'Tweet',
                         'mode' => 'new-window',
-                        'description' => 'Tweet text, author, and link from x.com.',
+                        'description' => 'Tweet and first photo from x.com.',
                         'bookmarklet_kind' => 'tweet',
                     ],
                 ],
