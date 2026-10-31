@@ -386,7 +386,7 @@ Validate the configured agent reply LLM provider/API key with one live plain-tex
 ./v3 agent-reply test
 ```
 
-The default local file resolves to `../forum-private/secrets.php` relative to this checkout. To update only the LLM API key without putting it in shell history:
+The default local file is `FORUM_SECRETS_PATH`, else `../forum-private/<checkout folder>/secrets.php` when it exists, else `../forum-private/secrets.php`, relative to this checkout. To update only the LLM API key without putting it in shell history:
 
 ```bash
 printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin

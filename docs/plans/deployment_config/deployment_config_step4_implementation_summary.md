@@ -5,6 +5,7 @@ Effort study: railspike-effort / v3/deployment_config; [standing enrollment P2](
 Extended estimates: enabled
 Branch: `feat/deployment-config`; planning commit `e51751cf`
 **Cycle estimate: 0.85**
+**Retrospective cycle assessment: 0.85**
 
 # Deployment Config Step 4 Implementation Summary
 
@@ -94,3 +95,35 @@ Branch: `feat/deployment-config`; planning commit `e51751cf`
 - Notes: no web UI change; navigation icons and UI copy audit are not applicable.
 
 *— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Documentation, operator checklist and release verification
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - Production deploy runbook: the `Environment Variables` and `Site Profile` sections are replaced by one [Deployment Settings](../../runbooks/production_deploy.md#deployment-settings) section: the six settings and their defaults; the private file as their home; precedence (environment, private file, default, with command options first); which private file a checkout uses and the folder-rename caveat; the `./v3 status` and `./v3 task-queue cron` checks; moving existing `SetEnv` lines step by step; recovery; the QDB operator acceptance checklist with exact commands; and local development of another profile. The lock-timeout setting and deployment checklist step 6 link to it.
+  - CLI reference: path precedence lists the private file between the environment and the bootstrapped default; status and `private-config --path` describe the per-checkout lookup. The README private-config paragraph says the same.
+  - `docs/examples/apache_vhost.conf` and `docs/examples/env.production.example` point to the private file and keep the `SetEnv`/environment lines as a documented alternative that still takes precedence.
+  - New concept entry `docs/concepts/deployment_configuration.md` (purpose, QDB scenario, sources: `DeploymentSettings`, `PrivateConfig`, runbook section). Private-config help text needed no change (updated in Stage 1).
+  - Study ledger: Step 4 entry and closeout appended under `Cycle v3/deployment_config` in `docs/plans/effort_estimation_trial.md`.
+  - Review corrections in this stage: the runbook profile list adds `mitrapclub`, which `SiteProfileRegistry` registers; the acceptance `curl` line no longer asserts an exact `<title>` string.
+- Verification:
+  - Full suite at HEAD (`./v3 test`): **1743 run, 1734 passed, 9 failed**, against the baseline's 1732 run / 6 failed. The 11 added tests are this cycle's. The six baseline failures reproduce identically (`ApprovalSeedCommandTest`, three `LocalAppSmokeTest`, `PlatformDocsStaticTest`, `ReadModelBuilderTimingTest`). The three other failures (`BoundedProcessTest::testNoisyAndStalledDescendantsAreBounded`, `HighTrafficTest::testRendererLimitErrorsNameTheLimitAndLastStage`, `PrivateMessageHistorySyncTest::testConcurrentSyncWritesLeaveForegroundMessageStoreResponsive`) are timing-sensitive and occurred while another test suite ran concurrently on this machine (load average about 10 on 12 cores); rerun alone, all three classes pass 24/24. Passed, with no regression attributable to this cycle.
+  - Links and anchors: every relative link in the four changed documents resolves; `#deployment-settings` exists; no links to the removed `#environment-variables` or `#site-profile` anchors remain outside historical plans. `git diff --check` clean. Passed.
+  - Stale guidance: `SetEnv FORUM` and `../forum-private/secrets.php` searched across README, docs, `src` and `scripts`; remaining mentions are the lookup rule itself, historical plans and the QDB diagnosis record. Passed.
+  - Help text: `./v3 private-config --help` states the lookup rule. Passed.
+  - QDB host acceptance: **pending**. It is an operator-run step on the QDB host (checklist in the runbook); nothing here replays that host, and the Apache harness remains blocked at its pre-existing native-import failure.
+- Notes: documentation-only stage; no runtime change. Navigation icons, UI copy audit and migrations are not applicable.
+
+*— Claude · 2026-10-31 UTC · Model: claude-fable-5-1*
+
+## Closeout
+
+Delivered scope v1.1 / revised Option A, complete as planned: one private file location rule with per-checkout lookup; a `DeploymentSettings` lookup with environment, private file, default precedence for the six site and path settings; the web app, every `./v3` command, the TUI and cron reading through it with a guard test against direct environment reads; `./v3 status` reporting each value's source and warning about local edits to tracked deployment files; and runbook, CLI reference, examples and concept entry. Six planned stages, six completed. Commits: planning `e51751cf`; S1 `06f903e7`; S2 `5536338c`; S3 `6a464910`; S4 `40fd290f`; S5 `53b3f5a2`; S6 is this documentation closeout commit (hash recorded in the debug handoff). Implementation started from `origin/main` `2ee0d198`; planning baseline `4abda3db`.
+
+Verification and omissions: every stage's focused suites passed and are recorded above; the Step 4 full-suite comparison is in Stage 6. Pre-existing failures reproduced at the baseline and unchanged here: six full-suite tests listed in the entry checkpoint and the Apache harness native-import step. Not verified: the QDB host (operator acceptance pending, runbook checklist provided) and the effect of a stray pre-existing path key in a real deployment's private file (this machine's file has none). Corrective work versus new requests: one plan deviation in Stage 2 (defaults left in their existing classes, same outcome) and two documentation corrections in Stage 6; no new requests, splits or follow-up cycles. No merge or push in this cycle.
+
+Study: `v3/deployment_config`, scope v1.1, baseline `4abda3db`, R1 / P2. Prospective 0.80 (intake and Step 1), 0.85 (Step 1 revision 1, reaffirmed at Steps 2, 3 and Step 4 entry) retained. **Retrospective cycle assessment: 0.85** by Claude (claude-fable-5-1), a different model from the prospective rater (claude-opus-5-5); it is a scope assessment, not measured labor or a replacement projection. Stage originals 0.10/0.15/0.15/0.15/0.10/0.10 and retrospectives 0.08/0.12/0.15/0.15/0.10/0.10 are non-additive. Maintainer comfortable-fit judgment and study acceptance pending; no accepted-outcome increment.
+
+*— Claude · 2026-10-31 UTC · Model: claude-fable-5-1*
