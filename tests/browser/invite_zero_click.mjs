@@ -51,7 +51,7 @@ try {
     await inviter.page.goto(base + '/account/key/');
     await inviter.page.waitForFunction(() => document.querySelector('[data-private-site-auth-state]').dataset.authenticatedIdentityId !== '');
     let lastInvitation;
-    async function issue(target = '/threads/root-001?from=invite#reply-001', enabled = true) {
+    async function issue(target = '/threads/root-001?from=invite#reply-001', enabled = true, lifetime = 30 * 86400 * 1000) {
       await inviter.page.goto(base + target);
       // The app shell keeps Invite in the account menu; open it first.
       const menu = inviter.page.locator('details[data-role="account-menu"]');
@@ -67,9 +67,15 @@ try {
         await checkbox.uncheck(); await checkbox.check();
         assert.equal(await inviter.page.locator('[name=destination]').inputValue(), target);
       }
+      const preparedResponse = inviter.page.waitForResponse(response => response.url().endsWith('/api/prepare_invitation'));
+      const issuedAfter = Date.now();
       const finalResponse = inviter.page.waitForResponse(response => response.url().endsWith('/api/create_prepared_invitation'));
       await inviter.page.locator('[data-invitation-issue-form] button[type=submit]').click();
       lastInvitation = await (await finalResponse).json();
+      const prepared = await (await preparedResponse).json();
+      const expiry = Date.parse(prepared.canonical_record.match(/^Expires-At: (.+)$/m)[1]);
+      assert(expiry >= issuedAfter + lifetime - 1000 && expiry <= Date.now() + lifetime);
+      assert.equal(await inviter.page.getByText('Expires 30 days after creation.', {exact:true}).count(), 1);
       await inviter.page.waitForFunction(() => document.querySelector('[data-role=invitation-link]').value.includes('#invite='));
       assert.equal(await inviter.page.locator('[data-role=invitation-qr]').isVisible(), true);
       return inviter.page.locator('[data-role=invitation-link]').inputValue();
@@ -182,7 +188,7 @@ try {
       body.set('expires_at', new Date(Date.now() + 5000).toISOString().replace(/\.\d{3}Z$/, 'Z'));
       await route.continue({ postData: body.toString() });
     });
-    const expiredUrl = await issue();
+    const expiredUrl = await issue(undefined, true, 5000);
     await inviter.context.unroute('**/api/prepare_invitation');
     await new Promise(resolve => setTimeout(resolve, 5100));
     const expired = await contextWithIdentity(base);

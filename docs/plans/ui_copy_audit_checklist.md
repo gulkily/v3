@@ -1,10 +1,11 @@
 # UI copy audit checklist
 
-## Current audit status — October 29, 2026
+## Current audit status — October 30, 2026
 
-Two copy-review candidates remain in the [current queue](#next-phase--new-candidates):
-SQLite Viewer loading feedback and System State repository hashes. Both were
-rechecked in current source; neither has a rendered review or a removal decision.
+Four copy-review candidates remain in the [current queue](#next-phase--new-candidates):
+SQLite Viewer loading feedback, System State repository hashes, account rename
+feedback and key restore feedback. These are source
+observations; none has a rendered review or a removal decision for this queue.
 
 All five recorded audit passes, including the original seven candidates, have
 completion records below. Some reviews deliberately retained useful information.
@@ -773,9 +774,21 @@ Change: no copy change. Account's testing-only "Approve current account" could a
 Verification: `testing_self_approval` (now passes from a first visit; adds Remove → Continue → Approve without a refresh, reusing Continue's sign-in, and Approve after the session is signed out behind the page), `account_states`, `background_sign_in`, `lobby_local_key`, `compose_layout_stability`, `private_message_redesign`, `TestingSelfApprovalTest`, `AccountKeyPageHooksTest`, `BrowserSigningNormalizationTest`, `LocalAppSmokeTest` (one long-standing unrelated failure).
 Limits and follow-up: signing in regenerates the session ID and deletes the old session (`AuthApiController`, `session_regenerate_id(true)`). A request already in flight with the old ID (seen with Remove right after a background sign-in) gets a new empty session under strict mode, and its cookie replaces the signed-in one, so the browser is quietly signed out. Approve now recovers from this, but other signed-in actions may not; fixing the rotation itself is not done here. Update 2026-10-30: fixed by forwarding the old ID for 30 seconds; see the [session rotation decision](session_rotation_race_decision.md).
 
+## Invite creation success feedback — October 30, 2026
+
+- [x] Removed the routine “Invitation created.” notice when the generated link and QR code appear. Empty feedback is cleared and hidden, including after Check invitation recovers a lost response. Pending, failure, QR fallback, copy and revocation feedback remain, as do sharing/account-access warnings and expiry.
+- Verification: `InvitationIssuanceTest` passed (10/10), including QR fallback and uncertain-creation recovery assertions in `invitation_issuance.cjs`. `invite_signing_readiness.mjs` passed on public and members-only sites: real creation/redemption/revocation, delayed authentication, lost-response recovery without reissuance, rejected signatures, QR failure followed by successful retry, and missing/unapproved-key recovery. Rendered initial, pending, success, uncertain, recovered, failure and restored states at 320/1280px in Light, Dark, LCD, Word97, Chicago and Midnight; no horizontal overflow and the Generate action remained visible. Updated the existing visual harness to open the account menu before choosing a theme.
+- Evidence: screenshots in `/tmp/invite-copy-review`; inspected Chicago phone success, Midnight desktop success, Midnight phone QR fallback and Light phone members-only success. Diff check passed. Limits: physical devices, other browser engines, screen-reader announcements and deployment were not checked. No navigation, dependencies or `todo.txt` changes.
+
+## Invite default expiry — October 30, 2026
+
+- [x] Changed new browser-issued invitations from seven days to 30 days and updated the result label to “Expires 30 days after creation.” No expiry selector. Existing signed expiry timestamps and API custom-expiry support remain unchanged.
+- Verification: `InvitationIssuanceTest` passed 10/10, including the 30-day request assertion. A real signed-issuance browser probe (`/tmp/invite-expiry-review.mjs`) verified the prepared canonical expiry and rendered result at 320/1280px in Light, Word97, Chicago and Midnight on public and members-only sites, with no horizontal overflow. Inspected Chicago phone and Midnight desktop screenshots (`/tmp/invite-expiry-*.png`). `invite_zero_click.mjs` passed the complete public/members-only entry, redemption, naming/rebuild, expiry/revocation and recovery flows; the deliberately short-lived expiry fixture is checked against its own lifetime. Template syntax and diff checks passed.
+- Limits: physical devices, other engines and deployment unchecked. Multi-redemption remains proposed in [the Step 1 assessment](multi_redemption_invites_step1_solution_assessment.md); no change to single-use behavior.
+
 ## Next phase — new candidates
 
-Current queue, reconciled October 29, 2026. These observations need rendered review before deciding what to remove. Keep this section at the end of the file. A decision to retain useful copy can close a review; source matches alone cannot.
+Current queue, expanded October 30, 2026. These observations need rendered review before deciding what to remove. Keep this section at the end of the file. A decision to retain useful copy can close a review; source matches alone cannot.
 
 - [ ] **SQLite Viewer loading feedback** — Review “Loading...” on the disabled Load Database button alongside “Loading the published read-model database...” in the live status. Check initial load and refresh, standalone and embedded views; retain an accessible pending signal, source freshness and actionable failures. Sources: `public/assets/sqlite_viewer.js`, `templates/pages/sqlite_viewer.php`.
 
@@ -785,3 +798,17 @@ Source recheck: both loading messages remain in `public/assets/sqlite_viewer.js`
 `templates/pages/codebase_state.php` still lists Repository head, Short head and
 Latest commit. Their presence confirms candidates, not redundancy. Start with
 SQLite Viewer, checking standalone and embedded loading/failure/retry states.
+
+- [ ] **Account rename success feedback** — Review “Username saved. Your key and approval are unchanged.” after `saveProfileName` closes the editor and calls `renderSavedState`. Check whether the updated Name and approval state already convey the result, including normalization, pending/approved identities and failure/retry. Retain any information necessary to distinguish a name change from a key or membership change; do not assume those states are interchangeable. Sources: `public/assets/browser_signing.js` (`saveProfileName`), `templates/pages/account_key.php`.
+
+- [ ] **Key restore success feedback** — Review “Backup restored. Your public key is linked and this browser is ready.” against the identity state actually displayed after `identity.restore`. Check both text and PNG backups, existing and fresh browser identities, and the expanded backup panel at phone/desktop sizes. Establish whether completion is otherwise visible before removing feedback; preserve passphrase/file errors, access-loss warnings and any distinct registration or approval state. Sources: `public/assets/key_backup_ui.js` (restore handler), `templates/pages/account_key.php`.
+
+Scan evidence: inspected current templates and browser status writers on commit
+`2e17c971`, then cross-checked the completed audit records. The three scan findings (invite creation now closed above)
+are narrower follow-ups to previously reviewed pages, not a reopening of those
+whole reviews. Excluded the Docs landing source-path explanation and guide
+summaries because their restoration was explicitly approved; excluded QDB's
+search instructions because they were deliberately added and rendered-verified.
+Also retained copy/revocation confirmations and backup download feedback as
+potentially necessary signals for effects outside the visible page. The scan itself was documentation
+only; subsequent implementation and verification are recorded separately above.

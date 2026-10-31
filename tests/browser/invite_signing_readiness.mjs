@@ -68,10 +68,13 @@ try {
     await mkdir(screenshots, {recursive:true});
     for (const width of [320,1280]) {
       await page.setViewportSize({width,height:900});
-      for (const theme of ['light','dark','lcd','word97','midnight']) {
+      for (const theme of ['light','dark','lcd','word97','chicago','midnight']) {
+        const accountMenu = page.locator('[data-role=account-menu]');
+        if (await accountMenu.count() && !(await accountMenu.evaluate(node => node.open))) await accountMenu.locator('summary').first().click();
         await page.locator('[data-action=theme-toggle]').click();
         await page.locator(`[data-theme-option="${theme}"]`).click();
         await page.waitForFunction(theme => document.documentElement.dataset.resolvedTheme === theme, theme);
+        if (await accountMenu.count() && await accountMenu.evaluate(node => node.open)) await accountMenu.locator('summary').first().click();
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, label);
         assert.equal(await page.locator('[data-invitation-issue-form] button[type=submit]').isVisible(), true);
         await page.screenshot({path:join(screenshots, `${privateSite?'private':'public'}-${label}-${theme}-${width}.png`),fullPage:true});
@@ -129,6 +132,8 @@ try {
     const posts = join(root, 'repository/records/posts');
     const records = await Promise.all((await readdir(posts,{recursive:true})).filter(path => path.endsWith('.txt')).map(path => readFile(join(posts,path),'utf8')));
     assert.equal(records.filter(text => text.includes('Invitation-Action: issue\n') && text.includes('Verification-Hash: '+hash+'\n')).length, 1);
+    await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').hidden);
+    assert.equal(await page.locator('[data-role=invitation-feedback]').textContent(), '');
     await checkUi('success');
   }
   assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('forum_pki_public_key'),localStorage.getItem('forum_pki_private_key')]),before);
@@ -183,6 +188,8 @@ try {
     await page.getByRole('button', {name:'Check invitation', exact:true}).click();
     await page.locator('[data-role=invitation-qr]').waitFor({state:'visible'});
     assert.equal(finalRequests, finalStart + 1);
+    assert.equal(await page.locator('[data-role=invitation-feedback]').isVisible(), false);
+    await checkUi('recovered');
     const recovered = await page.locator('[data-role=invitation-link]').inputValue();
     const recipient = await contextWithIdentity(base);
     await recipient.page.goto(recovered);
@@ -199,7 +206,15 @@ try {
     await checkUi('invalid-signature');
     assert.equal(await page.locator('[data-role=invitation-qr]').isVisible(), false);
     await page.unroute('**/api/create_prepared_invitation');
+    // QR failure retains the usable link and fallback; the next creation clears it.
+    await page.evaluate(() => { window.savedQrEncoder = window.qrcode; window.qrcode = () => { throw Error('QR unavailable'); }; });
+    assert.equal((await issue()).status, 'ok');
+    await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').textContent.includes('QR code unavailable'));
+    assert.equal(await page.locator('[data-role=invitation-link]').isVisible(), true);
+    await checkUi('qr-fallback');
+    await page.evaluate(() => { window.qrcode = window.savedQrEncoder; delete window.savedQrEncoder; });
     const revocable = await issue();
+    await page.waitForFunction(() => document.querySelector('[data-role=invitation-feedback]').hidden);
     const token = (await page.locator('[data-role=invitation-link]').inputValue()).split('#invite=')[1];
     await page.locator('summary').filter({hasText:'Revoke invite'}).click();
     await page.locator('[name=invitation_id]').fill(revocable.invitation_id);

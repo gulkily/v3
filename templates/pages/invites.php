@@ -26,7 +26,7 @@
     </form>
     <p class="meta" data-role="invitation-feedback" role="status" hidden></p>
     <div data-role="invitation-result" hidden>
-      <p class="meta">Expires seven days after creation.</p>
+      <p class="meta">Expires 30 days after creation.</p>
       <div class="button-row button-row-split">
         <textarea id="invite-link" aria-label="Invitation link" readonly rows="3" data-role="invitation-link"></textarea>
         <button type="button" data-action="copy-invitation-link">Copy</button>

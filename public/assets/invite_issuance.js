@@ -5,7 +5,7 @@
   const maximumRecentDestinations = 8;
 
   function setFeedback(node, message, kind) {
-    node.hidden = false;
+    node.hidden = !message;
     node.textContent = message;
     node.dataset.status = kind || "ok";
   }
@@ -299,7 +299,7 @@
           const prepared = await prepareSignedInvitation(root, feedback, {
             action: "issue",
             verification_hash: await verificationHash(token),
-            expires_at: new Date(Date.now() + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
+            expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
             destination: selectedDestination,
           });
           let finalized;
@@ -317,7 +317,7 @@
         addDestinationOption(destinationOptions, selectedDestination);
         link.value = window.location.origin + "/lobby/#invite=" + token;
         result.hidden = false;
-        setFeedback(feedback, "Invitation created.", "ok");
+        setFeedback(feedback, "", "ok");
         try {
           renderInvitationQr(qrCanvas, link.value);
           qrResult.hidden = false;

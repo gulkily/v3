@@ -1097,3 +1097,15 @@ Relationship: Follows v3/qdb_rebuild_scope successful host activation and reuses
 2026-10-30 UTC, v3/qdb_build_time Step 3 handoff: Step 2 C approved. [Development plan/checkpoint](./qdb_build_time/qdb_build_time_step3_development_plan.md#study-checkpoint) covers eight stages: baselines, profile control, transitions, streamed commit indexing, operation-local disk-backed evidence reuse, maintenance/recovery parity, separate/combined measurements, and operator closeout. v2/C/baseline/R1/P2/exposed rater unchanged; total 1.25 reaffirmed; original stage work 0.15/0.16/0.15/0.20/0.23/0.16/0.15/0.10 non-additive. Frozen hashes verified. Timing/noise, memory and runtime-profile gates fixed before coding; stage/day ceiling and failure gates retained. No implementation, benchmarks or accepted outcome; await Approved Step 3.
 
 2026-10-30 UTC, v3/qdb_build_time Step 4 local closeout: [Entry/stages/outcome](./qdb_build_time/qdb_build_time_step4_implementation_summary.md#closeout). Approved Step 3, v2/C, original baseline/R1/P2/single exposed rater retained. Entry 1.25 reaffirmed; prospective whole-cycle revision 1.35 at S7 after scratch overhead discovery; separate retrospective 1.40. Stage originals 0.15/0.16/0.15/0.20/0.23/0.16/0.15/0.10 retained; S7 revised 0.22; retrospectives 0.18/0.13/0.15/0.18/0.22/0.14/0.27/0.12, non-additive. All three fixed workload timing gates, exact data parity, memory/runtime budgets and normal CLI activation pass; supplemental small-commit evidence costs 0.0407s (8.7%) more and is disclosed. Full production replay, full-suite result, maintainer comfortable-fit judgment and acceptance remain pending. One unchanged baseline timing-progress test failure is recorded; no dependency/schema delta, measured labor, independent rating, merge/push/deployment or accepted-count increment. Preserve v1/A 0.50, failed/noisy samples and deduplicate worktree copies.
+
+## Cycle v3/multi_redemption_invites
+
+Date: 2026-10-30 UTC
+Status: Step 1 planning handoff; awaiting approval; no multi-redemption implementation
+Scope: v1; baseline 2e17c971308a710a540c905e738048c4f51e53ca plus uncommitted invite-copy cleanup; capped shared invites with compatible replay, atomic capacity and retry recovery. Separately authorized 30-day browser default excluded from cycle.
+Reference: R1 / P2; exact three frozen source hashes verified; standing enrollment; extended estimates enabled
+Projection: Intake 0.85 and Step 1 0.85 reaffirmed; Codex single exposed rater; prior invitation inspection disclosed
+Canonical checkpoints: [Step 1 snapshots](multi_redemption_invites_step1_solution_assessment.md#study-snapshots)
+Alternatives: A/v1 0.85; B/v1 0.70; independent alternative whole-cycle projections, not additive
+Relationship: New cycle; related invitation-entry and approval-acceptance work, no split outcome
+Outcome: Planning only; no measured effort, independent rating, implementation approval or accepted outcome. Records uncommitted; deduplicate worktree copies by stable cycle ID.

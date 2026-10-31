@@ -98,6 +98,8 @@ async function main() {
   lost.state.inspection = {status:'ok',state:'available'};
   await lost.issue();
   assert.equal(lost.qr.hidden, false);
+  assert.equal(lost.feedback.hidden, true);
+  assert.equal(lost.feedback.textContent, '');
   assert.equal(lost.calls.filter(call => call.endpoint === '/api/prepare_invitation').length, 1);
   assert.equal(lost.calls.filter(call => call.endpoint === '/api/create_prepared_invitation').length, 1);
   for (const problem of ['missing', 'pending', 'not-configured', 'helper']) {
@@ -122,9 +124,15 @@ async function main() {
   assert.equal(authenticating.calls.length, 2);
   const page = invitationPage();
   assert.equal(page.qr.hidden, true);
+  const issuedAfter = Date.now();
   await page.issue();
+  const expiry = Date.parse(page.calls.find(call => call.endpoint === '/api/prepare_invitation').values.get('expires_at'));
+  const lifetime = 30 * 86400 * 1000;
+  assert(expiry >= issuedAfter + lifetime - 1000 && expiry <= Date.now() + lifetime);
   assert.equal(page.result.hidden, false);
   assert.equal(page.qr.hidden, false);
+  assert.equal(page.feedback.hidden, true);
+  assert.equal(page.feedback.textContent, "");
   assert.match(page.link.value, /^https:\/\/forum\.test\/lobby\/#invite=[a-f0-9]{32}$/);
   assert.deepEqual(page.payloads, [page.link.value]);
   assert.equal(page.canvas.width, page.canvas.height);
