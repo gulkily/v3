@@ -168,7 +168,7 @@
     }
 
     function nextAppearance(theme) {
-      var index = paletteNames.indexOf(palette);
+      var index = paletteNames.indexOf(lcdControl.value());
       if (theme === 'lcd' && index >= 0 && index + 1 < paletteNames.length) {
         return { theme: theme, palette: paletteNames[index + 1] };
       }
@@ -183,7 +183,7 @@
 
     function syncButton(theme) {
       var next = nextAppearance(theme);
-      var currentLabel = appearanceLabel(theme, palette);
+      var currentLabel = appearanceLabel(theme, lcdControl.value());
       var nextLabel = appearanceLabel(next.theme, next.palette);
 
       cycleButton.setAttribute("data-theme", resolvedTheme(theme));
@@ -227,76 +227,86 @@
       return;
     }
 
-    var paletteControl = menu.querySelector("[data-role='lcd-palette']");
-    var paletteButton = paletteControl && paletteControl.querySelector('[data-action="lcd-palette-toggle"]');
-    var palettePopover = paletteControl && paletteControl.querySelector('[role="menu"]');
-    var paletteOptions = paletteControl ? Array.prototype.slice.call(paletteControl.querySelectorAll('[data-lcd-palette-option]')) : [];
-    var paletteNames = paletteOptions.map(function (option) { return option.getAttribute('data-lcd-palette-option'); });
-    var palette = document.documentElement.getAttribute('data-lcd-palette') || 'green';
+    function createPaletteControl(paletteTheme, themeLabel) {
+      var paletteControl = menu.querySelector('[data-role="' + paletteTheme + '-palette"]');
+      var paletteButton = paletteControl && paletteControl.querySelector('[data-action="' + paletteTheme + '-palette-toggle"]');
+      var palettePopover = paletteControl && paletteControl.querySelector('[role="menu"]');
+      var paletteOptions = paletteControl ? Array.prototype.slice.call(paletteControl.querySelectorAll('[data-' + paletteTheme + '-palette-option]')) : [];
+      var paletteNames = paletteOptions.map(function (option) { return option.getAttribute('data-' + paletteTheme + '-palette-option'); });
+      var palette = document.documentElement.getAttribute('data-' + paletteTheme + '-palette') || 'green';
 
-    function setPalette(value) {
-      palette = value;
-      document.documentElement.setAttribute('data-lcd-palette', palette);
-      try { localStorage.setItem(storageKey + '-lcd-palette', palette); } catch (error) {}
-    }
-
-    function closePalette(refocus) {
-      if (!palettePopover) return;
-      palettePopover.hidden = true;
-      paletteButton.setAttribute('aria-expanded', 'false');
-      if (refocus) paletteButton.focus();
-    }
-
-    function syncPalette() {
-      if (!paletteControl) return;
-      if (currentTheme !== 'lcd') {
-        var hadFocus = paletteControl.contains(document.activeElement);
-        closePalette(false);
-        if (hadFocus) cycleButton.focus();
+      function setPalette(value) {
+        palette = value;
+        document.documentElement.setAttribute('data-' + paletteTheme + '-palette', palette);
+        try { localStorage.setItem(storageKey + '-' + paletteTheme + '-palette', palette); } catch (error) {}
       }
-      var selected = paletteOptions.filter(function (option) {
-        var checked = option.getAttribute('data-lcd-palette-option') === palette;
-        option.setAttribute('aria-checked', String(checked));
-        return checked;
-      })[0];
-      if (selected) paletteButton.setAttribute('aria-label', 'Choose LCD palette: ' + selected.textContent.trim());
-    }
 
-    if (paletteButton) {
-      paletteButton.addEventListener('click', function () {
-        if (!palettePopover.hidden) { closePalette(false); return; }
-        closeMenu(false);
-        palettePopover.hidden = false;
-        paletteButton.setAttribute('aria-expanded', 'true');
-        (paletteOptions.filter(function (option) { return option.getAttribute('aria-checked') === 'true'; })[0] || paletteOptions[0]).focus();
-      });
-      paletteOptions.forEach(function (option) {
-        option.addEventListener('click', function () {
-          setPalette(option.getAttribute('data-lcd-palette-option'));
-          syncButton(currentTheme);
-          syncPalette();
-          closePalette(true);
+      function closePalette(refocus) {
+        if (!palettePopover) return;
+        palettePopover.hidden = true;
+        paletteButton.setAttribute('aria-expanded', 'false');
+        if (refocus) paletteButton.focus();
+      }
+
+      function syncPalette() {
+        if (!paletteControl) return;
+        if (currentTheme !== paletteTheme) {
+          var hadFocus = paletteControl.contains(document.activeElement);
+          closePalette(false);
+          if (hadFocus) cycleButton.focus();
+        }
+        var selected = paletteOptions.filter(function (option) {
+          var checked = option.getAttribute('data-' + paletteTheme + '-palette-option') === palette;
+          option.setAttribute('aria-checked', String(checked));
+          return checked;
+        })[0];
+        if (selected) paletteButton.setAttribute('aria-label', 'Choose ' + themeLabel + ' palette: ' + selected.textContent.trim());
+      }
+
+      if (paletteButton) {
+        paletteButton.addEventListener('click', function () {
+          if (!palettePopover.hidden) { closePalette(false); return; }
+          closeMenu(false);
+          palettePopover.hidden = false;
+          paletteButton.setAttribute('aria-expanded', 'true');
+          (paletteOptions.filter(function (option) { return option.getAttribute('aria-checked') === 'true'; })[0] || paletteOptions[0]).focus();
         });
-      });
-      paletteControl.addEventListener('keydown', function (event) {
-        if (palettePopover.hidden) return;
-        event.stopPropagation();
-        if (event.key === 'Escape') { event.preventDefault(); closePalette(true); return; }
-        var index = paletteOptions.indexOf(document.activeElement);
-        if (event.key === 'Tab') { closePalette(true); return; }
-        if (['ArrowDown', 'ArrowUp', 'Home', 'End'].indexOf(event.key) === -1) return;
-        event.preventDefault();
-        index = event.key === 'Home' ? 0 : event.key === 'End' ? paletteOptions.length - 1
-          : (index + (event.key === 'ArrowUp' ? -1 : 1) + paletteOptions.length) % paletteOptions.length;
-        paletteOptions[index].focus();
-      });
-      paletteControl.addEventListener('focusout', function (event) {
-        if (!paletteControl.contains(event.relatedTarget)) closePalette(false);
-      });
-      document.addEventListener('click', function (event) {
-        if (!paletteControl.contains(event.target)) closePalette(false);
-      });
+        paletteOptions.forEach(function (option) {
+          option.addEventListener('click', function () {
+            setPalette(option.getAttribute('data-' + paletteTheme + '-palette-option'));
+            syncButton(currentTheme);
+            syncPalette();
+            closePalette(true);
+          });
+        });
+        paletteControl.addEventListener('keydown', function (event) {
+          if (palettePopover.hidden) return;
+          event.stopPropagation();
+          if (event.key === 'Escape') { event.preventDefault(); closePalette(true); return; }
+          var index = paletteOptions.indexOf(document.activeElement);
+          if (event.key === 'Tab') { closePalette(true); return; }
+          if (['ArrowDown', 'ArrowUp', 'Home', 'End'].indexOf(event.key) === -1) return;
+          event.preventDefault();
+          index = event.key === 'Home' ? 0 : event.key === 'End' ? paletteOptions.length - 1
+            : (index + (event.key === 'ArrowUp' ? -1 : 1) + paletteOptions.length) % paletteOptions.length;
+          paletteOptions[index].focus();
+        });
+        paletteControl.addEventListener('focusout', function (event) {
+          if (!paletteControl.contains(event.relatedTarget)) closePalette(false);
+        });
+        document.addEventListener('click', function (event) {
+          if (!paletteControl.contains(event.target)) closePalette(false);
+        });
+      }
+
+      return { close: closePalette, sync: syncPalette, set: setPalette, names: paletteNames, options: paletteOptions, value: function () { return palette; } };
     }
+    var lcdControl = createPaletteControl('lcd', 'LCD');
+    var consoleControl = createPaletteControl('console', 'Console');
+    var paletteNames = lcdControl.names;
+    var paletteOptions = lcdControl.options;
+    function closePalette(refocus) { lcdControl.close(refocus); consoleControl.close(false); }
+    function syncPalette() { lcdControl.sync(); consoleControl.sync(); }
 
     var currentTheme = readStoredTheme();
 
@@ -330,7 +340,7 @@
     function commitSelection(theme, selectedPalette) {
       document.documentElement.removeAttribute("data-theme-loading");
       currentTheme = theme;
-      if (selectedPalette) setPalette(selectedPalette);
+      if (selectedPalette) lcdControl.set(selectedPalette);
       applyTheme(currentTheme);
       syncResolvedTheme(currentTheme);
       syncButton(currentTheme);

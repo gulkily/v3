@@ -28,6 +28,12 @@
         if (lcdPalettes.indexOf(savedPalette) !== -1) palette = savedPalette;
       } catch (error) {}
       document.documentElement.setAttribute('data-lcd-palette', palette);
+      var consolePalette = 'green';
+      try {
+        var savedConsolePalette = localStorage.getItem(browserRuntime.themeStorageKey + '-console-palette');
+        if (<?= json_encode(array_keys($consolePalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>.indexOf(savedConsolePalette) !== -1) consolePalette = savedConsolePalette;
+      } catch (error) {}
+      document.documentElement.setAttribute('data-console-palette', consolePalette);
       var theme = null;
       window.forumBrowserRuntime = browserRuntime;
 

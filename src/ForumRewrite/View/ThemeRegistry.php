@@ -8,6 +8,7 @@ final class ThemeRegistry
 {
     public const THEME_HINT_COOKIE = 'theme-hint';
 
+    public const CONSOLE_PALETTES = ['green' => 'Green', 'amber' => 'Amber', 'cyan' => 'Cyan', 'white' => 'White'];
     public const LCD_PALETTES = ['green' => 'Green', 'amber' => 'Amber', 'purple' => 'Purple', 'gray' => 'Gray'];
 
     /** Retired theme names mapped to their replacements, for saved preferences. */

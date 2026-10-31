@@ -111,7 +111,7 @@
 
 :root[data-theme="lcd"] .theme-menu { margin-left: 2.5rem; }
 
-:root[data-theme="lcd"] .lcd-palette { display: block; }
+:root[data-theme="lcd"] [data-role="lcd-palette"] { display: block; }
 
 :root[data-theme="lcd"][data-lcd-palette="purple"] {
   --lcd-detail: #322d3a14;
