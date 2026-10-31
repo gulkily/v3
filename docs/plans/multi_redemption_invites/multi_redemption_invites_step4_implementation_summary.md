@@ -46,3 +46,15 @@ Completion: Signed APIs admit N distinct keys, refuse N+1, recover same-key retr
 - Notes: S2 commit 5701a13b. Browser/restore follow in S4/S5. No dependencies/schema/frontend changes. Original estimate unchanged; no measured labor.
 
 *— Codex · 2026-10-31 UTC*
+
+## Stage 4 - S4/v2: Existing-client compatibility
+
+**Original estimate: 0.08**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes: Real-browser API-created capped invitation fixture reuses existing browser fixture/router, Chrome, Playwright Core and shipped signing/identity/Lobby code. API usage documented. No frontend source changed.
+- Verification: node tests/browser/invite_multi_redemption.mjs passes public and members-only targeted/manual entry, two recipients/third refusal, lost response and full/partial revocation recovery. node tests/browser/invite_zero_click.mjs passes its full public/members-only legacy flow including browser single-use/30-day issuance, expired links and actual v3 rebuild. InvitationIssuanceTest and BrowserSigningNormalizationTest 92/92 passed. Diff confirms zero public/templates changes.
+- Limitation: First multi-use browser run passed public flows but failed members-only manual entry with “Invalid approval acceptance time.” A full rerun of the same condition passed both modes without code changes; cause remains unexplained. This is not claimed fixed. Keep this intermittent environment/timing observation visible for release acceptance.
+- Notes: S3 commit 3e2130a0. Existing dependencies only. Stage retrospective reflects browser replay overhead; whole-cycle projection remains 0.70, independently judged, no measured labor. No visual/theme redesign involved.
+
+*— Codex · 2026-10-31 UTC*

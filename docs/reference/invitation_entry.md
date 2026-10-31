@@ -12,7 +12,7 @@ No username prompt or Redeem click is required. A fresh key receives the usernam
 `guest`. Existing browser keys and names are preserved. JavaScript and
 working browser key storage are required.
 
-Opening the link intentionally attempts single-use redemption, including in a
+Opening the link intentionally attempts redemption, including in a
 JavaScript-capable link preview. Share it with its intended recipient. An already
 approved member follows a valid target without consuming an unused invitation.
 An untargeted invitation retains the explicit Redeem button and normal setup.
@@ -26,8 +26,9 @@ existing policy; a chosen name does not prove a unique real-world identity.
 
 If a response is lost, reload or retry the original invitation in the same browser.
 A signed same-recipient retry resumes verified access without another redemption.
-A used invitation cannot be recovered by another identity. Expired, revoked, or
-invalid invitations require help from the sender. Storage failures require fixing
+Only the same accepted key can recover its grant after capacity is exhausted,
+expiry, or revocation. Other keys need an available slot or a new invitation.
+An invalid invitation requires help from the sender. Storage failures require fixing
 browser storage or restoring a key through Account. Do not generate another key
 to recover an invitation already redeemed by the current key.
 
@@ -35,6 +36,38 @@ Targets must be supported internal URLs. Member approval unlocks the members-onl
 site gate; it does not bypass independent resource restrictions. A deleted target
 shows the normal Not Found page; use site navigation to continue. The approved
 membership remains available.
+
+## Capped invitations through the API
+
+Browser issuance remains single-use with a 30-day expiry. API clients may send
+`max_redemptions` (integer 1–1000) to the existing authenticated
+`POST /api/prepare_invitation`. Omission means one. The returned canonical record
+includes the signed `Max-Redemptions` header when requested. Sign its exact bytes
+and finalize with `POST /api/create_prepared_invitation` as usual.
+
+Example prepare fields (form encoded on the wire):
+
+```text
+verification_hash: sha256:<SHA-256 of the bearer token>
+expires_at: <future RFC 3339 UTC timestamp>
+max_redemptions: 2
+destination: /threads/root-001
+```
+
+Keep the bearer secret and send recipients `/lobby/#invite=<token>`. Two distinct
+keys can accept this example; a third is refused. Inspection/preparation,
+failed writes, already-approved members and same-key retries consume no slots.
+The limit counts keys, not people. Existing Lobby clients need no changes.
+
+To close unused capacity, prepare `action=revoke`, `invitation_id` and
+`verification_hash` as the issuer, then sign/finalize the returned record. Omit
+`max_redemptions` when revoking. Earlier accepted grants remain valid. Recovery
+never restores membership withdrawn independently of the invitation.
+
+Inspection retains the `targeted` and `available`/`used` response fields. A closed
+link with prior acceptance remains inspectable so its accepted keys can reach
+signed recovery; inspection alone does not grant access or reveal recipients.
+See the [record and upgrade contract](../specs/invitation_record_v1.md).
 
 ## Choosing a username, step by step
 
