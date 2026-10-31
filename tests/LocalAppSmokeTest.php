@@ -64,6 +64,23 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testVersion39StartupBuildsHistoryMembershipRevisions(): void
+    {
+        $database=sys_get_temp_dir().'/sync-revision-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            exec(escapeshellarg(dirname(__DIR__).'/v3').' rebuild '.escapeshellarg($this->repositoryRoot).' '.escapeshellarg($database),$output,$exit);
+            assertSame(0,$exit,implode("\n",$output));
+            $pdo=new PDO('sqlite:'.$database);
+            foreach(['insert','update','delete'] as $event)$pdo->exec('DROP TRIGGER history_keys_'.$event);
+            $pdo->exec('DROP TABLE history_keys_revision');
+            $pdo->exec("UPDATE metadata SET value='39' WHERE key='schema_version'");
+            $app=new Application(dirname(__DIR__),$this->repositoryRoot,$database);
+            assertStringContains('Hello world',$this->render($app,'/threads/root-001'));
+            $pdo=new PDO('sqlite:'.$database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION,$pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame(3,(int)$pdo->query("SELECT count(*) FROM sqlite_master WHERE type='trigger' AND name LIKE 'history_keys_%'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
     public function testVersion38StartupBuildsBoundedSyncKeyIndex(): void
     {
         $database=sys_get_temp_dir().'/sync-key-schema-'.bin2hex(random_bytes(6)).'.sqlite3';

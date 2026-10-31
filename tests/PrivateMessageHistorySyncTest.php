@@ -9,6 +9,7 @@ final class PrivateMessageHistorySyncTest
         $profiles=new PDO('sqlite::memory:');
         $profiles->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_ASSOC);
         $profiles->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, profile_slug TEXT, username TEXT, username_token TEXT, fallback_label TEXT, signer_fingerprint TEXT, bootstrap_post_id TEXT, bootstrap_thread_id TEXT, public_key TEXT, is_approved INTEGER, approved_by_identity_id TEXT, approved_by_profile_slug TEXT, approved_by_label TEXT, post_count INTEGER, thread_count INTEGER)');
+foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements() as $sql) $profiles->exec($sql);
         foreach (['a'=>'alice','b'=>'alice','c'=>'bob','d'=>'mallory'] as $key=>$account) {
             $fp=str_repeat($key,40);
             $q=$profiles->prepare('INSERT INTO profiles (identity_id,profile_slug,username,username_token,public_key,is_approved) VALUES (?,?,?,?,?,1)');
@@ -78,6 +79,58 @@ final class PrivateMessageHistorySyncTest
         $service->acknowledge($this->viewer(),['checkpoint'=>$work['checkpoint']]);
         $next=$service->work($this->viewer());
         assertSame(false,$next['messages'][0]['verification_more']);
+    }
+    public function testRecentDestinationPriorityFairnessAndQuietRevisionInvalidation(): void
+    {
+        [$profiles,$messages,$sync,$service,$db,$syncDb]=$this->fixture(115);
+        // An active key at the end of fingerprint order gets the first selection.
+        $recent=$profiles->query("SELECT substr(identity_id,9) FROM profiles WHERE username_token='alice' ORDER BY identity_id DESC LIMIT 1")->fetchColumn();
+        $sync->recordActivity('alice',$recent,100);
+        $selected=[];
+        for($i=0;$i<4;$i++) {
+            $work=$service->combinedWork($this->viewer(),['sender'])['work'][0];$selected[]=$work['target'];
+            $service->acknowledge($this->viewer(),['checkpoint'=>$work['checkpoint'],'items'=>array_map(fn($r)=>['message_id'=>$r['message_id'],'digest'=>$r['digest']],$work['messages'])]);
+        }
+        assertSame($recent,$selected[0]);assertSame(true,$selected[3]!==$recent,'Fourth selection protects stable-order destinations');
+        // Finish a donor pass without claiming readability on other keys.
+        for($i=0;$i<700;$i++) {
+            $result=$service->combinedWork($this->viewer());
+            foreach($result['work'] as $work) {
+                $items=array_map(fn($r)=>['message_id'=>$r['message_id'],'digest'=>$r['digest']],$work['messages']);
+                if($items!==[] && $work['target']!==str_repeat('a',40))$sync->upload($work['account'],str_repeat('a',40),$work['target'],'cipher',$items);
+                $service->acknowledge($this->viewer(),['mode'=>$work['mode'],'checkpoint'=>$work['checkpoint'],'items'=>$items]);
+            }
+            if(!$result['continuation'])break;
+        }
+        assertSame(true,$i<700);
+        $idle=$service->combinedWork($this->viewer());
+        assertSame([],$idle['work']);assertSame(false,$idle['continuation']);
+        assertSame(['keys'=>0,'decisions'=>0],$service->budgetUsage());
+        assertSame(true,strlen(json_encode($idle))<=8192);
+        $sync->recordActivity('alice',$recent,200);
+        assertSame(false,$service->combinedWork($this->viewer())['continuation'],'Foreground activity must not reopen settled cryptographic work');
+        $messages->storeEnvelope('new','now','bob','alice','source','new cipher');
+        assertSame(true,$service->combinedWork($this->viewer())['continuation'],'New originals reopen work');
+    }
+    public function testRevisionTracksRelevantRecoveryChangesWithoutRecipientActivity(): void
+    {
+        [$profiles,$messages,$sync,$service,$db,$syncDb]=$this->fixture();
+        $method=new ReflectionMethod($service,'revision');$source=str_repeat('a',40);
+        $revision=fn()=>$method->invoke($service,'alice',$source);
+        $before=$revision();
+        $sync->recordActivity('bob',str_repeat('c',40),100);
+        $sync->acknowledge('bob',str_repeat('c',40),[['message_id'=>'m01','digest'=>hash('sha256','cipher-1')]]);
+        assertSame($before,$revision(),'Recipient activity/coverage must not affect sender scheduling');
+        $profiles->exec("UPDATE profiles SET post_count=2");
+        assertSame($before,$revision(),'Unrelated public profile activity is not a key change');
+        $profiles->exec("UPDATE profiles SET is_approved=0 WHERE public_key='KEY-b'");
+        assertSame(true,$before!==$revision());$before=$revision();
+        $transfer=$sync->upload('alice',str_repeat('c',40),$source,'cipher',[['message_id'=>'m02','digest'=>hash('sha256','cipher-2')]]);
+        assertSame(true,$before!==$revision());$before=$revision();
+        $syncDb->exec("DELETE FROM history_sync_transfers WHERE transfer_id='".$transfer."'");
+        assertSame(true,$before!==$revision());$before=$revision();
+        $db->exec("UPDATE private_messages SET encrypted_envelope='changed' WHERE message_id='m01'");
+        assertSame(true,$before!==$revision());
     }
     public function testActivityIsPrivateCoalescedAndNotPromotedBySync(): void
     {

@@ -69,3 +69,16 @@ Verification: Documentation diff and local relative-link targets checked; runtim
 - History: Revised planning commit e25676b2e precedes resumed implementation. Earlier withdrawn experiment and failed regression are retained above. Original stage estimate preserved; retrospective reflects extra legacy adapter/testing, not measured labor. Dependency delta zero. No full-suite, production or final traffic acceptance.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 4 - Activity ordering and quiet completion
+
+**Original estimate: 0.17**
+**Retrospective stage work: 0.20**
+
+- Changes: Store separate destination positions and bounded scheduler metadata. Prefer recently foreground-active same-account keys for three selections, with stable-order fairness on the fourth; finish pending verification subsets before switching destinations. Completed account/sender passes return a small idle response without original/key discovery. Submission/verification progress never creates readability evidence.
+- Invalidation: Private message mutation tokens, public membership-key tokens, own incoming transfer changes and deleted donor contributions reopen relevant passes. Epoch tokens distinguish newly initialized/rebuilt private stores; tokens survive reconnects. Recipient activity and receipts never enter sender scheduling. Ordinary profile post-count changes and foreground activity do not reopen settled crypto work.
+- Verification: 37/37 focused history/crypto/feature-flag/schema checks pass, plus a dedicated revision privacy/invalidation test. The 115-key service fixture selects the active key first, protects the fourth fair selection, finishes all useful work, then returns one sub-8-KiB response with zero key loads/decisions. New originals reopen it. Tests exposed and fixed pending-verification pinning and sender completion after successful verification/contribution. Both legacy and modern real-key compatibility harnesses remain passing.
+- Schema: Version 40 adds derived membership revision tokens/triggers; isolated ./v3 rebuild and normal startup from version 39 pass. Message and sync storage additions are private, additive, and contain no decrypted secrets. Existing encrypted history/send acceptance unchanged. Source metadata lookup and per-destination scheduling replace full-account key materialization; first enumeration remains bounded necessary work.
+- Limitations: This establishes server scheduling/quietness; browser turn deduplication, automatic continuation and natural-flow acceptance remain Stages 5–7. No production replay, full suite, dependency change, merge or push. Original estimate retained; retrospective reflects revision and scheduler interaction tests, not measured labor.
+
+*— Codex · 2026-10-30 UTC*

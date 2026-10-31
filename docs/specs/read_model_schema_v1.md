@@ -589,3 +589,5 @@ usable through key comparisons. An empty positioned list offers first-page
 recovery and a return direction when eligible rows remain.
 
 Schema version 39: Add profiles_sync_keys on profiles(username_token, is_approved, identity_id) for bounded private-message recovery key enumeration. Startup rebuilds prior versions before the query runs; no canonical record change.
+
+Schema version 40 adds history_keys_revision and profile mutation triggers. Tokens change on key identity, account, approval or public-key changes, not unrelated profile activity. History recovery uses this public membership revision without enumerating all keys; tokens are rebuilt with the derived database.

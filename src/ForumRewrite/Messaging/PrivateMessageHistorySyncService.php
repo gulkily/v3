@@ -55,7 +55,7 @@ final class PrivateMessageHistorySyncService
             if ($bytes+$size>3*1048576-32768) break;
             $messages[]=$row;$bytes+=$size;
             $token=hash('sha256',$binding.':'.$prior['after'].':'.$page['after']);
-            $updated[$binding]=['after'=>$prior['after'],'pending'=>$page['after'],'more'=>$page['more'],'token'=>$token,'id'=>$row['message_id']];
+            $updated[$binding]=['after'=>$prior['after'],'pending'=>$page['after'],'more'=>$page['more'],'token'=>$token,'id'=>$row['message_id'],'target'=>$target];
             $this->verificationTokens[$binding]=$token;
             $this->verificationMore=$this->verificationMore || $page['more'];
         }
@@ -89,12 +89,66 @@ final class PrivateMessageHistorySyncService
     {
         return $this->sync->admit(strtolower((string)$viewer['username_token']), (string)$viewer['identity_id'], $now ?? microtime(true));
     }
+    private function revision(string $account, string $source): string
+    {
+        return hash('sha256',json_encode([$this->messages->historyRevision($account),PrivateMessageHistoryRevision::token($this->profiles,'history_keys','*'),$this->sync->arrivalRevision($account,$source),$this->sync->donorRevision($source)],JSON_THROW_ON_ERROR));
+    }
+    private function hasKey(string $account, string $fingerprint): bool
+    {
+        $q=$this->profiles->prepare("SELECT 1 FROM profiles WHERE username_token=? AND identity_id=? AND is_approved=1 AND public_key!=''");
+        $q->execute([$account,'openpgp:'.$fingerprint]);return $q->fetchColumn()!==false;
+    }
+    private function scheduledTarget(string $account, string $source, string $revision): ?string
+    {
+        $state=$this->sync->schedule($account,$source,'account');
+        if(($state['revision']??'')!==$revision) {
+            $state=['revision'=>$revision,'cursor'=>'','enumerated'=>false,'turn'=>0,'fair'=>''];
+            $this->sync->saveVerification($account,$source,'account',[]);
+        }
+        if(($state['done']??false))return null;
+        foreach($this->sync->verification($account,$source,'account') as $entry) if($entry['more'] && isset($entry['target']) && $this->hasKey($account,$entry['target']))return $entry['target'];
+        $target=null;$fair=$state['turn']%4===3;
+        if(!$fair) foreach($this->sync->recentActivity($account) as $activity) {
+            $this->decisions++;
+            $candidate=$activity['source'];
+            if($this->hasKey($account,$candidate) && !$this->sync->destination($account,$source,$candidate,$revision)['finished']) {$target=$candidate;break;}
+        }
+        if($target===null && !$state['enumerated']) {
+            // One metadata destination per selection; no hidden full-account enumeration.
+            $target=$this->nextKey($account,$state['cursor']);$this->decisions++;
+            if($target===null)$state['enumerated']=true;
+            else $state['cursor']=$target;
+        }
+        if($target===null) {
+            $target=$this->sync->pendingDestination($account,$source,$revision,$state['fair'])??$this->sync->pendingDestination($account,$source,$revision);
+            if($target!==null && !$this->hasKey($account,$target)) {
+                $this->sync->saveDestination($account,$source,$target,$revision,'',true);$target=null;
+            }
+        }
+        if($target!==null) {
+            $state['turn']++;if($fair)$state['fair']=$target;
+            $position=$this->sync->destination($account,$source,$target,$revision);
+            $this->sync->saveDestination($account,$source,$target,$revision,$position['after_id'],(bool)$position['finished']);
+        } else $state['done']=true;
+        $this->sync->saveSchedule($account,$source,'account',$state);
+        return $target;
+    }
+    private function finishScheduled(string $account, string $source, string $mode, array $checkpoint): void
+    {
+        $schedule=$checkpoint['schedule']??null;
+        if(!is_array($schedule) || !is_string($schedule['revision']??null) || $schedule['revision']!==$this->revision($account,$source))return;
+        if($mode==='account') {
+            $target=$schedule['target']??'';$after=$schedule['after_id']??'';
+            if(!is_string($target) || !is_string($after) || strlen($after)>128 || !$this->hasKey($account,$target))return;
+            $this->sync->saveDestination($account,$source,$target,$schedule['revision'],$after,($schedule['finished']??false)===true);
+        } elseif(($schedule['finished']??false)===true) $this->sync->saveSchedule($account,$source,'sender',['revision'=>$schedule['revision'],'done'=>true]);
+    }
     private function context(array $viewer): array
     {
         $account=strtolower(trim((string)($viewer['username_token']??'')));
         $source=strtolower(substr((string)($viewer['identity_id']??''),8));
-        $key=$this->key($account,$source);
-        if (($viewer['is_approved']??0)!=1 || !str_starts_with((string)($viewer['identity_id']??''),'openpgp:') || $key===null) throw new RuntimeException('An approved authenticated account key is required.');
+        $key=$this->hasKey($account,$source);
+        if (($viewer['is_approved']??0)!=1 || !str_starts_with((string)($viewer['identity_id']??''),'openpgp:') || !$key) throw new RuntimeException('An approved authenticated account key is required.');
         return [$account,$source];
     }
     // Derive authorization from the original, never from donor-supplied account claims.
@@ -114,12 +168,15 @@ final class PrivateMessageHistorySyncService
         $this->resetBudget();
         return $this->accountWork($viewer,$mode);
     }
-    private function accountWork(array $viewer, mixed $mode = 'account'): array
+    private function accountWork(array $viewer, mixed $mode = 'account', bool $scheduled = false): array
     {
         if(!in_array($mode,['account','sender'],true)) throw new InvalidArgumentException('Invalid history work mode.');
         if($mode==='sender') return $this->senderWork($viewer);
         [$account,$source]=$this->context($viewer);
-        $position=$this->sync->checkpoint($account,$source);
+        $revision=$scheduled?$this->revision($account,$source):'';
+        $chosen=$scheduled?$this->scheduledTarget($account,$source,$revision):null;
+        if($scheduled && $chosen===null) return ['account'=>$account,'source'=>$source,'target'=>'','messages'=>[],'checkpoint'=>['target'=>'','after_id'=>''],'cycle_end'=>true];
+        $position=$scheduled?['target'=>$chosen]+$this->sync->destination($account,$source,$chosen,$revision):$this->sync->checkpoint($account,$source);
         $first=$this->nextKey($account);
         $target=$this->key($account,$position['target'])!==null?$position['target']:$first;
         $after=$target===$position['target']?$position['after_id']:'';
@@ -128,6 +185,7 @@ final class PrivateMessageHistorySyncService
         $prepared=$this->boundedMessages($page['messages'],$account,$source,'account',$target);
         if(count($prepared)<count($page['messages'])) { $page['more']=true;$page['last']=$prepared===[]?$after:$prepared[count($prepared)-1]['message_id']; }
         $next=$page['more']?['target'=>$target,'after_id'=>$page['last']]:['target'=>$this->nextKey($account,$target)??$first,'after_id'=>''];
+        if($scheduled) $next['schedule']=['revision'=>$revision,'target'=>$target,'after_id'=>$page['more']?$page['last']:'','finished'=>!$page['more']];
         $messages=$prepared;
         foreach ($messages as &$message) {
             $receipt=$this->sync->receipt($account,$target,$message['message_id'],$message['digest']);
@@ -135,7 +193,7 @@ final class PrivateMessageHistorySyncService
         }
         unset($message);
         return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$this->key($account,$target), 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
-            'checkpoint'=>$next+['verification'=>$this->verificationTokens],'cycle_end'=>!$this->verificationMore && !$page['more'] && $next['target']===$first, 'total'=>$this->messages->historySyncCount($account)];
+            'checkpoint'=>$next+['verification'=>$this->verificationTokens],'cycle_end'=>!$scheduled && !$this->verificationMore && !$page['more'] && $next['target']===$first, 'total'=>$this->messages->historySyncCount($account)];
     }
     public function combinedWork(array $viewer, mixed $finished = []): array
     {
@@ -143,11 +201,24 @@ final class PrivateMessageHistorySyncService
         if (!is_array($finished) || !array_is_list($finished) || count($finished)>2 || array_filter($finished,fn($mode)=>!is_string($mode) || !in_array($mode,['account','sender'],true))!==[]) throw new InvalidArgumentException('Invalid completed modes.');
         [$account,$source]=$this->context($viewer);
         $bundles=[];$complete=$finished;
+        $revision=$this->revision($account,$source);
         foreach (['account','sender'] as $mode) {
             if (in_array($mode,$finished,true)) continue;
+            if($mode==='sender') {
+                $state=$this->sync->schedule($account,$source,'sender');
+                if(($state['revision']??'')===$revision && ($state['done']??false)) {$complete[]=$mode;continue;}
+                if(($state['revision']??'')!==$revision) {
+                    $this->sync->advance($account,$source,'','',true);
+                    $this->sync->saveSchedule($account,$source,'sender',['revision'=>$revision,'done'=>false]);
+                }
+            }
             // Bounded discovery can advance covered pages, but never client work or access receipts.
             for ($page=0;$page<8 && $this->decisions<150 && $this->keyLoads<40;$page++) {
-                $work=$mode==='sender'?$this->senderWork($viewer,true):$this->accountWork($viewer);
+                $work=$mode==='sender'?$this->senderWork($viewer,true):$this->accountWork($viewer,'account',true);
+                if($mode==='sender') {
+                    $work['checkpoint']['schedule']=['revision'=>$revision,'finished'=>$work['scan_end']];
+                    if($work['messages']===[])$work['cycle_end']=$work['scan_end'];
+                }
                 if ($mode==='account' && $work['target']!==$source) {
                     $work['messages']=array_values(array_filter($work['messages'],fn($row)=>!$this->sync->hasContribution($account,$source,$work['target'],$row['message_id'],$row['digest'])));
                 }
@@ -157,8 +228,16 @@ final class PrivateMessageHistorySyncService
                     break;
                 }
                 $next=$work['checkpoint'];
+                $this->sync->saveVerification($account,$source,$mode,[]);
+                $this->finishScheduled($account,$source,$mode,$next);
                 $this->sync->advance($account,$source,$next['target'],$next['after_id'],$mode==='sender');
                 if ($work['cycle_end']) { $complete[]=$mode;break; }
+            }
+            if($mode==='account') {
+                $state=$this->sync->schedule($account,$source,'account');
+                if(($state['enumerated']??false) && $this->sync->pendingDestination($account,$source,$revision)===null) {
+                    $state['done']=true;$this->sync->saveSchedule($account,$source,'account',$state);$complete[]='account';
+                }
             }
         }
         return ['mode'=>'combined','account'=>$account,'source'=>$source,'work'=>$bundles,
@@ -187,7 +266,7 @@ final class PrivateMessageHistorySyncService
         $next=$nextKey!==null?['target'=>$nextKey,'after_id'=>$position['after_id']]:['target'=>'','after_id'=>$end?'':$last];
         // Never consult recipient coverage: sender work must not reveal recovery or read activity.
         return ['mode'=>'sender','source_account'=>$account,'account'=>$destination,'source'=>$source,'target'=>$target,
-            'target_key'=>$target===''?null:$this->key($destination,$target),'messages'=>$target===''?[]:array_values(array_filter($messages, fn($row)=>!$skipContributed || !$this->sync->hasContribution($destination,$source,$target,$row['message_id'],$row['digest']))),'checkpoint'=>$next+['verification'=>$this->verificationTokens],'cycle_end'=>!$this->verificationMore && $end];
+            'target_key'=>$target===''?null:$this->key($destination,$target),'messages'=>$target===''?[]:array_values(array_filter($messages, fn($row)=>!$skipContributed || !$this->sync->hasContribution($destination,$source,$target,$row['message_id'],$row['digest']))),'checkpoint'=>$next+['verification'=>$this->verificationTokens],'scan_end'=>$end,'cycle_end'=>!$this->verificationMore && $end];
     }
     private function items(string $account, mixed $items): array
     {
@@ -281,7 +360,10 @@ final class PrivateMessageHistorySyncService
             unset($entry);
             $this->sync->saveVerification($account,$source,$mode,$pending?$state:[]);
             // Old timeout checkpoints omit the token: retain work rather than skip a key page.
-            if(!$pending) $this->sync->advance($account,$source,$checkpoint['target'],$checkpoint['after_id'],$mode==='sender');
+            if(!$pending) {
+                $this->finishScheduled($account,$source,$mode,$checkpoint);
+                $this->sync->advance($account,$source,$checkpoint['target'],$checkpoint['after_id'],$mode==='sender');
+            }
         }
         return ['confirmed'=>count($items)];
     }
