@@ -1,0 +1,29 @@
+Contract: Tweet first-photo browser handoff
+Scope: v2/B, Stage 1
+Date: 2026-10-31 UTC
+Entry: Existing same-window/new-window bookmarklets to /compose/thread
+Payload: Existing query text/subject plus #tweet-image=<percent-encoded photo URL>
+Source: Selected tweet's own still-photo images; exclude quotes, avatars, emoji, video previews
+Photo-URL: HTTPS pbs.twimg.com, no credentials/port, /media/ ID with jpg/png/webp rendition
+Download: Composer browser, credentials omitted, redirects rejected, no referrer, 15-second timeout, 32 MiB streamed ceiling matching preparation input
+Preparation: Existing ForumImagePrepare and ForumImageUpload.select(form, file); never server-side URL fetching
+Retention: Photo source URLs remain in draft body for import/reload/manual recovery
+Publication: Existing one-image signed upload; pending/failed intent blocks all submit paths until attachment selected or explicitly removed
+Outbox: Pending/failed import must retain existing image refusal, even before signing loads
+Initialization: Blocking composer import bootstrap before composer markup; parser-time bind establishes pending UI before primary action can paint; HTML remains viewer-independent
+Draft-Precedence: Existing explicit query prefill wins over unrelated stored text draft; importer does not overwrite fields
+Race-Recovery: Removal/replacement invalidates/aborts older download; failure provides retry and source-link/manual attachment; manual selection supersedes failed/pending import
+Reload: No new binary persistence; surviving fragment/source link permits retry; never claim attachment retained after reload beyond existing contract
+Dependencies: Zero added runtime/development packages or external components
+
+Browser-Probe: Chromium 145 cached Playwright build, actual project composer served by existing image fixture, two distinct localhost source/destination origins
+Same-Window: PASS navigation, text prefill, real HTTPS photo download and existing preparation
+New-Window: PASS navigation/noopener, text prefill, real HTTPS photo download and existing preparation
+Probe-URL: https://pbs.twimg.com/media/BnH7gEaIQAAfD66.jpg:medium
+Probe-Response: HTTP 200, image/jpeg, 45626 source bytes; prepared 52016 bytes, 599 x 438 pixels
+Probe-Limits: Existing composer plus disposable explicit fetch/preparation; feature wiring not yet implemented; one public image does not prove every X image works
+Live-X: https://x.com/NASA returned net::ERR_HTTP_RESPONSE_CODE_FAILURE; live tweet markup/CSP bookmarklet execution remains unverified
+Environment: node absent from PATH; used existing cached node v22.16.0; cached Chromium lacked NSS/NSPR/ALSA libraries
+Environment-Recovery: Downloaded Ubuntu libnspr4, libnss3 and libasound2t64 packages and extracted only under /tmp/tweet-browser-libs; LD_LIBRARY_PATH per test process, no system installation or repository dependency delta
+Evidence: /tmp/tweet-transfer-probe.cjs and /tmp/tweet-transfer-6cn8Xy (disposable); durable results above
+Gate: PASS client browser access and existing preparation in both launch modes; live X integration acceptance remains separate
