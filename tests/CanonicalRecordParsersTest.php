@@ -489,14 +489,15 @@ final class CanonicalRecordParsersTest
         $ledger = new InvitationLedger([$issued, $redeemed]);
         assertTrue($ledger->find('invite-0123456789abcdef')['redeemed'] !== null);
 
+        $ledger->apply($parser->parse($this->invitationContents('redeem', $recipient, null, 'reply-invite-redeem-2')));
+        assertSame(1, count($ledger->find('invite-0123456789abcdef')['recipients']));
         try {
-            $ledger->apply($parser->parse($this->invitationContents('redeem', $recipient, null, 'reply-invite-redeem-2')));
-        } catch (RuntimeException $exception) {
-            assertSame('Invitation is no longer redeemable.', $exception->getMessage());
+            $ledger->apply($parser->parse($this->invitationContents('redeem', 'openpgp:' . str_repeat('b', 40))));
+        } catch (RuntimeException $error) {
+            assertSame('Invitation is no longer redeemable.', $error->getMessage());
             return;
         }
-
-        throw new RuntimeException('Expected invitation reuse to fail.');
+        throw new RuntimeException('Expected excess recipient rejection.');
     }
 
     public function testInvitationBearerTokenAcceptsNewAndPreviousFormats(): void

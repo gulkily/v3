@@ -23,5 +23,9 @@ Sources: `src/ForumRewrite/Security/ApprovalPolicy.php`,
 
 Purpose: Preserve accepted invitation grants independently of today's clock.
 Scenario: A redemption accepted before expiry remains eligible during rebuild;
-missing legacy acceptance facts remain unknown rather than invented.
+missing legacy acceptance facts remain unknown rather than invented. The shared
+InvitationLedger counts distinct recipient keys up to the signed limit. Verified
+acceptance receipts preserve earlier grants across prospective revocation even
+when second-resolution authored timestamps sort revocation first. Duplicate
+recipient records consume no extra slot; contradictory accepted capacity fails closed.
 Sources: `src/ForumRewrite/Invitation/InvitationApprovalReplay.php`.

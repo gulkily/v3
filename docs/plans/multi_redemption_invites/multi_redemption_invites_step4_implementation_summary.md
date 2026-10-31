@@ -24,3 +24,14 @@ Completion: Signed APIs admit N distinct keys, refuse N+1, recover same-key retr
 - Notes: No dependencies, schema or frontend edits. Original unchanged; retrospective is judgment, not measured labor.
 
 *— Codex · 2026-10-31 UTC*
+
+## Stage 2 - S2: Preserve accepted recipients
+
+**Original estimate: 0.18**
+**Retrospective stage-work assessment: 0.18**
+
+- Changes: Shared ledger/replay recipient sets, duplicate-key idempotence, prospective revocation and receipt-aware acceptance. Missing multi-use receipts fail closed; accepted over-capacity evidence is rejected. Runtime ledger reads validated receipts. Existing single redeemed field retained for compatibility until API stage.
+- Verification: CanonicalRecordParsersTest, ApprovalAcceptanceTest, ApprovalPolicyTest — 64/64 passed. Subsequent receipt-loss regression: ApprovalAcceptanceTest 6/6 passed. Covers legacy expiry, two accepted keys, same-second revocation, duplicate records, receipt loss and excess capacity. Initial test failures exposed malformed old test fixture bodies and a canonical-only assertion helper; corrected fixtures/assertions, retained real canonical parsing. Full/incremental rebuild consumers call the shared replay; end-to-end parity awaits S3/S5.
+- Notes: S1 commit 7a33faee. No schema/dependency/frontend changes. Original estimate unchanged; no measured labor.
+
+*— Codex · 2026-10-31 UTC*

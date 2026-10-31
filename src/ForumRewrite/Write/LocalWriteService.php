@@ -4124,6 +4124,7 @@ class LocalWriteService
     private function invitationLedger(): InvitationLedger
     {
         $records = [];
+        $receipts = [];
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->repositoryRoot . '/records/posts', \FilesystemIterator::SKIP_DOTS)
         );
@@ -4136,13 +4137,18 @@ class LocalWriteService
             if ($contents === false || !str_contains($contents, 'Board-Tags: identity invitation internal')) {
                 continue;
             }
-            $records[] = $parser->parse($contents);
+            $record = $parser->parse($contents);
+            $records[] = $record;
+            if ($record->action === 'redeem') {
+                $path = substr($file->getPathname(), strlen($this->repositoryRoot) + 1);
+                $receipts[$record->post->postId] = ApprovalAcceptance::read($this->repositoryRoot, $path);
+            }
         }
 
         usort($records, static fn ($left, $right): int =>
             \ForumRewrite\Invitation\InvitationReplayOrder::key($left->post->createdAt, $left->post->body, $left->post->postId)
             <=> \ForumRewrite\Invitation\InvitationReplayOrder::key($right->post->createdAt, $right->post->body, $right->post->postId));
-        return new InvitationLedger($records);
+        return new InvitationLedger($records, $receipts);
     }
 
     private function requireInvitationExpiry(string $value): string
