@@ -95,3 +95,15 @@ Verification: Documentation diff and local relative-link targets checked; runtim
 - Limits: Secret caches are in memory only; this stage does not yet establish the 16-attempt/10-original turn ceiling or natural automatic continuation (Stage 6). No dependencies, UI copy, send restriction, production replay, merge or push. Estimate unchanged; no measured labor.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 6 - Bounded automatic continuation
+
+**Original estimate: 0.13**
+**Retrospective stage work: 0.16**
+
+- Changes: Count retries in the sixteen-attempt shared turn budget; admit at most ten distinct originals, retain the three-request concurrency gate, stop new work at ten seconds and cancel network work at fifteen seconds. Yield at least one second before automatic continuation, honor 429 Retry-After, and preserve non-secret candidate-page positions across turns. Stop on completed/no-progress passes and cancel timers/secrets when hidden, navigating, disabled or changing identity. Web Locks coalesce tabs where supported; server admission is the fallback when unavailable.
+- Progress: Partial work does not advance a full checkpoint. Server verifier state is pruned to the work actually offered, preventing already covered/contributed rows from pinning continuation. A bounded non-secret completed-checkpoint set detects repeated unchanged work. A pending field in the existing coordinator state supports verification of timer completion without new UI.
+- Verification: Ten focused crypto/scheduling/server-progress checks pass, plus the final continuation harness after pending-state wiring. A single initial trigger processes 25 originals in three yielded turns; all turns meet ten-original/sixteen-attempt limits. Tests cover counted transient retries, exact three-second Retry-After, continuation after fifteen invalid candidate pages, idle/no-progress timer stop, hidden cancellation and another tab holding the lock. Existing real-key 115-key compatibility, canonical reader, three-request disable race and interrupted sender tests pass.
+- Limits: These are browser/service harness results; natural real-page scale acceptance is Stage 7. A broader run passed 32/33 with a transient concurrent-writer test failure under shared-machine load; that test subsequently passed standalone. No claim of a clean full suite or production acceptance. Sending unchanged; dependency delta zero. Original estimate retained; retrospective reflects candidate-cursor and cancellation integration, not measured labor.
+
+*— Codex · 2026-10-30 UTC*

@@ -45,5 +45,5 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
   const receipt=await call({action:'receipt',target:source.fp,envelope});assert(receipt.receipt);
   if(process.argv.includes('--modern'))assert.equal(lookups,0,'Wrong signer must not fetch transfer candidates');
   console.log(`Real 115-key ${process.argv.includes('--modern')?'modern':'legacy'} recovery passed: ${pages} bounded work pages; ${lookups} legacy candidate lookups (modern dedup pending).`);
- } finally {service.stdin.end();}
+ } finally {window.ForumPrivateMessageHistorySync?.stop();service.stdin.end();}
 })().catch(e=>{console.error(e);process.exitCode=1});

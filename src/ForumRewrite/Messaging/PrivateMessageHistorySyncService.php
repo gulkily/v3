@@ -110,6 +110,7 @@ final class PrivateMessageHistorySyncService
         foreach($this->sync->verification($account,$source,'account') as $entry) if($entry['more'] && isset($entry['target']) && $this->hasKey($account,$entry['target']))return $entry['target'];
         $target=null;$fair=$state['turn']%4===3;
         if(!$fair) foreach($this->sync->recentActivity($account) as $activity) {
+            if($this->decisions>=150)break;
             $this->decisions++;
             $candidate=$activity['source'];
             if($this->hasKey($account,$candidate) && !$this->sync->destination($account,$source,$candidate,$revision)['finished']) {$target=$candidate;break;}
@@ -223,6 +224,9 @@ final class PrivateMessageHistorySyncService
                 if ($mode==='account' && $work['target']!==$source) {
                     $work['messages']=array_values(array_filter($work['messages'],fn($row)=>!$this->sync->hasContribution($account,$source,$work['target'],$row['message_id'],$row['digest'])));
                 }
+                $offered=array_column($work['messages'],'message_id');
+                $verification=$this->sync->verification($account,$source,$mode);
+                $this->sync->saveVerification($account,$source,$mode,array_filter($verification,fn($entry)=>in_array($entry['id'],$offered,true)));
                 $work['mode']=$mode;
                 if ($work['messages']!==[]) {
                     if(strlen(json_encode($bundles,JSON_THROW_ON_ERROR))+strlen(json_encode($work,JSON_THROW_ON_ERROR))<4*1048576-8192) $bundles[]=$work;
