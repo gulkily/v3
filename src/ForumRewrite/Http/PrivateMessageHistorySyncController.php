@@ -26,7 +26,7 @@ final class PrivateMessageHistorySyncController
             $retry=$service->admit($viewer);
             if ($retry>0) {
                 $this->routes->sendJson(['status'=>'error','code'=>'history_rate_limited','error'=>'History synchronization is busy. Retry later.'],429,
-                    array_merge($this->routes->noStoreHeaders(),['Retry-After'=>(string)max(1,(int)ceil($retry))]));
+                    array_merge($this->routes->noStoreHeaders(),['Retry-After: '.max(1,(int)ceil($retry))]));
                 return;
             }
             $input=$query;

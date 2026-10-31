@@ -170,12 +170,17 @@ foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements
             foreach([false,true] as $sameKey) {
                 $jobs=[];
                 for($i=0;$i<8;$i++) {
-                    $code='require '.var_export(dirname(__DIR__).'/autoload.php',true).'; $p=new PDO("sqlite:".$argv[1]);$p->exec("PRAGMA busy_timeout=1000");$s=new ForumRewrite\\Messaging\\PrivateMessageHistorySyncStore($p);$n=0;for($i=0;$i<16;$i++)if($s->admit($argv[2],$argv[3],100.0)===0.0)$n++;echo $n;';
+                    // Storage contention is retryable at the API boundary. Retry
+                    // only SQLITE_BUSY, preserving the fixed admission clock.
+                    $code='require '.var_export(dirname(__DIR__).'/autoload.php',true).'; $p=new PDO("sqlite:".$argv[1]);$p->exec("PRAGMA busy_timeout=1000");'
+                        .'function retryBusy($call){for($n=0;;$n++){try{return $call();}catch(PDOException $e){if(($e->errorInfo[1]??null)!==5 || $n>=4)throw $e;usleep(20000);}}}'
+                        .'$s=retryBusy(fn()=>new ForumRewrite\\Messaging\\PrivateMessageHistorySyncStore($p));$n=0;for($i=0;$i<16;$i++)if(retryBusy(fn()=>$s->admit($argv[2],$argv[3],100.0))===0.0)$n++;echo $n;';
                     $proc=proc_open(['php','-r',$code,$path,$sameKey?'shared':'distinct',$sameKey?'one':'key'.$i],[1=>['pipe','w'],2=>['pipe','w']],$pipes);
                     $jobs[]=[$proc,$pipes];
                 }
-                $total=0;
-                foreach($jobs as [$proc,$pipes]) {$out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);assertSame(0,proc_close($proc),$err);$total+=(int)$out;}
+                $total=0;$errors=[];
+                foreach($jobs as [$proc,$pipes]) {$out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);if(proc_close($proc)!==0)$errors[]=$err;$total+=(int)$out;}
+                if($errors!==[])throw new RuntimeException('Admission workers failed: '.implode("\n",$errors));
                 assertSame($sameKey?16:64,$total);
             }
         } finally {unlink($path);}
@@ -267,6 +272,21 @@ foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements
         assertSame(null,$eligible->invoke($service,$received,'bob',str_repeat('a',40)));
         $profiles->exec("UPDATE profiles SET is_approved=0 WHERE public_key='KEY-b'");
         assertSame(null,$eligible->invoke($service,$sent,'bob',str_repeat('b',40)));
+    }
+    public function testSharedCandidateItemsRecheckEachOriginalBeforeBrowserReuse(): void
+    {
+        [,,$sync,$service,$db]=$this->fixture();
+        $input=array_replace($this->uploadInput(),['account'=>'bob','target'=>str_repeat('c',40)]);
+        $input['items'][]=['message_id'=>'m03','digest'=>hash('sha256','cipher-3')];
+        $service->upload($this->viewer('b'),$input);
+        $viewer=$this->viewer('c','bob');
+        $page=$service->transfers($viewer,['message_id'=>'m01']);
+        assertSame(2,count($page['transfers'][0]['items']));
+        $db->exec("UPDATE private_messages SET sender_username_token='mallory' WHERE message_id='m03'");
+        $page=$service->transfers($viewer,['message_id'=>'m01']);
+        assertSame([$input['items'][0]],$page['transfers'][0]['items'],'A valid requested original must not authorize unrelated bundle entries');
+        assertTrue($service->budgetUsage()['decisions']<=160);
+        assertSame(null,$sync->receipt('bob',str_repeat('c',40),'m01',$input['items'][0]['digest']));
     }
     public function testSenderTransferRecoveryRechecksEveryOriginalAndMembership(): void
     {
@@ -506,8 +526,9 @@ foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements
             $store=new PrivateMessageStore(new PDO('sqlite:'.$root.'/messages.sqlite3'));
             $worker='require '.var_export(dirname(__DIR__).'/autoload.php',true).';'
                 .'$pdo=new PDO("sqlite:".$argv[1]);$pdo->exec("PRAGMA busy_timeout=1000");'
-                .'$store=new ForumRewrite\\Messaging\\PrivateMessageHistorySyncStore($pdo);'
-                .'for($i=0;$i<30;$i++){ $store->upload("alice",$argv[2],"target",str_repeat("c",8192).$i,[["message_id"=>"m1","digest"=>str_repeat("a",64)]]);usleep(10000);}';
+                .'function retryBusy($call){for($n=0;;$n++){try{return $call();}catch(PDOException $e){if(($e->errorInfo[1]??null)!==5 || $n>=4)throw $e;usleep(20000);}}}'
+                .'$store=retryBusy(fn()=>new ForumRewrite\\Messaging\\PrivateMessageHistorySyncStore($pdo));'
+                .'for($i=0;$i<30;$i++){ retryBusy(fn()=>$store->upload("alice",$argv[2],"target",str_repeat("c",8192).$i,[["message_id"=>"m1","digest"=>str_repeat("a",64)]]));usleep(10000);}';
             for($i=0;$i<3;$i++) { $proc=proc_open([PHP_BINARY,'-r',$worker,$syncPath,'source'.$i],[1=>['pipe','w'],2=>['pipe','w']],$pipes);$children[]=[$proc,$pipes]; }
             $latencies=[];
             for($i=0;$i<60;$i++) {
@@ -515,7 +536,9 @@ foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements
                 $store->storeEnvelope('m'.$i,'now','bob','alice','key','cipher');$store->unreadStateFor('alice');
                 $latencies[]=(hrtime(true)-$start)/1e6;usleep(10000);
             }
-            foreach($children as [$proc,$pipes]) { $out=stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);assertSame(0,proc_close($proc),$out); }
+            $errors=[];
+            foreach($children as [$proc,$pipes]) { $out=stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);if(proc_close($proc)!==0)$errors[]=$out; }
+            if($errors!==[])throw new RuntimeException('Sync writers failed: '.implode("\n",$errors));
             sort($latencies);assertSame(true,$latencies[56]<250,'Local foreground p95 exceeded 250 ms: '.$latencies[56]);
             assertSame(60,$store->historySyncCount('alice'));
         } finally { foreach(glob($root.'/*') as $file) unlink($file);rmdir($root); }

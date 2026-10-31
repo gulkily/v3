@@ -22,7 +22,10 @@ final class PrivateMessageHistoryRevision
     }
     public static function profileStatements(): array
     {
-        return self::statements('profiles','history_keys',['*'], 'OLD.identity_id IS NOT NEW.identity_id OR OLD.username_token IS NOT NEW.username_token OR OLD.public_key IS NOT NEW.public_key OR OLD.is_approved IS NOT NEW.is_approved');
+        $statements=self::statements('profiles','history_keys',['*'], 'OLD.identity_id IS NOT NEW.identity_id OR OLD.username_token IS NOT NEW.username_token OR OLD.public_key IS NOT NEW.public_key OR OLD.is_approved IS NOT NEW.is_approved');
+        // ReadModelSchema::tableNames derives its rebuild DROP list from CREATE TABLE.
+        $statements[0]=str_replace('CREATE TABLE IF NOT EXISTS','CREATE TABLE',$statements[0]);
+        return $statements;
     }
     public static function ensureEpoch(PDO $pdo, string $prefix): void
     {

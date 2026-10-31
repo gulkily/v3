@@ -96,7 +96,10 @@ final class PrivateMessageHistorySyncStore
             $events=array_values(array_filter($events,static fn($event)=>$event[1]>$now-10 && $event[1]<=$now));
             $own=array_values(array_filter($events,static fn($event)=>$event[0]===$source));
             $retry=max(count($events)>=64?$events[0][1]+10-$now:0, count($own)>=16?$own[0][1]+10-$now:0);
-            if ($retry<=0) $events[]=[$source,$now];
+            // Rejected attempts cannot alter or extend admission, so avoid a
+            // redundant durable write while other clients are being admitted.
+            if ($retry>0) {$this->pdo->exec('COMMIT');return $retry;}
+            $events[]=[$source,$now];
             $q=$this->pdo->prepare('INSERT INTO history_sync_admission VALUES (?,?) ON CONFLICT(account) DO UPDATE SET events=excluded.events');
             $q->execute([$account,json_encode($events,JSON_THROW_ON_ERROR)]);
             $this->pdo->exec('COMMIT');
@@ -116,6 +119,10 @@ final class PrivateMessageHistorySyncStore
         $table=$sender?'history_sync_sender_scan':'history_sync_scan';
         $q=$this->pdo->prepare('INSERT INTO '.$table.' VALUES (?,?,?,?) ON CONFLICT(account,source) DO UPDATE SET target=excluded.target,after_id=excluded.after_id WHERE target!=excluded.target OR after_id!=excluded.after_id');
         $q->execute([$account,$source,$target,$after]);
+    }
+    public function transferItems(string $transfer): array
+    {
+        $q=$this->pdo->prepare('SELECT message_id,digest FROM history_sync_items WHERE transfer_id=? LIMIT 10');$q->execute([$transfer]);return $q->fetchAll();
     }
     public function hasCandidate(string $account, string $target, string $id, string $digest): bool
     {

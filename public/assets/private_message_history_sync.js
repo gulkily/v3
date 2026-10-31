@@ -12,7 +12,10 @@
   function remember(set,key) {if(set.size>=256)set.delete(set.values().next().value);set.add(key);}
   let requestsInFlight=0;const requestWaiters=[];
   let turn=null, continuationTimer=null, retryAt=0;
-  const completedWork=new Set(), candidateCursors=new Map();
+  const completedWork=new Set(), candidateCursors=new Map(), candidateShares=new Map();
+  let candidateTail=Promise.resolve(), shareTimer=null;
+  const foregroundReads=new Set();
+  function clearShares(){clearTimeout(shareTimer);shareTimer=null;candidateShares.clear();}
   function budgetError(){const error=Error('History turn exhausted.');error.budget=true;return error;}
   function cancelContinuation(){clearTimeout(continuationTimer);continuationTimer=null;stats.pending=false;}
   function continueLater(run){
@@ -66,13 +69,30 @@
       throw Error('History synchronization unavailable.');
     } finally {const next=requestWaiters.shift();if(next)next();else requestsInFlight--;}
   }
+  function recovered(messageId,envelope) {
+    if(!valid(generation))return null;
+    const digest=window.ForumPrivateMessageHistoryCrypto.digest(envelope), entry=originals.get(messageId+':'+digest);
+    const run=generation;
+    return entry?.verified?{message_id:messageId,digest,keys:entry.keys,transfer_id:entry.transfer_id,isCurrent:()=>valid(run)}:null;
+  }
   async function candidates(messageId, envelope, run=generation, visit=null) {
     if(!valid(run)) return [];
     const crypto=window.ForumPrivateMessageHistoryCrypto, digest=crypto.digest(envelope);
+    const shared=recovered(messageId,envelope);if(!visit && shared)return [shared];
     const cacheKey=messageId+':'+digest+(visit?':work':'');
     if(candidateRequests.has(cacheKey)) return candidateRequests.get(cacheKey);
     if(!visit)candidateCursors.delete(cacheKey);
+    const previous=candidateTail;let release;
+    candidateTail=new Promise(resolve=>{release=resolve;});
     const promise=(async()=>{
+      await previous;
+      if(!valid(run))throw Error('History identity changed.');
+      const shared=candidateShares.get(messageId+':'+digest);
+      if(shared && (!visit || await visit(shared)))return [shared];
+      // Earlier queued readers may have learned a newer admission deadline.
+      // Check it at the head of the queue, not only before joining the queue.
+      if(!turn && retryAt>Date.now())await new Promise(resolve=>setTimeout(resolve,retryAt-Date.now()));
+      if(!valid(run))throw Error('History identity changed.');
       if(!aborter || (aborter.signal.aborted && !active)) aborter=new AbortController();
       const privateKey=localStorage.getItem('forum_pki_private_key')||'';
       const pgp=await window.__forumBrowserIdentity.ensureOpenPgpApi(['readPrivateKey']);
@@ -85,7 +105,15 @@
           try {
             if(transfer.account!==account || transfer.target!==target) continue;
             const entries=await crypto.unwrapHistoryKeys({account,source_account:transfer.source_account,source:transfer.source,target,privateKey,sourceKey:transfer.source_key,ciphertext:transfer.ciphertext});
-            const entry=entries.find(row=>row.message_id===messageId && row.digest===digest);
+            if(!valid(run))throw Error('History identity changed.');
+            const allowed=Array.isArray(transfer.items)?transfer.items:[{message_id:messageId,digest}];
+            for(const entry of entries) {
+              if(!allowed.some(item=>item.message_id===entry.message_id && item.digest===entry.digest))continue;
+              if(candidateShares.size>=10)candidateShares.delete(candidateShares.keys().next().value);
+              candidateShares.set(entry.message_id+':'+entry.digest,{keys:entry.keys,transfer_id:transfer.transfer_id});
+            }
+            if(JSON.stringify(Array.from(candidateShares.values())).length>65536)candidateShares.clear();
+            const entry=entries.find(row=>row.message_id===messageId && row.digest===digest && allowed.some(item=>item.message_id===row.message_id && item.digest===row.digest));
             if(entry) {
               const candidate={keys:entry.keys,transfer_id:transfer.transfer_id};
               if(visit) {if(await visit(candidate))return [candidate];}
@@ -98,8 +126,25 @@
       } while(after && valid(run));
       if(!valid(run)) throw Error('History identity changed.');
       return result;
-    })().finally(()=>{if(candidateRequests.get(cacheKey)===promise)candidateRequests.delete(cacheKey);});
+    })().finally(()=>{
+      release();if(candidateRequests.get(cacheKey)===promise)candidateRequests.delete(cacheKey);
+      clearTimeout(shareTimer);shareTimer=setTimeout(clearShares,1000);
+    });
     candidateRequests.set(cacheKey,promise);return promise;
+  }
+  async function findCandidate(messageId,envelope,visit) {
+    const run=generation,reading={};foregroundReads.add(reading);
+    try {
+    for(let attempt=0;attempt<2;attempt++) {
+      // Foreground reads may outlive a background turn; let that turn release
+      // its request budget before retrieving retained recovery material.
+      if(active)await active;
+      if(retryAt>Date.now())await new Promise(resolve=>setTimeout(resolve,retryAt-Date.now()));
+      if(!valid(run))return [];
+      try {return await candidates(messageId,envelope,run,visit);}
+      catch(error) {if(attempt || (!error.budget && error.status!==429))throw error;}
+    }
+    } finally {foregroundReads.delete(reading);}
   }
   function confirm(messageId,envelope,transferId='') {
     if(window.ForumPrivateMessageAvailability.isDisabled() || !nav || original!==identity() || document.hidden) return;
@@ -136,10 +181,11 @@
       try {cached.keys=await crypto.extractKeys(row.encrypted_envelope,privateKey);cached.transfer_id='';}
       catch (_) {
         if(row.candidate_available!==false) {
-          await candidates(row.message_id,row.encrypted_envelope,run,async candidate=>{
+          const found=await candidates(row.message_id,row.encrypted_envelope,run,async candidate=>{
             try {await crypto.readOriginal(row.encrypted_envelope,candidate.keys,row.sender_keys);Object.assign(cached,candidate,{verified:true});return true;}
             catch(error) {if(error.historyVerification){Object.assign(cached,candidate);return true;}return false;}
           });
+          if(!cached.keys && found.length)Object.assign(cached,found[0]);
         }
         if(!cached.keys)cached.noAccess=true;
       }
@@ -177,7 +223,7 @@
           catch(error) { if(error.status!==405)throw error;combinedSupported=false; }
           if(result) {
             if(result.mode!=='combined' || result.account!==account || result.source!==fingerprint || !Array.isArray(result.work) || !Array.isArray(result.complete) || typeof result.continuation!=='boolean') throw Error('Invalid combined history work.');
-            if(result.revision && result.revision!==workRevision){clearRecovery();confirmed.clear();completedWork.clear();candidateCursors.clear();workRevision=result.revision;}
+            if(result.revision && result.revision!==workRevision){clearRecovery();confirmed.clear();completedWork.clear();candidateCursors.clear();clearShares();workRevision=result.revision;}
             pending=result.continuation;
             for(const mode of result.complete) {if(!['account','sender'].includes(mode))throw Error('Invalid completed mode.');finished[mode]=true;}
             works=result.work.sort((a,b)=>(a.mode===nextMode?-1:0)-(b.mode===nextMode?-1:0));
@@ -244,7 +290,7 @@
       pending=error.budget || error.status===429;
       if(valid(current))publish(pending?'waiting':'error');
     } finally {
-      clearTimeout(timer);clearRecovery();if(turn===currentTurn)turn=null;
+      clearTimeout(timer);clearRecovery();clearShares();if(turn===currentTurn)turn=null;
       stats.pending=pending && !stalled && valid(current);
       if(stats.pending)continueLater(current);
     }
@@ -254,20 +300,22 @@
     if(original!==identity()) { invalidate();return Promise.resolve(); }
     if(window.ForumPrivateMessageUnread?.historyEligibility() !== true) return Promise.resolve();
     if(active) return active;
+    // A continuation must not take the next budget away from visible readers.
+    if(foregroundReads.size){continueLater(generation);return Promise.resolve();}
     if(!force && Date.now()-lastRun<5000) return Promise.resolve();
     if(Date.now()<retryAt){continueLater(generation);return Promise.resolve();}
     if(!resuming)completedWork.clear();
-    cancelContinuation();lastRun=Date.now();
+    cancelContinuation();stats.pending=true;lastRun=Date.now();
     const execute=()=>run();
     const locks=typeof navigator!=='undefined'?navigator.locks:null;
     let entered=false;
     const task=locks?.request?locks.request('forum-history:'+account+':'+window.ForumPrivateMessageHistoryCrypto.digest(localStorage.getItem('forum_pki_public_key')||''),{ifAvailable:true},lock=>{entered=true;return lock?execute():undefined;}).catch(error=>{if(!entered)return execute();throw error;}):execute();
-    active=Promise.resolve(task).finally(()=>{active=null;});
+    active=Promise.resolve(task).finally(()=>{active=null;if(continuationTimer===null && turn===null)stats.pending=false;});
     return active;
   }
-  function invalidate() { cancelContinuation();completedWork.clear();candidateCursors.clear();retryAt=0;generation++; if(aborter) aborter.abort();verifiedIds.clear();confirmed.clear();clearConfirmations();clearRecovery();stats.verified=0;publish('identity-changed'); }
+  function invalidate() { foregroundReads.clear();cancelContinuation();completedWork.clear();candidateCursors.clear();clearShares();retryAt=0;generation++; if(aborter) aborter.abort();verifiedIds.clear();confirmed.clear();clearConfirmations();clearRecovery();stats.verified=0;publish('identity-changed'); }
   function stop() {
-    cancelContinuation();completedWork.clear();candidateCursors.clear();retryAt=0;generation++;
+    foregroundReads.clear();cancelContinuation();completedWork.clear();candidateCursors.clear();clearShares();retryAt=0;generation++;
     if(aborter)aborter.abort();
     nav=null;
     clearRecovery();confirmed.clear();clearConfirmations();
@@ -294,16 +342,16 @@
       listening=true;
       document.addEventListener('private-messaging-disabled',stop);
       document.addEventListener('private-message-history-eligibility',()=>refresh());
-      window.addEventListener('pagehide',()=>{cancelContinuation();generation++;if(aborter)aborter.abort();clearRecovery();clearConfirmations();});
+      window.addEventListener('pagehide',()=>{foregroundReads.clear();cancelContinuation();generation++;if(aborter)aborter.abort();clearRecovery();clearShares();clearConfirmations();});
       window.addEventListener('pageshow',()=>refresh());
       window.addEventListener('focus',()=>refresh());
       window.addEventListener('storage',event=>{if(event.key===null || ['forum_pki_username','forum_pki_public_key','forum_pki_private_key'].includes(event.key)) invalidate();});
-      document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelContinuation();generation++;if(aborter)aborter.abort();clearRecovery();clearConfirmations();}else refresh();});
+      document.addEventListener('visibilitychange',()=>{if(document.hidden){foregroundReads.clear();cancelContinuation();generation++;if(aborter)aborter.abort();clearRecovery();clearShares();clearConfirmations();}else refresh();});
     }
     const current=generation;
     // Let the cancelled run drain before starting another bounded run.
     return Promise.resolve(active).then(()=>{if(valid(current))return refresh(true);});
   }
-  window.ForumPrivateMessageHistorySync={refresh:()=>refresh(true),state:()=>({...stats}),candidates,confirm,start,stop};
+  window.ForumPrivateMessageHistorySync={refresh:()=>refresh(true),state:()=>({...stats}),candidates,findCandidate,recovered,confirm,start,stop};
   document.addEventListener('DOMContentLoaded',()=>start(document.querySelector('[data-private-message-unread]')));
 })();

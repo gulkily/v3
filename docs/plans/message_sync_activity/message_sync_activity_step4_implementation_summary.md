@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/message_sync_activity — [ledger](../effort_estimation_trial.md#cycle-v3message_sync_activity)
 Extended estimates: enabled
-Status: Revised Step 3 approved; Stage 3 complete; implementation continuing
+Status: Revised Step 3 approved; Stages 1–7 complete; Stage 8 closeout pending
 
 **Cycle estimate: 0.95**
 
@@ -107,3 +107,17 @@ Verification: Documentation diff and local relative-link targets checked; runtim
 - Limits: These are browser/service harness results; natural real-page scale acceptance is Stage 7. A broader run passed 32/33 with a transient concurrent-writer test failure under shared-machine load; that test subsequently passed standalone. No claim of a clean full suite or production acceptance. Sending unchanged; dependency delta zero. Original estimate retained; retrospective reflects candidate-cursor and cancellation integration, not measured labor.
 
 *— Codex · 2026-10-30 UTC*
+
+## Stage 7 - User-flow and scale acceptance
+
+**Original estimate: 0.15**
+**Revised stage-work estimate: 0.25**
+**Retrospective stage work: 0.30**
+
+- Resumption: User requested continued implementation on 2026-10-31. Same approved v2/A scope, original baseline, R1/P2, extended estimates and debug enabled; single exposed Codex rater. All three frozen R1 hashes reverified. Whole-cycle projection 0.95 reaffirmed independently. Stage revision reflects discovered foreground/background integration defects and natural-flow verification, not additional feature scope or measured labor.
+- Corrections under verification: Skip already covered/contributed work before loading verifier keys; authorize each shared candidate bundle item; reuse bounded transient candidates and recovered originals in readers/previews; deduplicate concurrent sender-key lookups. Retry early reads once the viewer becomes known. Foreground recovery waits for the background turn and honors temporary throttling; subsequent background turns yield to pending foreground reads. Corrected the HTTP Retry-After header to use RouteServices’ list-of-header-lines contract. In-place read-model rebuilds include membership revision state in their drop/recreate list; no table/column/index shape change beyond committed schema 40.
+- Verification: 41/41 server/storage/API checks and 16/16 reader/crypto/schema checks pass; commands and limits are in [acceptance.txt](./acceptance.txt). Real same-account and sender-assisted 31-original journeys pass after the corrections, including partial donors, draft-preserving reload, restored-device forwarding, paired restore, ordinary sending during sync outage and signed toggles across themes. Direct retained-transfer reading/reload passes. The 115-real-key journey restores 19 mixed originals without forced refresh, then returns one 245-byte idle response; ordinary sending succeeds during confirmed history 429 with a valid Retry-After header. Desktop/phone overflow checks and screenshots reviewed. Legacy/modern signer-mismatch, both crypto bundles, request/response ceilings, fairness, cancellation and receipt/privacy regressions pass.
+- Environment and failure history: System boot cleanup deleted active /tmp fixtures; later browser runs use TMPDIR=/home/wsl/.cache/v3-message-sync-verification outside the repository. SQLite worker contention exposed retryable SQLITE_BUSY; concurrency tests now drain all workers and retry only that error up to five attempts while preserving fixed-clock aggregate limits and foreground latency assertions. Rejected admissions no longer rewrite unchanged accounting. Earlier natural-flow failures, malformed HTTP header and diagnostic-client timing assumptions are recorded in acceptance.txt. The broader smoke run found an unrelated missing repositoryArchiveDownloadFilename method already absent at pre-change HEAD. No full-suite or production success claim.
+- Notes: Original 0.15 and revised 0.25 preserved; retrospective 0.30 reflects foreground/background scheduling, HTTP and real-flow corrections and verification, not measured labor or added feature scope. Stage 7 includes code, tests and this evidence; Stage 8 remains pending. Sending unchanged; dependency delta zero. Sibling retirement/cap proposals remain separate.
+
+*— Codex · 2026-10-31 UTC*

@@ -183,17 +183,22 @@ final class PrivateMessageHistorySyncService
         $target=$this->key($account,$position['target'])!==null?$position['target']:$first;
         $after=$target===$position['target']?$position['after_id']:'';
         if ($after!=='' && $this->messages->historySyncMessage($account,$after)===null) $after='';
-        $page=$this->messages->historySyncPage($account,$after,self::BATCH_SIZE);
-        $prepared=$this->boundedMessages($page['messages'],$account,$source,'account',$target);
-        if(count($prepared)<count($page['messages'])) { $page['more']=true;$page['last']=$prepared===[]?$after:$prepared[count($prepared)-1]['message_id']; }
+        $remaining=160-$this->decisions;
+        if($remaining<=0)return ['account'=>$account,'source'=>$source,'target'=>$target,'messages'=>[],'checkpoint'=>['target'=>$target,'after_id'=>$after],'cycle_end'=>false];
+        $page=$this->messages->historySyncPage($account,$after,min(self::BATCH_SIZE,$remaining));
+        $needed=[];
+        foreach($page['messages'] as $message) {
+            $message['digest']=hash('sha256',$message['encrypted_envelope']);
+            $receipt=$this->sync->receipt($account,$target,$message['message_id'],$message['digest']);
+            $covered=$receipt!==null && ($receipt['transfer_id']==='' || $this->eligibleSource($message,$account,$receipt['source']??'')!==null);
+            if($covered || ($scheduled && $target!==$source && $this->sync->hasContribution($account,$source,$target,$message['message_id'],$message['digest']))) {$this->decisions++;continue;}
+            $message['covered']=false;$needed[]=$message;
+        }
+        $prepared=$this->boundedMessages($needed,$account,$source,'account',$target);
+        if(count($prepared)<count($needed)) { $page['more']=true;$page['last']=$prepared===[]?$after:$prepared[count($prepared)-1]['message_id']; }
         $next=$page['more']?['target'=>$target,'after_id'=>$page['last']]:['target'=>$this->nextKey($account,$target)??$first,'after_id'=>''];
         if($scheduled) $next['schedule']=['revision'=>$revision,'target'=>$target,'after_id'=>$page['more']?$page['last']:'','finished'=>!$page['more']];
         $messages=$prepared;
-        foreach ($messages as &$message) {
-            $receipt=$this->sync->receipt($account,$target,$message['message_id'],$message['digest']);
-            $message['covered']=$receipt!==null && ($receipt['transfer_id']==='' || $this->eligibleSource($message,$account,$receipt['source']??'')!==null);
-        }
-        unset($message);
         return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$this->key($account,$target), 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
             'checkpoint'=>$next+['verification'=>$this->verificationTokens],'cycle_end'=>!$scheduled && !$this->verificationMore && !$page['more'] && $next['target']===$first, 'total'=>$this->messages->historySyncCount($account)];
     }
@@ -322,6 +327,15 @@ final class PrivateMessageHistorySyncService
             $eligible=$this->eligibleSource($row,$account,$candidate['source']);
             if($eligible===null){$last=$candidate['transfer_id'];continue;}
             $candidate+=$eligible;
+            $candidate['items']=[];
+            foreach($this->sync->transferItems($candidate['transfer_id']) as $item) {
+                $this->decisions++;
+                $original=$this->messages->historySyncMessage($account,$item['message_id']);
+                if(!$original || !hash_equals(hash('sha256',$original['encrypted_envelope']),$item['digest']))continue;
+                $allowed=$this->hasKey($account,$candidate['source']) || ($original['recipient_username_token']===$account && $this->hasKey($original['sender_username_token'],$candidate['source']));
+                if($allowed)$candidate['items'][]=$item;
+            }
+
             $size=strlen(json_encode($candidate,JSON_THROW_ON_ERROR));
             if($bytes+$size>4*1048576-32768){$more=true;break;}
             $result[]=$candidate;$bytes+=$size;$last=$candidate['transfer_id'];

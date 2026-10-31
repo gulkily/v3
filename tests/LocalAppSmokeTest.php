@@ -64,6 +64,17 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testHistoryMembershipRevisionChangesOnRepeatedInPlaceRebuild(): void
+    {
+        $database=sys_get_temp_dir().'/sync-repeat-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            $builder=new ReadModelBuilder($this->repositoryRoot,$database,new CanonicalRecordRepository($this->repositoryRoot));
+            $builder->rebuild();$pdo=new PDO('sqlite:'.$database);
+            $before=$pdo->query("SELECT token FROM history_keys_revision WHERE account='*'")->fetchColumn();
+            $builder->rebuild();$pdo=new PDO('sqlite:'.$database);
+            assertTrue($before!==$pdo->query("SELECT token FROM history_keys_revision WHERE account='*'")->fetchColumn());
+        } finally {@unlink($database);}
+    }
     public function testVersion39StartupBuildsHistoryMembershipRevisions(): void
     {
         $database=sys_get_temp_dir().'/sync-revision-schema-'.bin2hex(random_bytes(6)).'.sqlite3';

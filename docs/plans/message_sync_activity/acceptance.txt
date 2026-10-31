@@ -1,0 +1,32 @@
+Feature: Message synchronization activity and bounded recovery
+Date: 2026-10-31 UTC
+Environment: Local Linux, PHP/SQLite, Node and installed Chromium
+Scope: v2/A; no send restrictions; no dependency additions
+Server checks: 41 passed, 0 failed
+Reader, crypto and schema checks: 16 passed, 0 failed
+Full suite: Not run
+Production replay: Not performed
+Physical devices and other browser engines: Not tested
+
+Server command: php tests/run.php PrivateMessageHistorySyncTest PrivateMessageFeatureFlagTest PrivateMessageMailboxServiceTest PrivateMessageReleaseIsolationTest
+Browser unit command: php tests/run.php PrivateMessageHistoryCryptoTest PrivateMessageReaderTest PrivateMessageListTest LocalAppSmokeTest::testHistoryMembershipRevisionChangesOnRepeatedInPlaceRebuild LocalAppSmokeTest::testVersion39StartupBuildsHistoryMembershipRevisions
+Browser journeys: node tests/browser/private_message_history_sync_browser.mjs; repeat with --sender, --direct and --scale
+Temporary fixture directory: TMPDIR=/home/wsl/.cache/v3-message-sync-verification
+
+Same-account journey: Passed; 31 originals, partial donors, natural visits/reloads, retained draft, pagination, restored-device forwarding, paired restore, ordinary send during sync-store outage, signed feature toggles and deployment overrides
+Sender-assisted journey: Passed; 31 originals, recipient donors absent, restored sender contribution, same recovery/restore/toggle matrix
+Direct transfer journey: Passed; preview, canonical reader and retained reload
+Scale journey: 115 real approved keys, 19 mixed sent/received originals; inactive destination contributions seeded, active target approved through signed APIs
+Forced refresh calls for recovery convergence: 0
+Ordinary send during confirmed history 429: Passed; positive Retry-After response header asserted
+Settled scale visit: One work request, 245-byte response, no candidate or receipt requests and no continuation
+Scale layout: Desktop 1100x800 and phone 375x812; no horizontal overflow; screenshots inspected
+
+Before corrections: Natural partial-donor reload could settle background work while 14 or more visible originals remained load-failed. Foreground reading consumed an exhausted background budget; early viewer discovery could also miss recovery retries.
+After corrections: Both complete 31-original journeys pass, including retained reload, draft preservation and later-device forwarding. Foreground recovery waits for background turns, holds priority over continuations and honors Retry-After; early reads retry once viewer identity becomes known.
+Numeric baseline replay: Not performed; earlier user evidence remains in ../private_message_sync_idle_reload_diagnostic.txt
+
+HTTP correction: A direct API saturation check exposed a malformed Retry-After header. The controller now supplies a complete header line; the browser journey asserts a positive returned delay.
+Failure history: Boot cleanup removed active /tmp fixtures. Subsequent fixtures use the stable temporary directory above. Parallel SQLite workers also encountered retryable SQLITE_BUSY during constructor reads and writes; tests now drain all workers and retry only that error up to five attempts, preserving the fixed admission clock and foreground latency assertion. Runtime admission avoids rewriting unchanged rejected attempts.
+Unrelated broad-smoke failure: LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp references a missing repositoryArchiveDownloadFilename method, also absent at the pre-change HEAD. No clean full-suite claim.
+Resource and trust checks: Focused tests cover legacy/modern 115-key signer mismatch, maximum key material, exact rolling admission, response/key/decision limits, activity priority/fairness, revision invalidation, privacy, signature failure, bad donors, no fabricated receipts, shared candidate authorization, timer budgets, tab lock/cancellation and both bundled crypto versions.
