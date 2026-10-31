@@ -39,3 +39,15 @@ Runtime/UI/deployment/migration checks are inapplicable to documentation changes
 - Estimate details: Original scope unchanged; no revisions. Retrospective stage judgment includes isolated probes and consumer tracing, not independent measured labor. Untraced extensions/custom clients remain coverage gaps.
 
 *— Codex · 2026-10-31 UTC*
+
+## Stage 3 — Publication and maintenance
+
+**Original estimate: 0.18**
+**Retrospective stage work: 0.18**
+
+- Changes: LBS02/LBS03/LBS07/LBS08, offline-browser boundary and import/export/rebuild/queue exceptions in findings; [six maintenance samples](maintenance_results.txt), [archived source](maintenance_probe_source.txt) and reproduction notes.
+- Verification: Actual snapshotThreadRows selection via reflection on isolated fixture: 201 exact IDs including oldest pinned thread; all six samples pass at 128 MiB. 1000/10000 input rows, PHP peak 4/24 MiB. Traced worker dispatch, import planner/archive, export, scoring backfill, source-history and delivered commit/evidence readers; document path/link/whitespace checks passed.
+- Notes: Selection-only evidence omits full snapshot publication, selected-post copying, expansion corpus and size failures. Source-history full-log capture remains after earlier indexCommits improvements. Necessary full validation/export traversal is not classified as safely truncatable. Retraction handoff read; no new guards/diagnostics or trust-policy changes. Browser/native/host dimensions and specialized handlers explicitly deferred.
+- Estimate details: Original scope unchanged, no revisions. Retrospective includes maintenance probe and caller classification; labor remains unmeasured. No runtime/UI/release/migration tests applicable to document delivery.
+
+*— Codex · 2026-10-31 UTC*
