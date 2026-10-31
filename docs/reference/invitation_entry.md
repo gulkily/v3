@@ -69,6 +69,36 @@ link with prior acceptance remains inspectable so its accepted keys can reach
 signed recovery; inspection alone does not grant access or reveal recipients.
 See the [record and upgrade contract](../specs/invitation_record_v1.md).
 
+### Upgrade, backup and recovery
+
+Upgrade every application writer and replay reader before issuing a capped link.
+Older releases assume one redemption. Once multi-use records exist, use compatible
+software for recovery; an old-reader rollback is unsupported. Existing single-use
+records and signatures need no migration.
+
+Keep the canonical invitation posts, signatures and approval-acceptance receipts
+together in trusted backups. The public repository exporter produces a committed
+snapshot under `repository/`; the existing `v3 import-repository` command accepts
+`records/` or `local_repository/records/`. Extract the snapshot and repack its
+`repository/records/` as top-level `records/` before using that CLI. This existing
+layout mismatch is not changed by capped invitations. Keep a full Git backup as
+well when preserving history is required.
+
+Restore into an isolated repository with compatible code, run
+`./v3 import-repository <archive.tar.gz> <repository> <database>` and verify the
+accepted keys and closed links before switching traffic. Full rebuild and trusted
+restore retain accepted counts and grants. Missing multi-use acceptance receipts
+cause rebuild and invitation operations to fail; restore the matching evidence
+from backup rather than deleting redemption records or reopening capacity.
+Ordinary public content import deliberately excludes invitation posts and receipts
+and cannot transfer invitation authority.
+
+After a committed grant's refresh fails, retry the same signed request or the
+original link with the same key. Recovery repairs derived state and consumes no
+extra slot. Resolve persistent repository/refresh failures before enabling new
+writes. Retry a preparation if server clock changes cause an acceptance-time
+rejection; never edit signed timestamps or acceptance receipts to force acceptance.
+
 ## Choosing a username, step by step
 
 The **Account → Choose username** button changes the forum name attached to an

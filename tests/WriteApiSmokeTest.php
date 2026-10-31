@@ -7350,6 +7350,52 @@ NODE;
                 $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $profiles[$n]['identity_id']);
                 assertSame(1, (int) $profile['is_approved']);
             }
+            require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+            $workspace = new ImportTestWorkspace();
+            // Exercise the ordinary exporter, preserving every signed byte. Its existing
+            // repository/ wrapper needs repacking for the legacy import-repository CLI.
+            $export = (new \ForumRewrite\Images\ImageBackup($root, $db))->export('tar.gz');
+            fclose($export['stream']);
+            $unpacked = $workspace->root . '/unpacked'; mkdir($unpacked);
+            [$code, $output] = $workspace->command(['tar', '-xzf', $export['path'], '-C', $unpacked]);
+            assertSame(0, $code, $output);
+            $archive = $workspace->root . '/invites.tar.gz';
+            [$code, $output] = $workspace->command(['tar', '-czf', $archive, '-C', $unpacked . '/repository', 'records']);
+            assertSame(0, $code, $output);
+            $restored = $workspace->repository('restored', true); $workspace->git($restored);
+            $restoreDb = $workspace->root . '/restored.sqlite3';
+            [$code, $output] = $workspace->command([__DIR__ . '/../v3', 'import-repository', $archive, $restored, $restoreDb]);
+            assertSame(0, $code, $output);
+            $restoredWriter = new LocalWriteService($restored, $restoreDb, $workspace->root . '/static', new CanonicalRecordRepository($restored));
+            foreach ([$issue, $first, $claims[$winner - 2], $partialIssue, $partialClaim, $partialRevoke] as $record) {
+                foreach ([$record['record_path'], $record['record_path'] . '.asc'] as $path) {
+                    assertSame(file_get_contents($root . '/' . $path), file_get_contents($restored . '/' . $path));
+                }
+            }
+            foreach ([$first, $claims[$winner - 2], $partialClaim] as $claim) {
+                assertSame(\ForumRewrite\Security\ApprovalAcceptance::read($root, $claim['record_path']),
+                    \ForumRewrite\Security\ApprovalAcceptance::read($restored, $claim['record_path']));
+                assertSame(true, $restoredWriter->finalizePreparedInvitation($claim)['recovered']);
+            }
+            assertSame('used', $restoredWriter->inspectInvitation(str_repeat('a', 32))['state']);
+            assertSame('used', $restoredWriter->inspectInvitation($partialToken)['state']);
+            $target = $workspace->repository('content-target', true); $workspace->git($target);
+            $targetDb = $workspace->root . '/content.sqlite3';
+            $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($root, $target);
+            foreach ([$issue, $first, $partialIssue, $partialClaim] as $record) assertSame('excluded', $plan[$record['record_path']]['state']);
+            $receiptPath = \ForumRewrite\Security\ApprovalAcceptance::path($first['post_id']);
+            assertSame('excluded', $plan[$receiptPath]['state']);
+            $run = (new \ForumRewrite\Import\ContentImportRunner($target, $targetDb))->run($root, static function () use ($target, $targetDb): void {
+                (new ReadModelBuilder($target, $targetDb, new CanonicalRecordRepository($target)))->rebuild();
+            });
+            assertSame('complete', $run['status']);
+            assertFalse(is_file($target . '/' . $issue['record_path']));
+            assertFalse(is_file($target . '/' . $receiptPath));
+            // A damaged restore cannot turn an accepted invitation into fresh capacity.
+            unlink($restored . '/' . $receiptPath);
+            assertThrowsRuntime(fn () => $restoredWriter->inspectInvitation(str_repeat('a', 32)), 'Multi-use invitation acceptance receipt is missing.');
+            assertThrowsRuntime(fn () => (new ReadModelBuilder($restored, $restoreDb, new CanonicalRecordRepository($restored)))->rebuild(),
+                'Multi-use invitation acceptance receipt is missing.');
         } finally {
             foreach ($keys as $key) $this->deleteTree($key['home']);
         }

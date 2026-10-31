@@ -58,3 +58,15 @@ Completion: Signed APIs admit N distinct keys, refuse N+1, recover same-key retr
 - Notes: S3 commit 3e2130a0. Existing dependencies only. Stage retrospective reflects browser replay overhead; whole-cycle projection remains 0.70, independently judged, no measured labor. No visual/theme redesign involved.
 
 *— Codex · 2026-10-31 UTC*
+
+## Stage 5 - S5: Restore and compatibility proof
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.12**
+
+- Changes: Extended signed integration fixture through ordinary ImageBackup export, byte-preserving archive repack and v3 import-repository. Verified restored signed posts/signatures/receipts and same-key recovery; missing receipt blocks both inspection and rebuild. ContentImportPlanner and actual ContentImportRunner exclude invitation authority. Documented upgrade, archive layout, roll-forward and recovery procedures.
+- Verification: Signed multi-redemption integration plus ContentImportPlannerTest and ArchiveExportTest — 26/26 passed. ContentImportRunner has no standalone class matching that filter; it is exercised directly by the integration fixture. Before/after rebuild and restore keep accepted grants and exhausted/revoked states. Legacy invitation restore is covered by the existing signed invitation test (S3).
+- Limitations: Existing public export repository/ wrapper requires repacking to top-level records/ for import-repository; no direct format interoperability fix. Snapshot verification is not a full Git-history restore claim; preserve a separate full-history backup. No deployment/old-reader rollback verified.
+- Notes: S4 commit 60766d25. No import-policy expansion, dependencies, schema or frontend edits. Original estimate unchanged; no measured labor.
+
+*— Codex · 2026-10-31 UTC*
