@@ -2,6 +2,7 @@
   'use strict';
   function notify(form) { form.dispatchEvent(new CustomEvent('forum:image-state')); }
   function clear(form) {
+    if (form.__tweetImageImport) form.__tweetImageImport.cancel();
     const old = form.__imageState;
     if (old && old.url) URL.revokeObjectURL(old.url);
     form.__imageState = null;
@@ -160,5 +161,5 @@
   async function assertEligible(form) {
     if (!await refreshEligibility(form)) throw new Error('Image uploading is unavailable for this identity or connection. Your draft is retained; reconnect or remove the attachment to post text.');
   }
-  window.ForumImageUpload = {bind,select,clear,ready,lock,assertEligible,refreshEligibility,has:form=>Boolean(form.__imageState)};
+  window.ForumImageUpload = {bind,select,clear,ready,lock,assertEligible,refreshEligibility,has:form=>Boolean(form.__imageState || form.__tweetImageImport)};
 })();

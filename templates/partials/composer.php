@@ -48,6 +48,9 @@ HTML;
   <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
     <span data-role="compose-normalization-message"></span>
   </p>
+<?php if (isset($tweetImageImportScriptPath)): ?>
+<?= $partial('partials/tweet_image_import_fields.php') ?>
+<?php endif; ?>
 <?php if ($imageContentEnabled ?? false): ?>
 <?= $partial('partials/image_compose_fields.php', ['imageChooseInMenu' => true]) ?>
 <?php endif; ?>

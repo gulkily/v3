@@ -95,6 +95,9 @@ final class TemplateRenderer
         if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::RAILSPIKE_ENABLED)) {
             $scriptPaths = array_values(array_diff($scriptPaths, ['/assets/railspike_workflow.js']));
         }
+        if ($pageTemplate === 'compose_thread.php') {
+            $pageData['tweetImageImportScriptPath'] = $this->assetPath('/assets/tweet_image_import.js');
+        }
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
         $hasQueryDialog = $pageTemplate === 'codebase_state.php' || !empty($pageData['listingQuery']);
         if ($hasQueryDialog) {

@@ -37,7 +37,11 @@ Planning commit: 616ba190
 
 **Original estimate: 0.20**
 
-Status: pending Stage 2 verification/commit.
+**Retrospective stage work: 0.24**
+
+- Changes: synchronous fingerprinted composer adapter and parser-time binding show import intent before primary actions paint; URL validation, credential/referrer-free bounded streamed download and existing File preparation/preview/signing reused. Pending/failed imports count in canonical uploader.has; explicit clear/replacement cancels stale fetches and removes fragment. Form capture prevents anonymous/native/Outbox paths from silently dropping expected photo. Added image-attachment concept and updated clipping concept.
+- Verification: PASS `node tests/browser/tweet_image_import.mjs`: actual Tools/bookmarklet entry in both modes, source links, query-prefill precedence, pending native/anonymous/Outbox refusal, removal/replacement races, blocked/redirect/oversize/preparation failure/retry, identity/flag failure and normal signed publish retry/readback. Evidence root `/tmp/tweet-image-browser-pcIAj5`. PASS existing image transport check and PHP/JS syntax; focused PHP checks PASS 16/16 after recovering environment (`ImageContentTest`, upload validation, lazy signing, Outbox, renderer media and fingerprint checks).
+- Notes: Stage 2 commit 5712e7d1. Early browser test exposed DOMContentLoaded listener ordering; adapter now explicitly initializes canonical signing after asset readiness. Test environment lacked PHP GD/ZIP and zip executable; extracted outside repo for per-process testing, no project/system installation. Original stage 0.20 retained; retrospective 0.24 for full integration and environment correction, 2026-10-31 UTC, not measured labor. Scope unchanged; live X remains unverified.
 
 ## Stage 4 - Acceptance and documentation
 

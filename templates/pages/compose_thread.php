@@ -1,3 +1,4 @@
+<script src="<?= $e($tweetImageImportScriptPath) ?>"></script>
 <section class="stack compose-page" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>"<?= $notice !== null ? ' data-compose-submitted="1"' : '' ?>>
   <article class="card">
     <h1>New post</h1>
