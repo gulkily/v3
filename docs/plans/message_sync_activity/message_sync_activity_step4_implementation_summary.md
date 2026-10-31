@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/message_sync_activity — [ledger](../effort_estimation_trial.md#cycle-v3message_sync_activity)
 Extended estimates: enabled
-Status: Stages 1–2 committed; Stage 3 paused at compatibility gate; proposed Step 2 revision awaits approval
+Status: Revised Step 3 approved; Stage 3 complete; implementation continuing
 
 **Cycle estimate: 0.95**
 
@@ -43,5 +43,29 @@ Entry: 2026-10-30 UTC; projection 0.95 reaffirmed, scope v1/A, baseline 4b14e622
 - Disposition: Removed the experimental service/schema/startup-test changes; retained the new compatibility regression. Stages 1–2 remain committed (68167edd2, f2c3a8a98). Stage 3 is not complete; Stages 4–8 have not started. No release, idle-traffic, activity-priority, browser-continuation or full recovery claim.
 - Proposed decision: [Reviewable Step 2 revision](./message_sync_activity_compatibility_revision.md) keeps all ceilings, introduces bounded modern verification continuation and explicitly requests approval for upgrade-required errors on legacy requests that cannot fit. This is a proposed compatibility change, not an approved implementation refinement.
 - Study: Original estimates retained; no stage/cycle completion assessment or accepted outcome. Dependency delta zero. No merge, push, deployment or full-suite verification.
+
+*— Codex · 2026-10-30 UTC*
+
+## Planning revision — preserve sending
+
+Date: 2026-10-30 UTC
+Direction: User rejects blocking sends and selects recorded-key-first recovery with bounded fallback. Revised Step 2 records this requirement; no sending change, legacy upgrade requirement or dependency is authorized. The earlier upgrade-required proposal is superseded as a recommendation, with its history retained.
+State: Completed work and estimates unchanged. Legacy compatibility under the resource ceilings remains a Step 3 feasibility check; the revised implementation plan has not been written or approved. No new application changes or runtime acceptance.
+Verification: Documentation diff and local relative-link targets checked; runtime/UI/deployment checks inapplicable to this planning-only revision. Prior runtime evidence remains separately recorded above.
+
+*— Codex · 2026-10-30 UTC*
+
+2026-10-30 UTC — Revised Step 2 approved. Revised Step 3 specifies the recorded-key-first path, bounded verification continuation and legacy checkpoint/timeout acceptance gate. No application work resumed; completed stages and prior failed experiment remain preserved.
+
+## Stage 3 - Bounded retrieval and compatible signer fallback
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.20**
+
+- Changes: Replaced history service full-account public-key materialization with indexed exact/next-key retrieval and a shared 64-key/160-decision request budget. Verification tries the submitting-key hint first and includes bounded alternatives; remaining subsets use private non-secret page state and tokens echoed through existing checkpoints. Timeout checkpoints without tokens retain pending subsets. Progress cannot create access receipts. Transfer and work payloads paginate by encoded size. Updated browser separates successful decryption from signature failure, avoiding unrelated candidate lookups. Sending unchanged.
+- Verification: 31/31 focused history, crypto and schema tests pass; repeated schema check invokes the actual ./v3 rebuild on an isolated fixture and normal application startup upgrades version 38 to 39 before use. Real 115-key fixture recovers an original signed by the final key using the frozen unchanged legacy coordinator and updated coordinator; each response stays under 4 MiB/64 keys/160 decisions. Legacy uses 16 work pages and 15 candidate lookups; updated coordinator uses zero candidate lookups for that case. Tests cover rewritten timeout checkpoints, duplicate old acknowledgments, maximum-sized material, eligibility, revocation, restore, original signature rejection and both existing crypto bundles.
+- Compatibility: No legacy upgrade error or send-time key-match check. The legacy fixture uses later visits after its existing eight-bundle limit; automatic uninterrupted continuation is Stage 6 work, not proven by this compatibility harness. Source fixture retains the project-owned coordinator from 4b14e622f, not a third-party dependency. Broader natural-flow acceptance remains Stage 7.
+- Storage: Additive private verification table holds only current-page identifiers/cursors/tokens, at most ten entries per account/key/mode. Read-model version 39 adds the approved-key traversal index; schema specification/startup regression updated. No private keys, extracted session keys or plaintext persisted.
+- History: Revised planning commit e25676b2e precedes resumed implementation. Earlier withdrawn experiment and failed regression are retained above. Original stage estimate preserved; retrospective reflects extra legacy adapter/testing, not measured labor. Dependency delta zero. No full-suite, production or final traffic acceptance.
 
 *— Codex · 2026-10-30 UTC*

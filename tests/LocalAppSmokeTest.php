@@ -64,6 +64,22 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testVersion38StartupBuildsBoundedSyncKeyIndex(): void
+    {
+        $database=sys_get_temp_dir().'/sync-key-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            exec(escapeshellarg(dirname(__DIR__).'/v3').' rebuild '.escapeshellarg($this->repositoryRoot).' '.escapeshellarg($database),$output,$exit);
+            assertSame(0,$exit,implode("\n",$output));
+            $pdo=new PDO('sqlite:'.$database);
+            $pdo->exec('DROP INDEX profiles_sync_keys');
+            $pdo->exec("UPDATE metadata SET value='38' WHERE key='schema_version'");
+            $app=new Application(dirname(__DIR__),$this->repositoryRoot,$database);
+            assertStringContains('Hello world',$this->render($app,'/threads/root-001'));
+            $pdo=new PDO('sqlite:'.$database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION,$pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame('profiles_sync_keys',$pdo->query("SELECT name FROM sqlite_master WHERE type='index' AND name='profiles_sync_keys'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
     public function testVersion21StartupRebuildsAgentProvenanceBeforeServingPage(): void
     {
         $database = sys_get_temp_dir() . '/agent-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';

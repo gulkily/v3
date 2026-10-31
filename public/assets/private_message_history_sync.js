@@ -84,16 +84,18 @@
   async function ownKeys(row, privateKey, run) {
     const crypto=window.ForumPrivateMessageHistoryCrypto;
     if(crypto.digest(row.encrypted_envelope)!==row.digest) throw Error('Envelope changed.');
-    try {
-      const keys=await crypto.extractKeys(row.encrypted_envelope,privateKey);
-      await crypto.readOriginal(row.encrypted_envelope,keys,row.sender_keys);
-      return {keys,transfer_id:''};
-    } catch (_) {
+    let keys;
+    try { keys=await crypto.extractKeys(row.encrypted_envelope,privateKey); }
+    catch (_) {
       for(const candidate of await candidates(row.message_id,row.encrypted_envelope,run)) {
         try {await crypto.readOriginal(row.encrypted_envelope,candidate.keys,row.sender_keys);return candidate;} catch (_) {}
       }
       throw Error('History not currently recoverable.');
     }
+    // A failed signer subset does not mean the decryption key is missing.
+    // The server checkpoint retains the remaining verification subsets.
+    await crypto.readOriginal(row.encrypted_envelope,keys,row.sender_keys);
+    return {keys,transfer_id:''};
   }
   async function run() {
     const current=generation, crypto=window.ForumPrivateMessageHistoryCrypto;

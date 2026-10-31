@@ -587,3 +587,5 @@ Counts and page/existence queries share `identityEligibility`; existing username
 aggregate interfaces retain their previous behavior. A deleted boundary remains
 usable through key comparisons. An empty positioned list offers first-page
 recovery and a return direction when eligible rows remain.
+
+Schema version 39: Add profiles_sync_keys on profiles(username_token, is_approved, identity_id) for bounded private-message recovery key enumeration. Startup rebuilds prior versions before the query runs; no canonical record change.

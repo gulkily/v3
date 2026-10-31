@@ -8,6 +8,7 @@ final class PrivateMessageHistorySyncStore
     {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_verification (account TEXT NOT NULL, source TEXT NOT NULL, mode TEXT NOT NULL, state TEXT NOT NULL, PRIMARY KEY(account,source,mode))');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_activity (account TEXT NOT NULL, source TEXT NOT NULL, active_at INTEGER NOT NULL, PRIMARY KEY(account,source))');
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_activity_recent ON history_sync_activity(account,active_at DESC,source)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_admission (account TEXT PRIMARY KEY, events TEXT NOT NULL)');
@@ -19,6 +20,18 @@ final class PrivateMessageHistorySyncStore
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_coverage_transfer ON history_sync_coverage(transfer_id)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_sender_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
+    }
+    /** Bounded, non-secret continuation for only the current work page. */
+    public function verification(string $account, string $source, string $mode): array
+    {
+        $q=$this->pdo->prepare('SELECT state FROM history_sync_verification WHERE account=? AND source=? AND mode=?');
+        $q->execute([$account,$source,$mode]);
+        return json_decode($q->fetchColumn() ?: '[]',true,32,JSON_THROW_ON_ERROR);
+    }
+    public function saveVerification(string $account, string $source, string $mode, array $state): void
+    {
+        $q=$this->pdo->prepare('INSERT INTO history_sync_verification VALUES (?,?,?,?) ON CONFLICT(account,source,mode) DO UPDATE SET state=excluded.state');
+        $q->execute([$account,$source,$mode,json_encode($state,JSON_THROW_ON_ERROR)]);
     }
     public function recordActivity(string $account, string $source, int $now): void
     {

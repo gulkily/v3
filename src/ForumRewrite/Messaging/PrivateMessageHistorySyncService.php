@@ -7,6 +7,83 @@ use InvalidArgumentException;
 final class PrivateMessageHistorySyncService
 {
     public const BATCH_SIZE = 10;
+    private array $keyCache=[];
+    private int $keyLoads=0;
+    private int $decisions=0;
+    private function resetBudget(): void { $this->keyCache=[];$this->keyLoads=0;$this->decisions=0; }
+    public function budgetUsage(): array { return ['keys'=>$this->keyLoads,'decisions'=>$this->decisions]; }
+    private function key(string $account, string $fingerprint): ?string
+    {
+        if (!preg_match('/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/D',$fingerprint)) return null;
+        $id=$account.':'.$fingerprint;
+        if (array_key_exists($id,$this->keyCache)) {
+            $q=$this->profiles->prepare('SELECT 1 FROM profiles WHERE identity_id=? AND username_token=? AND is_approved=1');
+            $q->execute(['openpgp:'.$fingerprint,$account]);
+            return $q->fetchColumn()===false?null:$this->keyCache[$id];
+        }
+        if ($this->keyLoads>=64) throw new RuntimeException('History key budget exhausted. Retry bounded discovery.');
+        $q=$this->profiles->prepare('SELECT substr(public_key,1,1048577) FROM profiles WHERE identity_id=? AND username_token=? AND is_approved=1');
+        $q->execute(['openpgp:'.$fingerprint,$account]);
+        $key=$q->fetchColumn();$this->keyLoads++;
+        if (is_string($key) && strlen($key)>1048576) throw new RuntimeException('Public key exceeds the canonical armor limit.');
+        return $this->keyCache[$id]=$key===false || trim($key)===''?null:$key;
+    }
+    private function nextKey(string $account, string $after = ''): ?string
+    {
+        $q=$this->profiles->prepare("SELECT identity_id FROM profiles WHERE username_token=? AND is_approved=1 AND identity_id>? AND identity_id LIKE 'openpgp:%' AND public_key!='' ORDER BY identity_id LIMIT 1");
+        $q->execute([$account,'openpgp:'.$after]);
+        $id=$q->fetchColumn();return $id===false?null:substr($id,8);
+    }
+    private array $verificationTokens=[];
+    private bool $verificationMore=false;
+    private function boundedMessages(array $rows, string $account, string $source, string $mode, string $target): array
+    {
+        $messages=[];$bytes=0;$this->verificationTokens=[];$this->verificationMore=false;
+        $state=$this->sync->verification($account,$source,$mode);
+        $updated=[];
+        foreach($rows as $row) {
+            if($this->decisions>=160 || $this->keyLoads>=48) break;
+            $this->decisions++;
+            $digest=hash('sha256',$row['encrypted_envelope']);
+            $binding=hash('sha256',$target.':'.$row['message_id'].':'.$digest);
+            $prior=$state[$binding]??['after'=>''];
+            $page=$this->verificationKeys($row,$prior['after']);
+            $row['sender_keys']=$page['keys'];$row['digest']=$digest;
+            $row['verification_more']=$page['more'];
+            $size=strlen(json_encode($row,JSON_THROW_ON_ERROR));
+            // Canonical armor is ASCII; reserve a maximum target key and framing.
+            if ($bytes+$size>3*1048576-32768) break;
+            $messages[]=$row;$bytes+=$size;
+            $token=hash('sha256',$binding.':'.$prior['after'].':'.$page['after']);
+            $updated[$binding]=['after'=>$prior['after'],'pending'=>$page['after'],'more'=>$page['more'],'token'=>$token,'id'=>$row['message_id']];
+            $this->verificationTokens[$binding]=$token;
+            $this->verificationMore=$this->verificationMore || $page['more'];
+        }
+        $this->sync->saveVerification($account,$source,$mode,$updated);
+        return $messages;
+    }
+    private function verificationKeys(array $message, string $after): array
+    {
+        $account=$message['sender_username_token'];$keys=[];$bytes=0;
+        $hint=str_starts_with($message['sender_identity_id']??'','openpgp:')?substr($message['sender_identity_id'],8):'';
+        if ($after==='' && $hint!=='') {
+            $key=$this->key($account,$hint);
+            if($key!==null) { $keys[]=$key;$bytes=strlen(json_encode($key,JSON_THROW_ON_ERROR)); }
+        }
+        // Keep the hint first, but never treat it as proof of the encrypted signer.
+        $cursor=$after;
+        while(count($keys)<8 && $this->keyLoads<48) {
+            $next=$this->nextKey($account,$cursor);
+            if($next===null) return ['keys'=>$keys,'after'=>$cursor,'more'=>false];
+            if($next===$hint) {$cursor=$next;continue;}
+            $key=$this->key($account,$next);
+            $size=strlen(json_encode($key,JSON_THROW_ON_ERROR));
+            if($bytes+$size>1048576+32768)break;
+            if($key!==null){$keys[]=$key;$bytes+=$size;}
+            $cursor=$next;
+        }
+        return ['keys'=>$keys,'after'=>$cursor,'more'=>$this->nextKey($account,$cursor)!==null];
+    }
     public function __construct(private readonly PrivateMessageStore $messages, private readonly PrivateMessageHistorySyncStore $sync, private readonly PDO $profiles) {}
     public function admit(array $viewer, ?float $now = null): float
     {
@@ -16,19 +93,9 @@ final class PrivateMessageHistorySyncService
     {
         $account=strtolower(trim((string)($viewer['username_token']??'')));
         $source=strtolower(substr((string)($viewer['identity_id']??''),8));
-        $keys=$this->keys($account);
-        if (($viewer['is_approved']??0)!=1 || !str_starts_with((string)($viewer['identity_id']??''),'openpgp:') || !isset($keys[$source])) throw new RuntimeException('An approved authenticated account key is required.');
-        return [$account,$source,$keys];
-    }
-    private function keys(string $account): array
-    {
-        $keys=[];
-        foreach ((new ApprovedUserKeyResolver())->keysForUsernameToken($this->profiles,$account) as $key) {
-            $fp=strtolower(substr($key['identity_id'],8));
-            if (str_starts_with($key['identity_id'],'openpgp:') && preg_match('/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/D',$fp)) $keys[$fp]=$key['public_key'];
-        }
-        ksort($keys);
-        return $keys;
+        $key=$this->key($account,$source);
+        if (($viewer['is_approved']??0)!=1 || !str_starts_with((string)($viewer['identity_id']??''),'openpgp:') || $key===null) throw new RuntimeException('An approved authenticated account key is required.');
+        return [$account,$source];
     }
     // Derive authorization from the original, never from donor-supplied account claims.
     private function eligibleSource(array $message, string $destinationAccount, string $sourceFingerprint): ?array
@@ -37,52 +104,58 @@ final class PrivateMessageHistorySyncService
         $accounts=[$destinationAccount];
         if ($message['recipient_username_token']===$destinationAccount) $accounts[]=$message['sender_username_token'];
         foreach (array_unique($accounts) as $account) {
-            $keys=$this->keys($account);
-            if (isset($keys[$sourceFingerprint])) return ['source_account'=>$account, 'source_key'=>$keys[$sourceFingerprint]];
+            $key=$this->key($account,$sourceFingerprint);
+            if ($key!==null) return ['source_account'=>$account, 'source_key'=>$key];
         }
         return null;
     }
     public function work(array $viewer, mixed $mode = 'account'): array
     {
+        $this->resetBudget();
+        return $this->accountWork($viewer,$mode);
+    }
+    private function accountWork(array $viewer, mixed $mode = 'account'): array
+    {
         if(!in_array($mode,['account','sender'],true)) throw new InvalidArgumentException('Invalid history work mode.');
         if($mode==='sender') return $this->senderWork($viewer);
-        [$account,$source,$keys]=$this->context($viewer);
+        [$account,$source]=$this->context($viewer);
         $position=$this->sync->checkpoint($account,$source);
-        $targets=array_keys($keys);
-        $target=isset($keys[$position['target']])?$position['target']:$targets[0];
+        $first=$this->nextKey($account);
+        $target=$this->key($account,$position['target'])!==null?$position['target']:$first;
         $after=$target===$position['target']?$position['after_id']:'';
         if ($after!=='' && $this->messages->historySyncMessage($account,$after)===null) $after='';
         $page=$this->messages->historySyncPage($account,$after,self::BATCH_SIZE);
-        $next=$page['more']?['target'=>$target,'after_id'=>$page['last']]:['target'=>$targets[(array_search($target,$targets,true)+1)%count($targets)],'after_id'=>''];
-        $messages=$page['messages'];
-        $senderKeys=[];
+        $prepared=$this->boundedMessages($page['messages'],$account,$source,'account',$target);
+        if(count($prepared)<count($page['messages'])) { $page['more']=true;$page['last']=$prepared===[]?$after:$prepared[count($prepared)-1]['message_id']; }
+        $next=$page['more']?['target'=>$target,'after_id'=>$page['last']]:['target'=>$this->nextKey($account,$target)??$first,'after_id'=>''];
+        $messages=$prepared;
         foreach ($messages as &$message) {
-            $sender=$message['sender_username_token'];
-            $senderKeys[$sender]??=array_values($this->keys($sender));
-            $message['sender_keys']=$senderKeys[$sender];
-            $message['digest']=hash('sha256',$message['encrypted_envelope']);
             $receipt=$this->sync->receipt($account,$target,$message['message_id'],$message['digest']);
             $message['covered']=$receipt!==null && ($receipt['transfer_id']==='' || $this->eligibleSource($message,$account,$receipt['source']??'')!==null);
         }
         unset($message);
-        return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$keys[$target], 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
-            'checkpoint'=>$next,'cycle_end'=>!$page['more'] && $next['target']===$targets[0], 'total'=>$this->messages->historySyncCount($account)];
+        return ['account'=>$account,'source'=>$source,'target'=>$target,'target_key'=>$this->key($account,$target), 'messages'=>array_values(array_filter($messages,static fn($row)=>!$row['covered'])),
+            'checkpoint'=>$next+['verification'=>$this->verificationTokens],'cycle_end'=>!$this->verificationMore && !$page['more'] && $next['target']===$first, 'total'=>$this->messages->historySyncCount($account)];
     }
     public function combinedWork(array $viewer, mixed $finished = []): array
     {
+        $this->resetBudget();
         if (!is_array($finished) || !array_is_list($finished) || count($finished)>2 || array_filter($finished,fn($mode)=>!is_string($mode) || !in_array($mode,['account','sender'],true))!==[]) throw new InvalidArgumentException('Invalid completed modes.');
         [$account,$source]=$this->context($viewer);
         $bundles=[];$complete=$finished;
         foreach (['account','sender'] as $mode) {
             if (in_array($mode,$finished,true)) continue;
             // Bounded discovery can advance covered pages, but never client work or access receipts.
-            for ($page=0;$page<8;$page++) {
-                $work=$mode==='sender'?$this->senderWork($viewer,true):$this->work($viewer);
+            for ($page=0;$page<8 && $this->decisions<150 && $this->keyLoads<40;$page++) {
+                $work=$mode==='sender'?$this->senderWork($viewer,true):$this->accountWork($viewer);
                 if ($mode==='account' && $work['target']!==$source) {
                     $work['messages']=array_values(array_filter($work['messages'],fn($row)=>!$this->sync->hasContribution($account,$source,$work['target'],$row['message_id'],$row['digest'])));
                 }
                 $work['mode']=$mode;
-                if ($work['messages']!==[]) { $bundles[]=$work;break; }
+                if ($work['messages']!==[]) {
+                    if(strlen(json_encode($bundles,JSON_THROW_ON_ERROR))+strlen(json_encode($work,JSON_THROW_ON_ERROR))<4*1048576-8192) $bundles[]=$work;
+                    break;
+                }
                 $next=$work['checkpoint'];
                 $this->sync->advance($account,$source,$next['target'],$next['after_id'],$mode==='sender');
                 if ($work['cycle_end']) { $complete[]=$mode;break; }
@@ -93,30 +166,28 @@ final class PrivateMessageHistorySyncService
     }
     private function senderWork(array $viewer, bool $skipContributed = false): array
     {
-        [$account,$source,$keys]=$this->context($viewer);
+        [$account,$source]=$this->context($viewer);
         $position=$this->sync->checkpoint($account,$source,true);
         $anchor=$position['after_id']===''?null:$this->messages->historySyncMessage($account,$position['after_id']);
         if($position['after_id']!=='' && (!$anchor || $anchor['sender_username_token']!==$account)) $position=['target'=>'','after_id'=>''];
         $page=$this->messages->historySyncSentPage($account,$position['after_id'],self::BATCH_SIZE);
         $destination=$page['messages'][0]['recipient_username_token']??'';
-        $targetKeys=$destination===''?[]:$this->keys($destination);
-        $targets=array_keys($targetKeys);
-        $target=isset($targetKeys[$position['target']])?$position['target']:($targets[0]??'');
+        $target=$destination===''?'':($this->key($destination,$position['target'])!==null?$position['target']:($this->nextKey($destination)??''));
+        $prepared=$this->boundedMessages($page['messages'],$account,$source,'sender',$target);
+        if(count($prepared)<count($page['messages'])) { $page['more']=true;$page['last']=$prepared===[]?$position['after_id']:$prepared[count($prepared)-1]['message_id']; }
         $messages=[];
-        foreach($page['messages'] as $message) {
+        foreach($prepared as $message) {
             // A bundle has exactly one recipient account; all keys get a turn before advancing history.
             if($message['recipient_username_token']!==$destination) break;
-            $message['sender_keys']=array_values($keys);
-            $message['digest']=hash('sha256',$message['encrypted_envelope']);
             $messages[]=$message;
         }
         $last=$messages===[]?'':$messages[count($messages)-1]['message_id'];
-        $nextKey=$target===''?null:($targets[array_search($target,$targets,true)+1]??null);
+        $nextKey=$target===''?null:$this->nextKey($destination,$target);
         $end=$nextKey===null && !$page['more'] && $last===$page['last'];
         $next=$nextKey!==null?['target'=>$nextKey,'after_id'=>$position['after_id']]:['target'=>'','after_id'=>$end?'':$last];
         // Never consult recipient coverage: sender work must not reveal recovery or read activity.
         return ['mode'=>'sender','source_account'=>$account,'account'=>$destination,'source'=>$source,'target'=>$target,
-            'target_key'=>$targetKeys[$target]??null,'messages'=>$target===''?[]:array_values(array_filter($messages, fn($row)=>!$skipContributed || !$this->sync->hasContribution($destination,$source,$target,$row['message_id'],$row['digest']))),'checkpoint'=>$next,'cycle_end'=>$end];
+            'target_key'=>$target===''?null:$this->key($destination,$target),'messages'=>$target===''?[]:array_values(array_filter($messages, fn($row)=>!$skipContributed || !$this->sync->hasContribution($destination,$source,$target,$row['message_id'],$row['digest']))),'checkpoint'=>$next+['verification'=>$this->verificationTokens],'cycle_end'=>!$this->verificationMore && $end];
     }
     private function items(string $account, mixed $items): array
     {
@@ -134,12 +205,12 @@ final class PrivateMessageHistorySyncService
     }
     public function upload(array $viewer, array $input): array
     {
-        [$account,$source,$keys]=$this->context($viewer);
+        $this->resetBudget();
+        [$account,$source]=$this->context($viewer);
         $destination=$input['account']??$account;
         if(!is_string($destination)) throw new InvalidArgumentException('Invalid destination account.');
-        $destinationKeys=$destination===$account?$keys:$this->keys($destination);
         $target=$input['target']??null;$ciphertext=$input['ciphertext']??null;
-        if(!is_string($target) || !isset($destinationKeys[$target]) || $target===$source) throw new InvalidArgumentException('Target must be another approved account key.');
+        if(!is_string($target) || $this->key($destination,$target)===null || $target===$source) throw new InvalidArgumentException('Target must be another approved account key.');
         if(!is_string($ciphertext) || strlen($ciphertext)>65536 || !str_starts_with($ciphertext,'-----BEGIN PGP MESSAGE-----') || !str_contains($ciphertext,'-----END PGP MESSAGE-----')) throw new InvalidArgumentException('Invalid encrypted history transfer.');
         $items=$this->items($destination,$input['items']??null);
         foreach($items as $item) {
@@ -153,7 +224,8 @@ final class PrivateMessageHistorySyncService
     }
     public function transfers(array $viewer, array $query): array
     {
-        [$account,$target,$keys]=$this->context($viewer);
+        $this->resetBudget();
+        [$account,$target]=$this->context($viewer);
         $id=$query['message_id']??null;$after=$query['after']??'';
         if(!is_string($id) || strlen($id)>128 || !is_string($after) || ($after!=='' && !preg_match('/^[a-f0-9]{64}$/D',$after))) throw new InvalidArgumentException('Invalid transfer query.');
         $row=$this->messages->historySyncMessage($account,$id);
@@ -161,15 +233,21 @@ final class PrivateMessageHistorySyncService
         $digest=hash('sha256',$row['encrypted_envelope']);
         $rows=$this->sync->candidates($account,$target,$id,$digest,$after);
         $more=count($rows)>10;$rows=array_slice($rows,0,10);
-        $next=$more?$rows[count($rows)-1]['transfer_id']:null;
-        $rows=array_values(array_filter($rows,fn($r)=>$this->eligibleSource($row,$account,$r['source'])!==null));
-        foreach($rows as &$r) $r+=$this->eligibleSource($row,$account,$r['source']);
-        unset($r);
-        return ['account'=>$account,'target'=>$target,'message_id'=>$id,'digest'=>$digest,'transfers'=>$rows,'next'=>$next];
+        $result=[];$bytes=0;$last=$after;
+        foreach($rows as $candidate) {
+            $eligible=$this->eligibleSource($row,$account,$candidate['source']);
+            if($eligible===null){$last=$candidate['transfer_id'];continue;}
+            $candidate+=$eligible;
+            $size=strlen(json_encode($candidate,JSON_THROW_ON_ERROR));
+            if($bytes+$size>4*1048576-32768){$more=true;break;}
+            $result[]=$candidate;$bytes+=$size;$last=$candidate['transfer_id'];
+        }
+        return ['account'=>$account,'target'=>$target,'message_id'=>$id,'digest'=>$digest,'transfers'=>$result,'next'=>$more?$last:null];
     }
     public function acknowledge(array $viewer, array $input): array
     {
-        [$account,$source,$keys]=$this->context($viewer);
+        $this->resetBudget();
+        [$account,$source]=$this->context($viewer);
         $items=$this->items($account,$input['items']??[]);
         foreach($items as $item) {
             if($item['transfer_id']==='') continue; // authenticated target reports verified direct access
@@ -181,7 +259,7 @@ final class PrivateMessageHistorySyncService
         if(!in_array($mode,['account','sender'],true)) throw new InvalidArgumentException('Invalid history work mode.');
         if($checkpoint!==null) {
             if(!is_array($checkpoint) || !is_string($checkpoint['target']??null) || !is_string($checkpoint['after_id']??null) || strlen($checkpoint['after_id'])>128) throw new InvalidArgumentException('Invalid scan checkpoint.');
-            if($mode==='account' && !isset($keys[$checkpoint['target']])) throw new InvalidArgumentException('Invalid scan target.');
+            if($mode==='account' && $this->key($account,$checkpoint['target'])===null) throw new InvalidArgumentException('Invalid scan target.');
             if($mode==='sender') {
                 if($checkpoint['target']!=='' && !preg_match('/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/D',$checkpoint['target'])) throw new InvalidArgumentException('Invalid scan target.');
                 $anchor=$checkpoint['after_id']===''?null:$this->messages->historySyncMessage($account,$checkpoint['after_id']);
@@ -189,7 +267,22 @@ final class PrivateMessageHistorySyncService
             }
         }
         if($items!==[]) $this->sync->acknowledge($account,$source,$items);
-        if($checkpoint!==null) $this->sync->advance($account,$source,$checkpoint['target'],$checkpoint['after_id'],$mode==='sender');
+        if($checkpoint!==null) {
+            $state=$this->sync->verification($account,$source,$mode);$pending=false;
+            foreach($state as $binding=>&$entry) {
+                $token=$checkpoint['verification'][$binding]??null;
+                $verified=in_array($entry['id'],array_column($items,'message_id'),true);
+                if($verified) {$entry['more']=false;continue;}
+                if($entry['more']) {
+                    $pending=true;
+                    if(is_string($token) && hash_equals($entry['token'],$token)) $entry['after']=$entry['pending'];
+                }
+            }
+            unset($entry);
+            $this->sync->saveVerification($account,$source,$mode,$pending?$state:[]);
+            // Old timeout checkpoints omit the token: retain work rather than skip a key page.
+            if(!$pending) $this->sync->advance($account,$source,$checkpoint['target'],$checkpoint['after_id'],$mode==='sender');
+        }
         return ['confirmed'=>count($items)];
     }
 }

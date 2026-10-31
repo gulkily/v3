@@ -35,6 +35,50 @@ final class PrivateMessageHistorySyncTest
         $outgoing=array_values(array_filter($work['messages'],static fn($row)=>$row['sender_username_token']==='alice'));
         assertSame(true,in_array('KEY-b',$outgoing[0]['sender_keys'],true),'Submission identity must not exclude another approved original signer');
     }
+    public function testBoundedVerificationVisitsLaterKeysAndRetainsTimeoutWork(): void
+    {
+        [$profiles,$messages,$sync,$service,$db]=$this->fixture(115);
+        $db->exec("DELETE FROM private_messages");
+        $messages->storeEnvelope('m1','now','alice','bob','openpgp:'.str_repeat('a',40),'cipher');
+        $seen=[];$prior=null;$more=true;$rounds=0;
+        while($more) {
+            $work=$service->work($this->viewer());
+            assertSame(true,strlen(json_encode($work))<=4*1048576);
+            assertSame(true,$service->budgetUsage()['keys']<=64);
+            $row=$work['messages'][0];
+            if($rounds===0) {
+                assertSame('KEY-a',$row['sender_keys'][0]);
+                $service->acknowledge($this->viewer(),['checkpoint'=>['target'=>$work['target'],'after_id'=>'m1']]);
+                assertSame($row['sender_keys'],$service->work($this->viewer())['messages'][0]['sender_keys'],'Timeout must retain untried verification work');
+            }
+            $seen=array_merge($seen,$row['sender_keys']);
+            $more=$row['verification_more'];
+            $service->acknowledge($this->viewer(),['checkpoint'=>$work['checkpoint']]);
+            if($prior!==null) {
+                $service->acknowledge($this->viewer(),['checkpoint'=>$prior]);
+                // Duplicate old token cannot skip the newer pending key subset.
+            }
+            $prior=$work['checkpoint'];
+            assertSame(true,++$rounds<30);
+        }
+        assertSame(115,count(array_unique($seen)));
+        assertSame(null,$sync->receipt('alice',str_repeat('a',40),'m1',hash('sha256','cipher')),'Scan progress cannot fabricate readability');
+    }
+    public function testMaximumArmorVerificationMaterialYieldsBoundedProgress(): void
+    {
+        [$profiles,$messages,,$service,$db]=$this->fixture();
+        $large='-----BEGIN PGP PUBLIC KEY BLOCK-----'.str_repeat('A',1048400).'-----END PGP PUBLIC KEY BLOCK-----';
+        $q=$profiles->prepare("UPDATE profiles SET public_key=? WHERE username_token='alice'");$q->execute([$large]);
+        $db->exec('DELETE FROM private_messages');
+        $messages->storeEnvelope('m1','now','alice','bob','openpgp:'.str_repeat('a',40),str_repeat('A',1048500));
+        $work=$service->work($this->viewer());
+        assertSame(true,strlen(json_encode($work))<=4*1048576);
+        assertSame(true,count($work['messages'][0]['sender_keys'])>0);
+        assertSame(true,$work['messages'][0]['verification_more']);
+        $service->acknowledge($this->viewer(),['checkpoint'=>$work['checkpoint']]);
+        $next=$service->work($this->viewer());
+        assertSame(false,$next['messages'][0]['verification_more']);
+    }
     public function testActivityIsPrivateCoalescedAndNotPromotedBySync(): void
     {
         [,,$sync,$service]=$this->fixture();
