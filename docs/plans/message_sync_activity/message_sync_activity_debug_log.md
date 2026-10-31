@@ -85,3 +85,23 @@ Checks: Documentation-only scope, local file targets and git diff --check. Runti
 Handoff: Request Approved Step 3; then commit revised planning on the existing branch and resume Stage 3. No restart of completed stages or sibling cycles.
 
 *— Codex · 2026-10-30 UTC*
+
+## Step 4 closeout diagnostic — 2026-10-31 UTC
+
+### Necessary/useful instructions
+
+- Source: Step 3 completion contract and step4_implementation_do.md. Contribution: natural 115-key and partial-donor journeys exposed real HTTP-header and foreground/background scheduling defects that narrower service tests missed; stage-scoped commits kept acceptance before operations closeout. Suggestion: retain explicit whole-flow verification and honest limits.
+- Source: host CONTRIBUTING.md and Step 3 compatibility gate. Contribution: retained old clients and send acceptance, exercised derived-schema startup/in-place rebuild and documented additive-store rollback. Suggestion: retain.
+- Source: RAILSPIKE.md study recovery and scope preservation. Contribution: retained the withdrawn compatibility experiment, original scores, corrected failures, separate retirement/cap proposals and pending maintainer judgment. Suggestion: retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- The original Stage 7 projection understated integration corrections; the preserved 0.15 original, 0.25 revision and 0.30 retrospective record that uncertainty without treating time or line counts as an effort measure.
+
+Verification: 57 focused checks, real same-account/sender/direct/115-key browser journeys, API throttling with continued sending, store lifecycle smoke and documentation checks. Earlier failures and environment limitations are retained in acceptance.txt. Zero dependencies. No full-suite or production acceptance, merge or push; maintainer study judgment remains pending.
+
+*— Codex · 2026-10-31 UTC*

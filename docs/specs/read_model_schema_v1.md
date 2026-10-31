@@ -33,7 +33,7 @@ Adding a **table** needs only its `CREATE TABLE` statement in
 (`ReadModelBuilder::dropSchema()`) derives the tables to drop from
 `ReadModelSchema::tableNames()` (parsed from those statements), so a new table is
 dropped-and-recreated on in-place rebuild automatically — there is no separate
-drop list to keep in sync. (A forgotten entry previously caused in-place rebuilds
+drop list to keep in sync. Shared schema helpers must emit plain `CREATE TABLE` for this read-model path, rather than `CREATE TABLE IF NOT EXISTS`, so the table-name parser includes their tables. (A forgotten entry previously caused in-place rebuilds
 to fail with `table <name> already exists`.) Indexes need no drop step; dropping
 a table drops its indexes. Read-model tables declare no foreign keys, so drop
 order is immaterial.

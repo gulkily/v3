@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/message_sync_activity — [ledger](../effort_estimation_trial.md#cycle-v3message_sync_activity)
 Extended estimates: enabled
-Status: Revised Step 3 approved; Stages 1–7 complete; Stage 8 closeout pending
+Status: All eight stages locally complete; deployment and maintainer study acceptance pending
 
 **Cycle estimate: 0.95**
 
@@ -119,5 +119,25 @@ Verification: Documentation diff and local relative-link targets checked; runtim
 - Verification: 41/41 server/storage/API checks and 16/16 reader/crypto/schema checks pass; commands and limits are in [acceptance.txt](./acceptance.txt). Real same-account and sender-assisted 31-original journeys pass after the corrections, including partial donors, draft-preserving reload, restored-device forwarding, paired restore, ordinary sending during sync outage and signed toggles across themes. Direct retained-transfer reading/reload passes. The 115-real-key journey restores 19 mixed originals without forced refresh, then returns one 245-byte idle response; ordinary sending succeeds during confirmed history 429 with a valid Retry-After header. Desktop/phone overflow checks and screenshots reviewed. Legacy/modern signer-mismatch, both crypto bundles, request/response ceilings, fairness, cancellation and receipt/privacy regressions pass.
 - Environment and failure history: System boot cleanup deleted active /tmp fixtures; later browser runs use TMPDIR=/home/wsl/.cache/v3-message-sync-verification outside the repository. SQLite worker contention exposed retryable SQLITE_BUSY; concurrency tests now drain all workers and retry only that error up to five attempts while preserving fixed-clock aggregate limits and foreground latency assertions. Rejected admissions no longer rewrite unchanged accounting. Earlier natural-flow failures, malformed HTTP header and diagnostic-client timing assumptions are recorded in acceptance.txt. The broader smoke run found an unrelated missing repositoryArchiveDownloadFilename method already absent at pre-change HEAD. No full-suite or production success claim.
 - Notes: Original 0.15 and revised 0.25 preserved; retrospective 0.30 reflects foreground/background scheduling, HTTP and real-flow corrections and verification, not measured labor or added feature scope. Stage 7 includes code, tests and this evidence; Stage 8 remains pending. Sending unchanged; dependency delta zero. Sibling retirement/cap proposals remain separate.
+
+*— Codex · 2026-10-31 UTC*
+
+## Stage 8 - Compatibility, operations and closeout
+
+**Original estimate: 0.06**
+**Retrospective stage work: 0.06**
+
+- Changes: Updated the existing history API/operations guide for activity priority, persistent completion, bounded signer fallback, continuation, foreground priority, exact admission/response/turn ceilings, additive private state, retention and rollback. Added the two touched concept entries and clarified the read-model helper declaration needed for correct in-place rebuilds. Stage 7 implementation is committed as 733b180b0.
+- Verification: Seven store lifecycle checks pass using the actual pre-cycle store class from 4b14e622f (renamed only to coexist with the current class): old store -> current store -> old store -> current store preserves encrypted transfer material, receipt and checkpoint, initializes new metadata and passes integrity_check. Frozen legacy and updated real-key recovery already pass in Stage 7. Isolated ./v3 rebuild, version-39 startup and repeated in-place rebuild tests pass. Local documentation links, changed-file scope and git diff --check verified. No new runtime dependency or schema shape in this documentation stage.
+- Limits: Store rollback is not a full previous-release deployment rehearsal. No production replay, physical mobile-device check, additional browser engine, full-suite pass, merge, push or deployment is claimed. The unrelated broad-smoke missing-method failure and earlier corrected/intermittent failures remain in [acceptance.txt](./acceptance.txt). The user's eventual recovery report and original diagnostic remain preserved.
+
+## Study closeout and release state
+
+**Original whole-cycle projection: 0.95**
+**Retrospective cycle scope: 1.00**
+
+Study: railspike-effort / v3/message_sync_activity; v2/A; original baseline 4b14e622f3cca6cb8f041145fd1df954bacc74e4; R1/P2; extended estimates enabled; single exposed Codex rater. Frozen hashes reverified on resumption. Retrospective scope reflects real-flow corrections and compatibility verification; it is not measured labor, a sum of stage scores or a replacement for the original projections. Earlier v1, failed experiments and unavailable stage assessments remain historical above. No new cycle or split is created.
+
+Outcome: Eight of eight stages locally complete. Stages 1–2: 68167edd2 / f2c3a8a98; revised planning: e25676b2e; Stages 3–7: 49d94f98c / 4bb19da30 / f4cd2a32f / a63f8a0fa / 733b180b0; Stage 8 is the closeout commit containing this record. Original stage estimates and later revisions/retrospectives remain separate and non-additive. Final application revision: 733b180b0. Dependency delta: zero. Measured active work: unavailable. Maintainer comfortable-fit judgment and acceptance: pending; accepted-count increment: none. Retirement and active-key-limit proposals remain separately unapproved and uncommitted.
 
 *— Codex · 2026-10-31 UTC*
