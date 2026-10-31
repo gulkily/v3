@@ -85,6 +85,8 @@ final class Application
 {
     private const PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME = 34560000;
     private const LOBBY_GATE_LOG_ROTATE_LINES = 1000;
+    /** This request arrived on a session a sign-in had just replaced and was moved to the new one. */
+    private bool $viewerSessionForwarded = false;
     private ?string $appVersion = null;
     private bool $docsPage = false;
     private ?FeatureFlagEvaluator $featureFlags = null;
@@ -2443,6 +2445,8 @@ final class Application
             'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
             'use_strict_mode' => true,
         ]);
+        $this->viewerSessionForwarded = session_status() === PHP_SESSION_ACTIVE
+            && \ForumRewrite\Http\SessionRotation::follow();
     }
 
     /** @param array<string, mixed> $query */
@@ -2480,7 +2484,8 @@ final class Application
         $requestedSessionId = (string) ($_COOKIE[$sessionName] ?? '');
         $this->startViewerSession();
 
-        if (session_status() !== PHP_SESSION_ACTIVE || $requestedSessionId === session_id()) {
+        // A session replaced by a sign-in moments ago forwards to its replacement: keep that cookie.
+        if (session_status() !== PHP_SESSION_ACTIVE || $requestedSessionId === session_id() || $this->viewerSessionForwarded) {
             return;
         }
 

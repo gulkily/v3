@@ -40,6 +40,7 @@ $testFiles = [
     __DIR__ . '/RetractionSweepTest.php',
 
     __DIR__ . '/TestingSelfApprovalTest.php',
+    __DIR__ . '/SessionRotationTest.php',
     __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/RailspikeWorkflowTest.php',
     __DIR__ . '/RailspikeFeatureFlagTest.php',
