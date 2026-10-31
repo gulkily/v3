@@ -170,6 +170,56 @@ final class DeploymentSettingsTest
         }
     }
 
+    public function testStatusReportsEachSourceAndWarnsAboutTrackedDeploymentEdits(): void
+    {
+        $parent = sys_get_temp_dir() . '/forum-rewrite-deployment-status-' . bin2hex(random_bytes(6));
+        $checkout = $parent . '/qdb';
+        try {
+            mkdir($checkout . '/scripts', 0700, true);
+            mkdir($checkout . '/public', 0700, true);
+            copy(dirname(__DIR__) . '/autoload.php', $checkout . '/autoload.php');
+            copy(dirname(__DIR__) . '/scripts/status.php', $checkout . '/scripts/status.php');
+            copy(dirname(__DIR__) . '/public/.htaccess', $checkout . '/public/.htaccess');
+            copy(dirname(__DIR__) . '/public/index.php', $checkout . '/public/index.php');
+            exec('cp -R ' . escapeshellarg(dirname(__DIR__) . '/src') . ' ' . escapeshellarg($checkout . '/src'));
+            exec('cd ' . escapeshellarg($checkout) . ' && git init -q && git add . && git -c user.name=t -c user.email=t@t commit -qm checkout');
+            mkdir($parent . '/forum-private/qdb', 0700, true);
+            file_put_contents($parent . '/forum-private/qdb/secrets.php', '<?php return ' . var_export([
+                'FORUM_SITE_ID' => 'qdb',
+                'FORUM_REPOSITORY_ROOT' => $parent . '/repository',
+                'LLM_API_KEY' => 'secret-must-not-print',
+            ], true) . ';');
+            $run = function (string $extra = '') use ($checkout): string {
+                $output = [];
+                exec('cd ' . escapeshellarg($checkout) . ' && env -u FORUM_SECRETS_PATH '
+                    . implode(' ', array_map(static fn (string $key): string => '-u ' . $key, DeploymentSettings::KEYS))
+                    . ' ' . $extra . ' php scripts/status.php --url=http://127.0.0.1:9 2>&1', $output);
+                return implode("\n", $output);
+            };
+
+            $status = $run('FORUM_DATABASE_PATH=' . escapeshellarg($parent . '/read.sqlite3'));
+            $file = $parent . '/forum-private/qdb/secrets.php';
+            assertTrue(str_contains($status, 'Private config: ' . $file));
+            assertTrue(str_contains($status, 'FORUM_SITE_ID: qdb (private file ' . $file . ')'));
+            assertTrue(str_contains($status, 'FORUM_REPOSITORY_ROOT: ' . $parent . '/repository (private file ' . $file . ')'));
+            assertTrue(str_contains($status, 'FORUM_DATABASE_PATH: ' . $parent . '/read.sqlite3 (environment)'));
+            assertTrue(str_contains($status, 'FORUM_IMAGE_ROOT: built-in (default)'));
+            assertTrue(!str_contains($status, 'secret-must-not-print'));
+            assertTrue(!str_contains($status, 'has local edits'));
+
+            file_put_contents($checkout . '/public/.htaccess', "\nSetEnv FORUM_SITE_ID qdb\n", FILE_APPEND);
+            $status = $run();
+            assertTrue(str_contains($status, 'WARN  public/.htaccess has local edits; a code reset discards them. Keep deployment settings in ' . $file . '.'));
+
+            unlink($file);
+            $status = $run();
+            assertTrue(str_contains($status, 'Private config: ' . $parent . '/forum-private/secrets.php (missing)'));
+            assertTrue(str_contains($status, 'FORUM_SITE_ID: zenmemes (default)'));
+        } finally {
+            exec('rm -rf ' . escapeshellarg($parent));
+        }
+    }
+
     /**
      * @param array<string, mixed> $values
      * @param callable(string):void $callback

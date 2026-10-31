@@ -452,7 +452,8 @@ try {
         $workerCronLine = '* * * * * cd ' . escapeshellarg($appRoot)
             . ' && php scripts/task_queue.php run --quiet --limit=1 >> '
             . escapeshellarg($logPath) . ' 2>&1';
-        fwrite(STDOUT, "Task queue cron reference\n\nInstall:\n  crontab -e\n  {$workerCronLine}\n");
+        fwrite(STDOUT, "Task queue cron reference\n\nInstall:\n  crontab -e\n  {$workerCronLine}\n\nSite settings: "
+            . \ForumRewrite\Support\PrivateConfig::path($projectRoot) . "\n");
         exit(0);
     }
 

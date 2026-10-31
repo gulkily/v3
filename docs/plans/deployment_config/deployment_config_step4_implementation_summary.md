@@ -13,7 +13,9 @@ Branch: `feat/deployment-config`; planning commit `e51751cf`
 - Checkpoint: Step 4 entry, 2026-10-30 UTC; whole-cycle **0.85 reaffirmed** from Step 3.
 - Scope v1.1 / revised Option A; planning baseline `4abda3db`; implementation starts from `origin/main` `2ee0d198` (17 later upstream commits, one touching `PrivateConfigSchema` by adding an unrelated flag). R1 / P2; Claude (claude-opus-5-5) single exposed rater.
 - Original stage-work estimates S1–S6/v1: 0.10 / 0.15 / 0.15 / 0.15 / 0.10 / 0.10, copied from the approved plan, not additive.
-- Full-suite and Apache-harness baselines at `2ee0d198` run in a separate worktree; results recorded in Stage 2.
+- Baselines at `2ee0d198` (separate worktree, run concurrently with Stages 1–4):
+  - Full suite: **1732 run, 1726 passed, 6 failed** — `ApprovalSeedCommandTest::testSeedRetiresCachedPagesAndReleaseBeforeServingUpdatedState`, `LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces`, `LocalAppSmokeTest::testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound`, `LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `PlatformDocsStaticTest::testStaticReleaseIncludesCompleteInventoryAndSafeAssets`, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`.
+  - Unmodified `tests/high_traffic_apache_test.py`: **fails** at the native-import step (line 191, exit 255), confirming that failure predates this cycle.
 
 ## Stage 1 - One private file location rule
 
@@ -53,7 +55,7 @@ Branch: `feat/deployment-config`; planning commit `e51751cf`
   - `public/index.php`, `Application`, `RouteServices`, `HighTrafficSafety`, `RetractionSweepFactory`, `FastmodTaggingPolicy`, `LocalWriteService` and `ImageStore` read the six settings through `DeploymentSettings::value(..., <project root>)`, each keeping its existing default. The high-traffic worker still receives the resolved profile as an argument.
   - `tests/high_traffic_apache_test.py`: new scenario after the existing `SetEnv` one. It restores `.htaccess` without `SetEnv`, puts `FORUM_SITE_ID => 'qdb'` only in the private file, restarts Apache and the CLI without `FORUM_SITE_ID`, and checks that normal, cold, warm (no PHP) and CLI-refreshed homepages are QDB's.
 - Verification:
-  - Full Apache harness: **blocked** at its existing native-import step (line 191, exit 255) before reaching either profile scenario. This is the same pre-existing failure recorded in the QDB diagnosis; the baseline result is pending.
+  - Full Apache harness: **blocked** at its existing native-import step (line 191, exit 255) before reaching either profile scenario. This is the same pre-existing failure recorded in the QDB diagnosis, and it also fails at the baseline (see entry checkpoint).
   - Scratch copy running only setup plus the two profile scenarios (not committed): **passed** both the request-scoped `SetEnv` scenario and the new private-file-only scenario; the script stopped afterwards only on its summary line, which refers to a timing variable from the cut section.
   - `HighTrafficTest` 6/6, `DeploymentSettingsTest` 7/7, `SiteProfileRegistryTest` 8/8, `WriteApiSmokeTest` 193/193 passed. `LocalAppSmokeTest` 154/157; all three failures also occur in the baseline at `2ee0d198` (`testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`, `testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces`, `testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound`).
 - Notes: an unknown profile in the private file makes web requests fail with an error in the server log; status in Stage 5 surfaces the same message to the operator.
@@ -75,5 +77,20 @@ Branch: `feat/deployment-config`; planning commit `e51751cf`
   - `DeploymentSettingsTest` 9/9. Passed: `StatusCommandTest` 7, `OperatorStatusCollectorTest` 6, `ImportInstanceCommandTest` 9, `RepositoryArchiveImportCommandTest` 1, `FastmodAuditCommandTest` 5, `ApprovalReceiptMaintenanceTest` 6, `ArchiveThreadCommandTest` 3, `PostSignatureAuditCommandTest` 2, `AgentReplyCommandTest` 5, `AgentResponseFormatReadinessTest` 4, `RetractionSweepTest` 10, `TerminalOperatorUiCommandTest` 3, `TerminalOperatorUiDashboardTest` 1, `DevServerLogTest` 9, `HighTrafficPublicationTest` 4; Python terminal UI navigation, PTY and acceptance tests.
   - `ApprovalSeedCommandTest::testSeedRetiresCachedPagesAndReleaseBeforeServingUpdatedState` failed and also fails in the baseline. `TaskQueueCommandTest::testRebuildWorkerRecordsPrivateProgressCheckpoints` and `DocsPublicationFlowTest::testReportedResumeCompletesWithChangedAndMissingDamagedOrLegacyDocs` ("HTTP server failed to start") failed once while the baseline suite was running concurrently, then passed twice each when rerun alone; treated as intermittent.
 - Notes: `backfill_unicode_risk.php` still initializes the local default repository eagerly (pre-existing; unchanged).
+
+*— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Status shows where settings come from
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - `./v3 status` ends with a **Deployment settings** section: the private file in use (marked `missing` when absent) and each of the six settings with its effective value and source (`environment`, `private file <path>`, `--repository-root`/`--database-path`, or `default`). An unknown environment profile is shown as falling back to the default. A setting that can't be resolved (for example an unknown profile in the private file) shows `ERROR` with the message instead of aborting the section. Only these six non-secret settings are printed.
+  - Warns when tracked `public/.htaccess` or `public/index.php` has local edits (via `git status`), pointing to the private file. `--summary` (the TUI home) shows the warning line only when there is one.
+  - `./v3 task-queue cron` prints the private file the worker will read (`Site settings: <path>`).
+  - Tests: `testStatusReportsEachSourceAndWarnsAboutTrackedDeploymentEdits` (copied checkout named `qdb` in a temporary Git repository; per-checkout file, environment and default sources; a secret in the same file not printed; `.htaccess` edit warning; missing file falls back to default); `TaskQueueCommandTest` asserts the cron output's settings path.
+- Verification (all passed): `DeploymentSettingsTest` 10/10, `TaskQueueCommandTest` 12/12, `StatusCommandTest` 7/7, `TerminalOperatorUiCommandTest` 3/3, `TerminalOperatorUiDashboardTest` 1/1, Python terminal UI acceptance test.
+- Notes: no web UI change; navigation icons and UI copy audit are not applicable.
 
 *— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*

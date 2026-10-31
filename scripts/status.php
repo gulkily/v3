@@ -48,6 +48,9 @@ try {
 
     if (($options['summary'] ?? false) === true) {
         fwrite(STDOUT, "Repository: {$repositoryRoot}\n");
+        foreach (deploymentWarnings($projectRoot) as $warning) {
+            fwrite(STDOUT, 'Deployment: WARN ' . $warning . "\n");
+        }
         foreach (HealthIndicators::fromStatus($status) as $indicator) {
             if (in_array($indicator['label'], ['Frontend', 'Read model', 'Task queue', 'Failed tasks'], true)) {
                 // Home is deliberately compact; details retain all indicators/recovery.
@@ -57,6 +60,7 @@ try {
         }
     } else {
         printStatus($status, $repositoryRoot, $databasePath, $queuePath);
+        printDeploymentSettings($projectRoot, $repositoryRoot, $databasePath, $options);
     }
 } catch (Throwable $exception) {
     fwrite(STDERR, 'Error: ' . $exception->getMessage() . "\n\n");
@@ -189,6 +193,62 @@ function statusNextAction(string $readModelStatus, string $lockStatus, string $r
     }
 
     return 'No read-model recovery is currently required.';
+}
+
+/**
+ * Where each deployment setting comes from, so web, CLI and cron can be
+ * compared. Prints only these non-secret settings, never other private values.
+ */
+/** @param array<string, string|bool> $options */
+function printDeploymentSettings(string $projectRoot, string $repositoryRoot, string $databasePath, array $options): void
+{
+    $privatePath = \ForumRewrite\Support\PrivateConfig::path($projectRoot);
+    fwrite(STDOUT, "\nDeployment settings\n");
+    fwrite(STDOUT, 'Private config: ' . $privatePath . (is_file($privatePath) ? '' : ' (missing)') . "\n");
+    $effective = ['FORUM_REPOSITORY_ROOT' => $repositoryRoot, 'FORUM_DATABASE_PATH' => $databasePath];
+    foreach (\ForumRewrite\Support\DeploymentSettings::KEYS as $key) {
+        try {
+            $value = \ForumRewrite\Support\DeploymentSettings::value($key, $projectRoot);
+            $source = \ForumRewrite\Support\DeploymentSettings::source($key, $projectRoot);
+            $option = ['FORUM_REPOSITORY_ROOT' => 'repository-root', 'FORUM_DATABASE_PATH' => 'database-path'][$key] ?? null;
+            if ($option !== null && isset($options[$option])) {
+                [$value, $source] = [$effective[$key], '--' . $option];
+            }
+            if ($key === 'FORUM_SITE_ID') {
+                $active = \ForumRewrite\SiteProfileRegistry::active()['name'];
+                if ($value !== null && $value !== $active) {
+                    $source .= ' value "' . $value . '" is not a known profile; using the default';
+                }
+                $value = $active;
+            }
+            $value ??= $effective[$key] ?? 'built-in';
+            fwrite(STDOUT, "{$key}: {$value} ({$source})\n");
+        } catch (Throwable $exception) {
+            fwrite(STDOUT, "{$key}: ERROR " . $exception->getMessage() . "\n");
+        }
+    }
+    foreach (deploymentWarnings($projectRoot) as $warning) {
+        fwrite(STDOUT, 'WARN  ' . $warning . "\n");
+    }
+}
+
+/** @return list<string> */
+function deploymentWarnings(string $projectRoot): array
+{
+    if (!is_dir($projectRoot . '/.git') && !is_file($projectRoot . '/.git')) {
+        return [];
+    }
+    $output = [];
+    $exitCode = 0;
+    exec('git -C ' . escapeshellarg($projectRoot) . ' status --porcelain -- public/.htaccess public/index.php 2>/dev/null', $output, $exitCode);
+    $warnings = [];
+    foreach ($exitCode === 0 ? $output : [] as $line) {
+        $file = trim(substr($line, 3));
+        $warnings[] = "{$file} has local edits; a code reset discards them. Keep deployment settings in "
+            . \ForumRewrite\Support\PrivateConfig::path($projectRoot) . '.';
+    }
+
+    return $warnings;
 }
 
 function printStatusUsage($stream): void
