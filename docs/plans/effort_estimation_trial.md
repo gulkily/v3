@@ -1059,6 +1059,14 @@ Authorization: Plan only; await Approved Step 1. No implementation, tests, commi
 
 2026-10-30 UTC — v3/single_request_posting Step 4 local closeout: [entry/stages/limits](./single_request_posting/single_request_posting_step4_implementation_summary.md#closeout-and-release-limits), revised Step 3 v2/B approved. Original baseline/R1/P2/single exposed Codex rater retained; entry projection 1.05 reaffirmed, separate retrospective 1.10. Eight stages complete locally, stage originals 0.16/0.12/0.20/0.18/0.10/0.10/0.08/0.15; retrospectives unchanged except S8 0.22, non-additive. New API preserves dedicated bootstrap, exact signed bytes, key reuse and atomic replay/recovery. Focused PHP 51/51, subsequent final targeted checks and browser evidence in summary; actual rebuild and byte-preserving repacked snapshot import pass. Direct export/import layout mismatch remains an existing limitation; full rebuild latency is unbenchmarked at production scale. Zero dependencies/schema delta, no measured labor, merge/push/deployment or accepted-count increment. Full suite/live release/physical devices/maintainer fit pending; frm.py remains paused; pristine intake missing.
 
+## Cycle v3/load_before_selection_audit
+
+Status: Step 1 proposed; audit execution and remediation not started.
+Scope: v1/B codebase-wide audit of loading whole collections before selection; baseline cfb8364f6db03cc09e27cd26afb93c109c723a08; R1/P2.
+Canonical checkpoints: [Intake and Step 1](./load_before_selection_audit_step1_solution_assessment.md#study-checkpoint), 2026-10-30 UTC; 0.55 total reaffirmed. Alternatives A 0.20 / C 0.90, non-additive whole-audit projections.
+Rater: Codex, single exposed rater; prior memory-audit exposure explicit; all three frozen hashes verified. Debug and extended estimates enabled. No measured labor, independent rating or accepted outcome.
+Relationship: Related to v3/qdb_memory_audit, broadening from memory to unnecessary work before selection. Seed findings overlap and must not be counted as independent discoveries. No application changes, dependency additions, commits or deployment.
+
 ## Cycle v3/qdb_rebuild_scope
 
 Status: Six stages locally complete; early integration pushed at user request; production and maintainer acceptance pending.
