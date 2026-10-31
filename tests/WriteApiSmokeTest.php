@@ -7238,6 +7238,123 @@ NODE;
         }
     }
 
+    public function testMultiRedemptionCapacityRacesAndRecovery(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $keys = []; $profiles = [];
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            foreach (['sponsor', 'first', 'second', 'third'] as $name) {
+                $key = $this->createSigningKey('multi-' . $name); $keys[] = $key;
+                $profiles[] = $writer->linkIdentity(['public_key' => $key['public_key']]);
+            }
+            $this->approveIdentity($writer, $profiles[0]);
+            $issueInput = ['issuer_identity_id' => $profiles[0]['identity_id'],
+                'thread_id' => $profiles[0]['bootstrap_thread_id'], 'parent_id' => $profiles[0]['bootstrap_post_id'],
+                'verification_hash' => 'sha256:' . hash('sha256', str_repeat('a', 32)),
+                'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600), 'max_redemptions' => 2,
+                'destination' => '/threads/root-001'];
+            $sign = fn (array $prepared, int $n) => $prepared + ['author_identity_id' => $profiles[$n]['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($keys[$n]['home'], $prepared['canonical_record'])];
+            foreach ([0, 1001, 2.0, true, null, [], '02'] as $bad) {
+                assertThrowsRuntime(fn () => $writer->prepareInvitation(array_replace($issueInput, ['max_redemptions' => $bad])),
+                    'max_redemptions must be an integer from 1 to 1000 on issuance only.');
+            }
+            $issue = $writer->prepareInvitation($issueInput);
+            assertStringContains("Max-Redemptions: 2\n", $issue['canonical_record']);
+            $tampered = $sign($issue, 0); $tampered['canonical_record'] = str_replace('Max-Redemptions: 2', 'Max-Redemptions: 3', $tampered['canonical_record']);
+            assertThrowsRuntime(fn () => $writer->finalizePreparedInvitation($tampered), 'Prepared post canonical record mismatch.');
+            $writer->finalizePreparedInvitation($sign($issue, 0));
+            $prepare = fn (int $n) => $writer->prepareInvitationRedemption(['recipient_identity_id' => $profiles[$n]['identity_id'],
+                'thread_id' => $profiles[$n]['bootstrap_thread_id'], 'parent_id' => $profiles[$n]['bootstrap_post_id'],
+                'invite_token' => str_repeat('a', 32)]);
+            $first = $sign($prepare(1), 1);
+            // Inject a pre-commit failure: no acceptance or capacity can survive it.
+            $hook = $root . '/.git/hooks/pre-commit'; file_put_contents($hook, "#!/bin/sh\nexit 1\n"); chmod($hook, 0755);
+            $failed = false;
+            try { $writer->finalizePreparedInvitation($first); } catch (RuntimeException) { $failed = true; }
+            assertTrue($failed); unlink($hook);
+            assertFalse(is_file($root . '/' . $first['record_path']));
+            assertSame('available', $writer->inspectInvitation(str_repeat('a', 32))['state']);
+            $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root)) extends LocalWriteService {
+                protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+                {
+                    return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                        public function applyApprovalWrite(\ForumRewrite\Canonical\PostRecord $record, string $commitSha): array { throw new RuntimeException('test incremental failure'); }
+                    };
+                }
+                protected function rebuildReadModel(): array { throw new RuntimeException('test rebuild failure'); }
+            };
+            try { $failing->finalizePreparedInvitation($first); throw new RuntimeException('Expected refresh failure.'); }
+            catch (RuntimeException $error) { assertStringContains('Canonical write committed at', $error->getMessage()); }
+            assertSame(true, $writer->finalizePreparedInvitation($first)['recovered']);
+            $head = $this->latestCommitSha($root);
+            assertSame(true, $writer->finalizePreparedInvitation($first)['recovered']);
+            assertSame($head, $this->latestCommitSha($root));
+            assertSame('available', $writer->inspectInvitation(str_repeat('a', 32))['state']);
+            $claims = [$sign($prepare(2), 2), $sign($prepare(3), 3)];
+            $race = function (array $claims) use ($root, $db, $artifacts): array {
+            $children = []; $pipes = [];
+            $script = 'require ' . var_export(dirname(__DIR__) . '/autoload.php', true) . ';'
+                . '$writer = new ForumRewrite\\Write\\LocalWriteService($argv[1], $argv[2], $argv[3], new ForumRewrite\\Canonical\\CanonicalRecordRepository($argv[1]));'
+                . 'try { $result = $writer->finalizePreparedInvitation(json_decode(base64_decode($argv[4]), true)); echo !empty($result["recovered"]) ? "recovered" : "accepted"; }'
+                . 'catch (RuntimeException $e) { echo $e->getMessage(); }';
+            foreach ($claims as $i => $claim) {
+                $children[$i] = proc_open([PHP_BINARY, '-r', $script, $root, $db, $artifacts, base64_encode(json_encode($claim))],
+                    [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[$i]);
+                fclose($pipes[$i][0]);
+            }
+            $results = [];
+            foreach ($children as $i => $process) {
+                $results[$i] = stream_get_contents($pipes[$i][1]); fclose($pipes[$i][1]);
+                $error = stream_get_contents($pipes[$i][2]); fclose($pipes[$i][2]);
+                assertSame(0, proc_close($process), $error);
+            }
+                return $results;
+            };
+            $results = $race($claims);
+            assertSame(1, count(array_filter($results, fn ($value) => $value === 'accepted')));
+            assertSame(1, count(array_filter($results, fn ($value) => str_contains($value, 'used by another identity'))));
+            assertSame('used', $writer->inspectInvitation(str_repeat('a', 32))['state']);
+            $winner = $results[0] === 'accepted' ? 2 : 3;
+            assertSame(true, $writer->finalizePreparedInvitation($sign($prepare($winner), $winner))['recovered']);
+            $revokeInput = $issueInput; unset($revokeInput['max_redemptions']);
+            $revoke = $writer->prepareInvitation(array_replace($revokeInput, ['action' => 'revoke', 'invitation_id' => $issue['invitation_id']]));
+            $writer->finalizePreparedInvitation($sign($revoke, 0));
+            assertSame('used', $writer->inspectInvitation(str_repeat('a', 32))['state']);
+            assertSame(true, $writer->finalizePreparedInvitation($sign($prepare(1), 1))['recovered']);
+            // A separately capped link closes unused capacity after its first acceptance.
+            $partialToken = str_repeat('b', 32);
+            $partialInput = array_replace($issueInput, ['verification_hash' => 'sha256:' . hash('sha256', $partialToken)]);
+            $partialIssue = $writer->prepareInvitation($partialInput);
+            $writer->finalizePreparedInvitation($sign($partialIssue, 0));
+            $loser = $winner === 2 ? 3 : 2;
+            $partialPrepare = fn (int $n) => $writer->prepareInvitationRedemption(['recipient_identity_id' => $profiles[$n]['identity_id'],
+                'thread_id' => $profiles[$n]['bootstrap_thread_id'], 'parent_id' => $profiles[$n]['bootstrap_post_id'], 'invite_token' => $partialToken]);
+            $partialClaim = $sign($partialPrepare($loser), $loser);
+            $sameKeyResults = $race([$partialClaim, $partialClaim]); sort($sameKeyResults);
+            assertSame(['accepted', 'recovered'], $sameKeyResults);
+            assertSame('available', $writer->inspectInvitation($partialToken)['state']);
+            unset($partialInput['max_redemptions']);
+            $partialRevoke = $writer->prepareInvitation(array_replace($partialInput, ['action' => 'revoke', 'invitation_id' => $partialIssue['invitation_id']]));
+            $writer->finalizePreparedInvitation($sign($partialRevoke, 0));
+            assertThrowsRuntime(fn () => $partialPrepare(0), 'Invitation is expired, revoked, or used by another identity.');
+            assertSame(true, $writer->finalizePreparedInvitation($partialClaim)['recovered']);
+            assertSame(true, $writer->finalizePreparedInvitation($sign($partialPrepare($loser), $loser))['recovered']);
+            // Recovery cannot restore membership independently withdrawn from the derived state.
+            $pdo = (new ReadModelConnection($db))->open();
+            $pdo->prepare('UPDATE profiles SET is_approved = 0 WHERE identity_id = ?')->execute([$profiles[$loser]['identity_id']]);
+            assertThrowsRuntime(fn () => $writer->finalizePreparedInvitation($partialClaim), 'Invitation member access is unavailable.');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            foreach ([1, $winner] as $n) {
+                $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $profiles[$n]['identity_id']);
+                assertSame(1, (int) $profile['is_approved']);
+            }
+        } finally {
+            foreach ($keys as $key) $this->deleteTree($key['home']);
+        }
+    }
+
     public function testSignedInvitationRedemptionRechecksPolicyBeforeAcceptance(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

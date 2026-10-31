@@ -1962,6 +1962,15 @@ class LocalWriteService
             $verificationHash = $this->requireInvitationHash((string) ($input['verification_hash'] ?? ''));
             $expiresAt = $action === 'issue' ? $this->requireInvitationExpiry((string) ($input['expires_at'] ?? '')) : null;
             $destination = $action === 'issue' ? $this->normalizeInvitationDestination((string) ($input['destination'] ?? '')) : null;
+            $maxRedemptions = null;
+            if (array_key_exists('max_redemptions', $input)) {
+                $value = $input['max_redemptions'];
+                if ($action !== 'issue' || (!is_int($value) && !is_string($value))
+                    || preg_match('/^[1-9][0-9]{0,3}$/D', (string) $value) !== 1 || (int) $value > 1000) {
+                    throw new RuntimeException('max_redemptions must be an integer from 1 to 1000 on issuance only.');
+                }
+                $maxRedemptions = (int) $value;
+            }
 
             $thread = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
             $parent = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($parentId));
@@ -1978,7 +1987,7 @@ class LocalWriteService
                 if ($entry === null || $entry['issued']->post->authorIdentityId !== $issuerIdentityId) {
                     throw new RuntimeException('Only the invitation issuer may revoke an invitation.');
                 }
-                if ($entry['revoked'] !== null || $entry['redeemed'] !== null) {
+                if ($entry['revoked'] !== null) {
                     throw new RuntimeException('Invitation is no longer revocable.');
                 }
                 if (!hash_equals($entry['issued']->verificationHash, $verificationHash)) {
@@ -1990,6 +1999,7 @@ class LocalWriteService
                 . "Invitation-Action: {$action}\n"
                 . "Verification-Hash: {$verificationHash}\n"
                 . ($expiresAt !== null ? "Expires-At: {$expiresAt}\n" : '')
+                . ($maxRedemptions !== null ? "Max-Redemptions: {$maxRedemptions}\n" : '')
                 . ($destination !== null ? "Destination: {$destination}\n" : '')
                 . "\n";
             $contents = "Post-ID: {$postId}\n"
@@ -2033,6 +2043,8 @@ class LocalWriteService
     {
         return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
+            $recovered = $this->recoverAcceptedApproval($input, 'invitation');
+            if ($recovered !== null) return $recovered;
             $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $prepared = $this->loadPreparedPost($prepareToken);
             if (!in_array((string) ($prepared['kind'] ?? ''), ['invitation_issue', 'invitation_revoke', 'invitation_redeem'], true)) {
@@ -2065,21 +2077,33 @@ class LocalWriteService
             }
             if ($record->action === 'redeem') {
                 $entry = $this->invitationLedger()->find($record->invitationId);
-                if ($entry === null || $entry['revoked'] !== null
-                    || !hash_equals($entry['issued']->verificationHash, $record->verificationHash)) {
+                if ($entry === null || !hash_equals($entry['issued']->verificationHash, $record->verificationHash)) {
                     throw new RuntimeException('Invitation is invalid or revoked.');
                 }
-                if ($entry['redeemed'] !== null) {
-                    if ($entry['redeemed']->post->authorIdentityId !== $authorIdentityId || !$this->isApprovedIdentity($authorIdentityId)) {
+                if (isset($entry['recipients'][$authorIdentityId])) {
+                    // A newly prepared same-key retry also repairs a failed projection refresh.
+                    if (!$this->canIncrementallyUpdateReadModel()) {
+                        $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to inspect invitation recovery'));
+                        $this->refreshDerivedStateAfterCommit($head);
+                    }
+                    if (!$this->isApprovedIdentity($authorIdentityId)) {
                         throw new RuntimeException('Invitation is used by another identity or member access is unavailable.');
                     }
+                    $this->deletePreparedPost($prepareToken);
                     return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'recovered' => true];
+                }
+                if ($entry['revoked'] !== null || count($entry['recipients']) >= $entry['issued']->maxRedemptions) {
+                    throw new RuntimeException('Invitation is expired, revoked, or used by another identity.');
                 }
                 if (strtotime($entry['issued']->expiresAt) <= time()) throw new RuntimeException('Invitation has expired.');
                 if ($this->isApprovedIdentity($authorIdentityId)) {
                     return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'already_approved' => true];
                 }
                 $context = $this->approvalContext((string) $entry['issued']->post->authorIdentityId, $authorIdentityId, (string) $record->post->threadId, (string) $record->post->parentId);
+            }
+            if ($record->action !== 'redeem') {
+                // Preparation is advisory: recheck issuance/revocation against current state under the lock.
+                $this->invitationLedger()->apply($record);
             }
             if ($this->postTargetExists($postId)) throw new RuntimeException('Prepared post target already exists.');
             $message = ucfirst($record->action) . ' invitation ' . $record->invitationId . ' by ' . $authorIdentityId;
@@ -2112,11 +2136,12 @@ class LocalWriteService
     public function inspectInvitation(string $token): array
     {
         $entry = $this->invitationForToken($token);
-        if ($entry['revoked'] !== null || ($entry['redeemed'] === null && strtotime($entry['issued']->expiresAt) <= time())) {
+        if ($entry['recipients'] === [] && ($entry['revoked'] !== null || strtotime($entry['issued']->expiresAt) <= time())) {
             throw new RuntimeException('Invitation is expired or revoked.');
         }
         return ['status' => 'ok', 'targeted' => $entry['issued']->destination !== null,
-            'state' => $entry['redeemed'] === null ? 'available' : 'used'];
+            'state' => $entry['revoked'] === null && strtotime($entry['issued']->expiresAt) > time()
+                && count($entry['recipients']) < $entry['issued']->maxRedemptions ? 'available' : 'used'];
     }
 
     private function invitationForToken(string $token): array
@@ -2134,9 +2159,10 @@ class LocalWriteService
             $this->assertWritableRepository();
             $recipientIdentityId = $this->requireOpenPgpIdentityId((string) ($input['recipient_identity_id'] ?? ''), 'recipient_identity_id');
             $entry = $this->invitationForToken(trim((string) ($input['invite_token'] ?? '')));
-            $sameRecipient = $entry['redeemed'] !== null && $entry['redeemed']->post->authorIdentityId === $recipientIdentityId;
-            if ($entry['revoked'] !== null || ($entry['redeemed'] !== null && !$sameRecipient)
-                || (!$sameRecipient && strtotime($entry['issued']->expiresAt) <= time())) {
+            $sameRecipient = isset($entry['recipients'][$recipientIdentityId]);
+            if (!$sameRecipient && ($entry['revoked'] !== null
+                || count($entry['recipients']) >= $entry['issued']->maxRedemptions
+                || strtotime($entry['issued']->expiresAt) <= time())) {
                 throw new RuntimeException('Invitation is expired, revoked, or used by another identity.');
             }
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
@@ -3097,7 +3123,7 @@ class LocalWriteService
         $this->invalidator()->invalidateAccountHistory($context['target_username'], $query->fetchAll(\PDO::FETCH_COLUMN));
     }
 
-    private function recoverAcceptedApproval(array $input): ?array
+    private function recoverAcceptedApproval(array $input, string $kind = 'direct'): ?array
     {
         $contents = (string) ($input['canonical_record'] ?? '');
         if ($contents === '' || !isset($input['post_id'], $input['record_path'], $input['author_identity_id'], $input['detached_signature'])) return null;
@@ -3109,10 +3135,11 @@ class LocalWriteService
             || !is_file($this->repositoryRoot . '/' . $path . '.asc')
             || file_get_contents($this->repositoryRoot . '/' . $path . '.asc') !== $input['detached_signature']) return null;
         $receipt = ApprovalAcceptance::read($this->repositoryRoot, $path);
-        if ($receipt === null || $receipt['kind'] !== 'direct') return null;
+        if ($receipt === null || $receipt['kind'] !== $kind) return null;
         foreach ([$path, $path . '.asc', ...ApprovalAcceptance::existingPaths($this->repositoryRoot, $post->postId)] as $relative) {
             $bytes = (string) file_get_contents($this->repositoryRoot . '/' . $relative);
-            if ($this->runGitCommand(['show', 'HEAD:' . $relative], 'Unable to verify accepted approval') !== rtrim($bytes, "\n")) return null;
+            if ($this->runGitCommand(['rev-parse', 'HEAD:' . $relative], 'Unable to verify accepted approval')
+                !== $this->runGitCommand(['hash-object', '--', $relative], 'Unable to hash accepted approval')) return null;
         }
         $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to inspect accepted approval'));
         try {
@@ -3126,6 +3153,16 @@ class LocalWriteService
             $this->invalidateAccountHistory($context);
         } catch (\Throwable $error) {
             throw new RuntimeException('Approval already committed at ' . $head . ' but cached-view refresh failed. Retry refresh; do not approve again.', 0, $error);
+        }
+        if ($kind === 'invitation') {
+            $invitation = (new InvitationRecordParser())->parse($contents);
+            $entry = $this->invitationLedger()->find($invitation->invitationId);
+            if ($entry === null || !isset($entry['recipients'][$post->authorIdentityId])
+                || !$this->isApprovedIdentity($post->authorIdentityId)) {
+                throw new RuntimeException('Invitation member access is unavailable.');
+            }
+            return ['status' => 'ok', 'recovered' => true, 'post_id' => $post->postId,
+                'destination' => $entry['issued']->destination ?? '', 'commit_sha' => $head];
         }
         return ['status' => 'ok', 'recovered' => true, 'post_id' => $post->postId, 'thread_id' => $post->threadId,
             'profile_slug' => $receipt['context']['target_profile_slug'], 'record_path' => $path,
@@ -3161,7 +3198,8 @@ class LocalWriteService
             if ($after !== $before) {
                 // Never remove a committed grant because subsequent reporting failed.
                 foreach ($files as $relative => $bytes) {
-                    if ($this->runGitCommand(['show', 'HEAD:' . $relative], 'Unable to verify committed acceptance') !== rtrim($bytes, "\n")) throw $error;
+                    if ($this->runGitCommand(['rev-parse', 'HEAD:' . $relative], 'Unable to verify committed acceptance')
+                        !== $this->runGitCommand(['hash-object', '--', $relative], 'Unable to hash committed acceptance')) throw $error;
                 }
                 return ['commit_sha' => $after, 'timings' => []];
             }

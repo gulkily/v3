@@ -35,3 +35,14 @@ Completion: Signed APIs admit N distinct keys, refuse N+1, recover same-key retr
 - Notes: S1 commit 7a33faee. No schema/dependency/frontend changes. Original estimate unchanged; no measured labor.
 
 *— Codex · 2026-10-31 UTC*
+
+## Stage 3 - S3: Atomic admission and recovery
+
+**Original estimate: 0.20**
+**Retrospective stage-work assessment: 0.20**
+
+- Changes: Existing signed API accepts optional max_redemptions; strict input and exact-byte finalization. Final checks under existing write/publication lock count recipients and recheck revocation. Receipt-backed same-key recovery survives expiry/revocation and refresh failure without restoring unavailable membership. Existing approval recovery now verifies exact Git blob hashes (line-based command output previously mismatched invitation trailing blank lines). Read-only inspection preserves available/used and targeted fields, allowing authenticated retry on closed links with accepted recipients.
+- Verification: Multi-recipient signed integration, direct approval recovery and policy suite 8/8 passed; legacy signed invitation test separately passed. Final same-key concurrent extension passed 1/1. Independent PHP processes race for last slot and same-key acceptance; one distinct winner, one same-key recovered result. Covers invalid limits, tampering, pre-commit rollback, committed refresh failure, lost-response retries, partial revocation, unavailable membership and rebuild grants. Initial failures exposed exact-byte recovery and inherited fork cleanup in the test harness; switched to independent processes and verified recovery.
+- Notes: S2 commit 5701a13b. Browser/restore follow in S4/S5. No dependencies/schema/frontend changes. Original estimate unchanged; no measured labor.
+
+*— Codex · 2026-10-31 UTC*
