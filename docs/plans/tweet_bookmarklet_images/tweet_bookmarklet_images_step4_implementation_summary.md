@@ -27,7 +27,11 @@ Planning commit: 616ba190
 
 **Original estimate: 0.10**
 
-Status: pending Stage 1 gate/commit.
+**Retrospective stage work: 0.10**
+
+- Changes: existing bookmarklet extracts selected tweet photo anchors, checks status ownership and HTTPS media URLs, orders/deduplicates them, retains all source links and carries first-photo intent in the fragment. Both launch/copy modes share this code. Added current tweet-clipping concept entry.
+- Verification: PASS `node tests/browser/bookmarklet_copy.cjs` (all seven variants, one-line copy/failure recovery) and `node tests/browser/tweet_bookmarklet.mjs` (real DOM ownership/order, multiple/no photos, quotes/nested tweets, unsafe URLs, avatars/emoji/video exclusion, text selection and missing-tweet recovery). PASS whitespace check. Initial fixture uncovered browser mixed-content rewriting of currentSrc; extraction now validates the declared source URL first.
+- Notes: Stage 1 commit 9659ac0b. Live X markup unverified; no gallery/picker added. Original/retrospective 0.10, scope unchanged, 2026-10-31 UTC; not measured labor.
 
 ## Stage 3 - Existing uploader integration
 

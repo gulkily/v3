@@ -24,7 +24,7 @@ function execute(script, kind, mode) {
   const current = 'https://source.test/status/123?q=100%25';
   const timeLink = {href: current, querySelector: () => ({}), getAttribute: () => '/status/123'};
   const tweetText = {nodeType: 1, tagName: 'DIV', firstChild: {nodeType: 3, nodeValue: text, nextSibling: null}};
-  const article = {querySelector: s => s.includes('tweetText') ? tweetText : {innerText: 'Author\n@author'}, querySelectorAll: () => [timeLink], getBoundingClientRect: () => ({bottom: 100})};
+  const article = {querySelector: s => s.includes('tweetText') ? tweetText : {innerText: 'Author\n@author'}, querySelectorAll: s => s.includes('/photo/') ? [] : [timeLink], getBoundingClientRect: () => ({bottom: 100})};
   const location = {href: current, pathname: '/status/123'};
   const opened = [];
   const window = {location, getSelection: () => ({toString: () => kind === 'tweet' ? '' : text, rangeCount: 0}), open: (...args) => opened.push(args)};

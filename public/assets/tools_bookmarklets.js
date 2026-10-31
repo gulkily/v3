@@ -81,17 +81,33 @@
       return l.querySelector("time");
     })[0];
     var url = link ? link.href.split("?")[0] : location.href.split("?")[0];
+    var status = url.match(/\/status\/(\d+)/);
+    var photos = [];
+    [].forEach.call(art.querySelectorAll('a[href*="/photo/"] img'), function (img) {
+      var photoLink = img.closest('a[href*="/photo/"]');
+      var photo = photoLink && photoLink.href.match(/\/status\/(\d+)\/photo\/(\d+)(?:[?#]|$)/);
+      if (!status || !photo || photo[1] !== status[1] || img.closest('article[data-testid="tweet"]') !== art) return;
+      var source;
+      try { source = new URL(img.src || img.currentSrc); } catch (error) { return; }
+      if (source.protocol !== "https:" || source.host !== "pbs.twimg.com" || source.username || source.password ||
+          !/^\/media\/[A-Za-z0-9_-]+(?:\.(?:jpg|jpeg|png|webp)(?::[a-z0-9]+)?)?$/.test(source.pathname)) return;
+      if (photos.some(function (p) { return p.path === source.pathname.replace(/\.[^.]+$/, ""); })) return;
+      photos.push({url: source.href, path: source.pathname.replace(/\.[^.]+$/, ""), number: Number(photo[2])});
+    });
+    photos.sort(function (a, b) { return a.number - b.number; });
 
     var first = text.split("\n")[0];
     var subject = (handle ? handle + ": " : "") + (first.length > 90 ? first.slice(0, 87) + "..." : first);
-    var body = text + "\n\n— " + name + (handle ? " (" + handle + ")" : "") + "\n" + url;
+    var body = text + (photos.length ? "\n\n" + photos.map(function (p) { return p.url; }).join("\n") : "") +
+      "\n\n— " + name + (handle ? " (" + handle + ")" : "") + "\n" + url;
 
     return (
       baseOrigin +
       "/compose/thread?board_tags=general&subject=" +
       encodeURIComponent(subject) +
       "&body=" +
-      encodeURIComponent(body)
+      encodeURIComponent(body) +
+      (photos.length ? "#tweet-image=" + encodeURIComponent(photos[0].url) : "")
     );
   }
 
