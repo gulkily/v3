@@ -3,17 +3,21 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/message_sync_activity — [ledger](../effort_estimation_trial.md#cycle-v3message_sync_activity), standing P2 enrollment
 Extended estimates: enabled
-Status: Step 2 approved; Step 3 proposed; implementation not yet authorized
+Status: Revised Step 3 approved; Stages 1–2 committed; resume Stage 3
 
 **Cycle estimate: 0.95**
 
 ## Completion Contract
+
+Sending remains unchanged: no new send rejection, reauthentication requirement, key-match check or outer-signature requirement. Recovery tries the eligible recorded submitting key first, then bounded pages of other currently approved sender keys when needed. The recorded identity is a hint, never proof of the encrypted signer. No legacy upgrade-required response is authorized.
 
 Ordinary visible Messages visits on an existing donor and a recently active new key recover sent and received history at the observed 115-key scale without test-only repeated refresh calls. Recent authenticated foreground activity orders same-account destinations; one in four selections protects older destinations. Once useful work is settled, an eligible refresh is one response of at most 8 KiB, with no repeated originals, candidate queries or receipts; unused accounts remain silent. Missing donors, interruption, new activity and new valid transfers have explicit resume/invalidation paths.
 
 All [Step 2 ceilings](./message_sync_activity_step2_feature_description.md#proposed-hard-limits-and-success-criteria) are binding: 160 discovery decisions/64 public-key records per request, 4 MiB non-idle response, 16 attempts/10 distinct originals/3 concurrent requests per browser turn, 10-second work window/15-second cancellation deadline, at least one-second continuation yield, and server rolling admission of 16 requests/key and 64/account per 10 seconds. Budgets cover legacy endpoints and work hidden behind helpers. No retirement, approval cap, new dependency or public recipient activity. Local completion requires real-browser and server evidence; deployment/user-environment replay is separate and must remain explicitly pending until performed.
 
 ## Key Risks
+
+- **High risk:** Submitting identity need not equal the encrypted signer. Verify a real message submitted under A and signed by approved B, including B beyond the first key page. Separate successful decryption from signature verification; a wrong verification key must not initiate another transfer search. Legacy clients can rewrite checkpoints on timeout, so prove resumable fallback before implementing dependent scheduling.
 
 - **High risk:** “Settled” or unavailable caches can suppress later recovery, especially sent history. Establish revision/invalidation and interrupted-progress tests before suppression; never infer readability from upload alone.
 - **High risk:** Activity ranking or donor responses can expose another account's behavior. Keep activity private and same-account; vary recipient activity/coverage in invariance tests before sender integration.
@@ -50,11 +54,11 @@ All [Step 2 ceilings](./message_sync_activity_step2_feature_description.md#propo
 
 - Goal: Enforce record/byte ceilings without losing original verification or legacy compatibility.
 - Dependencies: Stage 2 committed; admission and activity tests pass.
-- Expected changes: Replace sync's full-account key loading with bounded identity/approved-target retrieval. Use original signer identity where trustworthy to select verification material, with bounded fallback for historical records; deduplicate originals/keys within response and provide continuation where needed. Apply an explicit budget through discovery, transfer retrieval and serialization, including old endpoints.
-- Verification approach: 115 and larger key sets, maximum accepted originals, large historical keys, old signer metadata, malformed inputs and old browser contracts; count loaded key records and emitted bytes, not just final list length. Verify the original signature with both supported crypto bundles.
-- Risks or open questions: Selecting too few keys may break historical verification. Resolve exact signer selection and bounded fallback before Stage 4; if preserving old-client recovery under approved ceilings is infeasible, return to Step 2 rather than truncate or silently relax limits.
+- Expected changes: Replace sync's full-account key loading with bounded identity/approved-target retrieval. Use submitting identity only as the first verification hint; paginate other approved sender keys without assuming a failed signature means missing decryption access. Planned contracts: verificationPage(viewer, messageId, digest, cursor, budget) and acknowledgeVerificationProgress(viewer, checkpoint). Bind progress to account, authenticated key, original/digest, destination and mode; validate membership at use. Additive bounded retrieval reuses history authorization and admission. Deduplicate originals/keys within responses and provide continuation where needed. Apply an explicit budget through discovery, transfer retrieval and serialization, including old endpoints.
+- Verification approach: First run a minimal real-key recovery slice with submitting key A, signer B beyond the first page, missing/revoked hints, invalid signatures and no donor. Exercise unchanged legacy GET/combined clients, timeout checkpoint rewrites, duplicate/lost acknowledgments, interrupted navigation and retry. Then cover 115 and larger key sets, maximum accepted originals/keys and malformed cursors; count helper key loads and actual encoded bytes. Verify supported crypto paths. No access receipt until the original signature succeeds.
+- Risks or open questions: Legacy clients have no verification-page request. Test server-held verification position independent of destination/message scan position: present bounded key subsets through existing sender_keys, advance only via validated progress acknowledgments, and do not finish the cycle while subsets remain. Timeout-rewritten checkpoints must not skip pending subsets. This is a candidate adapter, not proven compatibility. Commit Stage 3 only after old and updated clients recover under every ceiling; if infeasible, return with measured failing cases to Step 2, without shipping permanent 503 loops, truncation or upgrade errors.
 - Canonical components/API contracts touched: ApprovedUserKeyResolver/ProfileRepository queries used by sync, HistorySyncService/Controller, crypto verification contract. Any required read-model index/schema-dependent change includes version bump, schema docs, prior-version startup regression and rebuild/API verification.
-- Estimate details: Original stage work; driver is compatibility under byte/key budgets; uncertainty is historical verification-key shape.
+- Estimate details: Original stage work; driver is compatibility under byte/key budgets; uncertainty is legacy progress across failed verification and timeout. Owns the minimal browser verification consumer and compatibility harness; Stage 5 owns shared caches and receipt deduplication.
 
 ## Stage 4 — Activity-ordered progress and quiet completion
 
@@ -74,7 +78,7 @@ All [Step 2 ceilings](./message_sync_activity_step2_feature_description.md#propo
 
 - Goal: Processing the same original for several destinations does not repeat empty requests or cryptography.
 - Dependencies: Stage 4 committed.
-- Expected changes: Share bounded in-memory original-key extraction, candidate and signature results within a turn; batch or coalesce acknowledgments. Let discovery state indicate when no candidate retrieval is useful, tied to invalidation evidence. Preserve original/identity/digest binding and independent validation of each transfer. Additive modern protocol paths reuse existing services; keep old routes within approved budgets.
+- Expected changes: Share bounded in-memory original-key extraction, candidate and signature results within a turn; batch or coalesce acknowledgments. Let discovery state indicate when no candidate retrieval is useful, tied to invalidation evidence. Preserve original/identity/digest binding and independent validation of each transfer. Share successful decryption across verification-key pages; retry signature verification with the next bounded page instead of fetching the same transfer again. Keep missing access, unfinished verification and exhausted verification distinct. Bound both entry count and bytes of in-memory results; clear secrets on identity change, hiding/navigation or lifecycle cancellation. Additive modern protocol paths reuse existing services; keep old routes within approved budgets.
 - Verification approach: Request counts for repeated targets, invalid donors followed by valid donors, lost upload/ack responses, changed identities and new transfers after a negative result. Assert no persisted plaintext/private keys/session keys and no receipt before verification.
 - Risks or open questions: Cache retention can create stale failures or secret accumulation; cap entries/bytes, clear on identity/navigation boundaries and reopen through explicit reader retry or changed evidence.
 - Canonical components/API contracts touched: History coordinator/crypto, transfer and acknowledgment APIs, canonical conversation reader/list preview recovery.
@@ -87,7 +91,7 @@ All [Step 2 ceilings](./message_sync_activity_step2_feature_description.md#propo
 - Goal: One ordinary visible visit advances pending work and then becomes quiet.
 - Dependencies: Stage 5 committed.
 - Expected changes: Replace repeated fresh cycles with resumable turns carrying progress and completion state. Enforce all browser ceilings across candidates, upload, receipts and retries; yield at least one second and honor Retry-After. Coalesce triggers/tabs, cancel hidden/navigation/identity/disabled runs, preserve resume points and stop after no useful work remains. Existing storage/facilities only; server admission remains the backstop when browser coordination is unavailable.
-- Verification approach: Fake-clock and real-browser tests for budget exhaustion, missing donors, cancellation, simultaneous tabs, unavailable browser storage, 429 recovery and stale responses. An idle page must not restart itself on a timer.
+- Verification approach: Fake-clock and real-browser tests for budget exhaustion, missing donors, cancellation, simultaneous tabs, unavailable browser storage, 429 recovery and stale responses. An idle page must not restart itself on a timer. Verification-page progress is unfinished discovery; exhausted pages without a valid signature wait for relevant changes or explicit retry rather than restarting. Verify cancellation clears transient secrets while retaining non-secret resume metadata.
 - Risks or open questions: Indefinite continuation recreates the flood; distinguish unfinished bounded discovery from a completed no-progress pass and wait for relevant change/ordinary return after the latter.
 - Canonical components/API contracts touched: History coordinator, unread/availability lifecycle, foreground reader retry and private progress contract.
 - Estimate details: Original stage work; driver is cancellation and turn accounting; uncertainty is multi-tab fallback behavior.
@@ -99,7 +103,7 @@ All [Step 2 ceilings](./message_sync_activity_step2_feature_description.md#propo
 - Goal: Prove both the delayed recovery and continuing post-recovery traffic are fixed.
 - Dependencies: Stage 6 committed.
 - Expected changes: Complete real signed fixtures and network/resource assertions at 115 keys, with incoming/outgoing history, a recent new key, inactive destinations and partial donors. Capture sanitized before/after evidence; correct only in-scope defects.
-- Verification approach: Natural Messages reload/visible return on donor and recipient, without repeated test-only refresh calls; sent and received content readable, recent priority plus older fairness, then 8 KiB/one-request idle checks with no repeated lookup/receipt traffic. Exercise new donor arrival, outages, oversized records, direct/legacy clients, restore, concurrent tabs, phone/desktop and both crypto paths; verify every ceiling from Step 2 and ordinary sending during sync throttling.
+- Verification approach: Natural Messages reload/visible return on donor and recipient, without repeated test-only refresh calls; sent and received content readable, recent priority plus older fairness, then 8 KiB/one-request idle checks with no repeated lookup/receipt traffic. Exercise new donor arrival, outages, oversized records, direct/legacy clients, restore, concurrent tabs, phone/desktop and both crypto paths; verify every ceiling from Step 2 and ordinary sending during sync throttling. Include signed A/B mismatch recovery without any change to send acceptance, and confirm no send-time key-match restriction was introduced.
 - Risks or open questions: Full recovery for the active key does not mean every historical key is settled. Record finite useful background progress separately from repeated no-progress traffic. Replay the user's local/deployed trace only within authorization; retain pending external acceptance explicitly.
 - Canonical components/API contracts touched: Existing history/read-state/feature-flag tests and browser fixtures; no new product UI or diagnostic disclosure.
 - Estimate details: Original stage work; driver is realistic scale and recovery matrix; uncertainty is reproduction fidelity. Owns shared end-to-end acceptance; earlier stages own focused tests.
@@ -116,10 +120,21 @@ All [Step 2 ceilings](./message_sync_activity_step2_feature_description.md#propo
 - Canonical components/API contracts touched: Existing history rollout guide, private database support, [history concepts](../../concepts/private_message_history.md) and proposed private-key-activity concept; no unrelated inventory backfill.
 - Estimate details: Original stage work; driver is lifecycle documentation; uncertainty low. Owns shared closeout records, not repeated stage verification.
 
-## Execution and study checkpoint
+## Original execution and study checkpoint (historical)
 
 Step 3 handoff: 2026-10-30 UTC; whole-cycle 0.95 reaffirmed, scope v1/A, baseline 4b14e622f3cca6cb8f041145fd1df954bacc74e4, R1/P2 and Codex single exposed rater. Earlier 0.85/0.95 snapshots remain intact; inherited exact R1 verification retained. Eight original stage-work estimates are independent annotations, not additive or measured hours. Recent source inspection confirms full-key resolution and no existing history admission limiter; implementation risk remains concentrated in Stage 3/4 gates. No implementation or runtime acceptance in this step.
 
 After Approved Step 3, create feat/message-sync-activity, organize only this cycle's plans/debug/diagnostic references and index entries, and make the planning-only commit before creating its summary. Keep retirement/cap plans uncommitted and untouched by the selected cycle's commit; ledger changes for those cycles remain unstaged. Include only authorized organization reference fixes in the planning commit; substantive study bookkeeping accompanies a later stage. Every stage must pass its checks and be committed with its summary before the next. Do not advance dependent work through unresolved compatibility/budget risks or silently widen scope. No merge, push or deployment authorization is inferred.
+
+*— Codex · 2026-10-30 UTC*
+
+## Revised execution and study checkpoint — 2026-10-30 UTC
+
+- Approval: Revised Step 2 explicitly approved. This revision preserves its non-blocking send requirement and all limits; no legacy compatibility relaxation, new dependency, retirement or cap.
+- State: Stage 1 (68167edd2) and Stage 2 (f2c3a8a98) are complete; preserve them and their summaries. Stage 3 is incomplete; its withdrawn experiment and regression remain documented. Stages 4–8 are pending. Stage identities and original estimates remain unchanged; substantive revisions affect Stages 3, 5, 6 and 7 only.
+- Design evidence: Current browser echoes work.checkpoint on the ordinary path, but on a deadline can replace it with target/after_id (or null for sender work). Server-held verification progress must therefore survive that existing behavior. No runtime claim follows from source inspection; the Stage 3 harness is the acceptance gate.
+- Estimate: Whole-cycle 0.95 reaffirmed, v2/A, original baseline 4b14e622f3cca6cb8f041145fd1df954bacc74e4, R1/P2, single exposed Codex rater. All three frozen R1 hashes reverified. Original stage-work values retained: fallback/compatibility were already part of Stage 3, now specified more precisely. This is not remaining effort, measured labor or a completed outcome.
+- Resume after Approved Step 3: Reuse this cycle's feat/message-sync-activity branch; do not create a new cycle or replay completed stages. Commit the revised approved planning artifacts before restarting Stage 3; keep sibling retirement/cap proposals and their ledger changes out. Then update the existing summary and implement each remaining stage sequentially with its tests, summary and stage-scoped commit. Do not amend completed commits. No merge, push or deployment authorization.
+- Verification of this planning revision: Documentation scope, relative links and diff checks only. Runtime/UI tests not run because this turn changes no application code. Production replay and final traffic/recovery acceptance remain pending.
 
 *— Codex · 2026-10-30 UTC*

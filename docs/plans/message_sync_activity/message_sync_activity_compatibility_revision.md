@@ -1,9 +1,13 @@
 > **Feature plan:** [Step 1](./message_sync_activity_step1_solution_assessment.md) · [Step 2](./message_sync_activity_step2_feature_description.md) · [Step 3](./message_sync_activity_step3_development_plan.md) · [Step 4](./message_sync_activity_step4_implementation_summary.md)
 
-Status: Proposed Step 2 compatibility revision; not approved
+Status: Earlier proposal superseded; legacy upgrade-required restriction withdrawn from current recommendation, never approved
 Date: 2026-10-30 UTC
 Cycle: v3/message_sync_activity
 Scope: Historical verification under the approved resource ceilings
+
+## Current disposition
+
+The user rejected blocking sends and selected recorded-key-first recovery with bounded fallback. The [revised Step 2](./message_sync_activity_step2_feature_description.md#revision-checkpoint--recovery-without-send-restrictions) is the current proposal. No new send restrictions or legacy upgrade-required response are authorized. The remaining text preserves the earlier proposal and evidence; its suggested compatibility relaxation is not current scope. Legacy progress under the unchanged limits remains to be demonstrated, not assumed impossible or already solved.
 
 ## Finding
 

@@ -60,3 +60,28 @@ Verification: Restored Step 2 approval, debug and extended-estimate state; inspe
 *— Codex · 2026-10-30 UTC*
 
 2026-10-30 UTC — Step 4 compatibility checkpoint: Stage 3 exact submission-identity key selection failed the added regression for another approved original signer. Full focused tests had not covered that semantic boundary. Withdrew experimental product/schema changes; preserved committed admission/activity work and the regression. Step 2 compatibility revision proposed; Stages 3–8 incomplete. No debug-mode change, dependency change, deployment or accepted outcome.
+
+## Revised Step 2 diagnostic — 2026-10-30 UTC
+
+Mode: Debug enabled, inherited; extended estimates enabled, standing P2/R1 study.
+Request: Continue current sync cycle after user rejects send blocking and agrees to recovery-side fallback.
+Instructions applied: Host AGENTS/PRINCIPLES/CONTRIBUTING, Railspike Step 2 revision and approval gates; no delegation, dependencies or changes to todo.txt.
+Actions: Revised Step 2 with no new send restrictions, recorded-key-first verification and bounded fallback; withdrew unapproved legacy upgrade restriction from current recommendation while preserving historical proposal. Updated Step 3 status, implementation summary and study ledger.
+Evidence boundary: API permits differing submitting/signing keys; constructed regression is not evidence of this condition in user messages. Legacy progress under hard ceilings remains unproven; neither impossibility nor completed compatibility is claimed.
+Verification: Documentation diff/scope and relative-link checks; no runtime or UI changes, so runtime, UI and deployment verification not applicable this turn.
+Study: v2/A total 0.95 reaffirmed, original baseline and prior R1 verification inherited, single exposed Codex rater. Prior estimates and incomplete outcome preserved; no measured work or accepted result.
+Handoff: Revised Step 2 awaits approval before revised Step 3. Completed Stages 1–2 retained; no further implementation, merge or push. Separate retirement/cap proposals remain untouched.
+
+*— Codex · 2026-10-30 UTC*
+
+## Revised Step 3 diagnostic — 2026-10-30 UTC
+
+State: Revised Step 2 explicitly approved; debug and extended estimates remain enabled. Same cycle, branch and completed Stages 1–2.
+Instructions: Railspike Step 3 Before/Do/After; preserve prior work, scope and estimates; no implementation before renewed Step 3 approval.
+Changes: Plan adds recorded-key-first bounded fallback, separates failed verification from unavailable decryption, defines server-held legacy progress as a candidate requiring real-client validation, and covers timeout checkpoint replacement. Stages 5–7 share results, resume within budgets and test mismatch recovery without changing send acceptance. No new dependency or unapproved legacy error.
+Evidence: Read current browser combined/legacy processing and checkpoint paths. Ordinary acknowledgments echo server checkpoints; deadline handling can replace them. Feasibility remains unverified until the Stage 3 real-key harness; no new runtime tests or claim of solved compatibility.
+Study: R1 hashes reverified; 0.95 total and original stage estimates reaffirmed, same baseline and v2/A/P2, single exposed Codex. Earlier projections, incomplete stages and failed experiment retained.
+Checks: Documentation-only scope, local file targets and git diff --check. Runtime, UI, migration and deployment checks not applicable to this planning turn. No delegation, commit, push or release.
+Handoff: Request Approved Step 3; then commit revised planning on the existing branch and resume Stage 3. No restart of completed stages or sibling cycles.
+
+*— Codex · 2026-10-30 UTC*
