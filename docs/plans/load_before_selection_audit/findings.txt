@@ -1,7 +1,18 @@
 Audit: Load before selection
 Revision: ade35a65d2488bcfc280277e4bbf0bc8beae76a4
-Status: Public-reader stage complete; maintenance findings and final ranking pending
+Status: Documentation audit complete; remediation and production validation pending
 Evidence: measurements.txt, reader_results.txt; inherited memory evidence remains in ../qdb_memory_audit/qdb_memory_audit_findings.txt
+
+Ranking basis: User-visible/rebuild exposure, measured materialization and independence of correction; not predicted host speedup. Eight tracked findings, including inherited/overlapping causes, not eight new discoveries.
+Rank 1: LBS01 QDB welcome first, then separate numbered-list/random/search slices. Strong current body-count evidence, ordinary public and shared build exposure; highest semantic risk if broadened all at once.
+Rank 2: LBS02 offline candidate retention. Strong current selection evidence; narrow streaming step preserves pins and can reduce retention before tackling SQL projection.
+Rank 3: LBS04 tags-index narrow projection. Streaming already fixed retention, but bodies still cross PDO; lower risk if isolated from RSS/Forte/custom query consumers.
+Rank 4: LBS07 source-history lookup. Direct rebuild relevance and avoidable full output; validate deep-history measurements before estimating savings. Do not conflate with delivered indexCommits fix.
+Rank 5: LBS05 pending-user count. Small independent fix, source-only evidence; may be chosen before larger work for low implementation complexity.
+Rank 6: LBS06 standard username inactive tab. Source-only, identity-history growth; preserve Forte consumers and aggregate totals.
+Rank 7: LBS03 tag-route enumeration. Smaller metadata allocations, old evidence only; optional profile work already default-off.
+Rank 8: LBS08 historical scoring audit. Operator-only, inherited evidence; necessary full examination but unnecessary simultaneous body retention.
+Recommendation: Start a separately approved QDB welcome selection cycle using LBS01's parity contract. This audit authorizes no remediation, automated CI detector, schema/index change or deployment.
 
 Finding: LBS01
 Ownership: Inherited M02, same root cause; not a new discovery
@@ -15,11 +26,11 @@ Required checks: IDs/order/count parity against current logic on mixed eligibili
 
 Finding: LBS04
 Status: Source-traced unnecessary projection; unmeasured
-Source: src/ForumRewrite/Http/TagsPageController.php index; src/ForumRewrite/ReadModel/TagGrouping.php summaries; ThreadRepository::iterateThreads; Http/ApiTextController.php listIndex; Http/BoardPageController.php rss; Http/ForteBoardController.php board
+Source: src/ForumRewrite/Http/TagsPageController.php index; src/ForumRewrite/ReadModel/TagGrouping.php previewsFromUniqueThreads; ThreadRepository::iterateThreads; Http/ApiTextController.php listIndex; Http/BoardPageController.php rss; Http/ForteBoardController.php board
 Work: Tags index streams rows but still transfers every full root body, then discards it; summaries use body_preview for titles. Text index/RSS enumerate complete results yet also use the broad full-body query. Forte loads all board roots before selection; only selected-thread detail/replies are lazy.
 Exceptions: Complete RSS/text index and Forte folder/row lists currently expose the whole eligible collection. Full enumeration is necessary for that contract; full body projection is separable. Replacing with a capped result would change behavior. Native/browser bytes and body dependencies of custom editable listing queries remain unmeasured.
 Smallest correction: A narrow tags-index projection retaining exact tags, preview/title/order/count semantics; leave editable queries and full-detail readers untouched. Audit RSS/text title dependencies separately before sharing it.
-Required checks: Tag grouping counts/order/three previews, malformed JSON/object tags, media title fallback, complete RSS/text output and Forte selected direct-link behavior. Per-tag pages already use TagPage; do not duplicate that fix.
+Required checks: Tag grouping counts/order/five previews, malformed JSON/object tags, media title fallback, complete RSS/text output and Forte selected direct-link behavior. Per-tag pages already use TagPage; do not duplicate that fix.
 
 Finding: LBS05
 Status: Source-traced count-only overfetch; unmeasured

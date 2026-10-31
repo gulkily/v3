@@ -51,3 +51,34 @@ Runtime/UI/deployment/migration checks are inapplicable to documentation changes
 - Estimate details: Original scope unchanged, no revisions. Retrospective includes maintenance probe and caller classification; labor remains unmeasured. No runtime/UI/release/migration tests applicable to document delivery.
 
 *— Codex · 2026-10-31 UTC*
+
+## Stage 4 — Ranked handoff
+
+**Original estimate: 0.11**
+**Retrospective stage work: 0.11**
+
+- Changes: Ranked eight tracked findings (including inherited causes), explicit exceptions/gaps, [collection-selection concept](../../concepts/collection_selection.md), navigation/index and [operator handoff](operator_handoff.txt). Recommend QDB welcome as the first independent remediation scope; no fixes implemented.
+- Verification: Checked finding IDs, caller paths and named methods against current source; corrected the draft tag-group method name and preview count to previewsFromUniqueThreads/five. Cycle/concept links and referenced source paths resolve; all 24 samples retain exit/identity checks; archived probe syntax and arithmetic checked. Whitespace and staged file-scope checks passed; dependency/runtime/schema delta zero.
+- Notes: Current tests verify documentation/evidence, not application behavior after a fix. No full-suite, UI, production, concurrency or recovery claim. Complete export/RSS/import traversal and bounded tag/profile/activity/queue selection are separated from remaining allocation risks. Existing effective-tag/reaction concepts used unchanged; no corrections needed there.
+- Estimate details: Original scope unchanged, no revisions. Shared ranking/checks owned here. Separate retrospective stage work 0.11; non-additive and not measured labor.
+
+*— Codex · 2026-10-31 UTC*
+
+## Closeout
+
+**Retrospective cycle scope: 0.55**
+
+All four documentation stages complete. Prospective/entry total remains 0.55; separate retrospective total 0.55, single exposed Codex rater, same v1/B/original baseline/R1/P2. All three frozen-reference hashes reverified. Original/retrospective stage work 0.08/0.18/0.18/0.11 retained without revision; no independent rating, measured labor or accepted-outcome increment. Maintainer comfortable-fit/acceptance pending.
+
+Planning: 5983cbf2. Stage 1: af95cf65. Stage 2: ea0de69b. Stage 3: 7a2294f2. Stage 4: this summary-bearing closeout commit. Log-only handoff follows. No merge, push or deployment performed; unrelated capacity/QDB report drafts preserved.
+
+| Representative path | Candidates | Selected | PHP peak |
+| --- | ---: | ---: | ---: |
+| QDB reader + 25-item policy slice | 1,000 → 10,000 | 25 | 8 → 60 MiB |
+| QDB reader + welcome slice | 1,000 → 10,000 | 5 | 8 → 60 MiB |
+| Existing tag-page selection | 1,000 → 10,000 | 25 | 2 → 2 MiB |
+| Offline candidate selection | 1,000 → 10,000 | 201 | 4 → 24 MiB |
+
+These isolate current methods; they are not proposed-fix speedups or full-route parity tests. All samples passed selected-ID checks. QDB loads 10,000 full bodies; offline loads 10,000 preview rows; tag selection loads 25 full bodies. SQL rows examined and production impact remain unknown.
+
+*— Codex · 2026-10-31 UTC*

@@ -28,7 +28,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [Load-before-selection audit](load_before_selection_audit/load_before_selection_audit_step3_development_plan.md) — approved documentation-only audit of collection loading and consumer selection.
+- [Load-before-selection audit](load_before_selection_audit/load_before_selection_audit_step4_implementation_summary.md) — completed documentation audit; ranked findings and 24 local selection samples, fixes pending.
 
 - [QDB memory audit](qdb_memory_audit/qdb_memory_audit_step1_solution_assessment.md) — documentation-only source audit complete; fixes and host capacity acceptance remain separate.
 

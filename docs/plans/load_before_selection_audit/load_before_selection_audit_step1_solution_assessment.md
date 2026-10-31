@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](load_before_selection_audit_step1_solution_assessment.md) · [Step 2](load_before_selection_audit_step2_feature_description.md) · [Step 3](load_before_selection_audit_step3_development_plan.md) · Step 4 (not started)
+> **Feature plan:** [Step 1](load_before_selection_audit_step1_solution_assessment.md) · [Step 2](load_before_selection_audit_step2_feature_description.md) · [Step 3](load_before_selection_audit_step3_development_plan.md) · [Step 4](load_before_selection_audit_step4_implementation_summary.md)
 
 Debug mode: enabled
 Effort study: railspike-effort / v3/load_before_selection_audit; [P2 ledger](../effort_estimation_trial.md#cycle-v3load_before_selection_audit)

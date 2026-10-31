@@ -1061,11 +1061,17 @@ Authorization: Plan only; await Approved Step 1. No implementation, tests, commi
 
 ## Cycle v3/load_before_selection_audit
 
-Status: Step 1 proposed; audit execution and remediation not started.
+Status: Four documentation audit stages complete; fixes and host validation unimplemented; maintainer acceptance pending.
 Scope: v1/B codebase-wide audit of loading whole collections before selection; baseline cfb8364f6db03cc09e27cd26afb93c109c723a08; R1/P2.
 Canonical checkpoints: [Intake and Step 1](./load_before_selection_audit/load_before_selection_audit_step1_solution_assessment.md#study-checkpoint), 2026-10-30 UTC; 0.55 total reaffirmed. Alternatives A 0.20 / C 0.90, non-additive whole-audit projections.
 Rater: Codex, single exposed rater; prior memory-audit exposure explicit; all three frozen hashes verified. Debug and extended estimates enabled. No measured labor, independent rating or accepted outcome.
 Relationship: Related to v3/qdb_memory_audit, broadening from memory to unnecessary work before selection. Seed findings overlap and must not be counted as independent discoveries. No application changes, dependency additions, commits or deployment.
+
+2026-10-31 UTC, v3/load_before_selection_audit Step 2 handoff: [Requirements/checkpoint](./load_before_selection_audit/load_before_selection_audit_step2_feature_description.md#approval-and-study-checkpoint). v1/B/original baseline/R1/P2 retained; source context ade35a65 includes delivered fixes, without resetting history. Whole-cycle 0.55 reaffirmed; single exposed Codex rater, all frozen hashes reverified, debug/extended enabled. Documentation-only audit with disposable local probes and explicit family coverage; no fixes, automated detection or production capacity claim. No measured labor, independent rating or accepted outcome. Await Approved Step 2.
+
+2026-10-31 UTC, v3/load_before_selection_audit Step 3 handoff: Step 2 approved. [Plan/checkpoint](./load_before_selection_audit/load_before_selection_audit_step3_development_plan.md#study-checkpoint) retains v1/B/original baseline/R1/P2 and single exposed Codex rater; frozen hashes verified. Whole-cycle 0.55 independently reaffirmed; original stage work S1 0.08 / S2 0.18 / S3 0.18 / S4 0.11, non-additive, not hours. S1 owns baseline/conventions; S2/S3 own family probes; S4 owns consolidation. Documentation-only scope, explicit local/host evidence limits; no audit execution, runtime fixes, measured labor or accepted outcome. Await Approved Step 3; new planning artifacts remain uncommitted.
+
+2026-10-31 UTC, v3/load_before_selection_audit Step 4 closeout: Step 3 explicitly approved. [Entry/stages/outcome](./load_before_selection_audit/load_before_selection_audit_step4_implementation_summary.md#closeout). Same v1/B/original baseline/R1/P2; frozen hashes verified; single exposed Codex rater. Entry total 0.55 reaffirmed, separate retrospective scope 0.55; stage originals/retrospectives S1 0.08 / S2 0.18 / S3 0.18 / S4 0.11, no revisions, non-additive. Four stages complete: ranked tracked causes, coverage/exceptions, concept and operator handoff. All 24 local selection samples passed IDs/count checks at 128 MiB; QDB reader 8/60 MiB, offline selection 4/24 MiB for 1000/10000 candidates. Direct-method synthetic evidence only; SQL scans/full UI/build/production recovery unverified. Documentation-only changes, zero dependencies/runtime/schema delta; no merge/push/deployment, measured labor or accepted-count increment. Maintainer fit/acceptance pending.
 
 ## Cycle v3/qdb_rebuild_scope
 
