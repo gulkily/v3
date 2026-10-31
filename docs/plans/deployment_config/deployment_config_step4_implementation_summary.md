@@ -59,3 +59,21 @@ Branch: `feat/deployment-config`; planning commit `e51751cf`
 - Notes: an unknown profile in the private file makes web requests fail with an error in the server log; status in Stage 5 surfaces the same message to the operator.
 
 *— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - CLI scripts and cron
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - 71 direct reads in 26 scripts now go through `DeploymentSettings::value()`; explicit command-line options still take precedence and each script keeps its existing default. `check_static_artifacts.php` now loads the autoloader.
+  - Correction found here: `./v3 rebuild` with no arguments ignored `FORUM_REPOSITORY_ROOT` and always rebuilt the local default repository, so the CLI could disagree with the web app. It now uses the configured repository, and the local default is only initialized when none is configured.
+  - The TUI home placeholder (`terminal_operator_ui.sh`), shown if the first status call fails, resolves the repository through the same lookup instead of `${FORUM_REPOSITORY_ROOT:-...}`.
+  - The cron worker needs no change: it runs `php scripts/task_queue.php` from the checkout, which now reads the private file.
+  - Tests: `testNoCodeReadsDeploymentSettingsDirectlyFromTheEnvironment` scans `src`, `scripts`, `public` and `v3` for `getenv`, `$_SERVER`/`$_ENV` and shell `${...}` reads of the six keys (checked against the pre-change `status.php` and TUI script: both caught). `testCliUsesPrivateFileRepositoryAndDatabaseWithoutEnvironment` runs `rebuild` and `status` with all six variables unset and only the private file set, and checks they use its repository and database.
+- Verification:
+  - `DeploymentSettingsTest` 9/9. Passed: `StatusCommandTest` 7, `OperatorStatusCollectorTest` 6, `ImportInstanceCommandTest` 9, `RepositoryArchiveImportCommandTest` 1, `FastmodAuditCommandTest` 5, `ApprovalReceiptMaintenanceTest` 6, `ArchiveThreadCommandTest` 3, `PostSignatureAuditCommandTest` 2, `AgentReplyCommandTest` 5, `AgentResponseFormatReadinessTest` 4, `RetractionSweepTest` 10, `TerminalOperatorUiCommandTest` 3, `TerminalOperatorUiDashboardTest` 1, `DevServerLogTest` 9, `HighTrafficPublicationTest` 4; Python terminal UI navigation, PTY and acceptance tests.
+  - `ApprovalSeedCommandTest::testSeedRetiresCachedPagesAndReleaseBeforeServingUpdatedState` failed and also fails in the baseline. `TaskQueueCommandTest::testRebuildWorkerRecordsPrivateProgressCheckpoints` and `DocsPublicationFlowTest::testReportedResumeCompletesWithChangedAndMissingDamagedOrLegacyDocs` ("HTTP server failed to start") failed once while the baseline suite was running concurrently, then passed twice each when rerun alone; treated as intermittent.
+- Notes: `backfill_unicode_risk.php` still initializes the local default repository eagerly (pre-existing; unchanged).
+
+*— Claude · 2026-10-31 UTC · Model: claude-opus-5-5*

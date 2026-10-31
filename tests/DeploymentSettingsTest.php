@@ -121,6 +121,55 @@ final class DeploymentSettingsTest
         }
     }
 
+    public function testNoCodeReadsDeploymentSettingsDirectlyFromTheEnvironment(): void
+    {
+        $project = dirname(__DIR__);
+        $keys = implode('|', DeploymentSettings::KEYS);
+        $offenders = [];
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($project, FilesystemIterator::SKIP_DOTS));
+        foreach ($files as $file) {
+            $relative = substr($file->getPathname(), strlen($project) + 1);
+            if (!preg_match('#^(src|scripts|public)/.*\.(php|sh)$|^v3$#', $relative)
+                || $relative === 'src/ForumRewrite/Support/DeploymentSettings.php') {
+                continue;
+            }
+            $contents = (string) file_get_contents($file->getPathname());
+            if (preg_match('/getenv\(\s*[\'"](' . $keys . ')[\'"]\s*\)|\$_(SERVER|ENV)\[\s*[\'"](' . $keys . ')[\'"]|\$\{?(' . $keys . ')\b/', $contents, $match)) {
+                $offenders[] = $relative . ': ' . $match[0];
+            }
+        }
+        assertSame([], $offenders);
+    }
+
+    public function testCliUsesPrivateFileRepositoryAndDatabaseWithoutEnvironment(): void
+    {
+        $root = sys_get_temp_dir() . '/forum-rewrite-deployment-cli-' . bin2hex(random_bytes(6));
+        mkdir($root . '/repository', 0700, true);
+        exec('cp -R ' . escapeshellarg(dirname(__DIR__) . '/tests/fixtures/parity_minimal_v1/records') . ' ' . escapeshellarg($root . '/repository/records'));
+        exec('cd ' . escapeshellarg($root . '/repository') . ' && git init -q && git add . && git -c user.name=t -c user.email=t@t commit -qm fixture');
+        file_put_contents($root . '/secrets.php', '<?php return ' . var_export([
+            'FORUM_SITE_ID' => 'qdb',
+            'FORUM_REPOSITORY_ROOT' => $root . '/repository',
+            'FORUM_DATABASE_PATH' => $root . '/state/read.sqlite3',
+        ], true) . ';');
+        mkdir($root . '/state', 0700);
+        $environment = 'env ' . implode(' ', array_map(static fn (string $key): string => '-u ' . $key, DeploymentSettings::KEYS))
+            . ' FORUM_SECRETS_PATH=' . escapeshellarg($root . '/secrets.php');
+        try {
+            exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && ' . $environment . ' php scripts/rebuild_read_model.php 2>&1', $rebuild, $rebuildExit);
+            assertSame(0, $rebuildExit);
+            $pdo = new PDO('sqlite:' . $root . '/state/read.sqlite3');
+            assertSame('1', (string) $pdo->query("SELECT COUNT(*) FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+
+            exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && ' . $environment . ' php scripts/status.php --url=http://127.0.0.1:9 2>&1', $status);
+            $status = implode("\n", $status);
+            assertTrue(str_contains($status, 'Repository: ' . $root . '/repository'));
+            assertTrue(str_contains($status, 'Read-model database: ' . $root . '/state/read.sqlite3'));
+        } finally {
+            exec('rm -rf ' . escapeshellarg($root));
+        }
+    }
+
     /**
      * @param array<string, mixed> $values
      * @param callable(string):void $callback

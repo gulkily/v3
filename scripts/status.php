@@ -20,8 +20,8 @@ try {
         exit(0);
     }
 
-    $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
-    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $repositoryRoot = (string) ($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
+    $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
     $queuePath = TaskQueueDatabaseConfig::path(
         $projectRoot,
         isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null,

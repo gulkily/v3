@@ -28,8 +28,8 @@ if (preg_match('/^[A-Za-z0-9._:\/.-]+$/', $target) !== 1) {
     exit(1);
 }
 
-$repositoryRoot = normalizePath($argv[2] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
-$databasePath = normalizePath($argv[3] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+$repositoryRoot = normalizePath($argv[2] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
+$databasePath = normalizePath($argv[3] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
 $repository = new CanonicalRecordRepository($repositoryRoot);
 $targetInfo = resolveTargetInfo($repositoryRoot, $repository, $target);
 $threadId = $targetInfo['thread_id'];
