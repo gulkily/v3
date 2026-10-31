@@ -145,3 +145,9 @@ None pending.
 Debug: [Step 3 report](history_purge_debug_log.md#2026-10-30-utc--step-3).
 
 *— Claude · 2026-10-30 UTC · Model: claude-fable-5-1*
+
+### Stage 1 gate result and engine decision — 2026-10-31 UTC
+
+Step 3 approved ("approved step 3"); Stage 1 complete, see the [Step 4 summary](./history_purge_step4_implementation_summary.md#stage-1---sizing-gate-and-purge-planner). Gate measured on synthetic QDB-shaped repositories (no QDB-derived copy exists locally): `filter-branch` managed 2,215 of 5,010 commits in 17.5 minutes and was stopped; a `fast-export --no-data` stream through a path filter into `fast-import` rewrote the same history in 14.1 s and a 100,010-commit shape in 19.0 s, with the commit map taken from original ids and import marks. Engine decision: fast-export stream rewrite, confirmed by the user ("switch to fast-export"). Neither engine named in Stage 3 is used; the Option A contract and horizon-squash fallback are unchanged and the fallback is not needed. Stage 3 revised to 0.15 (0.12–0.18) as new understanding; whole-cycle 0.80 reaffirmed. Stage 1 retrospective 0.20. Stage 2 may begin.
+
+*— Claude · 2026-10-31 UTC · Model: claude-fable-5-1*
