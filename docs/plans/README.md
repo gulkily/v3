@@ -22,6 +22,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Retraction sweep evidence diagnostics](retraction_sweep_evidence_diagnostics_report.md) — historical production findings and failure-path inventory; the proposed diagnostics project is canceled (see the simplification handoff).
 
+[Session rotation race decision](session_rotation_race_decision.md) — signing in could quietly sign the browser out; options, decision (30-second forwarding) and implementation.
+
 [Request register](production_feedback_register.md) — current tracking for migrated requests; [intake and update guide](../reference/production_feedback_management.md). Older inventories are linked from the register and await reconciliation.
 
 ## Feature folders

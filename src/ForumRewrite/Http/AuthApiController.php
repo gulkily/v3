@@ -92,7 +92,7 @@ final class AuthApiController
             return;
         }
 
-        session_regenerate_id(true);
+        SessionRotation::rotate();
         $_SESSION['authenticated_identity_id'] = $identityId;
         unset(
             $_SESSION['lobby_identity_id'],
