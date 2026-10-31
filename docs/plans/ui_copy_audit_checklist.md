@@ -782,9 +782,12 @@ Limits and follow-up: signing in regenerates the session ID and deletes the old 
 
 ## Invite default expiry — October 30, 2026
 
+- Reuse: extended the existing `setFeedback` helper and issuance request in `public/assets/invite_issuance.js`, preserving the signed `expires_at` contract; updated the existing result paragraph in `templates/pages/invites.php`. No new component or API field.
 - [x] Changed new browser-issued invitations from seven days to 30 days and updated the result label to “Expires 30 days after creation.” No expiry selector. Existing signed expiry timestamps and API custom-expiry support remain unchanged.
 - Verification: `InvitationIssuanceTest` passed 10/10, including the 30-day request assertion. A real signed-issuance browser probe (`/tmp/invite-expiry-review.mjs`) verified the prepared canonical expiry and rendered result at 320/1280px in Light, Word97, Chicago and Midnight on public and members-only sites, with no horizontal overflow. Inspected Chicago phone and Midnight desktop screenshots (`/tmp/invite-expiry-*.png`). `invite_zero_click.mjs` passed the complete public/members-only entry, redemption, naming/rebuild, expiry/revocation and recovery flows; the deliberately short-lived expiry fixture is checked against its own lifetime. Template syntax and diff checks passed.
 - Limits: physical devices, other engines and deployment unchecked. Multi-redemption remains proposed in [the Step 1 assessment](multi_redemption_invites_step1_solution_assessment.md); no change to single-use behavior.
+
+Publication verification: 2026-10-30 UTC — user authorized commit and push. Integrated current `origin/main` at `ade35a65`, preserving both study-ledger append blocks. On the combined tree, `InvitationIssuanceTest` passed 10/10 and `invite_zero_click.mjs` passed public/members-only creation, redemption and recovery. Earlier theme evidence remains scoped to the pre-integration tree; no new visual run or deployment claim. Multi-redemption remains a Step 1 proposal.
 
 ## Next phase — new candidates
 
