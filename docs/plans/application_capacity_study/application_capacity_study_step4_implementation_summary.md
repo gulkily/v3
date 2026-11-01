@@ -66,3 +66,15 @@ Reuse: QDB archived probe provides canonical record recipe; tests/fixtures/parit
 - Limitations: One tiny image, not maximum-size/image-count capacity; browser draft recovery unverified (driver retains draft). Import content parity is synthetic subset plus explicit exclusions, not proof that authority is transferred. Large import and interruption during archive download/image restore deferred; this small restore completed too quickly for a meaningful interruption. Same R1/P2/exposed rater; whole-cycle 0.90 retained. Runtime changes/deployment/UI/schema checks inapplicable.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 5 - Scoring and queue maintenance
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes: Three normal fast-score status/audit samples and local rebuild queue batches on a fresh isolated queue. Explicit zero synthetic pricing inputs permit audit without configured provider/pricing; no external evaluations run. S4 commit: 033c7804.
+- Verification: Duplicate enqueue reports already outstanding. Three normal workers complete rebuild and exact 1000-body/count parity. Interrupted worker leaves a running claim; ordinary retry does not immediately reclaim it. Backdating only that disposable claim simulates expiry, then ordinary worker reclaims/completes attempt 2. All final jobs completed. Scope/link/whitespace checks pass.
+- Findings: Interrupted claims use a 900-second abandonment threshold; recovery test simulates time rather than waiting 15 minutes. Immediate run completed another local job, not the interrupted claim. Do not tell operators reset-recovery resets arbitrary running jobs: it resets automatic schema-recovery state. Initial audit without price options failed with actionable guidance and is retained.
+- Limitations: Empty score store; historical audit inspects source content but provider scoring and populated score-store scaling are deferred because external calls are prohibited. Local doubles would measure only adapter overhead and were not substituted for provider capacity. No long-duration queue soak or real-time 900-second wait. Same R1/P2/exposed rater, estimates unchanged. UI/deployment/schema checks inapplicable.
+
+*— Codex · 2026-11-01 UTC*

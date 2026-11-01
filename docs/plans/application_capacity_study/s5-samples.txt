@@ -1,0 +1,924 @@
+Sample: s1-tiny-rebuild
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.292668
+Sampled aggregate RSS bytes: 37572608
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 1273856
+Log SHA256: fa8cbf6b37b1a86a62f9e2170a0860ddc09fdce04a5bcdb26f20aa3c33dd2825
+
+Sample: s1-overhead-0
+Command: php -r 'echo "ok\n";'
+Exit: 0
+Stop: none
+Elapsed seconds: 0.024154
+Sampled aggregate RSS bytes: 4849664
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22
+
+Sample: s1-overhead-1
+Command: php -r 'echo "ok\n";'
+Exit: 0
+Stop: none
+Elapsed seconds: 0.026467
+Sampled aggregate RSS bytes: 12189696
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22
+
+Sample: s1-overhead-2
+Command: php -r 'echo "ok\n";'
+Exit: 0
+Stop: none
+Elapsed seconds: 0.024511
+Sampled aggregate RSS bytes: 5505024
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22
+
+Sample: prepare-1000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.261759
+Sampled aggregate RSS bytes: 49500160
+Observed processes: 2
+Sampled read bytes: 8192
+Sampled write bytes: 10006528
+Log SHA256: 539fd178131d3faa6c699d15fe3b0ac98ae6a524d3cc2596d045f6dd97496335
+
+Sample: reads-1000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1000
+Exit: 1
+Stop: none
+Elapsed seconds: 0.622754
+Sampled aggregate RSS bytes: 66105344
+Observed processes: 2
+Sampled read bytes: 2199552
+Sampled write bytes: 1933312
+Log SHA256: 23ed2c2f22c266685481ac55810975add5ed69cad2307ba6488e855bb508eafb
+
+Sample: prepare-1000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.280785
+Sampled aggregate RSS bytes: 49762304
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10010624
+Log SHA256: 3ba398ddacc8a614764b043a8c3ab2963a90b396e96f02d9f6c32c179303226b
+
+Sample: reads-1000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1000
+Exit: 0
+Stop: none
+Elapsed seconds: 0.756633
+Sampled aggregate RSS bytes: 67219456
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 2658304
+Log SHA256: 8b6a963f590ecd20240f43d4a0912a7e4c079d69bd661117b3a8b1cfd7182243
+
+Sample: prepare-10000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 2.799382
+Sampled aggregate RSS bytes: 159821824
+Observed processes: 6
+Sampled read bytes: 4096
+Sampled write bytes: 97894400
+Log SHA256: c774670ff420798a08de4e8b49af7690ed9728b8cae7efff57c4cbd9721575b3
+
+Sample: reads-10000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 10000
+Exit: 0
+Stop: none
+Elapsed seconds: 2.025776
+Sampled aggregate RSS bytes: 132132864
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 2658304
+Log SHA256: ebdcafecd628dea0d966bc7bb5c9a734ad5097b08f370eedb5a225d19fbdeb83
+
+Sample: prepare-40000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 1
+Stop: none
+Elapsed seconds: 1.520562
+Sampled aggregate RSS bytes: 166072320
+Observed processes: 6
+Sampled read bytes: 0
+Sampled write bytes: 12288
+Log SHA256: dcb7d5f8c686ebf9f63055e6dbd6b5e41a42ca6703424ecd9f507e6c7f90f8db
+
+Sample: reset-after-40k
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.389842
+Sampled aggregate RSS bytes: 49897472
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10006528
+Log SHA256: a59fd1fbf49b7a6880255b182e05851a49f221f3beedf8fae47e2e91fe0ba959
+
+Sample: signed-http
+Command: php /tmp/v3-capacity-5wrtjih3/signed_driver.php
+Exit: 0
+Stop: none
+Elapsed seconds: 2.299560
+Sampled aggregate RSS bytes: 87154688
+Observed processes: 6
+Sampled read bytes: 8192
+Sampled write bytes: 60780544
+Log SHA256: 63c60d55443b60bfb8abc9b698bf5c90e054333c1540524f32055f7e59aebd3b
+
+Sample: final-prepare-1000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.357542
+Sampled aggregate RSS bytes: 50008064
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10006528
+Log SHA256: 746299f18155594ecae29dbccf35e9bf316df7d8dcc954d30a3b7457163f2ca9
+
+Sample: final-reads-1000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1000
+Exit: 0
+Stop: none
+Elapsed seconds: 0.944051
+Sampled aggregate RSS bytes: 67379200
+Observed processes: 2
+Sampled read bytes: 8192
+Sampled write bytes: 3493888
+Log SHA256: e1775089f9b5c7b71d70677a459db8353abb98358cab947f7cb20cef9bbe7beb
+
+Sample: final-prepare-10000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 2.915320
+Sampled aggregate RSS bytes: 159895552
+Observed processes: 6
+Sampled read bytes: 4096
+Sampled write bytes: 97517568
+Log SHA256: b029ca9823b658ca7c1a617a0f904912eff0f71182417c5b9fd1175d359e964e
+
+Sample: final-reads-10000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 10000
+Exit: 0
+Stop: none
+Elapsed seconds: 1.834946
+Sampled aggregate RSS bytes: 132399104
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 3493888
+Log SHA256: 1a779f2d2f657d512533b201962982891db6fd424df9c5edc225c24115e42f78
+
+Sample: signed-session-http
+Command: php /tmp/v3-capacity-5wrtjih3/signed_driver.php
+Exit: 255
+Stop: none
+Elapsed seconds: 11.348728
+Sampled aggregate RSS bytes: 197406720
+Observed processes: 22
+Sampled read bytes: 8192
+Sampled write bytes: 1174753280
+Log SHA256: c056ce72d7eaf35eab11c7a672a5dcd4778c3dbddbee036b892bad697d44becf
+
+Sample: max-record-rebuild
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.546149
+Sampled aggregate RSS bytes: 90722304
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 33845248
+Log SHA256: 9cae0698f8a1dc8b364be63c3ba74838d5ad8243744de58a906127db913f3d53
+
+Sample: signed-reset-clean
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.371051
+Sampled aggregate RSS bytes: 49950720
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10006528
+Log SHA256: cf52afe505aebd096d2d246f0f584679f3075f63c9e53a000f5a63df7efa9549
+
+Sample: signed-session-clean
+Command: php /tmp/v3-capacity-5wrtjih3/signed_driver.php
+Exit: 255
+Stop: none
+Elapsed seconds: 2.324406
+Sampled aggregate RSS bytes: 91766784
+Observed processes: 8
+Sampled read bytes: 8192
+Sampled write bytes: 121188352
+Log SHA256: 0a5f056c72cade54f5087b5387b159617db191d03c3865ba4cc81becfa5d6266
+
+Sample: signed-reset-final
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.329958
+Sampled aggregate RSS bytes: 50286592
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10006528
+Log SHA256: 62a1b3cc8655dbf3270898a44c517933bb8e6c2714c412977a85c164939951dd
+
+Sample: signed-session-final
+Command: php /tmp/v3-capacity-5wrtjih3/signed_driver.php
+Exit: 0
+Stop: none
+Elapsed seconds: 2.304835
+Sampled aggregate RSS bytes: 87326720
+Observed processes: 5
+Sampled read bytes: 4096
+Sampled write bytes: 60624896
+Log SHA256: bd1b14159912aa6f1e50157cabe629ed36cec32cab5a5edcc96968f6248b7691
+
+Sample: max-record-clean
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.424591
+Sampled aggregate RSS bytes: 90726400
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 33845248
+Log SHA256: c41967edcc1b19796004e8c0c9baf16b8f7da5d74632fc2d0d9df059594f5986
+
+Sample: max-record-reads
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1
+Exit: 0
+Stop: none
+Elapsed seconds: 2.485724
+Sampled aggregate RSS bytes: 209104896
+Observed processes: 2
+Sampled read bytes: 4096
+Sampled write bytes: 94801920
+Log SHA256: 84a79bf262242d57f5458d43478fe30d3202f52cef89850d94c9598ff64d8d65
+
+Sample: s3-rebuild-1000-0
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.608383
+Sampled aggregate RSS bytes: 49897472
+Observed processes: 2
+Sampled read bytes: 4096
+Sampled write bytes: 10006528
+Log SHA256: 3b4cb1323f526e3f17b1a81193bed1707df41eac0885788ad563c2e2c891ab5d
+
+Sample: s3-rebuild-1000-1
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.640111
+Sampled aggregate RSS bytes: 49897472
+Observed processes: 2
+Sampled read bytes: 8192
+Sampled write bytes: 10006528
+Log SHA256: 59ecd760497b255753fbd0627688bf6e3f417ca8db063daaec1d30940868eaf1
+
+Sample: s3-rebuild-1000-2
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.619150
+Sampled aggregate RSS bytes: 50024448
+Observed processes: 3
+Sampled read bytes: 4096
+Sampled write bytes: 10006528
+Log SHA256: 101b5b29be8faee22ba6cd362e7540014d6f7910936ad2e9024d4e2bf77a0208
+
+Sample: s3-rebuild-10000-0
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 3.207800
+Sampled aggregate RSS bytes: 160858112
+Observed processes: 6
+Sampled read bytes: 0
+Sampled write bytes: 98041856
+Log SHA256: 3082b9e974125c87bbe83ceaeb2343da12d50d56a5a834ff9784d55e86664881
+
+Sample: s3-rebuild-10000-1
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 2.474591
+Sampled aggregate RSS bytes: 160399360
+Observed processes: 3
+Sampled read bytes: 0
+Sampled write bytes: 97517568
+Log SHA256: 3aed01345b2e16a53ecae4f5f92864ed2e3c67756823f425b976a24cce432aed
+
+Sample: s3-rebuild-10000-2
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 2.342887
+Sampled aggregate RSS bytes: 159563776
+Observed processes: 4
+Sampled read bytes: 0
+Sampled write bytes: 98226176
+Log SHA256: 7669098e5eb8c60ed595362e932e477ba7538f0026c3c363015bed1799d4b990
+
+Sample: s3-static-0
+Command: ./v3 build-static /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 2.159498
+Sampled aggregate RSS bytes: 58241024
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 28807168
+Log SHA256: b94a34742243b9e014860351aeffc9875e6f726679b539499710f56feb9948e9
+
+Sample: s3-static-1
+Command: ./v3 build-static /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 1.735268
+Sampled aggregate RSS bytes: 57901056
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 28545024
+Log SHA256: b24a15a6a8a4f920e85d449d111e92ac890bf4f5c747f73ef52856473359c82a
+
+Sample: s3-static-2
+Command: ./v3 build-static /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 1.687281
+Sampled aggregate RSS bytes: 58318848
+Observed processes: 3
+Sampled read bytes: 16384
+Sampled write bytes: 28545024
+Log SHA256: 0c2bd7cfb685ceef3d3fa0550ca9a96a0a0ac9399ee68c6f4bd4ebad5ab887c7
+
+Sample: s3-static-interrupted
+Command: ./v3 build-static /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: -9
+Stop: planned interruption
+Elapsed seconds: 0.122139
+Sampled aggregate RSS bytes: 49238016
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 7016448
+Log SHA256: 974a946f884fa6d51a634151993bcc9d8568c1f5439db93a95d18ae7952d76dd
+
+Sample: s3-static-retry
+Command: ./v3 build-static /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 1.740916
+Sampled aggregate RSS bytes: 58470400
+Observed processes: 2
+Sampled read bytes: 8192
+Sampled write bytes: 28545024
+Log SHA256: 18386832fbbada8a411139d0cf71b5e5ee4c180cd94430aa634e789d4debd2ff
+
+Sample: s3-static-interrupted-final
+Command: ./v3 build-static /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: -9
+Stop: planned interruption
+Elapsed seconds: 0.101599
+Sampled aggregate RSS bytes: 48058368
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 5611520
+Log SHA256: 401f66e607e435ced9462a08dd02c22547a57b259849ec57c7e09079e2c85d0f
+
+Sample: s3-static-retry-final
+Command: ./v3 build-static /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 2.097323
+Sampled aggregate RSS bytes: 57810944
+Observed processes: 2
+Sampled read bytes: 12288
+Sampled write bytes: 28545024
+Log SHA256: fb38ff4789ee1457d7ef8ac150dd526d675a4cf953e7293233c79430bfe3f82d
+
+Sample: s3-shared-0
+Command: ./v3 build-static --shared-only /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 0.254510
+Sampled aggregate RSS bytes: 49811456
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 6299648
+Log SHA256: dcb15e32c49a85d98943c05d8e1abdb826c15975dfcef7bcf0dbd58de192228f
+
+Sample: s3-offline-0
+Command: ./v3 offline publish --repository-root=/tmp/v3-capacity-5wrtjih3/repository --database-path=/tmp/v3-capacity-5wrtjih3/model.sqlite --static-html-root=/tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 1.313180
+Sampled aggregate RSS bytes: 39489536
+Observed processes: 2
+Sampled read bytes: 4096
+Sampled write bytes: 16211968
+Log SHA256: 04fdef285b15bd8b7d5e163b74623921e2148cf727208bca49839f0c3586aaa8
+
+Sample: s3-shared-1
+Command: ./v3 build-static --shared-only /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 0.265484
+Sampled aggregate RSS bytes: 50020352
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 6299648
+Log SHA256: 433d5cc8a5ab399c21a316b2cbff3dee10a47c2cedb12a8b91a6190afd12d87a
+
+Sample: s3-offline-1
+Command: ./v3 offline publish --repository-root=/tmp/v3-capacity-5wrtjih3/repository --database-path=/tmp/v3-capacity-5wrtjih3/model.sqlite --static-html-root=/tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 1.316057
+Sampled aggregate RSS bytes: 39383040
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 16211968
+Log SHA256: 4bcc6b4ded5a2091e00729263c1c8be5bf4df56bdee892fa7b0d7857944bf1d2
+
+Sample: s3-shared-2
+Command: ./v3 build-static --shared-only /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite /tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 0.257689
+Sampled aggregate RSS bytes: 50237440
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 6422528
+Log SHA256: a699d7dd260f30c8b75459405ba3501841f3337fb99306701b5370feee10419f
+
+Sample: s3-offline-2
+Command: ./v3 offline publish --repository-root=/tmp/v3-capacity-5wrtjih3/repository --database-path=/tmp/v3-capacity-5wrtjih3/model.sqlite --static-html-root=/tmp/v3-capacity-5wrtjih3/static
+Exit: 0
+Stop: none
+Elapsed seconds: 1.194253
+Sampled aggregate RSS bytes: 39616512
+Observed processes: 2
+Sampled read bytes: 4096
+Sampled write bytes: 16211968
+Log SHA256: a0543da89f8d87daeb1cf9ef048df0e692e085061bd2a115c46585d754bc675f
+
+Sample: s3-static-http
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1000
+Exit: 0
+Stop: none
+Elapsed seconds: 0.667641
+Sampled aggregate RSS bytes: 66916352
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 2473984
+Log SHA256: d5d067b16ad3df724d50d8d9cc429bd41cfb0195e570494a05e289d2266a289f
+
+Sample: s3-history-fixture-final
+Command: python3 tests/Support/qdb_build_time_fixture.py /tmp/v3-capacity-5wrtjih3/history-fixtures-final
+Exit: 0
+Stop: none
+Elapsed seconds: 2.467637
+Sampled aggregate RSS bytes: 22302720
+Observed processes: 5
+Sampled read bytes: 21581824
+Sampled write bytes: 254390272
+Log SHA256: 5bb695a16d7b679b80a4cbe6c7f1b97c6cc3f6671ead90013fe2f8954633d1d2
+
+Sample: s3-history-rebuild-0
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/history-fixtures-final/ordinary /tmp/v3-capacity-5wrtjih3/history.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.168118
+Sampled aggregate RSS bytes: 37969920
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 626688
+Log SHA256: 39c0342c28d007e8e78d3fb28218b5e276334bac072918bdf9ee1141ef0cb4ac
+
+Sample: s3-history-rebuild-1
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/history-fixtures-final/ordinary /tmp/v3-capacity-5wrtjih3/history.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.119782
+Sampled aggregate RSS bytes: 37703680
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 626688
+Log SHA256: b7366fdfc9c72e66b0fe742a26915fb01f589edd200819ccf6f90cb19f564ba6
+
+Sample: s3-history-rebuild-2
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/history-fixtures-final/ordinary /tmp/v3-capacity-5wrtjih3/history.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.120590
+Sampled aggregate RSS bytes: 37695488
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 626688
+Log SHA256: 19861447242e4bdcab21926a11c4426ccdbc2364ab2fa050c8ec273b4eedc3a6
+
+Sample: s3-history-http
+Command: python3 /tmp/v3-capacity-5wrtjih3/history_read_driver.py -1
+Exit: 0
+Stop: none
+Elapsed seconds: 0.377598
+Sampled aggregate RSS bytes: 58814464
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 688128
+Log SHA256: dee607a1165802573b9799f1e1e8269390309618ed7f5ea6ec4e3a2b02a147f3
+
+Sample: s4-image-http
+Command: php /tmp/v3-capacity-5wrtjih3/image_driver.php
+Exit: 255
+Stop: none
+Elapsed seconds: 2.138637
+Sampled aggregate RSS bytes: 92979200
+Observed processes: 6
+Sampled read bytes: 0
+Sampled write bytes: 60768256
+Log SHA256: 383564dd867fd1a69862a6d332c860b5070dbba7bc1b1e26fa134d0bc11444ac
+
+Sample: s4-image-approved-http
+Command: php /tmp/v3-capacity-5wrtjih3/image_driver.php
+Exit: 0
+Stop: none
+Elapsed seconds: 2.589844
+Sampled aggregate RSS bytes: 119644160
+Observed processes: 12
+Sampled read bytes: 0
+Sampled write bytes: 86777856
+Log SHA256: c0b8be962c8e4504e20e8b2da19f163c112cfd624f58b1494d3cb0e5d8398093
+
+Sample: s4-transfers
+Command: python3 /tmp/v3-capacity-5wrtjih3/transfer_driver.py
+Exit: 0
+Stop: none
+Elapsed seconds: 1.584384
+Sampled aggregate RSS bytes: 100982784
+Observed processes: 19
+Sampled read bytes: 12288
+Sampled write bytes: 39370752
+Log SHA256: 4a2e0b553f81c1bd476d3761cdf6c14a75447bf4b91c28e2ccb90efaa79e9657
+
+Sample: s4-import-recovery
+Command: python3 /tmp/v3-capacity-5wrtjih3/import_recovery_driver.py
+Exit: 1
+Stop: none
+Elapsed seconds: 1.973792
+Sampled aggregate RSS bytes: 55140352
+Observed processes: 4
+Sampled read bytes: 0
+Sampled write bytes: 77824
+Log SHA256: 0193a4ac6c3752d379cd0f7f7d72d0faf1a7014955d3116073a452ae37800452
+
+Sample: s4-import-recovery-final
+Command: python3 /tmp/v3-capacity-5wrtjih3/import_recovery_driver.py
+Exit: 0
+Stop: none
+Elapsed seconds: 2.633686
+Sampled aggregate RSS bytes: 104722432
+Observed processes: 15
+Sampled read bytes: 700416
+Sampled write bytes: 120434688
+Log SHA256: defeb835ea302163208e44bfe7731d7c8e6dcbe70e71fd574b0bf67d650a616c
+
+Sample: s4-images-0-verify
+Command: ./v3 images verify /tmp/v3-capacity-5wrtjih3/images.zip /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite --image-root=/tmp/v3-capacity-5wrtjih3/restored-images
+Exit: 0
+Stop: none
+Elapsed seconds: 0.071094
+Sampled aggregate RSS bytes: 30629888
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 4096
+Log SHA256: 9afc3175059d44b4223da353c6b3b26c3cb5397d4870b1e176a05262db6fa247
+
+Sample: s4-images-1-restore
+Command: ./v3 images restore /tmp/v3-capacity-5wrtjih3/images.zip /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite --image-root=/tmp/v3-capacity-5wrtjih3/restored-images
+Exit: 0
+Stop: none
+Elapsed seconds: 0.071510
+Sampled aggregate RSS bytes: 30887936
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 4096
+Log SHA256: 268df7f4f8f278cd668f8fb98424ae6522b2b98ff9755e06eb1b280b69f67baa
+
+Sample: s4-images-2-restore
+Command: ./v3 images restore /tmp/v3-capacity-5wrtjih3/images.zip /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite --image-root=/tmp/v3-capacity-5wrtjih3/restored-images
+Exit: 0
+Stop: none
+Elapsed seconds: 0.076491
+Sampled aggregate RSS bytes: 30760960
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 4096
+Log SHA256: 268df7f4f8f278cd668f8fb98424ae6522b2b98ff9755e06eb1b280b69f67baa
+
+Sample: s4-images-3-verify
+Command: ./v3 images verify /tmp/v3-capacity-5wrtjih3/images.zip /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite --image-root=/tmp/v3-capacity-5wrtjih3/restored-images
+Exit: 0
+Stop: none
+Elapsed seconds: 0.071569
+Sampled aggregate RSS bytes: 30892032
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 4096
+Log SHA256: 9afc3175059d44b4223da353c6b3b26c3cb5397d4870b1e176a05262db6fa247
+
+Sample: s5-score-status-0
+Command: ./v3 fast-score status
+Exit: 0
+Stop: none
+Elapsed seconds: 0.093247
+Sampled aggregate RSS bytes: 34430976
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 217088
+Log SHA256: a75a1c0da20b5bda46768d268c5c72227f807b57acf4f9cda167da55959ca0ec
+
+Sample: s5-score-audit-0
+Command: ./v3 fast-score audit --include-existing
+Exit: 1
+Stop: none
+Elapsed seconds: 0.070666
+Sampled aggregate RSS bytes: 40460288
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: d3142285121f2e9491483f71cc65741110554b6eb38f598460dc7a70bbd43af6
+
+Sample: s5-score-final-status-0
+Command: ./v3 fast-score status
+Exit: 0
+Stop: none
+Elapsed seconds: 0.023893
+Sampled aggregate RSS bytes: 3407872
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: a75a1c0da20b5bda46768d268c5c72227f807b57acf4f9cda167da55959ca0ec
+
+Sample: s5-score-final-audit-0
+Command: ./v3 fast-score audit --include-existing --input-usd-per-million=0 --output-usd-per-million=0
+Exit: 0
+Stop: none
+Elapsed seconds: 0.070814
+Sampled aggregate RSS bytes: 40718336
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: 5baf2ea8c62897f5a998675dbf7bea29b12285317f0d7a4af9143f43fdaabf63
+
+Sample: s5-score-final-status-1
+Command: ./v3 fast-score status
+Exit: 0
+Stop: none
+Elapsed seconds: 0.024280
+Sampled aggregate RSS bytes: 3407872
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: a75a1c0da20b5bda46768d268c5c72227f807b57acf4f9cda167da55959ca0ec
+
+Sample: s5-score-final-audit-1
+Command: ./v3 fast-score audit --include-existing --input-usd-per-million=0 --output-usd-per-million=0
+Exit: 0
+Stop: none
+Elapsed seconds: 0.099075
+Sampled aggregate RSS bytes: 40456192
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: 5baf2ea8c62897f5a998675dbf7bea29b12285317f0d7a4af9143f43fdaabf63
+
+Sample: s5-score-final-status-2
+Command: ./v3 fast-score status
+Exit: 0
+Stop: none
+Elapsed seconds: 0.050377
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: a75a1c0da20b5bda46768d268c5c72227f807b57acf4f9cda167da55959ca0ec
+
+Sample: s5-score-final-audit-2
+Command: ./v3 fast-score audit --include-existing --input-usd-per-million=0 --output-usd-per-million=0
+Exit: 0
+Stop: none
+Elapsed seconds: 0.077186
+Sampled aggregate RSS bytes: 40579072
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: 5baf2ea8c62897f5a998675dbf7bea29b12285317f0d7a4af9143f43fdaabf63
+
+Sample: s5-queue-status-0
+Command: ./v3 task-queue status
+Exit: 0
+Stop: none
+Elapsed seconds: 0.070954
+Sampled aggregate RSS bytes: 34299904
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 180224
+Log SHA256: 8c3cf957c99ef0aec0b227e9b56777ee785bb825c2741bb18b81ebaa91a2e323
+
+Sample: s5-enqueue-0
+Command: ./v3 task-queue enqueue-rebuild
+Exit: 0
+Stop: none
+Elapsed seconds: 0.047802
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: af76f678a7e6ccb5685392249076a770737faab5e91fc8047e4a3df119e573dc
+
+Sample: s5-enqueue-duplicate-0
+Command: ./v3 task-queue enqueue-rebuild
+Exit: 0
+Stop: none
+Elapsed seconds: 0.050370
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: a35982e76b1f1c98a0607f3ba9cce4bfe919db3f7a12f88ecbe09eb2c8c1bbc0
+
+Sample: s5-run-0
+Command: ./v3 task-queue run --limit=1
+Exit: 0
+Stop: none
+Elapsed seconds: 1.164232
+Sampled aggregate RSS bytes: 50810880
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 29229056
+Log SHA256: 68f6378233a900f4edc7571058b837d70d83c58852b8e56910107f1da1ad2ab9
+
+Sample: s5-queue-status-1
+Command: ./v3 task-queue status
+Exit: 0
+Stop: none
+Elapsed seconds: 0.050366
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: d0915d8e66e4c200cb52852586698095fd3d0dac595ce87f45b5ef00486772b1
+
+Sample: s5-enqueue-1
+Command: ./v3 task-queue enqueue-rebuild
+Exit: 0
+Stop: none
+Elapsed seconds: 0.047133
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: edf021ea1b4339f8a8b1cfb8bafde7149f47dc175ab960ae59edd53578667052
+
+Sample: s5-enqueue-duplicate-1
+Command: ./v3 task-queue enqueue-rebuild
+Exit: 0
+Stop: none
+Elapsed seconds: 0.023985
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: c8b0be5297d80ec00aef62dafb48662f27b024d47d0f426a946b2d1ce55e9f80
+
+Sample: s5-run-1
+Command: ./v3 task-queue run --limit=1
+Exit: 0
+Stop: none
+Elapsed seconds: 0.943538
+Sampled aggregate RSS bytes: 40804352
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 16265216
+Log SHA256: 4e800030a32ef56b620e22f6a44027054aacdb9888146227b2d2f15bbff27419
+
+Sample: s5-queue-status-2
+Command: ./v3 task-queue status
+Exit: 0
+Stop: none
+Elapsed seconds: 0.023737
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: b572d4afacffdd70c3b747f597052f671b28abe5ab05923a18092b223fa721e2
+
+Sample: s5-enqueue-2
+Command: ./v3 task-queue enqueue-rebuild
+Exit: 0
+Stop: none
+Elapsed seconds: 0.025296
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: c8b0be5297d80ec00aef62dafb48662f27b024d47d0f426a946b2d1ce55e9f80
+
+Sample: s5-enqueue-duplicate-2
+Command: ./v3 task-queue enqueue-rebuild
+Exit: 0
+Stop: none
+Elapsed seconds: 0.023579
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: c8b0be5297d80ec00aef62dafb48662f27b024d47d0f426a946b2d1ce55e9f80
+
+Sample: s5-run-2
+Command: ./v3 task-queue run --limit=1
+Exit: 0
+Stop: none
+Elapsed seconds: 0.860952
+Sampled aggregate RSS bytes: 51208192
+Observed processes: 2
+Sampled read bytes: 4096
+Sampled write bytes: 29683712
+Log SHA256: 38019e2dec9f81033aa5e61824f94c7830036f0d0d19cc2ffb0f583485a77968
+
+Sample: s5-recovery-enqueue
+Command: ./v3 task-queue enqueue-rebuild
+Exit: 0
+Stop: none
+Elapsed seconds: 0.046848
+Sampled aggregate RSS bytes: 3538944
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: 6ee20b010992ff8dbd24986a79a0cd124eb984500698d11162311f3275d63977
+
+Sample: s5-recovery-interrupt
+Command: ./v3 task-queue run --limit=1
+Exit: -9
+Stop: planned interruption
+Elapsed seconds: 0.122217
+Sampled aggregate RSS bytes: 38187008
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 1425408
+Log SHA256: 53e58d216027d1f0d96b281a5e4f69982fb2605162cd1497d0410c68c559dcf0
+
+Sample: s5-recovery-immediate
+Command: ./v3 task-queue run --limit=1
+Exit: 0
+Stop: none
+Elapsed seconds: 0.870056
+Sampled aggregate RSS bytes: 51208192
+Observed processes: 2
+Sampled read bytes: 8192
+Sampled write bytes: 29605888
+Log SHA256: 6703ff32cb950363c6103d7de7d9ef6c35bf75b8db3866d7a77c16b3743fb052
+
+Sample: s5-recovery-aged
+Command: ./v3 task-queue run --limit=1
+Exit: 0
+Stop: none
+Elapsed seconds: 0.999254
+Sampled aggregate RSS bytes: 40681472
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 16371712
+Log SHA256: 5a808c577d71d2150d94e97587668342f225203507559e405a10232a2b501bec
+
+Sample: s5-final-status
+Command: ./v3 task-queue status
+Exit: 0
+Stop: none
+Elapsed seconds: 0.023415
+Sampled aggregate RSS bytes: 3407872
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: 492537ea56dcfa41b7a0e7c2892d74bf0eb809e3052aa171f48bace0cdd579a8
+

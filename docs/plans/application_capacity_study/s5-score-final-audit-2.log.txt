@@ -1,0 +1,14 @@
+Fastmod historical audit
+Read-model database: /tmp/v3-capacity-5wrtjih3/model.sqlite
+Score database: /tmp/v3-capacity-5wrtjih3/scores.sqlite
+Selected model: 
+Enabled rubrics: meta, moderation
+Historical content
+  Total posts: 1008
+  Ready to backfill: 1008
+  Current-rubric scored: 0
+  Current-rubric deterministic exclusions: 0
+  Pending work: 0
+  Failed work awaiting operator action: 0
+Cost estimate: candidates=1008 samples=0 input_tokens_per_post=2500.0 output_tokens_per_post=1024.0 input_usd_per_million=0.0000 output_usd_per_million=0.0000 estimated_usd=0.000000 assumption=conservative_fallback
+Audit is read-only: no score, work, task-queue, or exchange records were written.

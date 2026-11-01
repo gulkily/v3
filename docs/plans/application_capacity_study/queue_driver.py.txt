@@ -1,0 +1,27 @@
+import collector as c
+import sqlite3
+r=c.ROOT;c.ENV['FORUM_TASK_QUEUE_DATABASE_PATH']=str(r/'s5-queue.sqlite')
+for i in range(3):
+ for command in ('status','audit'):
+  args=['./v3','fast-score',command]+(['--include-existing','--input-usd-per-million=0','--output-usd-per-million=0'] if command=='audit' else [])
+  assert c.run(f's5-score-final-{command}-{i}',args)==0
+for i in range(3):
+ assert c.run(f's5-queue-status-{i}',['./v3','task-queue','status'])==0
+ assert c.run(f's5-enqueue-{i}',['./v3','task-queue','enqueue-rebuild'])==0
+ assert c.run(f's5-enqueue-duplicate-{i}',['./v3','task-queue','enqueue-rebuild'])==0
+ assert 'already outstanding' in (r/f's5-enqueue-duplicate-{i}.log').read_text()
+ assert c.run(f's5-run-{i}',['./v3','task-queue','run','--limit=1'])==0
+ print(c.parity(1000),flush=True)
+assert c.run('s5-recovery-enqueue',['./v3','task-queue','enqueue-rebuild'])==0
+assert c.run('s5-recovery-interrupt',['./v3','task-queue','run','--limit=1'],interrupt=.1)!=0
+assert c.run('s5-recovery-immediate',['./v3','task-queue','run','--limit=1'])==0
+with sqlite3.connect(r/'s5-queue.sqlite') as db:
+ rows=db.execute('select id,status,attempts,claimed_at from internal_tasks').fetchall();print('Before synthetic aging:',rows,flush=True)
+ assert sum(x[1]=='running' for x in rows)==1
+ db.execute("update internal_tasks set claimed_at='2000-01-01T00:00:00+00:00' where status='running'");db.commit()
+assert c.run('s5-recovery-aged',['./v3','task-queue','run','--limit=1'])==0
+assert c.run('s5-final-status',['./v3','task-queue','status'])==0
+with sqlite3.connect(r/'s5-queue.sqlite') as db:
+ rows=db.execute('select id,status,attempts from internal_tasks').fetchall();print('After normal retry with aged fixture:',rows,flush=True)
+ assert all(row[1]=='completed' for row in rows)
+print(c.parity(1000),flush=True)
