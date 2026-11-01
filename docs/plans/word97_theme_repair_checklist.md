@@ -98,10 +98,10 @@ checklist is scoped to Word 97 but the gap should be recorded for them.
 
 ## Account page (added 2026-11-01 from a signed-in screenshot)
 
-- [x] (commit 5: account page) "Account" h1 is a Times heading on the bare desktop. The
+- [x] (f44cb1f53) "Account" h1 is a Times heading on the bare desktop. The
       `.account-key-header` is now the title bar of the first window below it (the feedback
       notice when one renders, otherwise the visible guest or member card).
-- [x] (commit 5: account page) "Remove this key" rendered as a bevelled button filling a whole
+- [x] (f44cb1f53) "Remove this key" rendered as a bevelled button filling a whole
       window frame: the theme's general button bevel matched `button.account-row`, and the base
       `button[type="button"]` colour painted the row grey. Grouped rows are now flat list rows
       and keep the danger colour. Verified guest and simulated member state at 1400.
@@ -115,6 +115,6 @@ checklist is scoped to Word 97 but the gap should be recorded for them.
       `site.css` or `account.css`. Check that the `.card` window treatment can be shared with
       `.thread-rows`, `.account-card`, `.account-group` via a shared selector list instead of
       duplicating the shadow stack.
-- [x] (commit 6: coverage test; `tests/Word97ThemeCoverageTest.php` asserts the theme covers every component above. Screenshots at 1400 and 390 of the board, ?view=all with pinned threads, Users as guest and member, /user/ilyag, /threads/root-001 and /account/key/ were reviewed by hand; the project has no screenshot-diff harness. Sibling check: Midnight shows the same header overlap, stray bar and unthemed rows; Chicago keeps the rounded lists with chevrons and the bare Users heading. Both are outside this branch.) Verification: extend the theme matrix screenshot test (added in ui_tools_launcher stage 3)
+- [x] (1495d64f7; `tests/Word97ThemeCoverageTest.php` asserts the theme covers every component above. Screenshots at 1400 and 390 of the board, ?view=all with pinned threads, Users as guest and member, /user/ilyag, /threads/root-001 and /account/key/ were reviewed by hand; the project has no screenshot-diff harness. Sibling check: Midnight shows the same header overlap, stray bar and unthemed rows; Chicago keeps the rounded lists with chevrons and the bare Users heading. Both are outside this branch.) Verification: extend the theme matrix screenshot test (added in ui_tools_launcher stage 3)
       to the list board, Users and /user/ pages under word97 at desktop and phone widths. Check
       Chicago and Midnight once for the same components and record the gap for them.
