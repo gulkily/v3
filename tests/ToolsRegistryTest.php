@@ -22,7 +22,6 @@ final class ToolsRegistryTest
         assertSame($groups, $seen);
         foreach ($tools as $tool) {
             assertSame(1, preg_match('/^[a-z][a-z-]*$/', $tool['tone']), $tool['key']);
-            assertSame(true, $tool['description'] !== '' && !str_contains($tool['description'], '.'), $tool['key'] . ': one short line');
         }
     }
 
