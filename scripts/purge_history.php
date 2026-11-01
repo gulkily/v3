@@ -17,13 +17,15 @@ function purgeHistoryUsage(): string
     return <<<'TEXT'
 Usage:
   ./v3 purge-history preview [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--skip-dry-run] [--json]
-  ./v3 purge-history run --confirm=/path/repository [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--json]
+  ./v3 purge-history run [--yes] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--json]
 
 Removes every post and signature path named by an accepted delete receipt from
 all Git history, commits a history rewrite record mapping old commit ids to new
 ones, then rebuilds the read model and static pages. preview changes nothing
-and times the rewrite on a temporary clone. run cannot be undone except from a
-full backup of the repository including .git; take and verify one first.
+and times the rewrite on a temporary clone. run asks you to type yes on the
+terminal before rewriting (--yes skips the question for scripts); it cannot be
+undone except from a full backup of the repository including .git, so take and
+verify one first.
 See docs/runbooks/history_purge.md.
 
 TEXT;
@@ -47,15 +49,13 @@ try {
     if (!in_array($command, ['preview', 'run'], true)) {
         throw new InvalidArgumentException('Unknown command: ' . $command);
     }
-    $options = ['json' => false, 'skip-dry-run' => false];
+    $options = ['json' => false, 'skip-dry-run' => false, 'yes' => false];
     foreach (array_slice($argv, 2) as $argument) {
         if ($argument === '--json') { $options['json'] = true; continue; }
         if ($argument === '--skip-dry-run' && $command === 'preview') { $options['skip-dry-run'] = true; continue; }
+        if ($argument === '--yes' && $command === 'run') { $options['yes'] = true; continue; }
         if (in_array($argument, ['-h', '--help'], true)) { fwrite(STDOUT, purgeHistoryUsage()); exit(0); }
-        if (preg_match('/^--(repository-root|database-path|static-html-root|confirm)=(.+)$/D', $argument, $m) !== 1) {
-            throw new InvalidArgumentException('Unknown option: ' . $argument);
-        }
-        if ($m[1] === 'confirm' && $command !== 'run') {
+        if (preg_match('/^--(repository-root|database-path|static-html-root)=(.+)$/D', $argument, $m) !== 1) {
             throw new InvalidArgumentException('Unknown option: ' . $argument);
         }
         $options[$m[1]] = $m[2];
@@ -67,11 +67,8 @@ try {
         throw new InvalidArgumentException('Repository root does not exist: ' . $repositoryRoot);
     }
     $resolvedRoot = realpath($repositoryRoot) ?: $repositoryRoot;
-    if ($command === 'run') {
-        $confirm = $options['confirm'] ?? '';
-        if ($confirm === '' || (realpath(rtrim($confirm, '/')) ?: rtrim($confirm, '/')) !== $resolvedRoot) {
-            throw new InvalidArgumentException('run needs --confirm=' . $resolvedRoot . ' naming the repository to rewrite. Back up the repository including .git first.');
-        }
+    if ($command === 'run' && !$options['yes'] && !stream_isatty(STDIN)) {
+        throw new InvalidArgumentException('run asks for confirmation on a terminal; pass --yes to skip the question when scripting. Back up the repository including .git first.');
     }
 
     $plan = HistoryPurgePlanner::plan($resolvedRoot);
@@ -103,7 +100,7 @@ try {
         $report = ['status' => $runnable ? 'ready' : 'blocked', 'repository' => $resolvedRoot, 'receipts' => $plan['receipts'],
             'targets' => $plan['targets'], 'commits_total' => $plan['commits_total'], 'commits_affected' => $plan['commits_affected'],
             'legacy_without_timestamp' => $plan['legacy_without_timestamp'], 'blockers' => $blockers, 'dry_run' => $dryRun,
-            'next' => $runnable ? './v3 purge-history run --confirm=' . $resolvedRoot : null];
+            'next' => $runnable ? './v3 purge-history run' : null];
         if ($options['json']) {
             echo json_encode($report, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n";
         } else {
@@ -136,7 +133,7 @@ try {
                 }
             }
             if ($runnable) {
-                echo 'Next: back up the repository including .git, verify the backup, then run ./v3 purge-history run --confirm=' . $resolvedRoot . "\n";
+                echo "Next: back up the repository including .git, verify the backup, then run ./v3 purge-history run\n";
             }
         }
         exit($runnable ? 0 : 1);
@@ -152,6 +149,15 @@ try {
             }
         }
         exit(1);
+    }
+    if (!$options['yes']) {
+        fwrite(STDERR, 'About to rewrite all Git history of ' . $resolvedRoot . ': ' . count($plan['targets']) . ' path(s) from ' . $plan['commits_total']
+            . " commits, then prune, record, and rebuild. This cannot be undone except from your backup including .git.\nType yes to continue: ");
+        $answer = fgets(STDIN);
+        if ($answer === false || trim($answer) !== 'yes') {
+            fwrite(STDERR, "Cancelled; nothing changed.\n");
+            exit(1);
+        }
     }
     $result = HistoryPurge::run($resolvedRoot, $databasePath, $plan, $staticHtmlRoot);
     $limits = 'Not reached by this purge: your own backups, other clones and mirrors, downloads already made, provider or search-engine copies, and quotations in surviving posts.';

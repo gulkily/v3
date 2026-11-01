@@ -19,7 +19,9 @@ final class PurgeHistoryCommandTest
         [$code, $out, $err] = $this->run($project, './v3 purge-history preview --unknown');
         assertSame(1, $code); assertSame('', $out);
         assertSame(true, str_contains($err, 'Error: Unknown option: --unknown')); assertSame(true, str_contains($err, 'Usage:')); assertSame(false, str_contains($err, 'Stack trace:'));
-        [$code, , $err] = $this->run($project, './v3 purge-history preview --confirm=/x');
+        [$code, , $err] = $this->run($project, './v3 purge-history preview --yes');
+        assertSame(1, $code); assertSame(true, str_contains($err, 'Error: Unknown option: --yes'));
+        [$code, , $err] = $this->run($project, './v3 purge-history run --confirm=/x');
         assertSame(1, $code); assertSame(true, str_contains($err, 'Error: Unknown option: --confirm=/x'));
         [$code, , $err] = $this->run($project, './v3 purge-history squash');
         assertSame(1, $code); assertSame(true, str_contains($err, 'Error: Unknown command: squash'));
@@ -28,9 +30,10 @@ final class PurgeHistoryCommandTest
         $root = $this->fixture();
         [$code, $out, $err] = $this->run($project, './v3 purge-history run --repository-root=' . escapeshellarg($root));
         assertSame(1, $code); assertSame('', $out);
-        assertSame(true, str_contains($err, 'run needs --confirm=' . realpath($root)));
-        [$code, , $err] = $this->run($project, './v3 purge-history run --confirm=/elsewhere --repository-root=' . escapeshellarg($root));
-        assertSame(1, $code); assertSame(true, str_contains($err, 'run needs --confirm='));
+        // Without a terminal the question cannot be asked, so run refuses unless --yes is given; piped input does not count.
+        assertSame(true, str_contains($err, 'run asks for confirmation on a terminal; pass --yes'));
+        [$code, $out, $err] = $this->run($project, 'echo yes | ./v3 purge-history run --repository-root=' . escapeshellarg($root));
+        assertSame(1, $code); assertSame('', $out); assertSame(true, str_contains($err, 'pass --yes'));
         // Nothing changed in the repository.
         assertSame(2, count(array_filter(explode("\n", trim(LabelRemoval::git($root, ['log', '--all', '--format=%H', '--', 'records/posts/2026/01/01']))))));
         $this->cleanup($root);
@@ -60,7 +63,7 @@ final class PurgeHistoryCommandTest
         assertSame(true, str_contains($out, "Accepted delete receipts: 1\nPaths to purge: 2\n  " . $target . "\n  " . $target . ".asc\n"));
         assertSame(true, str_contains($out, 'Dry run on a temporary clone: clone'));
         assertSame(true, str_contains($out, '2 of 2 commits rewritten, 0 still touching purged paths'));
-        assertSame(true, str_contains($out, 'Next: back up the repository including .git, verify the backup, then run ./v3 purge-history run --confirm=' . realpath($root)));
+        assertSame(true, str_contains($out, "Next: back up the repository including .git, verify the backup, then run ./v3 purge-history run\n"));
         [$code, $out] = $this->run($project, './v3 purge-history preview --skip-dry-run --json' . $common);
         assertSame(0, $code);
         $json = json_decode($out, true, 16, JSON_THROW_ON_ERROR);
@@ -69,7 +72,7 @@ final class PurgeHistoryCommandTest
         assertSame(2, count(array_filter(explode("\n", trim(LabelRemoval::git($root, ['log', '--all', '--format=%H', '--', $target]))))));
         assertSame([], glob(sys_get_temp_dir() . '/history-purge-dry-run-*') ?: []);
 
-        [$code, $out, $err] = $this->run($project, './v3 purge-history run --confirm=' . escapeshellarg($root) . $common);
+        [$code, $out, $err] = $this->run($project, './v3 purge-history run --yes' . $common);
         assertSame(0, $code, $out . $err); assertSame('', $err);
         assertSame(true, str_starts_with($out, "History purge complete\n"));
         assertSame(true, str_contains($out, "Paths purged: 2\nCommits rewritten: 2 of 2\nOld objects removed: 2 blobs\n"));
@@ -84,7 +87,7 @@ final class PurgeHistoryCommandTest
         [$code, $out] = $this->run($project, './v3 purge-history preview --skip-dry-run' . $common);
         assertSame(1, $code);
         assertSame(true, str_contains($out, 'nothing to purge'));
-        [$code, , $err] = $this->run($project, './v3 purge-history run --confirm=' . escapeshellarg($root) . $common);
+        [$code, , $err] = $this->run($project, './v3 purge-history run --yes' . $common);
         assertSame(1, $code);
         assertSame(true, str_contains($err, "History purge refused:\n  - no accepted delete receipt"));
 

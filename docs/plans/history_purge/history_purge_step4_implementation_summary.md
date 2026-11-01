@@ -188,3 +188,12 @@ Step 3 explicitly approved ("approved step 3"). Branch `feat/history-purge` from
 - Pending: maintainer comfortable-fit judgment and acceptance; merge; any production run (explicitly out of scope). Technical completion does not increment the study's accepted outcomes.
 
 *— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+
+## Follow-up after closeout — run confirmation (2026-11-01)
+
+- Request: the user asked that `run` not require another parameter, confirm interactively instead, and offer a flag to skip the confirmation. Same cycle, same unmerged branch; a usability correction to Stage 6, not new scope.
+- Changes: `scripts/purge_history.php` drops `--confirm=<repository_root>`. After the blocker check and before anything changes, `run` writes the repository path, the path count and the commit count to stderr and asks the operator to type `yes`; any other answer cancels with "Cancelled; nothing changed." and exit 1. `--yes` skips the question. Without a terminal on stdin and without `--yes` the run is refused before any work, so piping `yes` into it does not count. The prompt goes to stderr so `--json` output stays clean. Usage text, the `v3` help line, the CLI reference, the runbook and the concept entry updated; preview's next-step line now names the bare command.
+- Verification: `php tests/run.php PurgeHistoryCommandTest`: 2 run, 2 passed, now covering `--yes` rejected on preview, `--confirm` rejected as unknown, run without a terminal refused with the `--yes` hint, `echo yes |` refused the same way, and the full purge through the dispatcher with `--yes`. The interactive path was driven on a pseudo-terminal with `script`: answering `no` printed the cancellation and left history intact; answering `yes` purged and verified.
+- Estimate: no change to the cycle's 0.80 projection or 0.80 retrospective assessment; recorded as a correction, not a new request with its own score.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*

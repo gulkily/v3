@@ -59,10 +59,13 @@ would proceed; 1 means it is blocked and the output says why:
 ## Run
 
 ```bash
-./v3 purge-history run --confirm=/path/repository --repository-root=/path/repository --database-path=/path/read-model.sqlite3 --static-html-root=/path/static_html
+./v3 purge-history run --repository-root=/path/repository --database-path=/path/read-model.sqlite3 --static-html-root=/path/static_html
 ```
 
-`--confirm` must name the repository being rewritten. The run snapshots every ref,
+The command states the repository, the paths and the commit count and asks you
+to type `yes`; anything else cancels with nothing changed. Pass `--yes` to skip
+the question in a script; without a terminal and without `--yes` the run is
+refused. The run snapshots every ref,
 rewrites history, verifies that no ref still touches a purged path, and only then
 discards the old objects: reflogs are expired, stale pseudo-refs removed and the
 object database pruned. It then proves by object id that every old post blob and
