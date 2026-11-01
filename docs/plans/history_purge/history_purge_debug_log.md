@@ -67,3 +67,28 @@
 - Whether an engine switch at Stage 1 (filter-branch to horizon squash) is "changed scope" requiring a return to Step 2, or an implementation discovery within the approved Step 1 contingency. The plan reports it for confirmation before Stage 3 either way.
 
 *— Claude · 2026-10-30 UTC · Model: claude-fable-5-1*
+
+## 2026-11-01 UTC — Step 4
+
+### Necessary/useful instructions
+
+- `docs/railspike/RAILSPIKE.md`, Step 4 commit cadence (one stage-scoped commit with the summary update before the next stage): kept each stage's evidence attached to its code, and made the Stage 1 engine switch and the Stage 7 entry-note correction visible as dated records instead of silent rewrites. Retain.
+- `docs/railspike/docs/workflow/step4_implementation_do.md`, "report checks as passed, failed, blocked, pending, or inapplicable; a focused pass is never an unqualified full-suite result": forced the two load-sensitive failures to be rerun in isolation and on a clean `main` worktree before being classified, and kept the five inherited failures named in the closeout. Retain.
+- `AGENTS.md`, implementation standards ("replay that condition or explicitly report it unverified"): drove Stage 7 to look again for a QDB-derived copy, which found one the Step 4 entry had missed, and to run the real command over HTTP rather than relying on route tests that cannot see headers. Retain (host instruction, noted for context).
+- Extended estimates, separate retrospective stage-work assessment per stage: the Stage 3 revision at Stage 1 (0.20 to 0.15, engine pulled forward) and the Stage 5 retrospective (0.08, memoization risk did not materialize) were cheap to record and explain where the plan's uncertainty actually sat. Retain.
+
+### Redundant/unnecessary instructions
+
+- `docs/railspike/docs/workflow/step4_implementation_before.md`, re-reading the whole Step 3 plan at each stage: the plan's per-stage bullets were sufficient; the full re-read added nothing after Stage 2. Suggest "re-read the current stage and the Completion Contract" instead.
+
+### Inapplicable instructions
+
+- Documentation-only scope rules, UI copy audit tracking, navigation icon mapping: not applicable; application change without a navigation destination or UI text.
+- Browser/theme verification matrix: not applicable; the only user-visible change is a plain-text source route response and a response header.
+
+### Uncertain assessments
+
+- Whether the Stage 7 entry-note correction (a QDB-derived copy existed after all) should count as a planning defect under the study's "corrections versus new requests" rule. Recorded as a correction to the entry note, not as new scope; the cycle score was not changed by it.
+- Whether a dispatcher test that runs a full purge with a static build belongs in the ordinary suite (it adds several seconds). Kept, because it is the only automated coverage of the artifact-root branch.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
