@@ -8,7 +8,8 @@ Coverage: coverage_matrix.txt
 Reproduction: reproduction.txt; archived source files end in .py.txt or .php.txt
 
 Conclusion: Fixed-page runtime reading fits the tested 128 MiB process limit at 10000 ordinary records, but violates the proposed 32 MiB public ceiling. A 40000-record normal rebuild fails at that limit. A local 1000-record full rebuild/publication completes and survives tested interruption/retry. These are measured configurations, not a universal record-count limit or a production sizing recommendation.
-Qualification: No actual PHP 8.3/FastCGI host replay, production load, long soak or provider execution. Synthetic ordinary bodies are 2048 bytes, one tag, minimal reactions/pins/history unless separately stated. Three extra fixture posts accompany synthetic counts.
+Historical host evidence: The user previously reported successful QDB build/activation of release-20261030201011-af62aa46 on 2026-10-30: 314.961 seconds, 5253 HTML files and 53 assets. See ../qdb_rebuild_scope/qdb_rebuild_scope_step4_implementation_summary.md, User-reported host recovery, and ../qdb_build_time/qdb_build_time_step1_solution_assessment.md. Preserve this operator-observed success separately; this study did not replay that host or establish its concurrent capacity.
+Qualification: No new PHP 8.3/FastCGI host replay, production load, long soak or provider execution. Synthetic ordinary bodies are 2048 bytes, one tag, minimal reactions/pins/history unless separately stated. Three extra fixture posts accompany synthetic counts.
 
 Finding: QDB numbered-page input work exceeds visible output
 Measurements: /latest, /top and body search return 25 stable ordered synthetic IDs at 1000 and 10000 records. PHP peak rises from 10 MiB to 72 MiB. All final normal HTTP samples return 200. Root welcome responds but contains no synthetic IDs in this fixture; it is not a populated-welcome capacity result.
@@ -67,4 +68,6 @@ Priority 2: Bound parsedPosts and dependent rebuild passes, preserving full cano
 Priority 3: Resolve or clearly document direct import-repository/export layout compatibility. Preserve the unrepacked failure and import-instance resume contract.
 Priority 4: Measure uncovered shapes and real worker environment before selecting operational limits: large reply trees, reaction/pin density, maximum images, large commits, populated scoring state and longer/interleaved host runs. Preserve current complete-output contracts; do not truncate content to make a budget pass.
 Dependency/runtime/schema delta: Zero
-Deployment and actual reported host recovery: Unverified; separate authorized host replay required
+Deployment/new host replay: Unverified in this study; historical user-reported successful activation retained above. Separate authorized host replay is required for current capacity claims.
+
+Archive formatting: archive_normalization.txt maps raw and normalized hashes. c66a1c15 retains original archived bytes; final display files trim trailing whitespace/extra EOF blank lines only. Raw stdout hash fields remain unchanged.

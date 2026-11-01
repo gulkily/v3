@@ -1,7 +1,7 @@
 Fastmod historical audit
 Read-model database: /tmp/v3-capacity-5wrtjih3/model.sqlite
 Score database: /tmp/v3-capacity-5wrtjih3/scores.sqlite
-Selected model: 
+Selected model:
 Enabled rubrics: meta, moderation
 Historical content
   Total posts: 1008

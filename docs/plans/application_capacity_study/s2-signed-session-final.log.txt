@@ -39,4 +39,3 @@ Session route: /api/auth_status
 HTTP: HTTP/1.1 401 Unauthorized
 Elapsed seconds: 0.009505033493042
 Approval distinction: status=unauthenticated
-

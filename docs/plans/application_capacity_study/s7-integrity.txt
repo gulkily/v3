@@ -7,3 +7,5 @@ Changed-file scope: approved documentation and organization allowance only
 Runtime/test/config/schema/dependency/todo delta: zero
 Full application suite: not run; no product change
 Actual host recovery: unverified
+Whitespace verification: Initial staged/cumulative check exposed new-file log whitespace missed by earlier unstaged checks; final display normalization preserves raw history/hashes. Corrective cumulative check required before commit.
+Historical host evidence: Prior user-reported successful activation preserved separately from unverified new study replay.

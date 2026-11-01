@@ -28,7 +28,7 @@ PHP Warning:  foreach() argument must be of type array|object, null given in /tm
 PHP Warning:  Undefined variable $http_response_header in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 34
 PHP Warning:  Trying to access array offset on value of type null in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 34
 Session route: /api/auth_challenge
-HTTP: 
+HTTP:
 Elapsed seconds: 0.0002448558807373
 PHP Warning:  file_get_contents(http://127.0.0.1:18743/api/authenticate_identity): Failed to open stream: Connection refused in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 32
 PHP Warning:  Undefined variable $http_response_header in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 33
@@ -36,7 +36,7 @@ PHP Warning:  foreach() argument must be of type array|object, null given in /tm
 PHP Warning:  Undefined variable $http_response_header in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 34
 PHP Warning:  Trying to access array offset on value of type null in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 34
 Session route: /api/authenticate_identity
-HTTP: 
+HTTP:
 Elapsed seconds: 9.9897384643555E-5
 PHP Fatal error:  Uncaught RuntimeException: session authentication failed in /tmp/v3-capacity-5wrtjih3/signed_driver.php:40
 Stack trace:

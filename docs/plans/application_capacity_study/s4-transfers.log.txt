@@ -77,4 +77,3 @@ Import case: 2
 Command: ['./v3', 'import-instance', '--resume', '--repository-root=/tmp/v3-capacity-5wrtjih3/import-target', '--database-path=/tmp/v3-capacity-5wrtjih3/import.sqlite', '--static-html-root=/tmp/v3-capacity-5wrtjih3/import-static']
 Exit: 1
 Elapsed seconds: 0.064812
-

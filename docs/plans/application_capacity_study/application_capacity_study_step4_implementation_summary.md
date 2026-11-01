@@ -110,6 +110,14 @@ Date: 2026-11-01 UTC. Cycle v3/application_capacity_study; scope v1/B; original 
 
 Seven documentation/investigation stages completed with explicit tested/failed/deferred/inapplicable dispositions. Original stage values 0.12/0.16/0.18/0.14/0.10/0.14/0.10 retained; retrospectives 0.12/0.20/0.18/0.18/0.10/0.14/0.14, non-additive. No scope change or implemented remediation. Planning e22df83f; S1 0b391173; S2 66d316c1; S3 2e531995; S4 033c7804; S5 5617a4d2; S6 f04b6967; S7 is the commit containing this closeout. Separate debug-only handoff commit follows as required.
 
-Verification status: Report/provenance, representative ordinary-entry parity, documented recovery, source syntax and scoped document checks passed. Performance failures and harness corrections retained. Actual PHP 8.3 host, long-duration/FastCGI capacity, deferred matrix cells and full-suite acceptance unverified. No merge, push, deployment, dependency addition or production load. Existing unrelated ledger whitespace is preserved outside the scoped commit.
+Verification status: Report/provenance, representative ordinary-entry parity, documented recovery, source syntax and scoped document checks passed. Performance failures and harness corrections retained. Actual PHP 8.3 host, long-duration/FastCGI capacity, deferred matrix cells and full-suite acceptance unverified. No merge, push, deployment, dependency addition or production load. Existing unrelated ledger changes, including its prior host-outcome entry, are preserved outside the scoped commit.
+
+*— Codex · 2026-11-01 UTC*
+
+## Stage 7 correction - Final archive integrity
+
+- Final staged/cumulative whitespace verification found trailing whitespace and surplus EOF blank lines in newly archived logs; earlier unstaged checks had not included untracked files. The shell continued to the S7 commit after reporting those warnings. No earlier commit is amended. Display copies are normalized now, with original/normalized hashes in archive_normalization.txt and original raw bytes retained at c66a1c15. Command Log SHA256 fields continue to describe raw stdout. Final cumulative check must pass before the corrective commit.
+- Report now explicitly preserves the prior user-reported QDB activation (314.961 seconds; 5253 HTML/53 assets; release-20261030201011-af62aa46) from the existing source artifacts. That historical success does not establish this study's PHP 8.3/concurrency acceptance. Earlier unverified-host wording refers to a new study replay, not a denial of the operator's prior success.
+- S7 initial commit: c66a1c15. Corrections remain documentation-only, within scope; retrospective/study values unchanged. Unrelated ledger changes remain uncommitted.
 
 *— Codex · 2026-11-01 UTC*
