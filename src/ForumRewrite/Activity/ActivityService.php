@@ -1129,6 +1129,7 @@ final class ActivityService
             str_starts_with($path, 'records/post-retraction-acceptances/') => 'post retraction acceptance',
             str_starts_with($path, 'records/post-removals/') => 'post removal acceptance',
             str_starts_with($path, 'records/feature-flag-changes/') => 'feature flag change record',
+            str_starts_with($path, 'records/history-rewrites/') => 'history rewrite record',
             str_starts_with($path, 'records/profile-names/') => 'profile name record',
             str_starts_with($path, 'records/identity/') => 'identity record',
             str_starts_with($path, 'records/approval-seeds/') => 'approval seed record',

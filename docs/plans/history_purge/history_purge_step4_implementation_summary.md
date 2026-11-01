@@ -40,3 +40,25 @@ Step 3 explicitly approved ("approved step 3"). Branch `feat/history-purge` from
 - Estimate details (extended): original scope S1/v1 planner plus timed dry run, 0.15 (0.10–0.20). Retrospective 0.20: the gate needed a working engine to time, so the rewrite primitive and commit-map capture moved forward from Stage 3; two engines were measured instead of one. No measured labor claimed.
 
 *— Claude · 2026-10-31 UTC · Model: claude-fable-5-1*
+
+## Stage 2 - Commit map record contract
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `docs/specs/history_rewrite_record_v1.md`: the record. Path `records/history-rewrites/history-rewrite-<YYYYMMDD>T<HHMMSS>Z.txt`, headers `Format: history-rewrite-v1`, `Rewritten-At`, `Reason: purge`, `Receipt-Count`, `Part`, `Parts` in fixed order; body of `Old-Commit` / `New-Commit` blocks, strictly ascending by old identity, one to one, identity mappings omitted. Size bound: at most 100,000 blocks per file (about 10.7 MB, under the 16 MiB record limit); a larger run continues in `-<part>` files. Instance-local: `ArchiveRecordCatalog` does not list the directory, so exports and imports ignore it, as Step 2 requires.
+  - `src/ForumRewrite/Retraction/CommitMap.php`: `encode(rewrittenAt, receiptCount, map)` returns path => bytes for every part and self-validates; `decode(bytes, path?)` is the strict validator and refuses a filename that disagrees with its headers; `write(root, files)` refuses to overwrite, which is the "second run in the same second" rule; `records(root)` lists parts in resolution order; `resolve(root, sha)` applies every record in order and returns the newest identity, or null when no record names it. Resolution scans record bytes for the block rather than parsing 100,000 mappings per lookup, with a format-line check and a shape check on the hit. `GenericTextRecordParser` and `RecordLimits` reused; no new parser.
+  - `src/ForumRewrite/Canonical/SourcePathValidator.php`: the record path is a valid canonical record path, so `/source/blob` can show it once committed.
+  - `src/ForumRewrite/Activity/ActivityService.php`: the file role label "history rewrite record" for the purge commit in Activity, beside the other record families.
+  - `tests/CommitMapTest.php`, registered in `tests/run.php`.
+- Verification:
+  - `php tests/run.php CommitMapTest`: 4 run, 4 passed. Covers round trip with sorting and dropped identity mappings, an empty run, the 100,000-block split into parts with correct `Part`/`Parts`, sixteen malformed variants rejected (format, reason, timestamp, leading-zero count, part out of range, header order, extra header, identity mapping, duplicate old, duplicate new, out of order, uppercase hex, short hash, unknown block field, unterminated block, CRLF), path mismatch, many-to-one and negative count refused, chained resolution across two records to the latest identity, case-insensitive lookup, unmapped and malformed identities returning null, stray files in the directory ignored, overwrite refused.
+  - `php tests/run.php CommitMapTest HistoryRewriteTest HistoryPurgePlannerTest ActivityItemLinkTest ActivityProjectionTest`: 12 run, 12 passed for the activity suites on the label change, 9 run, 9 passed for the purge suites. No test exercises `SourcePathValidator` directly; the new pattern is asserted in `CommitMapTest`.
+  - Not applicable: UI, themes, roles, migration and deployment; no read-model schema change; no dependency change.
+- Notes:
+  - Routes consult the map only after Git reports a commit unknown (Stage 5), so a live identity is never redirected; the spec states this.
+  - Stage 4 will call `encode` with the `HistoryRewrite::rewrite` map and `write` before committing; Stage 3 keeps the engine free of record knowledge.
+- Estimate details (extended): original 0.10 (0.08–0.12). Retrospective 0.10: the strict codec was the driver as planned; the part split was the only addition beyond the Step 3 sketch, forced by the 100,010-commit shape Stage 1 measured against the 16 MiB record limit. Whole-cycle **0.80 reaffirmed**. No measured labor claimed.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*

@@ -30,6 +30,7 @@ $testFiles = [
     __DIR__ . '/ArchiveExportTest.php',
     __DIR__ . '/RetractionMaintenanceTest.php',
     __DIR__ . '/AcceptedRetractionTest.php',
+    __DIR__ . '/CommitMapTest.php',
     __DIR__ . '/HistoryPurgePlannerTest.php',
     __DIR__ . '/HistoryRewriteTest.php',
     __DIR__ . '/RemovalReceiptTest.php',
