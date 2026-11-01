@@ -101,6 +101,49 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testRetirementAuthorityCannotBeInferredFromRenamedApprovedProfiles(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $owner = $this->createSigningKey('retirement-owner');
+        $member = $this->createSigningKey('retirement-other');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $ownerId = $writer->linkIdentity(['public_key' => $owner['public_key']])['identity_id'];
+            $memberId = $writer->linkIdentity(['public_key' => $member['public_key']])['identity_id'];
+            $this->seedApprovedIdentity($root, $ownerId);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $pdo = (new ReadModelConnection($db))->open();
+            $profile = ProfileRepository::byIdentityId($pdo, $memberId);
+            $grant = $writer->prepareApproval(['approver_identity_id' => $ownerId, 'target_identity_id' => $memberId,
+                'target_profile_slug' => $profile['profile_slug'], 'thread_id' => $profile['bootstrap_thread_id'],
+                'parent_id' => $profile['bootstrap_post_id']]);
+            $writer->finalizePreparedApproval($grant + ['author_identity_id' => $ownerId,
+                'detached_signature' => $this->signCanonicalRecord($owner['home'], $grant['canonical_record'])]);
+            $receipt = \ForumRewrite\Security\ApprovalAcceptance::read($root, $grant['record_path']);
+            assertSame('retirement-other', $receipt['context']['target_username']);
+            assertSame(false, \ForumRewrite\Security\ApprovalPolicy::isOperator($root, $memberId));
+            $rename = $writer->prepareProfileName(['author_identity_id' => $memberId, 'username' => 'retirement-owner']);
+            $writer->finalizePreparedProfileName($rename + ['author_identity_id' => $memberId,
+                'detached_signature' => $this->signCanonicalRecord($member['home'], $rename['canonical_record'])]);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $memberProfile = ProfileRepository::byIdentityId($pdo, $memberId);
+            $ownerProfile = ProfileRepository::byIdentityId($pdo, $ownerId);
+            assertSame(1, (int) $memberProfile['is_approved']);
+            assertSame(1, (int) $ownerProfile['is_approved']);
+            assertSame($ownerProfile['username_token'], $memberProfile['username_token']);
+            // Equal current names and approvals do not establish accepted membership in the same account.
+            assertSame('retirement-other', \ForumRewrite\Security\ApprovalAcceptance::read($root, $grant['record_path'])['context']['target_username']);
+            assertSame(false, \ForumRewrite\Security\ApprovalPolicy::isOperator($root, $memberId));
+        } finally {
+            $this->deleteTree($owner['home']);
+            $this->deleteTree($member['home']);
+            $this->deleteTree($root);
+            $this->deleteTree($artifacts);
+            foreach (glob($db . '*') ?: [] as $file) if (is_file($file)) unlink($file);
+        }
+    }
+
     public function testSignedProfileNamePreservesIdentityAndRejectsForgery(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

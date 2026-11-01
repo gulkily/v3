@@ -93,3 +93,10 @@ Verification: Inspected Account and User Access templates and existing identity/
 Verification: Reviewed current approval acceptance, canonical write serialization, message transfer/receipt storage and ordinary key-management entry points. Read retraction coordination before planning reuse of ordinary serialization; no retraction guards/diagnostics proposed. Checked all eight stage fields, single footer, current document targets, frozen R1 hashes and whitespace. No runtime tests, application changes, dependency changes, commits or deployment. Step 2 approved; Step 3 awaits approval.
 
 *— Codex · 2026-11-01 UTC*
+
+
+## 2026-11-01 UTC — Stage 1 gate disposition
+
+Source: Approved Step 3, Stage 1 and Key Risks; step4_implementation_do.md, material risk before dependent work. Actual finding: signed rename plus retained approval does not establish same-account retirement authority; missing legacy context prevents silently treating all existing same-name keys as proven members. Saved a real-key characterization and reviewable Step 2 coverage proposal. Stage 1 incomplete; Stages 2–8 not started. This is a stage note, not a completed Step 4 diagnostic report. Dependency delta zero.
+
+*— Codex · 2026-11-01 UTC*
