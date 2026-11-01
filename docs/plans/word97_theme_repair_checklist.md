@@ -1,7 +1,7 @@
 # Word 97 theme repair checklist
 
 Date: 2026-11-01
-Status: in progress on branch `fix/word97-theme-repair`; each fix lands as its own commit, recorded on the item.
+Status: done on branch `fix/word97-theme-repair`; each fix landed as its own commit, recorded on the item. Not merged.
 
 Screenshots of the board, Users and /user/ pages under `word97` showed the
 theme no longer holds together. The cause is coverage, not regression: three
@@ -68,43 +68,53 @@ checklist is scoped to Word 97 but the gap should be recorded for them.
 
 ## Users page
 
-- [x] (commit 4: users and person pages; removed from view, kept for assistive technology, because the tabs under it are member-only and cannot carry a title bar for guests) `.users-page__title` "Users" is a Times h1 on the bare desktop. Make it the title bar of a
+- [x] (37c961307; removed from view, kept for assistive technology, because the tabs under it are member-only and cannot carry a title bar for guests) `.users-page__title` "Users" is a Times h1 on the bare desktop. Make it the title bar of a
       frame that encloses the tools and list, or remove it (the nav already says Users; the UI
       copy rule favours removal).
-- [x] (commit 4: users and person pages; white list in a window frame) `.account-group` has `border-radius: 0.75rem`. Square it and give it the sunken white
+- [x] (37c961307; white list in a window frame) `.account-group` has `border-radius: 0.75rem`. Square it and give it the sunken white
       ListView look (white background, inset bevel), which also fixes grey-on-grey rows.
-- [x] (commit 4: users and person pages) `.account-row--link::after` renders a "›" chevron. Hide it in word97; rows are plain
+- [x] (37c961307) `.account-row--link::after` renders a "›" chevron. Hide it in word97; rows are plain
       underlined links or ListView rows with navy selection.
-- [x] (commit 4: users and person pages; sunken white field) `select` in `.users-tools` (the Activity sort) is not covered by the theme's
+- [x] (37c961307; sunken white field) `select` in `.users-tools` (the Activity sort) is not covered by the theme's
       `input, textarea` bevel rule and renders with platform styling. Add `select` to the
       sunken rule, or style it as a raised button with the pixel dropdown arrow already used
       by `.theme-menu__trigger`.
-- [x] (commit 4: users and person pages) Search input placeholder is Times while the select is Tahoma; align to Tahoma for form
+- [x] (37c961307) Search input placeholder is Times while the select is Tahoma; align to Tahoma for form
       chrome.
 
 ## Person page (/user/...)
 
-- [x] (commit 4: users and person pages; also covers the Account page cards, checked at /account/key/) `.account-card.person-head` is a rounded grey card with no window chrome. Square it and
+- [x] (37c961307; also covers the Account page cards, checked at /account/key/) `.account-card.person-head` is a rounded grey card with no window chrome. Square it and
       apply the `.card` window treatment with the username as the title bar.
-- [x] (commit 4: users and person pages; 2rem bevelled tile) `.account-avatar` is a round navy circle with an initial. Replace with a square 32px
+- [x] (37c961307; 2rem bevelled tile) `.account-avatar` is a round navy circle with an initial. Replace with a square 32px
       bevelled tile, or hide it in word97.
-- [x] (commit 4: users and person pages; title bar of the identities window) `.person-identities__title` "Identities" is a Times h2 on the desktop; same fix as the
+- [x] (37c961307; title bar of the identities window) `.person-identities__title` "Identities" is a Times h2 on the desktop; same fix as the
       Users title (title bar of the identities frame).
-- [x] (commit 4: users and person pages) Identities `.account-group` rows: same rounded-corner and chevron fixes as Users.
+- [x] (37c961307) Identities `.account-group` rows: same rounded-corner and chevron fixes as Users.
 - [x] (left as a plain link under the window; acceptable in Word 97 and not worth markup) "Manage access" sits as a bare link under the list; fine as a link, but place it inside
       the frame or a status line rather than on the desktop.
 - [x] (no change needed: no script fills the banner, so it is always empty and hidden) Verify: `.starfield.banner` is hidden only while empty. If the client fills it, a starfield
       paints behind the Win95 card. Hide it explicitly in word97.
 
+## Account page (added 2026-11-01 from a signed-in screenshot)
+
+- [x] (commit 5: account page) "Account" h1 is a Times heading on the bare desktop. The
+      `.account-key-header` is now the title bar of the first window below it (the feedback
+      notice when one renders, otherwise the visible guest or member card).
+- [x] (commit 5: account page) "Remove this key" rendered as a bevelled button filling a whole
+      window frame: the theme's general button bevel matched `button.account-row`, and the base
+      `button[type="button"]` colour painted the row grey. Grouped rows are now flat list rows
+      and keep the danger colour. Verified guest and simulated member state at 1400.
+
 ## Cross-cutting
 
-- [ ] The theme has three greys (`--page-bg`, `--panel`, `--line`) that new components rely on
+- [x] (bed7230e8, 37c961307; white document surfaces for `.thread-rows` and `.account-group`, grey windows for cards) The theme has three greys (`--page-bg`, `--panel`, `--line`) that new components rely on
       for contrast. Add a content-surface override (white document area) in the theme file rather
       than per-component patches where possible.
-- [ ] Reuse: all fixes belong in `theme-word97.css`; do not add word97-specific rules to
+- [x] (9fbffb52f; one window-frame rule for `.card`, `.feedback`, `.account-card`, `.thread-rows`, `.account-group`; nothing added to `site.css` or `account.css`) Reuse: all fixes belong in `theme-word97.css`; do not add word97-specific rules to
       `site.css` or `account.css`. Check that the `.card` window treatment can be shared with
       `.thread-rows`, `.account-card`, `.account-group` via a shared selector list instead of
       duplicating the shadow stack.
-- [ ] Verification: extend the theme matrix screenshot test (added in ui_tools_launcher stage 3)
+- [x] (commit 6: coverage test; `tests/Word97ThemeCoverageTest.php` asserts the theme covers every component above. Screenshots at 1400 and 390 of the board, ?view=all with pinned threads, Users as guest and member, /user/ilyag, /threads/root-001 and /account/key/ were reviewed by hand; the project has no screenshot-diff harness. Sibling check: Midnight shows the same header overlap, stray bar and unthemed rows; Chicago keeps the rounded lists with chevrons and the bare Users heading. Both are outside this branch.) Verification: extend the theme matrix screenshot test (added in ui_tools_launcher stage 3)
       to the list board, Users and /user/ pages under word97 at desktop and phone widths. Check
       Chicago and Midnight once for the same components and record the gap for them.
