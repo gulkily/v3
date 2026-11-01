@@ -19,13 +19,13 @@ final class HistoryPurgePlanner
 {
     /**
      * @return array{
-     *   receipts:int, targets:list<string>, commits_total:int, commits_affected:int,
+     *   receipts:int, receipts_without_history:list<string>, targets:list<string>, commits_total:int, commits_affected:int,
      *   legacy_without_timestamp:list<string>, blockers:list<string>, can_run:bool
      * }
      */
     public static function plan(string $root): array
     {
-        $result = ['receipts' => 0, 'targets' => [], 'commits_total' => 0, 'commits_affected' => 0,
+        $result = ['receipts' => 0, 'receipts_without_history' => [], 'targets' => [], 'commits_total' => 0, 'commits_affected' => 0,
             'legacy_without_timestamp' => [], 'blockers' => [], 'can_run' => false];
         if (!is_dir($root . '/.git')) {
             $result['blockers'][] = 'missing_git';
@@ -42,14 +42,18 @@ final class HistoryPurgePlanner
         }
 
         $candidates = [];
+        $receiptIds = [];
         foreach (AcceptedRemoval::all($root) as $id => $record) {
             if (($record['operation'] ?? '') !== 'delete') {
                 continue;
             }
             $result['receipts']++;
+            $receiptIds[(string) $id] = [];
             foreach (CanonicalPathResolver::postCandidates((string) $id) as $candidate) {
                 $candidates[$candidate] = true;
                 $candidates[$candidate . '.asc'] = true;
+                $receiptIds[(string) $id][] = $candidate;
+                $receiptIds[(string) $id][] = $candidate . '.asc';
             }
         }
 
@@ -66,6 +70,15 @@ final class HistoryPurgePlanner
             $result['targets'] = array_keys($seen);
             sort($result['targets']);
             $result['commits_affected'] = self::affectedCommits($root, $result['targets']);
+            // A receipt can name a post with no file anywhere in this history: one
+            // already purged, or one that was never committed here. It is still a
+            // receipt, but there is nothing for the purge to remove.
+            foreach ($receiptIds as $id => $paths) {
+                if (array_intersect($paths, $result['targets']) === []) {
+                    $result['receipts_without_history'][] = $id;
+                }
+            }
+            sort($result['receipts_without_history']);
         }
 
         $result['legacy_without_timestamp'] = self::legacyPostsWithoutTimestamp($root);

@@ -36,11 +36,16 @@ final class HistoryPurgePlannerTest
         file_put_contents($root . '/records/post-timestamps/legacy.json', \ForumRewrite\Canonical\LegacyPostTimestamp::encode('legacy', $legacy, '2025-12-31T00:00:00Z'));
         $git(['add', '-A']); $git(['commit', '-q', '-m', 'delete first']);
 
+        // A second receipt for a post that never had a file here is counted but purges nothing.
+        file_put_contents($root . '/records/post-removals/quote-20260103000000-aaaa0009.txt', $this->receipt('quote-20260103000000-aaaa0009', '2026-01-03T00:00:00Z', 'never committed'));
+        $git(['add', '-A']); $git(['commit', '-q', '-m', 'receipt without history']);
+
         $plan = HistoryPurgePlanner::plan($root);
-        assertSame(1, $plan['receipts']);
+        assertSame(2, $plan['receipts']);
+        assertSame(['quote-20260103000000-aaaa0009'], $plan['receipts_without_history']);
         // Only the dated candidate ever existed; the undated candidate is not reported.
         assertSame([$deleted, $deleted . '.asc'], $plan['targets']);
-        assertSame(2, $plan['commits_total']);
+        assertSame(3, $plan['commits_total']);
         assertSame(2, $plan['commits_affected']);
         assertSame([], $plan['legacy_without_timestamp']);
         assertSame([], $plan['blockers']);

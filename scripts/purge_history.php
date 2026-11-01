@@ -98,6 +98,7 @@ try {
             }
         }
         $report = ['status' => $runnable ? 'ready' : 'blocked', 'repository' => $resolvedRoot, 'receipts' => $plan['receipts'],
+            'receipts_without_history' => $plan['receipts_without_history'],
             'targets' => $plan['targets'], 'commits_total' => $plan['commits_total'], 'commits_affected' => $plan['commits_affected'],
             'legacy_without_timestamp' => $plan['legacy_without_timestamp'], 'blockers' => $blockers, 'dry_run' => $dryRun,
             'next' => $runnable ? './v3 purge-history run' : null];
@@ -107,7 +108,13 @@ try {
             echo "History purge preview\n";
             echo 'Repository: ' . $resolvedRoot . "\n";
             echo 'Accepted delete receipts: ' . $plan['receipts'] . "\n";
-            echo 'Paths to purge: ' . count($plan['targets']) . "\n";
+            if ($plan['receipts_without_history'] !== []) {
+                echo 'Receipts with no post file left in this history (nothing to purge for them): ' . count($plan['receipts_without_history']) . "\n";
+                foreach ($plan['receipts_without_history'] as $id) {
+                    echo '  ' . $id . "\n";
+                }
+            }
+            echo 'Paths to purge (a post record and its detached signature count separately): ' . count($plan['targets']) . "\n";
             foreach ($plan['targets'] as $target) {
                 echo '  ' . $target . "\n";
             }

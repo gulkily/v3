@@ -206,3 +206,12 @@ Step 3 explicitly approved ("approved step 3"). Branch `feat/history-purge` from
 - Estimate: no change to the cycle scores; recorded as a correction.
 
 *— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+
+## Follow-up after closeout — receipts without history in preview (2026-11-01)
+
+- Request: the user read a preview showing "Accepted delete receipts: 2" above two paths that were one post record and its detached signature, and asked whether there was really only one receipt. There were two: the second named a post with no file anywhere in that repository's history, so it contributed no path, and the preview did not say so.
+- Changes: `HistoryPurgePlanner::plan` returns `receipts_without_history`, the IDs of accepted delete receipts whose candidate paths never appear in history (a post already purged, or never committed here). `preview` prints them under the receipt count with "nothing to purge for them", labels the path count as counting a record and its signature separately, and includes the list in `--json`.
+- Verification: `php tests/run.php HistoryPurgePlannerTest PurgeHistoryCommandTest HistoryPurgeTest`: 10 run, 10 passed; the planner test adds a receipt for a never-committed post and asserts it is counted and listed without adding targets. The user's local repository, which they had purged twice by then, previews as 2 receipts, both listed as having no post file left, 0 paths.
+- Estimate: no change; correction to Stage 6 output.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*

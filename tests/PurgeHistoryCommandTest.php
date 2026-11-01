@@ -60,7 +60,7 @@ final class PurgeHistoryCommandTest
 
         [$code, $out, $err] = $this->run($project, './v3 purge-history preview' . $common);
         assertSame(0, $code, $err); assertSame('', $err);
-        assertSame(true, str_contains($out, "Accepted delete receipts: 1\nPaths to purge: 2\n  " . $target . "\n  " . $target . ".asc\n"));
+        assertSame(true, str_contains($out, "Accepted delete receipts: 1\nPaths to purge (a post record and its detached signature count separately): 2\n  " . $target . "\n  " . $target . ".asc\n"));
         assertSame(true, str_contains($out, 'Dry run on a temporary clone: clone'));
         assertSame(true, str_contains($out, '2 of 2 commits rewritten, 0 still touching purged paths'));
         assertSame(true, str_contains($out, "Next: back up the repository including .git, verify the backup, then run ./v3 purge-history run\n"));
