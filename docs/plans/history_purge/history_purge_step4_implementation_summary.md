@@ -125,3 +125,26 @@ Step 3 explicitly approved ("approved step 3"). Branch `feat/history-purge` from
 - Estimate details (extended): original 0.10 (0.08–0.12). Retrospective 0.08: the memoization risk did not materialize because resolution happens before the shared helper is called. Whole-cycle **0.80 reaffirmed**. No measured labor claimed.
 
 *— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+
+## Stage 6 - CLI, runbook and concept entries
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `scripts/purge_history.php` and the `purge-history` case plus usage line in `v3`: `preview [--repository-root=] [--database-path=] [--static-html-root=] [--skip-dry-run] [--json]` and `run --confirm=<repository_root> [...] [--json]`. Options are validated before any work; unknown commands and options print `Error: ...` and the usage to stderr with exit 1; `-h`/`--help` exit 0. Paths fall back to `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, `FORUM_STATIC_HTML_ROOT`, then the local bootstrap defaults, like `delete-record` and `retraction-sweep`. Preview prints receipts, paths, commit counts, legacy posts, blockers in plain words, and the timed dry run on a temporary clone that is removed afterwards; exit 0 means run would proceed, 1 means blocked. Run refuses without `--confirm` naming the real path of the repository, refuses over blockers, calls `HistoryPurge::run` with the static root, prints counts, the record commit, phase times, `Verified` or the lingering-object recovery text, the list of copies the purge cannot reach, and the fresh-image-backup reminder; exit 1 when not verified. `--json` emits the plan or the result without the map.
+  - `docs/runbooks/history_purge.md`: what the purge reaches and does not, backup first, the pause, preview, run, verify, fresh image backup, mirrors must re-clone rather than pull, and recovery for each failure the engine distinguishes.
+  - `docs/reference/v3_cli.md`: new section after the sweep. `docs/reference/author_post_retraction.md` and `docs/reference/retraction_sweep.md`: the "history is not purged" statements now point at the command and runbook.
+  - Concept entries: `docs/concepts/history_purge.md` (created), `docs/concepts/post_retraction.md` (created; none existed), `docs/concepts/source_history_links.md` (created, describes the map resolution).
+  - `tests/PurgeHistoryCommandTest.php`, registered in `tests/run.php`.
+- Verification:
+  - `php tests/run.php PurgeHistoryCommandTest HistoryPurgeTest HistoryPurgePlannerTest HistoryRewriteTest CommitMapTest SourceRouteCommitMapTest`: 17 run, 17 passed. Through the `./v3` dispatcher: help exit 0, no-argument usage exit 1, unknown option and unknown command with `Error:` and usage on stderr and no stack trace, `--confirm` rejected on preview, missing repository root, run without or with a wrong `--confirm` refused with the exact confirm hint and nothing changed; preview on an empty repository blocked with the "nothing to purge" wording and exit 1; preview on the fixture listing both target paths, the dry-run line with 2 of 2 commits rewritten and 0 remaining, the next-step line, the `--json` form, history still intact and no dry-run directory left; `run --confirm` exit 0 with the complete/verified output, record commit at HEAD, purged path gone from history, read model file and `static/index.html` built; a second preview and run refusing with nothing to purge.
+  - Relative links in the runbook, the three concept entries, the three references and the spec all resolve (checked with a script over the touched files).
+  - `php tests/run.php PlatformDocsCatalogTest PlatformDocsPageTest PlatformDocsStaticTest`: 29 run, 28 passed; `PlatformDocsStaticTest::testStaticReleaseIncludesCompleteInventoryAndSafeAssets` is the runner's long-standing failure (failing since 2026-10-26, before this branch) and its assertions about `author_post_retraction.md` concern an ordered list this stage did not touch. The published docs catalog is a curated list; the runbook is reachable from the retraction references and the CLI reference.
+  - Navigation icons: not applicable, no navigation destination added. UI, themes, roles, migration, deployment: not applicable.
+- Notes:
+  - `retraction-sweep migrate` style refusal was not needed; there is no previous purge format.
+  - The dispatcher test runs a full purge with a static build on a two-post repository, so the artifact-root branch of `HistoryPurge::run` that Stage 4 left untested is now covered.
+- Estimate details (extended): original 0.10 (0.08–0.12). Retrospective 0.10: documentation breadth was the driver as planned. Whole-cycle **0.80 reaffirmed**. No measured labor claimed.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*

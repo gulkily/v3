@@ -34,6 +34,7 @@ $testFiles = [
     __DIR__ . '/HistoryPurgePlannerTest.php',
     __DIR__ . '/HistoryPurgeTest.php',
     __DIR__ . '/SourceRouteCommitMapTest.php',
+    __DIR__ . '/PurgeHistoryCommandTest.php',
     __DIR__ . '/HistoryRewriteTest.php',
     __DIR__ . '/RemovalReceiptTest.php',
     __DIR__ . '/RetractionReceiptTest.php',

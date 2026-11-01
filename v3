@@ -45,6 +45,7 @@ Usage:
   ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
   ./v3 codex-handoff test-local
   ./v3 retraction-sweep preview|status|run [--limit=250] [--repository-root=/path/repository]
+  ./v3 purge-history preview|run [--confirm=/path/repository] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--json]
   ./v3 task-queue enqueue-retraction-sweep
   ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
   ./v3 task-queue enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
@@ -88,6 +89,10 @@ case "${COMMAND}" in
   retraction-sweep)
     shift
     exec php "${ROOT}/scripts/retraction_sweep.php" "$@"
+    ;;
+  purge-history)
+    shift
+    exec php "${ROOT}/scripts/purge_history.php" "$@"
     ;;
   images)
     shift
