@@ -83,3 +83,21 @@ Step 3 explicitly approved ("approved step 3"). Branch `feat/history-purge` from
 - Estimate details (extended): revised original 0.15 (0.12–0.18). Retrospective 0.15: lock, snapshot, restore and two-phase verification as planned; the journal for interrupted runs and the pseudo-ref cleanup were the additions, offset by the engine already existing. Whole-cycle **0.80 reaffirmed**. No measured labor claimed.
 
 *— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+
+## Stage 4 - Commit the map and rebuild
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `src/ForumRewrite/Retraction/HistoryPurge.php`: `run(root, databasePath, plan, artifactRoot?)` is now the operator-facing purge. Under `forum-rewrite.lock` and `PublicationLock`, the same pair `delete-record` holds, it calls `execute()`, encodes the map with `CommitMap::encode` (receipt count from the plan), calls `HighTrafficSafety::beforeWrite` for the record path, writes the parts and commits them with the fixed subject `Record history purge <Rewritten-At>` using the application identity that `SignedPostTransaction` uses. Then `StaticArtifactInvalidator::invalidateAllGeneratedPresentation` (when an artifact root is given), a full `ReadModelBuilder::rebuild`, truncation of `activity_commit_manifest_cache.sqlite3` beside the database (every row is keyed by an old commit id), `ReadModelStaleMarker::clear`, and `StaticArtifactBuilder::build` for the artifact root, the sequence `delete-record` uses. A commit failure reports the written record paths and asks for a manual commit then `./v3 rebuild`; a refresh failure marks the read model stale with reason `history_purge_refresh_failed` and reports "site update incomplete. Run ./v3 rebuild", matching the retraction reference's wording. The map is committed even when object verification found lingering ids, because the refs have already moved; `verified` stays false in the result for the CLI to report.
+  - `tests/HistoryPurgeTest.php`: `testRunCommitsTheMapRebuildsAndClearsCaches`.
+- Verification:
+  - `php tests/run.php HistoryPurgeTest HistoryPurgePlannerTest HistoryRewriteTest CommitMapTest`: 14 run, 14 passed. The new test rebuilds a real read model before the purge, seeds the manifest cache with the surviving post's old commit and sets a stale marker; after `run()`: HEAD is the record commit with the fixed subject on top of the mapped old HEAD, the commit touches only the record, the working tree is clean, the decoded record equals the changed part of the map with `Receipt-Count: 1`, `CommitMap::resolve` maps the old HEAD and the surviving post's old commit, the rebuilt `activity` row for the surviving post carries the mapped commit, the `commits` table holds no pre-purge identity and exactly one more row (the record commit) with every row present in Git, the manifest cache row is gone, the stale marker is cleared, and the purged blobs are absent. A second repository with a directory where the database should be exercises the refresh failure: the record is still committed, the error names `./v3 rebuild`, and the stale marker reads `history_purge_refresh_failed`.
+  - Static artifact invalidation and build are exercised only by the artifact-root branch, which the test leaves null (no presentation root in a unit fixture); Stage 7 covers it through the CLI on a full local instance.
+  - Not applicable: UI, themes, roles, migration, deployment; no read-model schema change.
+- Notes:
+  - The rebuild is the direct `ReadModelBuilder::rebuild` used by `delete-record`, not the candidate-and-promote path of `./v3 rebuild`, because the promoter takes `forum-rewrite.lock` itself and the purge already holds it.
+- Estimate details (extended): original 0.10 (0.08–0.12). Retrospective 0.10: ordering with the existing builders was the driver as planned; the manifest-cache truncation and the refresh-failure contract were small. Whole-cycle **0.80 reaffirmed**. No measured labor claimed.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*

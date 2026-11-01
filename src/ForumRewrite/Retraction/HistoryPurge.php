@@ -4,8 +4,16 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Retraction;
 
+use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\LabelRemoval;
+use ForumRewrite\Host\HighTrafficSafety;
+use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\Support\ExecutionLock;
+use ForumRewrite\Support\PublicationLock;
+use ForumRewrite\Write\StaticArtifactInvalidator;
+use PDO;
 use RuntimeException;
 use Throwable;
 
@@ -23,16 +31,70 @@ final class HistoryPurge
     public const JOURNAL_DIRECTORY = '.git/history-purge';
     private const PSEUDO_REFS = ['ORIG_HEAD', 'FETCH_HEAD', 'MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REBASE_HEAD', 'REVERT_HEAD'];
 
+    public const COMMIT_SUBJECT = 'Record history purge';
+
     /**
-     * Runs the purge under the repository write lock shared with every writer.
+     * The operator-facing purge: under the repository write and publication
+     * locks, execute() the rewrite, write and commit the history rewrite record
+     * (docs/specs/history_rewrite_record_v1.md), then rebuild the read model,
+     * clear the activity commit-manifest cache and regenerate static artifacts.
+     * The map is committed even when object verification failed, because the
+     * refs have already moved and old links need it either way; `verified`
+     * tells the caller. A refresh failure leaves the stale marker set and
+     * reports `./v3 rebuild` as the next step.
      *
      * @param array $plan from HistoryPurgePlanner::plan()
-     * @return array see execute()
+     * @return array execute() result plus rewritten_at, record_paths, record_commit, rebuilt, static_artifacts
      */
-    public static function run(string $root, string $databasePath, array $plan): array
+    public static function run(string $root, string $databasePath, array $plan, ?string $artifactRoot = null): array
     {
-        return (new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))
-            ->withExclusiveLock(static fn (): array => self::execute($root, $plan));
+        return (new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
+            static fn (): array => PublicationLock::withLock($root, static function () use ($root, $databasePath, $plan, $artifactRoot): array {
+                $result = self::execute($root, $plan);
+                $rewrittenAt = gmdate('Y-m-d\TH:i:s\Z');
+                $files = CommitMap::encode($rewrittenAt, (int) ($plan['receipts'] ?? 0), $result['map']);
+                $paths = array_keys($files);
+                try {
+                    HighTrafficSafety::beforeWrite($root, $databasePath, $paths[0]);
+                    CommitMap::write($root, $files);
+                    LabelRemoval::git($root, array_merge(['add', '--'], $paths));
+                    LabelRemoval::git($root, array_merge(['-c', 'user.name=Forum Rewrite', '-c', 'user.email=forum-rewrite@example.invalid',
+                        'commit', '-q', '--only', '-m', self::COMMIT_SUBJECT . ' ' . $rewrittenAt, '--'], $paths));
+                } catch (Throwable $error) {
+                    throw new RuntimeException('History was purged but the rewrite record was not committed: ' . $error->getMessage()
+                        . ' Commit ' . implode(', ', $paths) . ' by hand, then run ./v3 rebuild.', 0, $error);
+                }
+                $commit = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+                try {
+                    if ($artifactRoot !== null) {
+                        (new StaticArtifactInvalidator($artifactRoot))->invalidateAllGeneratedPresentation();
+                    }
+                    (new ReadModelBuilder($root, $databasePath, new CanonicalRecordRepository($root)))->rebuild();
+                    self::clearCommitManifestCache($databasePath);
+                    (new ReadModelStaleMarker($databasePath))->clear();
+                    if ($artifactRoot !== null) {
+                        (new StaticArtifactBuilder(dirname(__DIR__, 3), $root, $databasePath, $artifactRoot))->build();
+                    }
+                } catch (Throwable $error) {
+                    (new ReadModelStaleMarker($databasePath))->mark(['reason' => 'history_purge_refresh_failed', 'commit_sha' => $commit]);
+                    throw new RuntimeException('History purged and recorded at ' . $commit . '; site update incomplete. Run ./v3 rebuild: ' . $error->getMessage(), 0, $error);
+                }
+                return $result + ['rewritten_at' => $rewrittenAt, 'record_paths' => $paths, 'record_commit' => $commit,
+                    'rebuilt' => true, 'static_artifacts' => $artifactRoot];
+            })
+        );
+    }
+
+    /** Cached manifests are keyed by commit id, so every pre-purge row is stale. */
+    private static function clearCommitManifestCache(string $databasePath): void
+    {
+        $path = dirname($databasePath) . '/activity_commit_manifest_cache.sqlite3';
+        if (!is_file($path)) {
+            return;
+        }
+        $pdo = new PDO('sqlite:' . $path);
+        $pdo->exec('CREATE TABLE IF NOT EXISTS activity_commit_manifests (commit_sha TEXT PRIMARY KEY, files_json TEXT NOT NULL, cached_at TEXT NOT NULL)');
+        $pdo->exec('DELETE FROM activity_commit_manifests');
     }
 
     /**

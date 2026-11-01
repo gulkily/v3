@@ -4,6 +4,7 @@ require_once __DIR__ . '/../autoload.php';
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\LabelRemoval;
 use ForumRewrite\Canonical\RemovalReceipt;
+use ForumRewrite\Retraction\CommitMap;
 use ForumRewrite\Retraction\HistoryPurge;
 use ForumRewrite\Retraction\HistoryPurgePlanner;
 
@@ -147,11 +148,87 @@ final class HistoryPurgeTest
         $this->cleanup($root);
     }
 
+    public function testRunCommitsTheMapRebuildsAndClearsCaches(): void
+    {
+        [$root, $git] = $this->fixture();
+        copy(dirname(__DIR__) . '/tests/fixtures/parity_minimal_v1/records/instance/public.txt', $root . '/records/instance/public.txt');
+        $git(['add', '-A']); $git(['commit', '-q', '-m', 'instance record']);
+        $stateDirectory = $root . '-state';
+        mkdir($stateDirectory, 0775, true);
+        $database = $stateDirectory . '/post_index.sqlite3';
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root)))->rebuild();
+        $pdo = new PDO('sqlite:' . $database);
+        $postsBefore = $pdo->query("SELECT post_id, source_commit_sha FROM activity WHERE kind IN ('thread', 'reply') AND source_commit_sha IS NOT NULL ORDER BY post_id")->fetchAll(PDO::FETCH_KEY_PAIR);
+        assertSame(['quote-20260102000000-dddd0002'], array_keys($postsBefore));
+        $oldKeptCommit = $postsBefore['quote-20260102000000-dddd0002'];
+        $commitsBefore = $pdo->query('SELECT sha FROM commits ORDER BY sha')->fetchAll(PDO::FETCH_COLUMN);
+        assertSame(true, in_array($oldHead = trim($git(['rev-parse', 'HEAD'])), $commitsBefore, true));
+        unset($pdo);
+        $manifestCache = new \ForumRewrite\Activity\SqliteActivityCommitManifestCache(new PDO('sqlite:' . $stateDirectory . '/activity_commit_manifest_cache.sqlite3'));
+        $manifestCache->put($oldKeptCommit, [['status' => 'added', 'path' => self::KEPT, 'previous_path' => '', 'role' => 'post record',
+            'signature_signer_identity' => '', 'signature_public_key_path' => '', 'signature_key_status' => '']]);
+        (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->mark(['reason' => 'test']);
+        $before = $this->snapshot($root);
+
+        $result = HistoryPurge::run($root, $database, HistoryPurgePlanner::plan($root));
+
+        assertSame(true, $result['verified']);
+        assertSame(true, $result['rebuilt']);
+        assertSame(null, $result['static_artifacts']);
+        assertSame([CommitMap::path($result['rewritten_at'])], $result['record_paths']);
+        // The record is committed on top of the rewritten history with the fixed subject, and nothing else changed.
+        assertSame($result['record_commit'], trim($git(['rev-parse', 'HEAD'])));
+        assertSame(HistoryPurge::COMMIT_SUBJECT . ' ' . $result['rewritten_at'], trim($git(['log', '-1', '--format=%s'])));
+        assertSame($result['map'][$oldHead], trim($git(['rev-parse', 'HEAD~1'])));
+        assertSame($result['record_paths'], array_filter(explode("\n", trim($git(['show', '--format=', '--name-only', 'HEAD'])))));
+        assertSame('', trim($git(['status', '--porcelain'])));
+        $record = CommitMap::decode(file_get_contents($root . '/' . $result['record_paths'][0]), $result['record_paths'][0]);
+        assertSame('1', $record['headers']['Receipt-Count']);
+        $changed = array_filter($result['map'], static fn (string $new, string $old): bool => $new !== $old, ARRAY_FILTER_USE_BOTH);
+        ksort($changed, SORT_STRING);
+        assertSame($changed, $record['map']);
+        assertSame($result['map'][$oldHead], CommitMap::resolve($root, $oldHead));
+        assertSame($result['map'][$oldKeptCommit], CommitMap::resolve($root, $oldKeptCommit));
+        // The rebuilt read model carries only new identities; the manifest cache and stale marker are gone.
+        $pdo = new PDO('sqlite:' . $database);
+        $postsAfter = $pdo->query("SELECT post_id, source_commit_sha FROM activity WHERE kind IN ('thread', 'reply') AND source_commit_sha IS NOT NULL ORDER BY post_id")->fetchAll(PDO::FETCH_KEY_PAIR);
+        assertSame(array_keys($postsBefore), array_keys($postsAfter));
+        assertSame($result['map'][$oldKeptCommit], $postsAfter['quote-20260102000000-dddd0002']);
+        $commitsAfter = $pdo->query('SELECT sha FROM commits ORDER BY sha')->fetchAll(PDO::FETCH_COLUMN);
+        assertSame(count($commitsBefore) + 1, count($commitsAfter)); // every old commit replaced, plus the record commit
+        assertSame([], array_intersect($commitsBefore, $commitsAfter));
+        foreach ($commitsAfter as $sha) {
+            assertSame(true, $this->objectExists($root, $sha));
+        }
+        unset($pdo);
+        assertSame(null, $manifestCache->get($oldKeptCommit));
+        assertSame(false, (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->exists());
+        foreach ($before['blobs'] as $blob) {
+            assertSame(false, $this->objectExists($root, $blob));
+        }
+        // A refresh failure after the commit marks the read model stale and names the next step.
+        [$root2, $git2] = $this->fixture();
+        copy(dirname(__DIR__) . '/tests/fixtures/parity_minimal_v1/records/instance/public.txt', $root2 . '/records/instance/public.txt');
+        $git2(['add', '-A']); $git2(['commit', '-q', '-m', 'instance record']);
+        $brokenDatabase = $root2 . '-state/post_index.sqlite3';
+        mkdir($brokenDatabase, 0775, true); // a directory where the database should be
+        try { HistoryPurge::run($root2, $brokenDatabase, HistoryPurgePlanner::plan($root2)); throw new LogicException('Refresh succeeded'); }
+        catch (RuntimeException $e) { assertSame(true, str_contains($e->getMessage(), 'site update incomplete. Run ./v3 rebuild')); }
+        assertSame(HistoryPurge::COMMIT_SUBJECT, substr(trim($git2(['log', '-1', '--format=%s'])), 0, strlen(HistoryPurge::COMMIT_SUBJECT)));
+        $marker = (new \ForumRewrite\ReadModel\ReadModelStaleMarker($brokenDatabase))->read();
+        assertSame('history_purge_refresh_failed', $marker['reason'] ?? null);
+        exec('rm -rf ' . escapeshellarg($root2 . '-state'));
+        $this->cleanup($root2);
+        exec('rm -rf ' . escapeshellarg($stateDirectory));
+        $this->cleanup($root);
+    }
+
     /** @return array{0:string,1:callable} */
     private function fixture(): array
     {
         $root = sys_get_temp_dir() . '/history-purge-run-' . bin2hex(random_bytes(6));
         mkdir($root . '/records/posts', 0775, true);
+        mkdir($root . '/records/instance', 0775, true);
         $git = static fn (array $args): string => LabelRemoval::git($root, $args);
         $git(['init', '-q', '-b', 'main']); $git(['config', 'user.name', 'Test']); $git(['config', 'user.email', 'test@example.invalid']);
         $this->post($root, 'quote-20260101000000-dddd0001', '2026-01-01T00:00:00Z', 'secret prose');
