@@ -1,0 +1,83 @@
+"""Archived disposable Linux collector; Python standard library only.
+Copy to WORK/collector.py; WORK must contain marker.txt from setup.py.
+Never import application behavior: invoke its ordinary CLI/router.
+"""
+from pathlib import Path
+import os, subprocess, time, signal, shlex, shutil, sqlite3, hashlib
+ROOT=Path(__file__).resolve().parent
+assert ROOT.name.startswith('v3-capacity-') and (ROOT/'marker.txt').exists()
+APP=ROOT/'app'
+ENV={'PATH':str(ROOT/'bin')+':/usr/bin:/bin','HOME':str(ROOT),'LANG':'C.UTF-8',
+ 'FORUM_SECRETS_PATH':str(ROOT/'secrets.php'),'CAPACITY_TELEMETRY':str(ROOT/'php-metrics.txt'),
+ 'FORUM_SITE_ID':'qdb','FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED':'false',
+ 'FAST_SCORING_ENABLED':'false','FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED':'false',
+ 'DEDALUS_AGENT_REPLIES_ENABLED':'false','DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED':'false',
+ 'AGENT_RESPONSE_REQUESTS_ENABLED':'false','LLM_PROVIDER':'','LLM_API_KEY':'',
+ 'FORUM_STATIC_PROFILE_PAGES_ENABLED':'false'}
+for key,value in {'FORUM_REPOSITORY_ROOT':'repository','FORUM_DATABASE_PATH':'model.sqlite',
+ 'FORUM_STATIC_HTML_ROOT':'static','FORUM_PUBLIC_ARTIFACT_ROOT':'public-artifacts',
+ 'FORUM_IMAGE_ROOT':'images','FORUM_TASK_QUEUE_DATABASE_PATH':'queue.sqlite',
+ 'FAST_SCORING_DATABASE_PATH':'scores.sqlite','LLM_EXCHANGE_DATABASE_PATH':'exchanges.sqlite',
+ 'VISITOR_STATISTICS_DATABASE_PATH':'visitors.sqlite','PRIVATE_MESSAGE_DATABASE_PATH':'messages.sqlite'}.items():
+ ENV[key]=str(ROOT/value)
+MEM=int(next(l.split()[1] for l in Path('/proc/meminfo').read_text().splitlines() if l.startswith('MemAvailable:')))*1024
+CAP=min(1024**3,MEM//4)
+def tree(pgid):
+ rows=[]
+ for d in Path('/proc').iterdir():
+  if not d.name.isdigit():continue
+  try:
+   stat=(d/'stat').read_text().rsplit(')',1)[1].split()
+   if int(stat[2])!=pgid:continue
+   rss=int(stat[21])*os.sysconf('SC_PAGE_SIZE')
+   io=dict(l.split(': ') for l in (d/'io').read_text().splitlines())
+   rows.append((int(d.name),rss,int(io['read_bytes']),int(io['write_bytes'])))
+  except (OSError,ValueError,IndexError):pass
+ return rows
+def disk():
+ return int(subprocess.check_output(['du','-s','-B1',str(ROOT)]).split()[0])
+def run(label,args,limit=600,interrupt=None):
+ log=ROOT/(label+'.log');start=time.monotonic();peak=0;ios={};pids=set();stop='none';lastdisk=0
+ with log.open('wb') as out:
+  p=subprocess.Popen(args,cwd=APP,env=ENV,stdout=out,stderr=subprocess.STDOUT,start_new_session=True)
+  while p.poll() is None:
+   rows=tree(p.pid);peak=max(peak,sum(r[1] for r in rows))
+   for pid,rss,rd,wr in rows:ios[pid]=(rd,wr);pids.add(pid)
+   elapsed=time.monotonic()-start
+   if peak>CAP:stop='RSS cap'
+   if elapsed>limit:stop='timeout'
+   if interrupt is not None and elapsed>interrupt:stop='planned interruption'
+   if elapsed-lastdisk>1:
+    lastdisk=elapsed
+    if disk()>2*1024**3:stop='scratch cap'
+   if stop!='none':
+    os.killpg(p.pid,signal.SIGKILL);break
+   time.sleep(.02)
+  code=p.wait()
+ elapsed=time.monotonic()-start
+ record=f'Sample: {label}\nCommand: {shlex.join(args)}\nExit: {code}\nStop: {stop}\nElapsed seconds: {elapsed:.6f}\nSampled aggregate RSS bytes: {peak}\nObserved processes: {len(pids)}\nSampled read bytes: {sum(x[0] for x in ios.values())}\nSampled write bytes: {sum(x[1] for x in ios.values())}\nLog SHA256: {hashlib.sha256(log.read_bytes()).hexdigest()}\n\n'
+ with (ROOT/'samples.txt').open('a') as f:f.write(record)
+ print(label,code,round(elapsed,3),peak,stop,flush=True)
+ if stop not in ('none','planned interruption'):raise RuntimeError(stop)
+ return code
+
+def fixture(n,body=2048):
+ repo=ROOT/'repository'
+ if repo.exists():shutil.rmtree(repo)
+ shutil.copytree(APP/'tests/fixtures/parity_minimal_v1',repo)
+ for i in range(n):
+  name=f'thread-20261030000000-qdb-{400000+i}'
+  (repo/'records/posts'/f'{name}.txt').write_text(f'Post-ID: {name}\nCreated-At: 2026-10-30T00:00:00Z\nBoard-Tags: general\nSubject: capacity {i:06}\n\n'+'q'*body+'\n')
+ for args in (['init','-q'],['config','user.name','Capacity fixture'],['config','user.email','capacity@example.invalid'],['config','gc.auto','0'],['add','.'],['commit','-qm','fixture']):
+  subprocess.run(['git','-C',str(repo),*args],env=ENV,check=True)
+ return repo
+
+def parity(n):
+ with sqlite3.connect(ROOT/'model.sqlite') as db:
+  actual=db.execute("select count(*) from posts where post_id like 'thread-20261030000000-qdb-%'").fetchone()[0]
+  assert actual==n,(actual,n)
+  rows=db.execute("select post_id,body from posts where post_id like 'thread-20261030000000-qdb-%' order by post_id").fetchall()
+  for pid,body in rows:
+   source=(ROOT/'repository/records/posts'/f'{pid}.txt').read_text().split('\n\n',1)[1].rstrip('\n')
+   assert body.rstrip('\n')==source,pid
+ return f'Count and every synthetic body match: {n}'

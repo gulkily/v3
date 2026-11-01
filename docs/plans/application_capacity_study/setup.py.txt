@@ -1,0 +1,15 @@
+from pathlib import Path
+import subprocess,tarfile,tempfile,shutil,os
+root=Path(tempfile.mkdtemp(prefix='v3-capacity-')); app=root/'app';app.mkdir()
+a=root/'source.tar';subprocess.run(['git','archive','--output',str(a),'3dc2c3feaa17af591eb6e819a055d26ab6990efb'],check=True)
+with tarfile.open(a) as t:t.extractall(app)
+a.unlink();(root/'bin').mkdir();(root/'secrets.php').write_text('<?php return [];\n')
+(root/'telemetry.php').write_text('''<?php
+register_shutdown_function(static function(): void {
+ $line = 'PID: '.getmypid().' | Route: '.($_SERVER['REQUEST_URI'] ?? 'CLI').' | PHP peak bytes: '.memory_get_peak_usage(true).' | HTTP status: '.(http_response_code() ?: 200)."\\n";
+ file_put_contents(getenv('CAPACITY_TELEMETRY'), $line, FILE_APPEND | LOCK_EX);
+});
+''')
+(root/'bin/php').write_text('#!/bin/sh\nexec /usr/bin/php -d memory_limit=128M -d auto_prepend_file='+str(root/'telemetry.php')+' "$@"\n');(root/'bin/php').chmod(0o755)
+(root/'marker.txt').write_text('Purpose: Application capacity study disposable workspace\nRevision: 3dc2c3feaa17af591eb6e819a055d26ab6990efb\n')
+Path('/tmp/capacity-root').write_text(str(root));print(root)
