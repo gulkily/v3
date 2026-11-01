@@ -1,0 +1,260 @@
+Starting read-model rebuild.
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Database: /tmp/v3-capacity-5wrtjih3/model.sqlite
+[1/3] Scanning source record counts...
+[1/3] Source scan complete: 1003 posts, 1 identities, 1 approval seeds.
+[2/3] Building and validating a read-model candidate...
+[2/3] Read model: drop schema...
+[2/3] Read model: drop schema complete (0.3 ms).
+[2/3] Read model: create schema...
+[2/3] Read model: create schema complete (2.7 ms).
+[2/3] Read model: resolve attribution cutoff...
+[2/3] Read model: resolve attribution cutoff complete (0.3 ms).
+[2/3] Read model: index posts...
+[2/3] Read model: resolve legacy post creation times...
+[2/3] Read model: resolve legacy post creation times complete (4.6 ms).
+[2/3] Read model: resolve post source commits...
+[2/3] Read model: read source history...
+[2/3] Read model: read source history complete (2.6 ms).
+[2/3] Read model: resolve post source commits complete (2.9 ms).
+[2/3] Read model: parsing post records (0/1003).
+[2/3] Read model: parsing post records (100/1003).
+[2/3] Read model: parsing post records (200/1003).
+[2/3] Read model: parsing post records (300/1003).
+[2/3] Read model: parsing post records (400/1003).
+[2/3] Read model: parsing post records (500/1003).
+[2/3] Read model: parsing post records (600/1003).
+[2/3] Read model: parsing post records (700/1003).
+[2/3] Read model: parsing post records (800/1003).
+[2/3] Read model: parsing post records (900/1003).
+[2/3] Read model: parsing post records (1000/1003).
+[2/3] Read model: parsing post records (1003/1003).
+[2/3] Read model: parsing post records complete (32.8 ms).
+[2/3] Read model: sort posts...
+[2/3] Read model: sort posts complete (0.5 ms).
+[2/3] Read model: writing post records (0/1003).
+[2/3] Read model: writing post records (100/1003).
+[2/3] Read model: writing post records (200/1003).
+[2/3] Read model: writing post records (300/1003).
+[2/3] Read model: writing post records (400/1003).
+[2/3] Read model: writing post records (500/1003).
+[2/3] Read model: writing post records (600/1003).
+[2/3] Read model: writing post records (700/1003).
+[2/3] Read model: writing post records (800/1003).
+[2/3] Read model: writing post records (900/1003).
+[2/3] Read model: writing post records (1000/1003).
+[2/3] Read model: writing post records (1003/1003).
+[2/3] Read model: writing post records complete (22.0 ms).
+[2/3] Read model: writing thread summaries (0/1002).
+[2/3] Read model: writing thread summaries (100/1002).
+[2/3] Read model: writing thread summaries (200/1002).
+[2/3] Read model: writing thread summaries (300/1002).
+[2/3] Read model: writing thread summaries (400/1002).
+[2/3] Read model: writing thread summaries (500/1002).
+[2/3] Read model: writing thread summaries (600/1002).
+[2/3] Read model: writing thread summaries (700/1002).
+[2/3] Read model: writing thread summaries (800/1002).
+[2/3] Read model: writing thread summaries (900/1002).
+[2/3] Read model: writing thread summaries (1000/1002).
+[2/3] Read model: writing thread summaries (1002/1002).
+[2/3] Read model: writing thread summaries complete (6.5 ms).
+[2/3] Read model: index posts complete (72.2 ms).
+[2/3] Read model: index profiles...
+[2/3] Read model: parsing identity records (0/1).
+[2/3] Read model: parsing identity records (1/1).
+[2/3] Read model: parsing identity records complete (0.3 ms).
+[2/3] Read model: index profiles complete (0.5 ms).
+[2/3] Read model: derive approval state...
+[2/3] Read model: approval pass 1.
+[2/3] Read model: checking approval posts (0/1003).
+[2/3] Read model: checking approval posts (100/1003).
+[2/3] Read model: checking approval posts (200/1003).
+[2/3] Read model: checking approval posts (300/1003).
+[2/3] Read model: checking approval posts (400/1003).
+[2/3] Read model: checking approval posts (500/1003).
+[2/3] Read model: checking approval posts (600/1003).
+[2/3] Read model: checking approval posts (700/1003).
+[2/3] Read model: checking approval posts (800/1003).
+[2/3] Read model: checking approval posts (900/1003).
+[2/3] Read model: checking approval posts (1000/1003).
+[2/3] Read model: checking approval posts (1003/1003).
+[2/3] Read model: checking approval posts complete (0.4 ms).
+[2/3] Read model: checking invitation candidates (0/0).
+[2/3] Read model: checking invitation candidates complete (0.0 ms).
+[2/3] Read model: derive approval state complete (7.8 ms).
+[2/3] Read model: index thread labels...
+[2/3] Read model: parsing thread label records (0/2).
+[2/3] Read model: parsing thread label records (2/2).
+[2/3] Read model: parsing thread label records complete (0.1 ms).
+[2/3] Read model: sort thread labels...
+[2/3] Read model: sort thread labels complete (0.0 ms).
+[2/3] Read model: resolve thread label source commits...
+[2/3] Read model: read source history...
+[2/3] Read model: read source history complete (2.2 ms).
+[2/3] Read model: resolve thread label source commits complete (2.2 ms).
+[2/3] Read model: deriving thread label records (0/2).
+[2/3] Read model: deriving thread label records (2/2).
+[2/3] Read model: deriving thread label records complete (1.1 ms).
+[2/3] Read model: writing thread labels (0/1002).
+[2/3] Read model: writing thread labels (100/1002).
+[2/3] Read model: writing thread labels (200/1002).
+[2/3] Read model: writing thread labels (300/1002).
+[2/3] Read model: writing thread labels (400/1002).
+[2/3] Read model: writing thread labels (500/1002).
+[2/3] Read model: writing thread labels (600/1002).
+[2/3] Read model: writing thread labels (700/1002).
+[2/3] Read model: writing thread labels (800/1002).
+[2/3] Read model: writing thread labels (900/1002).
+[2/3] Read model: writing thread labels (1000/1002).
+[2/3] Read model: writing thread labels (1002/1002).
+[2/3] Read model: writing thread labels complete (3.1 ms).
+[2/3] Read model: index thread labels complete (8.7 ms).
+[2/3] Read model: index thread subjects...
+[2/3] Read model: parsing thread subject records (0/1).
+[2/3] Read model: parsing thread subject records (1/1).
+[2/3] Read model: parsing thread subject records complete (0.2 ms).
+[2/3] Read model: sort thread subjects...
+[2/3] Read model: sort thread subjects complete (0.0 ms).
+[2/3] Read model: deriving thread subject records (0/1).
+[2/3] Read model: deriving thread subject records (1/1).
+[2/3] Read model: deriving thread subject records complete (0.0 ms).
+[2/3] Read model: index thread subjects complete (1.3 ms).
+[2/3] Read model: derive post attribution...
+[2/3] Read model: deriving post attribution (0/1003).
+[2/3] Read model: deriving post attribution (100/1003).
+[2/3] Read model: deriving post attribution (200/1003).
+[2/3] Read model: deriving post attribution (300/1003).
+[2/3] Read model: deriving post attribution (400/1003).
+[2/3] Read model: deriving post attribution (500/1003).
+[2/3] Read model: deriving post attribution (600/1003).
+[2/3] Read model: deriving post attribution (700/1003).
+[2/3] Read model: deriving post attribution (800/1003).
+[2/3] Read model: deriving post attribution (900/1003).
+[2/3] Read model: deriving post attribution (1000/1003).
+[2/3] Read model: deriving post attribution (1003/1003).
+[2/3] Read model: deriving post attribution complete (0.4 ms).
+[2/3] Read model: derive post attribution complete (0.4 ms).
+[2/3] Read model: derive profile counts...
+[2/3] Read model: initializing profile counts (0/1).
+[2/3] Read model: initializing profile counts (1/1).
+[2/3] Read model: initializing profile counts complete (0.0 ms).
+[2/3] Read model: counting profile posts (0/1003).
+[2/3] Read model: counting profile posts (100/1003).
+[2/3] Read model: counting profile posts (200/1003).
+[2/3] Read model: counting profile posts (300/1003).
+[2/3] Read model: counting profile posts (400/1003).
+[2/3] Read model: counting profile posts (500/1003).
+[2/3] Read model: counting profile posts (600/1003).
+[2/3] Read model: counting profile posts (700/1003).
+[2/3] Read model: counting profile posts (800/1003).
+[2/3] Read model: counting profile posts (900/1003).
+[2/3] Read model: counting profile posts (1000/1003).
+[2/3] Read model: counting profile posts (1003/1003).
+[2/3] Read model: counting profile posts complete (0.4 ms).
+[2/3] Read model: derive profile counts complete (0.4 ms).
+[2/3] Read model: link post authors...
+[2/3] Read model: linking author profiles (0/1).
+[2/3] Read model: linking author profiles (1/1).
+[2/3] Read model: linking author profiles complete (0.1 ms).
+[2/3] Read model: link post authors complete (0.2 ms).
+[2/3] Read model: index post reactions...
+[2/3] Read model: parsing post reaction records (0/0).
+[2/3] Read model: parsing post reaction records complete (0.0 ms).
+[2/3] Read model: sort post reactions...
+[2/3] Read model: sort post reactions complete (0.0 ms).
+[2/3] Read model: resolve post reaction source commits...
+[2/3] Read model: resolve post reaction source commits complete (0.0 ms).
+[2/3] Read model: deriving post reaction records (0/0).
+[2/3] Read model: deriving post reaction records complete (0.0 ms).
+[2/3] Read model: writing post reactions (0/1003).
+[2/3] Read model: writing post reactions (100/1003).
+[2/3] Read model: writing post reactions (200/1003).
+[2/3] Read model: writing post reactions (300/1003).
+[2/3] Read model: writing post reactions (400/1003).
+[2/3] Read model: writing post reactions (500/1003).
+[2/3] Read model: writing post reactions (600/1003).
+[2/3] Read model: writing post reactions (700/1003).
+[2/3] Read model: writing post reactions (800/1003).
+[2/3] Read model: writing post reactions (900/1003).
+[2/3] Read model: writing post reactions (1000/1003).
+[2/3] Read model: writing post reactions (1003/1003).
+[2/3] Read model: writing post reactions complete (12.3 ms).
+[2/3] Read model: index post reactions complete (14.0 ms).
+[2/3] Read model: index instance...
+[2/3] Read model: index instance complete (0.2 ms).
+[2/3] Read model: index activity...
+[2/3] Read model: writing post activity (0/1003).
+[2/3] Read model: writing post activity (100/1003).
+[2/3] Read model: writing post activity (200/1003).
+[2/3] Read model: writing post activity (300/1003).
+[2/3] Read model: writing post activity (400/1003).
+[2/3] Read model: writing post activity (500/1003).
+[2/3] Read model: writing post activity (600/1003).
+[2/3] Read model: writing post activity (700/1003).
+[2/3] Read model: writing post activity (800/1003).
+[2/3] Read model: writing post activity (900/1003).
+[2/3] Read model: writing post activity (1000/1003).
+[2/3] Read model: writing post activity (1003/1003).
+[2/3] Read model: writing post activity complete (39.7 ms).
+[2/3] Read model: writing thread label activity (0/2).
+[2/3] Read model: writing thread label activity (2/2).
+[2/3] Read model: writing thread label activity complete (0.1 ms).
+[2/3] Read model: writing post reaction activity (0/0).
+[2/3] Read model: writing post reaction activity complete (0.0 ms).
+[2/3] Read model: writing profile name activity (0/0).
+[2/3] Read model: writing profile name activity complete (0.0 ms).
+[2/3] Read model: derive signed flag activity...
+[2/3] Read model: resolve feature flag source commits...
+[2/3] Read model: resolve feature flag source commits complete (0.0 ms).
+[2/3] Read model: parsing feature flag changes (0/0).
+[2/3] Read model: parsing feature flag changes complete (0.0 ms).
+[2/3] Read model: sort feature flag activity...
+[2/3] Read model: sort feature flag activity complete (0.0 ms).
+[2/3] Read model: derive signed flag activity complete (0.0 ms).
+[2/3] Read model: writing signed flag activity (0/0).
+[2/3] Read model: writing signed flag activity complete (0.0 ms).
+[2/3] Read model: read legacy flag activity...
+[2/3] Read model: read legacy flag activity complete (0.0 ms).
+[2/3] Read model: writing legacy flag activity (0/0).
+[2/3] Read model: writing legacy flag activity complete (0.0 ms).
+[2/3] Read model: writing handoff activity (0/0).
+[2/3] Read model: writing handoff activity complete (0.0 ms).
+[2/3] Read model: index activity complete (40.3 ms).
+[2/3] Read model: mark activity attribution...
+[2/3] Read model: mark activity attribution complete (2.7 ms).
+[2/3] Read model: index commits...
+[2/3] Read model: read commit history...
+[2/3] Read model: processing commit history lines...
+[2/3] Read model: processing commit history lines complete (5.8 ms).
+[2/3] Read model: read commit history complete (5.8 ms).
+[2/3] Read model: index commits complete (5.9 ms).
+[2/3] Read model: index reaction signatures...
+[2/3] Read model: index reaction signatures complete (0.3 ms).
+[2/3] Read model: index activity evidence...
+[2/3] Read model: index activity evidence complete (24.2 ms).
+[2/3] Read model: write metadata...
+[2/3] Read model: write metadata complete (2.3 ms).
+[2/3] Read model: apply verified attribution...
+[2/3] Read model: apply verified attribution complete (17.6 ms).
+[2/3] Read model: commit read model...
+[2/3] Read model: commit read model complete (16.2 ms).
+[2/3] Read model: validating candidate...
+[2/3] Read model: validating candidate complete (8.4 ms).
+[2/3] Read-model candidate is ready.
+[3/3] Promoting the read-model candidate...
+[3/3] Waiting for the exclusive read-model lock...
+[3/3] Exclusive read-model lock acquired (0.2 ms).
+[3/3] Validating candidate before promotion...
+[3/3] Validating candidate before promotion complete (7.8 ms).
+[3/3] Replacing the live read model...
+[3/3] Replacing the live read model complete (0.9 ms).
+[3/3] Read-model promotion complete.
+[3/3] Read model promoted.
+Offline snapshot bootstrap...
+Offline snapshot bootstrap complete (0.2 ms).
+Offline snapshot bootstrap: already available at /tmp/v3-capacity-5wrtjih3/static/offline/snapshot.sqlite3
+Rebuilt read model at /tmp/v3-capacity-5wrtjih3/model.sqlite
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Source records: 1003 posts, 1 identities, 1 approval seeds
+Read model: 1003 posts, 1002 threads, 1 profiles, 1005 activity rows
+Elapsed: 0.242 seconds

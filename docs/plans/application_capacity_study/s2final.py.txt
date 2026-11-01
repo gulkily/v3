@@ -1,0 +1,7 @@
+import collector as c
+for n in (1000,10000):
+ c.fixture(n)
+ assert c.run(f'final-prepare-{n}',['./v3','rebuild',str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite')])==0
+ print(c.parity(n))
+ assert c.run(f'final-reads-{n}',['python3',str(c.ROOT/'read_driver.py'),str(n)])==0
+c.run('signed-session-http',['php',str(c.ROOT/'signed_driver.php')])

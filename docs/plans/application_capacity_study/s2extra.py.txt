@@ -1,0 +1,5 @@
+import collector as c
+c.fixture(1000)
+assert c.run('reset-after-40k',['./v3','rebuild',str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite')])==0
+print(c.parity(1000))
+c.run('signed-http',['php',str(c.ROOT/'signed_driver.php')])

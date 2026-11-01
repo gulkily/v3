@@ -7,7 +7,7 @@ import os, subprocess, time, signal, shlex, shutil, sqlite3, hashlib
 ROOT=Path(__file__).resolve().parent
 assert ROOT.name.startswith('v3-capacity-') and (ROOT/'marker.txt').exists()
 APP=ROOT/'app'
-ENV={'PATH':str(ROOT/'bin')+':/usr/bin:/bin','HOME':str(ROOT),'LANG':'C.UTF-8',
+ENV={'PATH':str(ROOT/'bin')+':/usr/bin:/bin','HOME':str(ROOT),'LANG':'C.UTF-8','TMPDIR':str(ROOT/'tmp'),
  'FORUM_SECRETS_PATH':str(ROOT/'secrets.php'),'CAPACITY_TELEMETRY':str(ROOT/'php-metrics.txt'),
  'FORUM_SITE_ID':'qdb','FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED':'false',
  'FAST_SCORING_ENABLED':'false','FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED':'false',
@@ -37,7 +37,9 @@ def tree(pgid):
 def disk():
  return int(subprocess.check_output(['du','-s','-B1',str(ROOT)]).split()[0])
 def run(label,args,limit=600,interrupt=None):
- log=ROOT/(label+'.log');start=time.monotonic();peak=0;ios={};pids=set();stop='none';lastdisk=0
+ log=ROOT/(label+'.log')
+ if log.exists():raise RuntimeError('Refuse to overwrite sample '+label)
+ start=time.monotonic();peak=0;ios={};pids=set();stop='none';lastdisk=0
  with log.open('wb') as out:
   p=subprocess.Popen(args,cwd=APP,env=ENV,stdout=out,stderr=subprocess.STDOUT,start_new_session=True)
   while p.poll() is None:

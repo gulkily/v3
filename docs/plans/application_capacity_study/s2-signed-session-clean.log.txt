@@ -1,0 +1,38 @@
+Sample: signed-post-0
+Response: {"status":"ok","post_id":"thread-20261101064851-037140da30308b15de1684a30af4b553","thread_id":"thread-20261101064851-037140da30308b15de1684a30af4b553","identity_id":"openpgp:ec53fbe51ff49565ff31f104284e916c7d82188e","profile_slug":"openpgp-ec53fbe51ff49565ff31f104284e916c7d82188e","bootstrap_post_id":"bootstrap-20261101064851-d09d74f082f96e5ea7012a4b3ee86c47","record_path":"records/posts/2026/11/01/thread-20261101064851-037140da30308b15de1684a30af4b553.txt","signature_path":"records/posts/2026/11/01/thread-20261101064851-037140da30308b15de1684a30af4b553.txt.asc","commit_sha":"acf23cdb0776a852128e3b3b7132cb515d94fe62","replayed":false}
+
+Elapsed seconds: 0.81426906585693
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-1
+Response: {"status":"ok","post_id":"thread-20261101064851-037140da30308b15de1684a30af4b553","thread_id":"thread-20261101064851-037140da30308b15de1684a30af4b553","identity_id":"openpgp:ec53fbe51ff49565ff31f104284e916c7d82188e","profile_slug":"openpgp-ec53fbe51ff49565ff31f104284e916c7d82188e","bootstrap_post_id":"bootstrap-20261101064851-d09d74f082f96e5ea7012a4b3ee86c47","record_path":"records/posts/2026/11/01/thread-20261101064851-037140da30308b15de1684a30af4b553.txt","signature_path":"records/posts/2026/11/01/thread-20261101064851-037140da30308b15de1684a30af4b553.txt.asc","commit_sha":"acf23cdb0776a852128e3b3b7132cb515d94fe62","replayed":true}
+
+Elapsed seconds: 0.58399295806885
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-2
+Response: {"status":"ok","post_id":"thread-20261101064851-037140da30308b15de1684a30af4b553","thread_id":"thread-20261101064851-037140da30308b15de1684a30af4b553","identity_id":"openpgp:ec53fbe51ff49565ff31f104284e916c7d82188e","profile_slug":"openpgp-ec53fbe51ff49565ff31f104284e916c7d82188e","bootstrap_post_id":"bootstrap-20261101064851-d09d74f082f96e5ea7012a4b3ee86c47","record_path":"records/posts/2026/11/01/thread-20261101064851-037140da30308b15de1684a30af4b553.txt","signature_path":"records/posts/2026/11/01/thread-20261101064851-037140da30308b15de1684a30af4b553.txt.asc","commit_sha":"acf23cdb0776a852128e3b3b7132cb515d94fe62","replayed":true}
+
+Elapsed seconds: 0.58586597442627
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Session route: /api/auth_challenge
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.0096569061279297
+Session route: /api/authenticate_identity
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.09450101852417
+Session result: status=ok | identity_id=openpgp:ec53fbe51ff49565ff31f104284e916c7d82188e | approved=0
+Session route: /profiles/openpgp-ec53fbe51ff49565ff31f104284e916c7d82188e
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.028480768203735
+PHP Fatal error:  Uncaught RuntimeException: profile missing post in /tmp/v3-capacity-5wrtjih3/signed_driver.php:40
+Stack trace:
+#0 {main}
+  thrown in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 40
