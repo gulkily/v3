@@ -89,3 +89,40 @@ Observation: Required per-stage verification and risk fields make this seven-fam
 Suggestion: Preserve explicit evidence requirements; enforce the day/eight-stage ceiling and return to scope review if representative coverage cannot fit, rather than silently extending execution or claiming unrun cases passed.
 
 *— Codex · 2026-10-31 UTC*
+
+## Step 4 completed handoff — 2026-11-01 UTC
+
+### Necessary/useful instructions
+
+Source: Step 4 normal-entry, risk and evidence boundaries.
+Observation: Ordinary rebuild reproduced the 40000-record 128 MiB failure; real HTTP showed 72 MiB pages at 10000 records. Activation, signed/image retry, offline import resume and concurrent readers provided evidence that direct-method probes alone did not establish. Explicit family dispositions prevented local results from becoming host guarantees.
+Suggestion: Preserve separate interpreter allocation, sampled process memory, physical I/O, result parity and actual host evidence.
+
+Source: Staged commit cadence and source-preserving verification.
+Observation: Planning e22df83f precedes summary/implementation; S1–S7 each include summary updates. S7 c66a1c15 plus corrective 69157346 preserve all history. Final cumulative whitespace check exposed raw-log trailing whitespace missed by earlier unstaged checks; 25 display archives were normalized with raw/normalized hashes, verified against c66a1c15. No raw evidence was lost from history. No amendment or squash.
+Suggestion: Include new/untracked artifacts in staged/cumulative checks before recording a pass, and stop shell sequences on failed gates.
+
+Source: Isolation and recovery gates.
+Observation: Import supervisor starts setsid children, invalidating process-group-only RSS/termination assumptions. Retained initial failed attempt and repeated with descendant supervision. Final archive setup/read replay passed in a fresh workspace. Both temporary workspaces were removed after checks; no remaining process referenced the main workspace. Final main scratch size was 642375680 bytes before removal. Signing source now uses ephemeral checked loopback ports.
+Suggestion: Inspect subprocess topology before claiming aggregate memory or interruption coverage; preserve invalidated attempts explicitly.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+Source: UI/theme/icon, deployment, schema and external dependency checks.
+Observation: Deliverable is scoped documentation/probe evidence, with no application/test/configuration/schema/dependency changes. These product-change checks are inapplicable. Normal-flow claims still received HTTP/CLI verification; full application suite was not run.
+Suggestion: Keep evidence-specific verification proportional without implying full-suite acceptance.
+
+### Uncertain assessments
+
+Source: Matrix completion and actual user/environment recovery.
+Observation: Explicit deferrals retain long threads, reaction/pin density, large commits, provider execution, maximum images, long soak and actual PHP 8.3/FastCGI capacity. Prior user-reported QDB activation (314.961 seconds, 5253 HTML and 53 assets) is preserved separately from this unverified host replay. Timing phases were not interleaved; faster overlap samples do not establish a speedup.
+Suggestion: Require targeted follow-up evidence before making operational limits or production recovery claims.
+
+Study: R1/P2, original v1/B baseline and 0.90 projection retained; independent retrospective scope judgment 1.00 by the same exposed rater, not an independent rating or measured effort. Maintainer comfortable-fit/acceptance pending. No accepted-count increment, external upload, merge, push or deployment.
+Final state: Report and seven-stage bounded investigation complete with explicit failures/deferrals. Nine cycle commits before this required debug-only handoff commit. Unrelated pre-existing ledger whitespace and historical host update remain uncommitted; no substantive unrelated changes included.
+
+*— Codex · 2026-11-01 UTC*
