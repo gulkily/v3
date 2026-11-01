@@ -55,15 +55,26 @@
     6px 6px 0 0 #000000;
 }
 
+/* One window frame for every surface: cards, feedback, Account's card, and the
+   dark lists (thread rows, grouped account rows). */
 :root[data-theme="midnight"] .card,
-:root[data-theme="midnight"] .feedback {
+:root[data-theme="midnight"] .feedback,
+:root[data-theme="midnight"] .account-card,
+:root[data-theme="midnight"] .thread-rows,
+:root[data-theme="midnight"] .account-group {
   border: 2px solid;
   border-color: #4e4e4e #1a1a1a #1a1a1a #4e4e4e;
+  border-radius: 0;
   background: #2b2b2b;
   box-shadow:
     -1px -1px 0 0 #686868,
     1px 1px 0 0 #000000,
     6px 6px 0 0 #000000;
+}
+
+:root[data-theme="midnight"] .thread-rows,
+:root[data-theme="midnight"] .account-group {
+  background: #121212;
 }
 
 :root[data-theme="midnight"] .card {
@@ -130,7 +141,8 @@
   color: #7aa8ff;
 }
 
-:root[data-theme="midnight"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+/* Grouped account rows (`button.account-row`) stay flat list rows, not buttons. */
+:root[data-theme="midnight"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row) {
   border: 1px solid #000000;
   background: #2b2b2b;
   color: #c8c8c8;
@@ -139,7 +151,7 @@
     inset -1px -1px 0 0 #000000;
 }
 
-:root[data-theme="midnight"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+:root[data-theme="midnight"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row):active {
   box-shadow:
     inset -1px -1px 0 0 #6a6a6a,
     inset 1px 1px 0 0 #000000;
@@ -496,6 +508,185 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
     scrollbar-color: #2b2b2b #3c3c3c;
   }}
 
+:root[data-theme="midnight"] .eyebrow .site-brand {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* App shell: the title bar spans the frame, the toolbar row sits beneath it and
+   the ruler beneath that. The app shell's flex row would otherwise squeeze all
+   three onto one line. */
+:root[data-theme="midnight"] .site-header--app {
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+:root[data-theme="midnight"] .site-header--app .eyebrow {
+  flex: 1 1 100%;
+  margin: -0.45rem -0.6rem 0.65rem;
+}
+
+:root[data-theme="midnight"] .site-header--app .site-header-actions,
+:root[data-theme="midnight"] .site-header--app::after {
+  flex: 1 1 100%;
+}
+
+/* Toolbar buttons: New post and You are bevelled buttons like every other
+   control; a pressed look marks the open menu and the current compose page. */
+:root[data-theme="midnight"] [data-shell="app"] .new-post-button,
+:root[data-theme="midnight"] .account-menu__trigger {
+  border: 1px solid #000000;
+  background: #2b2b2b;
+  color: #c8c8c8;
+  box-shadow:
+    inset 1px 1px 0 0 #6a6a6a,
+    inset -1px -1px 0 0 #000000;
+}
+
+:root[data-theme="midnight"] [data-shell="app"] .new-post-button.is-active,
+:root[data-theme="midnight"] .account-menu[open] > .account-menu__trigger {
+  background: #3c3c3c;
+  box-shadow:
+    inset -1px -1px 0 0 #6a6a6a,
+    inset 1px 1px 0 0 #000000;
+}
+
+:root[data-theme="midnight"] .account-menu__panel,
+:root[data-theme="midnight"] .board-sort__menu {
+  border: 1px solid #000000;
+  background: #2b2b2b;
+  box-shadow:
+    inset 1px 1px 0 0 #6a6a6a,
+    inset -1px -1px 0 0 #000000,
+    3px 3px 0 0 #000000;
+}
+
+/* List board: the filter strip is a toolbar; thread rows are the dark document
+   inside a window whose title bar is the section label pulled over the frame. */
+:root[data-theme="midnight"] .board-toolbar,
+:root[data-theme="midnight"] .stack > .board-filter {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #000000;
+  background: #2b2b2b;
+  box-shadow:
+    inset 1px 1px 0 0 #6a6a6a,
+    inset -1px -1px 0 0 #000000;
+}
+
+:root[data-theme="midnight"] .thread-row + .thread-row,
+:root[data-theme="midnight"] .account-row {
+  border-top-color: #3c3c3c;
+}
+
+:root[data-theme="midnight"] .account-row {
+  /* `button[type="button"]` would otherwise paint the row with the button colour. */
+  background: transparent;
+}
+
+:root[data-theme="midnight"] .thread-row__count,
+:root[data-theme="midnight"] .thread-row__meta {
+  font-family: var(--body-font);
+}
+
+:root[data-theme="midnight"] .section-label,
+:root[data-theme="midnight"] .person-identities__title,
+:root[data-theme="midnight"] .account-key-header {
+  position: relative;
+  z-index: 1;
+  height: 1.75rem;
+  margin: 1.5rem 2px calc(-1.75rem - 2px);
+  padding: 0 0.55rem;
+  background: linear-gradient(90deg, #00004a 0%, #0a3d6b 100%);
+  color: #ffffff;
+  font-family: var(--ui-font);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.75rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-theme="midnight"] .account-key-header h1 {
+  margin: 0;
+  font-family: var(--ui-font);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.75rem;
+}
+
+:root[data-theme="midnight"] .section-label + .thread-rows,
+:root[data-theme="midnight"] .person-identities__title + .account-group {
+  margin-top: 0;
+  padding-top: 1.75rem;
+}
+
+/* Account: the heading is the title bar of the first window below it, which is
+   the feedback notice when one renders, otherwise the visible account card. */
+:root[data-theme="midnight"] .account-key-header + .feedback,
+:root[data-theme="midnight"] .account-key-header ~ .account-card {
+  margin-top: 0;
+  padding-top: calc(1.75rem + 1.25rem);
+}
+
+:root[data-theme="midnight"] .account-key-header + .feedback ~ .account-card {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+}
+
+/* The Users heading repeats the pressed toolbar button; it stays for assistive
+   technology only. (The tabs under it are member-only, so it cannot be their title bar.) */
+:root[data-theme="midnight"] .users-page__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[data-theme="midnight"] .users-page__title + * {
+  margin-top: 0;
+}
+
+/* Status chips are flat form fields, not pills. */
+:root[data-theme="midnight"] .chip {
+  padding: 0 0.35rem;
+  border: 1px solid #6a6a6a;
+  border-radius: 0;
+  background: #343434;
+  color: #c8c8c8;
+}
+
+/* Users and person pages: grouped rows lose the chevron, the avatar is a bevelled tile. */
+:root[data-theme="midnight"] .account-row--link::after {
+  display: none;
+}
+
+:root[data-theme="midnight"] .account-avatar {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #2b2b2b;
+  color: #c8c8c8;
+  font-size: 1.1rem;
+  box-shadow:
+    inset 1px 1px 0 0 #6a6a6a,
+    inset -1px -1px 0 0 #000000;
+}
+
+:root[data-theme="midnight"] select,
+:root[data-theme="midnight"] .users-tools input {
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #121212;
+  color: #c8c8c8;
+  font-family: var(--ui-font);
+  box-shadow:
+    inset 1px 1px 0 0 #000000,
+    inset -1px -1px 0 0 #3c3c3c;
+}
+
 :root[data-theme="midnight"] .pinned-thread-marker {
   color: #000000;
   background: #ffff00;
@@ -520,3 +711,18 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
   margin-top: 0.5rem;
 }
 
+/* Phones: the tab bar is a raised toolbar strip; the current tab is pressed. */
+@media (max-width: 639px) {
+  :root[data-theme="midnight"] [data-shell="app"] .site-header--app .site-header-actions {
+    border-top: 1px solid #6a6a6a;
+    background: #2b2b2b;
+    box-shadow: 0 -1px 0 0 #000000;
+  }
+
+  :root[data-theme="midnight"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root[data-theme="midnight"] [data-shell="app"] .account-menu[open] > .account-menu__trigger {
+    color: #c8c8c8;
+    background: #3c3c3c;
+    border-color: #000000 #6a6a6a #6a6a6a #000000;
+  }
+}

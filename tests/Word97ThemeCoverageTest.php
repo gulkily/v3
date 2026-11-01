@@ -5,17 +5,25 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 /**
- * The Word 97 theme styles every component the app shell, list board, Users
- * and person pages render; see docs/plans/word97_theme_repair_checklist.md.
+ * The Word 97 and Midnight themes style every component the app shell, list
+ * board, Users, person and Account pages render; see
+ * docs/plans/word97_theme_repair_checklist.md.
  * A new shared component that only inherits the theme's variables falls back
  * to grey-on-grey panels, rounded corners and pill chips.
  */
 final class Word97ThemeCoverageTest
 {
-    public function testThemeCoversAppShellListBoardAndPeoplePages(): void
+    public function testThemesCoverAppShellListBoardAndPeoplePages(): void
     {
-        $css = (string) file_get_contents(__DIR__ . '/../public/assets/theme-word97.css');
-        $scope = ':root[data-theme="word97"]';
+        foreach (['word97', 'midnight'] as $theme) {
+            $this->assertThemeCoverage($theme);
+        }
+    }
+
+    private function assertThemeCoverage(string $theme): void
+    {
+        $css = (string) file_get_contents(__DIR__ . '/../public/assets/theme-' . $theme . '.css');
+        $scope = ':root[data-theme="' . $theme . '"]';
 
         $selectors = [
             // App shell header: title bar, toolbar row, ruler, buttons, account menu.
@@ -42,6 +50,7 @@ final class Word97ThemeCoverageTest
             '.account-row--link::after',
             '.account-avatar',
             '.person-identities__title',
+            '.account-key-header',
             'select',
         ];
         foreach ($selectors as $selector) {
