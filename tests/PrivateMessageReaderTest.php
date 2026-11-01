@@ -63,6 +63,37 @@ NODE);
         assertSame(['1', '1'], $result['settled']);
     }
 
+    public function testViewerDiscoveryRetriesAnEarlyReadWithoutBackgroundRecoveryWork(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs=require('fs'),vm=require('vm'),listeners={};
+let ready=false,lookups=0;
+const api={readKey:async()=>({}),readPrivateKey:async()=>({}),readMessage:async()=>({}),decrypt:async options=>{
+ if(!options.sessionKeys)throw Error('No direct access');
+ return {data:'restored',signatures:[{verified:Promise.resolve(true)}]};
+}};
+global.window={localStorage:{getItem:()=> 'key'},__forumBrowserIdentity:{ensureOpenPgpApi:async()=>api},
+ ForumPrivateMessages:{recipientKeys:async()=>['key']},ForumPrivateMessageHistorySync:{confirm(){},
+ findCandidate:async(id,envelope,visit)=>{lookups++;if(!ready)return [];const candidate={keys:['session'],transfer_id:'transfer'};await visit(candidate);return [candidate];}}};
+global.document={addEventListener:(type,fn)=>{listeners[type]=fn;}};
+global.fetch=async()=>({ok:true,json:async()=>({status:'ok',messages:[{message_id:'old',sender_username_token:'bob',encrypted_envelope:'cipher'}]})});
+vm.runInThisContext(fs.readFileSync(require('path').join(require('path').dirname(process.argv[1]),'private_message_availability.js'),'utf8'));
+vm.runInThisContext(fs.readFileSync(process.argv[1],'utf8'));
+const nodes=new Map(),card={dataset:{privateMessageId:'old'},querySelector(s){if(!nodes.has(s))nodes.set(s,{});return nodes.get(s);}};
+const root={dataset:{mailbox:'conversation',counterpartUsernameToken:'bob'},querySelectorAll:()=>[card]};
+(async()=>{
+ window.ForumPrivateMessageReader.bindMailbox(root);
+ await new Promise(r=>setTimeout(r,0));const before=card.dataset.readerState;
+ ready=true;listeners['private-message-viewer-known']({});
+ await new Promise(r=>setTimeout(r,0));
+ process.stdout.write(JSON.stringify({before,after:card.dataset.readerState,lookups}));
+})().catch(e=>{console.error(e);process.exit(1);});
+NODE);
+        assertSame('decryption-failed', $result['before']);
+        assertSame('verified', $result['after']);
+        assertSame(2, $result['lookups']);
+    }
+
     /** @return array<string, mixed> */
     private function runScript(string $script): array
     {

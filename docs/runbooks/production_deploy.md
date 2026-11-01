@@ -66,7 +66,7 @@ Recommended mapping:
 
 Optional runtime setting:
 
-- `FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS`: seconds a request waits for the shared write/read-model lock before returning a busy error. The default is `5`. It may also be set in the private config file (`../forum-private/secrets.php`); an environment value takes precedence. Prefer the private config file over `SetEnv` in `public/.htaccess`, which is tracked and blocks `git pull` when edited.
+- `FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS`: seconds a request waits for the shared write/read-model lock before returning a busy error. The default is `5`. It may also be set in the private config file (see [Deployment Settings](#deployment-settings)); an environment value takes precedence. Prefer the private config file over `SetEnv` in `public/.htaccess`, which is tracked and blocks `git pull` when edited.
 - `FORUM_UNICODE_AUTHORED_TEXT`: when set to `true`, subject/body prose may contain visible UTF-8 text such as Cyrillic. The default is disabled.
 - `FORUM_APP_VERSION_NOTIFICATION`: when set to `false`, disables browser-side app version polling and the reload banner. The default is enabled.
 - `LLM_CONVERSATION_RECORDING_ENABLED`: controls private exact-prompt/response capture. The default is enabled.
@@ -102,29 +102,59 @@ a separate lock and pointer; forum writes, imports, builds and cleanup do not
 render or bulk scan/copy docs. A small legacy reference retains docs from an old
 combined release until independent publication succeeds.
 
-## Environment Variables
+## Deployment Settings
 
-Use these in production:
+Six settings tell a deployment which site it is and where its data lives:
 
-- `FORUM_REPOSITORY_ROOT`
-- `FORUM_DATABASE_PATH`
-- `FORUM_STATIC_HTML_ROOT`
+- `FORUM_SITE_ID`: the site profile (`zenmemes`, `chouse`, `qdb` or `mitrapclub`); selects branding, default theme and composer copy, not content
+- `FORUM_REPOSITORY_ROOT`: the canonical repository checkout
+- `FORUM_DATABASE_PATH`: the read-model SQLite database
+- `FORUM_STATIC_HTML_ROOT`: static releases; defaults to `<application-root>/state/static_html` (with a profile suffix for non-ZenMemes profiles)
+- `FORUM_PUBLIC_ARTIFACT_ROOT`: the public web root; defaults to `<application-root>/public`
+- `FORUM_IMAGE_ROOT`: private image storage; see [Image backup and recovery](image_backup.md)
 
-Suggested values:
+Put them in the checkout's private config file, outside the code checkout. The web app, every `./v3` command, cron and cache workers then read the same values, and `git reset --hard` or `git pull` cannot remove them:
 
-```text
-FORUM_REPOSITORY_ROOT=/srv/forum-rewrite/repository
-FORUM_DATABASE_PATH=/srv/forum-rewrite/state/cache/post_index.sqlite3
-FORUM_STATIC_HTML_ROOT=/srv/forum-rewrite/state/static_html
+```php
+<?php
+return [
+    'FORUM_SITE_ID' => 'qdb',
+    'FORUM_REPOSITORY_ROOT' => '/home/qdb/v3-data/repository',
+    'FORUM_DATABASE_PATH' => '/home/qdb/v3-data/state/post_index.sqlite3',
+    // ...existing LLM and feature settings...
+];
 ```
 
-`FORUM_STATIC_HTML_ROOT` defaults to `<application-root>/state/static_html`.
-It is not under `public/`; Apache continues to route content requests through
-PHP, which selects the forum `current` release or the independent docs release
-for `/docs/*`, its retained assets and `/api/docs-version`. Keep these routes
-through PHP, including requests with cookies and private-site profiles; docs are
-public anonymous content. Do not expose either release directory as a general
-public file tree.
+Paths must be absolute. For each setting the order is: environment variable, then the private file, then the built-in default. Command options such as `--repository-root` still win for that command. Do not put these settings in `SetEnv` lines in the tracked `public/.htaccess`: a code reset discards them, and cron never sees Apache's `SetEnv` values.
+
+**Which private file.** `FORUM_SECRETS_PATH` names it explicitly. Otherwise, a checkout at `~/sites/qdb` uses `~/sites/forum-private/qdb/secrets.php` when that file exists, else the shared `~/sites/forum-private/secrets.php`. Two sites whose checkouts share a parent folder therefore each get their own file: create `forum-private/<checkout folder name>/secrets.php` for each. Renaming or re-cloning a checkout under another folder name switches it back to the shared file; keep the folder name or set `FORUM_SECRETS_PATH`. Edit the file directly or with `./v3 private-config edit`; both use the same location.
+
+**Check.** `./v3 status` ends with a *Deployment settings* section listing the private file in use and every setting's value and source (`environment`, `private file <path>`, a command option, or `default`). It warns when the tracked `public/.htaccess` or `public/index.php` has local edits. `./v3 task-queue cron` prints the file the cron worker reads.
+
+**Move existing `SetEnv` lines.** For each `SetEnv FORUM_...` line in `public/.htaccess` or the vhost:
+
+1. Add the same key and value to the private file.
+2. Run `./v3 status` and confirm it shows the value with `(private file ...)`.
+3. Remove the `SetEnv` line, restore the tracked `.htaccess` with `git checkout -- public/.htaccess`, and reload the site.
+4. Run `./v3 status` again: no `.htaccess` warning, and every value from the private file.
+
+Vhost-level `SetEnv` keeps working and still takes precedence; remove it once the private file is in place so web and cron cannot drift apart.
+
+**Recovery.** If the site shows the wrong profile or data after an update, run `./v3 status`. A value showing `default` means the private file is missing, misnamed or in the wrong folder; restore it from backup or fix the path shown. An unknown `FORUM_SITE_ID` in the private file is an error naming the file and the valid profiles. Removing these keys from the private file returns to the built-in defaults. In an emergency an environment variable still overrides the file.
+
+**QDB acceptance (operator, on the QDB host).** After deploying this release:
+
+```bash
+cd ~/v3
+./v3 status                       # FORUM_SITE_ID: qdb (private file ...), no .htaccess warning
+git reset --hard origin/main      # simulate an ordinary code reset
+./v3 status                       # unchanged
+curl -s https://qdb.us/ | grep -o '<title>[^<]*</title>'   # QDB's own Welcome page title
+```
+
+Then confirm the next cron run's log (`state/private/task_queue_cron.log`) shows no profile or repository errors. Record the result in the deployment configuration plan.
+
+For local development of another profile, `FORUM_SITE_ID=chouse ./v3 start` still works. Omitting `FORUM_REPOSITORY_ROOT` and `FORUM_DATABASE_PATH` uses the same default local instance state for every profile; only the disposable static HTML cache stays profile-specific.
 
 ### Content routing and image storage
 
@@ -278,28 +308,6 @@ LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH`
 Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome. Its executor history, detached-launch outcomes, and rebuild checkpoints live in that same private database; terminal history is bounded while active work and automatic-recovery circuit state are retained.
 
 Visitor statistics are private runtime data. Keep `VISITOR_STATISTICS_DATABASE_PATH` outside `public/`, the canonical repository, and published artifacts. It retains only bounded UTC hourly aggregates for up to 90 days: eligible-request counters, anonymous/server-authenticated request counters, and mergeable client/authenticated-user cardinality sketches. It never retains raw visitor, session, key, identity, route, referrer, header, or network records. A deployment begins a new hourly collection epoch; legacy daily aggregates are not converted into hourly history. Its protected page reports only server-observed eligible traffic; direct edge/static delivery outside PHP is not included.
-
-## Site Profile
-
-`FORUM_SITE_ID` selects which `SiteProfileRegistry` entry (site name, default theme, composer copy) this deployment renders. Values: `zenmemes`, `chouse`, `qdb`. Unset, empty, or unrecognized values resolve to `zenmemes`.
-
-Set it alongside the three path variables above, per vhost:
-
-```text
-FORUM_SITE_ID=zenmemes
-```
-
-It only selects branding — it does not select content or database paths. Those remain on `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, and `FORUM_STATIC_HTML_ROOT`, set independently per vhost. A vhost with a mismatched `FORUM_SITE_ID` and content paths is a misconfiguration, not a supported mode; the two must be kept paired by whoever edits the vhost config.
-
-Precedence and rollback match the other `FORUM_*` variables in this runbook: environment variable wins, code default (`zenmemes`) applies when absent, and rollback is deleting the `SetEnv` line.
-
-For local/CLI runs, set the same variable before the command:
-
-```bash
-FORUM_SITE_ID=chouse ./v3 start
-```
-
-Omitting `FORUM_REPOSITORY_ROOT` and `FORUM_DATABASE_PATH` uses the same default local instance state for every site profile. Only the disposable static HTML cache remains profile-specific by default, preventing rendered presentation from crossing profiles. Use explicit repository and database paths when developing genuinely separate instances from one checkout.
 
 ## LLM Provider Config
 
@@ -618,7 +626,7 @@ This directory must not be under `public/` and should be readable only by the de
 3. Ensure the repository is a real git checkout with `records/` and `.git/`.
 4. Create the writable state directory.
 5. Configure Apache to serve `public/`.
-6. Set the production environment variables.
+6. Put the [deployment settings](#deployment-settings) in the checkout's private config file and check them with `./v3 status`.
 7. Run the initial read-model rebuild. On a public instance, it automatically
    publishes the first offline snapshot when one is not already served; treat a
    reported snapshot-readiness failure as a launch blocker.

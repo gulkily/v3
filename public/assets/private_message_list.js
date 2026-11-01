@@ -26,23 +26,28 @@
     const previewRequests = new Map();
     function refreshHistory(event) {
       rendered.forEach(function (row) {
-        if (!['decryption-failed', 'unavailable', 'load-failed'].includes(row.dataset.previewState)) return;
+        if (row.dataset.previewState==='verified' || row.dataset.previewState==='bad-signature') return;
         if (event.detail && event.detail.messageId && event.detail.messageId !== row.dataset.messageId) return;
         const message = previewMessages.get(row.dataset.messageId);
-        if (message) preview(row, message);
+        if (message) {
+          const candidate=window.ForumPrivateMessageHistorySync?.recovered?.(message.message_id,message.encrypted_envelope);
+          const retry=()=>{if(row.dataset.previewState!=='verified')return preview(row,message,candidate);};
+          if(previewRequests.has(message.message_id))previewRequests.get(message.message_id).then(retry);else retry();
+        }
       });
     }
     document.addEventListener('private-message-history-restored', refreshHistory);
+    document.addEventListener('private-message-viewer-known', refreshHistory, {once:true});
 
-    function preview(row, message) {
+    function preview(row, message, historyCandidate) {
       if (previewRequests.has(message.message_id)) return previewRequests.get(message.message_id);
       previewMessages.set(message.message_id, message);
-      const request = readPreview(row, message).finally(function () { previewRequests.delete(message.message_id); });
+      const request = readPreview(row, message, historyCandidate).finally(function () { previewRequests.delete(message.message_id); });
       previewRequests.set(message.message_id, request);
       return request;
     }
 
-    async function readPreview(row, message) {
+    async function readPreview(row, message, historyCandidate) {
       const text = row.querySelector('[data-role="preview"]');
       const verified = row.querySelector('[data-role="verification"]');
       const retryPreview = row.querySelector('[data-action="retry-preview"]');
@@ -51,6 +56,7 @@
       verified.hidden = true;
       retryPreview.hidden = true;
       let result;
+      historyCandidate=historyCandidate || window.ForumPrivateMessageHistorySync?.recovered?.(message.message_id,message.encrypted_envelope);
       try {
         if (!senderKeys.has(message.sender_username_token)) {
           const request = window.ForumPrivateMessages.recipientKeys(message.sender_username_token);
@@ -60,7 +66,7 @@
         result = await window.ForumPrivateMessageReader.decryptEnvelope({
           messageId: message.message_id,
           encryptedEnvelope: message.encrypted_envelope,
-          senderPublicKeyArmors: await senderKeys.get(message.sender_username_token),
+          senderPublicKeyArmors: await senderKeys.get(message.sender_username_token), historyCandidate: historyCandidate,
         });
       } catch (error) {
         result = { kind: 'load-failed', message: 'Preview unavailable. Sender keys could not be loaded. Try again.' };

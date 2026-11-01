@@ -8,9 +8,9 @@ use ForumRewrite\Host\StaticArtifactReleasePublisher;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
-$repositoryRoot = $argv[1] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
-$databasePath = $argv[2] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
-$staticHtmlRoot = $argv[3] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html'));
+$repositoryRoot = $argv[1] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
+$databasePath = $argv[2] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
+$staticHtmlRoot = $argv[3] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html'));
 $startedAt = microtime(true);
 
 fwrite(STDOUT, "Starting shared static release refresh\n");

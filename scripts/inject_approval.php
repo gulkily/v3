@@ -23,14 +23,14 @@ try {
     if ($command === 'seed') {
         $identityId = normalizeCliIdentityId(requireCliArgument($argv, 2, 'identity_id'));
         $seedReason = trim((string) ($argv[3] ?? 'initial approved user'));
-        $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
-        $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: $defaultDatabasePath);
+        $repositoryRoot = $argv[4] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
+        $databasePath = $argv[5] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $defaultDatabasePath);
 
         $writer = new LocalWriteService(
             $repositoryRoot, $databasePath,
-            getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'),
+            \ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'),
             new CanonicalRecordRepository($repositoryRoot),
-            additionalArtifactRoots: [getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active())],
+            additionalArtifactRoots: [\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active())],
         );
         $writer->seedApprovedIdentity($identityId, $seedReason);
         fwrite(STDOUT, "Seeded approval for {$identityId}\n");
@@ -39,9 +39,9 @@ try {
 
     $approverIdentityId = normalizeCliIdentityId(requireCliArgument($argv, 2, 'approver_identity_id'));
     $targetIdentityId = normalizeCliIdentityId(requireCliArgument($argv, 3, 'target_identity_id'));
-    $repositoryRoot = $argv[4] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
-    $databasePath = $argv[5] ?? (getenv('FORUM_DATABASE_PATH') ?: $defaultDatabasePath);
-    $artifactRoot = $argv[6] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'));
+    $repositoryRoot = $argv[4] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
+    $databasePath = $argv[5] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $defaultDatabasePath);
+    $artifactRoot = $argv[6] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'));
 
     approveExistingUser($repositoryRoot, $databasePath, $artifactRoot, $approverIdentityId, $targetIdentityId);
     fwrite(STDOUT, "Approved {$targetIdentityId} using {$approverIdentityId}\n");

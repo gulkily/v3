@@ -41,7 +41,7 @@ try {
         if ($command !== 'meta-status') {
             throw new InvalidArgumentException($command . ' is retired: tags now follow retained scores. Disable Automatic Fastmod tagging to hide derived tags; use ordinary score retry for failed evaluations, then rebuild static/offline output. Individual tag removal is no longer supported; existing suppressions remain honored.');
         }
-        $repositoryRoot=(string)($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $projectRoot.'/state/local_repository'));
+        $repositoryRoot=(string)($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $projectRoot.'/state/local_repository'));
         $config=FastScoringConfig::fromPrivateConfig($privateConfig);
         $status=[
             'enabled'=>\ForumRewrite\Scoring\FastmodTaggingPolicy::enabled($projectRoot,$repositoryRoot),
@@ -62,7 +62,7 @@ try {
         if (($options['include-existing'] ?? false) !== true) {
             throw new InvalidArgumentException('--include-existing is required for historical audit. Run: ./v3 fast-score audit --include-existing');
         }
-        $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+        $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
         if (!is_file($databasePath)) {
             throw new InvalidArgumentException('Read-model database not found.');
         }
@@ -126,7 +126,7 @@ try {
     if ($command === 'backfill') {
         $maxPosts = fastmodPositiveIntegerOption($options, 'max-posts');
         $maxCostUsd = fastmodNonNegativeNumberOption($options, 'max-cost-usd');
-        $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+        $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
         if (!is_file($databasePath)) {
             throw new InvalidArgumentException('Read-model database not found.');
         }
@@ -219,8 +219,8 @@ try {
     if (in_array($command, ['retry', 'invalidate'], true)) {
         [$postId, $contentHash, $rubricRevision] = fastScoreTarget($options);
         if ($command === 'retry' && ($options['run'] ?? false) === true) {
-            $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-            $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
+            $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+            $repositoryRoot = (string) ($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
             $readPdo = new PDO('sqlite:' . $databasePath);
             $fetch = static function (string $id) use ($readPdo): ?array {
                 $stmt = $readPdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :id');
@@ -290,7 +290,7 @@ try {
         if ($postId === '') {
             throw new InvalidArgumentException('--post-id is required for smoke.');
         }
-        $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+        $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
         $readPdo = new PDO('sqlite:' . $databasePath);
         $fetchPost = static function (string $id) use ($readPdo): ?array {
             $stmt = $readPdo->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :post_id');
@@ -302,7 +302,7 @@ try {
         if ($post === null) {
             throw new InvalidArgumentException('Post not found.');
         }
-        $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
+        $repositoryRoot = (string) ($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
         $recorder = fastScoreRecorder($projectRoot, $repositoryRoot, $privateConfig);
         $result = FastScoreWorkflowFactory::fromPrivateConfig($privateConfig, $projectRoot, $fetchPost, $recorder)->scorePost($post);
         fwrite(STDOUT, json_encode([

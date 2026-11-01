@@ -7,7 +7,7 @@ umask(0077);
 
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/autoload.php';
-$defaultPath = getenv('FORUM_SECRETS_PATH') ?: (dirname($projectRoot) . '/forum-private/secrets.php');
+$defaultPath = \ForumRewrite\Support\PrivateConfig::path($projectRoot);
 
 $options = [
     'path' => $defaultPath,
@@ -484,7 +484,8 @@ Creates or updates the private PHP config used by ForumRewrite\Support\PrivateCo
 Use view/--view to print a redacted summary and update reminders without creating or modifying the file.
 Use edit/--edit to open an existing config file with VISUAL, EDITOR, or vi.
 Use refresh-template to rewrite the file with current comments/examples while preserving values.
-The default local path is ../forum-private/secrets.php relative to this app checkout.
+The default path is FORUM_SECRETS_PATH, else ../forum-private/<checkout folder>/secrets.php when it
+exists, else ../forum-private/secrets.php, relative to this app checkout.
 LLM_PROVIDER is required (no default). Supported values: openai, openrouter, anthropic, stub, and OpenAI-compatible gateways.
 Legacy DEDALUS_* LLM settings are still read as fallbacks, but new writes use LLM_* names.
 update-llm accepts a JSON request only on standard input; never pass a secret in an argument.

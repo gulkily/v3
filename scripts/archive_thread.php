@@ -23,9 +23,9 @@ if (preg_match('/^[A-Za-z0-9._:-]+$/', $threadId) !== 1) {
     exit(1);
 }
 
-$repositoryRoot = normalizePath($argv[2] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
-$databasePath = normalizePath($argv[3] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-$artifactRoot = normalizePath($argv[4] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html')));
+$repositoryRoot = normalizePath($argv[2] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
+$databasePath = normalizePath($argv[3] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+$artifactRoot = normalizePath($argv[4] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: ($projectRoot . '/state/static_html')));
 $archivePath = normalizePath($argv[5] ?? defaultArchivePath($projectRoot, $threadId));
 
 try {

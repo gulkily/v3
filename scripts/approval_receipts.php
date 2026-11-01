@@ -25,9 +25,9 @@ try {
     }
     if ($action !== 'convert' && isset($options['dry-run'])) throw new RuntimeException('--dry-run applies to convert only.');
     $project = dirname(__DIR__);
-    $root = realpath($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $project . '/state/local_repository'));
+    $root = realpath($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $project . '/state/local_repository'));
     if ($root === false || !is_dir($root . '/records')) throw new RuntimeException('Repository must already exist; use --repository-root.');
-    $db = $options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: $project . '/state/cache/post_index.sqlite3');
+    $db = $options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $project . '/state/cache/post_index.sqlite3');
     $service = new ApprovalReceiptMaintenance($root, $db);
     $result = match ($action) { 'convert' => $service->convert(isset($options['dry-run'])), 'readiness' => $service->readiness(), default => $service->inspect() };
     if (isset($options['json'])) echo json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n";

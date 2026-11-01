@@ -30,6 +30,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Load-before-selection audit](load_before_selection_audit/load_before_selection_audit_step4_implementation_summary.md) — completed documentation audit; ranked findings and 24 local selection samples, fixes pending.
 
+- [Deployment config](deployment_config/deployment_config_step1_solution_assessment.md)
 - [QDB memory audit](qdb_memory_audit/qdb_memory_audit_step1_solution_assessment.md) — documentation-only source audit complete; fixes and host capacity acceptance remain separate.
 
 - [Unified reaction records](unified_reaction_records/unified_reaction_records_step1_solution_assessment.md)
@@ -363,3 +364,5 @@ and repair its navigation and affected references. See the
 - [Bounded tag pages and QDB rebuild catalog](./qdb_rebuild_scope/qdb_rebuild_scope_step1_solution_assessment.md) — implemented and locally verified; all sites; live-host acceptance pending.
 
 - [QDB build-time reduction](./qdb_build_time/qdb_build_time_step1_solution_assessment.md) — combined profile publication and history optimization, locally implemented and measured; production replay pending.
+
+- [Message sync activity and limits](message_sync_activity/message_sync_activity_step1_solution_assessment.md) — recent-device priority and bounded, quiet recovery.
