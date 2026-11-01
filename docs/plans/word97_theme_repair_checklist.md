@@ -17,8 +17,8 @@ rounded corners, pill chips).
   `account-group`, `account-row`, `account-avatar`: commit bb95e3d57 and the
   users rebuild (2026-10-28).
 
-No sibling theme (Chicago, Midnight, ...) covers these selectors either; this
-checklist is scoped to Word 97 but the gap should be recorded for them.
+No sibling theme (Chicago, Midnight, ...) covered these selectors either. Midnight
+was repaired on the same branch (1340fa3be); Chicago is still open.
 
 ## Header (app shell)
 
@@ -115,6 +115,6 @@ checklist is scoped to Word 97 but the gap should be recorded for them.
       `site.css` or `account.css`. Check that the `.card` window treatment can be shared with
       `.thread-rows`, `.account-card`, `.account-group` via a shared selector list instead of
       duplicating the shadow stack.
-- [x] (1495d64f7; `tests/Word97ThemeCoverageTest.php` asserts the theme covers every component above. Screenshots at 1400 and 390 of the board, ?view=all with pinned threads, Users as guest and member, /user/ilyag, /threads/root-001 and /account/key/ were reviewed by hand; the project has no screenshot-diff harness. Sibling check: Midnight shows the same header overlap, stray bar and unthemed rows; Chicago keeps the rounded lists with chevrons and the bare Users heading. Both are outside this branch.) Verification: extend the theme matrix screenshot test (added in ui_tools_launcher stage 3)
+- [x] (1495d64f7; `tests/Word97ThemeCoverageTest.php` asserts the theme covers every component above. Screenshots at 1400 and 390 of the board, ?view=all with pinned threads, Users as guest and member, /user/ilyag, /threads/root-001 and /account/key/ were reviewed by hand; the project has no screenshot-diff harness. Sibling check: Midnight showed the same header overlap, stray bar and unthemed rows and received the same repairs in 1340fa3be, verified by screenshot at 1400 and 390 on the board, Users, person and Account pages; the coverage test now checks both themes. Chicago keeps the rounded lists with chevrons and the bare Users heading and is outside this branch.) Verification: extend the theme matrix screenshot test (added in ui_tools_launcher stage 3)
       to the list board, Users and /user/ pages under word97 at desktop and phone widths. Check
       Chicago and Midnight once for the same components and record the gap for them.
