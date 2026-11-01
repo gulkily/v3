@@ -28,7 +28,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [Application capacity study](application_capacity_study/application_capacity_study_step3_development_plan.md) — approved isolated measurement study.
+- [Application capacity study](application_capacity_study/capacity_report.txt) — local capacity study complete; memory failures, recovery evidence and host/coverage limits.
 
 - [Load-before-selection audit](load_before_selection_audit/load_before_selection_audit_step4_implementation_summary.md) — completed documentation audit; ranked findings and 24 local selection samples, fixes pending.
 

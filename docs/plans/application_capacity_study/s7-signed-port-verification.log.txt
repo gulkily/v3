@@ -1,0 +1,44 @@
+Sample: signed-post-0
+Response: {"status":"ok","post_id":"thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12","thread_id":"thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12","identity_id":"openpgp:28960b52465b6323f00024ae88bf7dfed2f140a9","profile_slug":"openpgp-28960b52465b6323f00024ae88bf7dfed2f140a9","bootstrap_post_id":"bootstrap-20261101071043-19a4f6809c547bf748127995c95665fd","record_path":"records/posts/2026/11/01/thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12.txt","signature_path":"records/posts/2026/11/01/thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12.txt.asc","commit_sha":"244063e4ef59ebcc081e075097b1364985ecefc0","replayed":false}
+
+Elapsed seconds: 0.76527404785156
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-1
+Response: {"status":"ok","post_id":"thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12","thread_id":"thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12","identity_id":"openpgp:28960b52465b6323f00024ae88bf7dfed2f140a9","profile_slug":"openpgp-28960b52465b6323f00024ae88bf7dfed2f140a9","bootstrap_post_id":"bootstrap-20261101071043-19a4f6809c547bf748127995c95665fd","record_path":"records/posts/2026/11/01/thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12.txt","signature_path":"records/posts/2026/11/01/thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12.txt.asc","commit_sha":"244063e4ef59ebcc081e075097b1364985ecefc0","replayed":true}
+
+Elapsed seconds: 0.56907105445862
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-2
+Response: {"status":"ok","post_id":"thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12","thread_id":"thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12","identity_id":"openpgp:28960b52465b6323f00024ae88bf7dfed2f140a9","profile_slug":"openpgp-28960b52465b6323f00024ae88bf7dfed2f140a9","bootstrap_post_id":"bootstrap-20261101071043-19a4f6809c547bf748127995c95665fd","record_path":"records/posts/2026/11/01/thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12.txt","signature_path":"records/posts/2026/11/01/thread-20261101071043-ff3c0108c50d31e99014b0a92e030c12.txt.asc","commit_sha":"244063e4ef59ebcc081e075097b1364985ecefc0","replayed":true}
+
+Elapsed seconds: 0.53850889205933
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+PHP Warning:  file_get_contents(http://127.0.0.1:18743/api/auth_challenge): Failed to open stream: Connection refused in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 32
+PHP Warning:  Undefined variable $http_response_header in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 33
+PHP Warning:  foreach() argument must be of type array|object, null given in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 33
+PHP Warning:  Undefined variable $http_response_header in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 34
+PHP Warning:  Trying to access array offset on value of type null in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 34
+Session route: /api/auth_challenge
+HTTP: 
+Elapsed seconds: 0.0002448558807373
+PHP Warning:  file_get_contents(http://127.0.0.1:18743/api/authenticate_identity): Failed to open stream: Connection refused in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 32
+PHP Warning:  Undefined variable $http_response_header in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 33
+PHP Warning:  foreach() argument must be of type array|object, null given in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 33
+PHP Warning:  Undefined variable $http_response_header in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 34
+PHP Warning:  Trying to access array offset on value of type null in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 34
+Session route: /api/authenticate_identity
+HTTP: 
+Elapsed seconds: 9.9897384643555E-5
+PHP Fatal error:  Uncaught RuntimeException: session authentication failed in /tmp/v3-capacity-5wrtjih3/signed_driver.php:40
+Stack trace:
+#0 {main}
+  thrown in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 40

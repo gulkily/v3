@@ -1,16 +1,19 @@
 <?php
 require __DIR__.'/app/tests/SignedPostIdentityTest.php';
-$server=proc_open(['php','-S','127.0.0.1:18743','-t',__DIR__.'/app/public',__DIR__.'/router.php'],[0=>['file','/dev/null','r'],1=>['file',__DIR__.'/signed-server.log','a'],2=>['file',__DIR__.'/signed-server.log','a']],$pipes,__DIR__.'/app');
+$listener=stream_socket_server('tcp://127.0.0.1:0',$errno,$errstr);
+if(!$listener)throw new RuntimeException('Cannot reserve loopback port');
+$address=stream_socket_get_name($listener,false);$port=(int)substr(strrchr($address,':'),1);fclose($listener);
+$server=proc_open(['php','-S',$address,'-t',__DIR__.'/app/public',__DIR__.'/router.php'],[0=>['file','/dev/null','r'],1=>['file',__DIR__.'/signed-server.log','a'],2=>['file',__DIR__.'/signed-server.log','a']],$pipes,__DIR__.'/app');
 if(!is_resource($server))throw new RuntimeException('server startup');
 try {
- for($i=0;$i<100;$i++){ $s=@fsockopen('127.0.0.1',18743,$e,$m,.05);if($s){fclose($s);break;}usleep(50000); }
+ for($i=0;$i<100;$i++){ if(!proc_get_status($server)['running'])throw new RuntimeException('Loopback server exited'); $s=@fsockopen('127.0.0.1',$port,$e,$m,.05);if($s){fclose($s);break;}usleep(50000); }
  $bundle=SignedPostIdentityTest::bundle();
  $head=trim(shell_exec('git -C '.escapeshellarg(getenv('FORUM_REPOSITORY_ROOT')).' rev-parse HEAD'));
  $first=null;
  for($i=0;$i<3;$i++){
   $start=microtime(true);
   $context=stream_context_create(['http'=>['method'=>'POST','header'=>"Content-Type: application/json\r\n",'content'=>json_encode($bundle),'ignore_errors'=>true,'timeout'=>30]]);
-  $body=file_get_contents('http://127.0.0.1:18743/api/create_signed_post',false,$context);
+  $body=file_get_contents('http://'.$address.'/api/create_signed_post',false,$context);
   echo 'Sample: signed-post-'.$i."\nResponse: ".$body."\nElapsed seconds: ".(microtime(true)-$start)."\nHTTP: ".$http_response_header[0]."\n";
   $result=json_decode($body,true);if(!str_contains($http_response_header[0],'200'))throw new RuntimeException('HTTP posting failed');
   $r=$result['result']??$result;
@@ -22,11 +25,11 @@ try {
   echo "Persisted byte parity: pass\nRetry commit parity: pass\n\n";
  }
  $cookies=[];
- $request=static function(string $path,?array $data=null) use (&$cookies): string {
+ $request=static function(string $path,?array $data=null) use (&$cookies,$address): string {
   $header='';foreach($cookies as $key=>$value)$header.=$key.'='.$value.'; ';
   $options=['method'=>$data===null?'GET':'POST','header'=>"Cookie: {$header}\r\nContent-Type: application/json\r\n",'ignore_errors'=>true,'timeout'=>30];
   if($data!==null)$options['content']=json_encode($data);
-  $start=microtime(true);$body=file_get_contents('http://127.0.0.1:18743'.$path,false,stream_context_create(['http'=>$options]));
+  $start=microtime(true);$body=file_get_contents('http://'.$address.$path,false,stream_context_create(['http'=>$options]));
   foreach($http_response_header as $line)if(preg_match('/^Set-Cookie: ([^=]+)=([^;]*)/i',$line,$m))$cookies[$m[1]]=$m[2];
   echo 'Session route: '.$path."\nHTTP: ".$http_response_header[0]."\nElapsed seconds: ".(microtime(true)-$start)."\n";
   return $body;

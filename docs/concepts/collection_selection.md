@@ -9,3 +9,7 @@ Measurement: Distinguish source rows examined, rows/bodies materialized or trans
 Sources: [tag selection](../../src/ForumRewrite/ReadModel/TagPage.php), [shared thread reader](../../src/ForumRewrite/ReadModel/ThreadRepository.php), [QDB pagination](../../src/ForumRewrite/Qdb/QdbBoardPolicy.php), [offline selection](../../src/ForumRewrite/Offline/PublicOfflineSnapshotBuilder.php), [audit findings and proposed corrections](../plans/load_before_selection_audit/findings.txt).
 
 Status: Describes current mixed behavior. QDB welcome and streaming offline candidate selection are implemented; remaining audit recommendations are tracked in the [fix checklist](../plans/selection_fixes_checklist.md); audit measurements are local synthetic evidence, not production capacity acceptance.
+
+Local capacity evidence: The [capacity study](../plans/application_capacity_study/capacity_report.txt) measures normal QDB latest/top/search at 10 MiB PHP for 1000 ordinary records and 72 MiB for 10000, with 25 returned IDs in both cases. Exact internal loaded counts remain uninstrumented; a small result is not a memory bound.
+
+*— Codex · 2026-11-01 UTC*

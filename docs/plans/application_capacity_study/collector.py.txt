@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parent
 assert ROOT.name.startswith('v3-capacity-') and (ROOT/'marker.txt').exists()
 APP=ROOT/'app'
 ENV={'PATH':str(ROOT/'bin')+':/usr/bin:/bin','HOME':str(ROOT),'LANG':'C.UTF-8','TMPDIR':str(ROOT/'tmp'),
- 'FORUM_SECRETS_PATH':str(ROOT/'secrets.php'),'CAPACITY_TELEMETRY':str(ROOT/'php-metrics.txt'),
+ 'FORUM_SECRETS_PATH':str(ROOT/'secrets.php'),'CAPACITY_TELEMETRY':str(ROOT/'php-metrics.txt'),'CAPACITY_SAMPLE':os.environ.get('CAPACITY_SAMPLE','unlabeled'),
  'FORUM_SITE_ID':'qdb','FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED':'false',
  'FAST_SCORING_ENABLED':'false','FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED':'false',
  'DEDALUS_AGENT_REPLIES_ENABLED':'false','DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED':'false',
@@ -54,7 +54,7 @@ def run(label,args,limit=600,interrupt=None):
  if log.exists():raise RuntimeError('Refuse to overwrite sample '+label)
  start=time.monotonic();peak=0;ios={};pids=set();stop='none';lastdisk=0
  with log.open('wb') as out:
-  p=subprocess.Popen(args,cwd=APP,env=ENV,stdout=out,stderr=subprocess.STDOUT,start_new_session=True)
+  p=subprocess.Popen(args,cwd=APP,env=dict(ENV,CAPACITY_SAMPLE=label),stdout=out,stderr=subprocess.STDOUT,start_new_session=True)
   while p.poll() is None:
    rows=tree(p.pid);peak=max(peak,sum(r[1] for r in rows))
    for pid,rss,rd,wr in rows:ios[pid]=(rd,wr);pids.add(pid)

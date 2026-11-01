@@ -6,7 +6,7 @@ with tarfile.open(a) as t:t.extractall(app)
 a.unlink();(root/'bin').mkdir();(root/'tmp').mkdir();(root/'sessions').mkdir();(root/'secrets.php').write_text('<?php return [];\n')
 (root/'telemetry.php').write_text('''<?php
 register_shutdown_function(static function(): void {
- $line = 'PID: '.getmypid().' | Route: '.($_SERVER['REQUEST_URI'] ?? 'CLI').' | PHP peak bytes: '.memory_get_peak_usage(true).' | HTTP status: '.(http_response_code() ?: 200)."\\n";
+ $line = 'Sample: '.getenv('CAPACITY_SAMPLE').' | PID: '.getmypid().' | Route: '.($_SERVER['REQUEST_URI'] ?? 'CLI').' | PHP peak bytes: '.memory_get_peak_usage(true).' | HTTP status: '.(http_response_code() ?: 200)."\\n";
  file_put_contents(getenv('CAPACITY_TELEMETRY'), $line, FILE_APPEND | LOCK_EX);
 });
 ''')

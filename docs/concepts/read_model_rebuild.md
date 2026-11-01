@@ -7,3 +7,7 @@ Known limitation: Several passes retain corpus-sized collections; the [QDB audit
 
 Commit indexing uses streamed raw tree changes for file counts, preserving Git's existing rename/merge defaults without computing line statistics. Activity evidence refresh uses a temporary file-backed manifest lookup shared across bounded batches, fetching only each action's source/signature/key paths. A failed manifest load rolls back its scratch transaction; missing history keeps existing fallback evidence. Scratch storage is removed after each refresh, including failures, and never becomes part of a read-model export or a later refresh. Full commit-detail views retain their existing manifest contract.
 See [history evidence indexing](history_evidence_indexing.md) for scratch lifetime, trust parity and measured workload limits.
+
+Local capacity boundary: The [normal-entry study](../plans/application_capacity_study/capacity_report.txt) reproduces a 128 MiB parsing failure at 40000 synthetic 2 KiB-body records, while retaining the prior live candidate-based model. A smaller fixture rebuild/publication succeeds. This is local PHP 8.1 evidence; PHP 8.3 host recovery and other corpus shapes remain unverified.
+
+*— Codex · 2026-11-01 UTC*

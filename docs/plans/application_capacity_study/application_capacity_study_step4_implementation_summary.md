@@ -90,3 +90,26 @@ Reuse: QDB archived probe provides canonical record recipe; tests/fixtures/parit
 - Notes: Same R1/P2/exposed rater and unchanged estimate. No external calls, dependencies or product changes. UI/theme/deployment/migration checks inapplicable.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 7 - Capacity report and handoff
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.14**
+
+- Changes: [Capacity report](capacity_report.txt), [family/dimension dispositions](coverage_matrix.txt), [reproduction and recovery](reproduction.txt), archived final replay and resource-measurement concept. Four existing concepts receive evidence-boundary additions; history evidence, export and scoring entries inspected and used unchanged. S6 commit: f04b6967.
+- Verification: 40000-record normal rebuild failure reproduced; prior 10003-row live model retained. Reset only disposable fixture to 1000, rebuild, full publication/activation and body parity pass. Separate static serving matches activated bytes; PHP root is an artifact hit while latest/top are dynamic. Fresh execution of final archived setup/collector/read driver passes 1000-record CLI/HTTP and teardown. Final signed driver with ephemeral port passes posting, retries, challenge/profile/API and unapproved distinction. Archived Python compiles and PHP syntax checks pass; document/navigation/source paths, file scope and whitespace checked.
+- Corrections: Final telemetry names samples; cold/warm definition clarified. Initial static replay used unsupported PHP /latest/ (404); corrected PHP route to /latest and retained separate file-server /latest/. First ephemeral-port rewrite left a session URL at the old port; retained failed sample, corrected all URLs, and final replay passed. No application changes. Pre-S7 archived harness versions and failed samples remain historical evidence.
+- Findings/limits: Public 10000-record pages use 72 MiB, 40000 rebuild fails 128 MiB, one maximum-size record renders at 100 MiB. Local concurrency passes latency but is not production sizing. Archive layout mismatch persists. Full matrix dispositions explicitly retain untested roles, shapes, provider work and real host recovery; completion is the approved bounded investigation/report, not exhaustive performance acceptance.
+- Notes: Dependency/application/test/config/schema delta zero. UI/theme/icon/deployment/migration checks inapplicable; full application suite not run because the deliverable is evidence/documentation and source is unchanged. Actual reported PHP 8.3/FastCGI recovery remains unverified. Temporary source/data execution stays outside the repository.
+
+*— Codex · 2026-11-01 UTC*
+
+## Closeout and study snapshot
+
+Date: 2026-11-01 UTC. Cycle v3/application_capacity_study; scope v1/B; original baseline cfb8364f6db03cc09e27cd26afb93c109c723a08, measured source 3dc2c3feaa17af591eb6e819a055d26ab6990efb; R1/P2 retained. Entry/prospective whole-cycle 0.90 unchanged. Separate retrospective whole-cycle scope assessment: 1.00, reflecting ordinary instrumentation corrections, real HTTP/recovery verification and report integrity; not a sum of stage scores or measured effort. Single exposed Codex rater; no independent rating or reliable labor measurement. Maintainer comfortable-fit judgment and study acceptance pending; accepted outcome count unchanged.
+
+Seven documentation/investigation stages completed with explicit tested/failed/deferred/inapplicable dispositions. Original stage values 0.12/0.16/0.18/0.14/0.10/0.14/0.10 retained; retrospectives 0.12/0.20/0.18/0.18/0.10/0.14/0.14, non-additive. No scope change or implemented remediation. Planning e22df83f; S1 0b391173; S2 66d316c1; S3 2e531995; S4 033c7804; S5 5617a4d2; S6 f04b6967; S7 is the commit containing this closeout. Separate debug-only handoff commit follows as required.
+
+Verification status: Report/provenance, representative ordinary-entry parity, documented recovery, source syntax and scoped document checks passed. Performance failures and harness corrections retained. Actual PHP 8.3 host, long-duration/FastCGI capacity, deferred matrix cells and full-suite acceptance unverified. No merge, push, deployment, dependency addition or production load. Existing unrelated ledger whitespace is preserved outside the scoped commit.
+
+*— Codex · 2026-11-01 UTC*

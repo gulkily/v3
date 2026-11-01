@@ -1,0 +1,2 @@
+import collector as c
+assert c.run('s7-signed-port-final',['php',str(c.ROOT/'signed_driver.php')])==0

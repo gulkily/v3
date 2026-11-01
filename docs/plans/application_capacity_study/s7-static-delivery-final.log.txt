@@ -1,0 +1,180 @@
+Delivery: php
+Route: /
+Repeat: 0
+Status: 200
+Elapsed seconds: 0.026257
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: public, no-cache, must-revalidate, max-age=0
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Delivery: php
+Route: /
+Repeat: 1
+Status: 200
+Elapsed seconds: 0.007529
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: public, no-cache, must-revalidate, max-age=0
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Delivery: php
+Route: /
+Repeat: 2
+Status: 200
+Elapsed seconds: 0.007024
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: public, no-cache, must-revalidate, max-age=0
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Delivery: php
+Route: /latest
+Repeat: 0
+Status: 200
+Elapsed seconds: 0.072660
+Bytes: 150335
+Matches activated HTML bytes: False
+Cache-Control: private, no-cache, must-revalidate, max-age=0
+SHA256: e157ccfa809696f884234ef4c66063d9762e6befcc91e3e7be1d939ff8e64872
+
+Delivery: php
+Route: /latest
+Repeat: 1
+Status: 200
+Elapsed seconds: 0.047905
+Bytes: 150235
+Matches activated HTML bytes: False
+Cache-Control: private, no-cache, must-revalidate, max-age=0
+SHA256: 0a8af8b83e0a88941deedbb09b0fb1aa7b0072965b7ed6ae2896c8d0f09e4573
+
+Delivery: php
+Route: /latest
+Repeat: 2
+Status: 200
+Elapsed seconds: 0.053785
+Bytes: 150335
+Matches activated HTML bytes: False
+Cache-Control: private, no-cache, must-revalidate, max-age=0
+SHA256: e157ccfa809696f884234ef4c66063d9762e6befcc91e3e7be1d939ff8e64872
+
+Delivery: php
+Route: /top
+Repeat: 0
+Status: 200
+Elapsed seconds: 0.047783
+Bytes: 150796
+Matches activated HTML bytes: False
+Cache-Control: private, no-cache, must-revalidate, max-age=0
+SHA256: 5c93cf110b11739beb5ac49d5cca9fafdcbea66ccae50ed67cdc8425ae461758
+
+Delivery: php
+Route: /top
+Repeat: 1
+Status: 200
+Elapsed seconds: 0.063768
+Bytes: 150396
+Matches activated HTML bytes: False
+Cache-Control: private, no-cache, must-revalidate, max-age=0
+SHA256: 41e7eafd8c5939f9eb42c5c286849b2bb8eb07826e3b1c5d4fa753f0b0601de9
+
+Delivery: php
+Route: /top
+Repeat: 2
+Status: 200
+Elapsed seconds: 0.076851
+Bytes: 150396
+Matches activated HTML bytes: False
+Cache-Control: private, no-cache, must-revalidate, max-age=0
+SHA256: f3926ee1c73c265a8c96bb5ea39cde114992afe17c4b2c1daffc487b31a07cdf
+
+Delivery: files
+Route: /
+Repeat: 0
+Status: 200
+Elapsed seconds: 0.012996
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Delivery: files
+Route: /
+Repeat: 1
+Status: 200
+Elapsed seconds: 0.001915
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Delivery: files
+Route: /
+Repeat: 2
+Status: 200
+Elapsed seconds: 0.001734
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Delivery: files
+Route: /latest/
+Repeat: 0
+Status: 200
+Elapsed seconds: 0.002198
+Bytes: 150334
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: 0bea31dd2465ee74742115241901aa7842aef9327c4b7d2b5f23172dc22e4177
+
+Delivery: files
+Route: /latest/
+Repeat: 1
+Status: 200
+Elapsed seconds: 0.002256
+Bytes: 150334
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: 0bea31dd2465ee74742115241901aa7842aef9327c4b7d2b5f23172dc22e4177
+
+Delivery: files
+Route: /latest/
+Repeat: 2
+Status: 200
+Elapsed seconds: 0.001731
+Bytes: 150334
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: 0bea31dd2465ee74742115241901aa7842aef9327c4b7d2b5f23172dc22e4177
+
+Delivery: files
+Route: /top/
+Repeat: 0
+Status: 200
+Elapsed seconds: 0.002372
+Bytes: 150495
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: bdf605fc1f7401c7bf9f38554fc7fff07bb9f1892b9a94ee0d468fbfdbd24bbe
+
+Delivery: files
+Route: /top/
+Repeat: 1
+Status: 200
+Elapsed seconds: 0.002867
+Bytes: 150495
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: bdf605fc1f7401c7bf9f38554fc7fff07bb9f1892b9a94ee0d468fbfdbd24bbe
+
+Delivery: files
+Route: /top/
+Repeat: 2
+Status: 200
+Elapsed seconds: 0.002908
+Bytes: 150495
+Matches activated HTML bytes: True
+Cache-Control: absent
+SHA256: bdf605fc1f7401c7bf9f38554fc7fff07bb9f1892b9a94ee0d468fbfdbd24bbe
+
