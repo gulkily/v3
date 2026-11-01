@@ -31,39 +31,39 @@ checklist is scoped to Word 97 but the gap should be recorded for them.
 - [x] (a4f8870e4; ruler on its own line) Stray vertical bar after the You button. The theme's `.site-header::after` ruler is still
       generated inside the flex app header and collapses to a 2px-wide flex item. Give it
       `flex-basis: 100%` so the ruler sits on its own line under the toolbar, or drop it in the app shell.
-- [x] (commit 2: toolbar buttons) New post is a flat navy block and You is a white box. Both should be bevelled Win95
+- [x] (bb9abf9d5) New post is a flat navy block and You is a white box. Both should be bevelled Win95
       buttons (`#c0c0c0`, white/grey inset bevel); New post may keep a bold label.
 - [x] (no change needed: `theme-nav-icons.css` already squares it for icon themes) `.account-menu__icon` is a round ring (`border-radius: 50%`); square it or hide it behind the
       existing pixel icon from `theme-nav-icons.css`.
-- [x] (commit 2: toolbar buttons; verified open at 1400 and 390) Verify: `.account-menu__panel` uses a soft blurred drop shadow. Match the theme menu popover
+- [x] (bb9abf9d5; verified open at 1400 and 390) Verify: `.account-menu__panel` uses a soft blurred drop shadow. Match the theme menu popover
       (hard 3px offset shadow, bevel, no blur). Not in the screenshots; check when fixing.
-- [x] (commit 2: toolbar buttons; raised strip, pressed current tab) Verify: phone tab bar (max-width 639px) under word97. Not in the screenshots.
+- [x] (bb9abf9d5; raised strip, pressed current tab) Verify: phone tab bar (max-width 639px) under word97. Not in the screenshots.
 
 ## Board (list slot)
 
-- [ ] Filter toolbar (All / Liked / Newest / Tags) floats on the bare grey desktop. Style
+- [x] (commit 3: list board) Filter toolbar (All / Liked / Newest / Tags) floats on the bare grey desktop. Style
       `.board-toolbar` as a toolbar strip: grey surface, bevelled edge, aligned with the header.
       The sunken active state on "Liked" is right; keep it. Same fix covers Members / Waiting
       on Users and Threads / Replies on /user/, which reuse `.board-filter`.
-- [ ] `.thread-rows` has no window chrome while the composer card above it has the full frame
+- [x] (commit 3: list board; white document inside the window frame) `.thread-rows` has no window chrome while the composer card above it has the full frame
       and hard shadow. Decide one treatment. Recommended: render the rows as the white Word
       "document" page (white background, inset bevel), since titles are already serif underlined
       links; the composer stays a floating window.
-- [ ] `.section-label` ("Pinned", "Latest") is soft uppercase text on the desktop. Turn it into
+- [x] (commit 3: list board; title bar pulled over the frame; verified with pinned threads on ?view=all) `.section-label` ("Pinned", "Latest") is soft uppercase text on the desktop. Turn it into
       the title bar of its rows group, or hide it when the frame carries a title.
-- [ ] Grey hairlines between rows vanish on the grey panel (`--line: #808080` on `#c0c0c0`).
+- [x] (commit 3: list board; white surface, #c0c0c0 separators) Grey hairlines between rows vanish on the grey panel (`--line: #808080` on `#c0c0c0`).
       Resolved by the white document surface above; otherwise use the `#dfdfdf` / `#808080`
       etched-line pair.
-- [ ] Row metadata mixes Times (author link) with Tahoma (date, reply count). Pick one per
+- [x] (commit 3: list board; Times inside the document) Row metadata mixes Times (author link) with Tahoma (date, reply count). Pick one per
       surface: Times for everything inside the document area, Tahoma only for chrome.
-- [ ] `.chip`, `.chip--pending`, `.chip--approved` are rounded pills with coloured outlines.
+- [x] (commit 3: list board; flat grey square fields) `.chip`, `.chip--pending`, `.chip--approved` are rounded pills with coloured outlines.
       Square them (`border-radius: 0`), black 1px border, grey fill, Tahoma 0.72rem; drop the
       colour tint or keep it only on the text.
-- [ ] Dead rules: the theme's `[data-thread-density="compact"] .thread-list .thread-card`
+- [x] (no change needed: the density toggle only renders on `board.php` and `tag.php`, where `.thread-card` still exists; the list board has no toggle, so nothing to port) Dead rules: the theme's `[data-thread-density="compact"] .thread-list .thread-card`
       block targets the old card board. The list board renders `.board-list .thread-rows`, so
       the density toggle does nothing under word97. Port the compact rules to `.thread-row`
       or remove them.
-- [ ] Excerpt line (`.thread-row__excerpt`) is `--ink-soft` grey on grey; verify contrast after
+- [x] (commit 3: list board; #404040 on white) Excerpt line (`.thread-row__excerpt`) is `--ink-soft` grey on grey; verify contrast after
       the surface change.
 
 ## Users page
