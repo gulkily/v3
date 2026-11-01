@@ -22,22 +22,22 @@ checklist is scoped to Word 97 but the gap should be recorded for them.
 
 ## Header (app shell)
 
-- [x] (commit 1: header title bar) Wordmark text is blue on the navy title bar. `:root[data-theme="word97"] a { color: #0000ff }`
+- [x] (a4f8870e4) Wordmark text is blue on the navy title bar. `:root[data-theme="word97"] a { color: #0000ff }`
       outranks `.site-brand { color: inherit }`. Add a theme rule for `.eyebrow a` (white, no underline).
-- [x] (commit 1: header title bar; done as full-width title bar over a toolbar row) Wordmark title bar is cramped: icon, text and the fake min/max/close controls overlap
+- [x] (a4f8870e4; full-width title bar over a toolbar row) Wordmark title bar is cramped: icon, text and the fake min/max/close controls overlap
       because `.eyebrow` is now a `flex: 0 0 auto` item on one row. Either give it a min-width
       and gap, or (better for the theme) make the title bar span the full header width with the
       nav as a toolbar row beneath it, as Word 97 lays out title bar then toolbar.
-- [x] (commit 1: header title bar; ruler now on its own line) Stray vertical bar after the You button. The theme's `.site-header::after` ruler is still
+- [x] (a4f8870e4; ruler on its own line) Stray vertical bar after the You button. The theme's `.site-header::after` ruler is still
       generated inside the flex app header and collapses to a 2px-wide flex item. Give it
       `flex-basis: 100%` so the ruler sits on its own line under the toolbar, or drop it in the app shell.
-- [ ] New post is a flat navy block and You is a white box. Both should be bevelled Win95
+- [x] (commit 2: toolbar buttons) New post is a flat navy block and You is a white box. Both should be bevelled Win95
       buttons (`#c0c0c0`, white/grey inset bevel); New post may keep a bold label.
-- [ ] `.account-menu__icon` is a round ring (`border-radius: 50%`); square it or hide it behind the
+- [x] (no change needed: `theme-nav-icons.css` already squares it for icon themes) `.account-menu__icon` is a round ring (`border-radius: 50%`); square it or hide it behind the
       existing pixel icon from `theme-nav-icons.css`.
-- [ ] Verify: `.account-menu__panel` uses a soft blurred drop shadow. Match the theme menu popover
+- [x] (commit 2: toolbar buttons; verified open at 1400 and 390) Verify: `.account-menu__panel` uses a soft blurred drop shadow. Match the theme menu popover
       (hard 3px offset shadow, bevel, no blur). Not in the screenshots; check when fixing.
-- [ ] Verify: phone tab bar (max-width 639px) under word97. Not in the screenshots.
+- [x] (commit 2: toolbar buttons; raised strip, pressed current tab) Verify: phone tab bar (max-width 639px) under word97. Not in the screenshots.
 
 ## Board (list slot)
 
