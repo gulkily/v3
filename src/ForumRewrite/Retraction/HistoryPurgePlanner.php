@@ -37,6 +37,9 @@ final class HistoryPurgePlanner
         if (is_file($root . '/.git/instance-import/pending.json')) {
             $result['blockers'][] = 'interrupted_import';
         }
+        if (HistoryPurge::interrupted($root) !== null) {
+            $result['blockers'][] = 'interrupted_purge';
+        }
 
         $candidates = [];
         foreach (AcceptedRemoval::all($root) as $id => $record) {
