@@ -1,0 +1,24 @@
+s3-rebuild-1000-0 0 0.608 49897472 none
+Count and every synthetic body match: 1000
+s3-rebuild-1000-1 0 0.64 49897472 none
+Count and every synthetic body match: 1000
+s3-rebuild-1000-2 0 0.619 50024448 none
+Count and every synthetic body match: 1000
+s3-rebuild-10000-0 0 3.208 160858112 none
+Count and every synthetic body match: 10000
+s3-rebuild-10000-1 0 2.475 160399360 none
+Count and every synthetic body match: 10000
+s3-rebuild-10000-2 0 2.343 159563776 none
+Count and every synthetic body match: 10000
+s3-static-0 0 2.159 58241024 none
+Count and every synthetic body match: 1000
+s3-static-1 0 1.735 57901056 none
+Count and every synthetic body match: 1000
+s3-static-2 0 1.687 58318848 none
+Count and every synthetic body match: 1000
+s3-static-interrupted -9 0.122 49238016 planned interruption
+s3-static-retry 0 1.741 58470400 none
+Traceback (most recent call last):
+  File "/tmp/v3-capacity-5wrtjih3/maintenance_driver.py", line 22, in <module>
+    assert set(before)==set(hashes())
+AssertionError

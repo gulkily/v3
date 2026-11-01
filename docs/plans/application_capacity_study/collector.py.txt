@@ -35,7 +35,9 @@ def tree(pgid):
   except (OSError,ValueError,IndexError):pass
  return rows
 def disk():
- return int(subprocess.check_output(['du','-s','-B1',str(ROOT)]).split()[0])
+ result=subprocess.run(['du','-s','-B1',str(ROOT)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+ if result.returncode and b'cannot access' not in result.stderr:raise RuntimeError('disk supervision failed')
+ return int(result.stdout.split()[0])
 def run(label,args,limit=600,interrupt=None):
  log=ROOT/(label+'.log')
  if log.exists():raise RuntimeError('Refuse to overwrite sample '+label)
@@ -51,7 +53,10 @@ def run(label,args,limit=600,interrupt=None):
    if interrupt is not None and elapsed>interrupt:stop='planned interruption'
    if elapsed-lastdisk>1:
     lastdisk=elapsed
-    if disk()>2*1024**3:stop='scratch cap'
+    try:
+     if disk()>2*1024**3:stop='scratch cap'
+    except BaseException:
+     os.killpg(p.pid,signal.SIGKILL);p.wait();raise
    if stop!='none':
     os.killpg(p.pid,signal.SIGKILL);break
    time.sleep(.02)

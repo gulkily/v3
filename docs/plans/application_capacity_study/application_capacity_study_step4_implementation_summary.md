@@ -40,3 +40,16 @@ Reuse: QDB archived probe provides canonical record recipe; tests/fixtures/parit
 - Notes: Reproduction uses final drivers, setup and collector; s2.py is the initial campaign, not an instruction to run failed preliminary campaigns again. Stage retrospective reflects harness correction; whole-cycle projection remains 0.90, no scope change. Runtime/UI/deployment checks outside evidence claims inapplicable.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 3 - Rebuild, publication and history
+
+**Original estimate: 0.18**
+**Retrospective stage work: 0.18**
+
+- Changes: Three ordinary rebuild samples each at 1000/10000, three 1000-record full/static/shared/offline publications, and three normal rebuilds of existing 1000-commit history fixture. Canonical builders/publishers reused. S2 commit: 66d316c1.
+- Verification: All measured rebuilds passed count/every-body parity. Full static builds completed activation; normal HTTP reads passed afterward. Forced SIGKILL during candidate work retained exact prior active HTML hashes; same command retried and activated matching page paths. Offline 201 selected post bodies match source. History contains all 1001 commits; HTTP activity/shared thread/API passed. Source/scope/link/whitespace checks pass.
+- Limitations: 40000 rebuild remains failed, so large-scale static/offline downstream cases deferred. Historical 100000-path commit and long-thread/reaction/pin matrix deferred: valid-content generation and growth would add a different workload beyond the bounded representative runs; existing direct-method evidence is not rebranded normal-entry acceptance. PHP 8.3/FastCGI incident replay remains unverified. No throughput claim for history or deployment.
+- Harness correction: Initial recovery comparison included every retained release, making the post-retry path-set assertion fail; corrected to static/current. Prior active content retention had passed. Initial history fixture collector hit a transient du missing-file race; fixture child finished, but that attempt lacks timing and is excluded. Collector now accepts transient du disappearance and kills/reaps on other supervision errors; clean repeat passed. No application fixes.
+- Notes: Same R1/P2/exposed rater; stage estimate unchanged. UI/theme/deployment/migration checks inapplicable to documentation-only work.
+
+*— Codex · 2026-11-01 UTC*
