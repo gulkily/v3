@@ -53,3 +53,16 @@ Reuse: QDB archived probe provides canonical record recipe; tests/fixtures/parit
 - Notes: Same R1/P2/exposed rater; stage estimate unchanged. UI/theme/deployment/migration checks inapplicable to documentation-only work.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 4 - Import, export and images
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.18**
+
+- Changes: Normal HTTP TAR/ZIP/image downloads repeated three times; 1025 canonical file hashes match both content archive formats. Approved multipart image preparation/upload and retry pass exact record/image/commit parity after invalid bytes rejected. Initial unapproved image request correctly refused. S3 commit: 2e531995.
+- Verification: Loopback import-instance dry run passed. Final import interrupted after saved journal, source server stopped, then ordinary --resume completed; 1000 synthetic records match exact bytes and database count, journal cleared, repeated resume reports no pending import. Images verify/restore/repeated restore/verify all pass and restored bytes match. Scope/links/whitespace passed; zero dependencies.
+- Finding: import-repository rejects the unchanged /downloads/repository.tar.gz layout (repository/records); error expects records/ or local_repository/records/. Retained failure, no silent repacking. import-instance supports this source and provides the demonstrated recovery. Distinguish full snapshot restore from additive import: authority/settings are excluded and images transfer separately.
+- Collector correction: InvocationSupervisor uses setsid children; process-group-only sampling/kill missed them. Initial interruption let the child finish, so resume correctly found no pending work; excluded from recovery acceptance. Final collector discovers PPID descendants and clean-destination rerun passed. Earlier RSS/I/O remain explicitly incomplete lower bounds. Public/maintenance PHP allocations and completed command timings remain valid where separately recorded.
+- Limitations: One tiny image, not maximum-size/image-count capacity; browser draft recovery unverified (driver retains draft). Import content parity is synthetic subset plus explicit exclusions, not proof that authority is transferred. Large import and interruption during archive download/image restore deferred; this small restore completed too quickly for a meaningful interruption. Same R1/P2/exposed rater; whole-cycle 0.90 retained. Runtime changes/deployment/UI/schema checks inapplicable.
+
+*— Codex · 2026-11-01 UTC*

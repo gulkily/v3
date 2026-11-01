@@ -1,0 +1,80 @@
+Download: repository.tar.gz
+Repeat: 0
+HTTP: 200
+Elapsed seconds: 0.247467
+Bytes: 36527
+SHA256: 4095b3aa113f73e4cdcc6c1c1bbb4ab487b0af51c4463570fa88c77468c7a369
+
+Download: repository.tar.gz
+Repeat: 1
+HTTP: 200
+Elapsed seconds: 0.019480
+Bytes: 36527
+SHA256: 4095b3aa113f73e4cdcc6c1c1bbb4ab487b0af51c4463570fa88c77468c7a369
+
+Download: repository.tar.gz
+Repeat: 2
+HTTP: 200
+Elapsed seconds: 0.016273
+Bytes: 36527
+SHA256: 4095b3aa113f73e4cdcc6c1c1bbb4ab487b0af51c4463570fa88c77468c7a369
+
+Download: repository.zip
+Repeat: 0
+HTTP: 200
+Elapsed seconds: 0.200687
+Bytes: 388495
+SHA256: be6d36955fbfba09bed8a639ff59436eb4920df0f49eb60fd372492ee2b1e84d
+
+Download: repository.zip
+Repeat: 1
+HTTP: 200
+Elapsed seconds: 0.023062
+Bytes: 388495
+SHA256: be6d36955fbfba09bed8a639ff59436eb4920df0f49eb60fd372492ee2b1e84d
+
+Download: repository.zip
+Repeat: 2
+HTTP: 200
+Elapsed seconds: 0.024512
+Bytes: 388495
+SHA256: be6d36955fbfba09bed8a639ff59436eb4920df0f49eb60fd372492ee2b1e84d
+
+Download: images.zip
+Repeat: 0
+HTTP: 200
+Elapsed seconds: 0.147718
+Bytes: 773
+SHA256: 4dbf415e6b2fc2866f5f479d1f4447c5ae754986df13907aba2774124f52156a
+
+Download: images.zip
+Repeat: 1
+HTTP: 200
+Elapsed seconds: 0.024291
+Bytes: 773
+SHA256: 4dbf415e6b2fc2866f5f479d1f4447c5ae754986df13907aba2774124f52156a
+
+Download: images.zip
+Repeat: 2
+HTTP: 200
+Elapsed seconds: 0.032107
+Bytes: 773
+SHA256: 4dbf415e6b2fc2866f5f479d1f4447c5ae754986df13907aba2774124f52156a
+
+Exact canonical record archive parity: repository.tar.gz, 1025 files
+Exact canonical record archive parity: repository.zip, 1025 files
+Import case: 0
+Command: ['./v3', 'import-repository', '/tmp/v3-capacity-5wrtjih3/repository.tar.gz', '/tmp/v3-capacity-5wrtjih3/import-target', '/tmp/v3-capacity-5wrtjih3/import.sqlite', '/tmp/v3-capacity-5wrtjih3/import-public', '--dry-run']
+Exit: 1
+Elapsed seconds: 0.064113
+
+Import case: 1
+Command: ['./v3', 'import-instance', 'http://127.0.0.1:43847', '--repository-root=/tmp/v3-capacity-5wrtjih3/import-target', '--database-path=/tmp/v3-capacity-5wrtjih3/import.sqlite', '--static-html-root=/tmp/v3-capacity-5wrtjih3/import-static', '--dry-run']
+Exit: 0
+Elapsed seconds: 0.515868
+
+Import case: 2
+Command: ['./v3', 'import-instance', '--resume', '--repository-root=/tmp/v3-capacity-5wrtjih3/import-target', '--database-path=/tmp/v3-capacity-5wrtjih3/import.sqlite', '--static-html-root=/tmp/v3-capacity-5wrtjih3/import-static']
+Exit: 1
+Elapsed seconds: 0.064812
+

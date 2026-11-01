@@ -1,0 +1,19 @@
+Import time limit: 300 seconds
+Source: http://127.0.0.1:38609
+Destination: /tmp/v3-capacity-5wrtjih3/import-target-final
+Database: /tmp/v3-capacity-5wrtjih3/import-final.sqlite
+Static/offline root: /tmp/v3-capacity-5wrtjih3/import-final-static
+Downloading repository archive...
+Archive URL: http://127.0.0.1:38609/downloads/repository.tar.gz
+Downloaded 36548 bytes; validating and extracting archive...
+Archive validation: scanning entries... (0.0s elapsed)
+Archive validation complete: 1040 entries, 3.0 MiB checked (0.0s elapsed)
+Archive integrity: checking gzip checksum... (0.0s elapsed)
+Archive integrity check complete (0.1s elapsed)
+Archive extraction: 0/1026 files, 0.0/2.1 MiB (0.0s elapsed)
+Archive extraction complete: 1026/1026 files, 2.1 MiB (0.0s elapsed)
+Legacy timestamps: inspecting source history... (0.0s elapsed)
+Legacy timestamps: no usable source history; skipping recovery (0.0s elapsed)
+Recovered legacy creation timestamps: 0
+Importing content and publishing local views...
+Planning public records, dependencies, and conflicts...

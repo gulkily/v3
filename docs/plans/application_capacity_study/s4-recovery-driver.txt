@@ -1,0 +1,5 @@
+s4-import-recovery 1 1.974 55140352 none
+Traceback (most recent call last):
+  File "/tmp/v3-capacity-5wrtjih3/s4recovery.py", line 2, in <module>
+    assert c.run('s4-import-recovery',['python3',str(c.ROOT/'import_recovery_driver.py')])==0
+AssertionError

@@ -1,0 +1,69 @@
+<?php
+require __DIR__.'/app/tests/SignedPostIdentityTest.php';
+require __DIR__.'/app/tests/ImageContentTest.php';
+putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
+$server=proc_open(['php','-S','127.0.0.1:18743','-t',__DIR__.'/app/public',__DIR__.'/router.php'],[0=>['file','/dev/null','r'],1=>['file',__DIR__.'/signed-server.log','a'],2=>['file',__DIR__.'/signed-server.log','a']],$pipes,__DIR__.'/app');
+if(!is_resource($server))throw new RuntimeException('server startup');
+try {
+ for($i=0;$i<100;$i++){ $s=@fsockopen('127.0.0.1',18743,$e,$m,.05);if($s){fclose($s);break;}usleep(50000); }
+ $bundle=SignedPostIdentityTest::bundle();
+ $head=trim(shell_exec('git -C '.escapeshellarg(getenv('FORUM_REPOSITORY_ROOT')).' rev-parse HEAD'));
+ $first=null;
+ for($i=0;$i<3;$i++){
+  $start=microtime(true);
+  $context=stream_context_create(['http'=>['method'=>'POST','header'=>"Content-Type: application/json\r\n",'content'=>json_encode($bundle),'ignore_errors'=>true,'timeout'=>30]]);
+  $body=file_get_contents('http://127.0.0.1:18743/api/create_signed_post',false,$context);
+  echo 'Sample: signed-post-'.$i."\nResponse: ".$body."\nElapsed seconds: ".(microtime(true)-$start)."\nHTTP: ".$http_response_header[0]."\n";
+  $result=json_decode($body,true);if(!str_contains($http_response_header[0],'200'))throw new RuntimeException('HTTP posting failed');
+  $r=$result['result']??$result;
+  if(!isset($r['record_path']))throw new RuntimeException('missing record path');
+  if(file_get_contents(getenv('FORUM_REPOSITORY_ROOT').'/'.$r['record_path'])!==$bundle['canonical_record'])throw new RuntimeException('byte mismatch');
+  $current=trim(shell_exec('git -C '.escapeshellarg(getenv('FORUM_REPOSITORY_ROOT')).' rev-parse HEAD'));
+  if($i===0){if($current===$head)throw new RuntimeException('no commit');$first=$current;}
+  elseif($current!==$first)throw new RuntimeException('duplicate retry commit');
+  echo "Persisted byte parity: pass\nRetry commit parity: pass\n\n";
+ }
+ $cookies=[];
+ $request=static function(string $path,?array $data=null) use (&$cookies): string {
+  $header='';foreach($cookies as $key=>$value)$header.=$key.'='.$value.'; ';
+  $options=['method'=>$data===null?'GET':'POST','header'=>"Cookie: {$header}\r\nContent-Type: application/json\r\n",'ignore_errors'=>true,'timeout'=>30];
+  if($data!==null)$options['content']=json_encode($data);
+  $start=microtime(true);$body=file_get_contents('http://127.0.0.1:18743'.$path,false,stream_context_create(['http'=>$options]));
+  foreach($http_response_header as $line)if(preg_match('/^Set-Cookie: ([^=]+)=([^;]*)/i',$line,$m))$cookies[$m[1]]=$m[2];
+  echo 'Session route: '.$path."\nHTTP: ".$http_response_header[0]."\nElapsed seconds: ".(microtime(true)-$start)."\n";
+  return $body;
+ };
+ $challenge=trim(substr($request('/api/auth_challenge'),10));
+ $signature=SignedPostIdentityTest::helper('signCanonicalRecord',SignedPostIdentityTest::$home,$challenge);
+ $auth=$request('/api/authenticate_identity',['identity_id'=>$r['identity_id'],'challenge'=>$challenge,'detached_signature'=>$signature]);
+ if(!str_contains($auth,'status=ok'))throw new RuntimeException('session authentication failed');
+ echo 'Session result: '.str_replace("\n",' | ',trim($auth))."\n";
+ $profile=$request('/profiles/'.$r['profile_slug']);
+ if(!str_contains($profile,$r['profile_slug']))throw new RuntimeException('profile missing identity');
+ $post=$request('/api/get_post?post_id='.$r['post_id']);
+ if(!str_contains($post,"\nHello\n"))throw new RuntimeException('API body mismatch');
+ echo 'Approval distinction: '.$request('/api/auth_status')."\n";
+ $approval=proc_open([__DIR__.'/app/v3','approve',$r['identity_id'],'capacity fixture',getenv('FORUM_REPOSITORY_ROOT'),getenv('FORUM_DATABASE_PATH')],[0=>['file','/dev/null','r'],1=>['file',__DIR__.'/s4-approval.log','w'],2=>['file',__DIR__.'/s4-approval.log','a']],$pipes,__DIR__.'/app');
+ if(!is_resource($approval)||proc_close($approval)!==0)throw new RuntimeException('approval fixture failed');
+ $png=ImageContentTest::png();file_put_contents(__DIR__.'/upload.png',$png);
+ $ref=\ForumRewrite\Images\ImageStore::inspect(__DIR__.'/upload.png','White pixel');
+ $draft="Picture\n".\ForumRewrite\Images\ImageReference::line($ref);
+ $prepared=json_decode($request('/api/prepare_thread',['body'=>$draft,'subject'=>'Image','author_identity_id'=>$r['identity_id']]),true);
+ if(!isset($prepared['canonical_record']))throw new RuntimeException('image preparation failed: '.json_encode($prepared));
+ $final=$prepared+['author_identity_id'=>$r['identity_id'],'detached_signature'=>SignedPostIdentityTest::helper('signCanonicalRecord',SignedPostIdentityTest::$home,$prepared['canonical_record'])];
+ $firstImageCommit=null;
+ foreach(['invalid image bytes',$png,$png] as $i=>$bytes){
+  $boundary='capacity-boundary';$body='';
+  foreach($final as $key=>$value){if(!is_scalar($value))continue;$body.="--{$boundary}\r\nContent-Disposition: form-data; name=\"{$key}\"\r\n\r\n{$value}\r\n";}
+  $body.="--{$boundary}\r\nContent-Disposition: form-data; name=\"image\"; filename=\"upload.png\"\r\nContent-Type: image/png\r\n\r\n".$bytes."\r\n--{$boundary}--\r\n";
+  $start=microtime(true);
+  $result=file_get_contents('http://127.0.0.1:18743/api/create_prepared_post',false,stream_context_create(['http'=>['method'=>'POST','header'=>"Content-Type: multipart/form-data; boundary={$boundary}\r\n",'content'=>$body,'ignore_errors'=>true,'timeout'=>30]]));
+  echo 'Image sample: '.$i."\nHTTP: ".$http_response_header[0]."\nElapsed seconds: ".(microtime(true)-$start)."\nResponse: ".$result."\n";
+  if($i===0){if(!str_contains($http_response_header[0],'400') || is_file(getenv('FORUM_REPOSITORY_ROOT').'/'.$prepared['record_path']))throw new RuntimeException('invalid image not refused');continue;}
+  if(!str_contains($http_response_header[0],'200'))throw new RuntimeException('valid image failed');
+  $parsed=json_decode($result,true);if($i===1)$firstImageCommit=$parsed['commit_sha'];elseif($parsed['commit_sha']!==$firstImageCommit)throw new RuntimeException('image retry committed twice');
+  if(file_get_contents(getenv('FORUM_REPOSITORY_ROOT').'/'.$prepared['record_path'])!==$prepared['canonical_record'])throw new RuntimeException('image record mismatch');
+ }
+ if(file_get_contents(getenv('FORUM_IMAGE_ROOT').'/'.\ForumRewrite\Images\ImageReference::filename($ref))!==$png)throw new RuntimeException('image bytes mismatch');
+ echo "Image bytes/record/retry parity: pass\nClient draft retained through refusal: pass (driver variable; browser unverified)\n";
+} finally {proc_terminate($server);proc_close($server);}

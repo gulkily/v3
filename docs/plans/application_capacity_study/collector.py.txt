@@ -22,18 +22,29 @@ for key,value in {'FORUM_REPOSITORY_ROOT':'repository','FORUM_DATABASE_PATH':'mo
  ENV[key]=str(ROOT/value)
 MEM=int(next(l.split()[1] for l in Path('/proc/meminfo').read_text().splitlines() if l.startswith('MemAvailable:')))*1024
 CAP=min(1024**3,MEM//4)
-def tree(pgid):
- rows=[]
+def tree(root_pid):
+ processes={}
  for d in Path('/proc').iterdir():
   if not d.name.isdigit():continue
   try:
    stat=(d/'stat').read_text().rsplit(')',1)[1].split()
-   if int(stat[2])!=pgid:continue
-   rss=int(stat[21])*os.sysconf('SC_PAGE_SIZE')
    io=dict(l.split(': ') for l in (d/'io').read_text().splitlines())
-   rows.append((int(d.name),rss,int(io['read_bytes']),int(io['write_bytes'])))
+   processes[int(d.name)]=(int(stat[1]),int(stat[2]),int(stat[21])*os.sysconf('SC_PAGE_SIZE'),int(io['read_bytes']),int(io['write_bytes']))
   except (OSError,ValueError,IndexError):pass
- return rows
+ selected={root_pid}|{pid for pid,v in processes.items() if v[1]==root_pid}
+ while True:
+  expanded=selected|{pid for pid,v in processes.items() if v[0] in selected}
+  if expanded==selected:break
+  selected=expanded
+ return [(pid,*processes[pid][2:]) for pid in selected if pid in processes]
+def kill_tree(root_pid):
+ # Capture descendants before killing parents, including setsid children.
+ victims=tree(root_pid)
+ for pid,*_ in reversed(victims):
+  try:os.kill(pid,signal.SIGKILL)
+  except ProcessLookupError:pass
+ try:os.killpg(root_pid,signal.SIGKILL)
+ except ProcessLookupError:pass
 def disk():
  result=subprocess.run(['du','-s','-B1',str(ROOT)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
  if result.returncode and b'cannot access' not in result.stderr:raise RuntimeError('disk supervision failed')
@@ -56,9 +67,9 @@ def run(label,args,limit=600,interrupt=None):
     try:
      if disk()>2*1024**3:stop='scratch cap'
     except BaseException:
-     os.killpg(p.pid,signal.SIGKILL);p.wait();raise
+     kill_tree(p.pid);p.wait();raise
    if stop!='none':
-    os.killpg(p.pid,signal.SIGKILL);break
+    kill_tree(p.pid);break
    time.sleep(.02)
   code=p.wait()
  elapsed=time.monotonic()-start
