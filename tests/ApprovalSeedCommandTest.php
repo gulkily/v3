@@ -251,6 +251,17 @@ final class ApprovalSeedCommandTest
 
     public function testSeedRetiresCachedPagesAndReleaseBeforeServingUpdatedState(): void
     {
+        $previous = getenv('FORUM_STATIC_PROFILE_PAGES_ENABLED');
+        putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED=true');
+        try {
+            $this->seedRetiresCachedPagesAndReleaseBeforeServingUpdatedState();
+        } finally {
+            putenv($previous === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $previous);
+        }
+    }
+
+    private function seedRetiresCachedPagesAndReleaseBeforeServingUpdatedState(): void
+    {
         $this->withFixture(function (string $root, string $db, string $public, string $static): void {
             $target = $this->addApprovalChain($root);
             $this->rebuild($root, $db);
