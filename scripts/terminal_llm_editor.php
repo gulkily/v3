@@ -72,7 +72,7 @@ function editorSave(array $request): array
     return [proc_close($process), (string) $output];
 }
 
-$path = getenv('FORUM_SECRETS_PATH') ?: dirname(__DIR__, 2) . '/forum-private/secrets.php';
+$path = PrivateConfig::path(dirname(__DIR__));
 try {
     $snapshot = PrivateConfig::snapshot($path);
     $file = $snapshot['file'];

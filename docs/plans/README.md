@@ -30,6 +30,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Load-before-selection audit](load_before_selection_audit/load_before_selection_audit_step4_implementation_summary.md) — completed documentation audit; ranked findings and 24 local selection samples, fixes pending.
 
+- [Deployment config](deployment_config/deployment_config_step1_solution_assessment.md)
 - [QDB memory audit](qdb_memory_audit/qdb_memory_audit_step1_solution_assessment.md) — documentation-only source audit complete; fixes and host capacity acceptance remain separate.
 
 - [Unified reaction records](unified_reaction_records/unified_reaction_records_step1_solution_assessment.md)

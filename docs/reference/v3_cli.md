@@ -28,7 +28,11 @@ Most data-touching commands accept optional positional `repository_root` and
 
 1. the relevant `FORUM_*` environment variable (`FORUM_REPOSITORY_ROOT`,
    `FORUM_DATABASE_PATH`, `FORUM_STATIC_HTML_ROOT`)
-2. the default local repository/database bootstrapped under `state/`
+2. the same key in the checkout's private config file
+3. the default local repository/database bootstrapped under `state/`
+
+`./v3 status` lists each deployment setting with its value and source; see
+[Deployment Settings](../runbooks/production_deploy.md#deployment-settings).
 
 See [Local Run](../../README.md#local-run) in the README for the defaults
 and the bootstrap flow.
@@ -380,7 +384,7 @@ use a saved target. Status never edits these registrations.
 
 For production virtual hosts, HTTPS, or an unresolved/ambiguous target, add
 `'FORUM_STATUS_URL' => 'https://forum.example/'` to the existing
-`../forum-private/secrets.php` (or `FORUM_SECRETS_PATH` file), or set the same
+private config file (`FORUM_SECRETS_PATH`, else `../forum-private/<checkout folder>/secrets.php` when it exists, else `../forum-private/secrets.php`), or set the same
 environment variable. Use the URL whose Host/TLS name routes to this instance.
 Rerun plain status to verify; `--url` temporarily overrides the saved value.
 Malformed targets require correction; credentials and fragments are rejected.
@@ -834,7 +838,7 @@ fallbacks, but new writes use `LLM_*` names.
 - `refresh-template` — rewrite the file with current comments/examples and every schema template setting, including `FORUM_STATUS_URL`, while preserving existing values
 - `--force` — overwrite without the usual confirmation/skip behavior
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`
-- `--path=...` — write to a specific file instead of the default `../forum-private/secrets.php` (relative to this checkout)
+- `--path=...` — write to a specific file instead of the default (`FORUM_SECRETS_PATH`, else `../forum-private/<checkout folder>/secrets.php` when it exists, else `../forum-private/secrets.php`, relative to this checkout)
 
 Private-config writers and `edit` coordinate through a private `.lock` sidecar;
 busy saves fail after three seconds and can be retried. Keep that lock file in

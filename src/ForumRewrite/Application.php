@@ -1551,7 +1551,7 @@ final class Application
 
     private function docsStaticRoot(): string
     {
-        return $this->staticHtmlRoot ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($this->projectRoot, SiteProfileRegistry::active()));
+        return $this->staticHtmlRoot ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT', $this->projectRoot) ?: PresentationPathResolver::staticHtmlRoot($this->projectRoot, SiteProfileRegistry::active()));
     }
 
     private function docsVersion(): string

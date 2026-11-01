@@ -17,9 +17,9 @@ use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
 $arguments = parseRebuildArguments(array_slice($argv, 1));
-$defaultRepositoryRoot = LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot);
-$repositoryRoot = $arguments['repository_root'] ?? $defaultRepositoryRoot;
-$databasePath = $arguments['database_path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
+$repositoryRoot = $arguments['repository_root']
+    ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot));
+$databasePath = $arguments['database_path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
 
 if ($arguments['help']) {
     fwrite(STDOUT, rebuildUsage());
@@ -112,7 +112,7 @@ try {
 
     $phase = 'ensuring the initial offline snapshot';
     $profile = SiteProfileRegistry::active();
-    $staticHtmlRoot = (string) (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile));
+    $staticHtmlRoot = (string) (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile));
     $approvedMembersOnly = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
         ->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
         ->effectiveValue;

@@ -15,7 +15,7 @@ final class ImageStore
 
     public function __construct(string $repositoryRoot, ?string $root = null)
     {
-        $configured = $root ?? (getenv('FORUM_IMAGE_ROOT') ?: dirname($repositoryRoot) . '/' . basename($repositoryRoot) . '-images');
+        $configured = $root ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_IMAGE_ROOT') ?: dirname($repositoryRoot) . '/' . basename($repositoryRoot) . '-images');
         if (!str_starts_with($configured, '/') || str_contains($configured, '..') || str_contains($configured, "\0")) {
             throw new RuntimeException('Image root must be an absolute private directory without parent traversal.');
         }

@@ -38,8 +38,8 @@ try {
     }
     $project = dirname(__DIR__);
     $absolute = static fn (string $path): string => $path === '/' ? '/' : rtrim(str_starts_with($path, '/') ? $path : getcwd() . '/' . $path, '/');
-    $repository = $absolute($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $project . '/state/local_repository'));
-    $static = $absolute($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($project, SiteProfileRegistry::active())));
+    $repository = $absolute($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $project . '/state/local_repository'));
+    $static = $absolute($options['static-html-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($project, SiteProfileRegistry::active())));
     $locator = new DocsReleaseLocator($static);
     if (!$json) {
         echo "Publishing documentation\nDocs root: " . $locator->root() . "\n";
