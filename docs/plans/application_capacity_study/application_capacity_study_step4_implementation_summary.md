@@ -78,3 +78,15 @@ Reuse: QDB archived probe provides canonical record recipe; tests/fixtures/parit
 - Limitations: Empty score store; historical audit inspects source content but provider scoring and populated score-store scaling are deferred because external calls are prohibited. Local doubles would measure only adapter overhead and were not substituted for provider capacity. No long-duration queue soak or real-time 900-second wait. Same R1/P2/exposed rater, estimates unchanged. UI/deployment/schema checks inapplicable.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 6 - Controlled overlap and persistence
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.14**
+
+- Changes: Eighteen 30-second windows: 1/2/4 independent persistent PHP servers and assigned clients, three repeats each, without/with one ordinary rebuild beginning at second 10. 10000-record corpus, same ordered 25-ID page each request, runtime rendering. S5 commit: 5617a4d2.
+- Verification: Every window has zero errors, expected IDs and post-window full body/count parity. All rebuilds complete. Full-window p95 below 1 second; during-maintenance distribution separately retained. Worst sampled aggregate tree RSS about 599 MiB, below 1 GiB cap; scratch below 2 GiB. Source/links/scope/whitespace checks pass. See s6-results.txt and raw per-request records.
+- Limitations: Includes driver and child memory; sampling is a lower bound and shared pages may be counted twice. Three repeats show substantial host timing variation. Processes persist only for 30 seconds; no FPM pool, long soak, disk-cold cache, other maintenance-overlap family or sustained saturation claim. Static delivery is not represented by these runtime latest requests. Earlier single-group samples remain qualified; these use descendant supervision.
+- Notes: Same R1/P2/exposed rater and unchanged estimate. No external calls, dependencies or product changes. UI/theme/deployment/migration checks inapplicable.
+
+*— Codex · 2026-11-01 UTC*

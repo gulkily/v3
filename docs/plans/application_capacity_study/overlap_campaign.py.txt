@@ -1,0 +1,9 @@
+import collector as c
+c.fixture(10000)
+c.ENV['FORUM_STATIC_HTML_ROOT']=str(c.ROOT/'overlap-static')
+assert c.run('s6-prepare',['./v3','rebuild',str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite')])==0
+print(c.parity(10000),flush=True)
+for mode in ('baseline','overlap'):
+ for clients in (1,2,4):
+  for repeat in range(3):
+   assert c.run(f's6-{mode}-{clients}-{repeat}',['python3',str(c.ROOT/'overlap_driver.py'),str(clients),mode,str(repeat)],limit=180)==0
