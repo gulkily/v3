@@ -25,9 +25,10 @@ final class HistoryRewrite
 {
     /**
      * @param list<string> $paths canonical record paths to drop from all history
+     * @param callable(int):void|null $onCommits called with the running commit count every 1,000 commits
      * @return array<string,string> old commit id => new commit id, for every rewritten commit
      */
-    public static function rewrite(string $root, array $paths): array
+    public static function rewrite(string $root, array $paths, ?callable $onCommits = null): array
     {
         if ($paths === []) {
             throw new RuntimeException('Nothing to rewrite.');
@@ -76,7 +77,7 @@ final class HistoryRewrite
                 throw new RuntimeException('Cannot run Git.');
             }
 
-            $markToOld = self::filterStream($exportPipes[1], $importPipes[0], $targets);
+            $markToOld = self::filterStream($exportPipes[1], $importPipes[0], $targets, $onCommits);
 
             fclose($exportPipes[1]);
             fclose($importPipes[0]);
@@ -120,8 +121,9 @@ final class HistoryRewrite
      * @param array<string,true> $targets
      * @return array<int,string>
      */
-    private static function filterStream($in, $out, array $targets): array
+    private static function filterStream($in, $out, array $targets, ?callable $onCommits = null): array
     {
+        $commits = 0;
         // A `data <n>` block carries exactly n bytes with no terminator, so the
         // stream is copied by line except inside those blocks. File commands only
         // occur inside commits; `mark` directly follows `commit`, then `original-oid`.
@@ -143,6 +145,9 @@ final class HistoryRewrite
             }
             if (str_starts_with($line, 'commit ')) {
                 $commitMark = null;
+                if (++$commits % 1000 === 0 && $onCommits !== null) {
+                    $onCommits($commits);
+                }
             } elseif ($commitMark === null && preg_match('/^mark :(\d+)\n$/', $line, $m) === 1) {
                 $commitMark = (int) $m[1];
             } elseif ($commitMark !== null && !isset($markToOld[$commitMark]) && preg_match('/^original-oid ([0-9a-f]{40,64})\n$/', $line, $m) === 1) {

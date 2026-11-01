@@ -159,7 +159,11 @@ try {
             exit(1);
         }
     }
-    $result = HistoryPurge::run($resolvedRoot, $databasePath, $plan, $staticHtmlRoot);
+    $startedAt = hrtime(true);
+    $progress = static function (string $message) use ($startedAt): void {
+        fwrite(STDERR, sprintf("[%6.1fs] %s\n", (hrtime(true) - $startedAt) / 1e9, $message));
+    };
+    $result = HistoryPurge::run($resolvedRoot, $databasePath, $plan, $staticHtmlRoot, $progress);
     $limits = 'Not reached by this purge: your own backups, other clones and mirrors, downloads already made, provider or search-engine copies, and quotations in surviving posts.';
     if ($options['json']) {
         unset($result['map']);

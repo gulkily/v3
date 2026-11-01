@@ -44,16 +44,20 @@ final class HistoryPurge
      * reports `./v3 rebuild` as the next step.
      *
      * @param array $plan from HistoryPurgePlanner::plan()
+     * @param \Closure(string):void|null $progress receives one human-readable line per phase or batch
      * @return array execute() result plus rewritten_at, record_paths, record_commit, rebuilt, static_artifacts
      */
-    public static function run(string $root, string $databasePath, array $plan, ?string $artifactRoot = null): array
+    public static function run(string $root, string $databasePath, array $plan, ?string $artifactRoot = null, ?\Closure $progress = null): array
     {
+        $report = static function (string $message) use ($progress): void { if ($progress !== null) { $progress($message); } };
+        $report('Waiting for the repository write lock...');
         return (new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
-            static fn (): array => PublicationLock::withLock($root, static function () use ($root, $databasePath, $plan, $artifactRoot): array {
-                $result = self::execute($root, $plan);
+            static fn (): array => PublicationLock::withLock($root, static function () use ($root, $databasePath, $plan, $artifactRoot, $progress, $report): array {
+                $result = self::execute($root, $plan, null, $progress);
                 $rewrittenAt = gmdate('Y-m-d\TH:i:s\Z');
                 $files = CommitMap::encode($rewrittenAt, (int) ($plan['receipts'] ?? 0), $result['map']);
                 $paths = array_keys($files);
+                $report('Committing the history rewrite record (' . count($result['map']) . ' commits mapped, ' . count($paths) . ' file(s))...');
                 try {
                     HighTrafficSafety::beforeWrite($root, $databasePath, $paths[0]);
                     CommitMap::write($root, $files);
@@ -65,15 +69,21 @@ final class HistoryPurge
                         . ' Commit ' . implode(', ', $paths) . ' by hand, then run ./v3 rebuild.', 0, $error);
                 }
                 $commit = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+                $report('Record committed at ' . $commit . '.');
                 try {
                     if ($artifactRoot !== null) {
+                        $report('Retiring generated pages under ' . $artifactRoot . '...');
                         (new StaticArtifactInvalidator($artifactRoot))->invalidateAllGeneratedPresentation();
                     }
-                    (new ReadModelBuilder($root, $databasePath, new CanonicalRecordRepository($root)))->rebuild();
+                    $report('Rebuilding the read model at ' . $databasePath . '...');
+                    (new ReadModelBuilder($root, $databasePath, new CanonicalRecordRepository($root), 'history-purge', $progress))->rebuild();
                     self::clearCommitManifestCache($databasePath);
                     (new ReadModelStaleMarker($databasePath))->clear();
+                    $report('Read model rebuilt.');
                     if ($artifactRoot !== null) {
-                        (new StaticArtifactBuilder(dirname(__DIR__, 3), $root, $databasePath, $artifactRoot))->build();
+                        $report('Rebuilding static pages under ' . $artifactRoot . '...');
+                        (new StaticArtifactBuilder(dirname(__DIR__, 3), $root, $databasePath, $artifactRoot, $progress))->buildFromReadModel();
+                        $report('Static pages rebuilt.');
                     }
                 } catch (Throwable $error) {
                     (new ReadModelStaleMarker($databasePath))->mark(['reason' => 'history_purge_refresh_failed', 'commit_sha' => $commit]);
@@ -100,18 +110,22 @@ final class HistoryPurge
     /**
      * @param array $plan from HistoryPurgePlanner::plan(); must be runnable
      * @param callable|null $afterRewrite test hook invoked between rewrite and verification
+     * @param \Closure(string):void|null $progress receives one human-readable line per phase
      * @return array{
      *   targets:int, commits_total:int, commits_changed:int, blobs_removed:int,
      *   map:array<string,string>, verified:bool, lingering:list<string>, restored_interrupted_run:bool,
      *   seconds:array<string,float>
      * }
      */
-    public static function execute(string $root, array $plan, ?callable $afterRewrite = null): array
+    public static function execute(string $root, array $plan, ?callable $afterRewrite = null, ?\Closure $progress = null): array
     {
+        $report = static function (string $message) use ($progress): void { if ($progress !== null) { $progress($message); } };
         $restored = false;
         if (self::interrupted($root) !== null) {
+            $report('Restoring the refs of an earlier interrupted purge...');
             self::restore($root);
             $restored = true;
+            $report('Re-planning after the restore...');
             $plan = HistoryPurgePlanner::plan($root);
         }
         if (($plan['can_run'] ?? false) !== true || ($plan['targets'] ?? []) === []) {
@@ -122,6 +136,7 @@ final class HistoryPurge
         $clock = static fn (): float => hrtime(true) / 1e9;
 
         // Pre-state: every ref, the HEAD symref and every blob ever stored at a target path.
+        $report('Snapshotting refs and the ' . count($targets) . ' path(s) to purge...');
         $t = $clock();
         $refsBefore = self::refs($root);
         $head = trim(LabelRemoval::git($root, ['symbolic-ref', '-q', 'HEAD']));
@@ -137,9 +152,18 @@ final class HistoryPurge
         self::phase($root, 'rewrite', $head);
 
         try {
+            $total = (int) ($plan['commits_total'] ?? 0);
+            $report('Rewriting ' . ($total > 0 ? number_format($total) . ' commits' : 'history') . ' (old refs stay restorable until verified)...');
             $t = $clock();
-            $map = HistoryRewrite::rewrite($root, $targets);
+            $lastReport = $t;
+            $map = HistoryRewrite::rewrite($root, $targets, static function (int $done) use ($report, $total, $clock, &$lastReport): void {
+                if ($done % 5000 === 0 || $clock() - $lastReport >= 2.0) {
+                    $lastReport = $clock();
+                    $report('Rewriting history: ' . number_format($done) . ($total > 0 ? ' of ' . number_format($total) : '') . ' commits streamed...');
+                }
+            });
             $seconds['rewrite'] = $clock() - $t;
+            $report('Rewrite finished in ' . number_format($seconds['rewrite'], 1) . ' s; verifying that no ref still touches a purged path...');
             if ($afterRewrite !== null) {
                 $afterRewrite($root, $map);
             }
@@ -156,12 +180,14 @@ final class HistoryPurge
             }
             $seconds['verify_refs'] = $clock() - $t;
         } catch (Throwable $failure) {
+            $report('Rewrite failed: ' . $failure->getMessage() . ' Restoring the original refs...');
             self::restoreRefs($root, $refsBefore, $head);
             self::clearJournal($root);
             throw new RuntimeException('Purge aborted before any history was discarded; original refs restored. ' . $failure->getMessage(), 0, $failure);
         }
 
         // Point of no return: old objects are discarded.
+        $report('Refs verified. Expiring reflogs and pruning old objects (point of no return)...');
         self::phase($root, 'prune', $head);
         $t = $clock();
         foreach ($targets as $path) {
@@ -186,12 +212,15 @@ final class HistoryPurge
         self::phase($root, 'verify-objects', $head);
         $t = $clock();
         $changed = array_keys(array_filter($map, static fn (string $new, string $old): bool => $new !== $old, ARRAY_FILTER_USE_BOTH));
+        $report('Pruned in ' . number_format($seconds['prune'], 1) . ' s; checking that ' . number_format(count($blobs)) . ' old blob(s) and ' . number_format(count($changed)) . ' old commit id(s) are gone...');
         $lingering = self::lingering($root, array_merge($blobs, $changed));
         $seconds['verify_objects'] = $clock() - $t;
         if ($lingering === []) {
             self::clearJournal($root);
+            $report('Verified: no old object remains.');
         } else {
             self::phase($root, 'lingering', $head);
+            $report('Verification failed: ' . count($lingering) . ' old object(s) still exist.');
         }
 
         return [

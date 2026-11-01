@@ -505,7 +505,8 @@ under the repository write lock, verifies the old objects are gone, commits a
 read model and static pages, and names the copies it cannot reach. It cannot be
 undone except from a full backup including `.git`, so it asks you to type `yes`
 on the terminal first; `--yes` skips the question for scripts, and a run without
-a terminal and without `--yes` is refused. Follow the
+a terminal and without `--yes` is refused. Progress for each phase goes to
+stderr with elapsed seconds; the result stays on stdout. Follow the
 [runbook](../runbooks/history_purge.md).
 
 ## Manage the background task queue

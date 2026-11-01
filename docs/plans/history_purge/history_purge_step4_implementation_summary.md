@@ -197,3 +197,12 @@ Step 3 explicitly approved ("approved step 3"). Branch `feat/history-purge` from
 - Estimate: no change to the cycle's 0.80 projection or 0.80 retrospective assessment; recorded as a correction, not a new request with its own score.
 
 *— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+
+## Follow-up after closeout — run progress reporting (2026-11-01)
+
+- Request: the user asked for progress and status reporting during `run` so it does not sit silent while working. Same cycle and branch; a usability correction to Stages 3, 4 and 6.
+- Changes: `HistoryRewrite::rewrite` accepts a callback invoked every 1,000 commits streamed. `HistoryPurge::execute` and `run` accept a progress closure and report each phase: lock wait, snapshot, rewrite start with the commit total, a running count every 5,000 commits or two seconds, rewrite time and ref verification, the point of no return before reflog expiry and prune, the object check with its counts, the verification result, record commit with the mapped count and resulting id, page retirement, read-model rebuild (the builder's own batch progress is forwarded, as `./v3 rebuild` prints it), and static page rebuild (the static builder's progress forwarded). `run` now calls `StaticArtifactBuilder::buildFromReadModel` instead of `build`, which had rebuilt the read model a second time. The CLI prints each line to stderr as `[elapsed s] message`, so stdout and `--json` output are unchanged.
+- Verification: `php tests/run.php PurgeHistoryCommandTest HistoryPurgeTest HistoryPurgePlannerTest HistoryRewriteTest CommitMapTest SourceRouteCommitMapTest`: 17 run, 17 passed, with the dispatcher test now asserting the phase lines on stderr and the timestamp format. Watched on synthetic repositories: a 20,005-commit shape showed the counter at 5,000-commit steps during a 4.8 s rewrite (that fixture has no instance record, so the rebuild stopped with the documented "site update incomplete. Run ./v3 rebuild" message after the record commit); a 5,006-commit shape with an instance record completed end to end in 8.7 s with every phase line present.
+- Estimate: no change to the cycle scores; recorded as a correction.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*

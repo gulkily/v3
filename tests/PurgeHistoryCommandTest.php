@@ -73,7 +73,13 @@ final class PurgeHistoryCommandTest
         assertSame([], glob(sys_get_temp_dir() . '/history-purge-dry-run-*') ?: []);
 
         [$code, $out, $err] = $this->run($project, './v3 purge-history run --yes' . $common);
-        assertSame(0, $code, $out . $err); assertSame('', $err);
+        assertSame(0, $code, $out . $err);
+        // Progress goes to stderr as timestamped lines while the result stays on stdout.
+        foreach (['Rewriting 2 commits', 'Refs verified. Expiring reflogs and pruning old objects (point of no return)', 'Verified: no old object remains.',
+            'Record committed at ', 'Rebuilding the read model at ', 'Read model rebuilt.', 'Rebuilding static pages under ', 'Static pages rebuilt.'] as $line) {
+            assertSame(true, str_contains($err, $line), $line);
+        }
+        assertSame(1, preg_match('/^\[ *\d+\.\ds\] Waiting for the repository write lock\.\.\.$/m', $err));
         assertSame(true, str_starts_with($out, "History purge complete\n"));
         assertSame(true, str_contains($out, "Paths purged: 2\nCommits rewritten: 2 of 2\nOld objects removed: 2 blobs\n"));
         assertSame(true, str_contains($out, 'History rewrite record: records/history-rewrites/history-rewrite-'));

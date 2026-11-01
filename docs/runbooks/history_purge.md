@@ -71,8 +71,11 @@ discards the old objects: reflogs are expired, stale pseudo-refs removed and the
 object database pruned. It then proves by object id that every old post blob and
 every pre-purge commit is gone, commits the rewrite record with the subject
 `Record history purge <time>`, rebuilds the read model, clears the activity commit
-manifest cache, and regenerates static pages. The output ends with `Verified`
-and the list of copies the purge does not reach. Exit code 0 means verified.
+manifest cache, and regenerates static pages. While it works it reports each
+phase on stderr with elapsed seconds, including a running commit count during
+the rewrite and the line marking the point of no return, followed by the
+rebuild's own progress. The result on stdout ends with `Verified` and the list
+of copies the purge does not reach. Exit code 0 means verified.
 
 ## Verify
 
