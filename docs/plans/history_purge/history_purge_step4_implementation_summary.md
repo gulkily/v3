@@ -101,3 +101,27 @@ Step 3 explicitly approved ("approved step 3"). Branch `feat/history-purge` from
 - Estimate details (extended): original 0.10 (0.08–0.12). Retrospective 0.10: ordering with the existing builders was the driver as planned; the manifest-cache truncation and the refresh-failure contract were small. Whole-cycle **0.80 reaffirmed**. No measured labor claimed.
 
 *— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+
+## Stage 5 - Source routes resolve old identities
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: 0.08**
+
+- Changes:
+  - `src/ForumRewrite/Http/SourceFileController.php`: `blob()` and `commit()` consult `CommitMap::resolve` only after Git reports the identity unknown, then proceed with the mapped identity. Both responses carry `X-Forum-Resolved-Commit: <new>`; the commit text additionally has a `Requested-Commit: <old>` line after `Commit:` so a reader sees the redirect happened. Blob bytes are unchanged. The retracted-path check still runs before any lookup, so a purged path returns the deletion notice at any identity, as today. Resolution errors degrade to the ordinary 404. `Application::sourceCommitDetails` needed no change: the controller resolves before calling it, and the memoized `sourceCommitFiles` keeps one identity per request.
+  - `tests/SourceRouteCommitMapTest.php`, registered in `tests/run.php`.
+- Consumer inventory from Step 2, each classified:
+  - `/source/blob/{commit}/...` and `/source/commits/{commit}`: resolved through the map (this stage).
+  - Activity feed source links, Forte detail manifests, RSS, the `commits` table and the commit-manifest cache: rebuilt or truncated by Stage 4's mandatory rebuild; they hold new identities only.
+  - Image backup manifests (`repository_head`): documented. `ImageRestore` refuses a manifest whose head is not the repository's current revision, so a pre-purge image backup restores only onto the pre-purge repository backup. The runbook (Stage 6) orders a fresh image backup after the purge.
+  - Interrupted import journals (`.git/instance-import/pending.json`, `run.commit`): refusal. The planner blocks a purge while one exists; afterwards none can reference a vanished commit.
+  - Archive snapshots (`RepositorySnapshot` revision inside exported archives): documented. A pre-purge archive names a pre-purge head; exports are history-free and import does not resolve the revision against the live repository, so nothing breaks, and the archive's revision simply predates the purge.
+  - Bookmarks and external links: resolved through the routes above.
+- Verification:
+  - `php tests/run.php SourceRouteCommitMapTest`: 1 run, 1 passed. The test builds a read model on the parity fixture plus a secret and a surviving post, deletes the secret with a local receipt, confirms the old blob link is live, runs `HistoryPurge::run`, then checks: old blob link for the surviving file returns identical bytes (lowercase and uppercase identity), the new identity works directly, the old commit link shows `Commit: <new>` then `Requested-Commit: <old>`, the new commit link has no `Requested-Commit`, the purged path returns 410 without prose at the old identity, the new identity and the current path, unknown identities stay 404, malformed stay 400, and the committed record is served at `/source/current/`.
+  - `php tests/run.php SourceRouteCommitMapTest FeatureFlagChangePageTest ActivityItemLinkTest RootApprovalPageTest StandardActivityPaginationTest HistoryPurgeTest HistoryPurgePlannerTest HistoryRewriteTest CommitMapTest`: 39 run, 39 passed (the source-route neighbours plus the purge suites).
+  - Response headers cannot be observed in CLI tests; the `Requested-Commit` body line is asserted instead.
+  - Not applicable: UI, themes, roles, migration, deployment.
+- Estimate details (extended): original 0.10 (0.08–0.12). Retrospective 0.08: the memoization risk did not materialize because resolution happens before the shared helper is called. Whole-cycle **0.80 reaffirmed**. No measured labor claimed.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*

@@ -6,6 +6,7 @@ namespace ForumRewrite\Http;
 
 use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SourcePathValidator;
+use ForumRewrite\Retraction\CommitMap;
 
 /**
  * Thirteenth Phase 2 slice (see docs/plans/codebase_cleanup_audit_plan_v1.md
@@ -20,6 +21,10 @@ use ForumRewrite\Canonical\SourcePathValidator;
  * throughout (SourcePathValidator) are shared well beyond this route group
  * (the activity feed's source links, the account page's public-key link) -
  * confirmed via call-site count before extracting rather than duplicated.
+ *
+ * A commit identity Git no longer knows is looked up in the history rewrite
+ * records (docs/specs/history_rewrite_record_v1.md) so links written before a
+ * history purge keep resolving; the response names the identity it resolved to.
  */
 final class SourceFileController
 {
@@ -78,12 +83,20 @@ final class SourceFileController
         }
 
         $contents = $this->readBlob($commitSha, $relativePath);
+        $headers = [];
+        if ($contents === null) {
+            $resolved = $this->resolveRewrittenCommit($commitSha);
+            $contents = $resolved === null ? null : $this->readBlob($resolved, $relativePath);
+            if ($contents !== null) {
+                $headers[] = 'X-Forum-Resolved-Commit: ' . $resolved;
+            }
+        }
         if ($contents === null) {
             $this->routeServices->sendText("Source not found\n", 404);
             return;
         }
 
-        $this->routeServices->sendText($contents, 200);
+        $this->routeServices->sendText($contents, 200, $headers);
     }
 
     public function commit(string $commitSha): void
@@ -94,12 +107,34 @@ final class SourceFileController
         }
 
         $details = ($this->sourceCommitDetails)($commitSha);
+        $headers = [];
+        if ($details === null) {
+            $resolved = $this->resolveRewrittenCommit($commitSha);
+            $details = $resolved === null ? null : ($this->sourceCommitDetails)($resolved);
+            if ($details !== null) {
+                $details = preg_replace('/^(Commit: [^\n]*\n)/', '$1Requested-Commit: ' . strtolower($commitSha) . "\n", $details, 1);
+                $headers[] = 'X-Forum-Resolved-Commit: ' . $resolved;
+            }
+        }
         if ($details === null) {
             $this->routeServices->sendText("Commit not found\n", 404);
             return;
         }
 
-        $this->routeServices->sendText($details, 200);
+        $this->routeServices->sendText($details, 200, $headers);
+    }
+
+    /** Newest identity for a commit a history purge rewrote, or null when no record names it. */
+    private function resolveRewrittenCommit(string $commitSha): ?string
+    {
+        if (!is_dir($this->repositoryRoot . '/.git')) {
+            return null;
+        }
+        try {
+            return CommitMap::resolve($this->repositoryRoot, $commitSha);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
