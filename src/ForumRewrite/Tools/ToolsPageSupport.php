@@ -41,41 +41,26 @@ final class ToolsPageSupport
      * Forte, Offline reading, Platform docs) - they still appear in the
      * launcher and the bar, but never receive `toolNavOptions`.
      *
-     * @return list<array{key:string,label:string,href:string,description:string,group:string,tone:string,standalone:bool}>
+     * @return list<array{key:string,label:string,href:string,group:string,tone:string,standalone:bool}>
      */
     public static function registry(): array
     {
         return [
-            ['key' => 'outbox', 'label' => 'Outbox', 'href' => '/tools/outbox/',
-                'description' => 'Drafts and queued posts', 'group' => 'device', 'tone' => 'outbox', 'standalone' => false],
-            ['key' => 'offline-reading', 'label' => 'Offline Reading', 'href' => '/offline/',
-                'description' => 'Read saved posts offline', 'group' => 'device', 'tone' => 'offline', 'standalone' => true],
-            ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/',
-                'description' => 'Clip pages into a new post', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],
-            ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/',
-                'description' => 'Everything that changed', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
-            ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte',
-                'description' => 'Three-pane newsreader view', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
-            ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/',
-                'description' => 'How the site works', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],
-            ['key' => 'user-access', 'label' => 'User Access', 'href' => '/tools/user-access/',
-                'description' => 'Accounts, keys and approvals', 'group' => 'community', 'tone' => 'access', 'standalone' => false],
-            ['key' => 'visitor-statistics', 'label' => 'Visitor Statistics', 'href' => '/tools/visitor-statistics/',
-                'description' => 'Aggregate visit counts', 'group' => 'community', 'tone' => 'statistics', 'standalone' => false],
-            ['key' => 'feature-flags', 'label' => 'Feature Flags', 'href' => '/tools/feature-flags/',
-                'description' => 'Turn site features on or off', 'group' => 'operator', 'tone' => 'flags', 'standalone' => false],
-            ['key' => 'codebase', 'label' => 'System status', 'href' => '/tools/codebase/',
-                'description' => 'Version and health', 'group' => 'operator', 'tone' => 'status', 'standalone' => false],
-            ['key' => 'sqlite', 'label' => 'SQLite Viewer', 'href' => '/tools/sqlite/',
-                'description' => 'Query the read model', 'group' => 'operator', 'tone' => 'database', 'standalone' => false],
-            ['key' => 'backup', 'label' => 'Backup', 'href' => '/tools/backup/',
-                'description' => 'Download the site’s data', 'group' => 'operator', 'tone' => 'backup', 'standalone' => false],
-            ['key' => 'llm-exchanges', 'label' => 'LLM Exchanges', 'href' => '/tools/llm-exchanges/',
-                'description' => 'Agent prompts and replies', 'group' => 'operator', 'tone' => 'llm', 'standalone' => false],
-            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/',
-                'description' => 'Choose recorded scores', 'group' => 'operator', 'tone' => 'fastmod', 'standalone' => false],
-            ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/',
-                'description' => 'How the site is served', 'group' => 'operator', 'tone' => 'operations', 'standalone' => false],
+            ['key' => 'outbox', 'label' => 'Outbox', 'href' => '/tools/outbox/', 'group' => 'device', 'tone' => 'outbox', 'standalone' => false],
+            ['key' => 'offline-reading', 'label' => 'Offline Reading', 'href' => '/offline/', 'group' => 'device', 'tone' => 'offline', 'standalone' => true],
+            ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],
+            ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
+            ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
+            ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],
+            ['key' => 'user-access', 'label' => 'User Access', 'href' => '/tools/user-access/', 'group' => 'community', 'tone' => 'access', 'standalone' => false],
+            ['key' => 'visitor-statistics', 'label' => 'Visitor Statistics', 'href' => '/tools/visitor-statistics/', 'group' => 'community', 'tone' => 'statistics', 'standalone' => false],
+            ['key' => 'feature-flags', 'label' => 'Feature Flags', 'href' => '/tools/feature-flags/', 'group' => 'operator', 'tone' => 'flags', 'standalone' => false],
+            ['key' => 'codebase', 'label' => 'System status', 'href' => '/tools/codebase/', 'group' => 'operator', 'tone' => 'status', 'standalone' => false],
+            ['key' => 'sqlite', 'label' => 'SQLite Viewer', 'href' => '/tools/sqlite/', 'group' => 'operator', 'tone' => 'database', 'standalone' => false],
+            ['key' => 'backup', 'label' => 'Backup', 'href' => '/tools/backup/', 'group' => 'operator', 'tone' => 'backup', 'standalone' => false],
+            ['key' => 'llm-exchanges', 'label' => 'LLM Exchanges', 'href' => '/tools/llm-exchanges/', 'group' => 'operator', 'tone' => 'llm', 'standalone' => false],
+            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/', 'group' => 'operator', 'tone' => 'fastmod', 'standalone' => false],
+            ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/', 'group' => 'operator', 'tone' => 'operations', 'standalone' => false],
         ];
     }
 

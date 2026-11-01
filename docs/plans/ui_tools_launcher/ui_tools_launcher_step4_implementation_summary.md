@@ -82,3 +82,48 @@ User review of the Stage 2 page, fixed in the same cycle before Stage 3's matrix
 - Estimate details: no score revision recorded here; this pass was made by a different model (claude-fable-5-1) than the cycle's single rater, and the Stage 2 retrospective above is left as rated. The work is in-scope layout refinement plus two review-requested changes (descriptions removed, heading icons), not new scope for the study.
 
 *— Claude · 2026-10-31 UTC · Model: claude-fable-5-1*
+
+## Stage 3 - Every site and theme (retrospective record, 2026-11-01)
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15** (rated at closeout by claude-fable-5-1, not the cycle's original rater)
+
+- Recorded at closeout, not at the time: the stage's work shipped in commit `429f66ea3` ("stage 3") on 2026-10-31 together with the review fixes above, and its verification was written under "Review findings after Stage 2" rather than as a stage section. This record collects it; it adds no new rating of the original scope.
+- Changes: `tests/browser/tools_launcher.mjs` (site via `FORUM_SITE_ID`, every permitted theme, 390px and 1280px): 15 tools once, no Account, four headings with `data-shape` in order, `data-tone` on every tool, each tool page's bar in registry order with the current tool marked and a divider per group boundary, no description text, whole labels, no overflow or page errors, non-empty icons on tools and group headings in Word97, Chicago and Midnight. The fixes the matrix and the user's review revealed (tile grid at every width, descriptions off the page, group heading icons) are recorded above.
+- Verification: as recorded above; the matrix passed on ZenMemes (28 cases) and QDB (30 cases) on 2026-10-31. Chouse and MIT Rap Club were not run at the time; they are run at closeout (Stage 4). The plan's "full PHP suite once" was not run at the time; it is run at closeout. The plan's Bookmarklets list comparison was not re-run after Stage 2's byte-identical result because every later selector is scoped away from Bookmarklets.
+- Estimate details: original scope as planned; no in-cycle revision. The retrospective is unchanged from the original: the matrix found no theme needing its own fix beyond the review findings.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+
+## Stage 4 - Records and closeout
+
+**Original estimate: 0.05**
+**Retrospective stage work: 0.05** (rated by claude-fable-5-1, not the cycle's original rater)
+
+- Done on branch `chore/ui-tools-launcher-stage4` from `main` `32918c910` (the merge of `feat/ui-tools-launcher`), because the user merged the feature branch after Stage 3 and this stage is records only.
+- Changes:
+  - Registry cleanup left open by the Stage 2 review: the unused one-line `description` left `ToolsPageSupport::registry()` and the return type; `ToolsRegistryTest` no longer asserts on it. Nothing rendered it (the launcher shows labels, the bar builds from `navOptions()`), and `LocalAppSmokeTest` and `tools_launcher.mjs` keep asserting that no description text appears.
+  - Concept entries created: [Tools launcher](../../concepts/tools_launcher.md) and [theme navigation icons](../../concepts/theme_navigation_icons.md); paths checked against the code (icons key on each link's `href` and the heading's `data-shape`).
+  - [UI copy checklist](../ui_copy_audit_checklist.md#tools-launcher--october-31-2026): removed descriptions and Account entry, renamed System status, the four headings added.
+  - [Implementation checklist](../ui_redesign/implementation_checklist.md#cycle-9-ui_tools_launcher): Cycle 9 marked built and merged; Cycle 5's stale "not merged" corrected (merged at `b8afb7711`).
+  - Study ledger closeout below and in [effort_estimation_trial.md](../effort_estimation_trial.md#cycle-v3ui_tools_launcher).
+- Verification (2026-11-01):
+  - `php tests/run.php ToolsRegistryTest LocalAppSmokeTest`: 156/159; the same three pre-existing failures as `main` (two Lobby tests, the archive filename test).
+  - `tests/browser/tools_launcher.mjs` with `/usr/bin/google-chrome` on all four sites, every permitted theme at 390px and 1280px: ZenMemes 28 cases, QDB 30, Chouse 30, MIT Rap Club 30, all passed (groups and hooks, each tool once, no Account, no description text, whole labels, no overflow, icons on tools and group headings in Word97/Chicago/Midnight; 8 tool bars in order with the current tool marked). Midnight 1280px ZenMemes screenshot inspected: four groups, 15 buttons with icons, every tool in view.
+  - Full PHP suite once: 1740 run, 1734 passed, 6 failed. Five are long-standing on `main` (the three above, `PlatformDocsStaticTest` static release inventory, `ReadModelBuilderTimingTest` progress counts). `ApprovalSeedCommandTest::testSeedRetiresCachedPagesAndReleaseBeforeServingUpdatedState` is marked new by the runner (first failed 2026-11-01T02:16 local, before this stage); it fails alone and fails identically with this stage's code change stashed, so it is not caused by this work and is left for its own investigation.
+  - Concept and checklist links resolve (script over the relative paths).
+- Not applicable: deployment, release, external systems, roles, migrations (none in scope). Not checked: physical phones.
+- Estimate details: original scope as planned; the retrospective is unchanged. The extra work over the plan was the four-site matrix and the full suite that Stage 3 had deferred, plus the registry cleanup.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+
+## Closeout
+
+- Stages: four of four complete, one commit each after the planning commit `58f8906cc`: Stage 1 `162623aa2`, Stage 2 `8804bffb7`, Stage 3 `429f66ea3` (also carrying the review fixes after Stage 2), and this stage's commit on `chore/ui-tools-launcher-stage4`. Debug report in a separate log-only commit.
+- Completion Contract: Tools from the main navigation opens one grouped launcher with the 15 tools once and no Account; every tool's bar lists the same tools in the same order with the current one marked; `data-tone` and `data-shape` hooks present; same server HTML for every viewer; Backup hidden when both backups are off. Checked on all four sites in every permitted theme at 390px and 1280px, with icons in Word97, Chicago and Midnight. One deviation from Step 2, approved in review: no description text on the page (and none in the registry).
+- Not checked: physical phones, deployment. Baseline failures recorded above, not fixed.
+- Follow-ups: none proposed. Account's Tools bar icon rule stays in `theme-nav-icons.css` unused; harmless.
+- Effort study: entry 0.45 reaffirmed, no in-cycle revision. **Retrospective cycle scope: 0.45** — the work matched the plan; the review after Stage 2 (tile grid, descriptions removed, heading icons) and the closeout matrix fit the original rating. Rated at closeout by claude-fable-5-1; Steps 1–3 and Stages 1–2 were rated by claude-opus-5-5, the cycle's single exposed rater, and those ratings are untouched. Stage originals/retrospectives 0.10/0.10, 0.15/0.15, 0.15/0.15, 0.05/0.05 (not summed). No measured labour. Maintainer comfortable-fit judgment: pending.
+
+*— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
+

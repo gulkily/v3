@@ -29,6 +29,12 @@ rendered checks or deployment verification. Preserved prior evidence and limits.
 
 *— Codex · 2026-10-29 UTC*
 
+## Tools launcher — October 31, 2026
+
+- [x] **Tools page and Tools bar** — Removed the one-line description under each tool button after the user's review of the grouped page ("get rid of the text bits under the buttons"); at closeout the unused descriptions left the registry too, so the launcher shows labels only. Removed the Account entry from Tools and from the Tools bar inside every tool (Account lives in the main navigation). Renamed "System State" to "System status" in the registry, page title and heading. Added only the four group headings (Your device, Reading, Community, Operator), which replace the former long list and the Tools bar card on /tools/.
+- Verification: `ToolsRegistryTest` and `LocalAppSmokeTest` (no description element on /tools/, no Account entry, four headings in order; the same three pre-existing smoke failures as `main`). `tests/browser/tools_launcher.mjs` on all four sites, every permitted theme at 390px and 1280px: each tool once, no Account, no description text, whole labels, no overflow, icons on tools and group headings in Word97/Chicago/Midnight. Midnight 1280px screenshot inspected. Details in the [implementation summary](ui_tools_launcher/ui_tools_launcher_step4_implementation_summary.md).
+- No dependencies, data-contract or `todo.txt` changes. Physical devices and deployment were not checked.
+
 ## Backup section grouping — October 25, 2026
 
 - [x] Split the page into three existing-style cards: Backup details, Downloads, and Recent included items. Added only the Downloads heading; preserved all fields, links, notes and empty states.

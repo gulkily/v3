@@ -62,3 +62,28 @@
 ### Uncertain assessments
 
 - `step3_development_plan_do.md` › "Stages should be about <=1 hour or <=50 lines": Stage 3's theme matrix may exceed 50 lines of test code; kept as one stage because splitting the test from the fixes it reveals would separate cause from correction.
+
+## 2026-11-01T15:30Z — Step 4 (implementation closeout)
+
+### Necessary/useful instructions
+
+- `step4_implementation_after.md` › Final Verification Checklist items 1–3 (every stage completed with verification recorded; one stage-scoped commit per stage; commit count ≥ 1 + stages): caught that Stage 3 had no stage section of its own in the summary (its work and verification sat under "Review findings after Stage 2", shipped in the Stage 3 commit), so a labelled retrospective Stage 3 record was added at closeout. Retain.
+- `step4_implementation_do.md` › Effort estimation ("Collect missing older records only at the current date, labeled retrospective when applicable, not as fabricated originals"): governed how that Stage 3 record and the Stage 4 record were written. Retain.
+- `concepts.md` › Implementation and verification ("Verify touched entries and their paths against the resulting code"): the path check established that the icon stylesheet keys tool glyphs on each link's `href` and group glyphs on `data-shape`, not on `data-tone`; the new concept entry says so. Retain.
+- `RAILSPIKE.md` › Railspike Debug Mode (separate log-only handoff commit after the final stage): kept this report out of the stage commit. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_do.md` › "complete the retrospective assessment and authorized ledger closeout update in the final stage before its commit" and `step4_implementation_after.md` › Effort estimation ("Include authorized ledger closeout updates in the final stage commit; verify this before leaving Do"): the same gate stated twice; light overhead. Suggest keeping it once, in Do, with After only confirming.
+
+### Inapplicable instructions
+
+- `step4_implementation_after.md` › item 5 (deployment, release, external-system, role, migration dependencies): none in scope; recorded as not applicable in the summary.
+- Documentation-only completion fields: application work.
+- `RAILSPIKE.md` › Follow-up Cycles Before Merge: the feature branch was already merged to `main` before this closeout stage.
+
+### Uncertain assessments
+
+- `effort-estimation.md` › single exposed rater: Steps 1–3 and Stages 1–2 were rated by claude-opus-5-5; the Stage 2 review pass, Stage 3 and this closeout ran as claude-fable-5-1. The instructions do not say how a rater change mid-cycle is recorded. The retrospective assessments are labelled with the model that made them and the cycle keeps its original ratings untouched; suggest one line on rater changes.
+- The closeout stage ran after the feature branch was merged to `main` (the user merged after Stage 3). `RAILSPIKE.md` says cycle completion does not imply merge readiness but does not address a records-only final stage after merge; it was done on a separate branch from `main` with the stage commit and a log-only commit. Suggest stating that a records-only stage after merge keeps the ordinary stage-commit cadence on a new branch.
+

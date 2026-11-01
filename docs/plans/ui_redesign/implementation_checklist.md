@@ -155,7 +155,7 @@ signing scripts. Depends on cycle 4.
 - [x] A visible state while the key is created ("Creating your account…"), with recovery if it fails.
 - Done when: a new visitor can write and publish a first post with no browser dialogs and no long wait after pressing Post.
 
-Built 2026-10-28 on `feat/ui-first-post-identity` for all sites (not merged); see the [Step 4 summary](../ui_first_post_identity/ui_first_post_identity_step4_implementation_summary.md). Readers no longer register keys. The real-iPhone check on ZenMemes is pending with the user.
+Built 2026-10-28 on `feat/ui-first-post-identity` for all sites, merged into `main` (`b8afb7711`); see the [Step 4 summary](../ui_first_post_identity/ui_first_post_identity_step4_implementation_summary.md). Readers no longer register keys. The real-iPhone check on ZenMemes is pending with the user.
 
 ### Cycle 6: `ui_composers`
 
@@ -220,10 +220,12 @@ Built 2026-10-29 on `feat/ui-messages` (six stages), merged into `main` 2026-10-
 
 Mockup: `tools.html`. Templates: `pages/tools.php`, `partials/tools_nav.php`.
 
-- [ ] Tools grouped by who uses them (Your device, Reading, Community, Operator), each listed once.
-- [ ] Hooks: a stable `data-tone` key per tool in `src/ForumRewrite/Tools/ToolsPageSupport.php`, `data-shape` on group headings.
-- [ ] Icon themes: Tools launcher buttons and subnavigation mapped in `theme-nav-icons.css`.
+- [x] Tools grouped by who uses them (Your device, Reading, Community, Operator), each listed once.
+- [x] Hooks: a stable `data-tone` key per tool in `src/ForumRewrite/Tools/ToolsPageSupport.php`, `data-shape` on group headings.
+- [x] Icon themes: Tools launcher buttons and subnavigation mapped in `theme-nav-icons.css`, plus a glyph on each group heading.
 - Done when: every tool is reachable once, in all themes.
+
+Built 2026-10-31 on `feat/ui-tools-launcher` (run as Railspike at the user's request, three implementation stages), merged into `main` 2026-10-31 (`32918c910`); see the [Step 4 summary](../ui_tools_launcher/ui_tools_launcher_step4_implementation_summary.md). /tools/ is one card of buttons in four groups with every tool in view at 1280×720 in every permitted theme; the Tools bar inside each tool follows the same order with a divider per group; Account left Tools for the main navigation; "System State" became "System status". Review after Stage 2 dropped the one-line descriptions under the buttons (and later from the registry) and added group heading icons in Word97, Chicago and Midnight. Concepts: [Tools launcher](../../concepts/tools_launcher.md), [theme navigation icons](../../concepts/theme_navigation_icons.md).
 
 ## Phase 2: Theme hooks
 
