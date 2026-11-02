@@ -156,7 +156,7 @@ final class Application
         $securityReviewRequest = ($query['view'] ?? '') === 'security'
             && in_array($path, ['/activity', '/activity/', '/forte/activity', '/forte/activity/', '/api/forte_activity_page', '/api/forte_activity_detail', '/api/forte_commit_detail'], true);
         if ($securityReviewRequest || $this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/test_self_approval', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
+            || in_array($path, ['/tools/deploy', '/tools/deploy/', '/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/test_self_approval', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
             || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
             || str_starts_with($path, '/api/private_messages/history_sync/')
             || str_starts_with($path, '/messages/conversation/')
@@ -590,6 +590,11 @@ final class Application
 
         if ($method === 'POST' && preg_match('#^/profiles/([^/]+)/approve/?$#', $path, $matches) === 1) {
             $this->handleApproveUserSubmit($matches[1], $query);
+            return;
+        }
+
+        if (($path === '/tools/deploy/' || $path === '/tools/deploy') && $method === 'POST') {
+            $this->deployController()->submit($query);
             return;
         }
 

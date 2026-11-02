@@ -43,6 +43,7 @@ final class TemplateRenderer
         'instance.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
         'operations.php' => ['/assets/tool-details.css'],
+        'deploy.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],

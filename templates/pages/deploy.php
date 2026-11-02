@@ -61,8 +61,22 @@ $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'sta
       </tbody>
     </table>
 <?php if ($workerQuiet && $canDeploy): ?>
-    <p class="meta">Queued deploys wait for the task worker, which <?= $e($workerLabels[$s['worker']] ?? 'is unavailable') ?>. Deploy now runs immediately.</p>
+<?php $workerSentences = ['stale' => 'has not run recently', 'not_observed' => 'has not run on this server yet', 'failed' => 'failed on its last run', 'unavailable' => 'cannot be checked']; ?>
+    <p class="meta">Queued deploys wait for the task worker, which <?= $e($workerSentences[$s['worker']] ?? 'cannot be checked') ?>. Deploy now runs immediately.</p>
 <?php endif; ?>
+<?php if ($canDeploy): ?>
+    <form method="post" action="/tools/deploy/" class="deploy-actions" data-deploy-form>
+      <button type="submit" name="action" value="queue">Deploy</button>
+      <button type="submit" name="action" value="now">Deploy now</button>
+      <button type="submit" name="action" value="check">Check for updates</button>
+    </form>
+<?php endif; ?>
+<?php endif; ?>
+<?php if ($canDeploy): ?>
+<?php $statusText = ($deployNotice ?? '') !== '' ? $deployNotice : ($pending ? 'A deploy is queued or running.' : ''); ?>
+    <p class="meta" role="status" aria-live="polite" data-deploy-status<?= $statusText === '' ? ' hidden' : '' ?>><?= $e($statusText) ?></p>
+<?php elseif (($deployNotice ?? '') !== ''): ?>
+    <p class="meta" role="status"><?= $e($deployNotice) ?></p>
 <?php endif; ?>
   </article>
 </section>

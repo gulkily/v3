@@ -77,3 +77,23 @@ Stage originals copied from Step 3 (not new ratings): S1 0.15, S2 0.08 (revised 
   - Form and page script land in Stage 4 with the POST handler.
 
 *— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Check, Deploy and Deploy now actions
+
+**Original estimate: 0.12**
+**Retrospective: 0.15** (a session bug masked by the tests was found in the browser run and fixed)
+
+- Changes:
+  - `DeployController::submit()`: `POST /tools/deploy/` with `action` = `status`, `check`, `queue` or `now`. Requires a same-origin request (`Sec-Fetch-Site: same-origin` and/or a matching `Origin`; neither present is refused) and `RouteServices::securityReviewAllowed()` (session-authenticated root-approved operator). JSON for the page script (`X-Requested-With: ForumDeploy`); a plain form post gets the page with a notice. Instant deploys set `ignore_user_abort` and a time limit so a dropped phone connection doesn't stop the pull.
+  - `Application`: POST route, and `/tools/deploy` added to the paths that start the viewer session (POSTs otherwise run without one).
+  - `templates/pages/deploy.php`: three buttons for operators, a status line (server-rendered when a deploy is pending, so first paint is final), and a stalled-worker note for operators.
+  - `public/assets/deploy_control.js`: JSON requests, polls `status` every 5 s while a deploy is queued or running and reloads when it finishes; buttons are disabled only during a request, so Deploy now stays available while a queued deploy waits.
+  - `tool-details.css` mapped to the Deploy template (Stage 3 had left the table unstyled) with a wrapping `.deploy-actions` row.
+- Verification:
+  - `php tests/run.php DeployPageTest AppUpdateTest ToolsRegistryTest TaskQueueWorkerTest TaskQueueStoreTest`: 49/49 passed. New action tests, one request per process: refused for signed-out, identity-hint only, signed-in non-operator, cross-site, mismatched `Origin` and no origin evidence; operator `status` succeeds; unknown action refused; queue coalesces ("already queued"); an instant deploy of a commit that rewrites the Deploy template completes its JSON response with the new commit.
+  - The session bug: the first version of the action tests passed while the real server refused the operator. With the session-start fix removed, the corrected tests now fail (2 of 2), and pass with it.
+  - Browser, local server, 390 px, signed-in operator session: Check for updates refreshed the checked time; Deploy now showed the refusal (this checkout is on the feature branch); Deploy queued with Deploy now still enabled; one real `task_queue.php run --limit=1` claimed the deploy ahead of two other queued tasks, and the page reloaded with the result; with JavaScript off, the form post returned the page with the notice; no page errors; no overflow.
+- Notes:
+  - Non-operator approved members are refused by the same guard that checks operator status first; the fixture has no approved non-operator, so "signed-in non-operator" is the tested case.
+
+*— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*
