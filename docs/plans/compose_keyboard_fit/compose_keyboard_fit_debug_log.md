@@ -74,3 +74,27 @@ Mode: enabled, inherited.
 ### Uncertain assessments
 
 - Headless WebKit: the test harnesses support `REPLY_BROWSER=webkit`, but no Playwright browser cache was found in this environment. The plan says "WebKit where installed"; Step 4 must report which engines actually ran.
+
+## 2026-11-02T02:10Z — Step 4
+
+Mode: enabled, inherited. Links repaired when the plans moved into `docs/plans/compose_keyboard_fit/`.
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md` "Planning Docs Commit Gate": the ordered steps (branch, status, organize, commit, verify HEAD, then summary) made the planning commit clean; the ledger stayed out of it as instructed and landed in the final stage commit.
+- `step4_implementation_do.md` "Stage Boundary Protocol": one commit per stage with its summary section kept the three stages auditable (`439000c06`, `e27587b9f`, `149984ae9`).
+- "Report checks as passed, failed, blocked, pending" and "a focused pass is never a full-suite result": drove the baseline-worktree reproductions of the browser timeouts and the two non-long-standing suite failures instead of hand-waving them.
+- Step 2 "Known user or environment" carried into Step 4: the device replay is recorded pending rather than satisfied by Chromium.
+
+### Redundant/unnecessary instructions
+
+- The effort-estimation paragraphs are repeated almost verbatim across `before`, `do` and `after`; a single pointer to `RAILSPIKE.md` would do.
+- `after` checklist item 3 restates the commit-count rule already stated under "Step 4 commit cadence" in `RAILSPIKE.md`.
+
+### Inapplicable instructions
+
+- Documentation-only verification items, one-shot transition rules, database and migration guidance, deployment verification (outside scope).
+
+### Uncertain assessments
+
+- Whether adding a `--phone-fit-only` switch to an existing test counts as ordinary correction or scope growth. Treated as in-scope verification tooling mirroring the file's existing `--shared-only` switch and recorded in Stage 2's retrospective.
