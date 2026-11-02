@@ -57,3 +57,19 @@ Uncertain assessments: Required per-stage fields, risk detail and study history 
 Inapplicable instructions: No implementation, deployment or runtime test execution is authorized at this handoff.
 
 Verification: Canonical original identity, verified name history, naming finalizer and shared Account/browser helpers inspected. Frozen hashes and document links/whitespace checked. Proposed recovery and visibility gates remain tests to execute, not established passes.
+
+## 2026-11-01 UTC — Step 4 local closeout
+
+Necessary/useful instructions:
+- Source: docs/railspike/docs/workflow/step4_implementation_do.md, Stage Boundary Protocol. Five stage commits each include their verification and summary; implementation followed planning commit 4cb17b77. Retain: failure recovery was exercised before UI composition, and scope/verification remained reviewable.
+- Source: docs/railspike/docs/workflow/step3_development_plan_do.md, Key Risks, carried through implementation. Native-dialog-free initial naming required recovering a committed signed name before repeat eligibility checks. Final failure review also found uncommitted name files could strand eligibility after Git failure; extending existing SignedPostTransaction avoided a parallel transaction system. Retain shared-contract and recovery requirements.
+- Source: docs/railspike/docs/workflow/step4_implementation_after.md, Contract and known-user verification. Local browser checks reproduce the reported flag-off missing-name path while preserving the explicit live-site limitation. Retain the distinction between local reproduction and deployed recovery.
+
+Redundant/unnecessary instructions: No supported findings.
+
+Uncertain assessments:
+- Source: docs/railspike/docs/workflow/step3_development_plan_do.md, concise stage sizing and one-page plan target. This cycle needed source, browser, theme, transaction and study detail to explain recovery. The compact plan was longer than a conventional printed page; consider treating the page target as a concise overview with linked evidence. No workflow text changed.
+
+Inapplicable instructions: Schema migrations, new dependencies and navigation destination/icon changes were unnecessary; zero delta verified. Deployment/merge were not authorized.
+
+Verification: Planning 4cb17b77; S1 1b2f0c39, S2 a10f7c5a, S3 125a58c0, S4 201a623c, S5 4105f172. Final focused 177/177, original transaction consumers, real Chrome naming/Account/legacy/capped flows, ordinary CLI rebuild and all 16 permitted themes at phone/desktop passed. Last Account replay includes an already-approved guest, retained approval and same fingerprint after rebuild. Current links, syntax, whitespace, unchanged todo/schema/vendor boundaries and clean working tree checked before this log-only commit. No full-suite, live-site, physical-device or production-scale claim. Cycle retrospective 0.85, maintainer acceptance pending, no measured labor or accepted-count increment.
