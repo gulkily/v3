@@ -20,7 +20,7 @@ if (in_array($argv[1] ?? '', ['-h', '--help'], true)) {
     exit(0);
 }
 
-$repositoryRoot = normalizePath($argv[1] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
+$repositoryRoot = normalizePath($argv[1] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
 $repository = new CanonicalRecordRepository($repositoryRoot);
 $verifier = new OpenPgpSignatureVerifier();
 $counts = [

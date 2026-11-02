@@ -20,8 +20,8 @@ try {
     if (!in_array($command, ['preview', 'status', 'run'], true)) throw new InvalidArgumentException('Use preview, status or run.');
     $sweep = \ForumRewrite\Retraction\RetractionSweepFactory::create(
         $root,
-        $options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository'),
-        $options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: \ForumRewrite\PresentationPathResolver::staticHtmlRoot($root, \ForumRewrite\SiteProfileRegistry::active())),
+        $options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository'),
+        $options['static-html-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: \ForumRewrite\PresentationPathResolver::staticHtmlRoot($root, \ForumRewrite\SiteProfileRegistry::active())),
         $options['exchange-database-path'] ?? null,
         $options['state-path'] ?? null,
     );

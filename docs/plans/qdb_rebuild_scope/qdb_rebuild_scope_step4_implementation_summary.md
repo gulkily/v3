@@ -103,3 +103,9 @@ Delivered: Catalog plus all-site bounded tag browsing, native traversal/recovery
 Production recovery: Not verified. After normal deployment, run the original ./v3 build-static with unchanged settings at /home/qdb/v3, require all four phases and check tag/news first/later pages. Preserve the exact next failure if a different known allocation problem appears. Local tag-phase results are not a guarantee for the entire production corpus or every maximum-record distribution.
 
 *— Codex · 2026-10-30 UTC*
+
+## User-reported host recovery — 2026-10-30 UTC
+
+User reports the build worked and activated release /home/qdb/v3/state/static_html/releases/release-20261030201011-af62aa46 in 314.961 seconds, producing 5253 HTML files and 53 assets. This supplies production build/activation evidence from the operator, not agent-observed execution or separate published pagination/browser verification. Runtime optimization now has a distinct proposed cycle, v3/qdb_build_time. Maintainer comfortable-fit study judgment remains unspecified; do not infer it from successful execution.
+
+*— Codex · 2026-10-30 UTC*

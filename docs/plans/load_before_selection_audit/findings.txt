@@ -1,0 +1,94 @@
+Audit: Load before selection
+Revision: ade35a65d2488bcfc280277e4bbf0bc8beae76a4
+Status: Documentation audit complete; remediation and production validation pending
+Evidence: measurements.txt, reader_results.txt; inherited memory evidence remains in ../qdb_memory_audit/qdb_memory_audit_findings.txt
+
+Ranking basis: User-visible/rebuild exposure, measured materialization and independence of correction; not predicted host speedup. Eight tracked findings, including inherited/overlapping causes, not eight new discoveries.
+Rank 1: LBS01 QDB welcome first, then separate numbered-list/random/search slices. Strong current body-count evidence, ordinary public and shared build exposure; highest semantic risk if broadened all at once.
+Rank 2: LBS02 offline candidate retention. Strong current selection evidence; narrow streaming step preserves pins and can reduce retention before tackling SQL projection.
+Rank 3: LBS04 tags-index narrow projection. Streaming already fixed retention, but bodies still cross PDO; lower risk if isolated from RSS/Forte/custom query consumers.
+Rank 4: LBS07 source-history lookup. Direct rebuild relevance and avoidable full output; validate deep-history measurements before estimating savings. Do not conflate with delivered indexCommits fix.
+Rank 5: LBS05 pending-user count. Small independent fix, source-only evidence; may be chosen before larger work for low implementation complexity.
+Rank 6: LBS06 standard username inactive tab. Source-only, identity-history growth; preserve Forte consumers and aggregate totals.
+Rank 7: LBS03 tag-route enumeration. Smaller metadata allocations, old evidence only; optional profile work already default-off.
+Rank 8: LBS08 historical scoring audit. Operator-only, inherited evidence; necessary full examination but unnecessary simultaneous body retention.
+Recommendation: Start a separately approved QDB welcome selection cycle using LBS01's parity contract. This audit authorizes no remediation, automated CI detector, schema/index change or deployment.
+
+Finding: LBS01
+Ownership: Inherited M02, same root cause; not a new discovery
+Status: Measured reader/policy slice; broader consumers source-traced
+Source: src/ForumRewrite/ReadModel/ThreadRepository.php fetchThreads/boardRowsSql; src/ForumRewrite/Qdb/QdbExperience.php welcome/random/search/eligibleQuotes; src/ForumRewrite/Qdb/QdbBoardPolicy.php paginate; src/ForumRewrite/Http/BoardPageController.php board/fetchBoardThreads/boardList/listPage
+Consumers: Application -> QdbExperience -> welcome, random, search; latest/top/leetness -> BoardPageController. Standard list board selects 50 non-pinned rows after fetching/sorting all rows. StaticArtifactBuilder renders shared/QDB routes through Application. Shared method use does not mean identical selection rules.
+Work: Complete joined rows including bodies before eligibility/filter/sort/slice; 10000 body rows/20,480,000 body bytes for 25 results (60 MiB PHP peak). Welcome first-five slice has same materialization. SQL scanned rows and end-to-end wall time remain unknown.
+Invariants: Exact QDB suffix regex eligibility; retracted and identity-tag exclusion; liked-view root score; pinned precedence; top/oldest/newest/leetness tie-breaking; welcome recent order differs from board creation order; news creation order; clamped numbered pages/counts; search stripos semantics; random sampling without replacement. Preserve existing links and viewer reaction lookups after selection.
+Smallest correction: QDB welcome bounded recent/news hydration plus exact count first, without changing other ThreadRepository consumers. Later independent slices for numbered lists, random and search; standard list board separately. Do not replace all fetchThreads calls with a universal LIMIT.
+Required checks: IDs/order/count parity against current logic on mixed eligibility, malformed tags, pins, equal dates/scores, page boundaries and news; fixed-result body-transfer scaling, real welcome/build-static flow, failed-build leaves active release intact. Random distribution and non-ASCII search need their own tests before changing those paths.
+
+Finding: LBS04
+Status: Source-traced unnecessary projection; unmeasured
+Source: src/ForumRewrite/Http/TagsPageController.php index; src/ForumRewrite/ReadModel/TagGrouping.php previewsFromUniqueThreads; ThreadRepository::iterateThreads; Http/ApiTextController.php listIndex; Http/BoardPageController.php rss; Http/ForteBoardController.php board
+Work: Tags index streams rows but still transfers every full root body, then discards it; summaries use body_preview for titles. Text index/RSS enumerate complete results yet also use the broad full-body query. Forte loads all board roots before selection; only selected-thread detail/replies are lazy.
+Exceptions: Complete RSS/text index and Forte folder/row lists currently expose the whole eligible collection. Full enumeration is necessary for that contract; full body projection is separable. Replacing with a capped result would change behavior. Native/browser bytes and body dependencies of custom editable listing queries remain unmeasured.
+Smallest correction: A narrow tags-index projection retaining exact tags, preview/title/order/count semantics; leave editable queries and full-detail readers untouched. Audit RSS/text title dependencies separately before sharing it.
+Required checks: Tag grouping counts/order/five previews, malformed JSON/object tags, media title fallback, complete RSS/text output and Forte selected direct-link behavior. Per-tag pages already use TagPage; do not duplicate that fix.
+
+Finding: LBS05
+Status: Source-traced count-only overfetch; unmeasured
+Source: src/ForumRewrite/Http/ProfilePageController.php directory; src/ForumRewrite/ReadModel/ProfileRepository.php pendingDirectoryProfiles
+Work: /users/ counts a fully hydrated pending-profile list with latest-activity subqueries and ordering, although only pendingCount is used.
+Consumers: The same repository method returns real rows to the approved-only pending directory and UserAccessController; those consumers need row data and access checks.
+Smallest correction: Dedicated pending count query matching is_approved=0; keep row-returning method for actual directory consumers.
+Required checks: Count parity with zero/many pending profiles, name-change feature settings and missing/multiple activity rows; pending-page authorization unchanged. No need to change profile schema for this audit.
+
+Finding: LBS06
+Status: Source-traced inactive-tab overfetch; unmeasured
+Source: src/ForumRewrite/Http/ProfilePageController.php username; src/ForumRewrite/ReadModel/AuthoredContentRepository.php visibleThreads/visiblePosts; templates/pages/username.php
+Work: /user/{username} loads both full identity-group thread and post collections before choosing Threads versus Replies tab; template filters replies from all posts even for the Threads tab. Identity-specific /profiles/{slug} uses a different bounded page path and is not this finding.
+Consumers: ForteProfileController::username and ForteContentAndUserDetailApiController::userDetail render both collections; their contract differs. AuthoredContentRepository queries already select identities but returned collection can be large.
+Smallest correction: Load only the active standard username tab, preserving existing count totals and signed attribution eligibility. Separate pagination proposal if desired, rather than silently truncating history.
+Required checks: Multi-key username aggregation, root-versus-reply handling, hidden/retracted/expansion exclusions, tab links/counts, fallback titles, Forte full-detail consumers and complete text/API history unaffected.
+
+Exceptions: ActivityService fetchActivityPage/fetchActivityRows/fetchCommits use SQL selection and limits; detail calls are separate. Source-traced bounded result materialization, not proven bounded SQLite scan cost. TagPage similarly bounds body hydration. Profile identity history visibleIdentityPage caps 100 (default 50) and uses scalar counts; username histories differ.
+Browser coverage: paned_board_reader.js filters already-delivered rows but fetches selected detail from /api/forte_thread_detail; paned_users_reader.js selects categories and fetches user detail; paned_activity_reader.js fetches more cursor pages and specific details. Complete board/directory rows remain a current contract, not a safe automatic truncation target. Browser heap/network/time were not measured; custom plugins/third-party clients were not traced.
+Other directory coverage: ForteUserDirectoryController loads approved/pending summary rows for category counts/sorting, with SQL MIN/MAX activity aggregation rather than all post bodies. Its complete directory is an exception, not evidence that all directory queries are efficient. Large selected-user histories remain a separate size dimension.
+
+Finding: LBS02
+Ownership: Inherited M04, same root cause
+Status: Measured current offline selection method; adjacent paths source-traced
+Source: src/ForumRewrite/Offline/PublicOfflineSnapshotBuilder.php visibleThreadRows/snapshotThreadRows/buildWhileLocked/visiblePostsForThread/insertUnavailableExpansions; src/ForumRewrite/Host/StaticArtifactBuilder.php buildFromReadModel; src/ForumRewrite/TaskQueue/TaskQueueWorker.php runOfflineSnapshotPublication
+Consumers: Static build and queued offline publication; saved offline_reader.js boardRows/tagGroups/savedTagPage consume the resulting database.
+Work: 1000/10000 rows, including previews, materialized to select 201; PHP peak 4/24 MiB. Default recent limit is 200 plus ALL pinned threads. Selection currently loops all candidates even after filling recent slots to find pins. Selected-thread posts and global expansion candidates are additional unbounded dimensions, not measured by this probe.
+Smallest correction: Stream ordered candidate rows into pinned and bounded-recent collections, preserving current parser/eligibility/order. This bounds ordinary candidate retention but still scans/transfers previews and retains all pinned rows; disclose that limit. A later narrow metadata/SQL selection can avoid unnecessary preview hydration after exact predicate parity is established.
+Required checks: Old/new IDs/order for mixed visibility, all-pinned, zero/one/many pins, pins older than recent window, effective derived tags and retracted/excluded structural content; full publication at size boundary, prior snapshot preserved on failure, saved online/offline navigation. Preserve valid expansion dependencies and unavailable markers; never cap pins silently. Full large-thread and expansion cases remain unmeasured.
+Browser boundary: offline_reader.js boardRows maps all saved thread metadata; savedTagPage then slices 25 after grouping. Snapshot byte cap/default recent limit reduce normal input, but all pins and selected-thread sizes can grow. Complete downloaded snapshot/update merging is its current offline contract. Browser allocation/network growth was not measured; do not claim the live TagPage bound applies to offline JavaScript.
+
+Finding: LBS03
+Ownership: Inherited M09, same route-enumeration cause
+Status: Source-traced residual; no new measurement
+Source: src/ForumRewrite/Host/StaticArtifactBuilder.php buildFromReadModel/fetchVisibleTagRoutes/fetchVisibleThreadIds/fetchVisiblePostIds/fetchIds
+Work: All thread tag rows fetched before deduplication to unique tag routes. Optional thread/post IDs fetched/filtered/mapped as complete arrays. Profile flag now defaults off and skips its enumeration/rendering, not tag enumeration. Route rows are smaller than bodies; historical M09 memory measurement is not rerun evidence.
+Smallest correction: Stream tag-route discovery into unique-route set. Treat enabled detail/profile route iteration as separate slice because renderRouteBatch progress expects a complete count/array.
+Required checks: Exact route-set parity across flags/site profiles, malformed/duplicate/mixed-case/effective tags and hidden identity rows; progress totals and no lost detail artifacts. All eligible routes must still be rendered when enabled; no arbitrary cap. Release activation/failure behavior unchanged.
+
+Finding: LBS07
+Ownership: Residual of inherited M06 source-history branch; not a new independent discovery
+Status: Source-traced, unmeasured
+Source: src/ForumRewrite/ReadModel/ReadModelBuilder.php preloadSourceCommitShas; src/ForumRewrite/Canonical/CanonicalRecordRepository.php preloadLegacyPostCreatedAts
+Consumers: Full rebuild/build-static indexing posts, thread labels, reactions and feature-flag changes; canonical legacy timestamp preload.
+Work: exec captures complete Git log path output before selecting requested paths. preloadSourceCommitShas retains first/newest match per requested path and continues after all paths resolve. Legacy timestamp preload intentionally retains oldest add event and cannot use the same early-stop rule. Prior CommitHistoryReader optimization fixes indexCommits, not these methods.
+Smallest correction: Stream source-commit lookup and stop only once all requested paths have their first valid match, preserving Git ordering/merge semantics and error outcome. Legacy oldest-add pass needs streaming through complete history, independently.
+Required checks: Merges/combined diffs, renamed/deleted/re-added paths, missing/shallow history, Git failure, unchanged source commits/activity ordering; compare total Git output read and PHP/RSS on deep histories with few requested paths. Preserve current failure fallback; intentional early process termination must not masquerade as Git error. No speedup quantified here.
+
+Finding: LBS08
+Ownership: Inherited M08, extended caller selection traced
+Status: Source-traced, not remeasured
+Source: src/ForumRewrite/Scoring/FastmodHistoricalAuditService.php audit; src/ForumRewrite/Scoring/FastmodBackfillRequestService.php create; scripts/fast_score.php audit/backfill
+Work: All post bodies fetched together before hash/status filtering into candidates; backfill max-post/cost bounds are applied downstream of the full audit. Audit totals require examining all posts with the current contract, but not retaining all bodies simultaneously. Candidate metadata itself may remain large.
+Smallest correction: Stream audit post rows while retaining exact counts/candidate metadata initially. Separately bound backfill candidate retention after establishing request-store selection/order semantics.
+Required checks: Same content hashes, rubric revisions, scored/excluded/pending/running/failed/unrated counts and candidate order; capped backfill selection/budget parity. No model calls or score writes needed for an audit-reader fixture. Historical 40000-post OOM belongs to prior memory audit.
+
+Maintenance exceptions: ReadModelBuilder::indexPosts needs all canonical posts to rebuild the derived model, but currently retains parsed posts and sort/derivation maps (M01/M05 capacity debt). CommitHistoryReader scans all commits because the index exposes all history; raw counting/spooling is delivered. CommitEvidenceLookup spools manifests into SQLite and fetches requested paths with a bounded 512-entry lookup cache; remaining native/database/large-commit cost is not established by PHP bounds.
+Import coverage: scripts/import_instance.php -> RepositoryArchive::extract -> ContentImportRunner::run -> ContentImportPlanner::plan. Archive validates full gzip/tar structure before selecting record paths; planner builds identity/dependency/conflict maps before admitting writes. Full validation/dependency discovery is necessary to current trust/transaction contract. Retained manifests/plans and repeated destination enumeration are capacity/efficiency leads, not confirmed safe truncation opportunities. No import/recovery campaign ran.
+Export coverage: src/ForumRewrite/Images/ImageBackup.php repository archive generation uses git archive to a temporary tar/snapshot before packaging selected export contents; complete requested content is the export contract. No proposal to cap records or history. All archive variants/image-size limits and export timing remain unmeasured.
+Queue coverage: scripts/task_queue.php -> TaskQueueWorker::run -> SqliteTaskQueueStore::claimNext selects IDs with LIMIT before claiming in a transaction; recent/history queries are similarly limited. This bounds claim results by requested limit, not job execution or database scan cost. Worker dispatch to rebuild/offline/scoring inherits those findings; no generic full-queue fetch defect found here.
+Gaps: Specialized qdb_archive_import_* scripts, every task type, private messaging/LLM exchanges, custom listing queries, every API/client, archive variants, actual browser heap/network, maximum-valid-record/thread, live production and concurrent/recovery measurements were not exhaustively traced or probed. These are explicitly deferred, not certified efficient. The separate capacity study owns broader workload acceptance.

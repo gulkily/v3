@@ -18,8 +18,12 @@ final class PrivateMessageStore
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         $this->ensureSchema();
+        foreach(PrivateMessageHistoryRevision::statements('private_messages','history_messages',['@.sender_username_token','@.recipient_username_token']) as $sql) $this->pdo->exec($sql);
+        PrivateMessageHistoryRevision::ensureEpoch($this->pdo,'history_messages');
         $this->readState = new PrivateMessageReadState($this->pdo);
     }
+
+    public function historyRevision(string $account): string { return PrivateMessageHistoryRevision::token($this->pdo,'history_messages',$account); }
 
     public function unreadStateFor(string $viewer, array $counterparts = []): array
     {

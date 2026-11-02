@@ -21,7 +21,7 @@ try {
         throw new RuntimeException('--time-limit must be a positive finite number of seconds.');
     }
     @fwrite(STDOUT, 'Import time limit: ' . $rawLimit . " seconds\n");
-    $repository = realpath($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: dirname(__DIR__) . '/state/local_repository'));
+    $repository = realpath($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: dirname(__DIR__) . '/state/local_repository'));
     $exitCode = \ForumRewrite\Support\InvocationSupervisor::run(static fn (): int => importInstanceMain($argv), (float) $rawLimit, $repository === false ? null : $repository);
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");
@@ -52,12 +52,12 @@ try {
     if ($source !== null) {
         $source = (new InstanceSourceResolver())->resolve($source, $options['sources'] ?? null);
     }
-    $repository = realpath($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $projectRoot . '/state/local_repository'));
+    $repository = realpath($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $projectRoot . '/state/local_repository'));
     if ($repository === false || !is_dir($repository . '/records') || !is_dir($repository . '/.git')) {
         throw new RuntimeException('Destination repository does not exist; initialize it or supply --repository-root.');
     }
-    $database = importAbsolutePath($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: $projectRoot . '/state/cache/post_index.sqlite3'));
-    $static = importAbsolutePath($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active())));
+    $database = importAbsolutePath($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $projectRoot . '/state/cache/post_index.sqlite3'));
+    $static = importAbsolutePath($options['static-html-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active())));
     // A pager may close stdout while an import still needs to finish safely.
     $outputOpen = true;
     $progress = static function (string $message) use (&$outputOpen): void {

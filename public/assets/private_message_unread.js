@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  let historyEligibility = null;
+  let historyEligibility = null, foregroundPending = false;
   let nav, viewer, originalIdentity, generation = 0, scheduled, listening = false;
   function identity() {
     try { return JSON.stringify([localStorage.getItem('forum_pki_public_key'), localStorage.getItem('forum_pki_username')]); }
@@ -40,6 +40,7 @@
         for (let index = 0; index < Math.max(names.length, 1); index += 25) {
           const batch = names.slice(index, index + 25);
           const query = new URLSearchParams();
+          if (foregroundPending && !document.hidden && index===0) query.set("foreground", "1");
           batch.forEach(name => query.append('counterparts[]', name));
           const response = await window.ForumPrivateMessageAvailability.request('/api/private_messages/unread?' + query, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
           const state = await response.json();
@@ -59,6 +60,7 @@
         nav.dataset.viewer = viewer;
         document.dispatchEvent(new CustomEvent('private-message-viewer-known'));
       }
+      if (!document.hidden) foregroundPending=false;
       historyEligibility = typeof combined.has_history === 'boolean' ? combined.has_history : true;
       document.dispatchEvent(new CustomEvent('private-message-history-eligibility'));
       const description = combined.unread_count + ' unread conversation' + (combined.unread_count === 1 ? '' : 's');
@@ -84,6 +86,7 @@
     clearTimeout(scheduled);
     scheduled = setTimeout(refresh, 0);
   }
+  function foreground() { if (!document.hidden) { foregroundPending=true; schedule(); } }
   function stop() {
     generation++;
     clearTimeout(scheduled);
@@ -108,10 +111,10 @@
         stop();
       });
       document.addEventListener('private-message-rows-changed', schedule);
-      window.addEventListener('focus', schedule);
+      window.addEventListener('focus', foreground);
       // A shared page can start without a session; retry once sign-in completes.
-      window.addEventListener('forum:authenticated-in-place', schedule);
-      window.addEventListener('pageshow', schedule);
+      window.addEventListener('forum:authenticated-in-place', foreground);
+      window.addEventListener('pageshow', foreground);
       window.addEventListener('pagehide', function () { generation++; clearTimeout(scheduled); });
       window.addEventListener('storage', function (event) {
         if (event.key === null || ['forum_pki_public_key', 'forum_pki_username'].includes(event.key)) {
@@ -120,9 +123,9 @@
           schedule();
         }
       });
-      document.addEventListener('visibilitychange', function () { if (!document.hidden) schedule(); });
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) foreground(); });
     }
-    schedule();
+    foreground();
   }
   window.ForumPrivateMessageUnread = { historyEligibility: () => nav && sameIdentity() ? historyEligibility : null, refresh, sameIdentity, acceptsState: valid, start, stop };
   document.addEventListener('DOMContentLoaded', () => start(document.querySelector('[data-private-message-unread]')));

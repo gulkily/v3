@@ -32,8 +32,8 @@ foreach ($args as $arg) {
     $filteredArgs[] = $arg;
 }
 
-$repositoryRoot = $filteredArgs[0] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
-$databasePath = $filteredArgs[1] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
+$repositoryRoot = $filteredArgs[0] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $defaultRepositoryRoot);
+$databasePath = $filteredArgs[1] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3'));
 
 try {
     $pdo = new PDO('sqlite:' . $databasePath);

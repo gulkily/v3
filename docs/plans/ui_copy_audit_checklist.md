@@ -1,10 +1,11 @@
 # UI copy audit checklist
 
-## Current audit status — October 29, 2026
+## Current audit status — October 30, 2026
 
-Two copy-review candidates remain in the [current queue](#next-phase--new-candidates):
-SQLite Viewer loading feedback and System State repository hashes. Both were
-rechecked in current source; neither has a rendered review or a removal decision.
+Four copy-review candidates remain in the [current queue](#next-phase--new-candidates):
+SQLite Viewer loading feedback, System State repository hashes, account rename
+feedback and key restore feedback. These are source
+observations; none has a rendered review or a removal decision for this queue.
 
 All five recorded audit passes, including the original seven candidates, have
 completion records below. Some reviews deliberately retained useful information.
@@ -27,6 +28,12 @@ source locations on main e614fbd9. Documentation only; no product change, new
 rendered checks or deployment verification. Preserved prior evidence and limits.
 
 *— Codex · 2026-10-29 UTC*
+
+## Tools launcher — October 31, 2026
+
+- [x] **Tools page and Tools bar** — Removed the one-line description under each tool button after the user's review of the grouped page ("get rid of the text bits under the buttons"); at closeout the unused descriptions left the registry too, so the launcher shows labels only. Removed the Account entry from Tools and from the Tools bar inside every tool (Account lives in the main navigation). Renamed "System State" to "System status" in the registry, page title and heading. Added only the four group headings (Your device, Reading, Community, Operator), which replace the former long list and the Tools bar card on /tools/.
+- Verification: `ToolsRegistryTest` and `LocalAppSmokeTest` (no description element on /tools/, no Account entry, four headings in order; the same three pre-existing smoke failures as `main`). `tests/browser/tools_launcher.mjs` on all four sites, every permitted theme at 390px and 1280px: each tool once, no Account, no description text, whole labels, no overflow, icons on tools and group headings in Word97/Chicago/Midnight. Midnight 1280px screenshot inspected. Details in the [implementation summary](ui_tools_launcher/ui_tools_launcher_step4_implementation_summary.md).
+- No dependencies, data-contract or `todo.txt` changes. Physical devices and deployment were not checked.
 
 ## Backup section grouping — October 25, 2026
 
@@ -771,11 +778,26 @@ Limits: `account_key_approval.mjs` times out waiting for "cancelled" signed-appr
 
 Change: no copy change. Account's testing-only "Approve current account" could answer "Testing approval is unavailable. Refresh Account and try again." after Remove this key and Continue: the button stayed on the page while the session was signed out, Continue didn't sign the new key in on public sites, and a single refresh didn't bring a working button back. Now Continue signs the session in with the new key on every site (`PrivateSiteAuth.authenticateInPlace`, newly exported, so the page doesn't navigate); Remove forgets the page's signed-in identity; the button is rendered whenever testing approval is on and shown only while this browser's key waits (`data-account-when="waiting"`), so it appears on a first visit and after Continue without a refresh; its token is a double-submit cookie (`testing_self_approval`, HttpOnly, SameSite Strict) instead of session data; and a refused Approve signs in again with the current key and retries once. The endpoint's checks are unchanged (marker, local peer and host, signed-in key, token, Origin, no extra fields).
 Verification: `testing_self_approval` (now passes from a first visit; adds Remove → Continue → Approve without a refresh, reusing Continue's sign-in, and Approve after the session is signed out behind the page), `account_states`, `background_sign_in`, `lobby_local_key`, `compose_layout_stability`, `private_message_redesign`, `TestingSelfApprovalTest`, `AccountKeyPageHooksTest`, `BrowserSigningNormalizationTest`, `LocalAppSmokeTest` (one long-standing unrelated failure).
-Limits and follow-up: signing in regenerates the session ID and deletes the old session (`AuthApiController`, `session_regenerate_id(true)`). A request already in flight with the old ID (seen with Remove right after a background sign-in) gets a new empty session under strict mode, and its cookie replaces the signed-in one, so the browser is quietly signed out. Approve now recovers from this, but other signed-in actions may not; fixing the rotation itself is not done here.
+Limits and follow-up: signing in regenerates the session ID and deletes the old session (`AuthApiController`, `session_regenerate_id(true)`). A request already in flight with the old ID (seen with Remove right after a background sign-in) gets a new empty session under strict mode, and its cookie replaces the signed-in one, so the browser is quietly signed out. Approve now recovers from this, but other signed-in actions may not; fixing the rotation itself is not done here. Update 2026-10-30: fixed by forwarding the old ID for 30 seconds; see the [session rotation decision](session_rotation_race_decision.md).
+
+## Invite creation success feedback — October 30, 2026
+
+- [x] Removed the routine “Invitation created.” notice when the generated link and QR code appear. Empty feedback is cleared and hidden, including after Check invitation recovers a lost response. Pending, failure, QR fallback, copy and revocation feedback remain, as do sharing/account-access warnings and expiry.
+- Verification: `InvitationIssuanceTest` passed (10/10), including QR fallback and uncertain-creation recovery assertions in `invitation_issuance.cjs`. `invite_signing_readiness.mjs` passed on public and members-only sites: real creation/redemption/revocation, delayed authentication, lost-response recovery without reissuance, rejected signatures, QR failure followed by successful retry, and missing/unapproved-key recovery. Rendered initial, pending, success, uncertain, recovered, failure and restored states at 320/1280px in Light, Dark, LCD, Word97, Chicago and Midnight; no horizontal overflow and the Generate action remained visible. Updated the existing visual harness to open the account menu before choosing a theme.
+- Evidence: screenshots in `/tmp/invite-copy-review`; inspected Chicago phone success, Midnight desktop success, Midnight phone QR fallback and Light phone members-only success. Diff check passed. Limits: physical devices, other browser engines, screen-reader announcements and deployment were not checked. No navigation, dependencies or `todo.txt` changes.
+
+## Invite default expiry — October 30, 2026
+
+- Reuse: extended the existing `setFeedback` helper and issuance request in `public/assets/invite_issuance.js`, preserving the signed `expires_at` contract; updated the existing result paragraph in `templates/pages/invites.php`. No new component or API field.
+- [x] Changed new browser-issued invitations from seven days to 30 days and updated the result label to “Expires 30 days after creation.” No expiry selector. Existing signed expiry timestamps and API custom-expiry support remain unchanged.
+- Verification: `InvitationIssuanceTest` passed 10/10, including the 30-day request assertion. A real signed-issuance browser probe (`/tmp/invite-expiry-review.mjs`) verified the prepared canonical expiry and rendered result at 320/1280px in Light, Word97, Chicago and Midnight on public and members-only sites, with no horizontal overflow. Inspected Chicago phone and Midnight desktop screenshots (`/tmp/invite-expiry-*.png`). `invite_zero_click.mjs` passed the complete public/members-only entry, redemption, naming/rebuild, expiry/revocation and recovery flows; the deliberately short-lived expiry fixture is checked against its own lifetime. Template syntax and diff checks passed.
+- Limits: physical devices, other engines and deployment unchecked. Multi-redemption remains proposed in [the Step 1 assessment](multi_redemption_invites_step1_solution_assessment.md); no change to single-use behavior.
+
+Publication verification: 2026-10-30 UTC — user authorized commit and push. Integrated current `origin/main` at `ade35a65`, preserving both study-ledger append blocks. On the combined tree, `InvitationIssuanceTest` passed 10/10 and `invite_zero_click.mjs` passed public/members-only creation, redemption and recovery. Earlier theme evidence remains scoped to the pre-integration tree; no new visual run or deployment claim. Multi-redemption remains a Step 1 proposal.
 
 ## Next phase — new candidates
 
-Current queue, reconciled October 29, 2026. These observations need rendered review before deciding what to remove. Keep this section at the end of the file. A decision to retain useful copy can close a review; source matches alone cannot.
+Current queue, expanded October 30, 2026. These observations need rendered review before deciding what to remove. Keep this section at the end of the file. A decision to retain useful copy can close a review; source matches alone cannot.
 
 - [ ] **SQLite Viewer loading feedback** — Review “Loading...” on the disabled Load Database button alongside “Loading the published read-model database...” in the live status. Check initial load and refresh, standalone and embedded views; retain an accessible pending signal, source freshness and actionable failures. Sources: `public/assets/sqlite_viewer.js`, `templates/pages/sqlite_viewer.php`.
 
@@ -785,3 +807,24 @@ Source recheck: both loading messages remain in `public/assets/sqlite_viewer.js`
 `templates/pages/codebase_state.php` still lists Repository head, Short head and
 Latest commit. Their presence confirms candidates, not redundancy. Start with
 SQLite Viewer, checking standalone and embedded loading/failure/retry states.
+
+- [ ] **Account rename success feedback** — Review “Username saved. Your key and approval are unchanged.” after `saveProfileName` closes the editor and calls `renderSavedState`. Check whether the updated Name and approval state already convey the result, including normalization, pending/approved identities and failure/retry. Retain any information necessary to distinguish a name change from a key or membership change; do not assume those states are interchangeable. Sources: `public/assets/browser_signing.js` (`saveProfileName`), `templates/pages/account_key.php`.
+
+- [ ] **Key restore success feedback** — Review “Backup restored. Your public key is linked and this browser is ready.” against the identity state actually displayed after `identity.restore`. Check both text and PNG backups, existing and fresh browser identities, and the expanded backup panel at phone/desktop sizes. Establish whether completion is otherwise visible before removing feedback; preserve passphrase/file errors, access-loss warnings and any distinct registration or approval state. Sources: `public/assets/key_backup_ui.js` (restore handler), `templates/pages/account_key.php`.
+
+Scan evidence: inspected current templates and browser status writers on commit
+`2e17c971`, then cross-checked the completed audit records. The three scan findings (invite creation now closed above)
+are narrower follow-ups to previously reviewed pages, not a reopening of those
+whole reviews. Excluded the Docs landing source-path explanation and guide
+summaries because their restoration was explicitly approved; excluded QDB's
+search instructions because they were deliberately added and rendered-verified.
+Also retained copy/revocation confirmations and backup download feedback as
+potentially necessary signals for effects outside the visible page. The scan itself was documentation
+only; subsequent implementation and verification are recorded separately above.
+
+## System State codebase Git information — 2026-10-31
+
+- [x] Added a separate Codebase facts table with application commit, branch, latest commit date/subject and clean/modified working-tree status. App version now uses the application checkout rather than the content repository. No remote URLs or changed file paths are exposed.
+- [x] Source-only deployments and failed Git commands show unavailable; detached HEAD is identified. Linked-worktree .git files are accepted. Existing content-repository and read-model details remain separate.
+- [x] Core-route rendered HTML smoke check passed; PHP syntax and diff whitespace checks passed. Reused the existing wrapping facts table. Dependency delta: zero.
+- [ ] Browser verification remains outstanding for phone/desktop, affected themes, long commit subjects, source-only deployments and detached HEAD; the HTML smoke check does not establish visual layout.

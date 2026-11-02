@@ -1,0 +1,10 @@
+Handoff: Load-before-selection audit; no application change to deploy
+Findings: findings.txt contains ranked follow-up slices, their consumers, semantics and required checks
+Next recommended scope: LBS01 QDB welcome recent/news selection and exact counts; separate approval before implementation
+Local evidence: 24 successful synthetic selection samples, commands/source/raw output retained. SQL scan counts and full HTTP/build time not measured.
+Known host: /home/qdb/v3, PHP 8.3, memory_limit 128 MiB. Historical successful build 314.961 seconds, 5253 HTML files and 53 assets preceded delivered build-time improvements. Do not use it as this audit's current baseline.
+Production status: No fresh host access/replay. The user's earlier successful activation remains valid user-reported evidence; this audit neither repeats it nor claims a new recovery.
+Future host baseline: On the operator's next ordinary authorized build, retain exact ./v3 build-static arguments, application revision, corpus revision/size, effective site profile/feature flags (especially static profiles/details), PHP version/memory limit, full phase timings, elapsed/user/system time, artifact counts and activated release. Compare like-for-like runs after a separately approved fix; keep unsuccessful runs too.
+Recovery boundary: Keep the existing working release active. If a future build fails, retain the error and phase, check which release is active, and investigate before retrying or deleting artifacts. This audit does not change publication/activation, authorize production load, or claim failed-build recovery tests.
+Selection acceptance: For each future fix compare exact eligible IDs, stable ties/order, counts, pins, old links, full-output consumers and recovery behavior; fixed selected size while corpus grows. Measure PHP and process RSS separately. Follow CONTRIBUTING for any dependent read-model query/schema change.
+Deferred acceptance: Production PHP 8.3, current corpus, full builds/HTTP/UI, maximum record/thread, concurrent use, every specialized CLI/client, failure injection and browser heap/network. Capacity study remains distinct.

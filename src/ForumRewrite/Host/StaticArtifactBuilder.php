@@ -77,9 +77,13 @@ final class StaticArtifactBuilder
         } else {
             $this->reportProgress('Skipping individual thread and post pages (FORUM_STATIC_DETAIL_PAGES_ENABLED is disabled).');
         }
-        $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
-            $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
-        });
+        if ($this->prebuildProfilePages()) {
+            $this->renderRouteBatch('profile pages', $this->fetchIds('SELECT profile_slug FROM profiles ORDER BY profile_slug'), function (string $profileSlug) use ($application): void {
+                $this->writeRouteArtifact($application, '/profiles/' . $profileSlug, $this->artifactRoot . '/profiles/' . $profileSlug . '.html');
+            });
+        } else {
+            $this->reportProgress('Skipping profile pages (FORUM_STATIC_PROFILE_PAGES_ENABLED is disabled).');
+        }
         $this->reportProgress('Building public offline reading snapshot...');
         (new PublicOfflineSnapshotBuilder($this->projectRoot))->build(
             $this->databasePath,
@@ -205,6 +209,12 @@ final class StaticArtifactBuilder
         }
     }
 
+    private function prebuildProfilePages(): bool
+    {
+        return FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
+            ->isEnabled(FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED);
+    }
+
     private function prebuildDetailPages(): bool
     {
         return FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
@@ -272,7 +282,7 @@ final class StaticArtifactBuilder
     public function buildSingleRoute(string $route): bool
     {
         $normalizedRoute = $this->normalizeRoute($route);
-        if ($normalizedRoute === null) {
+        if ($normalizedRoute === null || (str_starts_with($normalizedRoute, '/profiles/') && !$this->prebuildProfilePages())) {
             return false;
         }
 
@@ -394,6 +404,7 @@ final class StaticArtifactBuilder
      */
     private function renderRouteBatch(string $description, array $items, callable $renderer): void
     {
+        $started = hrtime(true);
         $total = count($items);
         $this->reportProgress("Rendering {$description} (0/{$total}).");
 
@@ -404,6 +415,7 @@ final class StaticArtifactBuilder
                 $this->reportProgress("Rendering {$description} ({$completed}/{$total}).");
             }
         }
+        $this->reportProgress(sprintf('Rendering %s complete (%.1f ms).', $description, (hrtime(true) - $started) / 1e6));
     }
 
     private function reportProgress(string $message): void

@@ -22,9 +22,9 @@ try {
 
     $profile = SiteProfileRegistry::active();
     $siteId = $profile['name'];
-    $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
-    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($projectRoot)));
-    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile)));
+    $repositoryRoot = (string) ($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
+    $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($projectRoot)));
+    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile)));
     $flagState = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)
         ->evaluate(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
     $snapshot = inspectSnapshot($staticHtmlRoot);

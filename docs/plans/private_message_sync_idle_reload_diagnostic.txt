@@ -1,0 +1,27 @@
+Title: Natural Messages reload recovery diagnostic
+Date: 2026-10-30
+Revision: 4b14e622f
+Status: Local reproduction; production cause not yet confirmed
+Request: New-key messages appear but cannot be decrypted despite an existing-key device being logged in and reloaded.
+
+Method: Adapted the existing real-browser history fixture temporarily so donor visits open Messages and await the automatic run, without calling HistorySync.refresh explicitly. Stopped deliberately after the partial-donor recovery check; no full-suite pass claimed. Removed the temporary driver afterward.
+
+Observation: One natural donor visit verified 20 originals and contributed 30 items, but the target could read none. Stored contributions went to another same-account key (20) and the original recipient (10). The account cursor pointed at the newly approved target with no supplied items for that target. Artifact directory: /tmp/history-sync-browser-XcofBz. This exposes the per-visit eight-bundle budget and absence of automatic continuation after that budget.
+
+Follow-up: A second fresh fixture with two natural donor Messages visits recovered 14 messages in the target's newest-25 view (the partial donor owns only 20 of 31 originals). Both runs completed automatically; the diagnostic then stopped intentionally. Artifact directory: /tmp/history-sync-browser-LeV1Vt.
+
+Interpretation: A single reload is not a reliable recovery guarantee. Necessary work can remain until another donor visit, even with all accounts/keys approved. Earlier acceptance drivers explicitly invoked refresh repeatedly and thus established eventual convergence across runs, not recovery from one reload. A correction should consider continuing already-discovered unfinished work while visible, preserving bounded turns, identity cancellation, mode fairness and an end-of-cycle stop; this is a proposal, not implementation authorization.
+
+Production evidence pending: Whether the existing-key device can read the same originals; whether POST history_sync/work runs and its status. User confirmed old messages appear as cannot be decrypted. No private keys requested, no production access, application changes, commit, push or deployment performed in this diagnostic.
+
+Follow-up evidence: User confirms the old device reads the originals. Reports 49 requests per heartbeat and recovery of received messages but not sent messages. Screenshot shows 200 responses, repeated per-message transfer GETs, acknowledgments and combined work responses around 0.77–1.05 MB. A successful HTTP response does not establish decryption or useful progress.
+
+Local metadata inspection: The screenshot's private-4853e9ac and private-00e39eaf message prefixes match this checkout's private message database. Read-only queries found 19 originals and 115 approved profiles for the affected composite account, compared with four approved keys for chrome and 39 for guest. No plaintext or private keys were read. The source ending in the inspected e807b9534f prefix was at target position 40 of 115; the newer active 9d3d47067c prefix is position 62. Each of those keys had retained candidate messages for two incoming originals and no outgoing originals. These are snapshots while browsers may continue advancing; cursor positions are not stable identifiers.
+
+Mechanism: Same-account discovery scans complete history separately for every approved target in fingerprint order. Sender assistance is independently interleaved. With 115 approved keys, useful same-account delivery to an active new key can remain behind many other target scans. ownKeys retries original decryption and then candidates for each target's repeated work. candidateRequests only deduplicates simultaneous requests and deletes each entry on completion; sequential repeated work therefore repeats empty candidate queries. confirm also sends individual foreground receipts. The screenshot does not establish the exact breakdown of all 49 requests, but these code paths account for the observed fan-out pattern.
+
+Direction asymmetry: Sender assistance can supply received originals without waiting for the old same-account donor's cursor. Sent originals still need same-account access; the observed retained candidate directions support the user's symptom. This is not evidence that sent-message recovery is prohibited or that a 200 response delivered usable access.
+
+Correction direction: Address destination scheduling and redundant processing together. Prioritize recovery for active same-account devices, reuse original-key extraction and candidate results within a bounded run, and avoid candidate lookups where discovery can already report no retained transfers. Preserve sender privacy, bounded work and eventual fairness to all approved keys. Do not remove approved keys or simply increase request volume as a repair. Further implementation needs a concrete reviewed plan under the repository workflow; this diagnostic does not authorize a scheduling/protocol redesign.
+
+User update, 2026-10-30: Messages have now synced, but the network log remains busy. The current remaining symptom is repeated post-recovery traffic; prior delayed recovery remains a required regression case. Follow-up assessments: message_sync_activity_step1_solution_assessment.md, key_retirement_step1_solution_assessment.md and active_key_limit_step1_solution_assessment.md. No recovery completion is inferred for every approved historical key.

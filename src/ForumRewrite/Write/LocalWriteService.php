@@ -2296,7 +2296,7 @@ class LocalWriteService
         return $this->withTimedWriteLock(function () use ($input,$operatorIdentityId,$projectRoot,$finalize): array {
             $operatorIdentityId=$this->requireOpenPgpIdentityId($operatorIdentityId,'operator_identity_id');
             if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot,$operatorIdentityId)) throw new RuntimeException('High-traffic changes require an approved operator identity.');
-            $cache=new \ForumRewrite\Host\HighTrafficCache($projectRoot,$this->repositoryRoot,$this->databasePath,getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $projectRoot . '/public');
+            $cache=new \ForumRewrite\Host\HighTrafficCache($projectRoot,$this->repositoryRoot,$this->databasePath,\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT', $projectRoot) ?: $projectRoot . '/public');
             $mode=new \ForumRewrite\Host\HighTrafficMode($cache);
             if (!$finalize) {
                 $enabled=$this->requireBooleanValue($input['enabled'] ?? null,'enabled');

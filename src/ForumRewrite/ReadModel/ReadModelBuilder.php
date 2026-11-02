@@ -1096,65 +1096,24 @@ final class ReadModelBuilder
      * (not one call per commit - the per-commit `git diff-tree` cost this
      * app already pays elsewhere is exactly what this table exists to
      * avoid paying at request time). Uses `\x1f` (unit separator) to split
-     * fields, since it can't appear in a commit subject, and `--shortstat`
-     * for file counts, tolerating commits with no stat line (e.g. merges
-     * with no changes) by defaulting file_count to 0 for those.
+     * fields (retaining the legacy parser contract), and `--raw` for
+     * tree-change counts, without computing unused line stats.
+     * Commits without a diff (including default merge output) retain zero counts.
      */
     private function indexCommits(PDO $pdo): void
     {
-        if (!is_dir($this->repositoryRoot . '/.git')) {
-            return;
-        }
-
-        $delimiter = "\x1f";
-        $command = sprintf(
-            'git -C %s log --format=%s --date=format:%s --shortstat 2>/dev/null',
-            escapeshellarg($this->repositoryRoot),
-            escapeshellarg('%H' . $delimiter . '%an' . $delimiter . '%ae' . $delimiter . '%cd' . $delimiter . '%s'),
-            escapeshellarg('%Y-%m-%dT%H:%M:%SZ'),
-        );
-        $output = [];
-        $exitCode = 0;
-        $this->measure('read_commit_history', static function () use ($command, &$output, &$exitCode): bool {
-            exec($command, $output, $exitCode);
-            return $exitCode === 0;
-        });
-        if ($exitCode !== 0) {
-            return;
-        }
-
+        if (!is_dir($this->repositoryRoot . '/.git')) return;
         $insert = $pdo->prepare(
             'INSERT INTO commits (sha, author_name, author_email, committed_at, subject, file_count)
              VALUES (:sha, :author_name, :author_email, :committed_at, :subject, :file_count)'
         );
-
-        $pendingRow = null;
-        foreach ($this->progressItems('processing_commit_history_lines', $output) as $line) {
-            $fields = explode($delimiter, $line);
-            if (count($fields) === 5 && preg_match('/^[0-9a-f]{40}$/', $fields[0]) === 1) {
-                if ($pendingRow !== null) {
-                    $insert->execute($pendingRow);
+        $this->measure('read_commit_history', function () use ($insert): void {
+            $this->measure('processing_commit_history_lines', function () use ($insert): void {
+                foreach ((new CommitHistoryReader())->rows($this->repositoryRoot) as $row) {
+                    $insert->execute($row);
                 }
-                [$sha, $authorName, $authorEmail, $committedAt, $subject] = $fields;
-                $pendingRow = [
-                    'sha' => $sha,
-                    'author_name' => $authorName,
-                    'author_email' => $authorEmail,
-                    'committed_at' => $committedAt,
-                    'subject' => $subject,
-                    'file_count' => 0,
-                ];
-                continue;
-            }
-
-            if ($pendingRow !== null && preg_match('/^\s*(\d+)\s+files?\s+changed/', $line, $statMatches) === 1) {
-                $pendingRow['file_count'] = (int) $statMatches[1];
-            }
-        }
-
-        if ($pendingRow !== null) {
-            $insert->execute($pendingRow);
-        }
+            });
+        });
     }
 
     /**

@@ -1,0 +1,80 @@
+Record: Build-time acceptance, local only
+Date: 2026-10-30 UTC
+Baseline: 4abda3db; frozen checkout /tmp/qdb-build-time-baseline
+Implementation: feature/qdb-build-time; final scratch operation transaction with per-load savepoints
+Environment: PHP 8.1.2, Git 2.34.1, WSL2; production PHP 8.3 not available
+Raw samples: qdb_build_time_samples.txt
+Fixture generator: tests/Support/qdb_build_time_fixture.py
+Measurement harnesses: tests/Support/qdb_build_time_benchmark.php and qdb_build_time_compare.py
+Protocol: Three serial fresh-process samples per case/variant, alternating order. Corpus setup and result serialization excluded. No global cache flush; first measured run is not a cold-cache guarantee. Preliminary/failed/regressing samples retained in findings and raw samples. Scratch evidence measurements repeated after tuning; earlier evidence samples are superseded.
+
+Target: 1000 ordinary text-update commits, plus root
+Baseline median seconds: 1.036226662
+Commit-only median seconds: 0.030452628
+Combined median seconds: 0.021860544
+Largest range seconds: 0.402951491
+Timing gate: Pass; median reduction exceeds larger within-variant range
+PHP peak bytes: 2097152 for all variants
+Parity: Complete 1001-row output identical, SHA-256 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+
+Target: 10000 events sharing a 20000-path commit
+Baseline median seconds: 1.464512502
+Evidence-only median seconds: 0.193566202
+Combined median seconds: 0.197008024
+Largest range seconds: 0.736981777
+Timing gate: Pass; median reduction exceeds larger within-variant range
+PHP peak bytes: Baseline 16777216; final variants at most 4194304
+Manifest processes: Baseline 50; final 1
+Parity: Complete event output identical, SHA-256 d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+
+Target: 5215 profile render/write loop
+Baseline median seconds: 69.00145054
+Profile-only disabled median seconds: 0.000602498
+Combined disabled median seconds: 0.002425843
+Largest range seconds: 21.116421845
+Timing gate: Pass; median reduction exceeds larger within-variant range
+PHP peak bytes: Baseline 10485760; disabled variants 2097152
+Artifacts: Baseline 5215 profile HTML files; disabled variants zero
+
+Combined publication: Normal release publisher using the same prepared 5215-profile model
+Baseline median seconds: 85.601950329
+Combined disabled median seconds: 15.996409339
+Largest range seconds: 36.939933471
+Timing gate: Pass; median reduction exceeds larger within-variant range
+PHP peak bytes: Baseline 18874368; combined 16777216
+Artifacts: Baseline 5234 HTML including 5215 profiles; combined 19 HTML and zero profiles
+Activation: Every sample built and activated a release
+Boundary: This prepared-model case measures publication, not a canonical rebuild of 5215 generated identities. Normal full CLI rebuild is measured separately below.
+
+Combined normal CLI: ./v3 build-static on the ordinary-history repository, fresh database/destination each run
+Baseline median seconds: 1.74
+Combined median seconds: 0.41
+Largest range seconds: 0.09
+Timing gate: Pass
+Memory: 128 MiB enforced through a temporary php launcher; standalone PHP peak not measured here, not zero. External process-tree RSS retained in raw samples.
+Parity: All columns of posts (3 rows), profiles (1), activity (5) and commits (1001) match exactly across every run. Activated releases have 20 baseline versus 19 disabled HTML artifacts; only the profile artifact is omitted.
+Recovery: Separate automated candidate/transition tests cover failed candidate, active-release retention and successful retry.
+
+Runtime profile: Same frontend route and model, no eligible artifact in either variant
+Baseline forced-runtime median seconds: 0.042272388
+Profile-only median seconds: 0.02657212
+Combined disabled median seconds: 0.029767605
+Runtime budget seconds: 0.056499627 (baseline median times 1.1 plus 0.010)
+Runtime gate: Pass
+Baseline static-hit median seconds: 0.009322768
+Tradeoff: Runtime reading remains slower than a static hit; disabled profiles preserve functionality, not static-hit latency.
+
+Supplemental case: 10000 events distributed over 1000 small commits
+Baseline median seconds: 0.46611177
+Evidence-only median seconds: 0.507331194
+Combined median seconds: 0.5068066
+Combined overhead seconds: 0.04069483 (8.7 percent)
+Largest range seconds: 0.09591245
+Manifest processes: 50 in every variant; no process-per-event regression
+PHP peak bytes: Baseline and combined 4194304; isolated variant 2097152
+Parity: Complete output identical, SHA-256 003b9d90c31594f44df2d81ed98adfb06a7dcb6ff50141b47d4edcbf40f8ec5d
+Finding: No speedup on this supplemental shape; small manifests incur scratch overhead. The three target workloads fixed in Stage 1 pass their improvement gates. Do not extrapolate the large-import improvement to every history shape. Initial multi-second scratch regression was corrected, with all earlier samples retained.
+
+Memory acceptance: All three target comparisons and supplemental cases stayed below 128 MiB. Matched PHP peaks did not increase above baseline, satisfying the baseline-plus-4-MiB gate. Maximum measured full-publication process-tree RSS was about 53 MiB; raw per-sample RSS/CPU values retained. An early getrusage high-water anomaly is not used as acceptance evidence.
+Dependency delta: Zero
+Production outcome: Pending. Local synthetic seconds are not a prediction for /home/qdb/v3 or the reported 314.961-second build.

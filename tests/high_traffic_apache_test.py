@@ -265,7 +265,34 @@ try:
     assert json.loads(cli('refresh','/'))['refreshed']=='/'
     assert_qdb_home(request('/')[2])
     cli('disable')
-    print(json.dumps({'status':'passed','checks':['Apache request-scoped QDB profile survives cold/warm/CLI rendering','Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
+    # The profile set only in the private file reaches Apache, the CLI and the
+    # cached renderer, with an unmodified .htaccess and no FORUM_SITE_ID anywhere.
+    (public/'.htaccess').write_text((project/'public/.htaccess').read_text()+'\n# custom hosting rule retained\n')
+    (root/'secrets.php').write_text("<?php return ['FORUM_SITE_ID' => 'qdb'];")
+    env.pop('FORUM_SITE_ID',None)
+    server.terminate(); server.communicate(timeout=10)
+    server=subprocess.Popen(['apache2','-f',str(config),'-DFOREGROUND'],env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)
+    for _ in range(100):
+        if server.poll() is not None:raise RuntimeError(server.communicate()[1].decode())
+        try: request('/api/version');break
+        except OSError:time.sleep(.05)
+    assert 'SetEnv' not in (public/'.htaccess').read_text()
+    code,_,normal_home=request('/')
+    assert code==200
+    assert_qdb_home(normal_home)
+    assert json.loads(cli('enable'))['profile']=='qdb'
+    code,_,cold_home=request('/')
+    assert code==200
+    assert_qdb_home(cold_home)
+    before=count()
+    code,headers,warm_home=request('/')
+    assert code==200 and headers.get('X-V3-High-Traffic')=='hit' and count()==before
+    assert_qdb_home(warm_home)
+    assert json.loads(cli('refresh','/'))['refreshed']=='/'
+    assert_qdb_home(request('/')[2])
+    cli('disable')
+    (root/'secrets.php').write_text('<?php return [];')
+    print(json.dumps({'status':'passed','checks':['Apache request-scoped QDB profile survives cold/warm/CLI rendering','private-file QDB profile without SetEnv or FORUM_SITE_ID survives normal/cold/warm/CLI rendering','Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
 except Exception:
     print('Fixture:',root)
     if (root/'error.log').exists():print((root/'error.log').read_text()[-5000:])

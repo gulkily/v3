@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-$artifactRoot = $argv[1] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: (dirname(__DIR__) . '/public'));
+require dirname(__DIR__) . '/autoload.php';
+
+$artifactRoot = $argv[1] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: (dirname(__DIR__) . '/public'));
 if (!is_dir($artifactRoot)) {
     fwrite(STDERR, "Artifact root does not exist: {$artifactRoot}\n");
     exit(1);

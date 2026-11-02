@@ -1,0 +1,59 @@
+Investigation: QDB successful-build time reduction
+Date: 2026-10-30 UTC
+Application inspection baseline: 4abda3dbd144370a3353781b29e8690e46d47d88
+Evidence: User-reported production log and local source inspection; no production access or new benchmark campaign
+
+Production result: Activated release /home/qdb/v3/state/static_html/releases/release-20261030201011-af62aa46
+Wall elapsed reported by application: 314.961 seconds
+Commit indexing: 39.1605 seconds
+Activity evidence indexing: 44.503 seconds
+Combined measured phases: 83.6635 seconds, about 26.6 percent of total
+Remaining time: 231.2975 seconds across all other phases, not attributable solely to profiles
+Artifacts: 5253 HTML files and 53 assets; profile enumeration reported 5215 total
+Shell timing: real 315.077 seconds; user CPU 99.683 seconds; sys CPU 168.179 seconds
+Interpretation: High kernel CPU warrants investigating process/filesystem overhead. It is not a direct disk-wait measurement or proof of one cause.
+
+Finding: T01
+Source: src/ForumRewrite/Host/StaticArtifactBuilder.php, buildFromReadModel profile loop
+Evidence: Profiles are always enumerated and rendered once each. The existing prebuildDetailPages flag only guards thread/post detail loops. There is one artifact path per profile, so the reported profile count corresponds to about 99.3 percent of HTML output count, not measured elapsed time.
+Direction: Explicit profile-prebuild control; preserve profile routes and shared identity data. Reduce eager artifacts only where runtime serving is available; static-only export needs opt-in retention. Validate full release replacing old artifacts, shared refresh, stale public-root fallback, cold request latency and private/member-only handling before enabling on QDB.
+Unknown: Profile pass duration and cost distribution within individual profile renders. The log's 675/5215 is intermediate progress, not a timing sample.
+
+Finding: T02
+Source: src/ForumRewrite/ReadModel/ReadModelBuilder.php, indexCommits
+Evidence: One git log --shortstat history walk computes commit headers and short statistics; PHP retains all lines and stores only the number of changed files, not added/deleted line counts.
+Direction: Investigate a bounded file-count-only history stream, retaining current commit metadata/count semantics, including root commits, merges, renames, binary changes and failures. Avoid merely dropping file_count.
+Unknown: How much of the reported 39.1605 seconds is Git diff work versus output parsing/insertion; source suggests avoidable work, not a quantified speedup.
+
+Finding: T03
+Source: src/ForumRewrite/ReadModel/ActivityEvidenceIndex.php, refresh/refreshBatch; src/ForumRewrite/Activity/ActivityService.php, primeCommitEvidence
+Evidence: Pending activity is fetched in 200-row batches ordered by source commit. Each batch constructs fresh services, each priming up to 32 commit manifests through Git. A commit spanning several 200-row batches can be read repeatedly; the previous service's manifest cache is discarded. Each manifest itself is fully materialized.
+Direction: Reduce repeated commit reads without restoring corpus-sized retention or retaining a giant manifest indefinitely. Preserve relevant-file mapping, rename behavior, missing-history recovery, signatures and attribution. Reuse M03 evidence from the QDB memory audit; do not count as a newly discovered independent defect.
+Unknown: Number/size of production commits, batch overlap frequency and actual Git invocations. These are needed to quantify the opportunity within 44.503 seconds.
+
+Measurement approach proposed: Same corpus/revision, PHP binary, limits, feature settings and output destination; separate full rebuild from render phase. Record full wall/CPU time, each phase, HTML counts, peak PHP memory and profile request latency. Identify cold versus warm repeats; do not attribute all remaining time to profiles. Compare full read-model/evidence results for history changes and published/direct/authorized profile behavior for artifact changes.
+Boundaries: No source/runtime/config changes, benchmarks, deployment, new dependencies or history suppression performed. Follow-up is distinct from completed tag pagination and still-pending capacity/load-before-selection audits.
+
+Stage 1 setup: 2026-10-30 UTC
+Baseline checkout: /tmp/qdb-build-time-baseline at 4abda3db
+Fixture command: python3 tests/Support/qdb_build_time_fixture.py /tmp/qdb-build-time-corpus
+Harness: tests/Support/qdb_build_time_benchmark.php PROJECT REPOSITORY DATABASE MODE OUTPUT
+Modes: prepare initializes 5215 profiles and 10000 events; commits, evidence and profiles measure independent operations.
+Corpus: ordinary 1000 updates of 4000 lines, large 20000 paths, edge root/merge/rename/delete/binary/empty and quoted filenames.
+Outputs: /tmp/qdb-build-time-results; machine row streams retained for exact comparisons; disposable output, not canonical records.
+Initial invalid samples: Evidence and profile exploratory runs shared a database concurrently; evidence failed with database locked, profile was terminated. Profile harness originally held a live SQL cursor across rendering, unlike production's fetchAll. Corrected to production fetchAll and transaction-wrapped history operations, run serially. These samples are excluded from acceptance, not counted as successes.
+Baseline preliminary: ordinary commits 14.809716675 seconds, PHP peak 2097152 bytes (initial exploratory run before transaction adjustment). Edge repeated full row output identical. Evidence corrected run 1.852803854 seconds, PHP peak 16777216 bytes. RSS inherited high-water reading needs independent /usr/bin/time verification.
+Invalid profile sample: 70.635080221 seconds produced files but repository_root mismatch rebuilt the synthetic model; this is NOT a 5215-profile baseline. Evidence repeat then showed five rows, correctly failing exact parity. Corrected by using the baseline model's exact repository path, isolating profile DB from evidence DB, and asserting HTTP status. Invalid samples retained here.
+Baseline trust verification: php tests/run.php ActivityProjectionTest in frozen checkout: 8/8 passed, including late public-key arrival/removal, incremental refresh/rollback, missing repository, prior-schema recovery and 128 MiB cap.
+Corrected evidence repeat: 5.327162355 seconds, PHP peak 16777216 bytes; exact output matches the corrected first baseline. Large timing variation means these preliminary runs do not establish an acceptance median.
+Environment: PHP 8.1.2-1ubuntu2.28, Git 2.34.1, Linux WSL2; production PHP 8.3 remains unmeasured.
+Frozen output SHA-256 edge: 99ee31c7e51a22abd6d49aa1b70d28bbe1e8ed368ab38433ad51af64293d6d6c
+Frozen output SHA-256 ordinary: 7492b5773eb59dc1807031fdfd5ac5c867e5a3c6e74ffa3d3ecf464d26a5082a
+Frozen output SHA-256 evidence: d30d550e080c9de7f47ba30c974838f812db7c882d3734a4a8db43d59d62d85e
+Empty/missing Git: Baseline produces no commit rows and succeeds; retained zero-byte expected streams.
+Valid preliminary profiles baseline: 5215 successful profile artifacts, 115.463300506 seconds, PHP peak 10485760 bytes; synthetic model retained. Matched repeated acceptance is deferred to Stage 7, not inferred from this one sample.
+
+Implementation outcome: Eight-stage local implementation, 2026-10-30 UTC; profile default preserved, all three selected targets delivered without dependencies, canonical changes or core schema changes.
+Accepted local targets: See qdb_build_time_measurements.txt and qdb_build_time_samples.txt for fixed-workload medians, ranges, complete parity hashes, CPU/RSS and artifact/process counts. Initial unsuccessful/noisy samples remain recorded above and in raw samples.
+Known tradeoff: Supplemental small-commit evidence adds 0.0407 seconds (8.7 percent) median; no universal history speedup claimed. Runtime profiles preserve access/data but have greater latency than static hits.
+Outstanding: QDB PHP 8.3 host replay and maintainer fit/acceptance. One timing-progress regression test fails identically in the frozen baseline and branch; not a new failure or a full-suite pass. Separate capacity/load-before-selection audits remain pending.

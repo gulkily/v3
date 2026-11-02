@@ -121,6 +121,11 @@ final class StaticArtifactReleasePublisher
             if ($entry === '.' || $entry === '..' || $entry === '.locks') {
                 continue;
             }
+            if ($releaseRoot && $entry === 'profiles'
+                && !\ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)
+                    ->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED)) {
+                continue;
+            }
             // Documentation is validated and transferred by its canonical publication policy.
             if ($releaseRoot && in_array($entry, ['docs', 'docs.html', 'docs.html.retraction-generation',
                 'docs.html.fastmod-generation', \ForumRewrite\Docs\DocsPublication::MANIFEST], true)) {

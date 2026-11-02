@@ -85,6 +85,8 @@ final class Application
 {
     private const PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME = 34560000;
     private const LOBBY_GATE_LOG_ROTATE_LINES = 1000;
+    /** This request arrived on a session a sign-in had just replaced and was moved to the new one. */
+    private bool $viewerSessionForwarded = false;
     private ?string $appVersion = null;
     private bool $docsPage = false;
     private ?FeatureFlagEvaluator $featureFlags = null;
@@ -1194,6 +1196,7 @@ final class Application
             TaskQueueDatabaseConfig::path($this->projectRoot),
             $this->executionLock(),
             $this->staleMarker(),
+            $this->projectRoot,
         );
     }
 
@@ -1548,7 +1551,7 @@ final class Application
 
     private function docsStaticRoot(): string
     {
-        return $this->staticHtmlRoot ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($this->projectRoot, SiteProfileRegistry::active()));
+        return $this->staticHtmlRoot ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT', $this->projectRoot) ?: PresentationPathResolver::staticHtmlRoot($this->projectRoot, SiteProfileRegistry::active()));
     }
 
     private function docsVersion(): string
@@ -2344,11 +2347,24 @@ final class Application
         return new MediaEmbedPreviewController($this->routeServices(), $this->projectRoot);
     }
 
+    private function recordHistoryActivity(array $viewer): void
+    {
+        if (($viewer['is_approved']??0)!=1 || !$this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)) return;
+        $identity=(string)($viewer['identity_id']??'');
+        if (!str_starts_with($identity,'openpgp:')) return;
+        // Scheduling hints must not make authentication or unread status depend on sync storage.
+        try {
+            $pdo=\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot,PrivateConfig::load($this->projectRoot));
+            (new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo))->recordActivity(strtolower($viewer['username_token']),substr($identity,8),time());
+        } catch (\Throwable $e) { /* Ordinary auth/reading remains available during sync outages. */ }
+    }
+
     private function authApiController(): AuthApiController
     {
         return new AuthApiController(
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
+            $this->recordHistoryActivity(...),
         );
     }
 
@@ -2358,6 +2374,7 @@ final class Application
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
             $this->privateMessageStore(...),
+            $this->recordHistoryActivity(...),
         );
     }
 
@@ -2470,6 +2487,8 @@ final class Application
             'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
             'use_strict_mode' => true,
         ]);
+        $this->viewerSessionForwarded = session_status() === PHP_SESSION_ACTIVE
+            && \ForumRewrite\Http\SessionRotation::follow();
     }
 
     /** @param array<string, mixed> $query */
@@ -2507,7 +2526,8 @@ final class Application
         $requestedSessionId = (string) ($_COOKIE[$sessionName] ?? '');
         $this->startViewerSession();
 
-        if (session_status() !== PHP_SESSION_ACTIVE || $requestedSessionId === session_id()) {
+        // A session replaced by a sign-in moments ago forwards to its replacement: keep that cookie.
+        if (session_status() !== PHP_SESSION_ACTIVE || $requestedSessionId === session_id() || $this->viewerSessionForwarded) {
             return;
         }
 

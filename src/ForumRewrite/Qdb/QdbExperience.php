@@ -151,16 +151,9 @@ final class QdbExperience
 
     private function welcome(): string
     {
-        $threads = ThreadRepository::fetchThreads($this->pdo);
-        $quotes = $this->boardPolicy->eligibleQuotes($threads);
-        $newsThreads = $this->boardPolicy->newsThreads($threads);
-
-        return $this->routeServices->renderPageTemplate('qdb_welcome.php', [
-            'qdbQuoteCount' => count($quotes),
-            'recentThreads' => array_slice($quotes, 0, 5),
-            'newsThreads' => array_slice($newsThreads, 0, 3),
-            'hasMoreNews' => count($newsThreads) > 3,
-        ], 'Welcome', 'welcome');
+        return $this->routeServices->renderPageTemplate(
+            'qdb_welcome.php', QdbWelcomeSelection::read($this->pdo, $this->boardPolicy), 'Welcome', 'welcome'
+        );
     }
 
     /** @param array<string, mixed> $query */

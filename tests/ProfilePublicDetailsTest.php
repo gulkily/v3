@@ -170,6 +170,8 @@ final class ProfilePublicDetailsTest
     public function testStaticProfileAndLivePositionsNeverSubstituteFirstPage(): void
     {
         $workspace = new ImportTestWorkspace();
+        $profiles = getenv('FORUM_STATIC_PROFILE_PAGES_ENABLED');
+        putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED=true');
         $flag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
         putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
         [$app, $pdo, $database] = $this->environment();
@@ -201,7 +203,9 @@ final class ProfilePublicDetailsTest
             assertStringNotContains('FIRST PROFILE ARTIFACT', $invalid);
             assertStringContains('First page', $invalid);
             assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical($url));
-        } finally { @unlink($database); unset($workspace); putenv($flag === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $flag); }
+        } finally {
+            putenv($profiles === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $profiles);
+            @unlink($database); unset($workspace); putenv($flag === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $flag); }
     }
 
 }

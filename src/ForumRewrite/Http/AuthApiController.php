@@ -23,6 +23,7 @@ final class AuthApiController
     public function __construct(
         private readonly RouteServices $routeServices,
         private readonly \Closure $authenticatedViewerProfile,
+        private readonly ?\Closure $recordHistoryActivity = null,
     ) {
     }
 
@@ -92,13 +93,14 @@ final class AuthApiController
             return;
         }
 
-        session_regenerate_id(true);
+        SessionRotation::rotate();
         $_SESSION['authenticated_identity_id'] = $identityId;
         unset(
             $_SESSION['lobby_identity_id'],
             $_SESSION['forum_auth_challenges'],
         );
         session_write_close();
+        if ($this->recordHistoryActivity) ($this->recordHistoryActivity)($profile);
         $approved = ((int) ($profile['is_approved'] ?? 0)) === 1 ? '1' : '0';
         $this->routeServices->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n", 200, $this->routeServices->noStoreHeaders());
     }

@@ -84,8 +84,8 @@ if (!is_resource($process)) {
 $serverErrors = $pipes[2];
 $registration = \ForumRewrite\Support\DevServerRegistry::register(
     $root,
-    getenv('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository',
-    getenv('FORUM_DATABASE_PATH') ?: $root . '/state/cache/post_index.sqlite3',
+    \ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository',
+    \ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $root . '/state/cache/post_index.sqlite3',
     proc_get_status($process)['pid'],
     $address,
 );

@@ -7,6 +7,9 @@ $runStartedAt = hrtime(true);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/QdbWelcomeSelectionTest.php',
+    __DIR__ . '/CommitEvidenceLookupTest.php',
+    __DIR__ . '/CommitHistoryReaderTest.php',
     __DIR__ . '/FastmodScoreTransferTest.php',
     __DIR__ . '/FastmodDerivedTagsTest.php',
     __DIR__ . '/FrmClientTest.php',
@@ -47,6 +50,8 @@ $testFiles = [
     __DIR__ . '/RetractionSweepTest.php',
 
     __DIR__ . '/TestingSelfApprovalTest.php',
+    __DIR__ . '/SessionRotationTest.php',
+    __DIR__ . '/ToolsRegistryTest.php',
     __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/TagsIndexMemoryTest.php',
     __DIR__ . '/TagPaginationTest.php',
@@ -228,8 +233,10 @@ $testFiles = [
     __DIR__ . '/ReadModelPostRetractionsTest.php',
     __DIR__ . '/LocalWriteServiceThreadSubjectTest.php',
     __DIR__ . '/ResumeTargetTest.php',
+    __DIR__ . '/DeploymentSettingsTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',
     __DIR__ . '/ThemeRegistryTest.php',
+    __DIR__ . '/Word97ThemeCoverageTest.php',
     __DIR__ . '/TestRunnerBehaviorTest.php',
     __DIR__ . '/TagScoreTest.php',
     __DIR__ . '/TerminalOperatorUiCommandTest.php',

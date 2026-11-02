@@ -155,7 +155,7 @@ signing scripts. Depends on cycle 4.
 - [x] A visible state while the key is created ("Creating your account…"), with recovery if it fails.
 - Done when: a new visitor can write and publish a first post with no browser dialogs and no long wait after pressing Post.
 
-Built 2026-10-28 on `feat/ui-first-post-identity` for all sites (not merged); see the [Step 4 summary](../ui_first_post_identity/ui_first_post_identity_step4_implementation_summary.md). Readers no longer register keys. The real-iPhone check on ZenMemes is pending with the user.
+Built 2026-10-28 on `feat/ui-first-post-identity` for all sites, merged into `main` (`b8afb7711`); see the [Step 4 summary](../ui_first_post_identity/ui_first_post_identity_step4_implementation_summary.md). Readers no longer register keys. The real-iPhone check on ZenMemes is pending with the user.
 
 ### Cycle 6: `ui_composers`
 
@@ -195,6 +195,7 @@ Built 2026-10-28 on `feat/ui-profile-users`:
 - **Waiting (`/users/pending`):** it used to redirect approved members to User Access. It now shows the waiting list itself, with the same Approve buttons, beside Members, and the count updates in place after an approval. It stays approved-members-only (403 otherwise), so the Waiting tab, with its count, is rendered only for approved members; visitors without cookies get the static copy, which has no tabs, and other viewers see just "Users" (user request, 2026-10-28: don't show a tab people can't open). The empty state reads "No one is waiting."
 - **Person page (`/user/{name}`):** the heading shows the name, "N threads · M posts" and an Approved (or Automated reply agent) chip. Message opens `/messages/conversation/{name}`, which replaces the embedded send-only form; your own page shows "Edit in Account" instead. Threads | Replies is a tab pair, and each key is listed under Identities ("Approved by …"), linking to its key page. "Manage access" shows for operators only; it replaces the "User Access" link and the "Approved by: …" line.
 - **Built from existing components** (fixed after review; see the [debug log](ui_profile_users_debug_log.md)): the tabs are the board's All | Liked filter (`.board-filter`); member rows and Identities are Account's grouped rows (`.account-group` / `.account-row`); the person heading is Account's card (`.account-card`, `.account-id`); threads use `partials/thread_row.php`, and replies use the same row markup. These pages load `account.css` and `thread-list.css`; the only CSS of their own is page layout in `site.css`.
+- **Revised 2026-11-01 (user review: "everything below the navbar looks basic and off"):** the member list is a content list, not settings, so it now uses the board's thread rows (`.thread-rows` / `.thread-row`: name as the title, "N threads · M posts" as the meta line) instead of Account's grouped rows, and the tabs and search share one board toolbar (`.board-toolbar`, new shared `.board-toolbar__search`). The Activity/Name sort, a native `<select>` that duplicated the board's sort menu, is gone; the list stays in activity order. The search still filters the list on the page and hides without JavaScript. Identities on the person page keep Account's grouped rows, which fit key/value content. Verified in `users_profile` and by screenshot in the default, Word 97 and Midnight themes at 1400 and 390.
 - **Kept as is:** the key page (`/profiles/{slug}`) keeps the presentation accepted on 2026-10-27 in `profile_public_details`: no name link, and Approval details beside Approved/Not approved. That decision is newer than the mockup.
 - **Deferred:** approving with a 5-second Undo before publishing (a proposal in the mockup that changes approval behavior), showing each waiting person's first post in their row, avatars, and the agent page's empty-state wording.
 
@@ -220,10 +221,12 @@ Built 2026-10-29 on `feat/ui-messages` (six stages), merged into `main` 2026-10-
 
 Mockup: `tools.html`. Templates: `pages/tools.php`, `partials/tools_nav.php`.
 
-- [ ] Tools grouped by who uses them (Your device, Reading, Community, Operator), each listed once.
-- [ ] Hooks: a stable `data-tone` key per tool in `src/ForumRewrite/Tools/ToolsPageSupport.php`, `data-shape` on group headings.
-- [ ] Icon themes: Tools launcher buttons and subnavigation mapped in `theme-nav-icons.css`.
+- [x] Tools grouped by who uses them (Your device, Reading, Community, Operator), each listed once.
+- [x] Hooks: a stable `data-tone` key per tool in `src/ForumRewrite/Tools/ToolsPageSupport.php`, `data-shape` on group headings.
+- [x] Icon themes: Tools launcher buttons and subnavigation mapped in `theme-nav-icons.css`, plus a glyph on each group heading.
 - Done when: every tool is reachable once, in all themes.
+
+Built 2026-10-31 on `feat/ui-tools-launcher` (run as Railspike at the user's request, three implementation stages), merged into `main` 2026-10-31 (`32918c910`); see the [Step 4 summary](../ui_tools_launcher/ui_tools_launcher_step4_implementation_summary.md). /tools/ is one card of buttons in four groups with every tool in view at 1280×720 in every permitted theme; the Tools bar inside each tool follows the same order with a divider per group; Account left Tools for the main navigation; "System State" became "System status". Review after Stage 2 dropped the one-line descriptions under the buttons (and later from the registry) and added group heading icons in Word97, Chicago and Midnight. Concepts: [Tools launcher](../../concepts/tools_launcher.md), [theme navigation icons](../../concepts/theme_navigation_icons.md).
 
 ## Phase 2: Theme hooks
 

@@ -22,10 +22,15 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Retraction sweep evidence diagnostics](retraction_sweep_evidence_diagnostics_report.md) — historical production findings and failure-path inventory; the proposed diagnostics project is canceled (see the simplification handoff).
 
+[Session rotation race decision](session_rotation_race_decision.md) — signing in could quietly sign the browser out; options, decision (30-second forwarding) and implementation.
+
 [Request register](production_feedback_register.md) — current tracking for migrated requests; [intake and update guide](../reference/production_feedback_management.md). Older inventories are linked from the register and await reconciliation.
 
 ## Feature folders
 
+- [Load-before-selection audit](load_before_selection_audit/load_before_selection_audit_step4_implementation_summary.md) — completed documentation audit; ranked findings and 24 local selection samples, fixes pending.
+
+- [Deployment config](deployment_config/deployment_config_step1_solution_assessment.md)
 - [QDB memory audit](qdb_memory_audit/qdb_memory_audit_step1_solution_assessment.md) — documentation-only source audit complete; fixes and host capacity acceptance remain separate.
 
 - [Unified reaction records](unified_reaction_records/unified_reaction_records_step1_solution_assessment.md)
@@ -55,6 +60,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [UI account states](ui_account_states/)
 - [UI first post identity](ui_first_post_identity/)
 - [UI messages](ui_messages/)
+- [UI tools launcher](ui_tools_launcher/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
@@ -356,3 +362,7 @@ and repair its navigation and affected references. See the
 - [Agent posting](agent_posting/agent_posting_step3_development_plan.md): Seven stages complete locally: frm.py, text diagnostics and API recovery; deployment/live acceptance pending.
 
 - [Bounded tag pages and QDB rebuild catalog](./qdb_rebuild_scope/qdb_rebuild_scope_step1_solution_assessment.md) — implemented and locally verified; all sites; live-host acceptance pending.
+
+- [QDB build-time reduction](./qdb_build_time/qdb_build_time_step1_solution_assessment.md) — combined profile publication and history optimization, locally implemented and measured; production replay pending.
+
+- [Message sync activity and limits](message_sync_activity/message_sync_activity_step1_solution_assessment.md) — recent-device priority and bounded, quiet recovery.

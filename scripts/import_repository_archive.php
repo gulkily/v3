@@ -21,15 +21,15 @@ if ($arguments['help'] || $arguments['archive_path'] === null) {
 $archivePath = normalizeExistingPath($arguments['archive_path'], getcwd());
 $repositoryRoot = normalizePath(
     $arguments['repository_root']
-        ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)),
+        ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)),
     getcwd(),
 );
 $databasePath = normalizePath(
     $arguments['database_path']
-        ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')),
+        ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')),
     getcwd(),
 );
-$artifactRoot = $arguments['artifact_root'] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: null);
+$artifactRoot = $arguments['artifact_root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: null);
 $artifactRoot = $artifactRoot !== null && $artifactRoot !== ''
     ? normalizePath($artifactRoot, getcwd())
     : null;

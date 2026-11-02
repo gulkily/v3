@@ -32,9 +32,9 @@ if (preg_match('/^[A-Za-z0-9._:\/.-]+$/', $target) !== 1) {
     exit(1);
 }
 
-$repositoryRoot = normalizePath($argv[2] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
-$databasePath = normalizePath($argv[3] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
-$artifactRoot = $argv[4] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: null);
+$repositoryRoot = normalizePath($argv[2] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)));
+$databasePath = normalizePath($argv[3] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+$artifactRoot = $argv[4] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: null);
 $artifactRoot = $artifactRoot !== null && $artifactRoot !== '' ? normalizePath($artifactRoot) : null;
 $sourceId = basename($target, '.txt');
 $source = null;
@@ -50,7 +50,7 @@ if ($source !== null) {
         } else {
             \ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, "records/post-retractions/maintenance.txt");
             $defaultStatic = \ForumRewrite\PresentationPathResolver::staticHtmlRoot($projectRoot, \ForumRewrite\SiteProfileRegistry::active());
-            $presentation = (string) (getenv('FORUM_STATIC_HTML_ROOT') ?: $defaultStatic);
+            $presentation = (string) (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: $defaultStatic);
             $result = \ForumRewrite\Write\SourceLabelRemoval::run($repositoryRoot, $databasePath, $sourceId, $repair, $resolvedLabels, $artifactRoot ?? $presentation);
         }
         if ($json) fwrite(STDOUT, json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT) . "\n");
