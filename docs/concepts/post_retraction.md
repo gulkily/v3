@@ -1,0 +1,6 @@
+# Post retraction and operator removal
+
+Purpose: Delete a post's prose from the current tree while retaining a receipt that describes the removal on its own.
+Scenario: A signed retraction request or a local operator deletion is accepted by an authenticated entry point; the post and signature files are removed, a shared `Key: value` receipt is written and committed, routes serve the deletion notice at the post's path and at every historical commit, and the read model is refreshed. The sweep retires derived copies; the history purge later removes the prose from Git history.
+Sources: [removal acceptance record](../specs/removal_acceptance_record_v1.md), [post retraction record](../specs/post_retraction_record_v1.md), [accepted removal reader](../../src/ForumRewrite/Canonical/AcceptedRemoval.php), [retracted paths](../../src/ForumRewrite/Canonical/RetractedPosts.php), [operator reference](../reference/author_post_retraction.md), [sweep reference](../reference/retraction_sweep.md).
+Known limitation: Acceptance deletes current content only; history, backups and external copies are separate concerns ([history purge](history_purge.md)).

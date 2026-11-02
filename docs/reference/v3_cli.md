@@ -494,6 +494,25 @@ Preview is non-mutating. Run executes one bounded batch immediately; repeat whil
 `remaining` is true. The normal queue worker also discovers and continues sweeps.
 See [coverage, exclusions, progress and recovery](retraction_sweep.md). Previous removal/retraction receipt formats are unsupported; no migration is available.
 
+## Purge retracted prose from Git history
+
+```
+./v3 purge-history preview [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--skip-dry-run] [--json]
+./v3 purge-history run [--yes] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--json]
+```
+
+Preview changes nothing: it lists the paths every accepted delete receipt names,
+the commits touching them, blockers, and the time a rewrite took on a temporary
+clone; exit code 0 means run would proceed. Run rewrites all history in place
+under the repository write lock, verifies the old objects are gone, commits a
+[history rewrite record](../specs/history_rewrite_record_v1.md), rebuilds the
+read model and static pages, and names the copies it cannot reach. It cannot be
+undone except from a full backup including `.git`, so it asks you to type `yes`
+on the terminal first; `--yes` skips the question for scripts, and a run without
+a terminal and without `--yes` is refused. Progress for each phase goes to
+stderr with elapsed seconds; the result stays on stdout. Follow the
+[runbook](../runbooks/history_purge.md).
+
 ## Manage the background task queue
 
 ```

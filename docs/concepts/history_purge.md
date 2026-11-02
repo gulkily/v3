@@ -1,0 +1,6 @@
+# History purge
+
+Purpose: Remove retracted or operator-deleted prose from the repository's Git history on the server, deliberately and in batches, while keeping receipts and old commit-addressed links working.
+Scenario: An operator runs `./v3 purge-history preview`, then `run`, confirming at the terminal or with `--yes`. The worklist is every post and signature path named by an accepted delete receipt. History is rewritten in place with built-in Git (`fast-export` through a path filter into `fast-import`), old refs are restorable until verification passes, then reflogs expire and the object database is pruned and checked by object id. A history rewrite record maps every changed commit identity and is committed with the purge; the read model and static pages are rebuilt.
+Sources: [planner](../../src/ForumRewrite/Retraction/HistoryPurgePlanner.php), [rewrite primitive](../../src/ForumRewrite/Retraction/HistoryRewrite.php), [engine and run](../../src/ForumRewrite/Retraction/HistoryPurge.php), [record spec](../specs/history_rewrite_record_v1.md), [CLI](../../scripts/purge_history.php), [runbook](../runbooks/history_purge.md).
+Known limitation: Backups, other clones and mirrors, downloads, provider copies and quotations are out of reach and are named in the output. A completed purge is undone only from the operator's backup.
