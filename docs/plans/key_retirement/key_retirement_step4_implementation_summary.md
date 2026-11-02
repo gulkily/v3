@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/key_retirement — [ledger](../effort_estimation_trial.md#cycle-v3key_retirement)
 Extended estimates: enabled
-Status: Step 3 v3/A approved; Stages 1–5 complete; Stage 6 next
+Status: Step 3 v3/A approved; Stages 1–6 complete; Stage 7 next
 
 **Cycle estimate: 1.00**
 
@@ -101,5 +101,16 @@ Approval: User said “approved step 3” for v3/A. Revised planning commit 3aab
 - Changes: Reused existing prepared state, signature verifier, canonical write/publication locks, recoverable signed transaction and approval artifact invalidation. Dedicated policy enforces distinct active actor/target, disabled-rename member boundary, independent operator authority and an unchanged active replacement. Prepare and finalize rebuild under lock; reviewed context and exact bytes are bound. Public no-store status and identical accepted retries distinguish accepted retirement from incomplete refresh.
 - Verification: 13 focused checks passed. New real-signature acceptance test covers both cross-account approval settings, both rename settings, wrong signer, changed review, renamed-back exclusion, operator assistance, last-key/reciprocal protection, HTTP status, and injected post-commit refresh failure followed by same-signature recovery. Existing transaction tests cover interrupted writers, Git rejection, staged conflicts and symlinks; approval acceptance and API route inventory pass. Whitespace checked.
 - Notes: Canonical transaction/prepare contracts were extended instead of introducing another journal or signing protocol. No retirement UI yet; no new dependencies or deployment. Original estimate unchanged; no measured labor.
+
+*— Codex · 2026-11-01 UTC*
+
+## Stage 6 - Shared retirement journeys and retained status
+
+**Original estimate: 0.16**
+**Retrospective stage work: 0.16**
+
+- Changes: Existing profile access partial hosts the permanent review/sign/submit/retry action; existing browser signing owns private-key use. A small action-specific partial is needed because retirement has an immutable target/replacement review and uncertain-outcome retry, unlike the existing approval form. Public eligible-actor hints drive visibility before the control is parsed, independent of server viewer identity. Account, normal/Forte profiles, account history, API status and pending queues distinguish retired keys. Historical authorship remains approved for public presentation without granting current access; public account histories retain their posts and grants.
+- Verification: 14 focused profile/history/access/write checks passed. `node tests/browser/key_retirement.mjs` passed the ordinary Account journey and operator replacement-first journey with real signatures, six viewer roles, first-frame visibility, keyboard review, cancellation, a lost accepted response followed by exact retry, retired Account recovery, retained history/pending exclusion, and no-JavaScript reading. Review layout checked in all 16 themes at 390/1280 pixels; phone and desktop Word97 screenshots visually inspected. No new navigation destination; existing icons unchanged. Whitespace checked.
+- Notes: Browser-local Remove/Undo is unchanged. No secrets enter retirement requests. Full private-store restore and final integration remain. Original estimate unchanged; no dependency change, physical-device test or production claim.
 
 *— Codex · 2026-11-01 UTC*

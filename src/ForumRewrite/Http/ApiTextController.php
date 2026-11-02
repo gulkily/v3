@@ -133,7 +133,8 @@ final class ApiTextController
         $approvedBy = ((int) $profile['is_approved']) === 1 ? (string) ($profile['approved_by_label'] ?? '') : '';
 
         $history = $this->routeServices->approvalHistory()->forProfile($profile);
-        $historyText = 'Approval-Classification: ' . $history['classification'] . "\nAccepted-At: " . ($history['accepted_at'] ?? 'unknown')
+        $historyText = 'Retired: ' . (!empty($profile['retired_at']) ? 'yes' : 'no') . "\nRetired-At: " . ($profile['retired_at'] ?? '') . "\n"
+            . 'Approval-Classification: ' . $history['classification'] . "\nAccepted-At: " . ($history['accepted_at'] ?? 'unknown')
             . "\nApproval-Evidence: " . ($history['source_path'] ?? 'unknown') . "\nAcceptance-Receipt: " . ($history['receipt_path'] ?? 'unknown')
             . "\nAccount-Key-History: /user/" . rawurlencode((string) $profile['username_token']) . "#account-keys\n";
         $this->routeServices->sendText(

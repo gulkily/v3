@@ -26,7 +26,7 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
 ]), 2) ?>
 <?php endif; ?>
   <article class="card">
-    <p id="account-keys"><strong>Approval:</strong> <?= (int) $profile['is_approved'] === 1 ? 'Approved' : 'Not approved' ?> · <a class="profile-approval-details" href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>#account-keys">Approval details</a></p>
+    <p id="account-keys"><strong>Approval:</strong> <?= !empty($profile['retired_at']) ? 'Retired' : ((int) $profile['is_approved'] === 1 ? 'Approved' : 'Not approved') ?> · <a class="profile-approval-details" href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>#account-keys">Approval details</a></p>
 <?php if ((int) $profile['is_approved'] === 1 && (string) ($profile['approved_by_label'] ?? '') !== ''): ?>
     <p><strong>Approved by:</strong>
 <?php if ((string) ($profile['approved_by_profile_slug'] ?? '') !== ''): ?>

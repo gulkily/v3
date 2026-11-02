@@ -108,7 +108,7 @@ final class ProfileRepository
                  ORDER BY candidate.created_at DESC, candidate.action_key DESC, candidate.id DESC
                  LIMIT 1
              )
-             WHERE is_approved = 0
+             WHERE is_approved = 0 AND retired_at IS NULL
              ORDER BY CASE WHEN latest_activity.created_at IS NULL THEN 1 ELSE 0 END ASC,
                       latest_activity.created_at DESC,
                       latest_activity.action_key DESC,
@@ -125,7 +125,7 @@ final class ProfileRepository
 
     public static function hasPendingDirectoryProfiles(PDO $pdo): bool
     {
-        $stmt = $pdo->query('SELECT 1 FROM profiles WHERE is_approved = 0 LIMIT 1');
+        $stmt = $pdo->query('SELECT 1 FROM profiles WHERE is_approved = 0 AND retired_at IS NULL LIMIT 1');
 
         return $stmt->fetchColumn() !== false;
     }

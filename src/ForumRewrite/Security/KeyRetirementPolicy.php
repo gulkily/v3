@@ -48,6 +48,20 @@ final class KeyRetirementPolicy
         return ['actor'=>self::snapshot($actor),'target'=>self::snapshot($target),'replacement'=>self::snapshot($replacement),
             'authority'=>$operator?'operator':'member','rename_enabled'=>$rename];
     }
+    /** Public presentation hints only. Acceptance always evaluates fresh authority. */
+    public function presentationActors(array $target): array
+    {
+        if ((int)$target['is_approved'] !== 1 || !empty($target['retired_at'])) return [];
+        $rename = FeatureFlagEvaluator::forRepository($this->root)->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED);
+        $actors = [];
+        foreach ($this->pdo->query('SELECT identity_id,username_token,bootstrap_username_token,has_name_history FROM profiles WHERE is_approved=1')->fetchAll(PDO::FETCH_ASSOC) as $candidate) {
+            $id=$candidate['identity_id'];
+            if ($id === $target['identity_id'] || KeyRetirement::read($this->root,$id)!==null) continue;
+            if (ApprovalPolicy::isActiveOperator($this->root,$id)
+                || (!$rename && self::unchanged($target) && self::unchanged($candidate) && $candidate['username_token']===$target['username_token'])) $actors[]=substr($id,8);
+        }
+        return $actors;
+    }
     public static function hash(array $context): string
     {
         return hash('sha256',json_encode($context,JSON_THROW_ON_ERROR));
