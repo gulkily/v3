@@ -675,7 +675,7 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
 }
 
 :root[data-theme="midnight"] select,
-:root[data-theme="midnight"] .users-tools input {
+:root[data-theme="midnight"] .board-toolbar__search {
   border: 1px solid #000000;
   border-radius: 0;
   background: #121212;

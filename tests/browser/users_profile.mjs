@@ -43,10 +43,10 @@ try {
   const linked = await context.request.post(base + '/api/link_identity', { form: { public_key: member.publicKey } });
   const memberSlug = /profile_slug=(.+)/.exec(await linked.text())[1];
 
-  // Members: compact rows, search and sort.
+  // Members: thread rows in the board toolbar's page, with a search.
   await page.goto(base + '/users/');
   assert.equal(await page.locator('nav.board-filter[aria-label="Users"] a[aria-current="page"]').textContent(), 'Members');
-  const rows = page.locator('[data-users-list] > a:not([hidden])');
+  const rows = page.locator('[data-users-list] > .thread-row:not([hidden])');
   const before = await rows.count();
   assert.ok(before >= 1);
   await page.getByRole('searchbox', { name: 'Search members' }).fill('browser-in');
@@ -54,15 +54,13 @@ try {
   await page.getByRole('searchbox', { name: 'Search members' }).fill('nobody-by-this-name');
   await page.getByText('No members match.').waitFor();
   await page.getByRole('searchbox', { name: 'Search members' }).fill('');
-  await page.getByRole('combobox', { name: 'Sort members' }).selectOption('name');
-  const names = await rows.evaluateAll(items => items.map(item => item.dataset.userName));
-  assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b)));
+  assert.equal(await rows.count(), before);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
 
   // Your own page: Edit in Account, no Message.
   await page.getByRole('searchbox', { name: 'Search members' }).fill('browser-in');
-  await rows.first().click();
-  await page.getByRole('heading', { name: 'browser-inviter', exact: true }).waitFor();
+  await rows.first().getByRole('link', { name: 'browser-inviter' }).click();
+  await page.waitForURL(/\/user\/browser-inviter/);
   assert.equal(await page.locator('.person-head .chip--approved').textContent(), 'Approved');
   assert.equal(await page.getByRole('button', { name: 'Edit in Account' }).isVisible(), true);
   assert.equal(await page.getByRole('button', { name: 'Message' }).count(), 0);
@@ -90,8 +88,8 @@ try {
   // The new member is now in the directory; their page offers Message, which opens the conversation.
   await page.goto(base + '/users/');
   await page.getByRole('searchbox', { name: 'Search members' }).fill('browser-member');
-  await rows.first().click();
-  await page.getByRole('heading', { name: 'browser-member', exact: true }).waitFor();
+  await rows.first().getByRole('link', { name: 'browser-member' }).click();
+  await page.waitForURL(/\/user\/browser-member/);
   await page.screenshot({ path: '/tmp/users-person-390.png', fullPage: true });
   await page.getByRole('button', { name: 'Message' }).click();
   await page.waitForURL(/\/messages\/conversation\/browser-member/);
@@ -107,13 +105,13 @@ try {
   assert.equal(forbidden.status(), 403);
   await anonymous.close();
 
-  // Without JavaScript the full list shows and the search and sort controls stay hidden.
+  // Without JavaScript the full list shows and the search stays hidden.
   const plain = await browser.newContext({ javaScriptEnabled: false });
   const plainPage = await plain.newPage();
   await plainPage.goto(base + '/users/');
   assert.equal(await plainPage.getByRole('searchbox', { name: 'Search members' }).isVisible(), false);
-  assert.ok(await plainPage.locator('[data-users-list] > a').count() >= 2);
+  assert.ok(await plainPage.locator('[data-users-list] > .thread-row').count() >= 2);
   await plain.close();
-  console.log('PASS users and profiles: search, sort, own page, Replies, approve from Waiting, Message opens the conversation, Waiting for approved members only, no JavaScript');
+  console.log('PASS users and profiles: search, own page, Replies, approve from Waiting, Message opens the conversation, Waiting for approved members only, no JavaScript');
 } catch (error) { console.error(logs.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }

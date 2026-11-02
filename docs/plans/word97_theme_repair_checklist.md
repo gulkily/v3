@@ -114,6 +114,11 @@ was repaired on the same branch (1340fa3be); Chicago is still open.
       header has 1.25rem of clearance before the first window. Verified in both themes at 1400
       and 390 on the board, Users and thread pages.
 
+- [x] (commit 8: users rows) Users page review: member rows had reused Account's settings rows and the
+      sort was a native select beside the board's existing sort menu. Members now use the board's
+      thread rows, the tabs and search share the board toolbar, and the sort is gone; see the cycle-7
+      entry in `ui_redesign/implementation_checklist.md`. Both themes pick the components up unchanged.
+
 ## Cross-cutting
 
 - [x] (bed7230e8, 37c961307; white document surfaces for `.thread-rows` and `.account-group`, grey windows for cards) The theme has three greys (`--page-bg`, `--panel`, `--line`) that new components rely on

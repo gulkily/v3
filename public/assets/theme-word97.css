@@ -424,7 +424,7 @@
 }
 
 :root[data-theme="word97"] select,
-:root[data-theme="word97"] .users-tools input {
+:root[data-theme="word97"] .board-toolbar__search {
   border: 1px solid #808080;
   border-radius: 0;
   background: #ffffff;
