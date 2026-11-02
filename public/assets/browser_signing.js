@@ -3031,8 +3031,8 @@
             if (username === "guest") {
               throw new Error("Type a name first.");
             }
-            // A registered automatic key keeps its posts and invitations: name it rather than replace it.
-            if (isRegisteredIdentity() && root.dataset.usernameChangesEnabled === "1") {
+            // Name an existing automatic key; never replace it to choose a name.
+            if (hasBrowserKeypair()) {
               await renameTo(username, null);
               return;
             }

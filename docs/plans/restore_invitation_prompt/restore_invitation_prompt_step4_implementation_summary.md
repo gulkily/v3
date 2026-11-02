@@ -33,3 +33,14 @@ Completion: Untargeted inline naming and Account guest recovery keep the key, po
 - Notes: S1 commit 1b2f0c39. Recovery authority remains exact signed committed names; no new receipt family. Definitive missing/expired uncommitted requests can be prepared afresh on next retry. No stage estimate revision.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 3 - Account recovery
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.12**
+
+- Changes: Existing Account pre-paint state script exposes Change for local guests/pending naming as well as the enabled rename flag; server eligibility remains authoritative. Continue names an existing key rather than replacing it. Existing inline editor uses canonical 80-character limit.
+- Verification: AccountKeyPageHooksTest plus BrowserSigningNormalizationTest 89/89 passed; renamed hook test separately 6/6. New real Chrome account_initial_name.mjs passed public/private flag-off guest naming, cancel, lost-response/reload recovery, same fingerprint and later rename control hidden. PHP/JS/whitespace checks pass.
+- Notes: S2 commit a10f7c5a. First private browser attempt encountered pending sign-in navigation during rapid fixture clicks; fixture now completes in-place authentication before testing the reloaded Account editor, and both modes pass. Initial visibility uses existing synchronous state script, without new server personalization. Full theme/viewport matrix follows S5.
+
+*— Codex · 2026-11-01 UTC*

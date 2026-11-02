@@ -53,7 +53,7 @@ $usernameChangesEnabled = $usernameChangesEnabled ?? false;
       <button type="button" class="account-row__action" data-action="rename-profile"<?= $usernameChangesEnabled ? '' : ' hidden' ?>>Change</button>
     </div>
     <form class="account-name-editor" data-role="name-editor" hidden>
-      <label>Name <input type="text" data-role="name-editor-input" autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="64" required></label>
+      <label>Name <input type="text" data-role="name-editor-input" autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="80" required></label>
       <p class="meta">Posts from this key move to the new name.</p>
       <div class="button-row">
         <button type="button" class="account-key-secondary-button" data-action="cancel-name">Cancel</button>
@@ -266,6 +266,12 @@ No browser private key saved yet.
       var fingerprintField = root.querySelector('[data-role="fingerprint-field"]');
       var copyFingerprint = root.querySelector('[data-action="copy-fingerprint"]');
       var userLink = root.querySelector('[data-role="user-link"]');
+
+      var changeName = root.querySelector('[data-action="rename-profile"]');
+      if (changeName) {
+        var pendingName = readStorageValue('forum_pending_profile_name:openpgp:' + fingerprint);
+        changeName.hidden = !ready || (root.dataset.usernameChangesEnabled !== '1' && username !== 'guest' && !pendingName);
+      }
 
       root.dataset.accountState = state;
       root.querySelectorAll('[data-role="username-field"], [data-role="name-row-value"], [data-role="guest-name"]').forEach(function (node) {
