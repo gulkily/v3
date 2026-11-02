@@ -1408,9 +1408,8 @@ class LocalWriteService
             if ($latest !== null && $record['Created-At'] <= $latest['Created-At']) {
                 throw new RuntimeException('A newer username was saved. Retry to prepare a fresh name change.');
             }
-            $this->writeFile($path, $contents);
-            $this->writeFile($path . '.asc', $signature);
-            $commit = $this->commitCanonicalWrite([$path, $path . '.asc'], 'Set profile name for ' . $identity);
+            $commit = ['commit_sha' => (new SignedPostTransaction($this->repositoryRoot))->accept(
+                [$path => $contents, $path . '.asc' => $signature], 'Set profile name for ' . $identity)];
             $this->refreshDerivedStateAfterCommit($commit['commit_sha']);
             $this->invalidator()->invalidateAllGeneratedPresentation();
             $this->deletePreparedPost($token);

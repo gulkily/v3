@@ -22,7 +22,7 @@ final class SignedPostTransaction
     }
     private function safePath(string $path): string
     {
-        if (!preg_match('#^records/(posts|identity|public-keys|thread-labels)/[A-Za-z0-9/_.-]+$#D',$path) || str_contains($path,'..')) throw new RuntimeException('Unsafe signed post path.');
+        if (!preg_match('#^records/(posts|identity|public-keys|thread-labels|profile-names)/[A-Za-z0-9/_.-]+$#D',$path) || str_contains($path,'..')) throw new RuntimeException('Unsafe signed post path.');
         $full=$this->root;
         foreach(explode('/',$path) as $part) { $full.='/'.$part; if(is_link($full)) throw new RuntimeException('Signed post path contains a symlink.'); }
         return $full;
@@ -70,7 +70,7 @@ final class SignedPostTransaction
         }
         $this->clear($dir);
     }
-    public function accept(array $files): string
+    public function accept(array $files, string $message = 'Accept signed post bundle'): string
     {
         $this->recover();
         if($files===[]) throw new RuntimeException('Empty signed post transaction.');
@@ -94,7 +94,7 @@ final class SignedPostTransaction
                 $this->checkpoint('file');
             }
             $this->git(['add','--',...array_keys($files)]); $this->checkpoint('staged');
-            $this->git(['-c','user.name=Forum Rewrite','-c','user.email=forum-rewrite@example.invalid','commit','-m','Accept signed post bundle','--only','--',...array_keys($files)]);
+            $this->git(['-c','user.name=Forum Rewrite','-c','user.email=forum-rewrite@example.invalid','commit','-m',$message,'--only','--',...array_keys($files)]);
             $this->checkpoint('committed');
             $sha=trim($this->git(['rev-parse','HEAD']));
             $this->clear($dir);

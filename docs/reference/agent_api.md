@@ -209,7 +209,10 @@ category and list its offending characters.
   a second `prepare_identity` for the same key fails with
   `Identity already exists for this fingerprint.`
 - Username changes use `prepare_profile_name` and `finalize_profile_name` and
-  only work when `/llms.txt` says they are enabled.
+  follow the live rename flag, except that an original `guest` identity with no
+  verified name update may choose its initial name even when renaming is disabled.
+  Exact committed signed naming requests may be retried after prepare-token expiry
+  or a lost response; recovery returns the latest verified name.
 
 ## Signing
 

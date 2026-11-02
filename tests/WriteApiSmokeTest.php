@@ -206,6 +206,11 @@ final class WriteApiSmokeTest
             $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
                 featureFlags: $this->usernameChangeFlags(false));
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $bootstrap = $root . '/records/identity/identity-' . str_replace(':', '-', $identity) . '.txt';
+            file_put_contents($bootstrap, str_replace("Username: guest\n", '', file_get_contents($bootstrap)));
+            $this->runCommand($root, 'git add records/identity');
+            $this->runCommand($root, 'git commit -qm "Legacy guest fixture without Username"');
+            $bootstrapBytes = file_get_contents($bootstrap);
             $sign = fn ($prepared) => $prepared + ['author_identity_id' => $identity,
                 'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
             $refuse = function ($action) {
@@ -216,6 +221,9 @@ final class WriteApiSmokeTest
             $first = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'initial-reader']));
             $competing = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'competing']));
             assertSame('initial-reader', $writer->finalizePreparedProfileName($first)['username']);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame('initial-reader', ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $identity)['username']);
+            assertSame($bootstrapBytes, file_get_contents($bootstrap));
             $refuse(fn () => $writer->finalizePreparedProfileName($competing));
             $refuse(fn () => $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'second']));
             $enabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
@@ -238,6 +246,13 @@ final class WriteApiSmokeTest
             $sign = fn ($prepared) => $prepared + ['author_identity_id' => $identity,
                 'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
             $signed = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'recovered']));
+            $hook = $root . '/.git/hooks/pre-commit';
+            file_put_contents($hook, "#!/bin/sh\nexit 1\n"); chmod($hook, 0700);
+            try { $writer->finalizePreparedProfileName($signed); throw new LogicException('Expected commit failure'); }
+            catch (RuntimeException $e) { assertStringContains('Git operation failed', $e->getMessage()); }
+            assertSame(false, is_file($root . '/' . $signed['record_path']));
+            assertSame('', trim($this->gitOutput($root, 'status --porcelain')));
+            unlink($hook);
             $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root),
                 featureFlags: $this->usernameChangeFlags(false)) extends LocalWriteService {
                 protected function rebuildReadModel(): array { throw new RuntimeException('injected name refresh failure'); }

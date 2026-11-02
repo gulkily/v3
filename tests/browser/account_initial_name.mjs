@@ -53,6 +53,15 @@ try {
       await window.__forumBrowserIdentity.ensureActionIdentity(null, null, { temporaryName: 'guest' });
     });
     const fingerprint = await reader.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint'));
+    if (privateSite) {
+      // Existing accepted guests must be able to name the same key without a new invitation.
+      await writeFile(join(root, 'repository/records/approval-seeds/openpgp-' + fingerprint.toLowerCase() + '.txt'),
+        'Approved-Identity-ID: openpgp:' + fingerprint.toLowerCase() + '\nSeed-Reason: approved guest recovery fixture\n\n');
+      assert.equal(spawnSync('git', ['-C', join(root, 'repository'), 'add', 'records/approval-seeds']).status, 0);
+      assert.equal(spawnSync('git', ['-C', join(root, 'repository'), 'commit', '-qm', 'Approve guest recovery fixture']).status, 0);
+      const rebuild = spawnSync(join(project, 'v3'), ['rebuild', join(root, 'repository'), join(root, 'read.sqlite3')], { encoding:'utf8' });
+      assert.equal(rebuild.status, 0, rebuild.stderr);
+    }
     await reader.page.evaluate(() => window.PrivateSiteAuth.authenticate({ navigate: false, force: true }));
     await reader.page.reload();
     const change = reader.page.locator('[data-action=rename-profile]');
@@ -79,6 +88,12 @@ try {
     await reader.page.reload();
     assert.equal(await change.isVisible(), false);
     assert.equal(await reader.page.evaluate(() => localStorage.getItem('forum_pki_username')), 'account-initial-' + Number(privateSite));
+    const rebuilt = spawnSync(join(project, 'v3'), ['rebuild', join(root, 'repository'), join(root, 'read.sqlite3')], { encoding:'utf8' });
+    assert.equal(rebuilt.status, 0, rebuilt.stderr);
+    await reader.page.reload();
+    assert.equal(await reader.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint')), fingerprint);
+    assert.match(await reader.page.locator('[data-role=name-row-value]').innerText(), new RegExp('account-initial-' + Number(privateSite)));
+    if (privateSite) assert.match(await reader.page.locator('[data-role=simple-status-badge]').innerText(), /Approved/);
     console.log('PASS Account initial naming, flag off, same key, cancel and lost-response reload: ' + (privateSite ? 'private' : 'public'));
   }
 } catch (error) {

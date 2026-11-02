@@ -49,7 +49,7 @@ final class ApiRouteCatalog
             ['GET', '/api/auth_challenge', 'public', 'text', 'Challenge to sign for authenticate_identity.'],
             ['POST', '/api/authenticate_identity', 'signed', 'text', 'Start a session with a signed challenge.'],
             ['GET', '/api/auth_status', 'session', 'text', 'Current session identity.'],
-            ['POST', '/api/prepare_profile_name', 'signed', 'json', 'Prepare a username change (when username changes are enabled).'],
+            ['POST', '/api/prepare_profile_name', 'signed', 'json', 'Prepare an initial guest name, or a later rename when username changes are enabled.'],
             ['POST', '/api/finalize_profile_name', 'signed', 'json', 'Submit a signed username change.'],
             // Posting
             ['POST', '/api/prepare_thread', 'signed', 'json', 'Prepare a signed thread: send author_identity_id and body, receive the bytes to sign.'],

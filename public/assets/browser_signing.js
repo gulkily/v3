@@ -2705,10 +2705,18 @@
     await privateSiteAuth.authenticate();
   }
 
-  // Renames a registered key with a signed profile-name record; its posts move to the new name.
+  function normalizeProfileName(value) {
+    const raw = String(value || '').trim();
+    const name = normalizeUsername(raw);
+    if (!raw || name.length > 80 || (name === 'guest' && raw.toLowerCase() !== 'guest')) {
+      throw new Error('Enter a username using letters, numbers, dots, underscores or hyphens (up to 80 characters).');
+    }
+    return name;
+  }
+
+  // Name the existing key with a signed profile-name record; posts keep the same owner.
   async function saveRegisteredName(chosen, root, statusNode) {
-    const username = String(chosen || "").trim().toLowerCase();
-    if (!/^[a-z0-9._-]{1,80}$/.test(username)) throw new Error("Enter a username using letters, numbers, dots, underscores or hyphens (up to 80 characters).");
+    const username = normalizeProfileName(chosen);
     await ensureActionIdentity(root || null, statusNode || null);
     const identity = currentAuthorIdentityId();
     const pendingKey = "forum_pending_profile_name:" + identity;
@@ -2738,8 +2746,8 @@
     try {
       result = await postName("/api/finalize_profile_name", pending);
     } catch (error) {
-      // The server checks committed recovery first, so these definitive failures may be prepared again.
-      if (/^Prepared post not found\.|^Prepared profile name mismatch or expiry\./.test(error.message)) {
+      // Committed recovery runs first; definitive unaccepted requests must not strand a later retry.
+      if (/^Prepared post not found\.|^Prepared profile name mismatch or expiry\.|^Username changes are disabled\.|^A newer username was saved\./.test(error.message)) {
         if (localStorage.getItem(pendingKey) === JSON.stringify(pending)) localStorage.removeItem(pendingKey);
       }
       throw error;
@@ -3987,6 +3995,7 @@
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
   window.ForumBrowserSigning.saveRegisteredName = saveRegisteredName;
+  window.ForumBrowserSigning.normalizeProfileName = normalizeProfileName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;

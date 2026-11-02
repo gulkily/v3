@@ -5,18 +5,20 @@ final class SignedPostTransactionTest
 {
     public function testFailureRollbackAndAcceptedCommit(): void
     {
-        foreach(['journal','file','staged','committed'] as $point) {
-            [$root]=SignedPostIdentityTest::helper('createTempEnvironment');
-            $path='records/posts/transaction-test.txt';
-            $tx=new SignedPostTransaction($root,static function($at) use($point) { if($at===$point) throw new RuntimeException('injected'); });
-            $before=trim($tx->git(['rev-parse','HEAD']));
-            try { $tx->accept([$path=>"test\n",$path.'.asc'=>"signature\n"]); assertSame('committed',$point); }
-            catch(RuntimeException $e) { assertSame('injected',$e->getMessage()); }
-            assertSame($point==='committed',is_file($root.'/'.$path));
-            assertSame($point!=='committed',$before===trim($tx->git(['rev-parse','HEAD'])));
-            assertSame('',trim($tx->git(['status','--porcelain'])));
-            assertSame(false,is_dir($root.'/.git/signed-post-pending'));
-        }
+        foreach(['records/posts', 'records/profile-names'] as $family) {
+            foreach(['journal','file','staged','committed'] as $point) {
+                [$root]=SignedPostIdentityTest::helper('createTempEnvironment');
+                $path=$family.'/transaction-test.txt';
+                $tx=new SignedPostTransaction($root,static function($at) use($point) { if($at===$point) throw new RuntimeException('injected'); });
+                $before=trim($tx->git(['rev-parse','HEAD']));
+                try { $tx->accept([$path=>"test\n",$path.'.asc'=>"signature\n"]); assertSame('committed',$point); }
+                catch(RuntimeException $e) { assertSame('injected',$e->getMessage()); }
+                assertSame($point==='committed',is_file($root.'/'.$path));
+                assertSame($point!=='committed',$before===trim($tx->git(['rev-parse','HEAD'])));
+                assertSame('',trim($tx->git(['status','--porcelain'])));
+                assertSame(false,is_dir($root.'/.git/signed-post-pending'));
+            }
+    }
     }
     public function testKilledWriterRecoversBeforeApplicationReads(): void
     {

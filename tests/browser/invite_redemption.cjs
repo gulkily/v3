@@ -21,9 +21,9 @@ async function run({ targeted = true, failure = '', token = 'a'.repeat(32) } = {
     sessionStorage: { setItem(){}, removeItem(){} },
     localStorage: { getItem(key) { if (failure === 'storage') throw Error('Storage unavailable'); return key === 'forum_pki_fingerprint' ? fingerprint : null; } },
     document: { addEventListener(_, fn) { ready = fn; }, querySelector() { return root; } },
-    window: { location: { hash: '#invite=' + token, replace(url) { navigations.push(url); } },
+    window: { addEventListener(){}, location: { hash: '#invite=' + token, replace(url) { navigations.push(url); } },
       __forumBrowserIdentity: { currentAuthorIdentityId() { return 'openpgp:' + fingerprint; }, async ensureActionIdentity(_root, _status, opts) { readiness.push(opts); } },
-      ForumBrowserSigning: { async signCanonicalRecord() { return 'signature'; } },
+      ForumBrowserSigning: { normalizeProfileName: value => value, async signCanonicalRecord() { return 'signature'; } },
       PrivateSiteAuth: { async authenticate(opts) { auth.push(opts); return { status: failure === 'auth' ? 'pending' : 'approved', identityId: 'openpgp:' + fingerprint }; } } },
     fetch: async (url, options) => {
       calls.push(url);

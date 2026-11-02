@@ -5,3 +5,5 @@ Scenario: An issuer signs Max-Redemptions: 2. Two different keys accept under th
 Authority: Existing signed invitation records and validated repository acceptance receipts. Missing multi-use acceptance evidence blocks replay and invitation operations; derived caches cannot create fresh capacity.
 Compatibility: Absent limit means one. Browser issuance remains single-use; API-created capped links use the same Lobby. Trusted restore retains grants; public content import excludes invitation authority.
 Sources: src/ForumRewrite/Canonical/InvitationRecordParser.php; src/ForumRewrite/Invitation/InvitationLedger.php; src/ForumRewrite/Invitation/InvitationApprovalReplay.php; src/ForumRewrite/Write/LocalWriteService.php; docs/specs/invitation_record_v1.md; docs/reference/invitation_entry.md.
+
+Entry: Untargeted links collect an initial Username inline when needed; existing named keys keep their name. Targeted entry stays automatic. [Initial naming](initial_naming.md) preserves the same key and recovers committed naming separately from invitation acceptance.

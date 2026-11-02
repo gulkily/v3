@@ -298,3 +298,8 @@ button.account-row {
 .account-retry button + button {
   margin-left: 0.5rem;
 }
+
+/* Guest naming is resolved before the Account markup, including streamed HTML. */
+html[data-account-initial-name="1"] [data-action="rename-profile"][hidden] {
+  display: inline-block;
+}

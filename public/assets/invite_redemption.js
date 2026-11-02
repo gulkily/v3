@@ -40,6 +40,15 @@
     const nameInput = root.querySelector('[data-invitation-username]');
     const draftKey = 'forum_invite_name:' + token;
     let inFlight = false;
+    function syncNameField() {
+      // Real identity changes after entry may change which action is appropriate.
+      const name = localStorage.getItem('forum_pki_username') || 'guest';
+      nameField.hidden = name !== 'guest' && Boolean(localStorage.getItem('forum_pki_private_key'));
+    }
+    window.addEventListener('forum:identity-changed', syncNameField);
+    window.addEventListener('storage', function (event) {
+      if (!event.key || /^forum_pki_/.test(event.key)) syncNameField();
+    });
     async function redeem(manual) {
       if (inFlight) return;
       inFlight = true;
@@ -55,7 +64,7 @@
         }
         const startingIdentity = window.__forumBrowserIdentity.currentAuthorIdentityId();
         const needsName = !inspected.targeted && !nameField.hidden;
-        const username = needsName ? nameInput.value.trim().toLowerCase() : '';
+        const username = needsName ? window.ForumBrowserSigning.normalizeProfileName(nameInput.value) : '';
         if (needsName) {
           if (!/^[a-z0-9._-]{1,80}$/.test(username) || username === 'guest') {
             throw new Error('Enter a username using letters, numbers, dots, underscores or hyphens (up to 80 characters).');

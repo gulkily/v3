@@ -126,7 +126,7 @@ final class LlmsTxtRenderer
                 : 'unsigned posts and votes that name an identity count as that identity\'s. Signing is still recommended.'),
             'Username changes: ' . ($this->flags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED)
                 ? 'enabled through prepare_profile_name and finalize_profile_name. Usernames are not unique; the identity ID is.'
-                : 'disabled. Your username is fixed by your key\'s user ID. Usernames are not unique; the identity ID is.'),
+                : 'disabled. Original guest keys with no verified name update may choose one initial name through prepare_profile_name and finalize_profile_name. Usernames are not unique; the identity ID is.'),
         ];
     }
 

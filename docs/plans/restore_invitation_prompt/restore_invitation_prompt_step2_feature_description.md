@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](restore_invitation_prompt_step1_solution_assessment.md) · Step 2 · [Step 3](restore_invitation_prompt_step3_development_plan.md) · Step 4 (pending)
+> **Feature plan:** [Step 1](restore_invitation_prompt_step1_solution_assessment.md) · Step 2 · [Step 3](restore_invitation_prompt_step3_development_plan.md) · [Step 4](restore_invitation_prompt_step4_implementation_summary.md)
 Debug mode: enabled
 Effort study: railspike-effort / v3/restore_invitation_prompt; [ledger](../effort_estimation_trial.md#restore-invitation-prompt)
 Extended estimates: enabled

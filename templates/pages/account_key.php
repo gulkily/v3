@@ -15,7 +15,27 @@ $viewerIdentityId = is_array($viewerProfile) ? strtolower(trim((string) ($viewer
 $viewerApproved = is_array($viewerProfile) && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
 $usernameChangesEnabled = $usernameChangesEnabled ?? false;
 ?>
+<?= $partial('partials/account_state_script.php') ?>
+<script>
+// Resolve guest naming before its markup can paint, including streamed pages.
+window.forumAccountInitialNameHint = function () {
+  var available = false;
+  try {
+    var fingerprint = (localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase();
+    available = Boolean(localStorage.getItem('forum_pki_public_key') && localStorage.getItem('forum_pki_private_key'))
+      && ((localStorage.getItem('forum_pki_username') || 'guest') === 'guest'
+        || Boolean(localStorage.getItem('forum_pending_profile_name:openpgp:' + fingerprint)));
+  } catch (error) {}
+  document.documentElement.setAttribute('data-account-initial-name', available ? '1' : '0');
+  return available;
+};
+window.forumAccountInitialNameHint();
+</script>
 <section class="stack account-page" data-account-key-root data-account-state="guest" data-sky="account" data-username-changes-enabled="<?= $usernameChangesEnabled ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-auth-in-place data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-approved="<?= $viewerApproved ? '1' : '0' ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
+<script>
+  var accountRootBeforePaint = document.currentScript.parentElement;
+  accountRootBeforePaint.dataset.accountState = window.ForumAccountState.accountState(accountRootBeforePaint);
+</script>
   <header class="account-key-header">
     <h1>Account</h1>
   </header>
@@ -175,7 +195,6 @@ No browser private key saved yet.
     </form>
   </dialog>
 </section>
-<?= $partial('partials/account_state_script.php') ?>
 <script>
   (function () {
     var accountStateHelpers = window.ForumAccountState;
@@ -269,8 +288,8 @@ No browser private key saved yet.
 
       var changeName = root.querySelector('[data-action="rename-profile"]');
       if (changeName) {
-        var pendingName = readStorageValue('forum_pending_profile_name:openpgp:' + fingerprint);
-        changeName.hidden = !ready || (root.dataset.usernameChangesEnabled !== '1' && username !== 'guest' && !pendingName);
+        var initialName = window.forumAccountInitialNameHint();
+        changeName.hidden = !ready || (root.dataset.usernameChangesEnabled !== '1' && !initialName);
       }
 
       root.dataset.accountState = state;

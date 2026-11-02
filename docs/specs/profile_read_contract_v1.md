@@ -51,10 +51,10 @@ Every resolved profile read must be able to surface at least:
 
 ## Username Rules
 
-- Username capture happens once during browser key generation/bootstrap.
+- Untargeted invitation entry collects an initial username inline; automatic guest keys can receive a signed initial name without replacing the key.
 - If browser `prompt()` is unavailable, dismissed, blank, or unusable, the bootstrap flow falls back to `guest`.
 - The chosen bootstrap username becomes the initial visible username for the identity.
-- A later username change is available only while the `FORUM_USERNAME_CHANGES_ENABLED` flag is on (default off): a signed, same-key `set-name` record under `records/profile-names/` supplies the visible username without changing the identity, keys or approvals (see [invitation entry](../reference/invitation_entry.md#choosing-a-username-step-by-step)). Other post-bootstrap profile editing is not part of V1.
+- An original guest identity with no verified name update may choose an initial non-guest name regardless of the rename flag. Other later username changes are available only while the `FORUM_USERNAME_CHANGES_ENABLED` flag is on (default off): a signed, same-key `set-name` record under `records/profile-names/` supplies the visible username without changing the identity, keys or approvals (see [invitation entry](../reference/invitation_entry.md#choosing-a-username-step-by-step)). Other post-bootstrap profile editing is not part of V1.
 
 ## Public Profile Resolution
 

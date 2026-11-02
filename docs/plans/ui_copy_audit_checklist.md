@@ -815,3 +815,10 @@ search instructions because they were deliberately added and rendered-verified.
 Also retained copy/revocation confirmations and backup download feedback as
 potentially necessary signals for effects outside the visible page. The scan itself was documentation
 only; subsequent implementation and verification are recorded separately above.
+
+## Inline invitation username — 2026-11-01
+
+- [x] Replace the untargeted invitation's missing naming step with Username above Redeem; remove the redundant destination explanation and routine “Choose Redeem” notice. Preserve validation/storage/access errors and retry links. Existing Account editor supports initial guest naming with later renaming off.
+- [x] Verify public/private fresh and automatic guest flows, same-key lost-response retries, field retention, Account cancellation/recovery, and named/targeted compatibility. Rendered checks cover 16 permitted themes at phone/desktop widths, first-frame controls, long values, errors, expanded editor and overflow. Existing name normalization retained; no silent guest fallback.
+- [x] Keep authenticated state and naming hints in the client; streamed Account markup now determines guest control/state before child markup. No new server personalization.
+- [ ] Actual user-site replay remains unverified; no instance/browser was supplied. Local results are not a deployment claim. See [implementation evidence](restore_invitation_prompt/restore_invitation_prompt_step4_implementation_summary.md#stage-5---release-proof).

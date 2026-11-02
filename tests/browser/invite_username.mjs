@@ -46,7 +46,8 @@ async function contextWithIdentity(base, identity) {
 }
 try {
   for (const privateSite of [false, true]) {
-    for (const automatic of [false, true]) {
+    for (const mode of ['fresh', 'local-guest', 'published-guest']) {
+    const automatic = mode !== 'fresh';
     const base = await start(privateSite, false, automatic);
     const inviter = await contextWithIdentity(base, { keys, fingerprint });
     await inviter.page.goto(base + '/account/key/');
@@ -74,8 +75,12 @@ try {
     if (automatic) {
       await reader.page.goto(base + '/account/key/');
       await reader.page.waitForFunction(() => localStorage.getItem('forum_pki_private_key'));
-      await reader.page.evaluate(() => window.__forumBrowserIdentity.ensureActionIdentity(null, null));
-      await reader.page.evaluate(() => window.PrivateSiteAuth.authenticate({ navigate: false, force: true }));
+      if (mode === 'published-guest') {
+        await reader.page.evaluate(() => window.__forumBrowserIdentity.ensureActionIdentity(null, null));
+        await reader.page.evaluate(() => window.PrivateSiteAuth.authenticate({ navigate: false, force: true }));
+      } else {
+        assert.equal(await reader.page.evaluate(() => localStorage.getItem('forum_pki_published_fingerprint')), null);
+      }
     }
     await reader.page.goto(url);
     const input = reader.page.locator('[data-invitation-username]');
@@ -85,7 +90,7 @@ try {
     await redeem.click();
     await reader.page.locator('[data-role=invitation-redemption-feedback][data-status=error]').waitFor();
     assert.equal(await reader.page.evaluate(() => localStorage.getItem('forum_pki_fingerprint')), beforeKey);
-    const name = 'reader-' + Number(privateSite) + '-' + Number(automatic);
+    const name = 'reader-' + Number(privateSite) + '-' + mode;
     await input.fill(name);
     await reader.page.reload();
     assert.equal(await input.inputValue(), name);
@@ -116,7 +121,7 @@ try {
     assert.equal(await input.isVisible(), false);
     await redeem.click(); await reader.page.waitForURL(base + '/');
     assert.equal(await reader.page.evaluate(() => localStorage.getItem('forum_pki_username')), name);
-    console.log(`PASS inline invitation naming: private=${privateSite}, automatic=${automatic}, flag off, validation, draft reload, partial/lost responses, same key and named retry`);
+    console.log(`PASS inline invitation naming: private=${privateSite}, mode=${mode}, flag off, validation, draft reload, partial/lost responses, same key and named retry`);
     }
   }
 } catch (error) {

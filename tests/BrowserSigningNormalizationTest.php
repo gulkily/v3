@@ -73,9 +73,12 @@ global.fetch = async (url, options) => {
   if (switchKey) identity = 'key-b';
   return { ok:true, json:async () => ({ status:'ok', username:'saved-name' }) };
 };
-eval(source.slice(source.indexOf('  async function saveRegisteredName('), source.indexOf('  // A failed key creation')));
+eval(source.slice(source.indexOf('  function normalizeUsername('), source.indexOf('  function currentAuthorIdentityId(')));
+eval(source.slice(source.indexOf('  function normalizeProfileName('), source.indexOf('  // A failed key creation')));
 (async () => {
+  assert.equal(normalizeProfileName(' Alice Smith '), 'alice-smith');
   await assert.rejects(saveRegisteredName(''), /Enter a username/);
+  await assert.rejects(saveRegisteredName('!!!'), /Enter a username/);
   await assert.rejects(saveRegisteredName('saved-name'), /lost response/);
   assert.equal(await saveRegisteredName('changed-draft'), 'saved-name');
   assert.equal(prepares, 1); assert.equal(finalizes, 2);

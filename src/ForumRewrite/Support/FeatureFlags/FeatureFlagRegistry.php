@@ -167,7 +167,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::USERNAME_CHANGES_ENABLED,
                 'Username changes',
-                'Let members change the username on their existing key from Account, and list each change in the activity report. Disabling stops new changes and hides their activity; saved names, keys and approvals are unchanged.',
+                'Let members change the username on their existing key from Account, and list each change in the activity report. Disabling stops later renames and hides name-change activity. Guests can still choose an initial name; saved names, keys and approvals are unchanged.',
                 false,
                 self::USERNAME_CHANGES_ENABLED,
                 siteMutable: true,
