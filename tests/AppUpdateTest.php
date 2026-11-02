@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use ForumRewrite\Deploy\AppUpdate;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+use ForumRewrite\TaskQueue\TaskQueueWorker;
 
 require_once __DIR__ . '/../autoload.php';
 
@@ -181,6 +183,116 @@ final class AppUpdateTest
         assertSame(false, (new AppUpdate($dir))->inspect()['is_checkout']);
     }
 
+    public function testQueuedDeployCoalescesAndRunsAsTheRequestingOperator(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $new = $this->pushCommit($seed, 'queued');
+        $store = $this->store($app);
+        $update = new AppUpdate($app);
+
+        $first = $update->queue($store, 'openpgp:operator');
+        $second = $update->queue($store, 'openpgp:operator');
+        assertSame(true, $first['enqueued']);
+        assertSame(false, $second['enqueued']);
+        assertSame($first['task_id'], $second['task_id']);
+        assertSame('queued', $update->latestAttempt()['Outcome']);
+
+        $summary = $this->worker($store, $app)->run();
+
+        assertSame(1, $summary['completed']);
+        assertSame($new, $this->head($app));
+        assertSame('completed', $store->findById($first['task_id'])['status']);
+        $latest = $update->latestAttempt();
+        assertSame('deployed', $latest['Outcome']);
+        assertSame('queued', $latest['Mode']);
+        assertSame('openpgp:operator', $latest['Actor']);
+    }
+
+    public function testQueuedDeployIsClaimedBeforeEarlierQueuedWork(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $new = $this->pushCommit($seed, 'priority');
+        $store = $this->store($app);
+        $rebuild = $store->enqueue(SqliteTaskQueueStore::REBUILD_READ_MODEL, 'read-model');
+        $reply = $store->enqueue(SqliteTaskQueueStore::AGENT_REPLY, 'reply-1');
+        $deploy = (new AppUpdate($app))->queue($store, 'openpgp:operator');
+        $rebuilds = 0;
+
+        $this->worker($store, $app, $rebuilds)->run(1);
+
+        assertSame($new, $this->head($app));
+        assertSame('completed', $store->findById($deploy['task_id'])['status']);
+        assertSame(0, $rebuilds);
+        assertSame('queued', $store->findById($rebuild['id'])['status']);
+        assertSame('queued', $store->findById($reply['id'])['status']);
+    }
+
+    public function testOtherTaskTypesKeepTheirQueuedOrder(): void
+    {
+        [$app] = $this->fixture();
+        $store = $this->store($app);
+        $score = $store->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score');
+        $rebuild = $store->enqueue(SqliteTaskQueueStore::REBUILD_READ_MODEL, 'read-model');
+
+        $claimed = $store->claimNext(2);
+
+        assertSame([$score['id'], $rebuild['id']], array_map(static fn (array $t): int => (int) $t['id'], $claimed));
+    }
+
+    public function testQueuedDeployRetriesWhenAnInstantDeployHoldsTheLock(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $this->pushCommit($seed, 'busy');
+        $store = $this->store($app);
+        $queued = (new AppUpdate($app))->queue($store, 'openpgp:operator');
+        @mkdir($app . '/state', 0775, true);
+        $lock = fopen($app . '/state/app_update.lock', 'c');
+        flock($lock, LOCK_EX);
+        try {
+            $this->worker($store, $app)->run();
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+        assertSame('queued', $store->findById($queued['task_id'])['status']);
+
+        $this->worker($store, $app)->run();
+
+        assertSame('completed', $store->findById($queued['task_id'])['status']);
+        assertSame('openpgp:operator', (new AppUpdate($app))->latestAttempt()['Actor']);
+    }
+
+    public function testRefusedQueuedDeployFailsWithTheReason(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $this->pushCommit($seed, 'refused');
+        file_put_contents($app . '/README.md', "edited\n");
+        $store = $this->store($app);
+        $queued = (new AppUpdate($app))->queue($store, 'openpgp:operator');
+
+        $this->worker($store, $app)->run();
+
+        $task = $store->findById($queued['task_id']);
+        assertSame('failed', $task['status']);
+        assertSame('local_changes', $task['failure_code']);
+    }
+
+    private function store(string $app): SqliteTaskQueueStore
+    {
+        return new SqliteTaskQueueStore(new PDO('sqlite:' . $app . '/state/tasks.sqlite3'));
+    }
+
+    private function worker(SqliteTaskQueueStore $store, string $app, int &$rebuilds = 0): TaskQueueWorker
+    {
+        return new TaskQueueWorker(
+            $store,
+            static function () use (&$rebuilds): void {
+                $rebuilds++;
+            },
+            runAppUpdate: static fn (): array => (new AppUpdate($app))->runQueued(30),
+        );
+    }
+
     public function testCliHelpAndStatusRun(): void
     {
         $root = dirname(__DIR__);
@@ -209,6 +321,7 @@ final class AppUpdateTest
         $this->git($seed, ['remote', 'add', 'origin', $remote]);
         $this->git($seed, ['push', '-q', 'origin', 'main']);
         $this->run(['git', 'clone', '-q', $remote, $app]);
+        mkdir($app . '/state', 0775, true);
 
         return [$app, $seed, $remote];
     }

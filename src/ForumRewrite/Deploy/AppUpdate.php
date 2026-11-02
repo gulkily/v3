@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Deploy;
 
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+
 /**
  * Operator-triggered update of the application checkout (not the content
  * repository): fetch `origin/main` and fast-forward to it, nothing else.
@@ -29,12 +31,66 @@ final class AppUpdate
 
     private string $lockPath;
     private string $logPath;
+    private string $queuedPath;
 
     public function __construct(private readonly string $appRoot, ?string $stateRoot = null)
     {
         $stateRoot ??= $appRoot . '/state';
         $this->lockPath = $stateRoot . '/app_update.lock';
         $this->logPath = $stateRoot . '/logs/app_update.log';
+        $this->queuedPath = $stateRoot . '/app_update_queued.txt';
+    }
+
+    /**
+     * Queues a deploy for the task worker. Repeated requests while one is
+     * outstanding coalesce into it (the task queue's deduplication).
+     *
+     * @return array{enqueued: bool, task_id: int}
+     */
+    public function queue(SqliteTaskQueueStore $store, string $actor): array
+    {
+        $task = $store->enqueue(SqliteTaskQueueStore::APP_UPDATE, self::REMOTE . '/' . self::BRANCH, 3);
+        $enqueued = ($task['enqueued'] ?? false) === true;
+        if ($enqueued) {
+            $dir = dirname($this->queuedPath);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+            @file_put_contents($this->queuedPath, 'Requested-By: ' . $actor . "
+Task-ID: " . (int) $task['id'] . "
+Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
+", LOCK_EX);
+            $this->appendAttempt([
+                'attempt_id' => gmdate('YmdHis') . '-' . bin2hex(random_bytes(4)),
+                'started_at' => gmdate('Y-m-d\TH:i:s\Z'),
+                'mode' => self::MODE_QUEUED,
+                'actor' => $actor,
+                'outcome' => 'queued',
+                'message' => 'Waiting for the task worker (task ' . (int) $task['id'] . ').',
+            ]);
+        }
+
+        return ['enqueued' => $enqueued, 'task_id' => (int) $task['id']];
+    }
+
+    /**
+     * Runs the queued deploy as the operator who requested it.
+     *
+     * @return array<string, mixed>
+     */
+    public function runQueued(int $timeoutSeconds = 120): array
+    {
+        $actor = 'queued';
+        $raw = is_file($this->queuedPath) ? (string) @file_get_contents($this->queuedPath) : '';
+        if (preg_match('/^Requested-By: (.+)$/m', $raw, $m) === 1) {
+            $actor = trim($m[1]);
+        }
+        $attempt = $this->deploy($actor, self::MODE_QUEUED, $timeoutSeconds);
+        if ($attempt['reason'] !== 'busy') {
+            @unlink($this->queuedPath);
+        }
+
+        return $attempt;
     }
 
     public static function forProject(string $projectRoot): self

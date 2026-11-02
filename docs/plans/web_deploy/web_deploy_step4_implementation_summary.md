@@ -40,3 +40,22 @@ Stage originals copied from Step 3 (not new ratings): S1 0.15, S2 0.08 (revised 
   - Last-checked time is `FETCH_HEAD`'s mtime, so manual `git fetch` over SSH also counts.
 
 *— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Queued mode with deploy priority
+
+**Original estimate: 0.08**
+**Revised (Step 3, 2026-11-02): 0.10** for deploy priority
+**Retrospective: 0.10**
+
+- Changes:
+  - `SqliteTaskQueueStore::APP_UPDATE` (`app_update`), allowed type; `claimNext()` orders `app_update` first, then the existing `requested_at, id` order. No schema change.
+  - `TaskQueueWorker` gains an optional `runAppUpdate` callable and a `runAppUpdateTask()` arm: deployed or up to date completes the task; `busy` (an instant deploy holds the lock) is retried on a later run; any other refusal or failure is final with the refusal reason as the failure code.
+  - `AppUpdate::queue($store, $actor)` enqueues with deduplication key `origin/main`, so repeated taps coalesce; it records the requester in `state/app_update_queued.txt` and appends a `queued` entry to the attempt log, which the page will show. `AppUpdate::runQueued()` deploys as that requester.
+  - `scripts/task_queue.php` wires `runAppUpdate` to `runQueued()`.
+- Verification:
+  - `php tests/run.php AppUpdateTest TaskQueueWorkerTest TaskQueueStoreTest TaskQueueCommandTest DetachedTaskQueueLauncherTest`: 57/57 passed. New: coalescing and requester attribution; deploy claimed before an earlier rebuild and agent reply (rebuild not run); fast-score then rebuild keep FIFO order; busy retry then success; refused deploy fails with `local_changes`.
+  - `php scripts/task_queue.php status` lists `type=app_update` tasks.
+- Notes:
+  - The queue has no payload column, so the requester travels in the sidecar file rather than the task row; this avoided a schema change.
+
+*— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*
