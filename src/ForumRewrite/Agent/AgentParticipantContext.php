@@ -25,7 +25,7 @@ final class AgentParticipantContext
 
     private function status(string $identity): array
     {
-        $profile = $identity === '' ? null : ProfileRepository::byIdentityId($this->pdo, $identity);
+        $profile = $identity === '' ? null : \ForumRewrite\Security\KeyRetirement::profile($this->repositoryRoot, ProfileRepository::byIdentityId($this->pdo, $identity));
         return [
             'approved' => $profile === null ? null : (int) $profile['is_approved'] === 1,
             'admin' => $profile === null ? null : ApprovalPolicy::isActiveOperator($this->repositoryRoot, $identity),

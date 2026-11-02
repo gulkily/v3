@@ -1,6 +1,6 @@
 # Key retirement record v1
 
-Status: Signed prepare/finalize/status API implemented after active-access and history gates; shared UI and release checks remain in the implementation plan.
+Status: Implemented with signed API, shared UI, active-access enforcement and retained-history recovery. Local verification and release boundaries are recorded in docs/plans/key_retirement/acceptance.txt.
 
 A retirement permanently withdraws one fingerprint's future account privileges.
 It retains the public key, original signed records, historical approval grants and

@@ -101,6 +101,84 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testRetirementSerializesReciprocalActionsAndPrivateAcceptance(): void
+    {
+        [$root,$db,$artifacts]=$this->createTempEnvironment();$keys=[];$processes=[];
+        try {
+            $writer=new LocalWriteService($root,$db,$artifacts,new CanonicalRecordRepository($root));$ids=[];
+            for($i=0;$i<3;$i++) {
+                $keys[]=$this->createSigningKey('retirement-race');
+                $ids[]=$writer->linkIdentity(['public_key'=>$keys[$i]['public_key']])['identity_id'];
+                $this->seedApprovedIdentity($root,$ids[$i]);
+            }
+            (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+            $prepare=function($a,$t)use($writer,$ids,$keys){$p=$writer->prepareKeyRetirement(['actor_identity_id'=>$ids[$a],'target_identity_id'=>$ids[$t]]);return $p+['detached_signature'=>$this->signCanonicalRecord($keys[$a]['home'],$p['canonical_record'])];};
+            $signed=$prepare(1,0);
+            $viewer=ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(),$ids[0]);
+            $payload=$artifacts.'/race.txt';file_put_contents($payload,serialize(['viewer'=>$viewer,'ids'=>$ids]));
+            $code=<<<'CODE'
+require $argv[1].'/autoload.php';
+$data=unserialize(file_get_contents($argv[5]),['allowed_classes'=>false]);
+$pdo=(new ForumRewrite\ReadModel\ReadModelConnection($argv[3]))->open();
+$messages=new ForumRewrite\Messaging\PrivateMessageStore(new PDO('sqlite::memory:'));
+$messages->storeEnvelope('original','now','retirement-race','other',$data['ids'][0],'cipher');
+file_put_contents($argv[6],'ready');
+try {
+ if($argv[7]==='upload') {
+  $service=new ForumRewrite\Messaging\PrivateMessageHistorySyncService($messages,new ForumRewrite\Messaging\PrivateMessageHistorySyncStore(new PDO('sqlite::memory:')),$pdo,$argv[2]);
+  $service->upload($data['viewer'],['target'=>substr($data['ids'][1],8),'ciphertext'=>"-----BEGIN PGP MESSAGE-----\nopaque\n-----END PGP MESSAGE-----",'items'=>[['message_id'=>'original','digest'=>hash('sha256','cipher')]]]);
+ } else {
+  $service=new ForumRewrite\Messaging\PrivateMessageMailboxService($messages,$pdo,new ForumRewrite\Messaging\ApprovedUserKeyResolver($argv[2]),$argv[2]);
+  $service->send($data['viewer'],['message_id'=>'new','recipient_username_token'=>'retirement-race','encrypted_envelope'=>"-----BEGIN PGP MESSAGE-----\nopaque\n-----END PGP MESSAGE-----"]);
+ }
+ echo 'accepted';
+} catch(RuntimeException $error) {echo 'rejected:'.$error->getMessage();}
+CODE;
+            \ForumRewrite\Support\PublicationLock::withLock($root,function()use($root,$db,$artifacts,$payload,$code,$writer,$signed,&$processes):void {
+                foreach(['upload','send'] as $kind) {
+                    $ready=$artifacts.'/'.$kind.'.ready';$pipes=[];
+                    $process=proc_open([PHP_BINARY,'-r',$code,dirname(__DIR__),$root,$db,$artifacts,$payload,$ready,$kind],[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
+                    if(!is_resource($process))throw new RuntimeException('Unable to start private acceptance race.');
+                    fclose($pipes[0]);$processes[]=[$process,$pipes,$ready];
+                }
+                $until=microtime(true)+10;
+                foreach($processes as [$process,$pipes,$ready]) {while(!is_file($ready)&&microtime(true)<$until)usleep(10000);assertSame(true,is_file($ready));}
+                assertSame('retired',$writer->finalizePreparedKeyRetirement($signed)['status']);
+            });
+            foreach($processes as [$process,$pipes]) {
+                $output=stream_get_contents($pipes[1]);$error=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);
+                assertSame(0,proc_close($process));assertSame('',$error);assertStringContains('rejected:',$output);
+            }
+            $processes=[];
+            // Two separate writers race to consume the remaining replacement.
+            $finalize=<<<'CODE'
+require $argv[1].'/autoload.php';
+$writer=new ForumRewrite\Write\LocalWriteService($argv[2],$argv[3],$argv[4],new ForumRewrite\Canonical\CanonicalRecordRepository($argv[2]));
+try {$result=$writer->finalizePreparedKeyRetirement(unserialize(file_get_contents($argv[5]),['allowed_classes'=>false]));echo $result['status'];}
+catch(RuntimeException $error){echo 'rejected:'.$error->getMessage();}
+CODE;
+            foreach([[1,2],[2,1]] as [$a,$t]) {
+                $file=$artifacts.'/signed-'.$a.'.txt';file_put_contents($file,serialize($prepare($a,$t)));$pipes=[];
+                // Prepare both requests before either child starts.
+                $requests[]=$file;
+            }
+            foreach($requests as $file) {
+                $process=proc_open([PHP_BINARY,'-r',$finalize,dirname(__DIR__),$root,$db,$artifacts,$file],[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
+                fclose($pipes[0]);$processes[]=[$process,$pipes];
+            }
+            $outcomes=[];
+            foreach($processes as [$process,$pipes]) {$outcomes[]=stream_get_contents($pipes[1]);$error=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);assertSame(0,proc_close($process));assertSame('',$error);}
+            $processes=[];
+            assertSame(1,count(array_filter($outcomes,fn($result)=>$result==='retired')));
+            assertSame(1,count(array_filter($outcomes,fn($result)=>str_starts_with($result,'rejected:'))));
+            assertSame(1,(int)(new ReadModelConnection($db))->open()->query("SELECT COUNT(*) FROM profiles WHERE username_token='retirement-race' AND is_approved=1")->fetchColumn());
+        } finally {
+            foreach($processes as [$process,$pipes])if(is_resource($process)) {proc_terminate($process);foreach($pipes as $pipe)if(is_resource($pipe))fclose($pipe);proc_close($process);}
+            foreach($keys as $key)$this->deleteTree($key['home']);$this->deleteTree($root);$this->deleteTree($artifacts);
+            foreach(glob($db.'*')?:[] as $file)if(is_file($file))unlink($file);
+        }
+    }
+
     public function testRetirementSurvivesCanonicalExportImportAndDatabaseDeletion(): void
     {
         [$root,$db,$artifacts]=$this->createTempEnvironment();

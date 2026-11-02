@@ -631,6 +631,8 @@ alias examples, fixed transfer/archive limits, publication, and recovery.
 ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
 ```
 
+Accepts `records/`, `local_repository/records/` and current `repository/records/` layouts. Administrative imports validate complete signed key-retirement bundles before copying and reject conflicting accepted evidence. Public content merge remains a separate operation that excludes local approval/retirement authority.
+
 Imports a `.tar.gz` repository archive into the target repository root,
 rebuilds the read model, and rebuilds static artifacts (when an artifact root
 is resolved). The command reports each phase (validation, extraction, record

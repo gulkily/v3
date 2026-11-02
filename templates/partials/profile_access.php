@@ -4,7 +4,7 @@
 <?php if ($isReplyAgentProfile): ?>
     <p><strong>Account type:</strong> automated reply agent</p>
 <?php endif; ?>
-    <p><strong>Status:</strong> <?= !empty($profile['retired_at']) ? 'Retired' : (((int) $profile['is_approved']) === 1 ? 'Approved' : 'Pending approval') ?></p>
+    <p><strong><?= !empty($profile['retired_at']) ? 'Status' : 'Approved' ?>:</strong> <?= !empty($profile['retired_at']) ? 'Retired' : (((int) $profile['is_approved']) === 1 ? 'yes' : 'no') ?></p>
 <?php if (((int) $profile['is_approved']) === 1 && ((string) ($profile['approved_by_label'] ?? '')) !== ''): ?>
     <p><strong>Approved by:</strong>
 <?php if ((string) ($profile['approved_by_profile_slug'] ?? '') !== ''): ?>

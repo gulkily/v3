@@ -18,7 +18,7 @@ $isApproved = ((int) $profile['is_approved']) === 1;
   </div>
   <div class="paned-standalone-body">
     <p><strong>Visible username:</strong> <?= $e($profile['username']) ?></p>
-    <p><strong>Status:</strong> <?= !empty($profile['retired_at']) ? 'Retired' : ($isApproved ? 'Approved' : 'Pending approval') ?></p>
+    <p><strong><?= !empty($profile['retired_at']) ? 'Status' : 'Approved' ?>:</strong> <?= !empty($profile['retired_at']) ? 'Retired' : ($isApproved ? 'yes' : 'no') ?></p>
 <?php if ($isApproved && (string) ($profile['approved_by_label'] ?? '') !== ''): ?>
     <p><strong>Approved by:</strong>
 <?php if ((string) ($profile['approved_by_profile_slug'] ?? '') !== ''): ?>

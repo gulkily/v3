@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/key_retirement — [ledger](../effort_estimation_trial.md#cycle-v3key_retirement)
 Extended estimates: enabled
-Status: Step 3 v3/A approved; Stages 1–7 complete; Stage 8 verification in progress
+Status: Step 3 v3/A approved; Stages 1–8 locally complete; maintainer review, merge and deployment pending
 
 **Cycle estimate: 1.00**
 
@@ -125,5 +125,27 @@ Approval: User said “approved step 3” for v3/A. Revised planning commit 3aab
 - Verification: 28 focused import/resolver/mailbox checks passed, followed by the extended malformed-archive check. Actual current export → `./v3 import-repository` → database deletion → `./v3 rebuild` preserves exact record/signature/receipt bytes, rejects retired sign-in and retains earlier beneficiaries after the accepting operator retires. Missing-signature archive fails before changing destination HEAD. `node tests/browser/private_message_history_sync_browser.mjs --retirement` passes real-key 31-message recovery, retired donors before unread-transfer retrieval, original signatures, draft preservation/reload, forwarding from restored devices, coordinated private-store restore, sync outage with normal send, and unchanged ciphertext/no private-key logging. Reader/list/crypto protocol checks pass.
 - Findings resolved: Initial CLI test found the older root-layout restriction and content-planner missing authority classification. Initial browser run reached retained transfers but marked retired original signatures invalid in the ordinary reader; separate verification lookup fixed it. The restored-auth fixture was corrected to obtain its challenge through the actual session endpoint. Failed attempts remain in local test history; they are not baseline failures.
 - Notes: UTC date is now 2026-11-02; preceding Stage 3–6 notes used the local Nov 1 date with a UTC label; commit timestamps are authoritative. Revised stage estimate reflects newly observed integration work within approved scope, recorded at completion rather than inventing an earlier checkpoint. Independent whole-cycle projection revised from retained 1.00 to 1.05 for this discovery; stage values are not summed. No measured labor, production or physical-device claim.
+
+*— Codex · 2026-11-02 UTC*
+
+## Stage 8 - Release evidence and handoff
+
+**Original estimate: 0.12**
+**Retrospective stage work: 0.12**
+
+- Changes: Added real separate-process retirement/private-acceptance races; closed canonical retirement checks for queued scripture requesters and participant metadata despite stale projections. Updated API, CLI, concept, record contract and safety runbook with normal retirement, replacement-first recovery, archive authority and rollback boundaries. Restored existing active-key approval labels after the full suite found an unnecessary presentation regression.
+- Verification: Full PHP suite completed: 1,763 run, 1,754 passed, 9 failed before the final corrections. The approval-label regression is fixed and its focused check passes. The other eight failing tests reproduce on unchanged main f82bdc3e9 in an isolated worktree; details in [acceptance](acceptance.txt). Final focused run: 12 concurrency, approval and agent/scripture checks pass; the static-release test alone reproduces the same identical-values baseline failure (the full suite reports an anonymous-publication-context failure first). Stage 6 and 7 browser, real archive/rebuild and private-store recovery evidence remains applicable. Final syntax, whitespace, source-path and staged-file checks passed. No new dependencies.
+- Notes: Full suite is not green; no final full-suite rerun claimed. Baseline failures are retained rather than hidden by changing unrelated tests. Production, physical devices, push/merge/deployment and previous-release rollback were not performed; rollback requires retirement-aware code and retained records. Public-instance rename configuration remains the operator's deployment responsibility.
+
+*— Codex · 2026-11-02 UTC*
+
+## Study closeout and release state
+
+**Revised cycle projection: 1.05**
+**Retrospective scope assessment: 1.05**
+
+Approved v3/A, original baseline 4b14e622f3cca6cb8f041145fd1df954bacc74e4, R1/P2, Codex single exposed rater. The original v1 0.95 and approved v2/v3 1.00 projections remain in history. Stage 7's 1.05 projection reflects observed reader/import integration gaps, not summed stage scores or measured time. The retrospective independently assesses delivered scope at 1.05. Original/revised/retrospective stage values remain above; S1 and S7 were revised, others unchanged. The over-1.00 result warrants discussing a smaller split for future cycles; required history/recovery verification was retained within this approved scope rather than deferred. No discretionary new feature was added.
+
+Frozen R1 source hashes reverified. Maintainer comfortable-fit and acceptance judgments pending; no measured labor, independent rating or accepted-count increment. Local implementation and required recovery are complete, with eight reproduced baseline test failures disclosed. No deployment or merge approval inferred. Separate sibling key-limit/disk-space drafts are preserved.
 
 *— Codex · 2026-11-02 UTC*

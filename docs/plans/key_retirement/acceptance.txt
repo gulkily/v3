@@ -1,0 +1,21 @@
+Feature: Key retirement
+Scope: Approved v3/A; one exact key, permanent; independent active operator authority; disabled-rename member authority with unchanged bootstrap name and no verified rename history
+Branch: feature/key-retirement
+Implementation: Stages 1–8 locally complete; merge, deployment and maintainer acceptance pending
+Authority: Distinct active approved actor; another active approved unchanged replacement required for both member and operator paths
+History: Public keys, signatures, approval grants, authorship, private ciphertext and retained trusted transfers preserved
+Concurrency: Real separate-process reciprocal retirements accept exactly one; private uploads and sends waiting behind retirement reject stale actors
+Recovery: Exact signed retry after lost accepted response and post-commit refresh failure; current canonical export/import, database deletion and actual CLI rebuild; malformed authority archive rejected before mutation
+Browser: Real member and operator journeys; six roles; before-paint controls; keyboard; cancellation; retry; retired Account recovery; no-JavaScript history; 16 themes at 390 and 1280 widths; representative screenshots inspected
+Private history: Real 31-message browser recovery with retired original signers and donors, reload/draft preservation, forwarding, coordinated private-store restore and sync outage; bounded 115-key modern and legacy crypto checks
+Schema: Version 42; prior version 41 startup and actual CLI rebuild checked
+Full suite: 1763 run, 1754 passed, 9 failed before final corrections
+Correction: Approval-label regression fixed by retaining existing Approved yes/no presentation for active keys; focused regression passed
+Baseline failures: ApprovalSeedCommandTest cached pages; LocalAppSmokeTest private lobby, private Forte and archive filename; PlatformDocsStaticTest static release; ReadModelBuilderTimingTest progress; ReactionRecordFormatParityTest parity; ReadModelSchemaTest expected objects. All eight tests also fail on unchanged main f82bdc3e9
+Baseline distinction: Static-release test reports anonymous publication context in full suite and identical-values assertion in isolated baseline; isolated final current run reproduces the identical-values baseline assertion
+Final checks: 12 focused concurrency, approval presentation and agent/scripture checks passed; final syntax, whitespace and document source-path checks recorded in summary
+Omissions: No physical devices, remote production changes, deployment, push or merge; no previous-release rollback claim. Rollback must preserve retirement-aware enforcement and all accepted authority records
+Dependencies: Zero added or updated third-party components
+Evidence: key_retirement_step4_implementation_summary.md; tests/browser/key_retirement.mjs; tests/browser/private_message_history_sync_browser.mjs --retirement; WriteApiSmokeTest retirement tests
+Local logs: /tmp/key-retirement-full-suite.log; /tmp/key-retirement-baseline-tests.log; /tmp/key-retirement-baseline-extra.log; /tmp/key-retirement-final-checks.log. Temporary logs are not durable acceptance artifacts
+Study: R1/P2; original projections retained; retrospective scope 1.05; maintainer comfortable-fit judgment pending; no measured labor or accepted-count increment
