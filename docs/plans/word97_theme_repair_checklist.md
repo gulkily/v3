@@ -108,7 +108,7 @@ was repaired on the same branch (1340fa3be); Chicago is still open.
 
 ## Follow-up from the 2026-11-01 header crops (Word 97 and Midnight)
 
-- [x] (commit 7: toolbar frames) The filter strip and the Members / Waiting strip sat flush under
+- [x] (fb7bf6804) The filter strip and the Members / Waiting strip sat flush under
       the header's drop shadow and their edges did not line up with the window ring above and
       the cards below. The strips now share the window frame (ring and hard shadow) and the
       header has 1.25rem of clearance before the first window. Verified in both themes at 1400
