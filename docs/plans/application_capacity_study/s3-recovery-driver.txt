@@ -1,0 +1,10 @@
+s3-static-interrupted-final -9 0.102 48058368 planned interruption
+s3-static-retry-final 0 2.097 57810944 none
+Recovery: prior active HTML exact hashes retained after SIGKILL; retry activated same HTML path set
+s3-shared-0 0 0.255 49811456 none
+s3-offline-0 0 1.313 39489536 none
+s3-shared-1 0 0.265 50020352 none
+s3-offline-1 0 1.316 39383040 none
+s3-shared-2 0 0.258 50237440 none
+s3-offline-2 0 1.194 39616512 none
+Count and every synthetic body match: 1000

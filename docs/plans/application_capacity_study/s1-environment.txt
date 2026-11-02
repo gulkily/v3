@@ -1,0 +1,8 @@
+Revision: 3dc2c3feaa17af591eb6e819a055d26ab6990efb
+PHP: PHP 8.1.2-1ubuntu2.28 (cli) (built: Oct 19 2026 18:54:45) (NTS)
+Platform: posix.uname_result(sysname='Linux', nodename='Lenovo', release='6.6.87.2-microsoft-standard-WSL2', version='#1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025', machine='x86_64')
+Initial available RAM bytes: 5418086400
+RSS stop bytes: 1073741824
+Scratch bytes: 49971200
+Isolation: source git archive; sanitized environment; explicit empty secrets; all writable paths under workspace
+Tiny fixture parity: Count and every synthetic body match: 3

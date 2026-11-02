@@ -187,25 +187,18 @@ final class QdbExperience
     private function search(string $term, int $page): string
     {
         $term = trim($term);
-        $matches = $term === '' ? [] : array_values(array_filter(
-            $this->eligibleQuotes(),
-            static fn (array $thread): bool => stripos((string) $thread['root_post_body'], $term) !== false,
-        ));
-        $resultCount = count($matches);
-        $presentation = $this->boardPolicy->paginate(
-            $matches,
-            'search',
-            max(1, $page),
-            '/search?search=' . rawurlencode($term),
+        $selected = \ForumRewrite\ReadModel\QdbPage::page($this->pdo, 'search', $page, $term);
+        $resultCount = $selected['count'];
+        $threads = $selected['threads'];
+        $pagination = $this->boardPolicy->pagination(
+            $resultCount, $selected['page'], '/search?search=' . rawurlencode($term)
         );
-        unset($matches);
-        $threads = $presentation['threads'];
 
         return $this->renderQuotePage('qdb_search.php', [
             'threads' => $threads,
             'term' => $term,
             'resultCount' => $resultCount,
-            'pagination' => $presentation['pagination'],
+            'pagination' => $pagination,
         ], 'Search', 'search', $threads);
     }
 

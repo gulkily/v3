@@ -1,0 +1,49 @@
+Sample: signed-post-0
+Response: {"status":"ok","post_id":"thread-20261101065255-6f8a8cae4803a0da05430004118c7744","thread_id":"thread-20261101065255-6f8a8cae4803a0da05430004118c7744","identity_id":"openpgp:7cfa246fef095069cd33fae5cc0aa03aea528cda","profile_slug":"openpgp-7cfa246fef095069cd33fae5cc0aa03aea528cda","bootstrap_post_id":"bootstrap-20261101065255-cb9491e513f5fd9d1471314774bddd84","record_path":"records/posts/2026/11/01/thread-20261101065255-6f8a8cae4803a0da05430004118c7744.txt","signature_path":"records/posts/2026/11/01/thread-20261101065255-6f8a8cae4803a0da05430004118c7744.txt.asc","commit_sha":"fb09a0b4d49488e7c66e5ce10beb104e53c6c545","replayed":false}
+
+Elapsed seconds: 3.5495648384094
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-1
+Response: {"status":"ok","post_id":"thread-20261101065255-6f8a8cae4803a0da05430004118c7744","thread_id":"thread-20261101065255-6f8a8cae4803a0da05430004118c7744","identity_id":"openpgp:7cfa246fef095069cd33fae5cc0aa03aea528cda","profile_slug":"openpgp-7cfa246fef095069cd33fae5cc0aa03aea528cda","bootstrap_post_id":"bootstrap-20261101065255-cb9491e513f5fd9d1471314774bddd84","record_path":"records/posts/2026/11/01/thread-20261101065255-6f8a8cae4803a0da05430004118c7744.txt","signature_path":"records/posts/2026/11/01/thread-20261101065255-6f8a8cae4803a0da05430004118c7744.txt.asc","commit_sha":"fb09a0b4d49488e7c66e5ce10beb104e53c6c545","replayed":true}
+
+Elapsed seconds: 0.51391696929932
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-2
+Response: {"status":"ok","post_id":"thread-20261101065255-6f8a8cae4803a0da05430004118c7744","thread_id":"thread-20261101065255-6f8a8cae4803a0da05430004118c7744","identity_id":"openpgp:7cfa246fef095069cd33fae5cc0aa03aea528cda","profile_slug":"openpgp-7cfa246fef095069cd33fae5cc0aa03aea528cda","bootstrap_post_id":"bootstrap-20261101065255-cb9491e513f5fd9d1471314774bddd84","record_path":"records/posts/2026/11/01/thread-20261101065255-6f8a8cae4803a0da05430004118c7744.txt","signature_path":"records/posts/2026/11/01/thread-20261101065255-6f8a8cae4803a0da05430004118c7744.txt.asc","commit_sha":"fb09a0b4d49488e7c66e5ce10beb104e53c6c545","replayed":true}
+
+Elapsed seconds: 0.5086498260498
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Session route: /api/auth_challenge
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.007504940032959
+Session route: /api/authenticate_identity
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.091198921203613
+Session result: status=ok | identity_id=openpgp:7cfa246fef095069cd33fae5cc0aa03aea528cda | approved=0
+Session route: /profiles/openpgp-7cfa246fef095069cd33fae5cc0aa03aea528cda
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.026978969573975
+Session route: /api/get_post?post_id=thread-20261101065255-6f8a8cae4803a0da05430004118c7744
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.0076630115509033
+Session route: /api/auth_status
+HTTP: HTTP/1.1 401 Unauthorized
+Elapsed seconds: 0.0069818496704102
+Approval distinction: status=unauthenticated
+
+Session route: /api/prepare_thread
+HTTP: HTTP/1.1 400 Bad Request
+Elapsed seconds: 0.008228063583374
+PHP Fatal error:  Uncaught RuntimeException: image preparation failed: {"status":"error","error":"Image attachments require enabled image support and an approved signing identity."} in /tmp/v3-capacity-5wrtjih3/image_driver.php:50
+Stack trace:
+#0 {main}
+  thrown in /tmp/v3-capacity-5wrtjih3/image_driver.php on line 50

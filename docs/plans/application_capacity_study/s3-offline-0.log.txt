@@ -1,0 +1,9 @@
+Offline snapshot published
+Site profile: qdb
+Read-model database: /tmp/v3-capacity-5wrtjih3/model.sqlite
+Snapshot path: /tmp/v3-capacity-5wrtjih3/static/offline/snapshot.sqlite3
+Update path: /tmp/v3-capacity-5wrtjih3/static/offline/update.sqlite3
+Generated: 2026-11-01T06:50:49Z
+Threads: 201; posts: 201; bytes: 1732608
+This uses the existing read model and does not rebuild data or render static post pages.
+Next: ./v3 offline diagnose

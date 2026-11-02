@@ -1,0 +1,121 @@
+Sample: read-1000-/-0
+Status: 200
+Elapsed seconds: 0.065994
+Response bytes: 41014
+Distinct synthetic IDs: 0
+Ordered ID hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+IDs stable: True
+Body SHA256: 466cf478e20c0364428bc1e094bc443a661b51cdfd2ae396d8aac32b35b532db
+
+Sample: read-1000-/-1
+Status: 200
+Elapsed seconds: 0.022603
+Response bytes: 41014
+Distinct synthetic IDs: 0
+Ordered ID hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+IDs stable: True
+Body SHA256: 466cf478e20c0364428bc1e094bc443a661b51cdfd2ae396d8aac32b35b532db
+
+Sample: read-1000-/-2
+Status: 200
+Elapsed seconds: 0.022357
+Response bytes: 41014
+Distinct synthetic IDs: 0
+Ordered ID hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+IDs stable: True
+Body SHA256: 466cf478e20c0364428bc1e094bc443a661b51cdfd2ae396d8aac32b35b532db
+
+Sample: read-1000-/latest-0
+Status: 200
+Elapsed seconds: 0.038517
+Response bytes: 150535
+Distinct synthetic IDs: 25
+Ordered ID hash: 9935e1dd9eae2a041c2ab3615e525cfef76a44eab7df8d8ba8f3874009832d4b
+IDs stable: True
+Body SHA256: cf0733e9a2293ec89940706f46e4f8c3c8cf32929a7075de1757b5109a3cff4d
+
+Sample: read-1000-/latest-1
+Status: 200
+Elapsed seconds: 0.033487
+Response bytes: 150335
+Distinct synthetic IDs: 25
+Ordered ID hash: 9935e1dd9eae2a041c2ab3615e525cfef76a44eab7df8d8ba8f3874009832d4b
+IDs stable: True
+Body SHA256: 923ad6ab4290ac7b26d7fba521b7a73e661226cc996b4b89e5f2d917db4c39fa
+
+Sample: read-1000-/latest-2
+Status: 200
+Elapsed seconds: 0.033420
+Response bytes: 150035
+Distinct synthetic IDs: 25
+Ordered ID hash: 9935e1dd9eae2a041c2ab3615e525cfef76a44eab7df8d8ba8f3874009832d4b
+IDs stable: True
+Body SHA256: 06e5b6e2b88565d200d346495ece0759d9bdd2e76ab27ecc09cbb153d3197da7
+
+Sample: read-1000-/top-0
+Status: 200
+Elapsed seconds: 0.034724
+Response bytes: 150796
+Distinct synthetic IDs: 25
+Ordered ID hash: 9935e1dd9eae2a041c2ab3615e525cfef76a44eab7df8d8ba8f3874009832d4b
+IDs stable: True
+Body SHA256: b157668fbdb0bd869f5e573f8545d607f6672958d20e4ec90fd5ed031847cf35
+
+Sample: read-1000-/top-1
+Status: 200
+Elapsed seconds: 0.033807
+Response bytes: 150296
+Distinct synthetic IDs: 25
+Ordered ID hash: 9935e1dd9eae2a041c2ab3615e525cfef76a44eab7df8d8ba8f3874009832d4b
+IDs stable: True
+Body SHA256: 510d23b894bac34f5f92c1e8b01ad14f805b14395f8c73f78e57da70ff93f391
+
+Sample: read-1000-/top-2
+Status: 200
+Elapsed seconds: 0.034746
+Response bytes: 150296
+Distinct synthetic IDs: 25
+Ordered ID hash: 9935e1dd9eae2a041c2ab3615e525cfef76a44eab7df8d8ba8f3874009832d4b
+IDs stable: True
+Body SHA256: 510d23b894bac34f5f92c1e8b01ad14f805b14395f8c73f78e57da70ff93f391
+
+Sample: read-1000-/search?search=capacity-0
+Status: 200
+Elapsed seconds: 0.028065
+Response bytes: 40683
+Distinct synthetic IDs: 0
+Ordered ID hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+IDs stable: True
+Body SHA256: 6342389cc93a90137d2eed51ebab4fcae94f6c9308ff16bb88cfbd0de219ced7
+
+Sample: read-1000-/search?search=capacity-1
+Status: 200
+Elapsed seconds: 0.026033
+Response bytes: 40683
+Distinct synthetic IDs: 0
+Ordered ID hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+IDs stable: True
+Body SHA256: 6342389cc93a90137d2eed51ebab4fcae94f6c9308ff16bb88cfbd0de219ced7
+
+Sample: read-1000-/search?search=capacity-2
+Status: 200
+Elapsed seconds: 0.025060
+Response bytes: 40683
+Distinct synthetic IDs: 0
+Ordered ID hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+IDs stable: True
+Body SHA256: 6342389cc93a90137d2eed51ebab4fcae94f6c9308ff16bb88cfbd0de219ced7
+
+Sample: read-1000-/thread/thread-20261030000000-qdb-400000-0
+Status: 404
+Elapsed seconds: 0.017521
+Response bytes: 39808
+Distinct synthetic IDs: 0
+Ordered ID hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+IDs stable: True
+Body SHA256: de5a279fc80bb4439571c7a3e8966ecfcfd86945a658a977199893b3947ab64a
+
+Traceback (most recent call last):
+  File "/tmp/v3-capacity-5wrtjih3/read_driver.py", line 26, in <module>
+    if status!=200 or not stable:raise RuntimeError('semantic/status mismatch; halt this route campaign')
+RuntimeError: semantic/status mismatch; halt this route campaign

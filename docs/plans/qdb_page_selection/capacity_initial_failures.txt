@@ -1,0 +1,14 @@
+page-rebuild-1000 0 7.063 51654656 none
+Traceback (most recent call last):
+  File "/tmp/v3-capacity-5z59f44k/qdb_capacity.py", line 76, in <module>
+    c.parity(n);read(n)
+  File "/tmp/v3-capacity-5z59f44k/qdb_capacity.py", line 54, in read
+    assert bodies==[expected_body]*len(expected),(route,'body mismatch')
+AssertionError: ('/latest', 'body mismatch')
+
+Retry diagnosis:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/tmp/v3-capacity-5z59f44k/qdb_capacity.py", line 54, in read
+    assert bodies==[expected_body]*len(expected),(route,'body mismatch',repr(bodies[0][-80:]) if bodies else bodies,repr(expected_body[-80:]),len(bodies[0]) if bodies else 0,len(expected_body))
+AssertionError: ('/latest', 'body mismatch', "'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq<br />\\n        '", "'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\\n'", 2063, 2049)

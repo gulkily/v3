@@ -1,0 +1,43 @@
+import collector as c
+import subprocess,time,socket,signal,os,hashlib,sqlite3,shutil
+r=c.ROOT;dest=r/'import-target-final';env=dict(c.ENV)
+env.update({'FORUM_REPOSITORY_ROOT':str(dest),'FORUM_DATABASE_PATH':str(r/'import-final.sqlite'),'FORUM_STATIC_HTML_ROOT':str(r/'import-final-static'),'FORUM_PUBLIC_ARTIFACT_ROOT':str(r/'import-final-public'),'FORUM_IMAGE_ROOT':str(r/'import-final-images'),'FAST_SCORING_DATABASE_PATH':str(r/'import-final-scores.sqlite')})
+shutil.copytree(c.APP/'tests/fixtures/parity_minimal_v1',dest)
+for args in (['init','-q'],['config','user.name','Import fixture'],['config','user.email','fixture@example.invalid'],['add','.'],['commit','-qm','initial']):subprocess.run(['git','-C',str(dest),*args],env=c.ENV,check=True)
+sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
+log=open(r/'s4-recovery-server.log','wb');server=subprocess.Popen(['php','-S',f'127.0.0.1:{port}','-t',str(c.APP/'public'),str(r/'router.php')],cwd=c.APP,env=c.ENV,stdout=log,stderr=log)
+opts=['--repository-root='+str(dest),'--database-path='+str(r/'import-final.sqlite'),'--static-html-root='+str(r/'import-final-static')]
+try:
+ for _ in range(100):
+  try:s=socket.create_connection(('127.0.0.1',port),.1);s.close();break
+  except OSError:time.sleep(.05)
+ start=time.monotonic();peak=0;interrupted=False
+ with (r/'s4-import-interrupted-final.log').open('wb') as out:
+  job=subprocess.Popen(['./v3','import-instance',f'http://127.0.0.1:{port}',*opts],cwd=c.APP,env=env,stdout=out,stderr=subprocess.STDOUT,start_new_session=True)
+  try:
+   while job.poll() is None:
+    peak=max(peak,sum(x[1] for x in c.tree(job.pid)))
+    assert peak+sum(x[1] for x in c.tree(os.getpgrp()))<c.CAP
+    assert time.monotonic()-start<120
+    if (dest/'.git/instance-import/pending.json').exists():c.kill_tree(job.pid);interrupted=True;break
+    time.sleep(.005)
+  finally:
+   if job.poll() is None:c.kill_tree(job.pid)
+   code=job.wait()
+ print(f'Interrupted at saved journal: {interrupted}\nExit: {code}\nElapsed seconds: {time.monotonic()-start:.6f}\nImporter sampled RSS bytes: {peak}',flush=True)
+ assert interrupted
+ # Resume after server shutdown proves saved input, not another remote download.
+ server.terminate();server.wait(timeout=5)
+ for i in range(2):
+  start=time.monotonic()
+  with (r/f's4-import-resume-final-{i}.log').open('wb') as out:result=subprocess.run(['./v3','import-instance','--resume',*opts],cwd=c.APP,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=120)
+  print(f'Resume: {i}\nExit: {result.returncode}\nElapsed seconds: {time.monotonic()-start:.6f}',flush=True)
+  assert result.returncode==(0 if i==0 else 1)
+ assert not (dest/'.git/instance-import/pending.json').exists()
+ synthetic=list((r/'repository/records/posts').glob('thread-20261030000000-qdb-*'))
+ for src in synthetic:assert (dest/src.relative_to(r/'repository')).read_bytes()==src.read_bytes()
+ with sqlite3.connect(r/'import-final.sqlite') as db:assert db.execute("select count(*) from posts where post_id like 'thread-20261030000000-qdb-%'").fetchone()[0]==1000
+ print('Imported synthetic record byte/count parity: 1000\nJournal cleared: yes\nRepeated resume: explicit no interrupted import',flush=True)
+finally:
+ if server.poll() is None:server.terminate();server.wait(timeout=5)
+ log.close()
