@@ -69,6 +69,27 @@ final class QdbPageTest
         assertSame(['threads'=>[], 'count'=>0, 'page'=>1], QdbPage::page($pdo, 'latest', 999));
     }
 
+    public function testScorePagesMatchLegacyPinsAndTies(): void
+    {
+        $pdo = $this->fixture();
+        $pdo->exec("UPDATE threads SET score_total = CASE CAST(substr(root_post_id, 8, 3) AS INTEGER) % 5 WHEN 0 THEN -10 WHEN 1 THEN 1336 WHEN 2 THEN 1338 WHEN 3 THEN 1337 ELSE 0 END");
+        $policy = new QdbBoardPolicy('/unused', static fn () => null);
+        $rows = $policy->eligibleQuotes(ThreadRepository::fetchThreads($pdo));
+        foreach (['top', 'leetness'] as $section) {
+            $expected = $rows;
+            usort($expected, static function ($a, $b) use ($section, $policy) {
+                $pin = (int) in_array('pinned', $b['thread_labels'], true) <=> (int) in_array('pinned', $a['thread_labels'], true);
+                $newest = strcmp($b['root_post_created_at'], $a['root_post_created_at']) ?: strcmp($b['root_post_id'], $a['root_post_id']);
+                return $pin ?: ($section === 'top' ? ($b['score_total'] <=> $a['score_total']) ?: $newest : $policy->compareLeetness($a, $b, $newest));
+            });
+            foreach ([1, 2, 999] as $page) {
+                $selected = QdbPage::page($pdo, $section, $page);
+                assertSame($policy->paginate($expected, $section, $page)['threads'], $selected['threads']);
+                assertSame(count($expected), $selected['count']);
+            }
+        }
+    }
+
     public function testPriorVersionStartupRebuildsBeforeLatest(): void
     {
         $database = tempnam(sys_get_temp_dir(), 'qdb-page-startup-');

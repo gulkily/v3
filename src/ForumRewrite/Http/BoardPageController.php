@@ -44,7 +44,8 @@ final class BoardPageController
         $sort = BoardViewOptions::normalizeSort($sort);
         $viewOptions = BoardViewOptions::viewOptions($view, $sort);
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
-        if ($qdbPolicy !== null && $view === 'all' && $activeSection === 'latest' && $sort === 'newest') {
+        if ($qdbPolicy !== null && $view === 'all' && in_array($activeSection, ['latest', 'top', 'leetness'], true)
+            && $sort === ($activeSection === 'latest' ? 'newest' : $activeSection)) {
             $selected = \ForumRewrite\ReadModel\QdbPage::page($this->routeServices->pdo(), $activeSection, $page);
             $threads = $selected['threads'];
             $qdbQuoteCount = $selected['count'];

@@ -27,3 +27,15 @@ Reuse decisions: Extend BoardPageController and QdbExperience; reuse QdbBoardPol
 - Notes: Initial startup assertion mistakenly expected the subject in the body; corrected to compare original canonical body bytes, then passed. No runtime failure hidden. Original scope/estimate unchanged; no measured labor. Dependency delta zero.
 
 *— Codex · 2026-11-02 UTC*
+
+## Stage 2 — Top and Leetness
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes: Extended the same selector to Top/Leetness and wired existing normal routes. Pin priority precedes score/distance ordering; creation and binary ID comparison break ties. Shared non-QDB and nonmatching board contexts keep their existing readers.
+- Verification: `php tests/run.php QdbPageTest QdbBoardPolicyTest QdbExperienceRoutingTest`: 11/11 passed, including pins, negative/equal scores, equidistant values and clamped last pages compared with legacy policy. `git diff --check` passed.
+- Notes: S1 commit 56587695. Schema 41 covers this cycle's query contract; no further stored-schema change. Scope/estimate unchanged; HTTP capacity remains S4.
+
+*— Codex · 2026-11-02 UTC*

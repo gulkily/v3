@@ -15,7 +15,7 @@ final class QdbPage
     /** @return array{threads:array,count:int,page:int} */
     public static function page(PDO $pdo, string $section, int $page, string $term = ''): array
     {
-        if ($section !== 'latest') {
+        if (!in_array($section, ['latest', 'top', 'leetness'], true)) {
             throw new \InvalidArgumentException('Unknown QDB page section.');
         }
         // Reuse PHP policies, including malformed legacy lists and exact ID suffixes.
@@ -27,7 +27,12 @@ final class QdbPage
         $base = ' FROM threads JOIN posts ON posts.post_id = threads.root_post_id
             WHERE threads.retracted_at IS NULL
             AND qdb_page_eligible(threads.root_post_id, threads.board_tags_json)';
-        $order = 'qdb_page_pinned(threads.thread_labels_json) DESC,
+        $scoreOrder = match ($section) {
+            'top' => 'CAST(threads.score_total AS INTEGER) DESC, ',
+            'leetness' => 'ABS(1337 - CAST(threads.score_total AS INTEGER)) ASC, ',
+            default => '',
+        };
+        $order = 'qdb_page_pinned(threads.thread_labels_json) DESC, ' . $scoreOrder . '
             threads.root_post_created_at COLLATE BINARY DESC, threads.root_post_id COLLATE BINARY DESC';
         $ownsTransaction = !$pdo->inTransaction();
         if ($ownsTransaction) {
