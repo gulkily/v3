@@ -107,9 +107,10 @@ try {
       const recipient = await contextWithIdentity(base);
       await recipient.page.goto(base + '/lobby/#invite=' + manual.token);
       await recipient.page.locator('[data-action=redeem-invitation]').waitFor({ state: 'visible' });
-      recipient.page.once('dialog', dialog => dialog.accept('multi-manual-' + Number(privateSite) + '-' + n));
+      await recipient.page.locator('[data-invitation-username]').fill('multi-manual-' + Number(privateSite) + '-' + n);
       await recipient.page.locator('[data-action=redeem-invitation]').click();
       await recipient.page.waitForURL(base + '/');
+      assert.equal(await recipient.page.evaluate(() => localStorage.getItem('forum_pki_username')), 'multi-manual-' + Number(privateSite) + '-' + n);
     }
     console.log(`PASS ${privateSite ? 'members-only' : 'public'}: API cap 2, unchanged targeted/manual Lobby, two recipients, third refused, lost response, full/partial revocation recovery`);
   }

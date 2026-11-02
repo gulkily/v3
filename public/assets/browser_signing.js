@@ -3986,6 +3986,7 @@
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
+  window.ForumBrowserSigning.saveRegisteredName = saveRegisteredName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;

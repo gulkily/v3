@@ -44,3 +44,14 @@ Completion: Untargeted inline naming and Account guest recovery keep the key, po
 - Notes: S2 commit a10f7c5a. First private browser attempt encountered pending sign-in navigation during rapid fixture clicks; fixture now completes in-place authentication before testing the reloaded Account editor, and both modes pass. Initial visibility uses existing synchronous state script, without new server personalization. Full theme/viewport matrix follows S5.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 4 - Name and redeem
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.16**
+
+- Changes: Lobby uses the canonical form/input styling and shared naming helper; username draft persists in session storage, fresh keys use the chosen name and existing automatic guest keys receive signed naming. Identity checks guard asynchronous redemption. Named visitors keep their name. Pre-paint local state controls field visibility; controls stay in place during inspection rather than appearing after a response. Targeted entry still proceeds automatically without requiring input.
+- Verification: InvitationIssuanceTest 10/10; real Chrome invite_username.mjs passed four public/private × automatic on/off cases with renaming disabled, invalid input, draft reload, committed-name lost response, accepted-invitation lost response, same-key and named retries. Legacy invite_zero_click and capped invite_multi_redemption suites passed both modes, including targeted recovery and CLI rebuild. PHP/JS syntax and whitespace pass.
+- Notes: S3 commit 125a58c0. First rendered check caught label CSS overriding hidden; using a hidden wrapper fixed it. Automatic-key fixture now visits Account before opening the invite, matching existing deliberate suppression of background generation on invite links. Existing tests now enter and assert names rather than optionally handling dialogs. No change to signed invitation contracts/capacity.
+
+*— Codex · 2026-11-01 UTC*

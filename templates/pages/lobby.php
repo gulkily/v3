@@ -23,9 +23,33 @@ $hasMembersOnlyAccess = $viewerProfile !== null
   </article>
   <article class="card" data-invitation-redemption hidden>
     <h2>Board invitation</h2>
-    <p>Invitations with a destination are accepted automatically.</p>
-    <button type="button" data-action="redeem-invitation">Redeem invitation</button>
+    <form data-invitation-name-form>
+      <div data-invitation-name-field hidden>
+      <label>Username
+        <input type="text" name="username" data-invitation-username autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="80">
+      </label>
+      </div>
+      <button type="submit" data-action="redeem-invitation">Redeem invitation</button>
+    </form>
     <p class="meta" data-role="invitation-redemption-feedback" role="status" hidden></p>
     <p><a href="/account/key/">Review or restore your account</a> · <a href="/">Go to the board</a></p>
   </article>
 </section>
+
+<script>
+(function () {
+  var root = document.querySelector('[data-invitation-redemption]');
+  var match = window.location.hash.match(/^#invite=(.*)$/);
+  if (!root || !match) return;
+  root.hidden = false;
+  // Decide the name control from this browser before paint; server HTML stays static.
+  try {
+    var name = localStorage.getItem('forum_pki_username') || 'guest';
+    var needsName = name === 'guest' || !localStorage.getItem('forum_pki_private_key');
+    root.querySelector('[data-invitation-name-field]').hidden = !needsName;
+    root.querySelector('[data-invitation-username]').value = sessionStorage.getItem('forum_invite_name:' + match[1]) || '';
+  } catch (error) {
+    root.querySelector('[data-invitation-name-field]').hidden = false;
+  }
+})();
+</script>

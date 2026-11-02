@@ -200,9 +200,10 @@ try {
     await manual.page.goto(manualUrl);
     await manual.page.locator('[data-action=redeem-invitation]').waitFor({ state: 'visible' });
     assert.equal(await manual.page.evaluate(() => localStorage.getItem('forum_pki_private_key')), null);
-    manual.page.once('dialog', dialog => dialog.accept('manual-reader-' + Number(privateSite)));
+    await manual.page.locator('[data-invitation-username]').fill('manual-reader-' + Number(privateSite));
     await manual.page.locator('[data-action=redeem-invitation]').click();
     await manual.page.waitForURL(base + '/');
+    assert.equal(await manual.page.evaluate(() => localStorage.getItem('forum_pki_username')), 'manual-reader-' + Number(privateSite));
     const invalid = await contextWithIdentity(base);
     await invalid.page.goto(base + '/lobby/#invite=' + '0'.repeat(32));
     await invalid.page.locator('[data-role=invitation-redemption-feedback][data-status=error]').waitFor();
