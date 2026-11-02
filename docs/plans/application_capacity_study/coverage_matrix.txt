@@ -1,0 +1,98 @@
+Record: Final family and dimension dispositions
+Status vocabulary: tested = named local evidence only; deferred = no capacity claim; inapplicable = no corresponding authorized change
+
+Family: QDB home/latest/top/search
+Status: Tested at 1000/10000 via normal HTTP, three requests/route, ordered 25-ID checks for latest/top/search; home has no synthetic IDs in this fixture
+Deferred: 40000 reads blocked by failed canonical preparation; populated welcome not represented
+Consequence: No 40000-read or populated-welcome envelope
+
+Family: Shared thread/profile/API and authentication
+Status: Tested ordinary shared fixture thread and activity; exact post API; signed/unapproved challenge session/profile; operator-approved image author
+Deferred: Hint-only behavior, approved-session throughput, exhaustive roles/themes/browser flows
+Reason: Representative HTTP contracts chosen; role/visual matrix would be separate evidence and is not inferred from HTTP success
+Consequence: No broad access/theme performance acceptance
+
+Family: Signed writes/retry
+Status: Tested first request and two duplicate retries at 1000 records; exact bytes/one commit; final ephemeral-port replay passes
+Deferred: 10000 signed timing acceptance (contaminated run excluded), 40000 blocked, concurrent writers
+Consequence: No large-corpus or concurrent-write envelope
+
+Family: Rebuild
+Status: Tested three repeats at 1000/10000; failed twice at 40000; candidate failure retains prior model; smaller-fixture retry activates
+Deferred: Actual PHP 8.3/FastCGI incident
+Reason: Only local PHP 8.1 authorized/available for campaign, no live load agreement
+Consequence: Production recovery remains unverified
+
+Family: Full/shared static and offline publication
+Status: Tested 1000-record builds, activation, selected offline body parity, forced candidate interruption/retry
+Deferred: Higher-corpus publication; interruption during final activation/offline swap
+Reason: Bounded representative publication matrix; 40000 upstream rebuild fails, 10000 full publication not sampled
+Consequence: Neither 10000 publication capacity nor every failure window established
+
+Family: Static versus runtime delivery
+Status: Root PHP artifact exact-byte check; latest/top runtime; separate local file server serves generated latest/top exact bytes
+Deferred: Actual Apache/FastCGI rules, network/TLS, static-only deployment
+Consequence: No interchangeable server performance comparison
+
+Family: Activity and Git history
+Status: Tested 1000 ordinary commits plus initial commit through normal rebuild, activity/thread/API; all 1001 indexed
+Deferred: Historical 100000-path commit and nontrivial trust/evidence distributions
+Reason: Existing fixture helper creates a separate 20000-path case, but it was not used for normal-entry acceptance; historical direct-method evidence is insufficient
+Consequence: No large-commit capacity/recovery guarantee
+
+Family: Downloads and content import
+Status: Tested TAR/ZIP/image downloads, canonical file parity; unchanged TAR rejected by import-repository; loopback import-instance interruption and offline resume pass
+Deferred: Large archives, conflict-rich import, interrupted remote download, legacy archive variants
+Reason: Representative 1000-record source plus signed/image records; preserving direct format mismatch rather than repacking
+Consequence: Additive import acceptance is not full authority/image restore or all-format acceptance
+
+Family: Images
+Status: Tested unapproved refusal, invalid multipart refusal, approved tiny PNG upload/retry, download and repeated verify/restore
+Deferred: 5 MiB/count/total storage boundaries, interrupted restore, browser draft UI
+Reason: Tiny restore completes rapidly; size/storage and browser behavior require separate fixtures
+Consequence: No maximum image capacity or browser recovery claim
+
+Family: Scoring and queue
+Status: Three empty-score status/historical-audit samples; three local rebuild batches, duplicate enqueue, interrupted claim with synthetic aging and ordinary retry
+Deferred: Populated scoring store, real providers, local provider doubles, actual 900-second wait
+Reason: Providers prohibited; doubles cannot establish provider capacity; synthetic timestamp ages only disposable state
+Consequence: Measures local audit/worker lifecycle, not inference/provider economics or real-time stale recovery
+
+Dimension: Corpus size
+Status: 1000 and 10000 tested with 2048-byte bodies; 40000 attempted/fails rebuild
+Consequence: No interpolation to a maximum safe count
+
+Dimension: Body size and maximum valid record
+Status: Baseline 2048-byte bodies; exact 16777216-byte source separately tested through rebuild and HTTP quote/API
+Deferred: Intermediate body sizes, many simultaneous maximum records, escape-heavy text
+Consequence: No universal per-record budget
+
+Dimension: Replies/reactions/pins
+Status: Minimal existing fixture retained; density/fanout variations deferred
+Reason: Representative corpus and explicit deferral permitted by approved completion boundary; broad combinatorial variations not executed in this bounded campaign
+Consequence: No claim that thread length, reactions or pin count are cheap; pinned offline output can exceed recent-thread count
+
+Dimension: History
+Status: Single-commit ordinary corpus; separate 1001-commit small-post fixture
+Deferred: Large commit and history-by-body/reaction combinations
+Consequence: History evidence improvements do not establish total application capacity
+
+Dimension: Cold/warm and persistence
+Status: Fresh CLI processes, first request per HTTP server, subsequent warm-process requests, 30-second persistent dev-server windows
+Deferred: OS/disk-cold caches, FastCGI pools, long soak, restart/leak behavior
+Reason: No global cache flushing or real host workload authorized
+Consequence: No cold-storage/FPM/long-term guarantee
+
+Dimension: Concurrency and overlap
+Status: 1/2/4 independent PHP processes, three 30-second repeats with/without one rebuild; 4627 checked requests, zero errors
+Deferred: Concurrent writers, overlap with full publication/import/images/scoring, sustained saturation
+Reason: Rebuild selected as representative shared-resource job; other jobs have different locks/costs
+Consequence: Cannot generalize overlap or production throughput
+
+Dimension: Measurements
+Status: PHP allocation where telemetry available; wall time, sampled RSS/processes and physical I/O; fixture/returned/used counts; limits and failed samples retained
+Deferred: Exact internal loaded rows, short-lived child peaks/I/O, per-process RSS attribution, true disk-cold volume
+Reason: No permanent production instrumentation; sampling and original process-group limitation disclosed
+Consequence: Missing values are unavailable, never zero or inferred from selected count
+
+Checks: UI/theme/navigation-icon, deployment, migration and dependency-install checks inapplicable because no product/config/schema/dependency changes. Full application suite not run; measured normal-entry assertions, archived-source syntax, document/link/scope/whitespace checks are the relevant verification.

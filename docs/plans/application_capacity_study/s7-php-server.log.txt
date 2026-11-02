@@ -1,0 +1,22 @@
+[Sun Nov  1 02:09:34 2026] PHP 8.1.2-1ubuntu2.28 Development Server (http://127.0.0.1:45979) started
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48220 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48220 Closed without sending a request; it was probably just an unused speculative preconnection
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48220 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48230 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48230 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48232 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48232 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48236 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48236 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48244 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48244 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48258 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48258 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48262 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48262 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48270 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48270 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48276 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48276 Closing
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48280 Accepted
+[Sun Nov  1 02:09:34 2026] 127.0.0.1:48280 Closing

@@ -1,0 +1,57 @@
+Record: Reproduction and operator handoff
+Source revision: 3dc2c3feaa17af591eb6e819a055d26ab6990efb
+Prerequisites: Existing project PHP/Git/Python 3 tools and PHP extensions; Linux /proc. No dependency installation authorized. Use a checkout containing the pinned source revision and these archived docs.
+Safety: Disposable local source copy only. Never replace paths below with production paths. setup.py.txt creates a fresh /tmp/v3-capacity-* directory, empty secrets, isolated data/session/temp paths and a 128M PHP launcher. Collector stops at 600 seconds, 1 GiB-or-25%-available sampled RSS and 2 GiB scratch. Concurrent cases use 30-second windows and at most four clients. Preserve failures; do not increase limits to turn failure into success.
+Fixture identity: Deterministic canonical base records and existing parity_minimal_v1. Git commit timestamps and generated signed keys/IDs vary; compare body/record bytes within each run. S6 pins the actual historical Git tree. Signing drivers generate disposable keys and use existing cleanup helpers; private keys are not archived.
+
+Commands from project root:
+archive_dir="$PWD/docs/plans/application_capacity_study"
+python3 "$archive_dir/setup.py.txt"
+work=$(cat /tmp/capacity-root)
+for source in "$archive_dir"/*.py.txt "$archive_dir"/*.php.txt; do
+  name=$(basename "$source" .txt)
+  cp "$source" "$work/$name"
+done
+cd "$work"
+
+Small safe replay commands:
+python3 - <<'PY'
+import collector as c
+c.fixture(1000)
+assert c.run('reproduce-1000-rebuild',['./v3','rebuild',str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite')])==0
+print(c.parity(1000))
+assert c.run('reproduce-1000-http',['python3',str(c.ROOT/'read_driver.py'),'1000'])==0
+assert c.run('reproduce-signed',['php',str(c.ROOT/'signed_driver.php')])==0
+PY
+
+Full family commands, sequentially after inspecting each result:
+python3 maintenance_driver.py
+python3 s3history.py
+python3 - <<'PY'
+import collector as c
+# maintenance_driver ends on the 1000-record fixture; history uses separate paths.
+assert c.run('reproduce-pre-image-signer',['php',str(c.ROOT/'signed_driver.php')])==0
+assert c.run('reproduce-image',['php',str(c.ROOT/'image_driver.php')])==0
+assert c.run('reproduce-transfer',['python3',str(c.ROOT/'transfer_driver.py')])==0
+assert c.run('reproduce-import-recovery',['python3',str(c.ROOT/'import_recovery_driver.py')])==0
+for i,mode in enumerate(('verify','restore','restore','verify')):
+    assert c.run('reproduce-images-'+str(i),['./v3','images',mode,str(c.ROOT/'images.zip'),str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite'),'--image-root='+str(c.ROOT/'restored-images')])==0
+PY
+python3 queue_driver.py
+python3 overlap_campaign.py
+python3 closeout_replay.py
+python3 - <<'PY'
+import collector as c
+assert c.run('reproduce-static-delivery',['python3',str(c.ROOT/'static_delivery_driver.py')])==0
+PY
+
+Expected failures: closeout_replay expects 40000 rebuild to fail at 128M, checks prior model retention, then resets only the disposable canonical fixture to 1000 and verifies rebuild/publication recovery. transfer_driver retains direct import-repository layout rejection and no-pending resume errors. Queue recovery intentionally kills a worker and synthetically ages only a disposable running claim. These are not instructions to backdate production queue rows or delete real content.
+Run separation: Do not launch multiple drivers against one WORK concurrently. Only overlap_driver intentionally coordinates concurrency. Collector refuses duplicate sample names. Start a fresh setup for a repeated campaign; do not rerun a full driver over existing imports/fixture directories. Initial/historical scripts (s2.py, s2final.py, s2redo.py, maintenance_driver_initial.py, etc.) preserve investigation provenance; the sequence above uses corrected drivers.
+Metrics: samples.txt holds command/time/RSS/I/O/log-hash records. php-metrics.txt holds request/CLI allocation peaks; final setup adds sample names. Worker logs retain each request timing/status. PHP -r probes do not run auto_prepend_file; their allocation is unavailable. Archived S1-S6 versions predate some collector corrections: consult the implementation summary before comparing their RSS or excluded attempts.
+Body boundary replay: s2variants.py creates the exact 16 MiB canonical source; maxread.py requests its numeric quote/API. Run only after finishing other families because it resets the shared fixture. Historical log labels may collide; use a fresh setup for this variant.
+Overhead: No-op process launch observations have roughly 20ms collector granularity. HTTP shutdown telemetry, process scanning, du and Python clients impose overhead; results are inclusive and not corrected. Three repeats, fixed order, no cache flush, uncontrolled background load. Near-threshold or causal claims need stronger host measurements.
+
+Recovery for real operator, not executed here: Before an authorized PHP 8.3 host replay, preserve normal backups/config and record exact revision, corpus dimensions and PHP/FastCGI limits. Run the original ordinary rebuild/build-static command with existing settings. Require candidate validation, read-model promotion and release activation plus normal route reads. On failure retain the exact phase/error and inspect ./v3 rebuild diagnose. Follow existing repository runbooks for any recovery; no content deletion, limit increase, direct DB surgery, deployment or production load is approved by this study.
+Import recovery: Retain destination options and private journal, stop conflicting writers, then use ./v3 import-instance --resume with the original destination. Source need not be online after saved input is complete. Repeated resume after success correctly reports no pending import. Images remain a separate matched archive workflow.
+Queue recovery: Normal worker retries abandoned running tasks after the 900-second threshold; this campaign exercises that path by synthetic aging, not elapsed time. Inspect task-queue status and existing worker configuration; reset-recovery is not a generic job reset.
+Teardown: Stop all campaign processes, archive desired logs, verify WORK/marker.txt names this study and WORK resolves to the fresh /tmp/v3-capacity-* directory, then remove only that WORK. Never remove the source checkout or a real repository. Final run logs/source are already archived here; temporary workspace removal does not remove evidence.

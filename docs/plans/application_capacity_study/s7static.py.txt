@@ -1,0 +1,2 @@
+import collector as c
+assert c.run('s7-static-delivery-final',['python3',str(c.ROOT/'static_delivery_driver.py')])==0

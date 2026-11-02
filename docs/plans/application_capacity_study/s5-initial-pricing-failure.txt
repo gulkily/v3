@@ -1,0 +1,6 @@
+s5-score-status-0 0 0.093 34430976 none
+s5-score-audit-0 1 0.071 40460288 none
+Traceback (most recent call last):
+  File "/tmp/v3-capacity-5wrtjih3/queue_driver.py", line 7, in <module>
+    assert c.run(f's5-score-{command}-{i}',args)==0
+AssertionError

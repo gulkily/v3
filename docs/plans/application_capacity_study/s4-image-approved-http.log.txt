@@ -1,0 +1,62 @@
+Sample: signed-post-0
+Response: {"status":"ok","post_id":"thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987","thread_id":"thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987","identity_id":"openpgp:3c462c901f1103e6586ba3f98784d0510f3776ca","profile_slug":"openpgp-3c462c901f1103e6586ba3f98784d0510f3776ca","bootstrap_post_id":"bootstrap-20261101065311-67487975fb9f6a4c79ce38313cc0d0c5","record_path":"records/posts/2026/11/01/thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987.txt","signature_path":"records/posts/2026/11/01/thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987.txt.asc","commit_sha":"3fe5c1c42af9cb40486026e1722ae0ddab4c93a7","replayed":false}
+
+Elapsed seconds: 0.69946908950806
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-1
+Response: {"status":"ok","post_id":"thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987","thread_id":"thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987","identity_id":"openpgp:3c462c901f1103e6586ba3f98784d0510f3776ca","profile_slug":"openpgp-3c462c901f1103e6586ba3f98784d0510f3776ca","bootstrap_post_id":"bootstrap-20261101065311-67487975fb9f6a4c79ce38313cc0d0c5","record_path":"records/posts/2026/11/01/thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987.txt","signature_path":"records/posts/2026/11/01/thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987.txt.asc","commit_sha":"3fe5c1c42af9cb40486026e1722ae0ddab4c93a7","replayed":true}
+
+Elapsed seconds: 0.50912499427795
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-2
+Response: {"status":"ok","post_id":"thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987","thread_id":"thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987","identity_id":"openpgp:3c462c901f1103e6586ba3f98784d0510f3776ca","profile_slug":"openpgp-3c462c901f1103e6586ba3f98784d0510f3776ca","bootstrap_post_id":"bootstrap-20261101065311-67487975fb9f6a4c79ce38313cc0d0c5","record_path":"records/posts/2026/11/01/thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987.txt","signature_path":"records/posts/2026/11/01/thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987.txt.asc","commit_sha":"3fe5c1c42af9cb40486026e1722ae0ddab4c93a7","replayed":true}
+
+Elapsed seconds: 0.49607586860657
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Session route: /api/auth_challenge
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.0074679851531982
+Session route: /api/authenticate_identity
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.090699195861816
+Session result: status=ok | identity_id=openpgp:3c462c901f1103e6586ba3f98784d0510f3776ca | approved=0
+Session route: /profiles/openpgp-3c462c901f1103e6586ba3f98784d0510f3776ca
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.026001930236816
+Session route: /api/get_post?post_id=thread-20261101065311-4ee577561c04b3ee1f8a0f4b4383a987
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.0086669921875
+Session route: /api/auth_status
+HTTP: HTTP/1.1 401 Unauthorized
+Elapsed seconds: 0.0074660778045654
+Approval distinction: status=unauthenticated
+
+Session route: /api/prepare_thread
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.011686086654663
+Image sample: 0
+HTTP: HTTP/1.1 400 Bad Request
+Elapsed seconds: 0.0084199905395508
+Response: {"status":"error","error":"Image is not a supported JPEG/PNG."}
+
+Image sample: 1
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.1285138130188
+Response: {"status":"ok","post_id":"thread-20261101065313-1678bb42","thread_id":"thread-20261101065313-1678bb42","record_path":"records/posts/2026/11/01/thread-20261101065313-1678bb42.txt","signature_path":"records/posts/2026/11/01/thread-20261101065313-1678bb42.txt.asc","fastmod_new_post":true,"commit_sha":"7431948b4fbfc804230d5c991454ba6bfc552b64"}
+
+Image sample: 2
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.35347390174866
+Response: {"status":"ok","post_id":"thread-20261101065313-1678bb42","thread_id":"thread-20261101065313-1678bb42","record_path":"records/posts/2026/11/01/thread-20261101065313-1678bb42.txt","commit_sha":"7431948b4fbfc804230d5c991454ba6bfc552b64"}
+
+Image bytes/record/retry parity: pass
+Client draft retained through refusal: pass (driver variable; browser unverified)

@@ -1,0 +1,87 @@
+Starting read-model rebuild.
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Database: /tmp/v3-capacity-5wrtjih3/model.sqlite
+[1/3] Scanning source record counts...
+[1/3] Source scan complete: 40003 posts, 1 identities, 1 approval seeds.
+[2/3] Building and validating a read-model candidate...
+[2/3] Read model: drop schema...
+[2/3] Read model: drop schema complete (0.8 ms).
+[2/3] Read model: create schema...
+[2/3] Read model: create schema complete (5.1 ms).
+[2/3] Read model: resolve attribution cutoff...
+[2/3] Read model: resolve attribution cutoff complete (0.7 ms).
+[2/3] Read model: index posts...
+[2/3] Read model: resolve legacy post creation times...
+[2/3] Read model: resolve legacy post creation times complete (87.5 ms).
+[2/3] Read model: resolve post source commits...
+[2/3] Read model: read source history...
+[2/3] Read model: read source history complete (50.1 ms).
+[2/3] Read model: resolve post source commits complete (76.2 ms).
+[2/3] Read model: parsing post records (0/40003).
+[2/3] Read model: parsing post records (401/40003).
+[2/3] Read model: parsing post records (802/40003).
+[2/3] Read model: parsing post records (1203/40003).
+[2/3] Read model: parsing post records (1604/40003).
+[2/3] Read model: parsing post records (2005/40003).
+[2/3] Read model: parsing post records (2406/40003).
+[2/3] Read model: parsing post records (2807/40003).
+[2/3] Read model: parsing post records (3208/40003).
+[2/3] Read model: parsing post records (3609/40003).
+[2/3] Read model: parsing post records (4010/40003).
+[2/3] Read model: parsing post records (4411/40003).
+[2/3] Read model: parsing post records (4812/40003).
+[2/3] Read model: parsing post records (5213/40003).
+[2/3] Read model: parsing post records (5614/40003).
+[2/3] Read model: parsing post records (6015/40003).
+[2/3] Read model: parsing post records (6416/40003).
+[2/3] Read model: parsing post records (6817/40003).
+[2/3] Read model: parsing post records (7218/40003).
+[2/3] Read model: parsing post records (7619/40003).
+[2/3] Read model: parsing post records (8020/40003).
+[2/3] Read model: parsing post records (8421/40003).
+[2/3] Read model: parsing post records (8822/40003).
+[2/3] Read model: parsing post records (9223/40003).
+[2/3] Read model: parsing post records (9624/40003).
+[2/3] Read model: parsing post records (10025/40003).
+[2/3] Read model: parsing post records (10426/40003).
+[2/3] Read model: parsing post records (10827/40003).
+[2/3] Read model: parsing post records (11228/40003).
+[2/3] Read model: parsing post records (11629/40003).
+[2/3] Read model: parsing post records (12030/40003).
+[2/3] Read model: parsing post records (12431/40003).
+[2/3] Read model: parsing post records (12832/40003).
+[2/3] Read model: parsing post records (13233/40003).
+[2/3] Read model: parsing post records (13634/40003).
+[2/3] Read model: parsing post records (14035/40003).
+[2/3] Read model: parsing post records (14436/40003).
+[2/3] Read model: parsing post records (14837/40003).
+[2/3] Read model: parsing post records (15238/40003).
+[2/3] Read model: parsing post records (15639/40003).
+[2/3] Read model: parsing post records (16040/40003).
+[2/3] Read model: parsing post records (16441/40003).
+[2/3] Read model: parsing post records (16842/40003).
+[2/3] Read model: parsing post records (17243/40003).
+[2/3] Read model: parsing post records (17644/40003).
+[2/3] Read model: parsing post records (18045/40003).
+[2/3] Read model: parsing post records (18446/40003).
+[2/3] Read model: parsing post records (18847/40003).
+[2/3] Read model: parsing post records (19248/40003).
+[2/3] Read model: parsing post records (19649/40003).
+[2/3] Read model: parsing post records (20050/40003).
+[2/3] Read model: parsing post records (20451/40003).
+[2/3] Read model: parsing post records (20852/40003).
+[2/3] Read model: parsing post records (21253/40003).
+[2/3] Read model: parsing post records (21654/40003).
+[2/3] Read model: parsing post records (22055/40003).
+[2/3] Read model: parsing post records (22456/40003).
+[2/3] Read model: parsing post records (22857/40003).
+[2/3] Read model: parsing post records (23258/40003).
+[2/3] Read model: parsing post records (23659/40003).
+[2/3] Read model: parsing post records (24060/40003).
+[2/3] Read model: parsing post records (24461/40003).
+[2/3] Read model: parsing post records (24862/40003).
+[2/3] Read model: parsing post records (25263/40003).
+[2/3] Read model: parsing post records (25664/40003).
+[2/3] Read model: parsing post records (26065/40003).
+
+Fatal error: Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /tmp/v3-capacity-5wrtjih3/app/src/ForumRewrite/ReadModel/ReadModelBuilder.php on line 211

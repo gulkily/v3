@@ -1,0 +1,10 @@
+Task queue worker starting
+Queue database: /tmp/v3-capacity-5wrtjih3/s5-queue.sqlite
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Read model: /tmp/v3-capacity-5wrtjih3/model.sqlite
+Offline snapshot root: /tmp/v3-capacity-5wrtjih3/static
+Limit: 1
+Fastmod provider-call limit: 25
+Fastmod examined-work limit: 250
+Queue before: queued=2 running=0 completed=3 failed=0
+Starting task id=4 type=publish_offline_snapshot attempt=1/3

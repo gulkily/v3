@@ -1,0 +1,18 @@
+[0.59s] FAIL LocalAppSmokeTest::testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding - Failed asserting that output contains: Next action: ./v3 rebuild recover --confirm [0.35s]
+[1.10s] FAIL LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces - Failed asserting that output contains: Your access is pending approval. Once you are fully authenticated, you can access this page. [0.51s]
+[2.16s] FAIL LocalAppSmokeTest::testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound - Failed asserting that output contains: Approval required [1.06s]
+[2.16s] FAIL LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp - Method ForumRewrite\Http\InstancePageController::repositoryArchiveDownloadFilename() does not exist [0.00s]
+
+Summary: 4 run, 0 passed, 4 failed
+
+Failing tests:
+  - LocalAppSmokeTest::testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding - Failed asserting that output contains: Next action: ./v3 rebuild recover --confirm
+  - LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces - Failed asserting that output contains: Your access is pending approval. Once you are fully authenticated, you can access this page.
+  - LocalAppSmokeTest::testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound - Failed asserting that output contains: Approval required
+  - LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp - Method ForumRewrite\Http\InstancePageController::repositoryArchiveDownloadFilename() does not exist
+
+Failing with no prior history (can't tell if new or long-standing):
+  - LocalAppSmokeTest::testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding
+  - LocalAppSmokeTest::testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces
+  - LocalAppSmokeTest::testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound
+  - LocalAppSmokeTest::testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp

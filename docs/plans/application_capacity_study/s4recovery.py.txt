@@ -1,0 +1,7 @@
+import collector as c
+assert c.run('s4-import-recovery-final',['python3',str(c.ROOT/'import_recovery_driver.py')])==0
+for i,mode in enumerate(('verify','restore','restore','verify')):
+ assert c.run(f's4-images-{i}-{mode}',['./v3','images',mode,str(c.ROOT/'images.zip'),str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite'),'--image-root='+str(c.ROOT/'restored-images')])==0
+for p in (c.ROOT/'images').glob('*'):
+ if p.is_file():assert p.read_bytes()==(c.ROOT/'restored-images'/p.name).read_bytes()
+print('Image restore and repeat byte parity: pass')

@@ -1,0 +1,11 @@
+Interrupted at saved journal: True
+Exit: -9
+Elapsed seconds: 0.376493
+Importer sampled RSS bytes: 33517568
+Resume: 0
+Exit: 1
+Elapsed seconds: 1.467911
+Traceback (most recent call last):
+  File "/tmp/v3-capacity-5wrtjih3/import_recovery_driver.py", line 33, in <module>
+    assert result.returncode==(0 if i==0 else 1)
+AssertionError

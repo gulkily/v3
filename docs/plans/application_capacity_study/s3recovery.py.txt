@@ -1,0 +1,16 @@
+import collector as c
+import hashlib
+r=c.ROOT
+args=['./v3','build-static',str(r/'repository'),str(r/'model.sqlite'),str(r/'static')]
+def hashes():
+ return {str(p.relative_to(r/'static/current')):hashlib.sha256(p.read_bytes()).hexdigest() for p in (r/'static/current').rglob('*.html')}
+before=hashes();assert before
+assert c.run('s3-static-interrupted-final',args,interrupt=.1)!=0
+assert before==hashes(),'prior HTML changed after interruption'
+assert c.run('s3-static-retry-final',args)==0
+assert set(before)==set(hashes())
+print('Recovery: prior active HTML exact hashes retained after SIGKILL; retry activated same HTML path set',flush=True)
+for repeat in range(3):
+ assert c.run(f's3-shared-{repeat}',['./v3','build-static','--shared-only',str(r/'repository'),str(r/'model.sqlite'),str(r/'static')])==0
+ assert c.run(f's3-offline-{repeat}',['./v3','offline','publish','--repository-root='+str(r/'repository'),'--database-path='+str(r/'model.sqlite'),'--static-html-root='+str(r/'static')])==0
+print(c.parity(1000),flush=True)

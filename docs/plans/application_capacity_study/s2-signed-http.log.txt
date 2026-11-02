@@ -1,0 +1,23 @@
+Sample: signed-post-0
+Response: {"status":"ok","post_id":"thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130","thread_id":"thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130","identity_id":"openpgp:f0c4ac395499cc7226bb4f9175c904e77f45ffb3","profile_slug":"openpgp-f0c4ac395499cc7226bb4f9175c904e77f45ffb3","bootstrap_post_id":"bootstrap-20261101064754-76d2b424b01b1f2e4522b499e125e9ab","record_path":"records/posts/2026/11/01/thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130.txt","signature_path":"records/posts/2026/11/01/thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130.txt.asc","commit_sha":"8734225f38c2697fcb4f4628266fd9bc0d5940f3","replayed":false}
+
+Elapsed seconds: 0.92018604278564
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-1
+Response: {"status":"ok","post_id":"thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130","thread_id":"thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130","identity_id":"openpgp:f0c4ac395499cc7226bb4f9175c904e77f45ffb3","profile_slug":"openpgp-f0c4ac395499cc7226bb4f9175c904e77f45ffb3","bootstrap_post_id":"bootstrap-20261101064754-76d2b424b01b1f2e4522b499e125e9ab","record_path":"records/posts/2026/11/01/thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130.txt","signature_path":"records/posts/2026/11/01/thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130.txt.asc","commit_sha":"8734225f38c2697fcb4f4628266fd9bc0d5940f3","replayed":true}
+
+Elapsed seconds: 0.56027698516846
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-2
+Response: {"status":"ok","post_id":"thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130","thread_id":"thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130","identity_id":"openpgp:f0c4ac395499cc7226bb4f9175c904e77f45ffb3","profile_slug":"openpgp-f0c4ac395499cc7226bb4f9175c904e77f45ffb3","bootstrap_post_id":"bootstrap-20261101064754-76d2b424b01b1f2e4522b499e125e9ab","record_path":"records/posts/2026/11/01/thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130.txt","signature_path":"records/posts/2026/11/01/thread-20261101064754-a4ceced85243b4e3b1c660224a2e2130.txt.asc","commit_sha":"8734225f38c2697fcb4f4628266fd9bc0d5940f3","replayed":true}
+
+Elapsed seconds: 0.61370205879211
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass

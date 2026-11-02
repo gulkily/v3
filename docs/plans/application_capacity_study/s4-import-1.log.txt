@@ -1,0 +1,36 @@
+Import time limit: 300 seconds
+Source: http://127.0.0.1:43847
+Destination: /tmp/v3-capacity-5wrtjih3/import-target
+Database: /tmp/v3-capacity-5wrtjih3/import.sqlite
+Static/offline root: /tmp/v3-capacity-5wrtjih3/import-static
+Downloading repository archive...
+Archive URL: http://127.0.0.1:43847/downloads/repository.tar.gz
+Downloaded 36548 bytes; validating and extracting archive...
+Archive validation: scanning entries... (0.0s elapsed)
+Archive validation complete: 1040 entries, 3.0 MiB checked (0.0s elapsed)
+Archive integrity: checking gzip checksum... (0.0s elapsed)
+Archive integrity check complete (0.1s elapsed)
+Archive extraction: 0/1026 files, 0.0/2.1 MiB (0.0s elapsed)
+Archive extraction complete: 1026/1026 files, 2.1 MiB (0.0s elapsed)
+Legacy timestamps: inspecting source history... (0.0s elapsed)
+Legacy timestamps: no usable source history; skipping recovery (0.0s elapsed)
+Recovered legacy creation timestamps: 0
+Previewing content merge...
+Excluded archive category README.md: 1
+Excluded archive category repository-snapshot.json: 1
+Excluded: Instance authority, settings, or private data (3 entries)
+Image files are separate and are not transferred by repository imports. Image references require the source image collection; this is not a full image backup restore.
+
+Preview result: complete
+Fastmod scores: valid
+scores_eligible: 0
+scores_existing: 0
+scores_duplicate: 0
+scores_incompatible: 0
+import: 1014
+duplicate: 8
+conflict: 0
+invalid: 0
+unsupported: 0
+excluded: 3
+Elapsed time: 0.47 seconds

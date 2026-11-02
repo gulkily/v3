@@ -1,0 +1,26 @@
+Sample: signed-post-0
+Response: {"status":"ok","post_id":"thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852","thread_id":"thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852","identity_id":"openpgp:3c9f39a9cc77e2a6586b7774cb575ff586e6007d","profile_slug":"openpgp-3c9f39a9cc77e2a6586b7774cb575ff586e6007d","bootstrap_post_id":"bootstrap-20261101064828-92f6ad6230262e31be267bf91e6f4f16","record_path":"records/posts/2026/11/01/thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852.txt","signature_path":"records/posts/2026/11/01/thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852.txt.asc","commit_sha":"ba220d13d19b5b9d15f4fe2257f006ed765fd75b","replayed":false}
+
+Elapsed seconds: 4.1242730617523
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-1
+Response: {"status":"ok","post_id":"thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852","thread_id":"thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852","identity_id":"openpgp:3c9f39a9cc77e2a6586b7774cb575ff586e6007d","profile_slug":"openpgp-3c9f39a9cc77e2a6586b7774cb575ff586e6007d","bootstrap_post_id":"bootstrap-20261101064828-92f6ad6230262e31be267bf91e6f4f16","record_path":"records/posts/2026/11/01/thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852.txt","signature_path":"records/posts/2026/11/01/thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852.txt.asc","commit_sha":"ba220d13d19b5b9d15f4fe2257f006ed765fd75b","replayed":true}
+
+Elapsed seconds: 3.3619167804718
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-2
+Response: {"status":"ok","post_id":"thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852","thread_id":"thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852","identity_id":"openpgp:3c9f39a9cc77e2a6586b7774cb575ff586e6007d","profile_slug":"openpgp-3c9f39a9cc77e2a6586b7774cb575ff586e6007d","bootstrap_post_id":"bootstrap-20261101064828-92f6ad6230262e31be267bf91e6f4f16","record_path":"records/posts/2026/11/01/thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852.txt","signature_path":"records/posts/2026/11/01/thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852.txt.asc","commit_sha":"ba220d13d19b5b9d15f4fe2257f006ed765fd75b","replayed":true}
+
+Elapsed seconds: 3.6616289615631
+HTTP: HTTP/1.1 200 OK
+PHP Warning:  file_get_contents(/tmp/v3-capacity-5wrtjih3/repository/records/posts/2026/11/01/thread-20261101064828-652d9db9c5b82fc4234fecd81bf3e852.txt): Failed to open stream: No such file or directory in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 18
+PHP Fatal error:  Uncaught RuntimeException: byte mismatch in /tmp/v3-capacity-5wrtjih3/signed_driver.php:18
+Stack trace:
+#0 {main}
+  thrown in /tmp/v3-capacity-5wrtjih3/signed_driver.php on line 18

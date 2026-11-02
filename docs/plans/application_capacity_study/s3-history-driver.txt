@@ -1,0 +1,13 @@
+du: cannot access '/tmp/v3-capacity-5wrtjih3/history-fixtures/large/.git/objects/a3/tmp_obj_3NaS4j': No such file or directory
+Traceback (most recent call last):
+  File "/tmp/v3-capacity-5wrtjih3/s3history.py", line 4, in <module>
+    assert c.run('s3-history-fixture',['python3','tests/Support/qdb_build_time_fixture.py',str(r/'history-fixtures')])==0
+  File "/tmp/v3-capacity-5wrtjih3/collector.py", line 54, in run
+    if disk()>2*1024**3:stop='scratch cap'
+  File "/tmp/v3-capacity-5wrtjih3/collector.py", line 38, in disk
+    return int(subprocess.check_output(['du','-s','-B1',str(ROOT)]).split()[0])
+  File "/usr/lib/python3.10/subprocess.py", line 421, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['du', '-s', '-B1', '/tmp/v3-capacity-5wrtjih3']' returned non-zero exit status 1.

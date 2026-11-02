@@ -20,6 +20,14 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 43 adds QDB numbered-page selection over existing thread/post fields,
+counting eligible rows and selecting IDs in one read snapshot before loading
+at most 25 bodies. PHP scalar predicates preserve quote-ID and legacy tag-list
+semantics; Search retains trimmed literal PHP stripos matching and activity/ID
+order. Latest/Top/Leetness preserve pin priority and creation/ID tie breaks,
+with score/distance ordering where applicable. No stored columns change;
+prior-version startup rebuild is required.
+
 When changing a core read-model table, column, index, constraint, or a query
 that requires one, increment `ReadModelMetadata::SCHEMA_VERSION` in the same
 change. Application startup uses that version to identify an incompatible
@@ -618,3 +626,10 @@ Integration: The message-recovery branch used versions 39 and 40 locally. Main a
 ## Version 42 — Recent public conversation
 
 Adds posts_recent_idx on posts(created_at DESC, post_id DESC), restricted to non-hidden, non-retracted posts. Recent uses bounded text projections and canonical post/date cursor keys; identity/bootstrap and expansion records remain excluded. No canonical format or table columns change. Normal startup rebuilds older read models before the Recent query; CLI rebuild recreates the index.
+
+## Version 43 — QDB numbered-page selection integration
+
+Combines main's version-41 message recovery and version-42 Recent indexes with
+QDB count/select-before-hydration queries. The QDB branch used version 41 locally;
+integration advances to 43 so either lineage rebuilds before the new queries run.
+No additional tables or indexes are needed for QDB selection.
