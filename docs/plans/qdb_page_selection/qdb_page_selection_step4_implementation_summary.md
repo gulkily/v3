@@ -51,3 +51,15 @@ Reuse decisions: Extend BoardPageController and QdbExperience; reuse QdbBoardPol
 - Notes: S2 commit fe661c5d. Callbacks inspect transient bodies during scans; only selected bodies are retained. No promise of bounded scan work. Scope/estimate unchanged, dependency delta zero.
 
 *— Codex · 2026-11-02 UTC*
+
+## Stage 4 — Normal HTTP capacity
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.20**
+
+- Changes: Archived isolated setup/replay and plain-text results in [capacity report](capacity_report.txt). S3 implementation commit: 486de3d5.
+- Verification: 72 ordinary HTTP requests across 1000/10000/40000 records passed exact ID/body/count and 32 MiB checks (2–4 MiB observed). Six maximum-valid requests passed under 128 MiB; numbered views/search peaked about 82.1 MiB, numeric quote 100 MiB. Normal rebuilds passed at 1000, 10000 and the maximum-record fixture.
+- Notes: Initial checker failure and corrected presentation normalization retained in capacity_initial_failures.txt. Prepared 40000 provenance is explicit; full rebuild capacity and PHP 8.3/FastCGI remain unverified here. No application changes or new dependencies in S4; original scope/estimate unchanged.
+
+*— Codex · 2026-11-02 UTC*

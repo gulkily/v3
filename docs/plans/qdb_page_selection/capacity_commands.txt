@@ -1,0 +1,33 @@
+Sample: page-rebuild-1000
+Command: ./v3 rebuild /tmp/v3-capacity-5z59f44k/repository /tmp/v3-capacity-5z59f44k/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 7.062688
+Sampled aggregate RSS bytes: 51654656
+Observed processes: 2
+Sampled read bytes: 4096
+Sampled write bytes: 24797184
+Log SHA256: 043899c7c5f946626269e7bc760c132641d547286aafed22aa0950b7ea5acbbc
+
+Sample: page-rebuild-10000
+Command: ./v3 rebuild /tmp/v3-capacity-5z59f44k/repository /tmp/v3-capacity-5z59f44k/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 8.927255
+Sampled aggregate RSS bytes: 160616448
+Observed processes: 4
+Sampled read bytes: 0
+Sampled write bytes: 97529856
+Log SHA256: 349b1f85218da01bf4c36610d8ca257d8b847f75dfaf160f60f178093dcefca7
+
+Sample: page-rebuild-maximum
+Command: ./v3 rebuild /tmp/v3-capacity-5z59f44k/repository /tmp/v3-capacity-5z59f44k/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.803063
+Sampled aggregate RSS bytes: 91049984
+Observed processes: 2
+Sampled read bytes: 16384
+Sampled write bytes: 33845248
+Log SHA256: 1c3186fea9aa8b9db45926f46d78d1a87c6c605c49a68ad49f71f2628bba9bd4
+

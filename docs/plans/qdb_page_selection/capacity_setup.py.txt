@@ -1,0 +1,16 @@
+from pathlib import Path
+import subprocess,tarfile,tempfile,shutil,os
+root=Path(tempfile.mkdtemp(prefix='v3-capacity-')); app=root/'app';app.mkdir()
+a=root/'source.tar';subprocess.run(['git','archive','--output',str(a),'486de3d5d7cab2d3305fe6218a66eb96b7619c16'],check=True)
+with tarfile.open(a) as t:t.extractall(app)
+a.unlink();(root/'bin').mkdir();(root/'tmp').mkdir();(root/'sessions').mkdir();(root/'secrets.php').write_text('<?php return [];\n')
+(root/'telemetry.php').write_text('''<?php
+register_shutdown_function(static function(): void {
+ $line = 'Sample: '.getenv('CAPACITY_SAMPLE').' | PID: '.getmypid().' | Route: '.($_SERVER['REQUEST_URI'] ?? 'CLI').' | PHP peak bytes: '.memory_get_peak_usage(true).' | HTTP status: '.(http_response_code() ?: 200)."\\n";
+ file_put_contents(getenv('CAPACITY_TELEMETRY'), $line, FILE_APPEND | LOCK_EX);
+});
+''')
+(root/'bin/php').write_text('#!/bin/sh\nexec /usr/bin/php -d memory_limit=128M -d session.save_path='+str(root/'sessions')+' -d auto_prepend_file='+str(root/'telemetry.php')+' "$@"\n');(root/'bin/php').chmod(0o755)
+(root/'router.php').write_text("<?php require __DIR__.'/telemetry.php'; return require __DIR__.'/app/public/router.php';\n")
+(root/'marker.txt').write_text('Purpose: Application capacity study disposable workspace\nRevision: 486de3d5d7cab2d3305fe6218a66eb96b7619c16\n')
+Path('/tmp/capacity-root').write_text(str(root));print(root)
