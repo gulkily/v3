@@ -89,3 +89,37 @@ Observation: Stage sizes are prospective; exact search callback allocation and 4
 Suggestion: Validate before dependent integration, split an oversized stage before execution and return to Step 2 if requirements cannot be met within scope. Do not claim local checks establish host recovery.
 
 *— Codex · 2026-11-02 UTC*
+
+Entry: 2026-11-02T02:43:19Z, Step 4 handoff
+
+## Necessary/useful instructions
+
+Source: step4_implementation_before.md, planning commit gate; step4_implementation_do.md, stage boundary protocol.
+Observation: Planning commit 69661da0 preceded the summary and code. Five separately verified stages committed as 56587695, fe661c5d, 486de3d5, 6eb5456a and fe6c3bac, each with a summary update. The QDB-only ledger closeout was staged independently of unrelated existing edits; sibling plans remain uncommitted.
+Suggestion: Retain the boundaries and explicit staged-content inspection, especially when several cycles share one ledger.
+
+Source: step4_implementation_after.md, normal-flow and environment evidence.
+Observation: 72 ordinary HTTP cases passed at 2–4 MiB through 40000 records; maximum-valid numbered views/search passed under 128 MiB. Ordinary HTTP upgraded schema 40 to 41, restored canonical bodies/order, and normal CLI rebuild/retry passed. Broad shared checks passed 212/216 with the four failures reproduced on baseline; targeted 30/30 and final policy 11/11 passed. All 150 corrected browser cases passed.
+Suggestion: Retain exact entry-point and baseline comparison requirements. Treat rendered asset responses as part of browser verification: visual review caught a fixture pointing at an empty asset root, invalidating its initial theme checks until corrected and rerun.
+
+Source: RAILSPIKE.md, experimental effort estimation and study closeout.
+Observation: Entry projection 0.80 and retrospective scope 0.80 are distinct; original stage values and separate retrospectives remain visible. No measured labor, independent rating or maintainer acceptance was invented.
+Suggestion: Retain separate scope/verification/acceptance records rather than treating implementation commits as study acceptance.
+
+## Redundant/unnecessary instructions
+
+No supported findings.
+
+## Inapplicable instructions
+
+Source: step4_implementation_after.md, external dependencies and release verification.
+Observation: No dependency change, merge, push, deployment or actual PHP 8.3/FastCGI work was authorized for this cycle. The prepared 40000 model proves reader behavior only; full rebuild capacity remains a sibling cycle.
+Suggestion: Preserve these boundaries and do not substitute local measurements for host evidence.
+
+## Uncertain assessments
+
+Source: step4_implementation_after.md, verification status and known limits.
+Observation: Full-suite pass and host acceptance remain unclaimed. Browser identity states were presentation simulations; anonymous/unapproved/approved viewer-tag selection was separately exercised in PHP. Final cycle whitespace and concept/plan links passed. Owned temporary servers were stopped and disposable app/model workspaces removed after evidence archival.
+Suggestion: Retain these limits in the handoff and assess real host capacity in its already separate cycle. The four reproduced baseline failures should not be described as regressions introduced here.
+
+*— Codex · 2026-11-02 UTC*
