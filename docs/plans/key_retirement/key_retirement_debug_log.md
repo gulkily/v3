@@ -100,3 +100,19 @@ Verification: Reviewed current approval acceptance, canonical write serializatio
 Source: Approved Step 3, Stage 1 and Key Risks; step4_implementation_do.md, material risk before dependent work. Actual finding: signed rename plus retained approval does not establish same-account retirement authority; missing legacy context prevents silently treating all existing same-name keys as proven members. Saved a real-key characterization and reviewable Step 2 coverage proposal. Stage 1 incomplete; Stages 2–8 not started. This is a stage note, not a completed Step 4 diagnostic report. Dependency delta zero.
 
 *— Codex · 2026-11-01 UTC*
+
+
+## 2026-11-01 UTC — Revised Steps 2–3, disabled-rename direction
+
+### Necessary/useful instructions
+
+- Source: step1_solution_assessment.md, Review and revision; step3_development_plan_before.md, reconcile approved scope. Contribution: replaces the earlier unselected account-association proposal in the actual requirements rather than leaving the user direction only as an appendix. Suggestion: retain.
+- Source: step3_development_plan_after.md, revised execution approval. Contribution: presents concrete effective-flag/history/bootstrap and replacement guards before dependent implementation. Prior approvals, branch and characterization remain intact; no restart.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+Verification: Step 2 v3/A approved by user; revised Step 3 pending. Document links/whitespace and exact frozen R1 hashes checked. No new runtime test, implementation or dependency change. Whole-cycle 1.00 reaffirmed; S1 whole-stage projection revised from retained 0.15 to 0.20 for the characterization plus new bounded guard work; other stage values preserved. Existing eight-stage plan remains, with affected stage edits attributed as one scope revision.
+
+*— Codex · 2026-11-01 UTC*
