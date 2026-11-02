@@ -113,7 +113,7 @@
   background: #2b2b2b;
 }
 
-:root[data-theme="midnight"] .card > .body,
+:root[data-theme="midnight"] .card > .body:not(:empty),
 :root[data-theme="midnight"] .card > p:not([class]) {
   margin: 0.9rem 0;
   padding: 0.7rem 0.9rem;
