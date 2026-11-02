@@ -44,3 +44,24 @@ Stage identities and original stage-work estimates copied from Step 3 (not new r
 - Estimate details: original scope one partial and two test files; uncertainty low; no revisions. Retrospective matches the original.
 
 *— Claude · 2026-11-02 UTC · Model: claude-fable-5-1*
+
+## Stage 2 - Phone body height and footprint
+
+**Original estimate: 0.08**
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `public/assets/compose.css`: under 640px the full composer's body (New post page and the paned New Thread dialog's form) is 5.5rem high, the compact form's height, with vertical resize; the reserved hidden picker footprint on the compose page is not kept on phones. Wider screens unchanged.
+  - `tests/browser/compose_layout_stability.mjs`: a phone fit pass over the 13 permitted themes at 375 by 667, 375 by 300 and 1280 by 1000. On phones it asserts no horizontal overflow, Title below Post, body top to Post bottom within 300px, nothing reserved between body and Post, and, after focusing the body and scrolling it into view as a phone does, Post's bottom edge inside the viewport and above the tab bar when shown. At 1280 it asserts the tall body and the reserved footprint remain. New `--phone-fit-only` switch runs just that pass, like the existing `--shared-only`; `PHONE_FIT_SCREENSHOT_DIR` saves a screenshot per case.
+- Verification:
+  - `node tests/browser/compose_layout_stability.mjs --phone-fit-only`: 39 of 39 cases passed in Chromium. Body top to Post bottom 157 to 166px on phones, 276 to 313px on desktop.
+  - Screenshots at 375 by 667 (Light, Word 97) and 375 by 300 (Light, Sticker) reviewed: body, Post row, Title, tags chip in that order; nothing runs off the right edge. Before focus at 300px tall the heading leaves Post below the fold; the focus assertion covers what a phone does next.
+  - `node tests/browser/composers.mjs`: passed again with the new CSS.
+  - `git diff --check`: clean.
+  - The test's full mode (without the switch) fails at its first `waitForLoadState('networkidle')` with a 30s timeout. Reproduced identically on the planning commit in the baseline worktree, so it is pre-existing and environmental (a client script polls every two seconds), not caused by this stage. Not chased; the new pass avoids network-idle waits.
+- Notes:
+  - Engines: Chromium only; no Playwright WebKit or Firefox build installed here. The real-phone replay is Stage 3.
+  - The paned dialog rule is harmless on desktop and only matters if the paned board is used under 640px.
+- Estimate details: original scope the phone rules and a theme loop; uncertainty low for layout. Retrospective 0.10 rather than 0.08 because the pre-existing network-idle failure forced the `--phone-fit-only` switch and a baseline reproduction. No scope change.
+
+*— Claude · 2026-11-02 UTC · Model: claude-fable-5-1*
