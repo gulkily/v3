@@ -116,3 +116,25 @@ Source: Approved Step 3, Stage 1 and Key Risks; step4_implementation_do.md, mate
 Verification: Step 2 v3/A approved by user; revised Step 3 pending. Document links/whitespace and exact frozen R1 hashes checked. No new runtime test, implementation or dependency change. Whole-cycle 1.00 reaffirmed; S1 whole-stage projection revised from retained 0.15 to 0.20 for the characterization plus new bounded guard work; other stage values preserved. Existing eight-stage plan remains, with affected stage edits attributed as one scope revision.
 
 *— Codex · 2026-11-01 UTC*
+
+
+## 2026-11-02 UTC — Completed Step 4
+
+### Necessary/useful instructions
+
+- Source: step4_implementation_do.md, stage dependency and recovery gates. Contribution: real restore and private-message journeys exposed the archive root/classification gap and the reader's shared active-key lookup; both fixed before closeout. Retain normal-flow recovery requirements.
+- Source: step4_implementation_after.md, baseline distinctions and log-only handoff. Contribution: full suite disclosed one introduced label regression, now fixed; the other eight failing tests were reproduced on unchanged main. Isolated static-release assertion differs from its earlier full-suite context failure and is explicitly recorded. Retain.
+- Source: project CONTRIBUTING.md and AGENTS.md, viewer state before paint and theme checks. Contribution: eligible actor hints and shared markup were verified across six roles and 16 themes, including a lost accepted response and exact retry. Retain.
+- Source: standing effort study P2, revision and incomplete outcomes. Contribution: original estimates and authority gate preserved; discovered Stage 7 work raised projection to 1.05 without inventing elapsed labor or maintainer acceptance. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- Eight stage artifacts plus repeated verification summaries create substantial documentation for this feature. They made authority and restore boundaries reviewable, but future cycles above 1.00 should discuss splitting earlier; required recovery must remain part of the parent outcome.
+
+Verification: All eight stages have scoped commits with summary updates; initial planning precedes implementation. Final stage 9a3d10a9e includes release evidence, final retrospective and current-cycle ledger closeout. Full suite 1754/1763 before final corrections; introduced approval label fixed, 12 final focused checks pass, eight remaining failing tests reproduce on unchanged main. Browser member/operator and private-history recovery, real CLI archive/rebuild, private-store restore and concurrent acceptance evidence in acceptance.txt. Syntax, whitespace and concept source links pass. No dependencies, production changes, push or merge. Unrelated sibling drafts/ledger additions preserved. Temporary clean baseline worktree removed after comparison. Maintainer fit/acceptance pending; no measured labor or accepted-count increment. Debug mode restored to inherited enabled state; no configuration changed. This is the separate log-only handoff commit.
+
+*— Codex · 2026-11-02 UTC*
