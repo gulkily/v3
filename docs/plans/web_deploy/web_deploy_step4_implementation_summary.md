@@ -114,3 +114,12 @@ Stage originals copied from Step 3 (not new ratings): S1 0.15, S2 0.08 (revised 
 - Notes: concept entries describe delivered behavior and their source paths resolve.
 
 *— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Live check on zenmemes.com
+
+**Original estimate: 0.05**
+**Retrospective: pending**
+
+- Status: **pending**, waiting for the maintainer to merge, install with one SSH `git pull`, then run the checks from an iPhone.
+- Pre-merge verification (full suite on `cdfa00dc`, stages 1-4 code): 1822 run, 1807 passed, 15 failed. All 15 also fail on unmodified `main` (`33879043`): 4 known (ApprovalSeedCommandTest unreadable-artifact, 3 LocalAppSmokeTest), 8 FrmClientTest, ReadModelBuilderTimingTest, ReactionRecordFormatParityTest, TerminalOperatorUiCommandTest. No new failures.
+- Planned live checks: Check for updates (proves PHP can fetch from GitHub); Deploy now with a small pending commit; Deploy (queued) and confirm cron runs it; if the worker is stale, confirm the warning and that Deploy now still works.
