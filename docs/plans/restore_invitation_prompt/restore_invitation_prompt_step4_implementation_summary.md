@@ -22,3 +22,14 @@ Completion: Untargeted inline naming and Account guest recovery keep the key, po
 - Notes: No estimate revision; original scope retained. Browser surfaces await S3/S4. Runtime canonical identity and verified history reused as planned.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 2 - Naming retry
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes: Exact committed signed names recover before prepare-token validation, verify Git blob identity and verified history, repair stale projection, and return the latest name without overwriting later changes. Browser stores a per-key signed pending request before sending, retains it across uncertain failures, and protects local state against identity changes.
+- Verification: Five focused PHP/Node-backed tests passed: prior eligibility/signature/gate checks plus injected committed refresh failure, absent token, lost-response replay, forged replay, newer name, and browser pending-request/identity-switch behavior. PHP/JS syntax and whitespace pass.
+- Notes: S1 commit 1b2f0c39. Recovery authority remains exact signed committed names; no new receipt family. Definitive missing/expired uncommitted requests can be prepared afresh on next retry. No stage estimate revision.
+
+*— Codex · 2026-11-01 UTC*

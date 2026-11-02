@@ -227,6 +227,42 @@ final class WriteApiSmokeTest
         } finally { $this->deleteTree($key['home']); }
     }
 
+    public function testInitialNameRecoversCommittedRefreshFailureAndLostResponse(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('guest');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(false));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $sign = fn ($prepared) => $prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            $signed = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'recovered']));
+            $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(false)) extends LocalWriteService {
+                protected function rebuildReadModel(): array { throw new RuntimeException('injected name refresh failure'); }
+            };
+            try { $failing->finalizePreparedProfileName($signed); throw new LogicException('Expected refresh failure'); }
+            catch (RuntimeException $e) { assertStringContains('Canonical write committed', $e->getMessage()); }
+            $head = $this->latestCommitSha($root);
+            $signed['prepare_token'] = str_repeat('0', 32);
+            $result = $writer->finalizePreparedProfileName($signed);
+            assertSame(true, $result['recovered']);
+            assertSame('recovered', $result['username']);
+            assertSame($head, $this->latestCommitSha($root));
+            $this->assertReadModelHealthy($db);
+            assertSame(true, $writer->finalizePreparedProfileName($signed)['recovered']);
+            $forged = $signed; $forged['detached_signature'] = 'forged';
+            try { $writer->finalizePreparedProfileName($forged); throw new LogicException('Accepted forgery'); }
+            catch (RuntimeException $e) { assertStringContains('Prepared post not found', $e->getMessage()); }
+            $enabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $enabled->finalizePreparedProfileName($sign($enabled->prepareProfileName(['author_identity_id' => $identity, 'username' => 'newer'])));
+            assertSame('newer', $writer->finalizePreparedProfileName($signed)['username']);
+            assertSame(2, count(glob($root . '/records/profile-names/*.txt')));
+        } finally { $this->deleteTree($key['home']); }
+    }
+
     private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator
     {
         return new FeatureFlagEvaluator(new FeatureFlagRegistry(), [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]);

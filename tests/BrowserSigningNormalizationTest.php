@@ -47,6 +47,50 @@ NODE);
         assertSame(true, $result['ok']);
     }
 
+    public function testNameRetryPersistsSignedRequestAndProtectsIdentity(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs = require('fs'), assert = require('node:assert/strict');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const data = new Map();
+global.localStorage = { getItem: k => data.get(k) || null, setItem: (k,v) => data.set(k,v), removeItem: k => data.delete(k) };
+global.window = { dispatchEvent(){} };
+let identity = 'key-a', prepares = 0, finalizes = 0, lost = true, switchKey = false;
+const storageKeys = { username: 'username' };
+async function ensureActionIdentity() {}
+function currentAuthorIdentityId() { return identity; }
+async function signCanonicalRecord() { return 'signature'; }
+global.fetch = async (url, options) => {
+  const values = new URLSearchParams(options.body);
+  if (url.includes('prepare_profile_name')) {
+    prepares++;
+    return { ok: true, json: async () => ({ status:'ok', prepare_token:'token', record_path:'record', canonical_record:'signed bytes' }) };
+  }
+  finalizes++;
+  assert.equal(values.get('canonical_record'), 'signed bytes');
+  assert.ok(data.get('forum_pending_profile_name:key-a'));
+  if (lost) { lost = false; throw Error('lost response'); }
+  if (switchKey) identity = 'key-b';
+  return { ok:true, json:async () => ({ status:'ok', username:'saved-name' }) };
+};
+eval(source.slice(source.indexOf('  async function saveRegisteredName('), source.indexOf('  // A failed key creation')));
+(async () => {
+  await assert.rejects(saveRegisteredName(''), /Enter a username/);
+  await assert.rejects(saveRegisteredName('saved-name'), /lost response/);
+  assert.equal(await saveRegisteredName('changed-draft'), 'saved-name');
+  assert.equal(prepares, 1); assert.equal(finalizes, 2);
+  assert.equal(data.get('username'), 'saved-name');
+  assert.equal(data.has('forum_pending_profile_name:key-a'), false);
+  switchKey = true;
+  await assert.rejects(saveRegisteredName('other'), /identity changed/);
+  assert.equal(data.get('username'), 'saved-name');
+  assert.ok(data.get('forum_pending_profile_name:key-a'));
+  process.stdout.write(JSON.stringify({ ok:true }));
+})().catch(e => { console.error(e); process.exit(1); });
+NODE);
+        assertSame(true, $result['ok']);
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -1329,6 +1329,33 @@ class LocalWriteService
         throw new RuntimeException('Username changes are disabled. Only an unnamed guest may choose an initial name.');
     }
 
+    /** Exact committed requests remain retryable after their prepare token is removed. */
+    private function recoverProfileName(array $input): ?array
+    {
+        $contents = (string) ($input['canonical_record'] ?? '');
+        if ($contents === '') return null;
+        $record = (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
+        $path = 'records/profile-names/' . $record['Record-ID'] . '.txt';
+        $identity = $record['Author-Identity-ID'];
+        if (($input['record_path'] ?? '') !== $path || ($input['author_identity_id'] ?? '') !== $identity
+            || !is_file($this->repositoryRoot . '/' . $path)) return null;
+        if (file_get_contents($this->repositoryRoot . '/' . $path) !== $contents
+            || !is_file($this->repositoryRoot . '/' . $path . '.asc')
+            || file_get_contents($this->repositoryRoot . '/' . $path . '.asc') !== ($input['detached_signature'] ?? '')) return null;
+        foreach ([$path, $path . '.asc'] as $relative) {
+            if ($this->runGitCommand(['rev-parse', 'HEAD:' . $relative], 'Unable to verify saved name')
+                !== $this->runGitCommand(['hash-object', '--', $relative], 'Unable to hash saved name')) return null;
+        }
+        $history = \ForumRewrite\ReadModel\ProfileNames::history($this->repositoryRoot)[$identity] ?? [];
+        if (!in_array($record['Record-ID'], array_column($history, 'Record-ID'), true)) return null;
+        $latest = $history[array_key_last($history)];
+        $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to inspect saved name'));
+        if (!$this->canIncrementallyUpdateReadModel()) $this->refreshDerivedStateAfterCommit($head);
+        $this->invalidator()->invalidateAllGeneratedPresentation();
+        return ['status' => 'ok', 'identity_id' => $identity, 'username' => $latest['Username'],
+            'recovered' => true, 'commit_sha' => $head];
+    }
+
     /** @param array<string, mixed> $input @return array<string, mixed> */
     public function prepareProfileName(array $input): array
     {
@@ -1356,6 +1383,8 @@ class LocalWriteService
     {
         return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
+            $recovered = $this->recoverProfileName($input);
+            if ($recovered !== null) return $recovered;
             $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $prepared = $this->loadPreparedPost($token);
             $contents = (string) ($input['canonical_record'] ?? '');

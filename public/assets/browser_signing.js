@@ -2707,22 +2707,46 @@
 
   // Renames a registered key with a signed profile-name record; its posts move to the new name.
   async function saveRegisteredName(chosen, root, statusNode) {
+    const username = String(chosen || "").trim().toLowerCase();
+    if (!/^[a-z0-9._-]{1,80}$/.test(username)) throw new Error("Enter a username using letters, numbers, dots, underscores or hyphens (up to 80 characters).");
     await ensureActionIdentity(root || null, statusNode || null);
     const identity = currentAuthorIdentityId();
+    const pendingKey = "forum_pending_profile_name:" + identity;
+    const assertIdentity = () => {
+      if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Return to the original key to retry naming.");
+    };
     const postName = async (endpoint, values) => {
+      assertIdentity();
       const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
       const result = await response.json();
       if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
       return result;
     };
-    const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
-    const signature = await signCanonicalRecord(prepared.canonical_record);
-    const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
-      record_path: prepared.record_path, author_identity_id: identity,
-      canonical_record: prepared.canonical_record, detached_signature: signature });
-    if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
+    let pending = JSON.parse(localStorage.getItem(pendingKey) || "null");
+    if (!pending) {
+      const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: username });
+      assertIdentity();
+      const signature = await signCanonicalRecord(prepared.canonical_record);
+      assertIdentity();
+      pending = { prepare_token: prepared.prepare_token, record_path: prepared.record_path,
+        author_identity_id: identity, canonical_record: prepared.canonical_record, detached_signature: signature };
+      // Persist before sending: a lost response must not strand a one-time initial name.
+      localStorage.setItem(pendingKey, JSON.stringify(pending));
+    }
+    let result;
+    try {
+      result = await postName("/api/finalize_profile_name", pending);
+    } catch (error) {
+      // The server checks committed recovery first, so these definitive failures may be prepared again.
+      if (/^Prepared post not found\.|^Prepared profile name mismatch or expiry\./.test(error.message)) {
+        if (localStorage.getItem(pendingKey) === JSON.stringify(pending)) localStorage.removeItem(pendingKey);
+      }
+      throw error;
+    }
+    assertIdentity();
     localStorage.setItem(storageKeys.username, result.username);
+    if (localStorage.getItem(pendingKey) === JSON.stringify(pending)) localStorage.removeItem(pendingKey);
     window.dispatchEvent(new Event("forum:identity-changed"));
     return result.username;
   }
