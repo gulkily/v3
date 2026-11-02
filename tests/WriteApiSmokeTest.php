@@ -141,6 +141,38 @@ final class WriteApiSmokeTest
             assertSame($ids[0],\ForumRewrite\Security\KeyRetirement::read($root,$ids[1])['Actor-Identity-ID']);
             assertSame(true,\ForumRewrite\Import\ArchiveRecordCatalog::isRecordPath($paths[0]));
             assertSame(true,\ForumRewrite\Import\ArchiveRecordCatalog::isSignaturePath($paths[0].'.asc'));
+            $retiredError = 'This key is retired. Use another approved key or ask an operator to approve a replacement.';
+            // Simulate a committed retirement whose derived refresh failed.
+            $pdo->exec('UPDATE profiles SET is_approved=1, retired_at=NULL');
+            assertSame(0,(int)\ForumRewrite\Security\KeyRetirement::profile($root,ProfileRepository::byIdentityId($pdo,$ids[1]))['is_approved']);
+            assertSame(true,\ForumRewrite\Security\ApprovalPolicy::isOperator($root,$ids[0]));
+            assertSame(false,\ForumRewrite\Security\ApprovalPolicy::isActiveOperator($root,$ids[0]));
+            assertThrowsRuntime(fn()=>$writer->linkIdentity(['public_key'=>$keys[1]['public_key']]),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->seedApprovedIdentity($ids[1],'retry'),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->prepareApproval(['approver_identity_id'=>$ids[2],'target_identity_id'=>$ids[1]]),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->prepareApproval(['approver_identity_id'=>$ids[0],'target_identity_id'=>$ids[2]]),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->prepareThread(['author_identity_id'=>$ids[1],'subject'=>'Kept draft','body'=>'Do not silently publish unsigned.','board_tags'=>'general']),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->prepareInvitation(['issuer_identity_id'=>$ids[1]]),$retiredError);
+            $now = gmdate('Y-m-d\TH:i:s\Z');
+            $direct = 'Post-ID: thread-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(16)) . "\nCreated-At: {$now}\nBoard-Tags: general\nAuthor-Identity-ID: {$ids[1]}\nSubject: Kept draft\n\nRetired direct signed post.\n";
+            assertThrowsRuntime(fn()=>$writer->createSignedPost(['canonical_record'=>$direct,'detached_signature'=>$this->signCanonicalRecord($keys[1]['home'],$direct)]),$retiredError);
+            $sessionBefore = $_SESSION ?? [];
+            $postBefore = $_POST;
+            try {
+                $_SESSION = ['authenticated_identity_id'=>$ids[1]];
+                $app = new Application(dirname(__DIR__),$root,$db,$artifacts);
+                assertStringContains('status=unauthenticated',$this->renderMethod($app,'GET','/api/auth_status'));
+                assertSame(401,http_response_code());
+                $_SESSION = ['forum_auth_challenges'=>['retired-challenge'=>time()+300]];
+                $_POST = ['identity_id'=>$ids[1],'challenge'=>'retired-challenge','detached_signature'=>$this->signCanonicalRecord($keys[1]['home'],'retired-challenge')];
+                assertStringContains($retiredError,$this->renderMethod($app,'POST','/api/authenticate_identity'));
+                assertSame(403,http_response_code());
+                assertSame(false,isset($_SESSION['authenticated_identity_id']));
+                // Public readers remain welcome without granting this key a session.
+                $_SESSION = [];
+                $this->renderMethod($app,'GET','/users/');
+                assertSame(200,http_response_code());
+            } finally { $_SESSION=$sessionBefore; $_POST=$postBefore; }
             $receipt = $root.'/'.\ForumRewrite\Security\KeyRetirement::acceptancePath($ids[1]);
             $bytes = file_get_contents($receipt);
             file_put_contents($receipt,str_replace('Record-SHA256: ','Record-SHA256: 0',$bytes));

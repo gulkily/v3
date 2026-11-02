@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/key_retirement — [ledger](../effort_estimation_trial.md#cycle-v3key_retirement)
 Extended estimates: enabled
-Status: Step 3 v3/A approved; Stage 1 contract complete; Stage 2 next
+Status: Step 3 v3/A approved; Stages 1–3 complete; Stage 4 next
 
 **Cycle estimate: 1.00**
 
@@ -68,5 +68,16 @@ Approval: User said “approved step 3” for v3/A. Revised planning commit 3aab
 - Changes: Added strict bounded signed retirement/acceptance parsing and exact-byte/hash verification; incomplete evidence fails explicitly. Full and incremental derived updates preserve the historical approval graph before marking the retired profile inactive, retaining `was_approved` and retirement provenance. Schema 42 adds bootstrap/verified-name-history and retirement fields. Canonical archive classification and recoverable transaction paths include the new record families. Profile lookups include the new metadata; existing consumers continue to select their response fields.
 - Verification: 10 focused checks passed: real-signature retirement/rebuild/incremental replay after the original actor retires; mismatched receipt/missing-signature rejection; recoverable signed transaction failures; approval acceptance; actual isolated `./v3 rebuild` and normal startup from schema 41 before profile lookup. Earlier focused approved-key resolver checks 3/3 passed. Initial replay test supplied the existing updater constructor arguments in the wrong order; corrected the fixture and reran successfully.
 - Notes: No public retirement writer yet. Effective access integration is Stage 3 and message history separation Stage 4; do not deploy this intermediate stage. Original stage estimate unchanged; no dependency changes, production verification or measured labor.
+
+*— Codex · 2026-11-01 UTC*
+
+## Stage 3 - Active eligibility enforcement
+
+**Original estimate: 0.17**
+**Retrospective stage work: 0.17**
+
+- Changes: Canonical retirement checks reject new sign-in, prepared/direct signed actions, registration, seed/reapproval and invitation use. Existing/forwarded sessions resolve through canonical profile inactivity even when the projection is stale. Current operator privileges are separated from retained historical operator evidence; workflow acceptance and sign-in share retirement's publication lock. Historical signature recovery remains available; public readers and keyless participation retain their existing paths.
+- Verification: 11 focused replay/policy/session/direct-identity checks passed, then 15 replay/workflow/access checks passed. Extended real-key replay regression simulates stale active profiles and exercises sign-in/status, direct/prepared posting, registration, seed, both approval roles and invitation refusal. Existing forwarding-chain tests and account-access journeys pass. Whitespace checked. Broader role/flag and browser end-to-end checks remain assigned to Stages 5–8; no public mutation UI yet.
+- Notes: Active checks intentionally do not alter historical operator classification or signature verification. Original estimate unchanged; no measured labor or deployment claim.
 
 *— Codex · 2026-11-01 UTC*

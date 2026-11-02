@@ -76,7 +76,21 @@ final class KeyRetirement
     }
     public static function assertActive(string $root, string $identity): void
     {
-        if ($identity !== '' && self::read($root, $identity) !== null) throw new RuntimeException('This key is retired. Use another approved key or ask an operator to approve a replacement.');
+        if (preg_match('/^openpgp:[a-f0-9]{40}$/D', $identity) && self::read($root, $identity) !== null) throw new RuntimeException('This key is retired. Use another approved key or ask an operator to approve a replacement.');
+    }
+    /** Overlay canonical inactivity when the derived database has not refreshed yet. */
+    public static function profile(string $root, ?array $profile): ?array
+    {
+        $id = (string) ($profile['identity_id'] ?? '');
+        if (!preg_match('/^openpgp:[a-f0-9]{40}$/D', $id)) return $profile;
+        $record = self::read($root, $id);
+        if ($record !== null) {
+            $profile['is_approved'] = 0;
+            $profile['was_approved'] = 1;
+            $profile['retired_at'] = $record['Accepted-At'];
+            $profile['retired_by_identity_id'] = $record['Actor-Identity-ID'];
+        }
+        return $profile;
     }
     public static function all(string $root): iterable
     {

@@ -1838,7 +1838,7 @@ final class Application
      */
     private function fetchProfileBySlug(string $slug): ?array
     {
-        return ProfileRepository::bySlug($this->pdo(), $slug);
+        return \ForumRewrite\Security\KeyRetirement::profile($this->repositoryRoot, ProfileRepository::bySlug($this->pdo(), $slug));
     }
 
     /**
@@ -1846,7 +1846,7 @@ final class Application
      */
     private function fetchProfileByIdentityId(string $identityId): ?array
     {
-        return ProfileRepository::byIdentityId($this->pdo(), $identityId);
+        return \ForumRewrite\Security\KeyRetirement::profile($this->repositoryRoot, ProfileRepository::byIdentityId($this->pdo(), $identityId));
     }
 
     /**

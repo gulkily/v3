@@ -131,6 +131,14 @@ final class RouteServices
             (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
     }
 
+    public function withActiveIdentity(string $identityId, callable $callback): mixed
+    {
+        return \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, function () use ($identityId, $callback): mixed {
+            \ForumRewrite\Security\KeyRetirement::assertActive($this->repositoryRoot, $identityId);
+            return $callback();
+        });
+    }
+
     public function databasePath(): string
     {
         return $this->databasePath;
@@ -180,7 +188,7 @@ final class RouteServices
     public function securityReviewAllowed(): bool
     {
         $id = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
-        if ($id === '' || !\ForumRewrite\Security\ApprovalPolicy::isOperator($this->repositoryRoot, $id)) return false;
+        if ($id === '' || !\ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->repositoryRoot, $id)) return false;
         $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->pdo(), $id);
         return $profile !== null && (int) $profile['is_approved'] === 1;
     }

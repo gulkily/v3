@@ -45,6 +45,7 @@ use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\SiteProfileRegistry;
 use RuntimeException;
+use ForumRewrite\Security\KeyRetirement;
 use ForumRewrite\Images\ImageReference;
 use ForumRewrite\Images\ImageStore;
 
@@ -1262,6 +1263,7 @@ class LocalWriteService
             $fingerprintLower = strtolower($fingerprintUpper);
             $username = $inspected['username'];
             $identityId = 'openpgp:' . $fingerprintLower;
+            KeyRetirement::assertActive($this->repositoryRoot, $identityId);
             $postId = 'identity-openpgp-' . $fingerprintLower;
 
             $identityPath = 'records/identity/' . $postId . '.txt';
@@ -1362,7 +1364,7 @@ class LocalWriteService
                 || hash('sha256', $contents) !== $prepared['canonical_sha256']) {
                 throw new RuntimeException('Prepared profile name mismatch or expiry.');
             }
-            $identity = $this->requirePreparedMatch($input, $prepared, 'author_identity_id');
+            $identity = $this->requireOpenPgpIdentityId($this->requirePreparedMatch($input, $prepared, 'author_identity_id'), 'author_identity_id');
             $path = $this->requirePreparedMatch($input, $prepared, 'record_path');
             $record = (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
             if ($record['Author-Identity-ID'] !== $identity || $path !== 'records/profile-names/' . $record['Record-ID'] . '.txt') {
@@ -1404,6 +1406,7 @@ class LocalWriteService
                 $fingerprintUpper = $inspected['fingerprint'];
                 $fingerprintLower = strtolower($fingerprintUpper);
                 $identityId = 'openpgp:' . $fingerprintLower;
+            KeyRetirement::assertActive($this->repositoryRoot, $identityId);
                 $identityPath = 'records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
                 if (is_file($this->repositoryRoot . '/' . $identityPath)) {
                     throw new RuntimeException('Identity already exists for this fingerprint.');
@@ -1502,6 +1505,7 @@ class LocalWriteService
 
             $record = $this->timePhase($timings, 'canonical_record_parse', fn (): PostRecord => (new PostRecordParser())->parse($canonicalRecord));
             $identityId = (string) $prepared['author_identity_id'];
+            KeyRetirement::assertActive($this->repositoryRoot, $identityId);
             if ($record->postId !== (string) $prepared['post_id']
                 || $record->createdAt !== (string) $prepared['created_at']
                 || $record->authorIdentityId !== $identityId
@@ -1594,6 +1598,7 @@ class LocalWriteService
             if (!preg_match('/^openpgp:[a-f0-9]{40}$/', $identityId) || preg_match('/[\r\n]/', $seedReason)) {
                 throw new RuntimeException('Invalid seed identity or reason. Seed not written.');
             }
+            KeyRetirement::assertActive($this->repositoryRoot, $identityId);
             $path = CanonicalPathResolver::approvalSeed(substr($identityId, 8));
             $absolute = $this->repositoryRoot . '/' . $path;
             $contents = "Approved-Identity-ID: {$identityId}\nSeed-Reason: {$seedReason}\n\nSeed this identity as approved.\n";
@@ -2075,6 +2080,7 @@ class LocalWriteService
                     }
                     return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'recovered' => true];
                 }
+                KeyRetirement::assertActive($this->repositoryRoot, (string) $entry['issued']->post->authorIdentityId);
                 if (strtotime($entry['issued']->expiresAt) <= time()) throw new RuntimeException('Invitation has expired.');
                 if ($this->isApprovedIdentity($authorIdentityId)) {
                     return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'already_approved' => true];
@@ -2134,6 +2140,7 @@ class LocalWriteService
             $this->assertWritableRepository();
             $recipientIdentityId = $this->requireOpenPgpIdentityId((string) ($input['recipient_identity_id'] ?? ''), 'recipient_identity_id');
             $entry = $this->invitationForToken(trim((string) ($input['invite_token'] ?? '')));
+            if ($entry['redeemed'] === null) KeyRetirement::assertActive($this->repositoryRoot, (string) $entry['issued']->post->authorIdentityId);
             $sameRecipient = $entry['redeemed'] !== null && $entry['redeemed']->post->authorIdentityId === $recipientIdentityId;
             if ($entry['revoked'] !== null || ($entry['redeemed'] !== null && !$sameRecipient)
                 || (!$sameRecipient && strtotime($entry['issued']->expiresAt) <= time())) {
@@ -3817,6 +3824,7 @@ class LocalWriteService
 
     private function isApprovedIdentity(string $identityId): bool
     {
+        KeyRetirement::assertActive($this->repositoryRoot, $identityId);
         $stmt = $this->readModelPdo()->prepare('SELECT is_approved FROM profiles WHERE identity_id = :identity_id');
         $stmt->execute(['identity_id' => $identityId]);
         $value = $stmt->fetchColumn();
@@ -3959,6 +3967,7 @@ class LocalWriteService
             throw new RuntimeException("{$field} must use a lowercase OpenPGP fingerprint.");
         }
 
+        KeyRetirement::assertActive($this->repositoryRoot, $identityId);
         $identityPath = $this->repositoryRoot . '/' . CanonicalPathResolver::identity($fingerprint);
         if (!is_file($identityPath)) {
             throw new RuntimeException("{$field} does not resolve to a known identity.");
