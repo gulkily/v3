@@ -101,6 +101,76 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testRetirementSurvivesCanonicalExportImportAndDatabaseDeletion(): void
+    {
+        [$root,$db,$artifacts]=$this->createTempEnvironment();
+        [$restored,$restoredDb,$restoredArtifacts]=$this->createTempEnvironment();
+        $keys=[];$exports=[];
+        try {
+            $writer=new LocalWriteService($root,$db,$artifacts,new CanonicalRecordRepository($root));$ids=[];
+            for($i=0;$i<4;$i++) {
+                $keys[]=$this->createSigningKey('retirement-restore');
+                $ids[]=$writer->linkIdentity(['public_key'=>$keys[$i]['public_key']])['identity_id'];
+            }
+            foreach([0,2] as $i) $this->seedApprovedIdentity($root,$ids[$i]);
+            (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+            foreach([1,3] as $i) {
+                $p=ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(),$ids[$i]);
+                $grant=$writer->prepareApproval(['approver_identity_id'=>$ids[0],'target_identity_id'=>$ids[$i],'target_profile_slug'=>$p['profile_slug'],'thread_id'=>$p['bootstrap_thread_id'],'parent_id'=>$p['bootstrap_post_id']]);
+                $writer->finalizePreparedApproval($grant+['author_identity_id'=>$ids[0],'detached_signature'=>$this->signCanonicalRecord($keys[0]['home'],$grant['canonical_record'])]);
+            }
+            foreach([[0,1],[2,0]] as [$actor,$target]) {
+                $p=$writer->prepareKeyRetirement(['actor_identity_id'=>$ids[$actor],'target_identity_id'=>$ids[$target]]);
+                assertSame('complete',$writer->finalizePreparedKeyRetirement($p+['detached_signature'=>$this->signCanonicalRecord($keys[$actor]['home'],$p['canonical_record'])])['refresh']);
+            }
+            $contentPlan=(new \ForumRewrite\Import\ContentImportPlanner())->plan($root,$restored);
+            // Public content merge must not import local access authority.
+            foreach ($contentPlan as $path => $entry) {
+                if (str_contains($path, 'key-retirement')) assertSame('excluded',$entry['state']);
+            }
+            $export=(new \ForumRewrite\Images\ImageBackup($root,$db))->export('tar.gz');$exports[]=$export['path'];fclose($export['stream']);
+            $output=$this->runCommand(dirname(__DIR__),'./v3 import-repository '.escapeshellarg($export['path']).' '.escapeshellarg($restored).' '.escapeshellarg($restoredDb).' '.escapeshellarg($restoredArtifacts));
+            assertStringContains('Imported:',$output);
+            foreach([0,1] as $i) foreach([\ForumRewrite\Security\KeyRetirement::path($ids[$i]),\ForumRewrite\Security\KeyRetirement::path($ids[$i]).'.asc',\ForumRewrite\Security\KeyRetirement::acceptancePath($ids[$i])] as $file) {
+                assertSame(file_get_contents($root.'/'.$file),file_get_contents($restored.'/'.$file));
+            }
+            foreach(glob($restoredDb.'*')?:[] as $file) if(is_file($file))unlink($file);
+            $this->runCommand(dirname(__DIR__),'./v3 rebuild '.escapeshellarg($restored).' '.escapeshellarg($restoredDb));
+            $pdo=(new ReadModelConnection($restoredDb))->open();
+            assertSame(0,(int)ProfileRepository::byIdentityId($pdo,$ids[0])['is_approved']);
+            assertSame(0,(int)ProfileRepository::byIdentityId($pdo,$ids[1])['is_approved']);
+            assertSame(1,(int)ProfileRepository::byIdentityId($pdo,$ids[3])['is_approved'],'Earlier beneficiary remains approved after its operator retires');
+            assertSame($ids[0],\ForumRewrite\Security\KeyRetirement::read($restored,$ids[1])['Actor-Identity-ID']);
+            $oldSession=$_SESSION??[];$oldPost=$_POST;
+            try {
+                $app=new Application(dirname(__DIR__),$restored,$restoredDb,$restoredArtifacts);
+                $challenge=$this->extractValue($this->renderMethod($app,'GET','/api/auth_challenge'),'challenge');
+                $_POST=['identity_id'=>$ids[0],'challenge'=>$challenge,'detached_signature'=>$this->signCanonicalRecord($keys[0]['home'],$challenge)];
+                $authResponse=$this->renderMethod($app,'POST','/api/authenticate_identity');
+                if (!str_contains($authResponse,'This key is retired.')) throw new RuntimeException('Unexpected restored authentication response: '.$authResponse);
+                assertSame(403,http_response_code());
+                assertStringContains('Retired',$this->renderMethod($app,'GET','/profiles/'.str_replace(':','-',$ids[1])));
+            } finally {$_SESSION=$oldSession;$_POST=$oldPost;}
+            $broken=$artifacts.'/broken-export';mkdir($broken,0700,true);
+            $this->runCommand(dirname(__DIR__),'tar -xzf '.escapeshellarg($export['path']).' -C '.escapeshellarg($broken));
+            unlink($broken.'/repository/'.\ForumRewrite\Security\KeyRetirement::path($ids[0]).'.asc');
+            $badArchive=$artifacts.'/incomplete.tar.gz';
+            $this->runCommand(dirname(__DIR__),'tar -czf '.escapeshellarg($badArchive).' -C '.escapeshellarg($broken).' repository');
+            $head=$this->latestCommitSha($restored);
+            try {
+                $this->runCommand(dirname(__DIR__),'./v3 import-repository '.escapeshellarg($badArchive).' '.escapeshellarg($restored).' '.escapeshellarg($restoredDb));
+                throw new LogicException('Incomplete retirement archive accepted.');
+            } catch (RuntimeException $error) { assertStringContains('Retirement evidence is missing',$error->getMessage()); }
+            assertSame($head,$this->latestCommitSha($restored));
+            assertSame($ids[2],\ForumRewrite\Security\KeyRetirement::read($restored,$ids[0])['Actor-Identity-ID']);
+        } finally {
+            foreach($keys as $key)$this->deleteTree($key['home']);
+            foreach([$root,$restored,$artifacts,$restoredArtifacts] as $dir)$this->deleteTree($dir);
+            foreach([$db,$restoredDb] as $database)foreach(glob($database.'*')?:[] as $file)if(is_file($file))unlink($file);
+            foreach($exports as $file)if(is_file($file))unlink($file);
+        }
+    }
+
     public function testSignedRetirementPolicyAcceptanceAndRecovery(): void
     {
         [$root,$db,$artifacts]=$this->createTempEnvironment(); $keys=[];

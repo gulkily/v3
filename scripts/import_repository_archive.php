@@ -111,6 +111,18 @@ try {
         }
     }
 
+    // Administrative restore accepts only complete verified retirement bundles;
+    // conflicting target evidence must fail before any canonical file is copied.
+    $retirements = [];
+    foreach ([$repositoryRoot, $sourceRoot] as $retirementRoot) {
+        foreach (\ForumRewrite\Security\KeyRetirement::all($retirementRoot) as $identity => $record) {
+            $bundle = [$record['canonical_record'], file_get_contents($retirementRoot.'/'.$record['source_path'].'.asc'),
+                file_get_contents($retirementRoot.'/'.\ForumRewrite\Security\KeyRetirement::acceptancePath($identity))];
+            if (isset($retirements[$identity]) && $retirements[$identity] !== $bundle) throw new RuntimeException('Conflicting retirement evidence: '.$identity);
+            $retirements[$identity] = $bundle;
+        }
+    }
+
     $reactionPlan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($sourceRoot, $repositoryRoot);
     $sourceFileCount = count($sourceFiles);
     $progressInterval = max(1, min(100, (int) ceil($sourceFileCount / 20)));
@@ -462,6 +474,7 @@ function locateSourceRepositoryRoot(string $extractRoot): string
 {
     $candidates = [
         $extractRoot . '/local_repository',
+        $extractRoot . '/repository',
         $extractRoot,
     ];
 
@@ -471,7 +484,7 @@ function locateSourceRepositoryRoot(string $extractRoot): string
         }
     }
 
-    throw new RuntimeException('Archive does not contain records/ or local_repository/records/.');
+    throw new RuntimeException('Archive does not contain records/, repository/records/ or local_repository/records/.');
 }
 
 /**

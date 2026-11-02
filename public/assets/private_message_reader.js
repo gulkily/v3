@@ -195,7 +195,7 @@
   const senderKeyRequests=new Map();
   function currentSenderKeys(messaging,account) {
     if(!senderKeyRequests.has(account)) {
-      const request=messaging.recipientKeys(account).finally(()=>{if(senderKeyRequests.get(account)===request)senderKeyRequests.delete(account);});
+      const request=(messaging.verificationKeys || messaging.recipientKeys)(account).finally(()=>{if(senderKeyRequests.get(account)===request)senderKeyRequests.delete(account);});
       senderKeyRequests.set(account,request);
     }
     return senderKeyRequests.get(account);

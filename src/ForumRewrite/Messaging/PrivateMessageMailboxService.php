@@ -122,7 +122,7 @@ final class PrivateMessageMailboxService
     }
 
     /** @param array<string, mixed> $viewer @return list<array{identity_id:string,profile_slug:string,public_key:string}> */
-    public function recipientKeys(array $viewer, string $usernameToken): array
+    public function recipientKeys(array $viewer, string $usernameToken, bool $historical = false): array
     {
         $this->approvedViewer($viewer);
         $usernameToken = strtolower(trim($usernameToken));
@@ -130,7 +130,7 @@ final class PrivateMessageMailboxService
             throw new InvalidArgumentException('Recipient username is invalid.');
         }
 
-        $keys = $this->keyResolver->keysForUsernameToken($this->readPdo, $usernameToken);
+        $keys = $this->keyResolver->keysForUsernameToken($this->readPdo, $usernameToken, $historical);
         if ($keys === []) {
             throw new InvalidArgumentException('Recipient has no approved profile keys.');
         }

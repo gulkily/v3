@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/key_retirement — [ledger](../effort_estimation_trial.md#cycle-v3key_retirement)
 Extended estimates: enabled
-Status: Step 3 v3/A approved; Stages 1–6 complete; Stage 7 next
+Status: Step 3 v3/A approved; Stages 1–7 complete; Stage 8 verification in progress
 
 **Cycle estimate: 1.00**
 
@@ -114,3 +114,16 @@ Approval: User said “approved step 3” for v3/A. Revised planning commit 3aab
 - Notes: Browser-local Remove/Undo is unchanged. No secrets enter retirement requests. Full private-store restore and final integration remain. Original estimate unchanged; no dependency change, physical-device test or production claim.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 7 - Canonical and private recovery
+
+**Original estimate: 0.15**
+**Revised whole-stage estimate: 0.20**
+**Retrospective stage work: 0.20**
+
+- Changes: Administrative archive restore accepts current `repository/` export layout, validates complete retirement bundles before copying, and refuses conflicts. Public content merge explicitly excludes retirement authority alongside approval authority. Ordinary message readers now request historical verification keys separately from active encryption keys; integration exposed that their former shared lookup still rejected retired original signers.
+- Verification: 28 focused import/resolver/mailbox checks passed, followed by the extended malformed-archive check. Actual current export → `./v3 import-repository` → database deletion → `./v3 rebuild` preserves exact record/signature/receipt bytes, rejects retired sign-in and retains earlier beneficiaries after the accepting operator retires. Missing-signature archive fails before changing destination HEAD. `node tests/browser/private_message_history_sync_browser.mjs --retirement` passes real-key 31-message recovery, retired donors before unread-transfer retrieval, original signatures, draft preservation/reload, forwarding from restored devices, coordinated private-store restore, sync outage with normal send, and unchanged ciphertext/no private-key logging. Reader/list/crypto protocol checks pass.
+- Findings resolved: Initial CLI test found the older root-layout restriction and content-planner missing authority classification. Initial browser run reached retained transfers but marked retired original signatures invalid in the ordinary reader; separate verification lookup fixed it. The restored-auth fixture was corrected to obtain its challenge through the actual session endpoint. Failed attempts remain in local test history; they are not baseline failures.
+- Notes: UTC date is now 2026-11-02; preceding Stage 3–6 notes used the local Nov 1 date with a UTC label; commit timestamps are authoritative. Revised stage estimate reflects newly observed integration work within approved scope, recorded at completion rather than inventing an earlier checkpoint. Independent whole-cycle projection revised from retained 1.00 to 1.05 for this discovery; stage values are not summed. No measured labor, production or physical-device claim.
+
+*— Codex · 2026-11-02 UTC*
