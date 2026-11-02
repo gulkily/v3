@@ -88,8 +88,8 @@ derived. See [PRINCIPLES.md](../../PRINCIPLES.md) and the
 [trust model](../architecture/public_architecture_and_trust.md).
 
 The "relay" in v3 is the Git repository. Anyone allowed to read the site can
-download the whole record with its history and rebuild a working instance
-elsewhere. That turns censorship resistance from a network property into an
+download the whole current record and rebuild a working instance elsewhere.
+Since 2026-10-24 those downloads omit Git history; only the operator holds it. That turns censorship resistance from a network property into an
 exit property: the operator can moderate freely, and the community can leave
 with everything if the operator goes bad. The research paper in this repository,
 [Byzantine Fault-Tolerant Governance for Internet Message Boards](../research/sigtbd_fault_tolerant_governance_for_internet_message_boards.md),
@@ -124,10 +124,12 @@ v3 does not promise that an operator cannot remove content. It promises that
 removal leaves evidence and that the community can leave. Operator removal and
 author retraction are both committed to Git with a retained, signed record and a
 plain-text acceptance receipt that contains no deleted prose
-([post retraction](../reference/author_post_retraction.md)). Deletions are
-therefore visible commits, which answers supermatt's point that relay censorship
-cannot be proven. Backups include full history, and a new steward can rebuild
-from the record alone ([10 reasons, item 1](10_reasons_to_consider_v3.md)).
+([post retraction](../reference/author_post_retraction.md)). On the server's
+repository, deletions are therefore visible commits, which answers supermatt's
+point that relay censorship cannot be proven. The receipts travel in every
+download; the commit history does not (downloads have been history-free since
+2026-10-24), so independent proof depends on who else holds a copy. A new
+steward can rebuild from the record alone ([10 reasons, item 1](10_reasons_to_consider_v3.md)).
 
 Government-scale blocking is out of scope for a single website, as it is for a
 relay. v3's position on pjc50's illegal-content question is the opposite of
@@ -263,7 +265,8 @@ Each item says what exists today and whether a plan already covers it. Items
 marked **no plan** have no planning document in `docs/plans/`.
 
 1. **Member-side replication.** Exit only works if someone outside the
-   operator holds a recent copy. Today that is a manual Backup download.
+   operator holds a recent copy. Today that is a manual Backup download of the
+   current tree without Git history.
    Nothing lets members or a second steward mirror automatically, and a hostile
    operator can simply stop offering downloads. The import command is the
    natural base for a scheduled member mirror, and a signed instance manifest
@@ -273,7 +276,8 @@ marked **no plan** have no planning document in `docs/plans/`.
    [instance content sync](../plans/instance_content_sync/instance_content_sync_step1_solution_assessment.md)).
    **Partially planned.**
 2. **Censorship evidence versus history purge.** Deletions are provable only
-   while Git history survives. The planned history purge removes the deleted
+   while Git history survives, and only to whoever holds it, which today is the
+   operator alone. The planned history purge removes the deleted
    prose and, with it, part of the evidence. The retained retraction and
    removal receipts need to be enough on their own to show what was removed,
    by whom and when, after the purge. The handoff says the record "should

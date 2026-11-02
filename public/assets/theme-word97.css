@@ -44,6 +44,8 @@
 }
 
 :root[data-theme="word97"] .site-header {
+  /* Clear the frame's ring and drop shadow before the first window below. */
+  margin-bottom: 1.25rem;
   padding: 0.45rem 0.6rem 0.6rem;
   border: 1px solid #808080;
   background: #c0c0c0;
@@ -113,6 +115,58 @@
     inset -1px -1px 0 0 #808080;
 }
 
+:root[data-theme="word97"] .eyebrow .site-brand {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* App shell: the title bar spans the frame, the toolbar row sits beneath it and
+   the ruler beneath that, as Word lays out its window. The app shell's flex row
+   would otherwise squeeze all three onto one line. */
+:root[data-theme="word97"] .site-header--app {
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+:root[data-theme="word97"] .site-header--app .eyebrow {
+  flex: 1 1 100%;
+  margin: -0.45rem -0.6rem 0.65rem;
+}
+
+:root[data-theme="word97"] .site-header--app .site-header-actions,
+:root[data-theme="word97"] .site-header--app::after {
+  flex: 1 1 100%;
+}
+
+/* Toolbar buttons: New post and You are bevelled buttons like every other
+   control; a pressed look marks the open menu and the current compose page. */
+:root[data-theme="word97"] [data-shell="app"] .new-post-button,
+:root[data-theme="word97"] .account-menu__trigger {
+  border: 1px solid #404040;
+  background: #c0c0c0;
+  color: #000000;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080;
+}
+
+:root[data-theme="word97"] [data-shell="app"] .new-post-button.is-active,
+:root[data-theme="word97"] .account-menu[open] > .account-menu__trigger {
+  background: #dfdfdf;
+  box-shadow:
+    inset -1px -1px 0 0 #ffffff,
+    inset 1px 1px 0 0 #808080;
+}
+
+:root[data-theme="word97"] .account-menu__panel {
+  border: 1px solid #404040;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080,
+    3px 3px 0 0 #404040;
+}
+
 :root[data-theme="word97"] .nav::before {
   content: "";
   flex: 0 0 auto;
@@ -123,14 +177,27 @@
   border-right: 1px solid #808080;
 }
 
+/* One window frame for every surface: cards, feedback, Account's card, and the
+   white lists (thread rows, grouped account rows). */
 :root[data-theme="word97"] .card,
-:root[data-theme="word97"] .feedback {
+:root[data-theme="word97"] .feedback,
+:root[data-theme="word97"] .account-card,
+:root[data-theme="word97"] .thread-rows,
+:root[data-theme="word97"] .account-group,
+:root[data-theme="word97"] .board-toolbar,
+:root[data-theme="word97"] .stack > .board-filter {
   border: 1px solid #808080;
+  border-radius: 0;
   background: #c0c0c0;
   box-shadow:
     0 0 0 3px #c0c0c0,
     0 0 0 4px #404040,
     7px 7px 0 4px #404040;
+}
+
+:root[data-theme="word97"] .thread-rows,
+:root[data-theme="word97"] .account-group {
+  background: #ffffff;
 }
 
 :root[data-theme="word97"] .card {
@@ -237,6 +304,146 @@
   margin-top: 0.9rem;
 }
 
+/* List board: the filter strip is a toolbar, the sort popover is a menu, and
+   thread rows are the white document inside a window whose title bar is the
+   section label pulled over the frame's top edge. */
+:root[data-theme="word97"] .board-toolbar,
+:root[data-theme="word97"] .stack > .board-filter {
+  padding: 0.3rem 0.4rem;
+}
+
+:root[data-theme="word97"] .board-sort__menu {
+  border: 1px solid #404040;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080,
+    3px 3px 0 0 #404040;
+}
+
+:root[data-theme="word97"] .thread-row + .thread-row {
+  border-top-color: #c0c0c0;
+}
+
+:root[data-theme="word97"] .thread-row__count,
+:root[data-theme="word97"] .thread-row__meta {
+  font-family: var(--body-font);
+}
+
+:root[data-theme="word97"] .section-label,
+:root[data-theme="word97"] .person-identities__title {
+  position: relative;
+  z-index: 1;
+  height: 1.75rem;
+  margin: 1.5rem 1px calc(-1.75rem - 1px);
+  padding: 0 0.55rem;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  font-family: var(--ui-font);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.75rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-theme="word97"] .section-label + .thread-rows,
+:root[data-theme="word97"] .person-identities__title + .account-group {
+  margin-top: 0;
+  padding-top: 1.75rem;
+}
+
+/* Account: the heading is the title bar of the first window below it, which is
+   the feedback notice when one renders, otherwise the visible account card. */
+:root[data-theme="word97"] .account-key-header {
+  position: relative;
+  z-index: 1;
+  height: 1.75rem;
+  margin: 1.5rem 1px calc(-1.75rem - 1px);
+  padding: 0 0.55rem;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+}
+
+:root[data-theme="word97"] .account-key-header h1 {
+  margin: 0;
+  font-family: var(--ui-font);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.75rem;
+}
+
+:root[data-theme="word97"] .account-key-header + .feedback,
+:root[data-theme="word97"] .account-key-header ~ .account-card {
+  margin-top: 0;
+  padding-top: calc(1.75rem + 1.25rem);
+}
+
+:root[data-theme="word97"] .account-key-header + .feedback ~ .account-card {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+}
+
+/* The Users heading repeats the pressed toolbar button; it stays for assistive
+   technology only. (The tabs under it are member-only, so it cannot be their title bar.) */
+:root[data-theme="word97"] .users-page__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[data-theme="word97"] .users-page__title + * {
+  margin-top: 0;
+}
+
+/* Users and person pages: grouped rows lose the chevron, the avatar is a bevelled tile. */
+:root[data-theme="word97"] .account-row {
+  border-top-color: #c0c0c0;
+  /* `button[type="button"]` would otherwise paint the row with the button colour. */
+  background: transparent;
+}
+
+:root[data-theme="word97"] .account-row--link::after {
+  display: none;
+}
+
+:root[data-theme="word97"] .account-avatar {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #404040;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+  font-size: 1.1rem;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080;
+}
+
+:root[data-theme="word97"] select,
+:root[data-theme="word97"] .board-toolbar__search {
+  border: 1px solid #808080;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+  font-family: var(--ui-font);
+  box-shadow:
+    inset 1px 1px 0 0 #404040,
+    inset -1px -1px 0 0 #dfdfdf;
+}
+
+/* Status chips are flat Word form fields, not pills. */
+:root[data-theme="word97"] .chip {
+  padding: 0 0.35rem;
+  border: 1px solid #808080;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+}
+
 :root[data-theme="word97"] .tool-launcher-button {
   border: 1px solid #404040;
   background: #c0c0c0;
@@ -257,7 +464,8 @@
   color: #0000ff;
 }
 
-:root[data-theme="word97"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+/* Grouped account rows (`button.account-row`) stay flat list rows, not buttons. */
+:root[data-theme="word97"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row) {
   border: 1px solid #404040;
   background: #c0c0c0;
   color: #000000;
@@ -266,7 +474,7 @@
     inset -1px -1px 0 0 #808080;
 }
 
-:root[data-theme="word97"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+:root[data-theme="word97"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row):active {
   box-shadow:
     inset -1px -1px 0 0 #ffffff,
     inset 1px 1px 0 0 #808080;
@@ -521,4 +729,20 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 
 :root[data-theme="word97"][data-thread-density="compact"] .thread-list .thread-card + .thread-card {
   margin-top: 0.5rem;
+}
+
+/* Phones: the tab bar is a raised toolbar strip; the current tab is pressed. */
+@media (max-width: 639px) {
+  :root[data-theme="word97"] [data-shell="app"] .site-header--app .site-header-actions {
+    border-top: 1px solid #ffffff;
+    background: #c0c0c0;
+    box-shadow: 0 -1px 0 0 #404040;
+  }
+
+  :root[data-theme="word97"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root[data-theme="word97"] [data-shell="app"] .account-menu[open] > .account-menu__trigger {
+    color: #000000;
+    background: #dfdfdf;
+    border-color: #808080 #ffffff #ffffff #808080;
+  }
 }
