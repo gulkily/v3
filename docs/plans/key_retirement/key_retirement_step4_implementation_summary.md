@@ -59,3 +59,14 @@ Approval: User said “approved step 3” for v3/A. Revised planning commit 3aab
 - Notes: Stage 1 policy gate resolved by user's revised approval. Existing trusted private transfers are retained rather than assigned invented historical dates. S2–S8 acceptance remains mandatory before enabling the writer. No dependencies, runtime retirement route, production change or measured labor.
 
 *— Codex · 2026-11-01 UTC*
+
+## Stage 2 - Retained signed records and replay
+
+**Original estimate: 0.16**
+**Retrospective stage work: 0.16**
+
+- Changes: Added strict bounded signed retirement/acceptance parsing and exact-byte/hash verification; incomplete evidence fails explicitly. Full and incremental derived updates preserve the historical approval graph before marking the retired profile inactive, retaining `was_approved` and retirement provenance. Schema 42 adds bootstrap/verified-name-history and retirement fields. Canonical archive classification and recoverable transaction paths include the new record families. Profile lookups include the new metadata; existing consumers continue to select their response fields.
+- Verification: 10 focused checks passed: real-signature retirement/rebuild/incremental replay after the original actor retires; mismatched receipt/missing-signature rejection; recoverable signed transaction failures; approval acceptance; actual isolated `./v3 rebuild` and normal startup from schema 41 before profile lookup. Earlier focused approved-key resolver checks 3/3 passed. Initial replay test supplied the existing updater constructor arguments in the wrong order; corrected the fixture and reran successfully.
+- Notes: No public retirement writer yet. Effective access integration is Stage 3 and message history separation Stage 4; do not deploy this intermediate stage. Original stage estimate unchanged; no dependency changes, production verification or measured labor.
+
+*— Codex · 2026-11-01 UTC*

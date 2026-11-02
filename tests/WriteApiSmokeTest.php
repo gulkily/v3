@@ -101,6 +101,60 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testRetirementEvidenceReplaysWithoutPresentActorAuthority(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $keys = [];
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $ids = [];
+            for ($i = 0; $i < 3; $i++) {
+                $keys[] = $this->createSigningKey('retirement-replay');
+                $ids[] = $writer->linkIdentity(['public_key' => $keys[$i]['public_key']])['identity_id'];
+                $this->seedApprovedIdentity($root, $ids[$i]);
+            }
+            $paths = [];
+            foreach ([[0,1,2],[2,0,2]] as [$actor,$target,$replacement]) {
+                $record = "Version: 1\nAction-ID: key-retirement-" . bin2hex(random_bytes(16))
+                    . "\nCreated-At: 2026-11-01T00:00:00Z\nActor-Identity-ID: {$ids[$actor]}\nTarget-Identity-ID: {$ids[$target]}\nAccount: retirement-replay\nAuthority: operator\nReplacement-Identity-ID: {$ids[$replacement]}\nContext-SHA256: " . str_repeat('a',64) . "\n\n";
+                $sig = $this->signCanonicalRecord($keys[$actor]['home'], $record);
+                $path = \ForumRewrite\Security\KeyRetirement::path($ids[$target]);
+                $receipt = \ForumRewrite\Security\KeyRetirement::acceptancePath($ids[$target]);
+                foreach ([$path=>$record,$path.'.asc'=>$sig,$receipt=>\ForumRewrite\Security\KeyRetirement::acceptance($record,$sig,'2026-11-01T00:00:01Z')] as $file=>$bytes) {
+                    if (!is_dir(dirname($root.'/'.$file))) mkdir(dirname($root.'/'.$file),0777,true);
+                    file_put_contents($root.'/'.$file,$bytes);
+                }
+                $paths[] = $path;
+            }
+            (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+            $pdo = (new ReadModelConnection($db))->open();
+            foreach ([0,1] as $i) {
+                $profile = ProfileRepository::byIdentityId($pdo,$ids[$i]);
+                assertSame(0,(int)$profile['is_approved']);
+                assertSame(1,(int)$profile['was_approved']);
+                assertSame('2026-11-01T00:00:01Z',$profile['retired_at']);
+            }
+            assertSame(1,(int)ProfileRepository::byIdentityId($pdo,$ids[2])['is_approved']);
+            // An incremental approval recomputation must not resurrect either retired seed.
+            (new IncrementalReadModelUpdater($db,$root))->applyApprovalSeedWrite($this->latestCommitSha($root));
+            assertSame(0,(int)ProfileRepository::byIdentityId($pdo,$ids[1])['is_approved']);
+            assertSame($ids[0],\ForumRewrite\Security\KeyRetirement::read($root,$ids[1])['Actor-Identity-ID']);
+            assertSame(true,\ForumRewrite\Import\ArchiveRecordCatalog::isRecordPath($paths[0]));
+            assertSame(true,\ForumRewrite\Import\ArchiveRecordCatalog::isSignaturePath($paths[0].'.asc'));
+            $receipt = $root.'/'.\ForumRewrite\Security\KeyRetirement::acceptancePath($ids[1]);
+            $bytes = file_get_contents($receipt);
+            file_put_contents($receipt,str_replace('Record-SHA256: ','Record-SHA256: 0',$bytes));
+            assertThrowsRuntime(fn()=>\ForumRewrite\Security\KeyRetirement::read($root,$ids[1]),'Invalid retirement signature or acceptance. Restore the accepted evidence.');
+            file_put_contents($receipt,$bytes);
+            unlink($root.'/'.$paths[0].'.asc');
+            assertThrowsRuntime(fn()=>(new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild(),'Retirement evidence is missing or oversized. Restore the accepted record, signature and receipt.');
+        } finally {
+            foreach ($keys as $key) $this->deleteTree($key['home']);
+            $this->deleteTree($root); $this->deleteTree($artifacts);
+            foreach (glob($db.'*') ?: [] as $file) if(is_file($file)) unlink($file);
+        }
+    }
+
     public function testRetirementAuthorityCannotBeInferredFromRenamedApprovedProfiles(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

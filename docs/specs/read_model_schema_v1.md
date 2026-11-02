@@ -614,3 +614,15 @@ Add profiles_sync_keys on profiles(username_token, is_approved, identity_id) for
 Also adds history_keys_revision and profile mutation triggers. Tokens change on key identity, account, approval or public-key changes, not unrelated profile activity. History recovery uses this public membership revision without enumerating all keys; tokens are rebuilt with the derived database.
 
 Integration: The message-recovery branch used versions 39 and 40 locally. Main already used those versions for tag and QDB selection. Version 41 combines both sets of changes and rebuilds either prior version before use.
+
+## Version 42 — Key retirement eligibility
+
+Profiles add `bootstrap_username_token` and `has_name_history` for the approved
+rename-disabled retirement policy; verified historical/imported name changes
+remain visible to eligibility even when rename activity is hidden. Profiles add
+`retired_at`, `retired_by_identity_id` and `was_approved`. `is_approved` is effective
+current membership; `was_approved` retains historical grant eligibility for retired
+keys. Derive the retained approval graph and historical attribution first, then
+apply accepted retirement in full rebuild and incremental metadata completion.
+Original canonical grants, public keys and signatures are unchanged. Startup
+rebuilds version 41 before queries use the new fields.
