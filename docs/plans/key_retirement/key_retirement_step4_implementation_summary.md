@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/key_retirement — [ledger](../effort_estimation_trial.md#cycle-v3key_retirement)
 Extended estimates: enabled
-Status: Stage 1 authority gate unresolved; revised Step 2 decision needed; Stages 2–8 not started
+Status: User selected rename-disabled public-instance direction; Stage 1 reconciliation pending; Stages 2–8 not started
 
 **Cycle estimate: 1.00**
 
@@ -28,5 +28,14 @@ Original stage-work estimates from the approved plan: S1 authority/history gate 
 ## Required Step 2 decision
 
 The approved Stage 1 gate found a concrete gap in accepted account authority. [Proposed clarification](key_retirement_step2_feature_description.md#proposed-authority-clarification--stage-1-gate) narrows member self-service to proven accepted membership and routes missing/conflicting legacy evidence to operator assistance; the broader alternative is a separately scoped durable account-association flow. Neither is silently assumed approved. Preserve existing Step 1–3 approvals as v2/A history; new scope/coverage requires review before continuing.
+
+*— Codex · 2026-11-01 UTC*
+
+
+## User direction and rename warning — 2026-11-01
+
+Direction: “let's do that for now, we'll just keep the rename feature disabled on public instances for now”; followed by “please add a warning to the feature flag for rename.” This supersedes pursuing the broader account-association redesign now. Keep the prior reproduction and proposals as history. The flag already defaults off; instance/environment overrides and historical/imported renames must not be assumed absent. No public-instance configuration was changed or verified remotely.
+
+Immediate authorized change: Add the warning to the existing always-visible Username changes flag description: renamed keys retain approval and can appear under another account's username; turning the flag off does not undo saved names or approvals. This is a separately requested copy change, not completion of Stage 1 or implementation of retirement. Continue reconciliation of the approved retirement plan around the selected disabled-rename boundary; do not treat the warning alone as an authorization check.
 
 *— Codex · 2026-11-01 UTC*

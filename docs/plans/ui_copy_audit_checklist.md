@@ -822,3 +822,9 @@ only; subsequent implementation and verification are recorded separately above.
 - [x] Source-only deployments and failed Git commands show unavailable; detached HEAD is identified. Linked-worktree .git files are accepted. Existing content-repository and read-model details remain separate.
 - [x] Core-route rendered HTML smoke check passed; PHP syntax and diff whitespace checks passed. Reused the existing wrapping facts table. Dependency delta: zero.
 - [ ] Browser verification remains outstanding for phone/desktop, affected themes, long commit subjects, source-only deployments and detached HEAD; the HTML smoke check does not establish visual layout.
+
+## Username changes flag warning — 2026-11-01
+
+- [x] Replaced the flag's ordinary description with a visible warning to keep username changes disabled on public instances: renamed keys retain approval and can appear under another account's name. Retained the consequences of disabling: stops new renames, hides rename activity, leaves saved names/approvals intact. Reuses the existing always-visible description beside the toggle; no new controls or post-paint text.
+- [x] PHP syntax and 23 existing FeatureFlagEvaluator/FeatureFlagsBehavior tests passed. Rendered the production template using its canonical-registry browser fixture at 375/1280 widths with light/dark/console/Word97/Chicago/Midnight theme settings, JavaScript on/off: 24 combinations showed the warning and default-off toggle with no horizontal page overflow. Inspected representative phone/desktop row screenshots. The initial disposable probe stalled on dynamically loading styles with JavaScript disabled; stopped it and used stylesheet links in initial HTML for the completed run.
+- [x] Whitespace checked; dependency delta zero. No instance settings, permissions or flag defaults changed. Live deployment, actual flag-mutation success/failure, physical devices and full application suite were not exercised for this copy-only change.
