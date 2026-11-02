@@ -45,6 +45,8 @@
 }
 
 :root[data-theme="midnight"] .site-header {
+  /* Clear the frame's ring and drop shadow before the first window below. */
+  margin-bottom: 1.25rem;
   padding: 0.45rem 0.6rem 0.6rem;
   border: 2px solid;
   border-color: #4e4e4e #1a1a1a #1a1a1a #4e4e4e;
@@ -61,7 +63,9 @@
 :root[data-theme="midnight"] .feedback,
 :root[data-theme="midnight"] .account-card,
 :root[data-theme="midnight"] .thread-rows,
-:root[data-theme="midnight"] .account-group {
+:root[data-theme="midnight"] .account-group,
+:root[data-theme="midnight"] .board-toolbar,
+:root[data-theme="midnight"] .stack > .board-filter {
   border: 2px solid;
   border-color: #4e4e4e #1a1a1a #1a1a1a #4e4e4e;
   border-radius: 0;
@@ -566,11 +570,6 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
 :root[data-theme="midnight"] .board-toolbar,
 :root[data-theme="midnight"] .stack > .board-filter {
   padding: 0.3rem 0.4rem;
-  border: 1px solid #000000;
-  background: #2b2b2b;
-  box-shadow:
-    inset 1px 1px 0 0 #6a6a6a,
-    inset -1px -1px 0 0 #000000;
 }
 
 :root[data-theme="midnight"] .thread-row + .thread-row,

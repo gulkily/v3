@@ -44,6 +44,8 @@
 }
 
 :root[data-theme="word97"] .site-header {
+  /* Clear the frame's ring and drop shadow before the first window below. */
+  margin-bottom: 1.25rem;
   padding: 0.45rem 0.6rem 0.6rem;
   border: 1px solid #808080;
   background: #c0c0c0;
@@ -181,7 +183,9 @@
 :root[data-theme="word97"] .feedback,
 :root[data-theme="word97"] .account-card,
 :root[data-theme="word97"] .thread-rows,
-:root[data-theme="word97"] .account-group {
+:root[data-theme="word97"] .account-group,
+:root[data-theme="word97"] .board-toolbar,
+:root[data-theme="word97"] .stack > .board-filter {
   border: 1px solid #808080;
   border-radius: 0;
   background: #c0c0c0;
@@ -306,11 +310,6 @@
 :root[data-theme="word97"] .board-toolbar,
 :root[data-theme="word97"] .stack > .board-filter {
   padding: 0.3rem 0.4rem;
-  border: 1px solid #808080;
-  background: #c0c0c0;
-  box-shadow:
-    inset 1px 1px 0 0 #ffffff,
-    inset -1px -1px 0 0 #808080;
 }
 
 :root[data-theme="word97"] .board-sort__menu {

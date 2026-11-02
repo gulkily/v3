@@ -106,6 +106,14 @@ was repaired on the same branch (1340fa3be); Chicago is still open.
       `button[type="button"]` colour painted the row grey. Grouped rows are now flat list rows
       and keep the danger colour. Verified guest and simulated member state at 1400.
 
+## Follow-up from the 2026-11-01 header crops (Word 97 and Midnight)
+
+- [x] (commit 7: toolbar frames) The filter strip and the Members / Waiting strip sat flush under
+      the header's drop shadow and their edges did not line up with the window ring above and
+      the cards below. The strips now share the window frame (ring and hard shadow) and the
+      header has 1.25rem of clearance before the first window. Verified in both themes at 1400
+      and 390 on the board, Users and thread pages.
+
 ## Cross-cutting
 
 - [x] (bed7230e8, 37c961307; white document surfaces for `.thread-rows` and `.account-group`, grey windows for cards) The theme has three greys (`--page-bg`, `--panel`, `--line`) that new components rely on
