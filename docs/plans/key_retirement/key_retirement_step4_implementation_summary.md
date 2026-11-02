@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/key_retirement — [ledger](../effort_estimation_trial.md#cycle-v3key_retirement)
 Extended estimates: enabled
-Status: Step 3 v3/A approved; Stages 1–3 complete; Stage 4 next
+Status: Step 3 v3/A approved; Stages 1–4 complete; Stage 5 next
 
 **Cycle estimate: 1.00**
 
@@ -79,5 +79,16 @@ Approval: User said “approved step 3” for v3/A. Revised planning commit 3aab
 - Changes: Canonical retirement checks reject new sign-in, prepared/direct signed actions, registration, seed/reapproval and invitation use. Existing/forwarded sessions resolve through canonical profile inactivity even when the projection is stale. Current operator privileges are separated from retained historical operator evidence; workflow acceptance and sign-in share retirement's publication lock. Historical signature recovery remains available; public readers and keyless participation retain their existing paths.
 - Verification: 11 focused replay/policy/session/direct-identity checks passed, then 15 replay/workflow/access checks passed. Extended real-key replay regression simulates stale active profiles and exercises sign-in/status, direct/prepared posting, registration, seed, both approval roles and invitation refusal. Existing forwarding-chain tests and account-access journeys pass. Whitespace checked. Broader role/flag and browser end-to-end checks remain assigned to Stages 5–8; no public mutation UI yet.
 - Notes: Active checks intentionally do not alter historical operator classification or signature verification. Original estimate unchanged; no measured labor or deployment claim.
+
+*— Codex · 2026-11-01 UTC*
+
+## Stage 4 - Retained message history and active destinations
+
+**Original estimate: 0.20**
+**Retrospective stage work: 0.20**
+
+- Changes: Original-signature and trusted retained-donor verification include previously approved retired keys; current actors, recipient discovery and recovery destinations remain active-only. Canonical guards cover stale projections. New sends, uploads and acknowledgments serialize with retirement through PublicationLock. Existing membership revision invalidation and bounded verification continuations remain in use; no timestamps invented for retained transfers.
+- Verification: 37 existing resolver/mailbox/history checks passed, including 115-key budgets, quiet scheduling, private activity, revocation and concurrent private-store writes. New retained-donor regression passes for confirmed and unread transfers, original-signature key discovery, rejected retired uploader/destination and preserved originals. Real 115-key crypto recovery passes with distinct retired submitting and signing keys in both modern (19 bounded pages, no candidate lookup) and unchanged legacy (16 pages) coordinators. Fixture schema/insert updated for the new fields. Whitespace checked.
+- Notes: Production services receive the repository root; isolated in-memory protocol fixtures retain optional construction. Ciphertext already accessible to a key cannot be revoked. Full retirement-writer concurrency and browser journeys follow once Stage 5 exposes acceptance; no private recovery metadata enters canonical records. Original estimate unchanged; no measured labor.
 
 *— Codex · 2026-11-01 UTC*

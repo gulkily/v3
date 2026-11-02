@@ -3,7 +3,7 @@ declare(strict_types=1);
 require dirname(__DIR__,2).'/autoload.php';
 use ForumRewrite\Messaging\{PrivateMessageStore,PrivateMessageHistorySyncStore,PrivateMessageHistorySyncService};
 $profiles=new PDO('sqlite::memory:');
-$profiles->exec('CREATE TABLE profiles(identity_id TEXT PRIMARY KEY,username_token TEXT,is_approved INTEGER,public_key TEXT)');
+$profiles->exec('CREATE TABLE profiles(identity_id TEXT PRIMARY KEY,username_token TEXT,is_approved INTEGER, was_approved INTEGER DEFAULT 0, retired_at TEXT,public_key TEXT)');
 foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements() as $sql) $profiles->exec($sql);
 $messages=new PrivateMessageStore(new PDO('sqlite::memory:'));
 $sync=new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
@@ -13,11 +13,15 @@ while(($line=fgets(STDIN))!==false) {
     $input=json_decode($line,true,64,JSON_THROW_ON_ERROR);
     if($input['action']==='setup') {
         foreach($input['keys'] as $key) {
-            $q=$profiles->prepare('INSERT INTO profiles VALUES (?,?,1,?)');
+            $q=$profiles->prepare('INSERT INTO profiles (identity_id,username_token,is_approved,public_key) VALUES (?,?,1,?)');
             $q->execute(['openpgp:'.$key['fp'],'alice',$key['publicKey']]);
         }
         $viewer=['username_token'=>'alice','identity_id'=>'openpgp:'.$input['source'],'is_approved'=>1];
-        $messages->storeEnvelope('m1','now','alice','bob',$viewer['identity_id'],$input['envelope']);
+        $messages->storeEnvelope('m1','now','alice','bob','openpgp:'.($input['submitting']??$input['source']),$input['envelope']);
+        foreach ($input['retired']??[] as $fp) {
+            $q=$profiles->prepare('UPDATE profiles SET is_approved=0,was_approved=1,retired_at=? WHERE identity_id=?');
+            $q->execute(['2026-11-01T00:00:00Z','openpgp:'.$fp]);
+        }
         $out=[];
     } else {
         $body=$input['body']??[];

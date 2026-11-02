@@ -139,6 +139,8 @@ final class RouteServices
         });
     }
 
+    public function repositoryRoot(): string { return $this->repositoryRoot; }
+
     public function databasePath(): string
     {
         return $this->databasePath;

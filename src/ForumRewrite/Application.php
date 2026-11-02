@@ -307,7 +307,7 @@ final class Application
             (new \ForumRewrite\Http\PrivateMessageHistorySyncController($this->routeServices(), $this->authenticatedViewerProfile(...), function () {
                 $config=PrivateConfig::load($this->projectRoot);
                 $pdo=\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot,$config);
-                return new \ForumRewrite\Messaging\PrivateMessageHistorySyncService($this->privateMessageStore(),new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo),$this->routeServices()->pdo());
+                return new \ForumRewrite\Messaging\PrivateMessageHistorySyncService($this->privateMessageStore(),new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo),$this->routeServices()->pdo(),$this->repositoryRoot);
             }))->handle($method, substr($path,strlen('/api/private_messages/history_sync/')),$query);
             return;
         }
