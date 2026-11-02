@@ -260,6 +260,7 @@ $testFiles = [
     __DIR__ . '/SqliteFastScoreStoreTest.php',
     __DIR__ . '/StatusCommandTest.php',
     __DIR__ . '/CheckoutsCommandTest.php',
+    __DIR__ . '/AppUpdateTest.php',
     __DIR__ . '/FastScoreSweepServiceTest.php',
     __DIR__ . '/FastmodHistoricalAuditServiceTest.php',
     __DIR__ . '/FastmodCostEstimatorTest.php',
