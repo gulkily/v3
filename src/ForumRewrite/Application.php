@@ -878,6 +878,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/deploy/' || $path === '/tools/deploy') {
+            $this->sendHtml($this->deployController()->render(), 200, ['Cache-Control: no-store']);
+            return;
+        }
+
         if ($path === '/compose/thread') {
             $this->sendHtml($this->composeAndAccountKeyController()->composeThread($query), 200);
             return;
@@ -1202,6 +1207,15 @@ final class Application
             $this->executionLock(),
             $this->staleMarker(),
             $this->projectRoot,
+        );
+    }
+
+    private function deployController(): \ForumRewrite\Http\DeployController
+    {
+        return new \ForumRewrite\Http\DeployController(
+            $this->routeServices(),
+            \ForumRewrite\Deploy\AppUpdate::forProject($this->projectRoot),
+            TaskQueueDatabaseConfig::path($this->projectRoot),
         );
     }
 
@@ -2147,7 +2161,7 @@ final class Application
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
-            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',

@@ -59,3 +59,21 @@ Stage originals copied from Step 3 (not new ratings): S1 0.15, S2 0.08 (revised 
   - The queue has no payload column, so the requester travels in the sidecar file rather than the task row; this avoided a schema change.
 
 *— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Deploy page
+
+**Original estimate: 0.12**
+**Retrospective: 0.12**
+
+- Changes:
+  - `src/ForumRewrite/Http/DeployController.php` and `templates/pages/deploy.php`: `/tools/deploy/` shows commit and subject, branch, tracked local changes (only when present), behind `origin/main` with last-checked time, task-worker heartbeat and the latest attempt; served `Cache-Control: no-store`. Reuses System status's `codebase-facts` table and the queue store's heartbeat and `latestByType()`; does not create the queue database if it is missing.
+  - `ToolsPageSupport` registry entry `deploy` (operator group, after Operations); route and known-route allowlist in `Application`; Deploy icon (green arrow over tray) in `theme-nav-icons.css` for launcher and subnavigation, plus the subnavigation sizing list.
+  - `tests/ToolsRegistryTest.php` tool count 15 to 16.
+- Verification:
+  - `php tests/run.php DeployPageTest ToolsRegistryTest WebServerRoutingTest ApiRouteCatalogTest AuthNavigationTest AppNavigationPlacementTest`: all passed. New `DeployPageTest`: opening the page creates no `FETCH_HEAD` and no queue database (proves no fetch); operator session renders the page and Tools lists Deploy; identity-hint-only viewer gets the read-only page with no controls.
+  - Browser, local server on this checkout, 390 px wide: Deploy icon present on launcher button and subnavigation in Word97, Chicago and Midnight, absent in Light; no horizontal overflow in any. Screenshots reviewed.
+- Notes:
+  - Step 3 said non-operators "get the existing denial". Step 2's requirement is that only operators see the controls; the page itself shows the same commit facts System status already shows publicly, so it follows the Operations/Feature Flags pattern: read-only for everyone, controls server-decided for a session-authenticated operator. Controls are a security gate, so this is decided on the server rather than in the client before paint.
+  - Form and page script land in Stage 4 with the POST handler.
+
+*— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*
