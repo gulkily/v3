@@ -1,6 +1,6 @@
 # Key retirement record v1
 
-Status: Implementation contract; no writable retirement route until all authorization/history gates pass.
+Status: Signed prepare/finalize/status API implemented after active-access and history gates; shared UI and release checks remain in the implementation plan.
 
 A retirement permanently withdraws one fingerprint's future account privileges.
 It retains the public key, original signed records, historical approval grants and
@@ -95,3 +95,11 @@ do not erase retirement and do not imply recoverable plaintext.
 Use a retirement-aware application for restore/rollback. Older code may ignore
 retirement and is not safe to serve against retired accounts. No deployment,
 history rewrite or remote configuration change is part of local implementation.
+
+## Signed API
+
+`POST /api/prepare_key_retirement`: actor_identity_id, target_identity_id and optional replacement_identity_id. Review the returned retirement_review and exact canonical_record before signing. Preparation rebuilds the projection under the write lock; the signature is required at acceptance.
+
+`POST /api/finalize_key_retirement`: prepare_token, canonical_record and detached_signature. It rechecks authority, effective rename setting and the reviewed replacement. Success reports status=retired and refresh=complete. A committed retirement with failed derived refresh reports refresh=pending and a recovery warning; retry the identical signed request. Identical retries work after the actor retires and do not require an unexpired prepared token. Conflicting retirements are rejected.
+
+`GET /api/key_retirement_status?target_identity_id=...`: reports retired with public acceptance provenance, or not_retired. Not retired is not proof of approval. Responses are no-store. The API performs no private-key custody and never silently substitutes unsigned publication.

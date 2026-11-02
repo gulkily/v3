@@ -46,6 +46,7 @@ use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\SiteProfileRegistry;
 use RuntimeException;
 use ForumRewrite\Security\KeyRetirement;
+use ForumRewrite\Security\KeyRetirementPolicy;
 use ForumRewrite\Images\ImageReference;
 use ForumRewrite\Images\ImageStore;
 
@@ -1787,6 +1788,72 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
+    public function prepareKeyRetirement(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $actor = $this->requireOpenPgpIdentityId((string)($input['actor_identity_id'] ?? ''),'actor_identity_id');
+            $target = $this->requireOpenPgpIdentityId((string)($input['target_identity_id'] ?? ''),'target_identity_id');
+            // Retirement is infrequent: rebuild here rather than trust a stale or imported projection.
+            $this->rebuildReadModel();
+            $context = (new KeyRetirementPolicy($this->readModelPdo(),$this->repositoryRoot))->evaluate($actor,$target,(string)($input['replacement_identity_id'] ?? ''));
+            $id = 'key-retirement-'.bin2hex(random_bytes(16)); $created = $this->canonicalTimestampNow();
+            $hash = KeyRetirementPolicy::hash($context); $replacement = $context['replacement']['identity_id'];
+            $record = "Version: 1\nAction-ID: {$id}\nCreated-At: {$created}\nActor-Identity-ID: {$actor}\nTarget-Identity-ID: {$target}\nAccount: {$context['target']['username_token']}\nAuthority: {$context['authority']}\nReplacement-Identity-ID: {$replacement}\nContext-SHA256: {$hash}\n\n";
+            KeyRetirement::parse($record); $path = KeyRetirement::path($target);
+            return $this->storePreparedPost($path,$record,['kind'=>'key-retirement','retirement_context'=>$context])
+                + ['status'=>'ok','canonical_record'=>$record,'record_path'=>$path,'retirement_review'=>KeyRetirementPolicy::review($context)];
+        });
+    }
+
+    public function keyRetirementStatus(string $target): array
+    {
+        $record = KeyRetirement::read($this->repositoryRoot,$target);
+        return ['status'=>$record === null?'not_retired':'retired','target_identity_id'=>$target]
+            + ($record === null?[]:['accepted_at'=>$record['Accepted-At'],'actor_identity_id'=>$record['Actor-Identity-ID'],
+                'replacement_identity_id'=>$record['Replacement-Identity-ID'],'record_path'=>$record['source_path']]);
+    }
+
+    public function finalizePreparedKeyRetirement(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $bytes = (string)($input['canonical_record'] ?? ''); $record = KeyRetirement::parse($bytes);
+            $target = $record['Target-Identity-ID']; $signature = (string)($input['detached_signature'] ?? '');
+            if (strlen($signature)>65536 || $signature==='') throw new RuntimeException('Invalid retirement signature.');
+            $existing = KeyRetirement::read($this->repositoryRoot,$target);
+            if ($existing !== null) {
+                if (!hash_equals($existing['canonical_record'],$bytes)
+                    || !hash_equals((string)file_get_contents($this->repositoryRoot.'/'.$existing['source_path'].'.asc'),$signature)) throw new RuntimeException('This key already has a different accepted retirement.');
+                $sha = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+            } else {
+                $token = $this->requireHexToken((string)($input['prepare_token'] ?? ''),'prepare_token');
+                $prepared = $this->loadPreparedPost($token);
+                if (($prepared['kind'] ?? '')!=='key-retirement' || strtotime($prepared['expires_at'])<time()
+                    || !hash_equals($prepared['canonical_sha256'],hash('sha256',$bytes))) throw new RuntimeException('Retirement review changed or expired. Prepare and review it again.');
+                $this->rebuildReadModel();
+                $context = (new KeyRetirementPolicy($this->readModelPdo(),$this->repositoryRoot))->evaluate($record['Actor-Identity-ID'],$target,$record['Replacement-Identity-ID']);
+                if (!hash_equals(KeyRetirementPolicy::hash($context),$record['Context-SHA256'])
+                    || $context !== $prepared['retirement_context']) throw new RuntimeException('Retirement authority changed. Prepare and review it again.');
+                [$key,$fingerprint] = $this->publicKeyForIdentity($record['Actor-Identity-ID']);
+                if (!$this->signatureVerifier->verifyDetached($key,$bytes,$signature,$fingerprint)['ok']) throw new RuntimeException('Retirement signature verification failed.');
+                $path = KeyRetirement::path($target);
+                $sha = (new SignedPostTransaction($this->repositoryRoot))->accept([$path=>$bytes,$path.'.asc'=>$signature,
+                    KeyRetirement::acceptancePath($target)=>KeyRetirement::acceptance($bytes,$signature,$this->canonicalTimestampNow())]);
+            }
+            $result = $this->keyRetirementStatus($target)+['commit_sha'=>$sha,'recovered'=>$existing !== null];
+            try {
+                $this->refreshDerivedStateAfterCommit($sha);
+                $this->invalidator()->invalidateApprovalSeed();
+                if (isset($token)) $this->deletePreparedPost($token);
+                return $result+['refresh'=>'complete'];
+            } catch (\Throwable $error) {
+                // The accepted signature is authoritative even when presentation repair fails.
+                return $result+['refresh'=>'pending','warning'=>'Retirement accepted. Refresh failed; retry the same signed request or rebuild the read model.'];
+            }
+        });
+    }
+
     public function prepareApproval(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {

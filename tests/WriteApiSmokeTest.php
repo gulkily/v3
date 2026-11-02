@@ -101,6 +101,85 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testSignedRetirementPolicyAcceptanceAndRecovery(): void
+    {
+        [$root,$db,$artifacts]=$this->createTempEnvironment(); $keys=[];
+        $oldRename=getenv('FORUM_USERNAME_CHANGES_ENABLED'); $oldCross=getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        try {
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=0');
+            $writer=new LocalWriteService($root,$db,$artifacts,new CanonicalRecordRepository($root));
+            $ids=[];
+            foreach (['retire-operator','retire-alice','retire-alice','retire-alice','retire-bob','retire-bob'] as $name) {
+                $keys[]=$this->createSigningKey($name);
+                $ids[]=$writer->linkIdentity(['public_key'=>$keys[array_key_last($keys)]['public_key']])['identity_id'];
+            }
+            $this->seedApprovedIdentity($root,$ids[0]);
+            (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+            for($i=1;$i<6;$i++) {
+                $profile=ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(),$ids[$i]);
+                $grant=$writer->prepareApproval(['approver_identity_id'=>$ids[0],'target_identity_id'=>$ids[$i],
+                    'target_profile_slug'=>$profile['profile_slug'],'thread_id'=>$profile['bootstrap_thread_id'],'parent_id'=>$profile['bootstrap_post_id']]);
+                $writer->finalizePreparedApproval($grant+['author_identity_id'=>$ids[0],'detached_signature'=>$this->signCanonicalRecord($keys[0]['home'],$grant['canonical_record'])]);
+            }
+            $prepare=fn($a,$t)=>$writer->prepareKeyRetirement(['actor_identity_id'=>$ids[$a],'target_identity_id'=>$ids[$t]]);
+            $sign=fn($a,$prepared)=>$prepared+['detached_signature'=>$this->signCanonicalRecord($keys[$a]['home'],$prepared['canonical_record'])];
+            foreach(['0','1'] as $cross) {
+                putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL='.$cross);
+                assertThrowsRuntime(fn()=>$prepare(1,4),'Member retirement requires unchanged account keys with username changes disabled. Ask a root-approved operator for help.');
+            }
+            $review=$prepare(1,2);
+            assertSame('member',$review['retirement_review']['authority']);
+            assertThrowsRuntime(fn()=>$writer->finalizePreparedKeyRetirement($sign(2,$review)),'Retirement signature verification failed.');
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=1');
+            assertThrowsRuntime(fn()=>$writer->finalizePreparedKeyRetirement($sign(1,$review)),'Member retirement requires unchanged account keys with username changes disabled. Ask a root-approved operator for help.');
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=0');
+            $signed=$sign(1,$review);
+            $broken=new class($root,$db,$artifacts,new CanonicalRecordRepository($root)) extends LocalWriteService {
+                private int $rebuilds=0;
+                protected function rebuildReadModel(): array {
+                    if(++$this->rebuilds===2) throw new RuntimeException('Injected post-commit projection failure.');
+                    return parent::rebuildReadModel();
+                }
+            };
+            $accepted=$broken->finalizePreparedKeyRetirement($signed);
+            assertSame('retired',$accepted['status']); assertSame('pending',$accepted['refresh']);
+            assertSame('retired',$writer->keyRetirementStatus($ids[2])['status']);
+            $retry=$writer->finalizePreparedKeyRetirement($signed);
+            assertSame(true,$retry['recovered']); assertSame('complete',$retry['refresh']);
+            assertSame($accepted['commit_sha'],$retry['commit_sha']);
+            assertSame(0,(int)ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(),$ids[2])['is_approved']);
+            // A renamed-back key stays outside the member/replacement boundary.
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=1');
+            foreach(['retire-bob','retire-alice'] as $name) {
+                $rename=$writer->prepareProfileName(['author_identity_id'=>$ids[3],'username'=>$name]);
+                $writer->finalizePreparedProfileName($rename+['author_identity_id'=>$ids[3],'detached_signature'=>$this->signCanonicalRecord($keys[3]['home'],$rename['canonical_record'])]);
+                sleep(1); // Profile-name ordering uses canonical whole seconds.
+            }
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=0');
+            assertThrowsRuntime(fn()=>$prepare(3,1),'Member retirement requires unchanged account keys with username changes disabled. Ask a root-approved operator for help.');
+            assertThrowsRuntime(fn()=>$prepare(0,1),'Approve an unchanged replacement key for this account before retiring this key.');
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=1');
+            $operator=$prepare(0,3);
+            assertSame('operator',$operator['retirement_review']['authority']);
+            assertSame('retired',$writer->finalizePreparedKeyRetirement($sign(0,$operator))['status']);
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=0');
+            $first=$sign(4,$prepare(4,5)); $reciprocal=$sign(5,$prepare(5,4));
+            assertSame('retired',$writer->finalizePreparedKeyRetirement($first)['status']);
+            assertThrowsRuntime(fn()=>$writer->finalizePreparedKeyRetirement($reciprocal),'This key is retired. Use another approved key or ask an operator to approve a replacement.');
+            assertSame('not_retired',$writer->keyRetirementStatus($ids[4])['status']);
+            assertThrowsRuntime(fn()=>$prepare(0,4),'Approve an unchanged replacement key for this account before retiring this key.');
+            $app=new Application(dirname(__DIR__),$root,$db,$artifacts);
+            $status=json_decode($this->renderMethod($app,'GET','/api/key_retirement_status?target_identity_id='.rawurlencode($ids[2])),true);
+            assertSame('retired',$status['status']);
+        } finally {
+            putenv($oldRename===false?'FORUM_USERNAME_CHANGES_ENABLED':'FORUM_USERNAME_CHANGES_ENABLED='.$oldRename);
+            putenv($oldCross===false?'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL':'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL='.$oldCross);
+            foreach($keys as $key) $this->deleteTree($key['home']);
+            $this->deleteTree($root); $this->deleteTree($artifacts);
+            foreach(glob($db.'*')?:[] as $file) if(is_file($file))unlink($file);
+        }
+    }
+
     public function testRetirementEvidenceReplaysWithoutPresentActorAuthority(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
