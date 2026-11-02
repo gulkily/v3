@@ -2402,6 +2402,15 @@ PHP;
         assertStringContains('New Post', $composeThread);
         assertStringContains('placeholder="Title — or we’ll use your first line"', $composeThread);
         assertStringContains('data-compose-disclosure="tags">', $composeThread);
+        // Full composer order: body, Post row, Title, then tags (phones keep body and Post above the keyboard).
+        $composeOrder = [strpos($composeThread, '<textarea name="body"'), strpos($composeThread, 'class="compose-form-actions"'), strpos($composeThread, 'class="compose-title"'), strpos($composeThread, 'class="compose-tools"')];
+        assertSame($composeOrder, array_filter($composeOrder, 'is_int'));
+        assertSame($composeOrder, (static function (array $positions): array { sort($positions); return $positions; })($composeOrder));
+        $forteDialogForm = substr($forte, strpos($forte, 'data-paned-new-thread-dialog'));
+        assertSame(true, strpos($forteDialogForm, '<textarea name="body"') < strpos($forteDialogForm, 'class="compose-form-actions"'));
+        assertSame(true, strpos($forteDialogForm, 'class="compose-form-actions"') < strpos($forteDialogForm, 'class="compose-title"'));
+        assertStringNotContains('class="compose-title"', $board);
+        assertStringNotContains('class="compose-tools"', $board);
         assertStringNotContains('data-compose-disclosure="tags" open', $composeThread);
         assertStringNotContains('data-compose-disclosure="tags" open', $prefilledSubjectCompose);
         assertStringContains('aria-label="Title" placeholder="Title — or we’ll use your first line" value="Saved Title"', $prefilledSubjectCompose);
