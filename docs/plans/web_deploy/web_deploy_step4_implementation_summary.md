@@ -97,3 +97,20 @@ Stage originals copied from Step 3 (not new ratings): S1 0.15, S2 0.08 (revised 
   - Non-operator approved members are refused by the same guard that checks operator status first; the fixture has no approved non-operator, so "signed-in non-operator" is the tested case.
 
 *— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Operator documentation and concept inventory
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - `docs/runbooks/production_deploy.md`: new "Deploy from the Site" section (the three actions, pull only, refusal reasons and recovery, attempt log, checkout and fetch requirements, first release by ordinary `git pull`, OPcache note); the task-queue section now lists deploys and their priority.
+  - `docs/reference/v3_cli.md`: "Update the application checkout" (`./v3 deploy`, options, output, exit codes).
+  - Concepts: new [Application update](../../concepts/application_update.md) and [Internal task queue](../../concepts/internal_task_queue.md); [Tools launcher](../../concepts/tools_launcher.md) count 15 to 16; [Theme navigation icons](../../concepts/theme_navigation_icons.md) notes the Deploy glyph.
+- Verification:
+  - Script check of every relative link and heading anchor in the six changed docs: 0 problems.
+  - Documented commands run as written: `./v3 deploy --help`, `--status` (exit 0), invalid `--timeout=0` (exit 2).
+  - `git diff --check`: clean.
+- Notes: concept entries describe delivered behavior and their source paths resolve.
+
+*— Claude · 2026-11-02 UTC · Model: claude-opus-5-5*

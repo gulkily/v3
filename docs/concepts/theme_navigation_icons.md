@@ -5,3 +5,5 @@ Scenario: A reader in one of those themes sees a glyph before the label of every
 Sources: [icon stylesheet](../../public/assets/theme-nav-icons.css) (the `:root:is(...)` theme list at the top adds a theme to the set), [the rule to keep icons current](../../AGENTS.md#navigation-icons), [launcher matrix test](../../tests/browser/tools_launcher.mjs) (asserts a non-empty glyph on each tool button, bar link and group heading in the three themes).
 
 Group heading glyphs: a monitor (device), an open book (reading), the Users glyph (community) and a gear drawn mid-grey with a white ring so it reads on light and dark panels (operator). Account's Tools bar rule remains in the stylesheet although Account is no longer a tool; its main navigation rule still applies.
+
+Tool glyphs added later keep the same 16px grid; Deploy (an arrow rising out of a tray) follows Operations in the operator group.
