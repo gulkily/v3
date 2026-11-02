@@ -833,3 +833,9 @@ only; subsequent implementation and verification are recorded separately above.
 - [x] Source-only deployments and failed Git commands show unavailable; detached HEAD is identified. Linked-worktree .git files are accepted. Existing content-repository and read-model details remain separate.
 - [x] Core-route rendered HTML smoke check passed; PHP syntax and diff whitespace checks passed. Reused the existing wrapping facts table. Dependency delta: zero.
 - [ ] Browser verification remains outstanding for phone/desktop, affected themes, long commit subjects, source-only deployments and detached HEAD; the HTML smoke check does not establish visual layout.
+
+## Compose keyboard fit — 2026-11-02
+
+- [x] Full composer order is now body, Post row, Title, tags and event; no copy added, removed or reworded. The Title placeholder and all button labels are unchanged.
+- [x] Phone body height and the dropped picker reservation are layout only; verified in 13 themes at 375 by 667 and 375 by 300 in Chromium (`compose_layout_stability.mjs --phone-fit-only`).
+- [ ] Maintainer's iPhone SE check in Firefox and Safari with the keyboard open is pending.

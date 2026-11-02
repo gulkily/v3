@@ -10,6 +10,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
+// --phone-fit-only runs just the phone fit pass (13 themes at 375x667, 375x300 and 1280x1000).
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const root = await mkdtemp(join(tmpdir(), 'compose-layout-browser-'));
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
@@ -52,7 +53,7 @@ try {
    [actions, ...actions.querySelectorAll(':scope > button, :scope > details > summary')]
      .map(node => { const {x,y,width,height}=node.getBoundingClientRect(); return {x,y,width,height}; }));
  let cases=0;
- for (const width of (process.argv.includes('--shared-only') ? [] : [390, 1280])) {
+ for (const width of ((process.argv.includes('--shared-only') || process.argv.includes('--phone-fit-only')) ? [] : [390, 1280])) {
    await page.setViewportSize({width,height:1000});
    for (const [theme, images, approved] of [
      ['light',true,true], ['word97',true,true], ['chicago',true,true], ['midnight',true,true],
@@ -129,6 +130,54 @@ try {
      await page.unroute('**/api/get_profile?*');
    }
  }
+ // Phones: the full composer keeps the body and Post together above the keyboard in every
+ // permitted theme (375 x 300 is roughly what an iPhone SE leaves above its keyboard), and
+ // wider screens keep the tall body and the reserved picker footprint.
+ for (const [width,height] of (process.argv.includes('--shared-only') ? [] : [[375,667],[375,300],[1280,1000]])) {
+   await page.setViewportSize({width,height});
+   for (const theme of ['light','dark','console','lcd','chicago','vapor','forge','sticker','arena','thermal','whitehot','word97','midnight']) {
+     await page.addInitScript(theme => {
+       localStorage.setItem('zenmemes-theme',theme);
+       for(const key of Object.keys(localStorage)) if(key.endsWith('-theme')) localStorage.setItem(key,theme);
+     }, theme);
+     await page.goto(base+'/compose/thread');
+     await page.locator('.compose-form-actions').waitFor();
+     assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
+     const fit = await page.evaluate(() => {
+       const form=document.querySelector('.compose-page [data-compose-kind="thread"]');
+       const body=form.querySelector('textarea[name="body"]').getBoundingClientRect();
+       const post=form.querySelector('.compose-form-actions > button[type="submit"]').getBoundingClientRect();
+       const title=form.querySelector('.compose-title').getBoundingClientRect();
+       const picker=form.querySelector('.image-compose-fields');
+       return {bodyHeight:body.height, span:post.bottom-body.top, titleBelowPost:title.top>=post.bottom,
+         pickerReserved:!!picker && picker.hidden && picker.getBoundingClientRect().height>0,
+         overflow:document.documentElement.scrollWidth>innerWidth};
+     });
+     const label=`${theme} ${width}x${height}`;
+     assert.equal(fit.overflow,false,`${label}: no horizontal overflow`);
+     assert.equal(fit.titleBelowPost,true,`${label}: Title sits below Post`);
+     if (width < 640) {
+       assert.ok(fit.span <= 300,`${label}: body top to Post bottom ${fit.span}px fits above a keyboard`);
+       assert.equal(fit.pickerReserved,false,`${label}: nothing reserved between body and Post`);
+       // What a phone does on focus: scroll the field into view. Post must then be on screen.
+       const focused = await page.evaluate(() => {
+         const form=document.querySelector('.compose-page [data-compose-kind="thread"]');
+         const body=form.querySelector('textarea[name="body"]'); body.focus(); body.scrollIntoView({block:'start'});
+         const post=form.querySelector('.compose-form-actions > button[type="submit"]').getBoundingClientRect();
+         const bar=document.querySelector('.site-header--app .site-header-actions');
+         const barTop=bar && getComputedStyle(bar).position==='fixed' && document.querySelector('[data-shell="app"]')?.dataset.tabbar!=='hidden' ? bar.getBoundingClientRect().top : innerHeight;
+         return {postBottom:post.bottom, limit:Math.min(innerHeight,barTop)};
+       });
+       assert.ok(focused.postBottom <= focused.limit + 0.5,`${label}: Post bottom ${Math.round(focused.postBottom)}px is on screen after focusing the body (limit ${Math.round(focused.limit)}px)`);
+     } else {
+       assert.ok(fit.bodyHeight > 150,`${label}: desktop keeps the tall body (${fit.bodyHeight}px)`);
+       assert.equal(fit.pickerReserved,true,`${label}: desktop keeps the reserved picker footprint`);
+     }
+     if(process.env.PHONE_FIT_SCREENSHOT_DIR) await page.screenshot({path:join(process.env.PHONE_FIT_SCREENSHOT_DIR,`compose-${theme}-${width}x${height}.png`)});
+     console.log(`PASS phone fit ${label} span=${Math.round(fit.span)}px`);
+   }
+ }
+ if (!process.argv.includes('--phone-fit-only')) {
  // Exercise the server-rendered buttons with their actual Outbox bindings.
  for (const path of (process.argv.includes('--shared-only') ? [] : ['/compose/thread','/compose/reply'])) {
    await page.goto(base+path);
@@ -184,6 +233,7 @@ try {
  await page.getByText('Signed reply after readiness cleanup',{exact:true}).first().waitFor();
  assert.deepEqual(errors,[]);
  console.log(`PASS ${cases} standalone layout cases; 32 shared readiness cases; explicit Account outcome; signed thread and reply`);
+ }
 } finally {
  if(browser) await browser.close();
  server.kill();
