@@ -15,7 +15,7 @@ final class QdbPage
     /** @return array{threads:array,count:int,page:int} */
     public static function page(PDO $pdo, string $section, int $page, string $term = ''): array
     {
-        if (!in_array($section, ['latest', 'top', 'leetness'], true)) {
+        if (!in_array($section, ['latest', 'top', 'leetness', 'search'], true)) {
             throw new \InvalidArgumentException('Unknown QDB page section.');
         }
         // Reuse PHP policies, including malformed legacy lists and exact ID suffixes.
@@ -34,6 +34,13 @@ final class QdbPage
         };
         $order = 'qdb_page_pinned(threads.thread_labels_json) DESC, ' . $scoreOrder . '
             threads.root_post_created_at COLLATE BINARY DESC, threads.root_post_id COLLATE BINARY DESC';
+        if ($section === 'search') {
+            $term = trim($term);
+            $pdo->sqliteCreateFunction('qdb_page_matches', static fn ($body): bool =>
+                stripos((string) $body, $term) !== false, 1);
+            $base .= $term === '' ? ' AND 0' : ' AND qdb_page_matches(posts.body)';
+            $order = 'threads.last_activity_at COLLATE BINARY DESC, threads.root_post_id COLLATE BINARY DESC';
+        }
         $ownsTransaction = !$pdo->inTransaction();
         if ($ownsTransaction) {
             $pdo->beginTransaction();

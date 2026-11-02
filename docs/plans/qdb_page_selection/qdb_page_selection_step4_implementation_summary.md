@@ -39,3 +39,15 @@ Reuse decisions: Extend BoardPageController and QdbExperience; reuse QdbBoardPol
 - Notes: S1 commit 56587695. Schema 41 covers this cycle's query contract; no further stored-schema change. Scope/estimate unchanged; HTTP capacity remains S4.
 
 *— Codex · 2026-11-02 UTC*
+
+## Stage 3 — Search
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.20**
+
+- Changes: Search now counts/selects before hydration, retaining trimmed PHP stripos semantics and activity/ID order. Empty searches remain empty. Existing template, encoding and viewer-reaction wiring are reused.
+- Verification: `php -d memory_limit=128M tests/run.php QdbPageTest QdbBoardPolicyTest QdbExperienceRoutingTest`: 13/13 passed. Literal percent/underscore, ASCII/non-ASCII case, whitespace, no-match, injection-like text and deep/clamped pages match legacy selection. Nearly 16 MiB body matching succeeds; a missing-table error rolls back the owned transaction and retry succeeds after restoration. HTTP replay/encoding remains S4.
+- Notes: S2 commit fe661c5d. Callbacks inspect transient bodies during scans; only selected bodies are retained. No promise of bounded scan work. Scope/estimate unchanged, dependency delta zero.
+
+*— Codex · 2026-11-02 UTC*

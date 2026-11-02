@@ -90,6 +90,48 @@ final class QdbPageTest
         }
     }
 
+    public function testSearchPreservesLiteralMatchingAndActivityOrder(): void
+    {
+        $pdo = $this->fixture();
+        $pdo->exec("UPDATE posts SET body = body || CASE sequence_number % 3 WHEN 0 THEN ' Alpha %_ äÄ' WHEN 1 THEN ' beta 100% ' ELSE ' under_score' END");
+        $policy = new QdbBoardPolicy('/unused', static fn () => null);
+        $rows = $policy->eligibleQuotes(ThreadRepository::fetchThreads($pdo));
+        $pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, [QdbPageBodyCounter::class]);
+        foreach (['', '   ', ' % ', '_', 'ALPHA', 'ä', 'Ä', 'not-present', "' OR 1=1", 'Body'] as $term) {
+            $needle = trim($term);
+            $expected = $needle === '' ? [] : array_values(array_filter($rows, static fn ($row) => stripos($row['root_post_body'], $needle) !== false));
+            foreach ([0, 1, 2, 999] as $page) {
+                QdbPageBodyCounter::$bodies = 0;
+                $actual = QdbPage::page($pdo, 'search', $page, $term);
+                assertSame($policy->paginate($expected, 'search', $page)['threads'], $actual['threads']);
+                assertSame(count($expected), $actual['count']);
+                assertSame(count($actual['threads']), QdbPageBodyCounter::$bodies);
+            }
+        }
+    }
+
+    public function testSearchLargeBodyAndFailureRetry(): void
+    {
+        $pdo = $this->fixture();
+        $id = $pdo->query("SELECT root_post_id FROM threads WHERE retracted_at IS NULL AND root_post_id LIKE '%-qdb-1'")->fetchColumn();
+        $stmt = $pdo->prepare('UPDATE posts SET body=? WHERE post_id=?');
+        $stmt->execute([str_repeat('x', 16 * 1024 * 1024 - 20) . ' UniqueLargeNeedle', $id]);
+        $result = QdbPage::page($pdo, 'search', 1, 'UniqueLargeNeedle');
+        assertSame(1, $result['count']);
+        assertSame($id, $result['threads'][0]['root_post_id']);
+        assertTrue(strlen($result['threads'][0]['root_post_body']) > 15 * 1024 * 1024);
+        unset($result);
+        $pdo->exec('ALTER TABLE posts RENAME TO missing_posts');
+        try {
+            QdbPage::page($pdo, 'search', 1, 'x');
+            throw new RuntimeException('Expected missing-table failure');
+        } catch (PDOException $error) {
+            assertTrue(!$pdo->inTransaction());
+        }
+        $pdo->exec('ALTER TABLE missing_posts RENAME TO posts');
+        assertSame(1, QdbPage::page($pdo, 'search', 1, 'UniqueLargeNeedle')['count']);
+    }
+
     public function testPriorVersionStartupRebuildsBeforeLatest(): void
     {
         $database = tempnam(sys_get_temp_dir(), 'qdb-page-startup-');
