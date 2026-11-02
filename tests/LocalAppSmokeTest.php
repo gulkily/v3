@@ -4218,13 +4218,18 @@ PHP;
             $this->databasePath,
         );
 
+        $previousCookie = $_COOKIE;
         $_COOKIE = [];
-        $response = $this->renderMethod($application, 'POST', '/api/set_identity_hint?identity_hint=OpenPGP-Example');
-        $account = $this->render($application, '/account/key/');
+        try {
+            $response = $this->renderMethod($application, 'POST', '/api/set_identity_hint?identity_hint=OpenPGP-Example');
+            $account = $this->render($application, '/account/key/');
 
-        assertStringContains('identity_hint=openpgp-example', $response);
-        assertSame('openpgp-example', $_COOKIE['identity_hint'] ?? null);
-        assertStringContains('openpgp-example', $account);
+            assertStringContains('identity_hint=openpgp-example', $response);
+            assertSame('openpgp-example', $_COOKIE['identity_hint'] ?? null);
+            assertStringContains('openpgp-example', $account);
+        } finally {
+            $_COOKIE = $previousCookie;
+        }
     }
 
     public function testRequestDataParsesRawFormEncodedBodyWhenPostIsEmpty(): void
