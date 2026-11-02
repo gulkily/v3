@@ -29,7 +29,7 @@ final class ForteUserDirectoryController
     ): string {
         $pdo = $this->routeServices->pdo();
         $users = ProfileRepository::approvedDirectoryUsers($pdo);
-        $activityBoundsByToken = $this->fetchActivityBoundsByToken($pdo);
+        $activityBoundsByToken = ProfileRepository::activityBoundsByUsernameToken($pdo);
         foreach ($users as &$user) {
             $bounds = $activityBoundsByToken[$user['username_token']] ?? ['earliest' => '', 'latest' => ''];
             $user['active_at'] = $bounds['latest'];
@@ -72,32 +72,6 @@ final class ForteUserDirectoryController
             ['/assets/toolbar_identity_status.js', '/assets/paned_users_reader.js'],
             ['/assets/forte.css'],
         );
-    }
-
-    /**
-     * @return array<string, array{earliest: string, latest: string}>
-     */
-    private function fetchActivityBoundsByToken(PDO $pdo): array
-    {
-        $stmt = $pdo->query(
-            'SELECT profiles.username_token,
-                    MIN(posts.created_at) AS earliest_activity_at,
-                    MAX(posts.created_at) AS latest_activity_at
-             FROM posts
-             JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE profiles.is_approved = 1 AND posts.is_hidden = 0
-             GROUP BY profiles.username_token'
-        );
-
-        $boundsByToken = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $boundsByToken[(string) $row['username_token']] = [
-                'earliest' => (string) $row['earliest_activity_at'],
-                'latest' => (string) $row['latest_activity_at'],
-            ];
-        }
-
-        return $boundsByToken;
     }
 
     /**

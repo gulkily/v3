@@ -15,6 +15,7 @@ If a change seems to need an exception, raise it before building.
 - Your secret keys stay on your devices, in your custody.
 - Digital signatures are the authority, not the server or database.*
 - Any individual or group, anytime, can take their content and history and move somewhere else.
+- Communities say where their copies live; no site goes looking for others unless its operator asks.
 
 ### How we build it
 
@@ -103,6 +104,18 @@ from the record alone.
 
 - Rules out: features whose data cannot be exported or rebuilt.
 - Source: [10 reasons](docs/product/10_reasons_to_consider_v3.md#1-your-community-can-keep-its-history-when-its-circumstances-change).
+
+### Communities describe themselves; instances look outward only where their operator points them
+
+A community records where its mirrors and successors live, and an author
+records where else their key posts. These are signed facts in the record and
+travel with every archive. An operator may configure their instance to follow
+named peer instances and show what those peers say about themselves. v3 ships
+no default peers, builds no crawler or ranking, and keeps usernames local.
+People find a community the way they find any website.
+
+- Rules out: default registry or peer URLs in the code, crawling unnamed instances, global usernames, and ranking other communities' content.
+- Source: maintainer (2026-10-30); [discovery essays](docs/product/instance_discovery_for_and_against.md).
 
 ## Interface
 

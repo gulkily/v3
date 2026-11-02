@@ -726,6 +726,11 @@ pre {
   background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
 }
 
+.board-sort__menu--end {
+  left: auto;
+  right: 0;
+}
+
 .board-sort__menu .nav-link[aria-current] {
   color: var(--active-ink);
   background: var(--active-bg);

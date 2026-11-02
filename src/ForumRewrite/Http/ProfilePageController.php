@@ -126,16 +126,60 @@ final class ProfilePageController
         return array_values($approvers);
     }
 
-    public function directory(): string
+    /**
+     * @param array<string, mixed> $query
+     */
+    public function directory(array $query = []): string
     {
         $pdo = $this->routeServices->pdo();
+        $sort = self::normalizeDirectorySort((string) ($query['sort'] ?? ''));
+        $users = ProfileRepository::approvedDirectoryUsers($pdo);
+        $bounds = ProfileRepository::activityBoundsByUsernameToken($pdo);
+        foreach ($users as &$user) {
+            $user['active_at'] = $bounds[(string) $user['username_token']]['latest'] ?? '';
+        }
+        unset($user);
+        if ($sort === 'name') {
+            usort($users, static fn (array $a, array $b): int => strcmp((string) $a['username_token'], (string) $b['username_token']));
+        } elseif ($sort === 'active') {
+            // Latest post first; members with no visible post come last, by name.
+            usort($users, static fn (array $a, array $b): int => strcmp((string) $b['active_at'], (string) $a['active_at'])
+                ?: strcmp((string) $a['username_token'], (string) $b['username_token']));
+        }
+        $sortOptions = self::directorySortOptions($sort);
         // Every viewer gets the same page, so shared copies match live ones. The
         // Members / Waiting tabs are shown before paint only for a browser
         // remembered as approved; Waiting itself stays approved-only (see pendingDirectory).
+        // Only /users/ itself is served as a static page; ?sort= requests render live, like the board's.
         return $this->routeServices->renderPageTemplate('users.php', [
-            'users' => ProfileRepository::approvedDirectoryUsers($pdo),
+            'users' => $users,
             'pendingCount' => count(ProfileRepository::pendingDirectoryProfiles($pdo, $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::USERNAME_CHANGES_ENABLED))),
+            'sortOptions' => $sortOptions,
+            'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
         ], 'Users', 'profiles');
+    }
+
+    public static function normalizeDirectorySort(string $sort): string
+    {
+        return in_array($sort, ['activity', 'active', 'name'], true) ? $sort : 'activity';
+    }
+
+    /**
+     * The Members list's sort menu, in the board's sort control: Activity is the
+     * directory's own order (most threads, then most posts), Last active puts the
+     * latest visible post first, Name is alphabetical.
+     *
+     * @return array<int, array{label:string,href:string,is_active:bool,key:string}>
+     */
+    public static function directorySortOptions(string $activeSort): array
+    {
+        return [
+            // Every option carries its sort, as on the board; a bare /users/ href would also take the
+            // Users destination icon in icon themes (theme-nav-icons.css), which a sort option should not.
+            ['key' => 'activity', 'label' => 'Activity', 'href' => '/users/?sort=activity', 'is_active' => $activeSort === 'activity'],
+            ['key' => 'active', 'label' => 'Last active', 'href' => '/users/?sort=active', 'is_active' => $activeSort === 'active'],
+            ['key' => 'name', 'label' => 'Name', 'href' => '/users/?sort=name', 'is_active' => $activeSort === 'name'],
+        ];
     }
 
     public function pendingDirectory(string $method): void

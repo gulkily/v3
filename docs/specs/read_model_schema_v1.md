@@ -614,3 +614,7 @@ Add profiles_sync_keys on profiles(username_token, is_approved, identity_id) for
 Also adds history_keys_revision and profile mutation triggers. Tokens change on key identity, account, approval or public-key changes, not unrelated profile activity. History recovery uses this public membership revision without enumerating all keys; tokens are rebuilt with the derived database.
 
 Integration: The message-recovery branch used versions 39 and 40 locally. Main already used those versions for tag and QDB selection. Version 41 combines both sets of changes and rebuilds either prior version before use.
+
+## Version 42 — Recent public conversation
+
+Adds posts_recent_idx on posts(created_at DESC, post_id DESC), restricted to non-hidden, non-retracted posts. Recent uses bounded text projections and canonical post/date cursor keys; identity/bootstrap and expansion records remain excluded. No canonical format or table columns change. Normal startup rebuilds older read models before the Recent query; CLI rebuild recreates the index.
