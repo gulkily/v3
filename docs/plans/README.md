@@ -30,6 +30,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Load-before-selection audit](load_before_selection_audit/load_before_selection_audit_step4_implementation_summary.md) — completed documentation audit; ranked findings and 24 local selection samples, fixes pending.
 
+- [Deployment config](deployment_config/deployment_config_step1_solution_assessment.md)
 - [QDB memory audit](qdb_memory_audit/qdb_memory_audit_step1_solution_assessment.md) — documentation-only source audit complete; fixes and host capacity acceptance remain separate.
 
 - [Unified reaction records](unified_reaction_records/unified_reaction_records_step1_solution_assessment.md)
@@ -59,6 +60,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [UI account states](ui_account_states/)
 - [UI first post identity](ui_first_post_identity/)
 - [UI messages](ui_messages/)
+- [UI tools launcher](ui_tools_launcher/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
@@ -364,3 +366,5 @@ and repair its navigation and affected references. See the
 - [QDB build-time reduction](./qdb_build_time/qdb_build_time_step1_solution_assessment.md) — combined profile publication and history optimization, locally implemented and measured; production replay pending.
 
 - [Recent conversation](recent_activity/recent_activity_step1_solution_assessment.md) — implemented locally; [verification and release handoff](recent_activity/recent_activity_step4_implementation_summary.md).
+
+- [Message sync activity and limits](message_sync_activity/message_sync_activity_step1_solution_assessment.md) — recent-device priority and bounded, quiet recovery.

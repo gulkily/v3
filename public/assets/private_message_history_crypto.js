@@ -38,8 +38,10 @@
   }
   async function readOriginal(envelope, keys, senderKeys) {
     const pgp=await api();
-    return verified(await pgp.decrypt({message:await pgp.readMessage({armoredMessage:envelope}), sessionKeys:keys,
-      verificationKeys:await Promise.all(senderKeys.map(armoredKey=>pgp.readKey({armoredKey}))), format:'utf8'}));
+    const result=await pgp.decrypt({message:await pgp.readMessage({armoredMessage:envelope}), sessionKeys:keys,
+      verificationKeys:await Promise.all(senderKeys.map(armoredKey=>pgp.readKey({armoredKey}))), format:'utf8'});
+    try {return await verified(result);}
+    catch(error) {error.historyVerification=true;throw error;}
   }
   async function wrapHistoryKeys(input) {
     const pgp=await api(), source=await pgp.readPrivateKey({armoredKey:input.privateKey}), target=await pgp.readKey({armoredKey:input.targetKey});

@@ -214,3 +214,7 @@ Users Waiting (N) count in shared HTML (from viewer_nav_prepaint, option A)
 		decide whether that exposure is acceptable or the count should come another way
 	the count on cached/static /users/ can go stale until the next rebuild
 		check what refreshes it when someone registers or is approved
+
+recent posts/threads selector would be clutch
+
+i need a button that lets me push a post/thread to live website from localhost once it's composed

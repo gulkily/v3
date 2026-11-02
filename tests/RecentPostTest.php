@@ -63,7 +63,7 @@ final class RecentPostTest
         $root=__DIR__.'/fixtures/parity_minimal_v1';
         try {
             $app=new Application(dirname(__DIR__),$root,$file);ob_start();$app->handle('GET','/recent/');ob_end_clean();
-            $pdo=new PDO('sqlite:'.$file);$pdo->exec("UPDATE metadata SET value='38' WHERE key='schema_version'; DROP INDEX posts_recent_idx");
+            $pdo=new PDO('sqlite:'.$file);$pdo->exec("UPDATE metadata SET value='41' WHERE key='schema_version'; DROP INDEX posts_recent_idx");
             $app=new Application(dirname(__DIR__),$root,$file);ob_start();$app->handle('GET','/recent/');ob_end_clean();
             assertSame(1,(int)$pdo->query("SELECT count(*) FROM sqlite_master WHERE name='posts_recent_idx'")->fetchColumn());
             RecentPostRepository::page($pdo);

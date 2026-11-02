@@ -90,7 +90,7 @@ Request: Delete mockups rather than save them in repository. Disposition: Entire
 ## Release and recovery
 
 Status: Implemented locally on feature/recent-activity; deployment not performed.
-Upgrade: Schema 41 (numbered 39 on the branch; renumbered at the 2026-10-31 merge behind unrelated versions 39–40) changes only derived SQLite state. Ordinary live startup detects older schema/fingerprint and rebuilds; canonical records need no migration. Deploy code and use the full static build for a consistent read model and navigation/assets release.
+Upgrade: Schema 42 (numbered 39 on the branch; renumbered at the 2026-10-31 merge behind unrelated versions 39–41) changes only derived SQLite state. Ordinary live startup detects older schema/fingerprint and rebuilds; canonical records need no migration. Deploy code and use the full static build for a consistent read model and navigation/assets release.
 Command: `./v3 build-static [repository_root] [database_path] [artifact_root]` using the instance's configured paths. Defaults come from FORUM_REPOSITORY_ROOT, FORUM_DATABASE_PATH and FORUM_STATIC_HTML_ROOT (otherwise the CLI's documented local defaults); the artifact root is the release root containing current, not the public source-assets directory. Run under the deployed site's existing profile/environment.
 Later shell refresh: Once the read model is current and a complete release is active, `./v3 build-static --shared-only [repository_root] [database_path] [artifact_root]` republishes navigation/shared pages/assets. It does not upgrade the model; do not substitute it for the full upgrade build.
 Failure recovery: Inspect a failed build's phase/error, correct the cause, then rerun the same full build. Candidate rendering failure leaves the prior active release in place. Never hand-edit or point current at an incomplete candidate. Missing/invalidated Recent artifacts fall back to PHP; cursor URLs always use live pagination. Verify `/recent/`, a Next URL, exact-post opening and Back after release activation.
@@ -116,3 +116,14 @@ Request: the delivered Recent page looked unlike the rest of the site. Reviewed 
 - Limits: physical phones and production remain unverified; estimates and study records unchanged (Direct work, not a new cycle).
 
 *— Claude · 2026-10-30 UTC*
+
+## Main integration — 2026-11-01
+
+Request: Finish the pending merge into main and push.
+Integration: Completed the prepared Recent merge as 11e76faec, then integrated origin/main fd7e525df. Preserved both branches' planning records and canonical icon mappings in public/assets/theme-nav-icons.css. Existing Application routing, TemplateRenderer navigation and ReadModelSchema contracts remain shared; no new component or dependency.
+Schema: Combined schema is version 42 because remote main already published version 41 for message recovery. RecentPostTest now exercises normal /recent/ startup from version 41 with the Recent index absent. ReadModelSchemaTest now includes remote main's history_keys_revision table and profiles_sync_keys index; its stale inventory failure was reproduced on fd7e525df before correction.
+Verification: Affected PHP suite ran 228 checks, 223 passed initially. Three LocalAppSmokeTest failures (private lobby copy, private Forte approval copy, archive filename reflection) reproduced on fd7e525df. Renderer 50ms timeout assertion failed initially and on first retry, passed on remote baseline and subsequent local retries. After the inventory correction, RecentPostTest, ReadModelSchemaTest and HighTrafficTest passed 14/14. Full repository suite not run.
+Browser: Final merged-tree Recent checks passed 13 themes at 390/1280px, icon mappings, no-JavaScript pagination, anchored replies, Back/reload and offline reconnect. Tools launcher passed 28 theme/width cases and eight tool bars, including icons in Word97, Chicago and Midnight. An earlier browser attempt overlapping integration failed its theme assertion; the completed-tree run passed.
+CLI: ./v3 rebuild tests/fixtures/parity_minimal_v1 against an isolated /tmp database passed. Scale probe at 1k/10k/40k posts retained 50 rows and 51,200 projected body bytes, using posts_recent_idx.
+Scope: Dependency delta zero. Untracked zenmemes feedback summary left untouched. Incoming todo.txt changes are remote history; no local todo edits. Diff against origin/main passes whitespace checks; two existing trailing blank lines in incoming Tools documentation remain unchanged.
+Limits: Three reproduced baseline failures remain. Production deployment, production failure replay and physical phones are unverified; this task integrates and pushes source only.

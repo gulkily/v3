@@ -33,7 +33,7 @@ Adding a **table** needs only its `CREATE TABLE` statement in
 (`ReadModelBuilder::dropSchema()`) derives the tables to drop from
 `ReadModelSchema::tableNames()` (parsed from those statements), so a new table is
 dropped-and-recreated on in-place rebuild automatically — there is no separate
-drop list to keep in sync. (A forgotten entry previously caused in-place rebuilds
+drop list to keep in sync. Shared schema helpers must emit plain `CREATE TABLE` for this read-model path, rather than `CREATE TABLE IF NOT EXISTS`, so the table-name parser includes their tables. (A forgotten entry previously caused in-place rebuilds
 to fail with `table <name> already exists`.) Indexes need no drop step; dropping
 a table drops its indexes. Read-model tables declare no foreign keys, so drop
 order is immaterial.
@@ -607,6 +607,14 @@ eligible news count. Tables and indexes are unchanged; prior-version startup reb
 before this new core query executes. Full metadata examination/sorting is still
 required; this bounds PHP retention and body transfer, not SQLite scan work.
 
-## Version 41 — Recent public conversation
+## Version 41 — Bounded message recovery
+
+Add profiles_sync_keys on profiles(username_token, is_approved, identity_id) for bounded private-message recovery key enumeration. Startup rebuilds prior versions before the query runs; no canonical record change.
+
+Also adds history_keys_revision and profile mutation triggers. Tokens change on key identity, account, approval or public-key changes, not unrelated profile activity. History recovery uses this public membership revision without enumerating all keys; tokens are rebuilt with the derived database.
+
+Integration: The message-recovery branch used versions 39 and 40 locally. Main already used those versions for tag and QDB selection. Version 41 combines both sets of changes and rebuilds either prior version before use.
+
+## Version 42 — Recent public conversation
 
 Adds posts_recent_idx on posts(created_at DESC, post_id DESC), restricted to non-hidden, non-retracted posts. Recent uses bounded text projections and canonical post/date cursor keys; identity/bootstrap and expansion records remain excluded. No canonical format or table columns change. Normal startup rebuilds older read models before the Recent query; CLI rebuild recreates the index.

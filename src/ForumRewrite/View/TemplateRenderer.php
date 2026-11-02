@@ -250,6 +250,7 @@ final class TemplateRenderer
             'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
             'themes' => $themes,
             'lcdPalettes' => ThemeRegistry::LCD_PALETTES,
+            'consolePalettes' => ThemeRegistry::CONSOLE_PALETTES,
             'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
             'themeStylesheetPaths' => $themeStylesheetPaths,

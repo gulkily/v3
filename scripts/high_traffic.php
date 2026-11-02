@@ -35,9 +35,9 @@ $progress = in_array($command, ['prepare', 'refresh', 'run'], true)
     ? static function (string $message) use ($startedAt): void { fwrite(STDERR, sprintf('[%6.2fs] %s' . "\n", microtime(true) - $startedAt, $message)); }
     : null;
 $progress?->__invoke('Preparing high-traffic ' . $command);
-$repository=getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($project);
-$database=getenv('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($project);
-$public=getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $project . '/public';
+$repository=\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($project);
+$database=\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($project);
+$public=\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $project . '/public';
 $cache=new HighTrafficCache($project,$repository,$database,$public,$progress);
 $progress?->__invoke('Repository: ' . $repository . '; database: ' . $database);
 $progress?->__invoke('Public root: ' . $public . '; cache: ' . $cache->root);

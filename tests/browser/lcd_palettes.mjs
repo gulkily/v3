@@ -176,6 +176,33 @@ try {
     for (const name of themes) { await theme(page, name); assert.equal(await page.locator(paletteToggle).isVisible(), false); }
     await theme(page, 'lcd');
   }
+  // Console reuses the selector while keeping LCD's saved palette independent.
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await theme(page, 'console');
+    const lcdSaved = await page.locator('html').getAttribute('data-lcd-palette');
+    for (const value of ['green', 'amber', 'cyan', 'white']) {
+      await openThemeControls(page);
+      assert.equal(await page.locator(paletteToggle).isVisible(), false);
+      await page.locator('[data-action="console-palette-toggle"]').click();
+      await page.locator(`[data-console-palette-option="${value}"]`).click();
+      assert.equal(await page.locator('html').getAttribute('data-console-palette'), value);
+      assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), lcdSaved);
+      await page.reload();
+      assert.equal(await page.locator('html').getAttribute('data-console-palette'), value);
+      await page.goto(base + '/tools/');
+      assert.equal(await page.locator('html').getAttribute('data-console-palette'), value);
+      await openThemeControls(page);
+      await page.locator('[data-action="console-palette-toggle"]').click();
+      await page.screenshot({ path: join(root, `console-${value}-${width}.png`), fullPage: true });
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('[data-action="console-palette-toggle"]').evaluate(e => e === document.activeElement), true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    }
+    await theme(page, 'lcd');
+    assert.equal(await page.locator('[data-action="console-palette-toggle"]').isVisible(), false);
+    assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), lcdSaved);
+  }
   // Foreign namespace and malformed/missing preferences never affect this site's choice.
   await page.evaluate(({ themeKey, paletteKey }) => { localStorage.setItem(themeKey, 'lcd'); localStorage.removeItem(paletteKey); localStorage.setItem('forum-qdb-theme-lcd-palette', 'purple'); }, { themeKey, paletteKey });
   await page.reload(); assert.equal(await page.locator('html').getAttribute('data-lcd-palette'), 'green');

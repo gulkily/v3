@@ -52,6 +52,7 @@ $testFiles = [
 
     __DIR__ . '/TestingSelfApprovalTest.php',
     __DIR__ . '/SessionRotationTest.php',
+    __DIR__ . '/ToolsRegistryTest.php',
     __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/TagsIndexMemoryTest.php',
     __DIR__ . '/TagPaginationTest.php',
@@ -233,6 +234,7 @@ $testFiles = [
     __DIR__ . '/ReadModelPostRetractionsTest.php',
     __DIR__ . '/LocalWriteServiceThreadSubjectTest.php',
     __DIR__ . '/ResumeTargetTest.php',
+    __DIR__ . '/DeploymentSettingsTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',
     __DIR__ . '/ThemeRegistryTest.php',
     __DIR__ . '/TestRunnerBehaviorTest.php',

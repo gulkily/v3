@@ -29,6 +29,12 @@ rendered checks or deployment verification. Preserved prior evidence and limits.
 
 *— Codex · 2026-10-29 UTC*
 
+## Tools launcher — October 31, 2026
+
+- [x] **Tools page and Tools bar** — Removed the one-line description under each tool button after the user's review of the grouped page ("get rid of the text bits under the buttons"); at closeout the unused descriptions left the registry too, so the launcher shows labels only. Removed the Account entry from Tools and from the Tools bar inside every tool (Account lives in the main navigation). Renamed "System State" to "System status" in the registry, page title and heading. Added only the four group headings (Your device, Reading, Community, Operator), which replace the former long list and the Tools bar card on /tools/.
+- Verification: `ToolsRegistryTest` and `LocalAppSmokeTest` (no description element on /tools/, no Account entry, four headings in order; the same three pre-existing smoke failures as `main`). `tests/browser/tools_launcher.mjs` on all four sites, every permitted theme at 390px and 1280px: each tool once, no Account, no description text, whole labels, no overflow, icons on tools and group headings in Word97/Chicago/Midnight. Midnight 1280px screenshot inspected. Details in the [implementation summary](ui_tools_launcher/ui_tools_launcher_step4_implementation_summary.md).
+- No dependencies, data-contract or `todo.txt` changes. Physical devices and deployment were not checked.
+
 ## Backup section grouping — October 25, 2026
 
 - [x] Split the page into three existing-style cards: Backup details, Downloads, and Recent included items. Added only the Downloads heading; preserved all fields, links, notes and empty states.
@@ -820,3 +826,10 @@ search instructions because they were deliberately added and rendered-verified.
 Also retained copy/revocation confirmations and backup download feedback as
 potentially necessary signals for effects outside the visible page. The scan itself was documentation
 only; subsequent implementation and verification are recorded separately above.
+
+## System State codebase Git information — 2026-10-31
+
+- [x] Added a separate Codebase facts table with application commit, branch, latest commit date/subject and clean/modified working-tree status. App version now uses the application checkout rather than the content repository. No remote URLs or changed file paths are exposed.
+- [x] Source-only deployments and failed Git commands show unavailable; detached HEAD is identified. Linked-worktree .git files are accepted. Existing content-repository and read-model details remain separate.
+- [x] Core-route rendered HTML smoke check passed; PHP syntax and diff whitespace checks passed. Reused the existing wrapping facts table. Dependency delta: zero.
+- [ ] Browser verification remains outstanding for phone/desktop, affected themes, long commit subjects, source-only deployments and detached HEAD; the HTML smoke check does not establish visual layout.

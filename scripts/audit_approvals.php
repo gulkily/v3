@@ -46,8 +46,8 @@ try {
 
     $projectRoot = dirname(__DIR__);
     // Do not call LocalRepositoryBootstrap::defaultRepositoryRoot: it may initialize state.
-    $repositoryRoot = realpath($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: $projectRoot . '/state/local_repository'));
-    $databasePath = realpath($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: $projectRoot . '/state/cache/post_index.sqlite3'));
+    $repositoryRoot = realpath($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $projectRoot . '/state/local_repository'));
+    $databasePath = realpath($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $projectRoot . '/state/cache/post_index.sqlite3'));
     if ($repositoryRoot === false || !is_dir($repositoryRoot . '/records')) {
         throw new RuntimeException('Repository with a records directory must already exist; use --repository-root.');
     }

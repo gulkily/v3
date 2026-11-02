@@ -222,6 +222,42 @@ final class PrivateConfigCommandTest
         }
     }
 
+    public function testPrivateConfigPathPrefersPerCheckoutFileThenSharedDefault(): void
+    {
+        $parent = sys_get_temp_dir() . '/forum-rewrite-private-path-' . bin2hex(random_bytes(6));
+        $siteA = $parent . '/site-a';
+        $siteB = $parent . '/site-b';
+        $previous = getenv('FORUM_SECRETS_PATH');
+        putenv('FORUM_SECRETS_PATH');
+        try {
+            mkdir($parent . '/forum-private/site-a', 0700, true);
+            assertSame($parent . '/forum-private/secrets.php', \ForumRewrite\Support\PrivateConfig::path($siteA));
+
+            file_put_contents($parent . '/forum-private/site-a/secrets.php', "<?php\nreturn ['LLM_MODEL' => 'site-a-model'];\n");
+            file_put_contents($parent . '/forum-private/secrets.php', "<?php\nreturn ['LLM_MODEL' => 'shared-model'];\n");
+            assertSame($parent . '/forum-private/site-a/secrets.php', \ForumRewrite\Support\PrivateConfig::path($siteA));
+            assertSame($parent . '/forum-private/site-a/secrets.php', \ForumRewrite\Support\PrivateConfig::path($siteA . '/'));
+            assertSame($parent . '/forum-private/secrets.php', \ForumRewrite\Support\PrivateConfig::path($siteB));
+            assertSame('site-a-model', \ForumRewrite\Support\PrivateConfig::load($siteA)['LLM_MODEL'] ?? null);
+            assertSame('shared-model', \ForumRewrite\Support\PrivateConfig::load($siteB)['LLM_MODEL'] ?? null);
+
+            putenv('FORUM_SECRETS_PATH=' . $parent . '/explicit.php');
+            assertSame($parent . '/explicit.php', \ForumRewrite\Support\PrivateConfig::path($siteA));
+            putenv('FORUM_SECRETS_PATH');
+
+            // The CLI resolves the same file from a checkout named site-a.
+            mkdir($siteA . '/scripts', 0700, true);
+            copy(dirname(__DIR__) . '/autoload.php', $siteA . '/autoload.php');
+            copy(dirname(__DIR__) . '/scripts/write_private_config.php', $siteA . '/scripts/write_private_config.php');
+            exec('cp -R ' . escapeshellarg(dirname(__DIR__) . '/src') . ' ' . escapeshellarg($siteA . '/src'));
+            $output = $this->runCommand($siteA, 'env -u FORUM_SECRETS_PATH php scripts/write_private_config.php view');
+            assertStringContains('Private config path: ' . $parent . '/forum-private/site-a/secrets.php', $output);
+        } finally {
+            putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
+            exec('rm -rf ' . escapeshellarg($parent));
+        }
+    }
+
     private function runCommand(string $cwd, string $command, string $input = ''): string
     {
         $descriptor = [
@@ -263,6 +299,16 @@ if (!function_exists('assertStringNotContains')) {
     {
         if (str_contains($haystack, $needle)) {
             throw new RuntimeException("Did not expect to find {$needle} in output.");
+        }
+    }
+}
+
+if (!function_exists('assertSame')) {
+    function assertSame(mixed $expected, mixed $actual): void
+    {
+        if ($expected !== $actual) {
+            throw new RuntimeException('Failed asserting that values are identical. Expected '
+                . var_export($expected, true) . ' but got ' . var_export($actual, true) . '.');
         }
     }
 }

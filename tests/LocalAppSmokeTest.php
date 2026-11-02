@@ -64,6 +64,52 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testHistoryMembershipRevisionChangesOnRepeatedInPlaceRebuild(): void
+    {
+        $database=sys_get_temp_dir().'/sync-repeat-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            $builder=new ReadModelBuilder($this->repositoryRoot,$database,new CanonicalRecordRepository($this->repositoryRoot));
+            $builder->rebuild();$pdo=new PDO('sqlite:'.$database);
+            $before=$pdo->query("SELECT token FROM history_keys_revision WHERE account='*'")->fetchColumn();
+            $builder->rebuild();$pdo=new PDO('sqlite:'.$database);
+            assertTrue($before!==$pdo->query("SELECT token FROM history_keys_revision WHERE account='*'")->fetchColumn());
+        } finally {@unlink($database);}
+    }
+    public function testVersion40StartupBuildsHistoryMembershipRevisions(): void
+    {
+        $database=sys_get_temp_dir().'/sync-revision-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            exec(escapeshellarg(dirname(__DIR__).'/v3').' rebuild '.escapeshellarg($this->repositoryRoot).' '.escapeshellarg($database),$output,$exit);
+            assertSame(0,$exit,implode("\n",$output));
+            $pdo=new PDO('sqlite:'.$database);
+            foreach(['insert','update','delete'] as $event)$pdo->exec('DROP TRIGGER history_keys_'.$event);
+            $pdo->exec('DROP TABLE history_keys_revision');
+            $pdo->exec('DROP INDEX profiles_sync_keys');
+            $pdo->exec("UPDATE metadata SET value='40' WHERE key='schema_version'");
+            $app=new Application(dirname(__DIR__),$this->repositoryRoot,$database);
+            assertStringContains('Hello world',$this->render($app,'/threads/root-001'));
+            $pdo=new PDO('sqlite:'.$database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION,$pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame(3,(int)$pdo->query("SELECT count(*) FROM sqlite_master WHERE type='trigger' AND name LIKE 'history_keys_%'")->fetchColumn());
+            assertSame('profiles_sync_keys',$pdo->query("SELECT name FROM sqlite_master WHERE type='index' AND name='profiles_sync_keys'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
+    public function testVersion38StartupBuildsBoundedSyncKeyIndex(): void
+    {
+        $database=sys_get_temp_dir().'/sync-key-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            exec(escapeshellarg(dirname(__DIR__).'/v3').' rebuild '.escapeshellarg($this->repositoryRoot).' '.escapeshellarg($database),$output,$exit);
+            assertSame(0,$exit,implode("\n",$output));
+            $pdo=new PDO('sqlite:'.$database);
+            $pdo->exec('DROP INDEX profiles_sync_keys');
+            $pdo->exec("UPDATE metadata SET value='38' WHERE key='schema_version'");
+            $app=new Application(dirname(__DIR__),$this->repositoryRoot,$database);
+            assertStringContains('Hello world',$this->render($app,'/threads/root-001'));
+            $pdo=new PDO('sqlite:'.$database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION,$pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame('profiles_sync_keys',$pdo->query("SELECT name FROM sqlite_master WHERE type='index' AND name='profiles_sync_keys'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
     public function testVersion21StartupRebuildsAgentProvenanceBeforeServingPage(): void
     {
         $database = sys_get_temp_dir() . '/agent-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -2164,27 +2210,31 @@ PHP;
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
         assertStringContains('/activity/', $tools);
-        assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
         assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
         assertStringContains('class="nav"', $tools);
         assertSame(1, substr_count($tools, 'href="/tools/">Tools</a>'));
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
-        assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
-        assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
         assertStringContains('tool-launcher-button" href="/tools/operations/"', $tools);
-        assertStringContains('Control how the site is served, including high-traffic mode.', $tools);
         assertStringContains('/tools/visitor-statistics/', $tools);
-        assertStringContains('Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.', $tools);
         assertStringContains('/forte', $tools);
-        assertStringContains('Classic three-pane newsreader view of the whole board - folders, thread list, and preview.', $tools);
-        assertStringContains('tool-launcher-button" href="/account/key/"', $tools);
-        assertStringContains('tools-nav-divider', $tools);
-        assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $tools);
-        assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $tools);
-        assertStringContains('System State', $codebase);
+        // Account is in the main navigation, not Tools.
+        assertStringNotContains('tool-launcher-button" href="/account/key/"', $tools);
+        assertStringNotContains('tools-nav .nav-link[href="/account/key/"]', $tools);
+        // One grouped launcher: no Tools bar on /tools/, each tool once, group headings with theme hooks.
+        assertStringNotContains('class="nav tools-nav"', $tools);
+        assertStringNotContains('tool-launcher-description', $tools);
+        foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
+            assertSame(1, substr_count($tools, 'class="tool-launcher-button" href="' . $tool['href'] . '"'), $tool['href']);
+            assertStringContains('data-tone="' . $tool['tone'] . '"', $tools);
+        }
+        foreach (\ForumRewrite\Tools\ToolsPageSupport::groups() as $key => $label) {
+            assertStringContains('data-shape="' . $key . '">' . $label . '</h2>', $tools);
+        }
+        assertOrdered($tools, '>Your device</h2>', '>Operator</h2>');
+        assertStringContains('System status', $codebase);
         assertStringContains('<strong>Name:</strong> zenmemes', $codebase);
         assertStringContains('<strong>Admin:</strong>', $codebase);
         assertStringContains('grep &#039;^Instance-Name:&#039; state/local_repository/records/instance/public.txt', $codebase);
@@ -2192,6 +2242,10 @@ PHP;
         assertStringContains('class="nav"', $codebase);
         assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $codebase);
+        assertStringContains('<h2>Codebase</h2>', $codebase);
+        assertStringContains('Working tree', $codebase);
+        assertStringContains('Branch', $codebase);
+        assertStringContains(\ForumRewrite\ReadModel\ReadModelMetadata::repositoryHead(dirname(__DIR__)), $codebase);
         assertStringContains('Repository head', $codebase);
         assertStringContains('Read model', $codebase);
         assertStringContains('Schema version', $codebase);
@@ -2218,7 +2272,15 @@ PHP;
         assertStringNotContains('high_traffic_control', $operations);
         assertFingerprintedAsset($operations, 'tool-details.css');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
-        assertStringContains('tools-nav-divider', $featureFlags);
+        // The Tools bar follows the launcher's groups, with a divider between each.
+        $toolsBar = substr($featureFlags, (int) strpos($featureFlags, '<div class="nav tools-nav">'));
+        $toolsBar = substr($toolsBar, 0, (int) strpos($toolsBar, '</div>'));
+        assertSame(3, substr_count($toolsBar, 'tools-nav-divider'));
+        $order = ['href="/tools/outbox/"', 'href="/activity/"', 'href="/tools/user-access/"', 'href="/tools/feature-flags/"', 'href="/tools/operations/"'];
+        for ($i = 1; $i < count($order); $i++) {
+            assertOrdered($toolsBar, $order[$i - 1], $order[$i]);
+        }
+        assertStringNotContains('href="/account/key/"', $toolsBar);
         assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $featureFlags);
         assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $featureFlags);
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
@@ -5367,7 +5429,7 @@ PHP;
 
         assertStringContains('status=ready', $status);
         assertStringContains('lock_status=locked', $status);
-        assertStringContains('System State', $codebase);
+        assertStringContains('System status', $codebase);
         assertStringContains('locked', $codebase);
         assertStringContains('Lock status', $codebase);
     }
@@ -5393,7 +5455,7 @@ PHP;
         assertStringContains('status=ready', $status);
         assertStringContains('stale_marker=absent', $status);
         assertStringContains('rebuild_reason=stale_marker', $status);
-        assertStringContains('System State', $codebase);
+        assertStringContains('System status', $codebase);
         assertStringContains('Stale marker', $codebase);
         assertStringContains('absent', $codebase);
     }

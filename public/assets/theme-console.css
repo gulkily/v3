@@ -1,6 +1,8 @@
 /* Theme: console */
 :root[data-theme="console"],
 .theme-menu__option[data-theme-option="console"] {
+  --console-glow: 155, 255, 138;
+  --console-hover: #132917;
   color-scheme: dark;
   --page-bg: #08110a;
   --body-background:
@@ -21,7 +23,7 @@
   --active-bg: #17341b;
   --active-ink: #c5ffba;
   --active-line: #6fdc6b;
-  --active-ring: rgba(155, 255, 138, 0.2);
+  --active-ring: rgba(var(--console-glow), 0.2);
   --body-font: "Lucida Console", "Courier New", monospace;
   --ui-font: "Lucida Console", "Courier New", monospace;
   --code-font: "Lucida Console", "Courier New", monospace;
@@ -35,11 +37,11 @@
 }
 
 .theme-menu__option[data-theme-option="console"] {
-  text-shadow: 0 0 6px rgba(155, 255, 138, 0.55);
+  text-shadow: 0 0 6px rgba(var(--console-glow), 0.55);
 }
 
 :root[data-theme="console"] body {
-  text-shadow: 0 0 6px rgba(155, 255, 138, 0.12);
+  text-shadow: 0 0 6px rgba(var(--console-glow), 0.12);
 }
 
 :root[data-theme="console"] .site-header::after {
@@ -50,7 +52,7 @@
   background:
     repeating-linear-gradient(
       90deg,
-      rgba(155, 255, 138, 0.7) 0 8px,
+      rgba(var(--console-glow), 0.7) 0 8px,
       transparent 8px 16px
     );
 }
@@ -64,7 +66,7 @@
 :root[data-theme="console"] textarea,
 :root[data-theme="console"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
   border-style: solid;
-  box-shadow: inset 0 0 0 1px rgba(155, 255, 138, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(var(--console-glow), 0.08);
 }
 
 :root[data-theme="console"] .eyebrow {
@@ -73,5 +75,77 @@
 
 :root[data-theme="console"] .nav-link.is-active,
 :root[data-theme="console"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
-  background: #132917;
+  background: var(--console-hover);
 }
+
+:root[data-theme="console"] .theme-menu { margin-left: 2.5rem; }
+:root[data-theme="console"] [data-role="console-palette"] { display: block; }
+:root[data-theme="console"] .lcd-palette__chip { --lcd-chip: var(--ink); }
+
+:root[data-theme="console"][data-console-palette="amber"] {
+  --page-bg: #130e06;
+  --ink: #ffcf78;
+  --ink-soft: #d7ac63;
+  --line: #78603b;
+  --panel: #191207;
+  --input-bg: #1d1609;
+  --button-bg: #241b0c;
+  --button-alt-bg: #2c220f;
+  --active-bg: #2b200c;
+  --active-ink: #fff0c9;
+  --active-line: #b89654;
+  --console-glow: 255, 207, 120;
+  --body-background: var(--page-bg);
+  --console-hover: var(--active-bg);
+  --active-ring: rgba(var(--console-glow), 0.2);
+  --feedback-ok-bg: var(--panel);
+  --feedback-error-bg: #251114;
+}
+
+:root[data-theme="console"][data-console-palette="cyan"] {
+  --page-bg: #061114;
+  --ink: #89edff;
+  --ink-soft: #64bfce;
+  --line: #356771;
+  --panel: #08171b;
+  --input-bg: #0a1c21;
+  --button-bg: #0e242a;
+  --button-alt-bg: #102e36;
+  --active-bg: #0d2930;
+  --active-ink: #c2f7ff;
+  --active-line: #64c9da;
+  --console-glow: 137, 237, 255;
+  --body-background: var(--page-bg);
+  --console-hover: var(--active-bg);
+  --active-ring: rgba(var(--console-glow), 0.2);
+  --feedback-ok-bg: var(--panel);
+  --feedback-error-bg: #251114;
+}
+
+:root[data-theme="console"][data-console-palette="white"] {
+  --page-bg: #101112;
+  --ink: #eeeeee;
+  --ink-soft: #bdbfc1;
+  --line: #62676c;
+  --panel: #16181a;
+  --input-bg: #1b1e20;
+  --button-bg: #232629;
+  --button-alt-bg: #2b2f32;
+  --active-bg: #272b2e;
+  --active-ink: #ffffff;
+  --active-line: #b5bcc2;
+  --console-glow: 238, 238, 238;
+  --body-background: var(--page-bg);
+  --console-hover: var(--active-bg);
+  --active-ring: rgba(var(--console-glow), 0.2);
+  --feedback-ok-bg: var(--panel);
+  --feedback-error-bg: #251114;
+}
+
+:root[data-theme="console"] [data-palette-theme="console"][data-palette-chip="green"] { --lcd-chip: #9bff8a; }
+
+:root[data-theme="console"] [data-palette-theme="console"][data-palette-chip="amber"] { --lcd-chip: #ffcf78; }
+
+:root[data-theme="console"] [data-palette-theme="console"][data-palette-chip="cyan"] { --lcd-chip: #89edff; }
+
+:root[data-theme="console"] [data-palette-theme="console"][data-palette-chip="white"] { --lcd-chip: #eeeeee; }

@@ -79,16 +79,30 @@ final class PrivateConfig
         return ['file' => $file, 'revision' => hash('sha256', serialize([$path, $bytes, $effective]))];
     }
 
-    private static function candidatePaths(string $projectRoot): array
+    /**
+     * The private settings file for a checkout: FORUM_SECRETS_PATH when set,
+     * else a per-checkout ../forum-private/<checkout folder>/secrets.php when
+     * it exists, else the shared ../forum-private/secrets.php.
+     */
+    public static function path(string $projectRoot): string
     {
-        $paths = [];
         $explicitPath = getenv('FORUM_SECRETS_PATH');
         if ($explicitPath !== false && trim($explicitPath) !== '') {
-            return [$explicitPath];
+            return $explicitPath;
         }
 
-        $paths[] = dirname($projectRoot) . '/forum-private/secrets.php';
+        $root = rtrim($projectRoot, '/');
+        $privateDirectory = dirname($root) . '/forum-private';
+        $perCheckout = $privateDirectory . '/' . basename($root) . '/secrets.php';
 
-        return array_values(array_unique($paths));
+        return is_file($perCheckout) ? $perCheckout : $privateDirectory . '/secrets.php';
+    }
+
+    /**
+     * @return string[]
+     */
+    private static function candidatePaths(string $projectRoot): array
+    {
+        return [self::path($projectRoot)];
     }
 }
