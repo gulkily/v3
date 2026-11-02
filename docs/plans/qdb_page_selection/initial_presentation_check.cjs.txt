@@ -1,0 +1,26 @@
+const {chromium}=require('/home/wsl/dedalus-e2e/node_modules/playwright');
+(async()=>{
+const b=await chromium.launch({headless:true,executablePath:'/snap/bin/chromium',args:['--no-sandbox']});
+for(const state of ['keyless','saved-key','approved-marker']){
+ const c=await b.newContext({viewport:{width:390,height:844}});
+ await c.addInitScript(state=>{
+  localStorage.setItem('forum-qdb-theme','qdb');
+  if(state!=='keyless'){
+   localStorage.setItem('forum_pki_fingerprint','a'.repeat(40));
+   localStorage.setItem('forum_pki_public_key','presentation-only fixture');
+   localStorage.setItem('forum_pki_private_key','presentation-only fixture');
+   if(state==='approved-marker')localStorage.setItem('forum_pki_approved_fingerprint','a'.repeat(40));
+  }
+  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>{
+   const x=document.querySelector('.quote-card');
+   window.initialQdb={count:document.querySelectorAll('.quote-card').length,top:x?.getBoundingClientRect().top,text:x?.querySelector('.quote-card-header-actions').innerText,member:document.documentElement.dataset.member||''};
+  }));
+ },state);
+ const p=await c.newPage();await p.goto('http://127.0.0.1:18793/latest',{waitUntil:'networkidle'});
+ const r=await p.evaluate(()=>{const x=document.querySelector('.quote-card');return {before:window.initialQdb,after:{count:document.querySelectorAll('.quote-card').length,top:x?.getBoundingClientRect().top,text:x?.querySelector('.quote-card-header-actions').innerText,member:document.documentElement.dataset.member||''}};});
+ if(JSON.stringify(r.before)!==JSON.stringify(r.after))throw new Error('Initial/loaded mismatch '+state+JSON.stringify(r));
+ console.log('Presentation state: '+state+' | Initial/loaded cards, position, captions and membership marker: stable');
+ await c.close();
+}
+await b.close();
+})().catch(e=>{console.error(e);process.exitCode=1;});

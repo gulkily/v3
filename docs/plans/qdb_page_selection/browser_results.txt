@@ -1,0 +1,43 @@
+Completed: 390 / auto
+Completed: 390 / light
+Completed: 390 / dark
+Completed: 390 / console
+Completed: 390 / lcd
+Completed: 390 / chicago
+Completed: 390 / vapor
+Completed: 390 / forge
+Completed: 390 / sticker
+Completed: 390 / arena
+Completed: 390 / thermal
+Completed: 390 / whitehot
+Completed: 390 / word97
+Completed: 390 / midnight
+Completed: 390 / qdb
+Completed: 1366 / auto
+Completed: 1366 / light
+Completed: 1366 / dark
+Completed: 1366 / console
+Completed: 1366 / lcd
+Completed: 1366 / chicago
+Completed: 1366 / vapor
+Completed: 1366 / forge
+Completed: 1366 / sticker
+Completed: 1366 / arena
+Completed: 1366 / thermal
+Completed: 1366 / whitehot
+Completed: 1366 / word97
+Completed: 1366 / midnight
+Completed: 1366 / qdb
+Rendered cases: 150; no-JS page navigation checked
+Findings: none
+
+Presentation state: keyless | Initial/loaded cards, position, captions and membership marker: stable
+Presentation state: saved-key | Initial/loaded cards, position, captions and membership marker: stable
+Presentation state: approved-marker | Initial/loaded cards, position, captions and membership marker: stable
+
+Runtime: Existing system Chromium 156 via existing external Playwright; no installation or dependency change.
+Cases: 15 permitted themes, widths 390 and 1366, Latest page 2, Top, Leetness, matching Search and empty Search; expected card counts, page overflow, selected theme and asset HTTP status checked. No-JavaScript next-page navigation passed.
+Presentation states: Keyless, saved-key and cached-approved-marker simulations; first animation frame after DOMContentLoaded compared with loaded cards, positions, captions and membership marker. These are presentation fixtures, not authenticated signing sessions. Server-side reaction selection is separately tested for anonymous/unapproved/approved viewers.
+Visual inspection: Chicago and Midnight phone, QDB desktop screenshots inspected; navigation, pagination, reaction controls and long quote wrapping visible.
+Invalid first pass: Collector's FORUM_PUBLIC_ARTIFACT_ROOT pointed to an empty directory. Visual inspection exposed missing fingerprinted styles despite correct DOM theme attributes. That pass and its initial/loaded comparison were excluded. Reran with FORUM_PUBLIC_ARTIFACT_ROOT=WORK/app/public and explicit asset-response assertions; all 150 cases above passed. Missing Playwright bundled Chromium was bypassed with existing system Chromium, without downloads.
+Reproduction: Use the capacity setup and a 1000-record fixture/rebuild. Start its ordinary PHP server on 127.0.0.1:18793 with the corrected public-artifact root; run browser_check.cjs.txt and initial_presentation_check.cjs.txt with node and the existing Playwright installation (adjust the local module/executable paths to already available equivalents). No dependency installation is part of this procedure.

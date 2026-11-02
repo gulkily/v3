@@ -1133,3 +1133,19 @@ Canonical checkpoints: [Step 1 snapshots](multi_redemption_invites_step1_solutio
 Alternatives: A/v1 0.85; B/v1 0.70; independent alternative whole-cycle projections, not additive
 Relationship: New cycle; related invitation-entry and approval-acceptance work, no split outcome
 Outcome: Planning only; no measured effort, independent rating, implementation approval or accepted outcome. Records uncommitted; deduplicate worktree copies by stable cycle ID.
+
+## Cycle v3/qdb_page_selection
+
+Date: 2026-11-01 UTC; standing P2 enrollment; reference R1; scope v1/A; baseline 75b5e30eb40b16f6297f69d83214b4e4926499b2.
+Status: Locally complete; maintainer acceptance pending. Earlier checkpoints retained below.
+Canonical checkpoint: [QDB bounded page selection](./qdb_page_selection/qdb_page_selection_step1_solution_assessment.md#study-checkpoint-and-approval).
+Projection: First recorded intake after exposure 0.80; Step 1 handoff 0.80 reaffirmed. All option estimates retained in the artifact, non-additive.
+Relationship: Separate follow-up to v3/application_capacity_study; no predecessor scope reset or duplicate accepted outcome. Host cycle reuses earlier shared-host delivery work rather than replacing it.
+Exposure: Codex single exposed rater; prior capacity campaign and current source inspection disclosed; pristine pre-inspection intake unavailable. Exact frozen hashes verified; debug/extended estimates enabled.
+Outcome: Await Approved Step 1 for this cycle. No implementation, host execution, commits, dependencies, measured labor, independent rating or accepted-count increment. Maintainer fit/acceptance pending.
+
+2026-11-02T01:21:17Z: QDB Step 1 Option A approved explicitly; [Step 2 requirements/checkpoint](./qdb_page_selection/qdb_page_selection_step2_feature_description.md#study-checkpoint-and-approval) drafted. Scope v1/A, original baseline, R1/P2 and exposed rater retained; Step 2 projected total 0.80 reaffirmed, frozen hashes verified. Await Approved Step 2; uncommitted planning only, no implementation or accepted outcome. Sibling cycles remain Step 1.
+
+2026-11-02T02:20:28Z: QDB Step 2 approved unchanged. [Step 3 plan/checkpoint](./qdb_page_selection/qdb_page_selection_step3_development_plan.md#execution-and-study-checkpoint) covers five stages through normal HTTP, upgrade recovery, capacity replay and shared-consumer verification. Scope v1/A, original baseline and R1/P2 retained; total 0.80 reaffirmed independently of stage-work estimates. Frozen hashes verified; single exposed rater. Await Approved Step 3; planning remains uncommitted, no implementation or accepted outcome.
+
+2026-11-02 UTC: Step 3 approved and implementation completed on feature/qdb-page-selection. [Step 4 closeout](./qdb_page_selection/qdb_page_selection_step4_implementation_summary.md#study-closeout): entry projection 0.80 reaffirmed, retrospective cycle scope 0.80; S1–S5 original/retrospective stage values retained separately. R1/P2, scope v1/A, baseline and exposed-rater history unchanged. Ordinary HTTP capacity, schema recovery, shared consumers and rendered themes verified locally; four smoke failures reproduced on baseline, PHP 8.3/FastCGI not claimed. No measured labor, independent rating or accepted-count increment; maintainer acceptance pending. Sibling cycles remain Step 1.

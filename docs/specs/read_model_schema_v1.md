@@ -23,7 +23,10 @@ behind this layer.
 Version 41 adds QDB numbered-page selection over existing thread/post fields,
 counting eligible rows and selecting IDs in one read snapshot before loading
 at most 25 bodies. PHP scalar predicates preserve quote-ID and legacy tag-list
-semantics. No stored columns change; prior-version startup rebuild is required.
+semantics; Search retains trimmed literal PHP stripos matching and activity/ID
+order. Latest/Top/Leetness preserve pin priority and creation/ID tie breaks,
+with score/distance ordering where applicable. No stored columns change;
+prior-version startup rebuild is required.
 
 When changing a core read-model table, column, index, constraint, or a query
 that requires one, increment `ReadModelMetadata::SCHEMA_VERSION` in the same

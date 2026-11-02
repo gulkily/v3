@@ -2,14 +2,18 @@
 
 Purpose: Choose the records needed by a view or job while preserving eligibility, ordering and complete-output contracts.
 
-Scenario: A live tag page selects at most 25 eligible thread IDs and loads only those bodies. Its ordering and navigation remain stable. QDB welcome streams eligibility/order metadata and hydrates at most eight distinct selected roots. QDB numbered pages still load every eligible body before selecting 25; their small visible result does not bound input work. Offline snapshot candidate selection now streams rows, retaining all pins plus recent threads, so a limit on recent threads is not a total-content limit.
+Scenario: A live tag page selects at most 25 eligible thread IDs and loads only those bodies. Its ordering and navigation remain stable. QDB welcome streams eligibility/order metadata and hydrates at most eight distinct selected roots. QDB Latest, Top, Leetness and Search count/select eligible IDs in a read snapshot and hydrate at most 25 roots. Search still scans transient bodies using the existing literal-match rule; bounded retention does not imply bounded scanning. Offline snapshot candidate selection now streams rows, retaining all pins plus recent threads, so a limit on recent threads is not a total-content limit.
 
 Measurement: Distinguish source rows examined, rows/bodies materialized or transferred, and results used. A SQL LIMIT bounds returned rows, not necessarily the database scan. A streaming loop can bound retained memory while still transferring unnecessary body bytes. Complete exports, RSS and import validation may require full traversal; caps would change their contract.
 
-Sources: [tag selection](../../src/ForumRewrite/ReadModel/TagPage.php), [shared thread reader](../../src/ForumRewrite/ReadModel/ThreadRepository.php), [QDB pagination](../../src/ForumRewrite/Qdb/QdbBoardPolicy.php), [offline selection](../../src/ForumRewrite/Offline/PublicOfflineSnapshotBuilder.php), [audit findings and proposed corrections](../plans/load_before_selection_audit/findings.txt).
+Sources: [tag selection](../../src/ForumRewrite/ReadModel/TagPage.php), [shared thread reader](../../src/ForumRewrite/ReadModel/ThreadRepository.php), [QDB numbered selection](../../src/ForumRewrite/ReadModel/QdbPage.php), [QDB pagination](../../src/ForumRewrite/Qdb/QdbBoardPolicy.php), [offline selection](../../src/ForumRewrite/Offline/PublicOfflineSnapshotBuilder.php), [audit findings and proposed corrections](../plans/load_before_selection_audit/findings.txt).
 
-Status: Describes current mixed behavior. QDB welcome and streaming offline candidate selection are implemented; remaining audit recommendations are tracked in the [fix checklist](../plans/selection_fixes_checklist.md); audit measurements are local synthetic evidence, not production capacity acceptance.
+Status: Describes current mixed behavior. QDB welcome, numbered-page selection and streaming offline candidate selection are implemented; remaining audit recommendations are tracked in the [fix checklist](../plans/selection_fixes_checklist.md); audit measurements are local synthetic evidence, not production capacity acceptance.
 
 Local capacity evidence: The [capacity study](../plans/application_capacity_study/capacity_report.txt) measures normal QDB latest/top/search at 10 MiB PHP for 1000 ordinary records and 72 MiB for 10000, with 25 returned IDs in both cases. Exact internal loaded counts remain uninstrumented; a small result is not a memory bound.
 
 *— Codex · 2026-11-01 UTC*
+
+QDB follow-up evidence: [HTTP acceptance](../plans/qdb_page_selection/capacity_report.txt) records 72 ordinary requests at 1000/10000/40000 records with exact IDs/bodies/counts and 2–4 MiB peak PHP allocation. The 40000 prepared model has canonical-body provenance but does not establish full rebuild capacity. Maximum-valid numbered views/search were about 82.1 MiB under 128 MiB; PHP 8.3/FastCGI remains a separate host check. Schema 41 startup recovery and shared-consumer checks are recorded in the [implementation summary](../plans/qdb_page_selection/qdb_page_selection_step4_implementation_summary.md).
+
+*— Codex · 2026-11-02 UTC*

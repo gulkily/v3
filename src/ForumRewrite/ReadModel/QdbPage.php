@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace ForumRewrite\ReadModel;
 
 use ForumRewrite\Qdb\QdbQuoteNumbers;
+use ForumRewrite\Qdb\QdbBoardPolicy;
 use PDO;
 
 /** Numbered QDB selection: count and choose IDs before hydrating bodies. */
 final class QdbPage
 {
-    public const SIZE = 25;
+    public const SIZE = QdbBoardPolicy::PAGE_SIZE;
 
     /** @return array{threads:array,count:int,page:int} */
     public static function page(PDO $pdo, string $section, int $page, string $term = ''): array

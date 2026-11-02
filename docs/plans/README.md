@@ -28,7 +28,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [QDB page selection](qdb_page_selection/qdb_page_selection_step3_development_plan.md) — approved bounded numbered-page implementation.
+- [QDB page selection](qdb_page_selection/qdb_page_selection_step3_development_plan.md) — bounded numbered-page selection; implementation and capacity evidence in its feature folder.
 
 - [Application capacity study](application_capacity_study/capacity_report.txt) — local capacity study complete; memory failures, recovery evidence and host/coverage limits.
 

@@ -132,6 +132,27 @@ final class QdbPageTest
         assertSame(1, QdbPage::page($pdo, 'search', 1, 'UniqueLargeNeedle')['count']);
     }
 
+    public function testSelectedPagesKeepViewerReactionState(): void
+    {
+        $pdo = $this->fixture();
+        $first = QdbPage::page($pdo, 'latest', 1)['threads'];
+        $second = QdbPage::page($pdo, 'latest', 2)['threads'];
+        $ids = [$first[0]['root_post_id'], $second[0]['root_post_id']];
+        $insert = $pdo->prepare('INSERT INTO viewer_tags VALUES(?,?,?,?)');
+        foreach ($ids as $id) {
+            $insert->execute(['thread-labels', $id, 'viewer-identity', 'upvote']);
+            $insert->execute(['post-reactions', $id, 'viewer-identity', 'flag']);
+        }
+        $anonymous = new QdbBoardPolicy('/unused', static fn () => null, null, $pdo);
+        assertSame(['voted'=>[], 'flagged'=>[]], $anonymous->viewerReactionState($first));
+        foreach ([0, 1] as $approved) {
+            $viewer = new QdbBoardPolicy('/unused', static fn () => ['identity_id'=>'viewer-identity', 'is_approved'=>$approved], null, $pdo);
+            foreach ([$first, $second] as $index => $threads) {
+                assertSame(['voted'=>[$ids[$index]=>true], 'flagged'=>[$ids[$index]=>true]], $viewer->viewerReactionState($threads));
+            }
+        }
+    }
+
     public function testPriorVersionStartupRebuildsBeforeLatest(): void
     {
         $database = tempnam(sys_get_temp_dir(), 'qdb-page-startup-');

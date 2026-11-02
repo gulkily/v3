@@ -63,3 +63,25 @@ Reuse decisions: Extend BoardPageController and QdbExperience; reuse QdbBoardPol
 - Notes: Initial checker failure and corrected presentation normalization retained in capacity_initial_failures.txt. Prepared 40000 provenance is explicit; full rebuild capacity and PHP 8.3/FastCGI remain unverified here. No application changes or new dependencies in S4; original scope/estimate unchanged.
 
 *— Codex · 2026-11-02 UTC*
+
+## Stage 5 — Shared consumers and closeout
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.20**
+
+- Changes: Added selected-page reaction checks for anonymous/unapproved/approved viewers; the existing policy now owns the single page-size constant used by QdbPage. Updated schema/concept evidence, plan navigation and this cycle's ledger. Removed only a trailing blank line from the S4 command archive (original retained in 6eb5456a); measurements unchanged.
+- Verification: Broad shared run: 216 tests, 212 passed, four failures reproduced individually on baseline 75b5e30. The pre-existing failures concern rebuild-diagnosis text, private-lobby text, expired-session approval text and a removed archive filename helper; retained in shared_test_results.txt and baseline_failure_results.txt. Targeted QdbPage/QuoteCardDisplayNumber/ReadModelViewerTagsRebuild: 30/30 passed, covering static listings/numeric aliases and viewer projection. Final page-size-alias/policy run: 11/11 passed under 128 MiB. No full-suite pass claimed.
+- Verification: [Browser results](browser_results.txt): 150 rendered cases across all 15 themes at phone/desktop widths, correct assets, no overflow and expected cards; no-JavaScript paging and three initial/loaded presentation states passed. Initial asset-misconfigured run was excluded and corrected before acceptance. Simulated presentation states are not live authenticated signing sessions; actual viewer-tag selection is covered by PHP tests. No markup or JS changed.
+- Verification: [HTTP upgrade](http_upgrade_results.txt): schema-40 stale-body fixture rebuilt through ordinary /latest to schema 41 with exact ordered IDs and canonical bodies; ordinary CLI rebuild/retry and Search page 2 then passed. PHP lint, plan links and whitespace checks passed. Runtime evidence is local PHP 8.1.2; PHP 8.3/FastCGI remains separate.
+- Notes: S4 commit 6eb5456a. S5 scope unchanged; retrospective work reflects shared/browser/recovery evidence and fixture corrections, not measured time. Dependency delta zero. No merge, push or deployment; sibling cycles untouched. Runtime templates, full-list consumers and static-publication semantics preserved.
+
+## Study closeout
+
+2026-11-02 UTC; scope v1/A, original baseline/R1/P2 and single exposed rater retained. Step 4 projection remained 0.80; no new independent estimate or measured labor claimed.
+
+**Retrospective cycle scope: 0.80**
+
+Locally complete with the documented pre-existing test failures and host boundary. Maintainer fit/acceptance pending; accepted-outcome count unchanged. Original S1–S5 scopes and estimates remain in Step 3; separate retrospective stage values above do not replace or sum into the cycle score.
+
+*— Codex · 2026-11-02 UTC*

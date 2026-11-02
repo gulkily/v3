@@ -9,7 +9,7 @@ use ForumRewrite\ReadModel\ViewerTagLookup;
 
 final class QdbBoardPolicy
 {
-    private const PAGE_SIZE = 25;
+    public const PAGE_SIZE = 25;
     private const PAGINATED_SECTIONS = ['latest', 'top', 'leetness', 'search'];
 
     /**
