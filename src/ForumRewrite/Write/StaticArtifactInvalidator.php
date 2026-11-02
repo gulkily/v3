@@ -29,6 +29,8 @@ final class StaticArtifactInvalidator
             '/index.html',
             '/instance.html',
             '/instance/index.html',
+            '/recent.html',
+            '/recent/index.html',
             '/activity.html',
             '/activity/index.html',
             '/users.html',
@@ -46,6 +48,8 @@ final class StaticArtifactInvalidator
             '/index.html',
             '/instance.html',
             '/instance/index.html',
+            '/recent.html',
+            '/recent/index.html',
             '/activity.html',
             '/activity/index.html',
             '/users.html',
@@ -60,6 +64,7 @@ final class StaticArtifactInvalidator
     public function invalidateProfile(string $profileSlug): void
     {
         $this->deletePaths([
+            '/recent.html', '/recent/index.html',
             '/users.html',
             '/users/index.html',
             '/profiles/' . $profileSlug . '.html',
@@ -72,6 +77,8 @@ final class StaticArtifactInvalidator
         $this->deletePaths([
             '/instance.html',
             '/instance/index.html',
+            '/recent.html',
+            '/recent/index.html',
             '/activity.html',
             '/activity/index.html',
             '/users.html',
@@ -90,6 +97,8 @@ final class StaticArtifactInvalidator
         $this->deletePaths([
             '/instance.html',
             '/instance/index.html',
+            '/recent.html',
+            '/recent/index.html',
             '/activity.html',
             '/activity/index.html',
             '/users.html',
@@ -112,7 +121,7 @@ final class StaticArtifactInvalidator
      */
     public function invalidateAccountHistory(string $username, array $profileSlugs): void
     {
-        $paths = ['/user/' . $username . '.html', '/user/' . $username . '/index.html',
+        $paths = ['/recent.html', '/recent/index.html', '/user/' . $username . '.html', '/user/' . $username . '/index.html',
             '/forte/user/' . $username . '.html', '/forte/user/' . $username . '/index.html',
             '/forte/activity.html', '/forte/activity/index.html'];
         foreach ($profileSlugs as $slug) {
@@ -153,7 +162,7 @@ final class StaticArtifactInvalidator
                 if ($legacy !== null && \ForumRewrite\Docs\DocsReleaseLocator::ownsLegacyPath($legacy['root'], realpath($root) . substr($path, strlen($root)))) continue;
                 $paths[] = substr($path, strlen($root));
             }
-            foreach (['threads', 'posts', 'profiles', 'users', 'tags', 'activity', 'instance', 'tools', 'about', 'docs', 'latest', 'top', 'leetness', 'qdb'] as $family) {
+            foreach (['threads', 'posts', 'profiles', 'users', 'tags', 'activity', 'recent', 'instance', 'tools', 'about', 'docs', 'latest', 'top', 'leetness', 'qdb'] as $family) {
                 if (!$includeDocumentation && $family === 'docs') continue;
                 $directory = $root . '/' . $family;
                 if ($legacy !== null && \ForumRewrite\Docs\DocsReleaseLocator::ownsLegacyPath($legacy['root'], realpath($root) . '/' . $family)) continue;
@@ -190,6 +199,8 @@ final class StaticArtifactInvalidator
             '/about/index.html',
             '/instance.html',
             '/instance/index.html',
+            '/recent.html',
+            '/recent/index.html',
             '/activity.html',
             '/activity/index.html',
             '/users.html',

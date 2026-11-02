@@ -360,7 +360,7 @@ final class TemplateRenderer
             return $items;
         }
 
-        $mainSections = ['board', 'profiles', 'messages', 'lobby'];
+        $mainSections = ['board', 'recent', 'profiles', 'messages', 'lobby'];
         foreach ($items as $index => $item) {
             // Users is main; a personal profile link (members-only mode) belongs in the account menu.
             $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
@@ -404,6 +404,7 @@ final class TemplateRenderer
             ? QdbPresentation::navigation()
             : [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/recent/', 'label' => 'Recent', 'section' => 'recent'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
                 ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
                 ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],

@@ -606,3 +606,7 @@ sharing a loaded row when a quote is also news. News More state reflects the com
 eligible news count. Tables and indexes are unchanged; prior-version startup rebuilds
 before this new core query executes. Full metadata examination/sorting is still
 required; this bounds PHP retention and body transfer, not SQLite scan work.
+
+## Version 41 — Recent public conversation
+
+Adds posts_recent_idx on posts(created_at DESC, post_id DESC), restricted to non-hidden, non-retracted posts. Recent uses bounded text projections and canonical post/date cursor keys; identity/bootstrap and expansion records remain excluded. No canonical format or table columns change. Normal startup rebuilds older read models before the Recent query; CLI rebuild recreates the index.

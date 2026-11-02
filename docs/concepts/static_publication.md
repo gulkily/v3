@@ -9,3 +9,5 @@ Tag artifacts contain only the first 25 matching threads. Later native page link
 
 Profile prebuilding is independently controlled by `FORUM_STATIC_PROFILE_PAGES_ENABLED` (default false). Disabled builds omit profile artifacts and the PHP frontend bypasses stale ones; shared refresh excludes copied profile artifacts and single-route generation skips them. Re-enabling requires a full build to restore artifacts. Identity/history data remains in the read model. See [profile delivery](../reference/profile_static_delivery.md).
 See [profile delivery](profile_delivery.md) for the runtime/static transition contract.
+
+Recent: The shared release includes recent.html; targeted builds normalize /recent to /recent/. Position queries bypass first-page artifacts. Post, reply, profile, identity, approval, account-history and broad presentation invalidation retire stale Recent output. Failed candidate rendering preserves the prior active release. [Coverage and release steps](../plans/recent_activity/recent_activity_step4_implementation_summary.md#release-and-recovery).

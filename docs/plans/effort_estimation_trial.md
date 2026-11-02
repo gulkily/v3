@@ -1115,3 +1115,21 @@ Canonical checkpoints: [Step 1 snapshots](multi_redemption_invites_step1_solutio
 Alternatives: A/v1 0.85; B/v1 0.70; independent alternative whole-cycle projections, not additive
 Relationship: New cycle; related invitation-entry and approval-acceptance work, no split outcome
 Outcome: Planning only; no measured effort, independent rating, implementation approval or accepted outcome. Records uncommitted; deduplicate worktree copies by stable cycle ID.
+
+<a id="cycle-v3recent_activity"></a>
+
+## v3/recent_activity — Reader-facing recent conversation
+
+Status: Step 1 proposed; standing P2 enrollment; no implementation authorization.
+Canonical checkpoints: [Step 1 intake and handoff](recent_activity/recent_activity_step1_solution_assessment.md#study-checkpoint-and-approval), 2026-10-30T20:30:16Z.
+Scope: v1/A; baseline 3a21fab67708c07ef77712790218e12a92c61bcd; R1/P2; dedicated public thread/reply feed with ordinary navigation, exact-post links, bounded native pagination and recovery.
+Projection: exposed intake 0.75; Step 1 handoff 0.75 reaffirmed. Pristine pre-inspection intake unavailable; prior catalog/source/status exposure disclosed. Inherited feedback-only 0.5 preserved separately. Option totals A 0.75 / B 0.95 / C 0.35 are alternatives, not additive.
+Rater: Codex, single exposed rater; frozen R1 hashes verified; debug and extended estimates enabled.
+Relationship: PF-20261021-F04; distinct from completed local Activity performance work. No second observation for worktree copies.
+Outcome: Await Approved Step 1; no measured labor, runtime acceptance, implementation, commits or accepted-outcome increment. Maintainer comfortable-fit judgment pending. This ledger bookkeeping is within the cycle's planning documentation boundary.
+
+2026-10-30T20:37:32Z — v3/recent_activity Step 2 handoff: user approved Step 1 Option A. [Feature description/checkpoint](recent_activity/recent_activity_step2_feature_description.md#approval-and-study-checkpoint) defines ordinary Recent navigation, individual public contributions, compact previews/exact-post links, bounded native pagination, visibility, static/live serving and recovery. Scope v1/A, original baseline/R1/P2, single exposed Codex rater and missing pristine intake retained; whole-cycle **0.75 reaffirmed**, frozen hashes reverified. Debug/extended mode enabled. No implementation, runtime acceptance, measured labor or accepted-count increment; planning remains uncommitted. Await Approved Step 2.
+
+2026-10-30T20:44:52Z — v3/recent_activity Step 3 handoff: Step 2 approved. [Development plan/checkpoint](recent_activity/recent_activity_step3_development_plan.md#execution-and-study-checkpoint) retains v1/A and original baseline/R1/P2; whole-cycle **0.85** revises preserved **0.75** for inspected attribution, index/startup and static-invalidation obligations, not changed outcome. Seven stage-work originals S1–S7: 0.10/0.18/0.15/0.10/0.15/0.15/0.05, non-additive; S6 owns shared acceptance. Single exposed Codex rater, hashes verified, missing pristine intake/inherited 0.5 retained. Await Approved Step 3; no implementation, runtime acceptance, measured labor, commits or accepted-count increment.
+
+2026-10-30 UTC — v3/recent_activity Step 4 local closeout: user approved Step 3 and requested deletion of mockups (deleted, never committed). [Canonical entry/stages/release/closeout](recent_activity/recent_activity_step4_implementation_summary.md#study-closeout); v1/A, original baseline/R1/P2, single exposed Codex rater retained. Entry projection 0.85 reaffirmed; separate retrospective whole-cycle scope assessment 0.85. Seven stages complete locally; original and retrospective stage work 0.10/0.18/0.15/0.10/0.15/0.15/0.05, non-additive. 213 affected checks: 208 initial passes, two progress assertions corrected and rerun successfully, three remaining failures reproduced at original baseline; additional high-traffic fallback passes. Browser 13 themes at two widths, no-JavaScript exact-post/paging/Back/reload/reconnect pass; 1k/10k/40k bounded-query evidence recorded. Schema 39 needs rebuild/republish. Zero dependencies; no measured labor, merge/push/deployment or accepted-count increment. Maintainer fit, physical-device and production acceptance pending; original 0.75, inherited 0.5 and missing pristine intake preserved. No separate worktree outcome.

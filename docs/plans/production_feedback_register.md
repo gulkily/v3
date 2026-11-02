@@ -15,7 +15,7 @@ Workflow and delivery evidence are independent. No entry is closed by this migra
 | [PF-20261021-F01](#pf-20261021-f01) | Reply focus | blocked | Local browser evidence; physical phone/deployment pending |
 | [PF-20261021-F02](#pf-20261021-f02) | Identity-ready notice | blocked | Local only; deployment pending |
 | [PF-20261021-F03](#pf-20261021-f03) | Text-entry macros | untriaged | Unverified |
-| [PF-20261021-F04](#pf-20261021-f04) | Simple recent activity | untriaged | Unverified |
+| [PF-20261021-F04](#pf-20261021-f04) | Simple recent activity | blocked | Local verification; deployment pending |
 | [PF-20261021-F05](#pf-20261021-f05) | QR appearance | untriaged | Unverified |
 | [PF-20261021-F06](#pf-20261021-f06) | LCD color choices | blocked | Local only; deployment pending |
 | [PF-20261021-F07](#pf-20261021-f07) | Default port fallback | untriaged | Unverified |
@@ -82,10 +82,10 @@ Recommended next scope: keep the standard inline composer ready after a confirme
 
 ## PF-20261021-F04 — Simple recent activity
 
-- **Alias:** `2026-10-21/F04` (Feature 04); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
-- **Request:** Provide a simple, nontechnical “most recent activity” page. **Reports:** [reply-20261021180354-1a31022c](https://zenmemes.com/posts/reply-20261021180354-1a31022c). **Inherited estimate:** 0.5 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
-- **Done when:** Ordinary readers can find recent content and open it without technical detail. **Next action:** Choose the intended audience and useful events before scoping a reader-facing Activity view.
-- **Recorded evidence/context:** Open — resolution not verified. **Triage context:** Existing Activity exposes record kinds and source metadata; choose audience and useful events before redesign. [Source](../../templates/pages/activity.php).
+- **Alias:** `2026-10-21/F04` (Feature 04); **workflow state:** blocked; **delivery evidence:** locally verified, deployment and production acceptance pending. Updated 2026-10-30.
+- **Request:** Provide a simple, nontechnical “most recent activity” page. **Reports:** [reply-20261021180354-1a31022c](https://zenmemes.com/posts/reply-20261021180354-1a31022c). **Inherited estimate:** 0.5 (October 21 feedback-only). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
+- **Delivered locally:** Recent navigation, individual thread/reply previews, exact-post links and bounded native paging. [Approved cycle and verification](recent_activity/recent_activity_step4_implementation_summary.md).
+- **Next action:** Deploy the code, rebuild/republish the configured instance and verify ordinary navigation on the reported phone/environment. Local browser tests cover 13 themes at phone/desktop widths, keyboard/no-JavaScript and reconnect recovery. No production claim; the separate Activity latency issue remains separate.
 
 <a id="pf-20261021-f05"></a>
 
