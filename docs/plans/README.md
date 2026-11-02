@@ -61,6 +61,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [UI first post identity](ui_first_post_identity/)
 - [UI messages](ui_messages/)
 - [UI tools launcher](ui_tools_launcher/)
+- [Compose keyboard fit](compose_keyboard_fit/)
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
