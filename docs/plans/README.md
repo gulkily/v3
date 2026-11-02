@@ -362,3 +362,5 @@ and repair its navigation and affected references. See the
 - [QDB build-time reduction](./qdb_build_time/qdb_build_time_step1_solution_assessment.md) — combined profile publication and history optimization, locally implemented and measured; production replay pending.
 
 - [Multi-redemption invites](multi_redemption_invites/multi_redemption_invites_step3_development_plan.md): backend-only scope v2; six stages implemented locally; verification and release limitations in the [summary](multi_redemption_invites/multi_redemption_invites_step4_implementation_summary.md).
+
+- [Invitation username selection](restore_invitation_prompt/restore_invitation_prompt_step1_solution_assessment.md) — inline naming and same-key guest recovery.
