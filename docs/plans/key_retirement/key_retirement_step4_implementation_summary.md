@@ -3,7 +3,7 @@
 Debug mode: enabled
 Effort study: railspike-effort / v3/key_retirement — [ledger](../effort_estimation_trial.md#cycle-v3key_retirement)
 Extended estimates: enabled
-Status: User selected rename-disabled public-instance direction; Stage 1 reconciliation pending; Stages 2–8 not started
+Status: Step 3 v3/A approved; Stage 1 contract complete; Stage 2 next
 
 **Cycle estimate: 1.00**
 
@@ -37,5 +37,25 @@ The approved Stage 1 gate found a concrete gap in accepted account authority. [P
 Direction: “let's do that for now, we'll just keep the rename feature disabled on public instances for now”; followed by “please add a warning to the feature flag for rename.” This supersedes pursuing the broader account-association redesign now. Keep the prior reproduction and proposals as history. The flag already defaults off; instance/environment overrides and historical/imported renames must not be assumed absent. No public-instance configuration was changed or verified remotely.
 
 Immediate authorized change: Add the warning to the existing always-visible Username changes flag description: renamed keys retain approval and can appear under another account's username; turning the flag off does not undo saved names or approvals. This is a separately requested copy change, not completion of Stage 1 or implementation of retirement. Continue reconciliation of the approved retirement plan around the selected disabled-rename boundary; do not treat the warning alone as an authorization check.
+
+*— Codex · 2026-11-01 UTC*
+
+
+## Planning reconciliation — 2026-11-01
+
+User asked whether Step 2 had been revised; only appended direction existed then. Main Step 2 and Step 3 requirements are now reconciled with the disabled-rename approach. User explicitly approved Step 2 v3/A. Revised Step 3 awaits approval before dependent implementation. Member actor/target must be unrenamed approved keys sharing unchanged bootstrap names with the rename flag off; operators retain their path; replacement counting excludes verified historical/imported/renamed-back keys. Keep all earlier characterization and scope history. No retirement runtime changes.
+
+*— Codex · 2026-11-01 UTC*
+
+
+## Revised entry and Stage 1 completion — 2026-11-01
+
+Approval: User said “approved step 3” for v3/A. Revised planning commit 3aab4e975 precedes resumed implementation. Whole-cycle 1.00 reaffirmed; original estimates/history preserved, S1 revised whole-stage 0.20 retained; same original baseline/R1/P2 and exposed single rater.
+
+**Stage 1 retrospective stage work: 0.20**
+
+- Changes: Resolved authority via the explicitly approved flag-off/unchanged-bootstrap/no-verified-rename boundary, with independent operator authority and unrenamed replacement protection. [Record/acceptance contract](../../specs/key_retirement_record_v1.md) defines exact bytes, trusted acceptance/replay, retained private transfers and serialization. No broad account-association migration. Protected-path inventory remains the approved plan's auth, sessions, direct/prepared writes, approvals/invitations, operators and messaging consumers; each is verified in its implementing stage.
+- Verification: Existing 35 focused gate/baseline checks from 0976ab96a establish current primitives and the rename failure case; source inspection confirms retained approval receipts, private transfer ownership, normal write serialization and signature verification. Contract paths and whitespace checked. Future retirement behavior is not claimed tested before implementation.
+- Notes: Stage 1 policy gate resolved by user's revised approval. Existing trusted private transfers are retained rather than assigned invented historical dates. S2–S8 acceptance remains mandatory before enabling the writer. No dependencies, runtime retirement route, production change or measured labor.
 
 *— Codex · 2026-11-01 UTC*
