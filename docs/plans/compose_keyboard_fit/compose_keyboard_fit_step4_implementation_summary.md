@@ -65,3 +65,30 @@ Stage identities and original stage-work estimates copied from Step 3 (not new r
 - Estimate details: original scope the phone rules and a theme loop; uncertainty low for layout. Retrospective 0.10 rather than 0.08 because the pre-existing network-idle failure forced the `--phone-fit-only` switch and a baseline reproduction. No scope change.
 
 *— Claude · 2026-11-02 UTC · Model: claude-fable-5-1*
+
+## Stage 3 - Acceptance, records and closeout
+
+**Original estimate: 0.05**
+**Retrospective stage-work assessment: 0.05**
+
+- Changes:
+  - `docs/concepts/shared_composer.md`: new entry (purpose, scenario, sources); all six source paths verified to exist.
+  - `docs/plans/ui_copy_audit_checklist.md`: entry recording no copy change and the pending device check.
+  - `docs/plans/effort_estimation_trial.md`: cycle closeout; `docs/plans/README.md` entry was added in the planning commit.
+- Verification:
+  - Full PHP suite `php tests/run.php` (what `./v3 test` runs): 1768 run, 1760 passed, 8 failed. Six are marked long-standing by the runner (approval seed cache, two private lobby/forte surfaces, archive filename, platform docs static release, read-model builder timing). The other two (reaction record format parity, read-model schema statements) fail identically on a clean `main` worktree at `2a7d356f8`. None touch the composer; recorded, not chased.
+  - Browser tests run for this cycle, Chromium only: `composers.mjs` pass, `compose_disclosure.mjs` pass, `reply_compose_focus.mjs` pass, `compose_layout_stability.mjs --phone-fit-only` 39 of 39 pass. `board_compose_focus.mjs` and the full `compose_layout_stability.mjs` time out on `networkidle` on the baseline too.
+  - Device replay (Step 2 known user): **pending**. The maintainer's iPhone SE in Firefox and Safari, keyboard open, one-line and 30-line draft, Post visible and a thread created; error path keeps the draft with Post visible. No emulator evidence is substituted for it.
+- Notes:
+  - Deployment is outside this cycle; nothing beyond the normal deploy is needed. No schema, API, dependency or navigation-icon change.
+- Estimate details: original scope records and a suite run; uncertainty low apart from the device result. Retrospective matches the original.
+
+## Closeout and study outcome
+
+- Delivered scope: Option A at scope v1.1. Full composer order body, Post row, Title, tags and event; phone body at the compact height with no reserved picker footprint; tests, concept entry and records. Reply and compact composers unchanged (byte-identical renders).
+- Revisions: starting `2a7d356f8` on `main`; branch `feat/compose-keyboard-fit`; planning `6e043cb6e`; Stage 1 `439000c06`; Stage 2 `e27587b9f`; Stage 3 is this commit. Three planned, three completed stages; no splits, no corrective work beyond the test switch noted in Stage 2.
+- Dependency delta: zero.
+- Omissions and limits: real-phone acceptance pending; Chromium only (no WebKit or Firefox build here); an attached image preview still sits between body and Post (accepted in Step 2); theme chrome overflow and keyboard docking remain separate requests.
+- Effort study: **0.20 original projection, reaffirmed at every checkpoint; 0.20 retrospective scope assessment** (separately judged, not the stage sum). Stage-work originals 0.07 / 0.08 / 0.05, retrospectives 0.07 / 0.10 / 0.05. Claude (claude-fable-5-1), single exposed rater; no measured labor. Maintainer comfortable-fit judgment and study acceptance pending; accepted-outcome count unchanged. Merge not implied.
+
+*— Claude · 2026-11-02 UTC · Model: claude-fable-5-1*
