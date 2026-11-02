@@ -44,11 +44,18 @@ final class BoardPageController
         $sort = BoardViewOptions::normalizeSort($sort);
         $viewOptions = BoardViewOptions::viewOptions($view, $sort);
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
-        $threads = $this->fetchBoardThreads($view, $sort, $qdbPolicy);
-        $qdbQuoteCount = $qdbPolicy?->quoteCount($threads) ?? 0;
-        $qdbPresentation = $qdbPolicy?->paginate($threads, $activeSection, $page);
-        $threads = $qdbPresentation['threads'] ?? $threads;
-        $pagination = $qdbPresentation['pagination'] ?? null;
+        if ($qdbPolicy !== null && $view === 'all' && $activeSection === 'latest' && $sort === 'newest') {
+            $selected = \ForumRewrite\ReadModel\QdbPage::page($this->routeServices->pdo(), $activeSection, $page);
+            $threads = $selected['threads'];
+            $qdbQuoteCount = $selected['count'];
+            $pagination = $qdbPolicy->pagination($selected['count'], $selected['page'], '/' . $activeSection);
+        } else {
+            $threads = $this->fetchBoardThreads($view, $sort, $qdbPolicy);
+            $qdbQuoteCount = $qdbPolicy?->quoteCount($threads) ?? 0;
+            $qdbPresentation = $qdbPolicy?->paginate($threads, $activeSection, $page);
+            $threads = $qdbPresentation['threads'] ?? $threads;
+            $pagination = $qdbPresentation['pagination'] ?? null;
+        }
         $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['voted' => [], 'flagged' => []];
         $voteCaptionPair = $qdbPolicy?->selectCaptionPair();
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];

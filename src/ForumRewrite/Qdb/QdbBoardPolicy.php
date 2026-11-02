@@ -62,6 +62,12 @@ final class QdbBoardPolicy
         ];
     }
 
+    public function pagination(int $count, int $page, string $basePath): ?array
+    {
+        $totalPages = max(1, (int) ceil($count / self::PAGE_SIZE));
+        return BoardViewOptions::pagination($basePath, max(1, min($page, $totalPages)), $totalPages);
+    }
+
     /**
      * @param array<int, array<string, mixed>> $threads
      * @return array{voted: array<string, true>, flagged: array<string, true>}
