@@ -36,4 +36,6 @@ Fixed within the cycle (user: "go ahead").
 - Threads use `partials/thread_row.php`.
 - The one-off `.users-tabs` / `.user-rows` / `.person-head__main` CSS is gone; only page layout remains.
 
+One piece survived this fix: the search box and its sort `<select>` (`.users-tools`), the only `<select>` sort on the classic site. The user noticed on 2026-11-01 ("did we reinvent some components for this one?") and asked for the board sort menu standard; the sort now uses `partials/board_sort.php`, extracted from the board toolbar, inside a shared `.board-toolbar` (see the checklist follow-up).
+
 Verification: `users_profile`, `account_states`, `profile_public_details`, `access_history` and `board_compose_focus` pass. The theme × site matrix (59 combinations, 390px and 1280px) found no automatic problems, and the contact sheets now match the board and Account. The person page, Users and Waiting pages were checked at phone size. See the [checklist entry](implementation_checklist.md#cycle-7-ui_profile_users).

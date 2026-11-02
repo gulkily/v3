@@ -118,6 +118,7 @@ was repaired on the same branch (1340fa3be); Chicago is still open.
       sort was a native select beside the board's existing sort menu. Members now use the board's
       thread rows, the tabs and search share the board toolbar, and the sort is gone; see the cycle-7
       entry in `ui_redesign/implementation_checklist.md`. Both themes pick the components up unchanged.
+      Follow-up 2026-11-01: the user asked for the sort back in the board's standard form; Users now renders `partials/board_sort.php` (Activity, Last active, Name) between the tabs and the search, and each row's meta line ends with the member's last post date. See the cycle-7 follow-up in `ui_redesign/implementation_checklist.md`.
 
 ## Cross-cutting
 

@@ -177,6 +177,7 @@ $testFiles = [
     __DIR__ . '/PrivateMessageApiRoutingTest.php',
     __DIR__ . '/PrivateMessageFeatureFlagTest.php',
     __DIR__ . '/PrivateMessageComposerTest.php',
+    __DIR__ . '/UsersDirectorySortTest.php',
     __DIR__ . '/PrivateMessageEnvelopeTest.php',
     __DIR__ . '/PrivateMessageHistoryCryptoTest.php',
     __DIR__ . '/PrivateMessageHistorySyncTest.php',
