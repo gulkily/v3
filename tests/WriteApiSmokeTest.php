@@ -4127,6 +4127,7 @@ NODE;
         $before = $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . $author['thread_id']);
         assertStringContains('zzprosemarker', $before);
         assertStringContains('zzprosemarker', $this->readModelFileBytes($databasePath));
+        assertStringContains("\nRetracted: no\n", $before);
 
         mkdir($artifactRoot . '/tags', 0777, true);
         mkdir($artifactRoot . '/offline', 0777, true);
@@ -4146,6 +4147,10 @@ NODE;
         $finalized = json_decode($this->renderMethod($application, 'POST', '/api/create_prepared_retraction'), true, 512, JSON_THROW_ON_ERROR);
         $_POST = [];
         assertSame('complete', $finalized['retraction_status']);
+        assertStringContains("\nRetracted: yes\n", $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . $author['thread_id']));
+        $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=' . $author['thread_id']);
+        assertStringContains("\nRetracted: yes\n", $threadApi);
+        assertStringContains('[' . $author['thread_id'] . '] (retracted)', $threadApi);
 
         foreach ($routes as $route) {
             $output = $this->renderMethod($application, 'GET', $route);
