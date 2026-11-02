@@ -92,12 +92,14 @@ final class ApiTextController
             'Reply-Count: ' . $thread['reply_count'],
             'Score-Total: ' . $thread['score_total'],
             'Labels: ' . implode(' ', $thread['thread_labels']),
+            'Retracted: ' . self::retractedValue($thread),
             '',
         ];
 
         foreach (($this->fetchThreadPosts)($threadId) as $post) {
             if (str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX)) { $lines[] = 'Image-Bytes: separate image backup required'; }
-            $lines[] = '[' . $post['post_id'] . '] ' . trim(str_replace("\n", ' ', $post['body']));
+            $marker = ($post['retracted_at'] ?? null) !== null ? '(retracted) ' : '';
+            $lines[] = '[' . $post['post_id'] . '] ' . $marker . trim(str_replace("\n", ' ', $post['body']));
         }
 
         $this->routeServices->sendText(implode("\n", $lines) . "\n", 200);
@@ -113,9 +115,20 @@ final class ApiTextController
 
         $imageNote = str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX) ? "Image-Bytes: separate image backup required\n" : '';
         $this->routeServices->sendText(
-            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n\n{$post['body']}",
+            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\nRetracted: " . self::retractedValue($post) . "\n\n{$post['body']}",
             200
         );
+    }
+
+    /**
+     * Agents confirm a retraction from this header instead of inferring it from an empty
+     * subject or body. Always present so one check answers both ways.
+     *
+     * @param array<string, mixed> $row
+     */
+    private static function retractedValue(array $row): string
+    {
+        return ($row['retracted_at'] ?? null) !== null ? 'yes' : 'no';
     }
 
     public function getProfile(string $slug): void

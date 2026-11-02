@@ -56,6 +56,10 @@ final class LlmsTxtRendererTest
         assertStringContains('(/api/version)', $text);
         assertStringContains('(/api/)', $text);
         assertStringContains('(' . LlmsTxtRenderer::REFERENCE_PATH . ')', $text);
+        assertStringContains(LlmsTxtRenderer::REFERENCE_RAW_PATH, $text);
+        assertStringContains('POST /api/prepare_retraction with post_id and author_identity_id', $text);
+        assertStringContains('cleanup_status: pending', $text);
+        assertStringContains('Retracted: yes', $text);
     }
 
     public function testListedRoutesComeFromTheCatalog(): void
