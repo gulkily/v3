@@ -1123,6 +1123,8 @@ Authorization: Step 1 requested by the user; awaiting Approved Step 1. No implem
 
 2026-11-01 UTC correction after closeout: preview now lists accepted delete receipts whose post has no file left in history; [follow-up record](./history_purge/history_purge_step4_implementation_summary.md#follow-up-after-closeout--receipts-without-history-in-preview-2026-11-01). 10/10 focused tests. Scores unchanged, acceptance still pending.
 
+2026-11-01 UTC merge onto `main` (7272877f): no conflicts in code; `scripts/purge_history.php` now resolves its path defaults through `DeploymentSettings` to satisfy the deployment-settings rule that landed after the baseline; [follow-up record](./history_purge/history_purge_step4_implementation_summary.md#follow-up-after-merge--deployment-settings-2026-11-01). 17/17 focused tests. Scores unchanged, acceptance still pending.
+
 ## Cycle v3/qdb_build_time
 
 Current status: Eight stages locally implemented and verified; production replay and maintainer fit/acceptance pending.

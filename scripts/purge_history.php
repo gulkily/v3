@@ -8,6 +8,7 @@ use ForumRewrite\PresentationPathResolver;
 use ForumRewrite\Retraction\HistoryPurge;
 use ForumRewrite\Retraction\HistoryPurgePlanner;
 use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Support\DeploymentSettings;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 $projectRoot = dirname(__DIR__);
@@ -60,9 +61,9 @@ try {
         }
         $options[$m[1]] = $m[2];
     }
-    $repositoryRoot = rtrim($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)), '/');
-    $databasePath = $options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: $projectRoot . '/state/cache/post_index.sqlite3');
-    $staticHtmlRoot = $options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active()));
+    $repositoryRoot = rtrim($options['repository-root'] ?? (DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)), '/');
+    $databasePath = $options['database-path'] ?? (DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $projectRoot . '/state/cache/post_index.sqlite3');
+    $staticHtmlRoot = $options['static-html-root'] ?? (DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active()));
     if (!is_dir($repositoryRoot)) {
         throw new InvalidArgumentException('Repository root does not exist: ' . $repositoryRoot);
     }

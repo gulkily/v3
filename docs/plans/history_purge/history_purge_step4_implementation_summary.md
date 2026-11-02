@@ -214,4 +214,11 @@ Step 3 explicitly approved ("approved step 3"). Branch `feat/history-purge` from
 - Verification: `php tests/run.php HistoryPurgePlannerTest PurgeHistoryCommandTest HistoryPurgeTest`: 10 run, 10 passed; the planner test adds a receipt for a never-committed post and asserts it is counted and listed without adding targets. The user's local repository, which they had purged twice by then, previews as 2 receipts, both listed as having no post file left, 0 paths.
 - Estimate: no change; correction to Stage 6 output.
 
+## Follow-up after merge — deployment settings (2026-11-01)
+
+- Found by: merging `feat/history-purge` onto the current `main`, which since the Step 4 baseline gained `DeploymentSettings` (cycle `v3/deployment_config`) and `DeploymentSettingsTest::testNoCodeReadsDeploymentSettingsDirectlyFromTheEnvironment`, a rule that no script reads `FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH` or `FORUM_STATIC_HTML_ROOT` with `getenv()`.
+- Change: `scripts/purge_history.php` resolves its three path defaults through `DeploymentSettings::value()`, like `scripts/rebuild_read_model.php`. Precedence is unchanged for the environment (environment first, then the checkout's private file, then the bootstrapped default), so the command now also honors the private file. Explicit `--repository-root=`, `--database-path=` and `--static-html-root=` options still win.
+- Verification: `php tests/run.php DeploymentSettingsTest PurgeHistoryCommandTest HistoryPurgeTest`: 17 run, 17 passed. The merged `main` full suite otherwise shows only failures that predate the merge: five long-standing ones (three `LocalAppSmokeTest`, `PlatformDocsStaticTest`, `ReadModelBuilderTimingTest`) and three that fail identically on the other checkout's `main` before the merge (`ApprovalSeedCommandTest::testSeedRetiresCachedPagesAndReleaseBeforeServingUpdatedState`, `ReactionRecordFormatParityTest`, `ReadModelSchemaTest`).
+- Estimate: no change; integration correction after merge.
+
 *— Claude · 2026-11-01 UTC · Model: claude-fable-5-1*
