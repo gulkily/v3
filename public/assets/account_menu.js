@@ -14,6 +14,21 @@
     });
   });
 
+  // The sort menu opens under its trigger's left edge. When the trigger sits
+  // near the right edge of a narrow screen (the Users toolbar on a phone), that
+  // would push the menu past the viewport, so align it to the trigger's right
+  // edge instead. Decided when the menu opens, so the closed page is unchanged.
+  document.addEventListener("toggle", function (event) {
+    var details = event.target;
+    if (!details.matches || !details.matches("[data-role='board-sort']")) return;
+    var menu = details.querySelector(".board-sort__menu");
+    if (!menu) return;
+    menu.classList.remove("board-sort__menu--end");
+    if (details.open && menu.getBoundingClientRect().right > document.documentElement.clientWidth) {
+      menu.classList.add("board-sort__menu--end");
+    }
+  }, true);
+
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape" || event.defaultPrevented) return;
     menus().forEach(function (menu) {

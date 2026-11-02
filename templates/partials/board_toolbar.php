@@ -10,13 +10,9 @@ $isCurrent = static fn (array $option): bool => !$tagsCurrent && $option['is_act
     <a class="nav-link<?= $isCurrent($option) ? ' is-active' : '' ?>" href="<?= $e($option['href']) ?>" data-nav-key="<?= $e($option['key']) ?>"<?= $isCurrent($option) ? ' aria-current="page"' : '' ?>><?php if ($option['key'] === 'liked'): ?><span class="like-mark" aria-hidden="true"></span><?php endif; ?><?= $e($option['label']) ?></a>
 <?php endforeach; ?>
   </nav>
-  <details class="board-sort" data-role="board-sort">
-    <summary class="nav-link"><span class="visually-hidden">Sort by </span><?= $e($sortLabel) ?></summary>
-    <div class="board-sort__menu">
-<?php foreach ($sortOptions as $option): ?>
-      <a class="nav-link<?= $isCurrent($option) ? ' is-active' : '' ?>" href="<?= $e($option['href']) ?>" data-nav-key="<?= $e($option['key']) ?>"<?= $isCurrent($option) ? ' aria-current="true"' : '' ?>><?= $e($option['label']) ?></a>
-<?php endforeach; ?>
-    </div>
-  </details>
+<?= $indent($partial('partials/board_sort.php', [
+    'sortOptions' => array_map(static fn (array $option): array => ['is_active' => $isCurrent($option)] + $option, $sortOptions),
+    'sortLabel' => $sortLabel,
+]), 1) ?>
   <a class="nav-link board-tags-link<?= $tagsCurrent ? ' is-active' : '' ?>" href="/tags/"<?= $tagsCurrent ? ' aria-current="page"' : '' ?>>Tags</a>
 </div>

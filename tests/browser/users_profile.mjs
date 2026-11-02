@@ -54,6 +54,30 @@ try {
   await page.getByRole('searchbox', { name: 'Search members' }).fill('nobody-by-this-name');
   await page.getByText('No members match.').waitFor();
   await page.getByRole('searchbox', { name: 'Search members' }).fill('');
+  // Sort is the board's "Sort by ▾" menu: Name reloads the page in alphabetical order, Last active by the row dates, Activity restores the directory's own order.
+  const sortMenu = page.locator('.users-page .board-toolbar details.board-sort');
+  assert.equal(await sortMenu.locator('summary').textContent(), 'Sort by Activity');
+  await sortMenu.locator('summary').click();
+  await sortMenu.getByRole('link', { name: 'Name' }).click();
+  await page.waitForURL(/\/users\/\?sort=name$/);
+  assert.equal(await sortMenu.locator('summary').textContent(), 'Sort by Name');
+  assert.equal(await sortMenu.locator('a[aria-current="true"]').textContent(), 'Name');
+  const names = await rows.evaluateAll(items => items.map(item => item.dataset.userName));
+  assert.ok(names.length >= 2, 'the sorted page lists the members');
+  assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b)));
+  await sortMenu.locator('summary').click();
+  await sortMenu.getByRole('link', { name: 'Last active' }).click();
+  await page.waitForURL(/\/users\/\?sort=active$/);
+  assert.equal(await sortMenu.locator('summary').textContent(), 'Sort by Last active');
+  const actives = await rows.evaluateAll(items => items.map(item => item.dataset.userActive));
+  const dated = actives.filter(Boolean);
+  assert.ok(dated.length >= 1, 'at least one member has posted');
+  assert.deepEqual(actives, [...dated].sort().reverse().concat(actives.filter(value => !value)));
+  assert.match(await page.locator('[data-users-list] > .thread-row[data-user-active]:not([data-user-active=""]) .thread-row__meta').first().textContent(), new RegExp(' · Active ' + new Date(dated[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) + '$'));
+  await sortMenu.locator('summary').click();
+  await sortMenu.getByRole('link', { name: 'Activity' }).click();
+  await page.waitForURL(/\/users\/\?sort=activity$/);
+  assert.equal(await sortMenu.locator('summary').textContent(), 'Sort by Activity');
   assert.equal(await rows.count(), before);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
 
@@ -111,7 +135,13 @@ try {
   await plainPage.goto(base + '/users/');
   assert.equal(await plainPage.getByRole('searchbox', { name: 'Search members' }).isVisible(), false);
   assert.ok(await plainPage.locator('[data-users-list] > .thread-row').count() >= 2);
+  // The sort menu still works without JavaScript: its options are links.
+  await plainPage.locator('.users-page details.board-sort summary').click();
+  await plainPage.locator('.users-page details.board-sort').getByRole('link', { name: 'Name' }).click();
+  await plainPage.waitForURL(/\/users\/\?sort=name$/);
+  const plainNames = await plainPage.locator('[data-users-list] > .thread-row').evaluateAll(items => items.map(item => item.dataset.userName));
+  assert.deepEqual(plainNames, [...plainNames].sort((a, b) => a.localeCompare(b)));
   await plain.close();
-  console.log('PASS users and profiles: search, own page, Replies, approve from Waiting, Message opens the conversation, Waiting for approved members only, no JavaScript');
+  console.log('PASS users and profiles: search, sort menu (Name, Last active, Activity), own page, Replies, approve from Waiting, Message opens the conversation, Waiting for approved members only, no JavaScript');
 } catch (error) { console.error(logs.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }

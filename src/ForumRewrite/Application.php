@@ -824,7 +824,7 @@ final class Application
         }
 
         if ($path === '/users/' || $path === '/users') {
-            $this->sendHtml($this->profilePageController()->directory(), 200);
+            $this->sendHtml($this->profilePageController()->directory($query), 200);
             return;
         }
 

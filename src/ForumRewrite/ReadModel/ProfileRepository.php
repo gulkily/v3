@@ -90,6 +90,35 @@ final class ProfileRepository
     }
 
     /**
+     * First and latest visible post per approved username, keyed by username_token:
+     * the "Joined" and "Active" dates of the directories (/users/ and /forte/users).
+     *
+     * @return array<string, array{earliest: string, latest: string}>
+     */
+    public static function activityBoundsByUsernameToken(PDO $pdo): array
+    {
+        $stmt = $pdo->query(
+            'SELECT profiles.username_token,
+                    MIN(posts.created_at) AS earliest_activity_at,
+                    MAX(posts.created_at) AS latest_activity_at
+             FROM posts
+             JOIN profiles ON profiles.identity_id = posts.author_identity_id
+             WHERE profiles.is_approved = 1 AND posts.is_hidden = 0
+             GROUP BY profiles.username_token'
+        );
+
+        $boundsByToken = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $boundsByToken[(string) $row['username_token']] = [
+                'earliest' => (string) $row['earliest_activity_at'],
+                'latest' => (string) $row['latest_activity_at'],
+            ];
+        }
+
+        return $boundsByToken;
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public static function pendingDirectoryProfiles(PDO $pdo, bool $includeProfileNameChanges = false): array
