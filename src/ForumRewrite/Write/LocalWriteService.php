@@ -1320,23 +1320,25 @@ class LocalWriteService
         });
     }
 
-    private function assertUsernameChangesEnabled(): void
+    private function assertUsernameChangeAllowed(string $identityId, string $name): void
     {
-        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED)) {
-            throw new RuntimeException('Username changes are disabled.');
-        }
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED)) return;
+        $identity = $this->canonicalRepository->loadIdentity(CanonicalPathResolver::identity(substr($identityId, 8)));
+        $history = \ForumRewrite\ReadModel\ProfileNames::history($this->repositoryRoot);
+        if (strtolower($identity->username) === 'guest' && !isset($history[$identityId]) && $name !== 'guest') return;
+        throw new RuntimeException('Username changes are disabled. Only an unnamed guest may choose an initial name.');
     }
 
     /** @param array<string, mixed> $input @return array<string, mixed> */
     public function prepareProfileName(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {
-            $this->assertUsernameChangesEnabled();
             $this->assertWritableRepository();
             $identity = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
             $this->publicKeyForIdentity($identity);
             $name = strtolower(trim((string) ($input['username'] ?? '')));
             if (preg_match('/^[a-z0-9._-]{1,80}$/D', $name) !== 1) throw new RuntimeException('Invalid profile name.');
+            $this->assertUsernameChangeAllowed($identity, $name);
             $id = 'profile-name-' . bin2hex(random_bytes(16));
             $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$identity] ?? null;
             $createdAt = gmdate('Y-m-d\TH:i:s\Z', max(time(), $latest === null ? 0 : strtotime($latest['Created-At']) + 1));
@@ -1353,7 +1355,6 @@ class LocalWriteService
     public function finalizePreparedProfileName(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {
-            $this->assertUsernameChangesEnabled();
             $this->assertWritableRepository();
             $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $prepared = $this->loadPreparedPost($token);
@@ -1373,6 +1374,7 @@ class LocalWriteService
             if (!$this->signatureVerifier->verifyDetached($key, $contents, $signature, $fingerprint)['ok']) {
                 throw new RuntimeException('Profile name signature verification failed.');
             }
+            $this->assertUsernameChangeAllowed($identity, $record['Username']);
             $latest = \ForumRewrite\ReadModel\ProfileNames::latest($this->repositoryRoot)[$identity] ?? null;
             if ($latest !== null && $record['Created-At'] <= $latest['Created-At']) {
                 throw new RuntimeException('A newer username was saved. Retry to prepare a fresh name change.');

@@ -198,6 +198,35 @@ final class WriteApiSmokeTest
         }
     }
 
+    public function testGuestInitialNameWorksOnceWithRenamingDisabled(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('guest');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(false));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $sign = fn ($prepared) => $prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            $refuse = function ($action) {
+                try { $action(); throw new LogicException('Expected disabled rename.'); }
+                catch (RuntimeException $e) { assertStringContains('Username changes are disabled', $e->getMessage()); }
+            };
+            $refuse(fn () => $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'guest']));
+            $first = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'initial-reader']));
+            $competing = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'competing']));
+            assertSame('initial-reader', $writer->finalizePreparedProfileName($first)['username']);
+            $refuse(fn () => $writer->finalizePreparedProfileName($competing));
+            $refuse(fn () => $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'second']));
+            $enabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $enabled->finalizePreparedProfileName($sign($enabled->prepareProfileName(['author_identity_id' => $identity, 'username' => 'guest'])));
+            $refuse(fn () => $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'bypass']));
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame('guest', ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $identity)['username']);
+        } finally { $this->deleteTree($key['home']); }
+    }
+
     private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator
     {
         return new FeatureFlagEvaluator(new FeatureFlagRegistry(), [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]);
