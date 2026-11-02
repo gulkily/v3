@@ -92,3 +92,11 @@ Stage identities and original stage-work estimates copied from Step 3 (not new r
 - Effort study: **0.20 original projection, reaffirmed at every checkpoint; 0.20 retrospective scope assessment** (separately judged, not the stage sum). Stage-work originals 0.07 / 0.08 / 0.05, retrospectives 0.07 / 0.10 / 0.05. Claude (claude-fable-5-1), single exposed rater; no measured labor. Maintainer comfortable-fit judgment and study acceptance pending; accepted-outcome count unchanged. Merge not implied.
 
 *— Claude · 2026-11-02 UTC · Model: claude-fable-5-1*
+
+## Maintainer merge acceptance — 2026-11-02
+
+- The maintainer said "great job, please merge and push". That authorizes merging and pushing; it is not the iPhone SE device check, which stays pending.
+- `main` (`99522a996`, 14 commits ahead of the cycle base) merged into the branch without conflicts. Combined-tree checks: `LocalAppSmokeTest` 162 run, 159 passed (the same three long-standing failures); `composers.mjs` passed; `compose_layout_stability.mjs --phone-fit-only` 39 of 39 passed. Chromium only.
+- Merged to `main` with a merge commit and pushed to `origin/main`.
+
+*— Claude · 2026-11-02 UTC · Model: claude-fable-5-1*
