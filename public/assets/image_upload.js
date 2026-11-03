@@ -77,7 +77,10 @@
       form.__imageIdentity = identity;
       const invalidate = () => { void refreshEligibility(form); };
       const refresh = () => { void refreshEligibility(form, true); };
-      ['forum:identity-changed','storage','offline'].forEach(name => window.addEventListener(name, invalidate));
+      ['forum:identity-changed','offline'].forEach(name => window.addEventListener(name, invalidate));
+      // Other tabs write compose drafts to localStorage on every keystroke; only an identity
+      // change (forum_pki_* keys, or a full clear) should re-check upload eligibility.
+      window.addEventListener('storage', event => { if (event.key === null || event.key.startsWith('forum_pki_')) invalidate(); });
       ['online','focus'].forEach(name => window.addEventListener(name, refresh));
       document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
       invalidate();

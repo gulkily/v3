@@ -95,6 +95,22 @@ final class LocalAppSmokeTest
             assertSame('profiles_sync_keys',$pdo->query("SELECT name FROM sqlite_master WHERE type='index' AND name='profiles_sync_keys'")->fetchColumn());
         } finally { @unlink($database); }
     }
+    public function testVersion41StartupBuildsRetirementStateBeforeProfileLookup(): void
+    {
+        $database = sys_get_temp_dir() . '/retirement-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            exec(escapeshellarg(dirname(__DIR__) . '/v3') . ' rebuild ' . escapeshellarg($this->repositoryRoot) . ' ' . escapeshellarg($database), $output, $exit);
+            assertSame(0, $exit);
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec("UPDATE metadata SET value='41' WHERE key='schema_version'");
+            $pdo->exec('ALTER TABLE profiles DROP COLUMN bootstrap_username_token');
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            $this->render($app, '/users/');
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM profiles WHERE bootstrap_username_token='' OR retired_at IS NOT NULL")->fetchColumn());
+        } finally { foreach (glob($database . '*') ?: [] as $file) @unlink($file); }
+    }
+
     public function testVersion38StartupBuildsBoundedSyncKeyIndex(): void
     {
         $database=sys_get_temp_dir().'/sync-key-schema-'.bin2hex(random_bytes(6)).'.sqlite3';

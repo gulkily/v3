@@ -517,15 +517,17 @@ class IncrementalReadModelUpdater
             'bootstrap_post_id' => $identity->bootstrapByPost,
             'bootstrap_thread_id' => $identity->bootstrapByThread,
             'public_key' => $identity->armoredPublicKey,
+            'bootstrap_username_token' => strtolower($identity->username !== '' ? $identity->username : 'guest'),
+            'has_name_history' => isset(ProfileNames::latest($this->repositoryRoot)[$identity->identityId]) ? 1 : 0,
         ];
 
         $stmt = $pdo->prepare(
             'INSERT INTO profiles (
                 identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint,
-                bootstrap_post_id, bootstrap_thread_id, public_key
+                bootstrap_post_id, bootstrap_thread_id, public_key, bootstrap_username_token, has_name_history
              ) VALUES (
                 :identity_id, :profile_slug, :username, :username_token, :fallback_label, :signer_fingerprint,
-                :bootstrap_post_id, :bootstrap_thread_id, :public_key
+                :bootstrap_post_id, :bootstrap_thread_id, :public_key, :bootstrap_username_token, :has_name_history
              )'
         );
         $stmt->execute($profile);
@@ -1272,6 +1274,7 @@ class IncrementalReadModelUpdater
 
     public function writeMetadata(PDO $pdo, string $commitSha): void
     {
+        \ForumRewrite\Security\KeyRetirement::apply($pdo, $this->repositoryRoot);
         ActivityEvidenceIndex::refresh($pdo, $this->repositoryRoot, $this->databasePath);
         $stmt = $pdo->prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (:key, :value)');
         $metadata = array_merge(ReadModelMetadata::expectedSchemaIdentity(), [

@@ -633,3 +633,16 @@ Combines main's version-41 message recovery and version-42 Recent indexes with
 QDB count/select-before-hydration queries. The QDB branch used version 41 locally;
 integration advances to 43 so either lineage rebuilds before the new queries run.
 No additional tables or indexes are needed for QDB selection.
+
+## Version 44 — Key retirement eligibility
+
+Profiles add `bootstrap_username_token` and `has_name_history` for the approved
+rename-disabled retirement policy; verified historical/imported name changes
+remain visible to eligibility even when rename activity is hidden. Profiles add
+`retired_at`, `retired_by_identity_id` and `was_approved`. `is_approved` is effective
+current membership; `was_approved` retains historical grant eligibility for retired
+keys. Derive the retained approval graph and historical attribution first, then
+apply accepted retirement in full rebuild and incremental metadata completion.
+Original canonical grants, public keys and signatures are unchanged. Startup
+rebuilds older read models before queries use the new fields. Integrated after
+main's versions 42 and 43; the branch used 42 locally.

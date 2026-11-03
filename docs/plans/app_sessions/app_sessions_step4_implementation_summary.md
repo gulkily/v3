@@ -195,3 +195,21 @@ Record the result here (passed, or what you saw); until then this item stays pen
 - Entry 0.95 reaffirmed; stage originals 0.15/0.10/0.10/0.25/0.07/0.15/0.08; stage retrospectives 0.12/0.10/0.10/0.25/0.05/0.15/0.08; not summed. Retrospective cycle scope 0.95, judged separately by the same exposed rater (Claude, claude-opus-5-5). R1 hashes re-verified at closeout. No measured labor. Maintainer comfortable-fit judgment and acceptance pending; no accepted-outcome increment.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Merge with main for review - 2026-11-03
+
+User authorization: "yes please <3" (push the branch and open a pull request). `main` had moved 22 commits to `fd4d0e02`, including key retirement. Merged `main` into the branch (no rebase; stage commits unchanged).
+
+- Conflicts resolved:
+  - `AuthApiController`: kept both. The challenge is used up first, then `withActiveIdentity()` (main's publication lock and retired-key check) wraps the app-owned `signIn()`, so a retired key still gets main's 403 and no session.
+  - `RouteServices::securityReviewAllowed`: app-owned session reader plus main's `isActiveOperator`.
+  - Study ledger: both cycles' appended records kept.
+- Adapted main's two new retirement tests in `WriteApiSmokeTest`, which pre-filled `$_SESSION`: they now sign in through the helper. The retired-key sign-in check asserts that no session row was added (new `TestViewerSession::sessionCount()`), and an existing session from before retirement is shown to stop working.
+- No `$_SESSION` or PHP session call came back in from `main` (grep `src/` and `tests/`).
+- Verification on the merged tree:
+  - Focused: `ViewerSessionStoreTest TestingSelfApprovalTest RootApprovalPageTest UserAccessTest DeployPageTest ApprovedUserKeyResolverTest PrivateMessageHistorySyncTest` 63/63 passed; `WriteApiSmokeTest LocalAppSmokeTest` 363 run, 360 passed, the 3 long-standing `LocalAppSmokeTest` failures.
+  - Browser (headless Chrome): `key_retirement.mjs` (main's new journey), `app_sessions_http_https.mjs` 7/7, `background_sign_in.mjs` passed.
+  - Full suite on the merged tree: pending at push time.
+- Study: merge integration only; scores, retrospectives and acceptance count unchanged.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

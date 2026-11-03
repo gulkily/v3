@@ -52,6 +52,16 @@ final class TestViewerSession
         return $token === '' ? '' : (self::store()->resolve($token)?->identityId ?? '');
     }
 
+    /** How many live sessions are signed in as this identity (sign-in attempts that should fail must not add one). */
+    public static function sessionCount(string $identityId): int
+    {
+        self::store();
+        $pdo = ViewerSessionDatabaseConfig::open('', ['VIEWER_SESSION_DATABASE_PATH' => (string) getenv('VIEWER_SESSION_DATABASE_PATH')]);
+        $statement = $pdo->prepare('SELECT COUNT(*) FROM viewer_sessions WHERE identity_id = :identity');
+        $statement->execute(['identity' => strtolower(trim($identityId))]);
+        return (int) $statement->fetchColumn();
+    }
+
     /** The session cookie's name and value, as a browser would hold them. @return array{0: string, 1: string} */
     public static function cookie(): array
     {

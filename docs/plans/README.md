@@ -378,3 +378,5 @@ and repair its navigation and affected references. See the
 - [Recent conversation](recent_activity/recent_activity_step1_solution_assessment.md) — implemented locally; [verification and release handoff](recent_activity/recent_activity_step4_implementation_summary.md).
 
 - [Message sync activity and limits](message_sync_activity/message_sync_activity_step1_solution_assessment.md) — recent-device priority and bounded, quiet recovery.
+
+- [Key retirement](key_retirement/key_retirement_step1_solution_assessment.md) — signed same-account/operator retirement with retained history; Steps 1–3 approved.

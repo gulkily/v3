@@ -5,7 +5,7 @@ $keyOnly = (bool) ($approvalHistory['profile_scope'] ?? false); ?>
 <article id="account-keys" class="card account-key-history<?= $keyOnly ? ' account-key-history-single' : '' ?>" aria-label="<?= $keyOnly ? 'Key approval' : 'Account key history' ?>">
   <h2><?= $keyOnly ? 'Key approval' : 'Account key history' ?></h2>
 <?php if (!$keyOnly): ?>
-  <p class="meta account-key-history-note"><?= (int) $approvalHistory['total'] ?> approved keys.</p>
+  <p class="meta account-key-history-note"><?= (int) $approvalHistory['total'] ?> keys.</p>
 <?php elseif ($approvalHistory['rows'] === []): ?>
   <p>This key is not approved.</p>
 <?php endif; ?>
@@ -24,6 +24,9 @@ $classification = match ($grant['classification']) {
   <li class="account-key-history-entry">
 <?php if (!$keyOnly): ?>
     <h3 class="account-key-history-heading"><a href="<?= $e($historyProfileBase) ?><?= $e($grant['profile_slug']) ?>" title="<?= $e($grant['profile_slug']) ?>" aria-label="<?= $e($grant['profile_slug']) ?>"><?= $e($shortenProfileSlug($grant['profile_slug'])) ?></a></h3>
+<?php endif; ?>
+<?php if (!empty($grant['retired_at'])): ?>
+    <p><strong>Retired</strong> · <?= $timestamp($grant['retired_at']) ?> · <a href="/source/current/records/key-retirements/<?= $e($grant['profile_slug']) ?>.txt">Retirement record</a></p>
 <?php endif; ?>
     <p class="account-key-history-metadata">Approved by <strong><?= $e($grant['approver_label']) ?></strong><?php if ($when !== null): ?> · <?= $e($whenLabel) ?>: <?= $timestamp($when) ?><?php else: ?> · Date not recorded<?php endif; ?><?php if ($grant['source_path'] !== null): ?>
 <?php $evidenceUrl = $grant['kind'] === 'root_seed'

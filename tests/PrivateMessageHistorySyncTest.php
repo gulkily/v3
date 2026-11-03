@@ -8,7 +8,7 @@ final class PrivateMessageHistorySyncTest
     {
         $profiles=new PDO('sqlite::memory:');
         $profiles->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_ASSOC);
-        $profiles->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, profile_slug TEXT, username TEXT, username_token TEXT, fallback_label TEXT, signer_fingerprint TEXT, bootstrap_post_id TEXT, bootstrap_thread_id TEXT, public_key TEXT, is_approved INTEGER, approved_by_identity_id TEXT, approved_by_profile_slug TEXT, approved_by_label TEXT, post_count INTEGER, thread_count INTEGER)');
+        $profiles->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, profile_slug TEXT, username TEXT, username_token TEXT, fallback_label TEXT, signer_fingerprint TEXT, bootstrap_post_id TEXT, bootstrap_thread_id TEXT, public_key TEXT, is_approved INTEGER, was_approved INTEGER DEFAULT 0, retired_at TEXT, approved_by_identity_id TEXT, approved_by_profile_slug TEXT, approved_by_label TEXT, post_count INTEGER, thread_count INTEGER)');
 foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements() as $sql) $profiles->exec($sql);
         foreach (['a'=>'alice','b'=>'alice','c'=>'bob','d'=>'mallory'] as $key=>$account) {
             $fp=str_repeat($key,40);
@@ -25,6 +25,30 @@ foreach(\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements
         $messages->storeEnvelope('foreign','2026-10-10','mallory','bob','source','secret');
         $syncDb=new PDO('sqlite::memory:');$sync=new PrivateMessageHistorySyncStore($syncDb);
         return [$profiles,$messages,$sync,new PrivateMessageHistorySyncService($messages,$sync,$profiles),$db,$syncDb];
+    }
+    public function testRetirementRetainsDonatedAndOriginalEvidenceWithoutNewAccess(): void
+    {
+        [$profiles,$messages,$sync,$service,$db]=$this->fixture();
+        $input=$this->uploadInput();
+        $transfer=$service->upload($this->viewer(),$input);
+        $other=$this->uploadInput('unread');
+        $other['items']=[['message_id'=>'m03','digest'=>hash('sha256','cipher-3')]];
+        $unread=$service->upload($this->viewer(),$other);
+        $service->acknowledge($this->viewer('b'),['items'=>[$input['items'][0]+$transfer]]);
+        $before=$service->combinedWork($this->viewer('b'));
+        $profiles->exec("UPDATE profiles SET is_approved=0,was_approved=1,retired_at='2026-11-01T00:00:00Z' WHERE public_key='KEY-a'");
+        assertSame($transfer['transfer_id'],$service->transfers($this->viewer('b'),['message_id'=>'m01'])['transfers'][0]['transfer_id']);
+        assertSame($unread['transfer_id'],$service->transfers($this->viewer('b'),['message_id'=>'m03'])['transfers'][0]['transfer_id']);
+        assertSame(['confirmed'=>1],$service->acknowledge($this->viewer('b'),['items'=>[$other['items'][0]+$unread]]));
+        $work=$service->work($this->viewer('b'));
+        assertSame(str_repeat('b',40),$work['target']);
+        $outgoing=array_values(array_filter($work['messages'],static fn($row)=>$row['sender_username_token']==='alice'));
+        assertSame(true,in_array('KEY-a',$outgoing[0]['sender_keys'],true));
+        assertThrowsRuntime(fn()=>$service->upload($this->viewer(),$input),'An approved authenticated account key is required.');
+        $input['target']=str_repeat('a',40);
+        try { $service->upload($this->viewer('b'),$input); throw new Exception('Retired destination accepted'); }
+        catch (InvalidArgumentException $error) { assertStringContains('another approved account key',$error->getMessage()); }
+        assertSame(31,$messages->historySyncCount('alice'));
     }
     public function testSubmissionIdentityDoesNotExcludeOtherApprovedOriginalSigners(): void
     {

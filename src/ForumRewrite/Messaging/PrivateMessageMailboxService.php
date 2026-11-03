@@ -14,6 +14,7 @@ final class PrivateMessageMailboxService
         private readonly PrivateMessageStore $store,
         private readonly PDO $readPdo,
         private readonly ApprovedUserKeyResolver $keyResolver = new ApprovedUserKeyResolver(),
+        private readonly ?string $repositoryRoot = null,
     ) {
     }
 
@@ -23,6 +24,11 @@ final class PrivateMessageMailboxService
      * @return array<string, string>
      */
     public function send(array $viewer, array $input): array
+    {
+        $accept = fn (): array => $this->sendAccepted($viewer, $input);
+        return $this->repositoryRoot === null ? $accept() : \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, $accept);
+    }
+    private function sendAccepted(array $viewer, array $input): array
     {
         $viewer = $this->approvedViewer($viewer);
         $messageId = trim((string) ($input['message_id'] ?? ''));
@@ -116,7 +122,7 @@ final class PrivateMessageMailboxService
     }
 
     /** @param array<string, mixed> $viewer @return list<array{identity_id:string,profile_slug:string,public_key:string}> */
-    public function recipientKeys(array $viewer, string $usernameToken): array
+    public function recipientKeys(array $viewer, string $usernameToken, bool $historical = false): array
     {
         $this->approvedViewer($viewer);
         $usernameToken = strtolower(trim($usernameToken));
@@ -124,7 +130,7 @@ final class PrivateMessageMailboxService
             throw new InvalidArgumentException('Recipient username is invalid.');
         }
 
-        $keys = $this->keyResolver->keysForUsernameToken($this->readPdo, $usernameToken);
+        $keys = $this->keyResolver->keysForUsernameToken($this->readPdo, $usernameToken, $historical);
         if ($keys === []) {
             throw new InvalidArgumentException('Recipient has no approved profile keys.');
         }
@@ -135,6 +141,7 @@ final class PrivateMessageMailboxService
     /** @param array<string, mixed> $viewer @return array<string, mixed> */
     private function approvedViewer(array $viewer): array
     {
+        if ($this->repositoryRoot !== null) \ForumRewrite\Security\KeyRetirement::assertActive($this->repositoryRoot, (string) ($viewer['identity_id'] ?? ''));
         if (((int) ($viewer['is_approved'] ?? 0)) !== 1
             || trim((string) ($viewer['identity_id'] ?? '')) === ''
             || trim((string) ($viewer['username_token'] ?? '')) === '') {

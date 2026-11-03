@@ -8,7 +8,7 @@
     <h2>Account keys</h2>
     <ul>
 <?php foreach ($profiles as $profile): ?>
-      <li><a href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a> — <?= (int) $profile['is_approved'] === 1 ? 'Approved' : 'Pending' ?></li>
+      <li><a href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a> — <?= !empty($profile['retired_at']) ? 'Retired' : ((int) $profile['is_approved'] === 1 ? 'Approved' : 'Pending') ?></li>
 <?php endforeach; ?>
     </ul>
   </article>
