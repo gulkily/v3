@@ -188,10 +188,21 @@
 .compose-action-menu-list > button { padding: .6rem .9rem; font-size: inherit; }
 
 /* Eligibility is asynchronous. Keep the initial picker footprint on dedicated
-   compose pages so enabling uploads does not move the submit actions. */
-.compose-page .image-compose-fields[hidden] {
-  display: block !important;
-  visibility: hidden;
+   compose pages so enabling uploads does not move the submit actions. On a phone
+   that reserved space sits between the editor and Post, so it is dropped there. */
+@media (min-width: 640px) {
+  .compose-page .image-compose-fields[hidden] {
+    display: block !important;
+    visibility: hidden;
+  }
+}
+/* The dedicated new-post page on a phone: a shorter editor keeps Post nearer the
+   text, between the compact composer's three rows and the full form's seven. */
+@media (max-width: 639px) {
+  .compose-page [data-compose-kind="thread"] textarea[name="body"] {
+    height: 7.5rem;
+    min-height: 5.5rem;
+  }
 }
 
 /* A phone reply is one bounded panel: editor, feedback and actions participate

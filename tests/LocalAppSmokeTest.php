@@ -2403,6 +2403,11 @@ PHP;
         assertStringContains('placeholder="Title — or we’ll use your first line"', $composeThread);
         assertStringContains('data-compose-disclosure="tags">', $composeThread);
         assertStringNotContains('data-compose-disclosure="tags" open', $composeThread);
+        // The full composer: Title, body, the Post row, then the tools (tags, event) below Post.
+        assertOrdered($composeThread, 'class="compose-title"', 'name="body"');
+        assertOrdered($composeThread, 'name="body"', 'class="compose-form-actions"');
+        assertOrdered($composeThread, 'class="compose-form-actions"', 'class="compose-tools"');
+        assertStringNotContains('class="compose-tools"', $board);
         assertStringNotContains('data-compose-disclosure="tags" open', $prefilledSubjectCompose);
         assertStringContains('aria-label="Title" placeholder="Title — or we’ll use your first line" value="Saved Title"', $prefilledSubjectCompose);
         assertStringContains('data-compose-disclosure="tags" open>', $prefilledTagsCompose);
