@@ -146,3 +146,52 @@ Branch: `feat/app-sessions` from `main` `e6493e2f`. Planning commit `eafa09b5`.
 - Estimate details: original scope unchanged; retrospective 0.15 (proxy and loopback issues cost what was budgeted as uncertainty).
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Documentation, concept entry and closeout
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `docs/reference/authentication_modes.md`: session section rewritten for app-owned sessions (lifetime, per-scheme cookies, challenges, sign-out, switching from PHP sessions); evidence links point to the new sources and tests.
+  - Superseded notes on `docs/plans/session_reauthentication_reference.md` and `docs/plans/session_rotation_race_decision.md` (the 30-second forwarding decision carries over inside the store).
+  - New concept entry `docs/concepts/viewer_session.md`.
+  - Study ledger closeout for `v3/app_sessions`.
+- Verification:
+  - Concept entry and reference links: every local link target resolves. Passed.
+  - Final full suite: 1839 run, 1824 passed, 15 failed, exactly the 15 baseline failures; no new failures, none fixed. Passed.
+  - Dependency delta: zero. No manifest or lock changes; `playwright-core` 1.58.1 was already declared and was installed locally with `--no-save --no-package-lock` only to run browser tests. Passed.
+- Estimate details: original scope unchanged; retrospective 0.08.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+**Retrospective cycle scope: 0.95**
+
+- Delivered: Option A as approved. Every request resolves "who is signed in" from its scheme's cookie through one store; no PHP session code, route list or rotation workaround remains; sign-out ends sessions on the server; the reported failures replay and pass.
+- Commits: planning `eafa09b5`; stages `435d1a61`, `414a2bd6`, `8959db42`, `9c1b9ad0`, `78ed137d`, `eebd9fd3`, and this Stage 7 commit. 1 + 7 commits, as required.
+- Checks:
+  - Passed: store unit tests (14), cutover tests, full suite against baseline, signed-in Deploy POST in a fresh process, http/https replay in Chrome (7/7; fails 6/7 on `main` with the reported errors), testing Approve and background sign-in browser tests.
+  - Failed on `main` and branch alike (pre-existing): `access_history.mjs` ("Temporary authentication failure" wait); the 15 baseline suite failures.
+  - Pending: real iPhone Safari check (steps below); production deployment; maintainer comfortable-fit judgment.
+  - Not checked: other browser tests not touched by this cycle; Apache (`tests/*_apache_test.py`) runs; production PHP/FastCGI.
+- Deviations: Stage 4 not split despite its trigger (a split would leave sign-in broken between commits); Stage 3 used a temporary `holdOpen()` test shim, removed in Stage 4. No new requests; no splits or follow-up cycles created.
+- Follow-ups (separate work, recorded in Step 1): Deploy page Sign in button; remove the lobby-gate diagnostic log; simplify the client challenge queue and its "PHP sessions hold one challenge" comment; bring `feature/operator-privilege-delegation` up to date (its session-resume commit `9f3f9563` is now unnecessary) and move `d7f14336`'s revoked-key check into `ViewerSessions` if it merges.
+- Release note: deploying this signs every browser out once. Browsers with a saved key sign back in on their next page load; an operator's first Deploy or other POST after the switch may need one page load first.
+
+### iPhone Safari acceptance (maintainer)
+
+1. On the iPhone that failed, open the site over https and confirm Account shows you signed in.
+2. Open the same site over http (same host name). Account should show you signed in within a few seconds, without "Authentication challenge is missing or expired".
+3. Reload over http; still signed in. Then reopen over https; still signed in.
+4. Optional, an operator account: after an idle evening, use Tools › Deploy › Check for updates over either scheme without signing in again.
+
+Record the result here (passed, or what you saw); until then this item stays pending.
+
+### Study closeout
+
+- Entry 0.95 reaffirmed; stage originals 0.15/0.10/0.10/0.25/0.07/0.15/0.08; stage retrospectives 0.12/0.10/0.10/0.25/0.05/0.15/0.08; not summed. Retrospective cycle scope 0.95, judged separately by the same exposed rater (Claude, claude-opus-5-5). R1 hashes re-verified at closeout. No measured labor. Maintainer comfortable-fit judgment and acceptance pending; no accepted-outcome increment.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
