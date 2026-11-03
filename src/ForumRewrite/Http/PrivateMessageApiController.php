@@ -21,6 +21,7 @@ final class PrivateMessageApiController
         private readonly RouteServices $routeServices,
         private readonly \Closure $authenticatedViewerProfile,
         private readonly \Closure $privateMessageStore,
+        private readonly ?\Closure $recordHistoryActivity = null,
     ) {
     }
 
@@ -124,7 +125,9 @@ final class PrivateMessageApiController
         }
 
         try {
-            $keys = $this->service()->recipientKeys($viewer, (string) ($query['username_token'] ?? ''));
+            $purpose = (string)($query['purpose'] ?? 'encryption');
+            if (!in_array($purpose,['encryption','verification'],true)) throw new InvalidArgumentException('Invalid key purpose.');
+            $keys = $this->service()->recipientKeys($viewer, (string) ($query['username_token'] ?? ''), $purpose==='verification');
             $this->routeServices->sendJson(['status' => 'ok', 'keys' => $keys], 200, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $exception) {
             $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
@@ -181,6 +184,7 @@ final class PrivateMessageApiController
             $counterparts = $query['counterparts'] ?? [];
             if (!is_array($counterparts)) throw new InvalidArgumentException('Conversation states must be a list.');
             $state = $this->service()->unreadState($viewer, $counterparts);
+            if (($query['foreground'] ?? '') === '1' && $this->recordHistoryActivity) ($this->recordHistoryActivity)($viewer);
             $this->routeServices->sendJson(['status' => 'ok'] + $state, 200, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $error) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 400, $this->routeServices->noStoreHeaders());
@@ -219,7 +223,8 @@ final class PrivateMessageApiController
         return new PrivateMessageMailboxService(
             ($this->privateMessageStore)(),
             $this->routeServices->pdo(),
-            new ApprovedUserKeyResolver(),
+            new ApprovedUserKeyResolver($this->routeServices->repositoryRoot()),
+            $this->routeServices->repositoryRoot(),
         );
     }
 

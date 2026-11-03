@@ -960,6 +960,7 @@ final class PostWorkflowService
                     throw new ScriptureVerificationException('Scripture request source or permissions changed.');
                 }
                 $requester = (string) ($stored['request_context']['agent_reply_request']['requested_by_identity_id'] ?? '');
+                \ForumRewrite\Security\KeyRetirement::assertActive($this->repositoryRoot, $requester);
                 $stmt = $this->pdo()->prepare('SELECT is_approved FROM profiles WHERE identity_id = ?');
                 $stmt->execute([$requester]); $approved = $stmt->fetchColumn(); $stmt->closeCursor();
                 if ((int) $approved !== 1) { throw new ScriptureVerificationException('Scripture requester is no longer approved.'); }

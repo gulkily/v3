@@ -1,0 +1,11 @@
+import collector as c
+from pathlib import Path
+c.fixture(1)
+p=next((c.ROOT/'repository/records/posts').glob('thread-20261030000000*'))
+header=p.read_text().split('\n\n',1)[0]+'\n\n'
+p.write_text(header+'q'*(16*1024*1024-len(header)-1)+'\n')
+assert p.stat().st_size==16777216
+import subprocess
+subprocess.run(['git','-C',str(c.ROOT/'repository'),'add','.'],env=c.ENV,check=True)
+subprocess.run(['git','-C',str(c.ROOT/'repository'),'commit','-qm','exact limit body'],env=c.ENV,check=True)
+c.run('max-record-rebuild',['./v3','rebuild',str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite')])

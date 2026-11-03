@@ -1,0 +1,170 @@
+Starting read-model rebuild.
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Database: /tmp/v3-capacity-5wrtjih3/model.sqlite
+[1/3] Scanning source record counts...
+[1/3] Source scan complete: 4 posts, 1 identities, 1 approval seeds.
+[2/3] Building and validating a read-model candidate...
+[2/3] Read model: drop schema...
+[2/3] Read model: drop schema complete (0.4 ms).
+[2/3] Read model: create schema...
+[2/3] Read model: create schema complete (3.7 ms).
+[2/3] Read model: resolve attribution cutoff...
+[2/3] Read model: resolve attribution cutoff complete (0.4 ms).
+[2/3] Read model: index posts...
+[2/3] Read model: resolve legacy post creation times...
+[2/3] Read model: resolve legacy post creation times complete (4.2 ms).
+[2/3] Read model: resolve post source commits...
+[2/3] Read model: read source history...
+[2/3] Read model: read source history complete (3.3 ms).
+[2/3] Read model: resolve post source commits complete (3.4 ms).
+[2/3] Read model: parsing post records (0/4).
+[2/3] Read model: parsing post records (4/4).
+[2/3] Read model: parsing post records complete (130.0 ms).
+[2/3] Read model: sort posts...
+[2/3] Read model: sort posts complete (0.0 ms).
+[2/3] Read model: writing post records (0/4).
+[2/3] Read model: writing post records (4/4).
+[2/3] Read model: writing post records complete (37.2 ms).
+[2/3] Read model: writing thread summaries (0/3).
+[2/3] Read model: writing thread summaries (3/3).
+[2/3] Read model: writing thread summaries complete (19.0 ms).
+[2/3] Read model: index posts complete (195.7 ms).
+[2/3] Read model: index profiles...
+[2/3] Read model: parsing identity records (0/1).
+[2/3] Read model: parsing identity records (1/1).
+[2/3] Read model: parsing identity records complete (0.3 ms).
+[2/3] Read model: index profiles complete (0.6 ms).
+[2/3] Read model: derive approval state...
+[2/3] Read model: approval pass 1.
+[2/3] Read model: checking approval posts (0/4).
+[2/3] Read model: checking approval posts (4/4).
+[2/3] Read model: checking approval posts complete (0.0 ms).
+[2/3] Read model: checking invitation candidates (0/0).
+[2/3] Read model: checking invitation candidates complete (0.0 ms).
+[2/3] Read model: derive approval state complete (2.7 ms).
+[2/3] Read model: index thread labels...
+[2/3] Read model: parsing thread label records (0/2).
+[2/3] Read model: parsing thread label records (2/2).
+[2/3] Read model: parsing thread label records complete (0.1 ms).
+[2/3] Read model: sort thread labels...
+[2/3] Read model: sort thread labels complete (0.0 ms).
+[2/3] Read model: resolve thread label source commits...
+[2/3] Read model: read source history...
+[2/3] Read model: read source history complete (2.8 ms).
+[2/3] Read model: resolve thread label source commits complete (2.8 ms).
+[2/3] Read model: deriving thread label records (0/2).
+[2/3] Read model: deriving thread label records (2/2).
+[2/3] Read model: deriving thread label records complete (1.3 ms).
+[2/3] Read model: writing thread labels (0/3).
+[2/3] Read model: writing thread labels (3/3).
+[2/3] Read model: writing thread labels complete (17.7 ms).
+[2/3] Read model: index thread labels complete (22.7 ms).
+[2/3] Read model: index thread subjects...
+[2/3] Read model: parsing thread subject records (0/1).
+[2/3] Read model: parsing thread subject records (1/1).
+[2/3] Read model: parsing thread subject records complete (0.2 ms).
+[2/3] Read model: sort thread subjects...
+[2/3] Read model: sort thread subjects complete (0.0 ms).
+[2/3] Read model: deriving thread subject records (0/1).
+[2/3] Read model: deriving thread subject records (1/1).
+[2/3] Read model: deriving thread subject records complete (0.0 ms).
+[2/3] Read model: index thread subjects complete (0.3 ms).
+[2/3] Read model: derive post attribution...
+[2/3] Read model: deriving post attribution (0/4).
+[2/3] Read model: deriving post attribution (4/4).
+[2/3] Read model: deriving post attribution complete (0.0 ms).
+[2/3] Read model: derive post attribution complete (0.0 ms).
+[2/3] Read model: derive profile counts...
+[2/3] Read model: initializing profile counts (0/1).
+[2/3] Read model: initializing profile counts (1/1).
+[2/3] Read model: initializing profile counts complete (0.0 ms).
+[2/3] Read model: counting profile posts (0/4).
+[2/3] Read model: counting profile posts (4/4).
+[2/3] Read model: counting profile posts complete (0.0 ms).
+[2/3] Read model: derive profile counts complete (0.0 ms).
+[2/3] Read model: link post authors...
+[2/3] Read model: linking author profiles (0/1).
+[2/3] Read model: linking author profiles (1/1).
+[2/3] Read model: linking author profiles complete (0.1 ms).
+[2/3] Read model: link post authors complete (0.2 ms).
+[2/3] Read model: index post reactions...
+[2/3] Read model: parsing post reaction records (0/0).
+[2/3] Read model: parsing post reaction records complete (0.0 ms).
+[2/3] Read model: sort post reactions...
+[2/3] Read model: sort post reactions complete (0.0 ms).
+[2/3] Read model: resolve post reaction source commits...
+[2/3] Read model: resolve post reaction source commits complete (0.0 ms).
+[2/3] Read model: deriving post reaction records (0/0).
+[2/3] Read model: deriving post reaction records complete (0.0 ms).
+[2/3] Read model: writing post reactions (0/4).
+[2/3] Read model: writing post reactions (4/4).
+[2/3] Read model: writing post reactions complete (24.2 ms).
+[2/3] Read model: index post reactions complete (27.7 ms).
+[2/3] Read model: index instance...
+[2/3] Read model: index instance complete (0.3 ms).
+[2/3] Read model: index activity...
+[2/3] Read model: writing post activity (0/4).
+[2/3] Read model: writing post activity (4/4).
+[2/3] Read model: writing post activity complete (0.3 ms).
+[2/3] Read model: writing thread label activity (0/2).
+[2/3] Read model: writing thread label activity (2/2).
+[2/3] Read model: writing thread label activity complete (0.1 ms).
+[2/3] Read model: writing post reaction activity (0/0).
+[2/3] Read model: writing post reaction activity complete (0.0 ms).
+[2/3] Read model: writing profile name activity (0/0).
+[2/3] Read model: writing profile name activity complete (0.0 ms).
+[2/3] Read model: derive signed flag activity...
+[2/3] Read model: resolve feature flag source commits...
+[2/3] Read model: resolve feature flag source commits complete (0.0 ms).
+[2/3] Read model: parsing feature flag changes (0/0).
+[2/3] Read model: parsing feature flag changes complete (0.0 ms).
+[2/3] Read model: sort feature flag activity...
+[2/3] Read model: sort feature flag activity complete (0.0 ms).
+[2/3] Read model: derive signed flag activity complete (0.0 ms).
+[2/3] Read model: writing signed flag activity (0/0).
+[2/3] Read model: writing signed flag activity complete (0.0 ms).
+[2/3] Read model: read legacy flag activity...
+[2/3] Read model: read legacy flag activity complete (0.0 ms).
+[2/3] Read model: writing legacy flag activity (0/0).
+[2/3] Read model: writing legacy flag activity complete (0.0 ms).
+[2/3] Read model: writing handoff activity (0/0).
+[2/3] Read model: writing handoff activity complete (0.0 ms).
+[2/3] Read model: index activity complete (0.9 ms).
+[2/3] Read model: mark activity attribution...
+[2/3] Read model: mark activity attribution complete (0.3 ms).
+[2/3] Read model: index commits...
+[2/3] Read model: read commit history...
+[2/3] Read model: processing commit history lines...
+[2/3] Read model: processing commit history lines complete (4.8 ms).
+[2/3] Read model: read commit history complete (4.9 ms).
+[2/3] Read model: index commits complete (4.9 ms).
+[2/3] Read model: index reaction signatures...
+[2/3] Read model: index reaction signatures complete (0.4 ms).
+[2/3] Read model: index activity evidence...
+[2/3] Read model: index activity evidence complete (6.1 ms).
+[2/3] Read model: write metadata...
+[2/3] Read model: write metadata complete (2.7 ms).
+[2/3] Read model: apply verified attribution...
+[2/3] Read model: apply verified attribution complete (50.0 ms).
+[2/3] Read model: commit read model...
+[2/3] Read model: commit read model complete (32.1 ms).
+[2/3] Read model: validating candidate...
+[2/3] Read model: validating candidate complete (11.3 ms).
+[2/3] Read-model candidate is ready.
+[3/3] Promoting the read-model candidate...
+[3/3] Waiting for the exclusive read-model lock...
+[3/3] Exclusive read-model lock acquired (0.2 ms).
+[3/3] Validating candidate before promotion...
+[3/3] Validating candidate before promotion complete (9.9 ms).
+[3/3] Replacing the live read model...
+[3/3] Replacing the live read model complete (1.2 ms).
+[3/3] Read-model promotion complete.
+[3/3] Read model promoted.
+Offline snapshot bootstrap...
+Offline snapshot bootstrap complete (0.5 ms).
+Offline snapshot bootstrap: already available at /tmp/v3-capacity-5wrtjih3/static/offline/snapshot.sqlite3
+Rebuilt read model at /tmp/v3-capacity-5wrtjih3/model.sqlite
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Source records: 4 posts, 1 identities, 1 approval seeds
+Read model: 4 posts, 3 threads, 1 profiles, 6 activity rows
+Elapsed: 0.382 seconds

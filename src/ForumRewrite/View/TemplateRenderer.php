@@ -43,6 +43,7 @@ final class TemplateRenderer
         'instance.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
         'operations.php' => ['/assets/tool-details.css'],
+        'deploy.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -250,6 +251,7 @@ final class TemplateRenderer
             'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
             'themes' => $themes,
             'lcdPalettes' => ThemeRegistry::LCD_PALETTES,
+            'consolePalettes' => ThemeRegistry::CONSOLE_PALETTES,
             'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
             'themeStylesheetPaths' => $themeStylesheetPaths,
@@ -360,7 +362,7 @@ final class TemplateRenderer
             return $items;
         }
 
-        $mainSections = ['board', 'profiles', 'messages', 'lobby'];
+        $mainSections = ['board', 'recent', 'profiles', 'messages', 'lobby'];
         foreach ($items as $index => $item) {
             // Users is main; a personal profile link (members-only mode) belongs in the account menu.
             $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
@@ -404,6 +406,7 @@ final class TemplateRenderer
             ? QdbPresentation::navigation()
             : [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/recent/', 'label' => 'Recent', 'section' => 'recent'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
                 ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
                 ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],
@@ -551,6 +554,7 @@ final class TemplateRenderer
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);
         $relativeTimestamp = fn (?string $timestamp): string => $this->renderRelativeTimestampHtml($timestamp, $e);
+        $shortDate = fn (?string $timestamp): string => $this->renderShortDateHtml($timestamp, $e);
         $shortenProfileSlug = static fn (string $slug): string => strlen($slug) > 17 ? substr($slug, 0, 17) . '...' : $slug;
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
@@ -683,19 +687,36 @@ final class TemplateRenderer
     {
         $authorHtml = $this->renderAuthorHtml($record, $escape);
         $authorHtml = str_replace(' <span class="meta">(unapproved)</span>', '', $authorHtml, $unapproved);
-        $value = trim((string) ($record[$timeField] ?? ''));
         $parts = [$authorHtml];
-        if ($value !== '') {
-            try {
-                $date = (new \DateTimeImmutable($value))->setTimezone(new \DateTimeZone('UTC'));
-                $short = $date->format($date->format('Y') === gmdate('Y') ? 'M j' : 'M j, Y');
-                $parts[] = '<time datetime="' . $escape($value) . '" title="' . $escape($this->formatFriendlyTimestamp($value)) . '">' . $escape($short) . '</time>';
-            } catch (\Exception) {
-                $parts[] = $escape($value);
-            }
+        $dateHtml = $this->renderShortDateHtml((string) ($record[$timeField] ?? ''), $escape);
+        if ($dateHtml !== '') {
+            $parts[] = $dateHtml;
         }
 
         return implode(' · ', $parts) . ($unapproved > 0 ? ' <span class="chip chip--pending">Pending</span>' : '');
+    }
+
+    /**
+     * The list rows' date: "Mar 3" this year, "Mar 3, 2024" otherwise, with the
+     * precise time in the title. Fixed text, so static pages do not go stale the
+     * way a relative "3 days ago" would.
+     *
+     * @param callable(mixed): string $escape
+     */
+    private function renderShortDateHtml(?string $timestamp, callable $escape): string
+    {
+        $value = trim((string) $timestamp);
+        if ($value === '') {
+            return '';
+        }
+        try {
+            $date = (new \DateTimeImmutable($value))->setTimezone(new \DateTimeZone('UTC'));
+        } catch (\Exception) {
+            return $escape($value);
+        }
+        $short = $date->format($date->format('Y') === gmdate('Y') ? 'M j' : 'M j, Y');
+
+        return '<time datetime="' . $escape($value) . '" title="' . $escape($this->formatFriendlyTimestamp($value)) . '">' . $escape($short) . '</time>';
     }
 
     /**

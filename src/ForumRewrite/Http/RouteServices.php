@@ -51,6 +51,8 @@ use RuntimeException;
  */
 final class RouteServices
 {
+    private ?\ForumRewrite\Session\ViewerSessions $fallbackViewerSessions = null;
+
     private ?PDO $tagReadConnection = null;
     private bool $viewerProfileResolved = false;
     private ?array $resolvedViewerProfile = null;
@@ -75,14 +77,32 @@ final class RouteServices
         private readonly FeatureFlagEvaluator $featureFlags,
         private readonly \Closure $lenientViewerProfileResolver,
         private readonly bool $readModelAccessAllowed = true,
+        /** @var (\Closure(): \ForumRewrite\Session\ViewerSessions)|null */
+        private readonly ?\Closure $viewerSessions = null,
     ) {
+    }
+
+    /** Who is signed in for the current request (see ViewerSessions). */
+    public function viewerSessions(): \ForumRewrite\Session\ViewerSessions
+    {
+        if ($this->viewerSessions !== null) {
+            return ($this->viewerSessions)();
+        }
+        $projectRoot = $this->projectRoot;
+        return $this->fallbackViewerSessions ??= new \ForumRewrite\Session\ViewerSessions(
+            static fn (): \ForumRewrite\Session\ViewerSessionStore => new \ForumRewrite\Session\ViewerSessionStore(
+                \ForumRewrite\Session\ViewerSessionDatabaseConfig::open($projectRoot, \ForumRewrite\Support\PrivateConfig::load($projectRoot))
+            ),
+            $_COOKIE,
+            \ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER),
+        );
     }
 
     public function highTrafficStatus(): array
     {
         try {
             return (new \ForumRewrite\Host\HighTrafficMode(new \ForumRewrite\Host\HighTrafficCache(
-                $this->projectRoot,$this->repositoryRoot,$this->databasePath,getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $this->projectRoot . '/public')))->status();
+                $this->projectRoot,$this->repositoryRoot,$this->databasePath,\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT', $this->projectRoot) ?: $this->projectRoot . '/public')))->status();
         } catch (\Throwable $error) { return ['effective_mode'=>'unknown','error'=>$error->getMessage()]; }
     }
     public function changeHighTraffic(array $input, string $operator, bool $finalize): array
@@ -97,6 +117,15 @@ final class RouteServices
 
     public const TESTING_SELF_APPROVAL_COOKIE = 'testing_self_approval';
 
+    /**
+     * Like the session cookie, one name per scheme: a Secure cookie set over https would
+     * otherwise stop http from storing its own and break testing Approve there.
+     */
+    public static function testingSelfApprovalCookieName(bool $https): string
+    {
+        return $https ? '__Host-' . self::TESTING_SELF_APPROVAL_COOKIE : self::TESTING_SELF_APPROVAL_COOKIE;
+    }
+
     // Account renders the testing Approve button whenever testing approval is on, and shows it while
     // this browser's key waits. The token is a double-submit cookie rather than session data, so it
     // survives the session changes of signing in and out; the endpoint still requires the signed-in key.
@@ -105,7 +134,9 @@ final class RouteServices
         if (!(new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest()) {
             return null;
         }
-        $token = (string) ($_COOKIE[self::TESTING_SELF_APPROVAL_COOKIE] ?? '');
+        $https = \ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER);
+        $name = self::testingSelfApprovalCookieName($https);
+        $token = (string) ($_COOKIE[$name] ?? '');
         if (preg_match('/^[a-f0-9]{64}$/D', $token) === 1) {
             return $token;
         }
@@ -113,13 +144,13 @@ final class RouteServices
             return null;
         }
         $token = bin2hex(random_bytes(32));
-        setcookie(self::TESTING_SELF_APPROVAL_COOKIE, $token, [
+        setcookie($name, $token, [
             'path' => '/',
             'httponly' => true,
             'samesite' => 'Strict',
-            'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'secure' => $https,
         ]);
-        return $_COOKIE[self::TESTING_SELF_APPROVAL_COOKIE] = $token;
+        return $_COOKIE[$name] = $token;
     }
 
     public function pdo(): PDO
@@ -130,6 +161,16 @@ final class RouteServices
         return $this->tagReadConnection ??= \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
             (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
     }
+
+    public function withActiveIdentity(string $identityId, callable $callback): mixed
+    {
+        return \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, function () use ($identityId, $callback): mixed {
+            \ForumRewrite\Security\KeyRetirement::assertActive($this->repositoryRoot, $identityId);
+            return $callback();
+        });
+    }
+
+    public function repositoryRoot(): string { return $this->repositoryRoot; }
 
     public function databasePath(): string
     {
@@ -179,8 +220,8 @@ final class RouteServices
 
     public function securityReviewAllowed(): bool
     {
-        $id = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
-        if ($id === '' || !\ForumRewrite\Security\ApprovalPolicy::isOperator($this->repositoryRoot, $id)) return false;
+        $id = $this->viewerSessions()->identityId();
+        if ($id === '' || !\ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->repositoryRoot, $id)) return false;
         $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->pdo(), $id);
         return $profile !== null && (int) $profile['is_approved'] === 1;
     }

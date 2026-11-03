@@ -20,6 +20,7 @@
 .account-page:not([data-account-state="guest"]) [data-account-card="guest"],
 .account-page[data-account-state="guest"] [data-account-card="member"],
 .account-page[data-account-state="guest"] [data-account-when="member"],
+.account-page:not([data-account-state="retired"]) [data-account-when="retired"],
 .account-page:not([data-account-state="waiting"]) [data-account-when="waiting"],
 .account-page:not([data-account-state="approved"]) [data-account-when="approved"] {
   display: none;

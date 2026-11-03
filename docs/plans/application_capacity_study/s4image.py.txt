@@ -1,0 +1,2 @@
+import collector as c
+c.run('s4-image-approved-http',['php',str(c.ROOT/'image_driver.php')])

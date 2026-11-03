@@ -1,0 +1,2 @@
+import collector as c
+c.run('s4-transfers',['python3',str(c.ROOT/'transfer_driver.py')])

@@ -1,0 +1,8 @@
+Import time limit: 300 seconds
+Source: saved interrupted import
+Destination: /tmp/v3-capacity-5wrtjih3/import-target-final
+Database: /tmp/v3-capacity-5wrtjih3/import-final.sqlite
+Static/offline root: /tmp/v3-capacity-5wrtjih3/import-final-static
+Importing content and publishing local views...
+Import failed: No interrupted import to resume.
+Elapsed time: 0.03 seconds

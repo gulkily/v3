@@ -16,153 +16,81 @@ use PDO;
 final class ToolsPageSupport
 {
     /**
-     * Single source of truth for every /tools/* destination: the sub-nav
-     * (navOptions()) and the /tools/ index table (registry() consumed
-     * directly by ToolsPageController) both build from this list, so they
-     * can't drift apart the way they did when each kept its own hardcoded
-     * array. `standalone` marks pages that render as full-page views with
-     * no sub-nav of their own (Activity, Forte) - they still appear in the
-     * index and (set apart) in the sub-nav, but never receive
-     * `toolNavOptions`.
+     * The launcher's groups, in order, by who uses the tools. Each key is also
+     * the group heading's `data-shape` hook.
      *
-     * @return list<array{key:string,label:string,href:string,description:string,standalone:bool}>
+     * @return array<string, string>
      */
-    public static function registry(): array
+    public static function groups(): array
     {
         return [
-            [
-                'key' => 'activity',
-                'label' => 'Activity',
-                'href' => '/activity/',
-                'description' => 'Recent forum activity across content, approvals, and identity events.',
-                'standalone' => true,
-            ],
-            [
-                'key' => 'forte',
-                'label' => 'Forte',
-                'href' => '/forte',
-                'description' => 'Classic three-pane newsreader view of the whole board - folders, thread list, and preview.',
-                'standalone' => true,
-            ],
-            [
-                'key' => 'offline-reading',
-                'label' => 'Offline Reading',
-                'href' => '/offline/',
-                'description' => 'Check whether this browser is ready to read saved public content offline.',
-                'standalone' => true,
-            ],
-            [
-                'key' => 'docs',
-                'label' => 'Platform Docs',
-                'href' => '/docs/',
-                'description' => 'How the site is built, operated, and extended, with repository source paths.',
-                'standalone' => true,
-            ],
-            [
-                'key' => 'account',
-                'label' => 'Account',
-                'href' => '/account/key/',
-                'description' => 'Manage this browser\'s keypair, username, and identity.',
-                'standalone' => true,
-            ],
-            [
-                'key' => 'bookmarklets',
-                'label' => 'Bookmarklets',
-                'href' => '/tools/bookmarklets/',
-                'description' => 'Bookmarklet links for clipping URLs and selections straight into a new post.',
-                'standalone' => false,
-            ],
-            [
-                'key' => 'outbox',
-                'label' => 'Outbox',
-                'href' => '/tools/outbox/',
-                'description' => 'Review local drafts and queued offline actions on this device.',
-                'standalone' => false,
-            ],
-            [
-                'key' => 'backup',
-                'label' => 'Backup',
-                'href' => '/tools/backup/',
-                'description' => 'Portable downloads of the repository and current read-model database.',
-                'standalone' => false,
-            ],
-            [
-                'key' => 'sqlite',
-                'label' => 'SQLite Viewer',
-                'href' => '/tools/sqlite/',
-                'description' => 'Inspect the published SQLite read model in your browser.',
-                'standalone' => false,
-            ],
-            [
-                'key' => 'llm-exchanges',
-                'label' => 'LLM Exchanges',
-                'href' => '/tools/llm-exchanges/',
-                'description' => 'Review private LLM prompts and responses chronologically.',
-                'standalone' => false,
-            ],
-            [
-                'key' => 'codebase',
-                'label' => 'System State',
-                'href' => '/tools/codebase/',
-                'description' => 'Current application version, repository head, and read-model health.',
-                'standalone' => false,
-            ],
-            [
-                'key' => 'visitor-statistics',
-                'label' => 'Visitor Statistics',
-                'href' => '/tools/visitor-statistics/',
-                'description' => 'Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.',
-                'standalone' => false,
-            ],
-            [
-                'key' => 'user-access',
-                'label' => 'User Access',
-                'href' => '/tools/user-access/',
-                'description' => 'Review accounts, keys, and pending approvals.',
-                'standalone' => false,
-            ],
-            [
-                'key' => 'feature-flags',
-                'label' => 'Feature Flags',
-                'href' => '/tools/feature-flags/',
-                'description' => 'Registered site feature flags, defaults, effective values, and override sources.',
-                'standalone' => false,
-            ],
-            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/',
-                'description' => 'Choose which independent scores Fastmod records.', 'standalone' => false],
-            ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/',
-                'description' => 'Control how the site is served, including high-traffic mode.', 'standalone' => false],
+            'device' => 'Your device',
+            'reading' => 'Reading',
+            'community' => 'Community',
+            'operator' => 'Operator',
         ];
     }
 
     /**
-     * In-page tools first (in registry order), then standalone tools -
-     * templates render a divider before the first standalone entry.
+     * Single source of truth for every /tools/* destination: the Tools bar
+     * (navOptions()) and the /tools/ launcher (registry() consumed directly by
+     * ToolsPageController) both build from this list, in this order, so they
+     * can't drift apart. `group` places the tool under one of groups();
+     * `tone` is its stable theme hook (`data-tone`). `standalone` marks pages
+     * that render as full-page views with no Tools bar of their own (Activity,
+     * Forte, Offline reading, Platform docs) - they still appear in the
+     * launcher and the bar, but never receive `toolNavOptions`.
      *
-     * @return list<array{key:string,label:string,href:string,is_active:bool,standalone:bool}>
+     * @return list<array{key:string,label:string,href:string,group:string,tone:string,standalone:bool}>
+     */
+    public static function registry(): array
+    {
+        return [
+            ['key' => 'outbox', 'label' => 'Outbox', 'href' => '/tools/outbox/', 'group' => 'device', 'tone' => 'outbox', 'standalone' => false],
+            ['key' => 'offline-reading', 'label' => 'Offline Reading', 'href' => '/offline/', 'group' => 'device', 'tone' => 'offline', 'standalone' => true],
+            ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],
+            ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
+            ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
+            ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],
+            ['key' => 'user-access', 'label' => 'User Access', 'href' => '/tools/user-access/', 'group' => 'community', 'tone' => 'access', 'standalone' => false],
+            ['key' => 'visitor-statistics', 'label' => 'Visitor Statistics', 'href' => '/tools/visitor-statistics/', 'group' => 'community', 'tone' => 'statistics', 'standalone' => false],
+            ['key' => 'feature-flags', 'label' => 'Feature Flags', 'href' => '/tools/feature-flags/', 'group' => 'operator', 'tone' => 'flags', 'standalone' => false],
+            ['key' => 'codebase', 'label' => 'System status', 'href' => '/tools/codebase/', 'group' => 'operator', 'tone' => 'status', 'standalone' => false],
+            ['key' => 'sqlite', 'label' => 'SQLite Viewer', 'href' => '/tools/sqlite/', 'group' => 'operator', 'tone' => 'database', 'standalone' => false],
+            ['key' => 'backup', 'label' => 'Backup', 'href' => '/tools/backup/', 'group' => 'operator', 'tone' => 'backup', 'standalone' => false],
+            ['key' => 'llm-exchanges', 'label' => 'LLM Exchanges', 'href' => '/tools/llm-exchanges/', 'group' => 'operator', 'tone' => 'llm', 'standalone' => false],
+            ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/', 'group' => 'operator', 'tone' => 'fastmod', 'standalone' => false],
+            ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/', 'group' => 'operator', 'tone' => 'operations', 'standalone' => false],
+            ['key' => 'deploy', 'label' => 'Deploy', 'href' => '/tools/deploy/', 'group' => 'operator', 'tone' => 'deploy', 'standalone' => false],
+        ];
+    }
+
+    /**
+     * The Tools bar: every tool in registry (group) order. `group_start` marks
+     * the first tool of each group after the first, where the bar shows a
+     * divider.
+     *
+     * @return list<array{key:string,label:string,href:string,tone:string,is_active:bool,standalone:bool,group_start:bool}>
      */
     public static function navOptions(?string $activeKey): array
     {
-        $inPage = [];
-        $standalone = [];
+        $options = [];
+        $previousGroup = null;
 
         foreach (self::registry() as $tool) {
-            $option = [
+            $options[] = [
                 'key' => $tool['key'],
                 'label' => $tool['label'],
                 'href' => $tool['href'],
+                'tone' => $tool['tone'],
                 'is_active' => $activeKey === $tool['key'],
                 'standalone' => $tool['standalone'],
+                'group_start' => $previousGroup !== null && $previousGroup !== $tool['group'],
             ];
-
-            if ($tool['standalone']) {
-                $standalone[] = $option;
-            } else {
-                $inPage[] = $option;
-            }
+            $previousGroup = $tool['group'];
         }
 
-        return [...$inPage, ...$standalone];
+        return $options;
     }
 
     /**

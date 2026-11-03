@@ -6,7 +6,7 @@ Use **… → Retract post** on the post or thread. Authors can retract their ow
 
 Acceptance means the repository commit succeeded. Ordinary refresh updates the views, and the existing worker cleans generated artifacts and saved LLM payloads later. Cached pages and saved exchanges may remain readable until successful maintenance; queueing is not completion and five-minute discovery is not a deadline. Retractions do not disable publication or require recurring reconstruction of Git acceptance evidence.
 
-Git history is **not purged in this release**. History purge is a separately planned release. Backups, downloaded copies, provider/remote copies, attachments and independently published replies or quotations are not erased.
+Acceptance does not touch Git history. An operator purges the prose of accepted deletions from history later, in batches, with `./v3 purge-history`; see the [history purge runbook](../runbooks/history_purge.md). Backups, downloaded copies, provider/remote copies, attachments and independently published replies or quotations are not erased by either step.
 
 ## Records and retries
 

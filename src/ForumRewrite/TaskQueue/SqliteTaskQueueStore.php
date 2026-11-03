@@ -15,6 +15,8 @@ final class SqliteTaskQueueStore
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
     public const AGENT_REPLY = 'agent_reply';
     public const RAILSPIKE_ASSESSMENT = 'railspike_assessment';
+    /** Operator-requested application deploy; claimed ahead of all other queued work. */
+    public const APP_UPDATE = 'app_update';
     public const EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS = 120;
     public const READ_MODEL_SCHEMA_RECOVERY_REASON = 'read_model_schema';
     public const TERMINAL_TASK_HISTORY_LIMIT = 100;
@@ -320,13 +322,14 @@ final class SqliteTaskQueueStore
                  FROM internal_tasks
                  WHERE status = :status AND attempts < max_attempts AND (:task_id IS NULL OR id = :task_id)
                    AND (:excluded_type IS NULL OR type <> :excluded_type)
-                 ORDER BY requested_at ASC, id ASC
+                 ORDER BY CASE WHEN type = :priority_type THEN 0 ELSE 1 END, requested_at ASC, id ASC
                  LIMIT :limit'
             );
             $select->bindValue('status', 'queued');
             $select->bindValue('task_id', $taskId, $taskId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
             $select->bindValue('excluded_type', $excludedType, $excludedType === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
             $select->bindValue('limit', $limit, PDO::PARAM_INT);
+            $select->bindValue('priority_type', self::APP_UPDATE);
             $select->execute();
 
             $claimed = [];
@@ -828,7 +831,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::RAILSPIKE_ASSESSMENT], true)) {
+        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::RAILSPIKE_ASSESSMENT, self::APP_UPDATE], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

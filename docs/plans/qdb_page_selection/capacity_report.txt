@@ -1,0 +1,20 @@
+Record: QDB page selection HTTP acceptance
+Date: 2026-11-02 UTC
+Source revision: 486de3d5
+Runtime: Local PHP 8.1.2 development server on WSL Linux, memory_limit=128M
+Ordinary requests: 72; all HTTP 200, exact ordered IDs, complete bodies and counts
+Ordinary fixtures: 1000/10000 canonical rebuilds; 40000 prepared model, cloned known row shape from 10000 model with every synthetic body compared against canonical source
+Ordinary peak PHP allocation: 4194304 bytes; 32 MiB ceiling passed
+Maximum fixture: Exact 16777216-byte canonical record, SHA256 c8be7f1c4592efca43cb17e5f78c7b1702ede33a65723d259ba7e8de7261fd8c
+Maximum results: Latest/Top/Leetness about 82.1 MiB; matching Search about 82.1 MiB; no-match Search 18 MiB; numeric quote 100 MiB; all HTTP 200 under 128 MiB with complete content
+Recovery: Normal isolated CLI rebuilds at 1000/10000/maximum passed. Empty/literal-no-match searches and out-of-range clamping passed. Prior-schema and failed-query retry are covered in S1/S3 tests.
+Measurement boundary: PHP allocation peaks, not process RSS or host capacity. Search may scan/transfer transient bodies; no bounded scan or latency promise. Prepared 40000 model is reader evidence only, not full rebuild acceptance.
+Harness correction: Initial raw/rendered-body comparison failed on existing br tags and indentation. Normalized those presentation-only additions; retained failed logs and reran 1000 before larger cases. Numeric-route Selected=0 means no quote-card wrapper; full body was verified separately.
+Dependencies: Zero additions; existing Python/PHP/Git only
+
+Reproduction:
+From project root run python3 docs/plans/qdb_page_selection/capacity_setup.py.txt.
+Read /tmp/capacity-root to find the newly created disposable workspace.
+Copy docs/plans/application_capacity_study/collector.py.txt to WORK/collector.py.
+Copy capacity_replay.py.txt beside it as WORK/qdb_capacity.py; run python3 WORK/qdb_capacity.py.
+Never substitute production paths. The setup archives the pinned implementation into isolated app, repository, database, static output and runtime paths. Use a fresh setup per full replay; collector refuses sample overwrites. The 40000 prepared model is deliberately constructed only for this reader test. Existing collector caps rebuild commands at 600 seconds, 1 GiB-or-25%-available RSS and 2 GiB scratch; HTTP requests time out after 30 seconds and PHP is capped at 128M. The replay terminates its HTTP server on success or error.

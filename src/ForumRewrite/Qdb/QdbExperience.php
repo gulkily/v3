@@ -151,16 +151,9 @@ final class QdbExperience
 
     private function welcome(): string
     {
-        $threads = ThreadRepository::fetchThreads($this->pdo);
-        $quotes = $this->boardPolicy->eligibleQuotes($threads);
-        $newsThreads = $this->boardPolicy->newsThreads($threads);
-
-        return $this->routeServices->renderPageTemplate('qdb_welcome.php', [
-            'qdbQuoteCount' => count($quotes),
-            'recentThreads' => array_slice($quotes, 0, 5),
-            'newsThreads' => array_slice($newsThreads, 0, 3),
-            'hasMoreNews' => count($newsThreads) > 3,
-        ], 'Welcome', 'welcome');
+        return $this->routeServices->renderPageTemplate(
+            'qdb_welcome.php', QdbWelcomeSelection::read($this->pdo, $this->boardPolicy), 'Welcome', 'welcome'
+        );
     }
 
     /** @param array<string, mixed> $query */
@@ -194,25 +187,18 @@ final class QdbExperience
     private function search(string $term, int $page): string
     {
         $term = trim($term);
-        $matches = $term === '' ? [] : array_values(array_filter(
-            $this->eligibleQuotes(),
-            static fn (array $thread): bool => stripos((string) $thread['root_post_body'], $term) !== false,
-        ));
-        $resultCount = count($matches);
-        $presentation = $this->boardPolicy->paginate(
-            $matches,
-            'search',
-            max(1, $page),
-            '/search?search=' . rawurlencode($term),
+        $selected = \ForumRewrite\ReadModel\QdbPage::page($this->pdo, 'search', $page, $term);
+        $resultCount = $selected['count'];
+        $threads = $selected['threads'];
+        $pagination = $this->boardPolicy->pagination(
+            $resultCount, $selected['page'], '/search?search=' . rawurlencode($term)
         );
-        unset($matches);
-        $threads = $presentation['threads'];
 
         return $this->renderQuotePage('qdb_search.php', [
             'threads' => $threads,
             'term' => $term,
             'resultCount' => $resultCount,
-            'pagination' => $presentation['pagination'],
+            'pagination' => $pagination,
         ], 'Search', 'search', $threads);
     }
 

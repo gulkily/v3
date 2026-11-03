@@ -214,3 +214,92 @@ Users Waiting (N) count in shared HTML (from viewer_nav_prepaint, option A)
 		decide whether that exposure is acceptable or the count should come another way
 	the count on cached/static /users/ can go stale until the next rebuild
 		check what refreshes it when someone registers or is approved
+
+recent posts/threads selector would be clutch
+
+i need a button that lets me push a post/thread to live website from localhost once it's composed
+
+hide the Deploy page (/tools/deploy/) from non-operator users
+	now it is read-only for everyone, like Operations and Feature Flags; only the buttons are operator-only
+
+let users pass on operator status
+	deploy and other operator actions require root-approved operator status, which can only be granted by an approval seed today
+
+probably do not list local changes on the Deploy page
+	it currently names the locally changed tracked files (e.g. public/.htaccess)
+
+replace PHP's built-in session management (flaky, causes many hard-to-diagnose issues)
+	outline for a Railspike Step 1 (solution assessment) in a new conversation:
+	problem
+		sign-in silently drops or never sticks, and each failure looks different; PHP sessions hide state in
+			server files, cookies and ini settings the app does not control
+	observed failures (2026-11-02 unless noted)
+		POST /tools/deploy/ ran without a session: sessions only start for an allowlist of paths in
+			Application::handle(), so new routes are signed out unless added there
+		operator session lapsed mid-evening: cookie lasts ~400 days, but PHP's server-side session files
+			expire on its own GC schedule (default 24 minutes idle)
+		"Authentication challenge is missing or expired" on the phone: a Secure PHPSESSID set over https
+			is not sent over http and blocks http from setting a new one, so every http request got a
+			fresh empty session; the server itself was fine
+		earlier: sign-in rotation race needed the SessionRotation forwarding workaround
+			(docs/plans/session_rotation_race_decision.md)
+		tests: $_SESSION stays populated after session_write_close(), which hid the deploy bug above
+	current inventory
+		only three session keys: authenticated_identity_id, forum_auth_challenges, lobby_identity_id
+		readers/writers: Application (start/resume + path allowlist), RouteServices::securityReviewAllowed,
+			AuthApiController (challenge + sign-in), SessionRotation, IdentityHintController,
+			UserAccessController, LlmExchangesController, ProfileRepository, Docs renderer/publication,
+			DeployController
+		cookie: PHPSESSID, Lax, HttpOnly, Secure only when the request is https, strict mode on
+	options to compare
+		A: app-owned server sessions: random token cookie, rows in a small SQLite table (identity,
+			created/last-seen/expires, rotated-from), explicit expiry and rotation, no PHP session
+			functions or ini settings
+		B: stateless signed cookie: identity + expiry signed with a server secret from private config;
+			challenges become signed nonces with a short replay table; no server session state at all
+		C: keep PHP sessions but harden: one start point for every route, own save path and lifetime
+			matching the cookie, redirect http to https, one cookie name
+		combinations: e.g. B for identity, A-style table only for challenge replay
+	constraints and questions
+		minimal dependencies, inspectable state, Key: value where human-facing; server HTML stays the
+			same for every viewer
+		members-only mode, lobby, private messages and operator tools all depend on the signed-in check
+		revocation: can sign-out or key removal end a session immediately (A yes, B needs a deny list)?
+		migration: existing PHPSESSID sessions end; browsers holding a key should sign back in silently
+		http vs https: decide whether to force https site-wide regardless of the option chosen
+	success criteria to carry into Step 2
+		one function answers "who is signed in" for every route and test, with no path allowlist
+		a signed-in operator stays signed in for the cookie's stated lifetime unless they sign out
+		sign-in works the same over http and https (or http redirects)
+		tests exercise the real cookie round trip, not a pre-filled $_SESSION
+	related todo: Deploy page Sign in button (reuse the Access history sign-in)
+
+New-version reload banner fires when nothing was deployed
+	/api/version returns the content repository's git head (ReadModelMetadata::repositoryHead on
+		FORUM_REPOSITORY_ROOT), so it changes with every post and background job; that is why
+		FORUM_APP_VERSION_NOTIFICATION was turned off on prod (2026-11-02)
+	point it at the code checkout's head instead so the banner means "a deploy happened"
+	then re-enable the flag: version_check.js polls on tab focus and page restore, which is the
+		stale-page-on-phone case
+
+Recent icon touches its label on desktop in the icon themes
+	theme-nav-icons.css: the [href="/recent/"]::before rule lacks the margin-right the other
+		nav icons share; Word97, Chicago and Midnight
+
+Checkout housekeeping (seen 2026-11-03)
+	~/v3 is still on feature/key-retirement; that branch merged into main at fd4d0e022, switch to main
+	~/agent/v3-codex-4 is stuck mid-merge on docs/plans/effort_estimation_trial.md (UU), resolve or abort
+	~/agent/v3-claude-4 is a main checkout not registered with ./v3 checkouts
+	~/v3, ~/agent/v3-codex and ~/agent/v3-codex-2 list prunable worktrees under /tmp; git worktree prune
+
+Capacity study follow-up cycles (Step 1 drafted 2026-11-01, awaiting Approved Step 1 each)
+	recommended order: import compatibility, then rebuild memory bound, then PHP 8.3 host verification;
+		import and rebuild touch disjoint code and can run in parallel
+	repository archive import compatibility (0.45): import-repository should accept the ordinary TAR
+		download's repository/records layout
+		docs/plans/repository_import_compatibility_step1_solution_assessment.md
+	rebuild memory bound (1.00): normal rebuild exhausts 128 MiB at 40000 records while filling parsedPosts
+		docs/plans/rebuild_memory_bound_step1_solution_assessment.md
+	PHP 8.3 and FastCGI host verification (0.65): staging replay after rebuild acceptance; needs import
+		compatibility if the staging corpus is loaded from an archive
+		docs/plans/php83_host_verification_step1_solution_assessment.md

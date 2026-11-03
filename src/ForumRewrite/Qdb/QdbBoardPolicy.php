@@ -9,7 +9,7 @@ use ForumRewrite\ReadModel\ViewerTagLookup;
 
 final class QdbBoardPolicy
 {
-    private const PAGE_SIZE = 25;
+    public const PAGE_SIZE = 25;
     private const PAGINATED_SECTIONS = ['latest', 'top', 'leetness', 'search'];
 
     /**
@@ -60,6 +60,12 @@ final class QdbBoardPolicy
             'threads' => array_slice($threads, ($page - 1) * self::PAGE_SIZE, self::PAGE_SIZE),
             'pagination' => BoardViewOptions::pagination($basePath ?? '/' . $activeSection, $page, $totalPages),
         ];
+    }
+
+    public function pagination(int $count, int $page, string $basePath): ?array
+    {
+        $totalPages = max(1, (int) ceil($count / self::PAGE_SIZE));
+        return BoardViewOptions::pagination($basePath, max(1, min($page, $totalPages)), $totalPages);
     }
 
     /**

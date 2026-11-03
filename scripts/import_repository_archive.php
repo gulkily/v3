@@ -21,15 +21,15 @@ if ($arguments['help'] || $arguments['archive_path'] === null) {
 $archivePath = normalizeExistingPath($arguments['archive_path'], getcwd());
 $repositoryRoot = normalizePath(
     $arguments['repository_root']
-        ?? (getenv('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)),
+        ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot)),
     getcwd(),
 );
 $databasePath = normalizePath(
     $arguments['database_path']
-        ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')),
+        ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')),
     getcwd(),
 );
-$artifactRoot = $arguments['artifact_root'] ?? (getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: null);
+$artifactRoot = $arguments['artifact_root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: null);
 $artifactRoot = $artifactRoot !== null && $artifactRoot !== ''
     ? normalizePath($artifactRoot, getcwd())
     : null;
@@ -108,6 +108,18 @@ try {
                 throw new RuntimeException('Conflicting approval receipt: ' . $id);
             }
             $approvalEvidence[$id] = $canonical;
+        }
+    }
+
+    // Administrative restore accepts only complete verified retirement bundles;
+    // conflicting target evidence must fail before any canonical file is copied.
+    $retirements = [];
+    foreach ([$repositoryRoot, $sourceRoot] as $retirementRoot) {
+        foreach (\ForumRewrite\Security\KeyRetirement::all($retirementRoot) as $identity => $record) {
+            $bundle = [$record['canonical_record'], file_get_contents($retirementRoot.'/'.$record['source_path'].'.asc'),
+                file_get_contents($retirementRoot.'/'.\ForumRewrite\Security\KeyRetirement::acceptancePath($identity))];
+            if (isset($retirements[$identity]) && $retirements[$identity] !== $bundle) throw new RuntimeException('Conflicting retirement evidence: '.$identity);
+            $retirements[$identity] = $bundle;
         }
     }
 
@@ -462,6 +474,7 @@ function locateSourceRepositoryRoot(string $extractRoot): string
 {
     $candidates = [
         $extractRoot . '/local_repository',
+        $extractRoot . '/repository',
         $extractRoot,
     ];
 
@@ -471,7 +484,7 @@ function locateSourceRepositoryRoot(string $extractRoot): string
         }
     }
 
-    throw new RuntimeException('Archive does not contain records/ or local_repository/records/.');
+    throw new RuntimeException('Archive does not contain records/, repository/records/ or local_repository/records/.');
 }
 
 /**

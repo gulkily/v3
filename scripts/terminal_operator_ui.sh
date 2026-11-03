@@ -59,7 +59,8 @@ if [[ ! -t 0 || ! -t 1 || ! -t 2 ]]; then
   exit 1
 fi
 
-home_status="Repository: ${FORUM_REPOSITORY_ROOT:-${root}/state/local_repository}"
+# Same lookup as the app: environment, then the private file, then the default.
+home_status="Repository: $(php -r 'require $argv[1] . "/autoload.php"; echo \ForumRewrite\Support\DeploymentSettings::value("FORUM_REPOSITORY_ROOT") ?: $argv[1] . "/state/local_repository";' "$root" 2>/dev/null)"
 home_observed=''
 refresh_home
 choice=refresh

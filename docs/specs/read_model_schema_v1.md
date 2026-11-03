@@ -20,6 +20,14 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 43 adds QDB numbered-page selection over existing thread/post fields,
+counting eligible rows and selecting IDs in one read snapshot before loading
+at most 25 bodies. PHP scalar predicates preserve quote-ID and legacy tag-list
+semantics; Search retains trimmed literal PHP stripos matching and activity/ID
+order. Latest/Top/Leetness preserve pin priority and creation/ID tie breaks,
+with score/distance ordering where applicable. No stored columns change;
+prior-version startup rebuild is required.
+
 When changing a core read-model table, column, index, constraint, or a query
 that requires one, increment `ReadModelMetadata::SCHEMA_VERSION` in the same
 change. Application startup uses that version to identify an incompatible
@@ -33,7 +41,7 @@ Adding a **table** needs only its `CREATE TABLE` statement in
 (`ReadModelBuilder::dropSchema()`) derives the tables to drop from
 `ReadModelSchema::tableNames()` (parsed from those statements), so a new table is
 dropped-and-recreated on in-place rebuild automatically — there is no separate
-drop list to keep in sync. (A forgotten entry previously caused in-place rebuilds
+drop list to keep in sync. Shared schema helpers must emit plain `CREATE TABLE` for this read-model path, rather than `CREATE TABLE IF NOT EXISTS`, so the table-name parser includes their tables. (A forgotten entry previously caused in-place rebuilds
 to fail with `table <name> already exists`.) Indexes need no drop step; dropping
 a table drops its indexes. Read-model tables declare no foreign keys, so drop
 order is immaterial.
@@ -595,3 +603,46 @@ and retracted roots excluded before pagination. Membership is case-insensitive a
 deduplicated per root. Activity time and root ID descending are stable page boundaries;
 only 25 selected roots are hydrated. Tables are unchanged. Prior-version startup
 rebuilds before the new query executes, following the core-query version contract.
+
+## Version 40 — QDB welcome selection
+
+QdbWelcomeSelection streams root ID, authored date and board-tag metadata in
+activity/ID descending order. It applies the existing hidden-bootstrap and quote-ID
+rules in PHP, counts all eligible quotes, and retains five recent quote IDs plus
+three news IDs (authored date/ID descending). Only those selected roots are hydrated,
+sharing a loaded row when a quote is also news. News More state reflects the complete
+eligible news count. Tables and indexes are unchanged; prior-version startup rebuilds
+before this new core query executes. Full metadata examination/sorting is still
+required; this bounds PHP retention and body transfer, not SQLite scan work.
+
+## Version 41 — Bounded message recovery
+
+Add profiles_sync_keys on profiles(username_token, is_approved, identity_id) for bounded private-message recovery key enumeration. Startup rebuilds prior versions before the query runs; no canonical record change.
+
+Also adds history_keys_revision and profile mutation triggers. Tokens change on key identity, account, approval or public-key changes, not unrelated profile activity. History recovery uses this public membership revision without enumerating all keys; tokens are rebuilt with the derived database.
+
+Integration: The message-recovery branch used versions 39 and 40 locally. Main already used those versions for tag and QDB selection. Version 41 combines both sets of changes and rebuilds either prior version before use.
+
+## Version 42 — Recent public conversation
+
+Adds posts_recent_idx on posts(created_at DESC, post_id DESC), restricted to non-hidden, non-retracted posts. Recent uses bounded text projections and canonical post/date cursor keys; identity/bootstrap and expansion records remain excluded. No canonical format or table columns change. Normal startup rebuilds older read models before the Recent query; CLI rebuild recreates the index.
+
+## Version 43 — QDB numbered-page selection integration
+
+Combines main's version-41 message recovery and version-42 Recent indexes with
+QDB count/select-before-hydration queries. The QDB branch used version 41 locally;
+integration advances to 43 so either lineage rebuilds before the new queries run.
+No additional tables or indexes are needed for QDB selection.
+
+## Version 44 — Key retirement eligibility
+
+Profiles add `bootstrap_username_token` and `has_name_history` for the approved
+rename-disabled retirement policy; verified historical/imported name changes
+remain visible to eligibility even when rename activity is hidden. Profiles add
+`retired_at`, `retired_by_identity_id` and `was_approved`. `is_approved` is effective
+current membership; `was_approved` retains historical grant eligibility for retired
+keys. Derive the retained approval graph and historical attribution first, then
+apply accepted retirement in full rebuild and incremental metadata completion.
+Original canonical grants, public keys and signatures are unchanged. Startup
+rebuilds older read models before queries use the new fields. Integrated after
+main's versions 42 and 43; the branch used 42 locally.

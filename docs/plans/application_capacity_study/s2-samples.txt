@@ -1,0 +1,274 @@
+Sample: s1-tiny-rebuild
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.292668
+Sampled aggregate RSS bytes: 37572608
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 1273856
+Log SHA256: fa8cbf6b37b1a86a62f9e2170a0860ddc09fdce04a5bcdb26f20aa3c33dd2825
+
+Sample: s1-overhead-0
+Command: php -r 'echo "ok\n";'
+Exit: 0
+Stop: none
+Elapsed seconds: 0.024154
+Sampled aggregate RSS bytes: 4849664
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22
+
+Sample: s1-overhead-1
+Command: php -r 'echo "ok\n";'
+Exit: 0
+Stop: none
+Elapsed seconds: 0.026467
+Sampled aggregate RSS bytes: 12189696
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22
+
+Sample: s1-overhead-2
+Command: php -r 'echo "ok\n";'
+Exit: 0
+Stop: none
+Elapsed seconds: 0.024511
+Sampled aggregate RSS bytes: 5505024
+Observed processes: 1
+Sampled read bytes: 0
+Sampled write bytes: 0
+Log SHA256: dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22
+
+Sample: prepare-1000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.261759
+Sampled aggregate RSS bytes: 49500160
+Observed processes: 2
+Sampled read bytes: 8192
+Sampled write bytes: 10006528
+Log SHA256: 539fd178131d3faa6c699d15fe3b0ac98ae6a524d3cc2596d045f6dd97496335
+
+Sample: reads-1000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1000
+Exit: 1
+Stop: none
+Elapsed seconds: 0.622754
+Sampled aggregate RSS bytes: 66105344
+Observed processes: 2
+Sampled read bytes: 2199552
+Sampled write bytes: 1933312
+Log SHA256: 23ed2c2f22c266685481ac55810975add5ed69cad2307ba6488e855bb508eafb
+
+Sample: prepare-1000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.280785
+Sampled aggregate RSS bytes: 49762304
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10010624
+Log SHA256: 3ba398ddacc8a614764b043a8c3ab2963a90b396e96f02d9f6c32c179303226b
+
+Sample: reads-1000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1000
+Exit: 0
+Stop: none
+Elapsed seconds: 0.756633
+Sampled aggregate RSS bytes: 67219456
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 2658304
+Log SHA256: 8b6a963f590ecd20240f43d4a0912a7e4c079d69bd661117b3a8b1cfd7182243
+
+Sample: prepare-10000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 2.799382
+Sampled aggregate RSS bytes: 159821824
+Observed processes: 6
+Sampled read bytes: 4096
+Sampled write bytes: 97894400
+Log SHA256: c774670ff420798a08de4e8b49af7690ed9728b8cae7efff57c4cbd9721575b3
+
+Sample: reads-10000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 10000
+Exit: 0
+Stop: none
+Elapsed seconds: 2.025776
+Sampled aggregate RSS bytes: 132132864
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 2658304
+Log SHA256: ebdcafecd628dea0d966bc7bb5c9a734ad5097b08f370eedb5a225d19fbdeb83
+
+Sample: prepare-40000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 1
+Stop: none
+Elapsed seconds: 1.520562
+Sampled aggregate RSS bytes: 166072320
+Observed processes: 6
+Sampled read bytes: 0
+Sampled write bytes: 12288
+Log SHA256: dcb7d5f8c686ebf9f63055e6dbd6b5e41a42ca6703424ecd9f507e6c7f90f8db
+
+Sample: reset-after-40k
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.389842
+Sampled aggregate RSS bytes: 49897472
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10006528
+Log SHA256: a59fd1fbf49b7a6880255b182e05851a49f221f3beedf8fae47e2e91fe0ba959
+
+Sample: signed-http
+Command: php /tmp/v3-capacity-5wrtjih3/signed_driver.php
+Exit: 0
+Stop: none
+Elapsed seconds: 2.299560
+Sampled aggregate RSS bytes: 87154688
+Observed processes: 6
+Sampled read bytes: 8192
+Sampled write bytes: 60780544
+Log SHA256: 63c60d55443b60bfb8abc9b698bf5c90e054333c1540524f32055f7e59aebd3b
+
+Sample: final-prepare-1000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.357542
+Sampled aggregate RSS bytes: 50008064
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10006528
+Log SHA256: 746299f18155594ecae29dbccf35e9bf316df7d8dcc954d30a3b7457163f2ca9
+
+Sample: final-reads-1000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1000
+Exit: 0
+Stop: none
+Elapsed seconds: 0.944051
+Sampled aggregate RSS bytes: 67379200
+Observed processes: 2
+Sampled read bytes: 8192
+Sampled write bytes: 3493888
+Log SHA256: e1775089f9b5c7b71d70677a459db8353abb98358cab947f7cb20cef9bbe7beb
+
+Sample: final-prepare-10000
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 2.915320
+Sampled aggregate RSS bytes: 159895552
+Observed processes: 6
+Sampled read bytes: 4096
+Sampled write bytes: 97517568
+Log SHA256: b029ca9823b658ca7c1a617a0f904912eff0f71182417c5b9fd1175d359e964e
+
+Sample: final-reads-10000
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 10000
+Exit: 0
+Stop: none
+Elapsed seconds: 1.834946
+Sampled aggregate RSS bytes: 132399104
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 3493888
+Log SHA256: 1a779f2d2f657d512533b201962982891db6fd424df9c5edc225c24115e42f78
+
+Sample: signed-session-http
+Command: php /tmp/v3-capacity-5wrtjih3/signed_driver.php
+Exit: 255
+Stop: none
+Elapsed seconds: 11.348728
+Sampled aggregate RSS bytes: 197406720
+Observed processes: 22
+Sampled read bytes: 8192
+Sampled write bytes: 1174753280
+Log SHA256: c056ce72d7eaf35eab11c7a672a5dcd4778c3dbddbee036b892bad697d44becf
+
+Sample: max-record-rebuild
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.546149
+Sampled aggregate RSS bytes: 90722304
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 33845248
+Log SHA256: 9cae0698f8a1dc8b364be63c3ba74838d5ad8243744de58a906127db913f3d53
+
+Sample: signed-reset-clean
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.371051
+Sampled aggregate RSS bytes: 49950720
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10006528
+Log SHA256: cf52afe505aebd096d2d246f0f584679f3075f63c9e53a000f5a63df7efa9549
+
+Sample: signed-session-clean
+Command: php /tmp/v3-capacity-5wrtjih3/signed_driver.php
+Exit: 255
+Stop: none
+Elapsed seconds: 2.324406
+Sampled aggregate RSS bytes: 91766784
+Observed processes: 8
+Sampled read bytes: 8192
+Sampled write bytes: 121188352
+Log SHA256: 0a5f056c72cade54f5087b5387b159617db191d03c3865ba4cc81becfa5d6266
+
+Sample: signed-reset-final
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.329958
+Sampled aggregate RSS bytes: 50286592
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 10006528
+Log SHA256: 62a1b3cc8655dbf3270898a44c517933bb8e6c2714c412977a85c164939951dd
+
+Sample: signed-session-final
+Command: php /tmp/v3-capacity-5wrtjih3/signed_driver.php
+Exit: 0
+Stop: none
+Elapsed seconds: 2.304835
+Sampled aggregate RSS bytes: 87326720
+Observed processes: 5
+Sampled read bytes: 4096
+Sampled write bytes: 60624896
+Log SHA256: bd1b14159912aa6f1e50157cabe629ed36cec32cab5a5edcc96968f6248b7691
+
+Sample: max-record-clean
+Command: ./v3 rebuild /tmp/v3-capacity-5wrtjih3/repository /tmp/v3-capacity-5wrtjih3/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 0.424591
+Sampled aggregate RSS bytes: 90726400
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 33845248
+Log SHA256: c41967edcc1b19796004e8c0c9baf16b8f7da5d74632fc2d0d9df059594f5986
+
+Sample: max-record-reads
+Command: python3 /tmp/v3-capacity-5wrtjih3/read_driver.py 1
+Exit: 0
+Stop: none
+Elapsed seconds: 2.485724
+Sampled aggregate RSS bytes: 209104896
+Observed processes: 2
+Sampled read bytes: 4096
+Sampled write bytes: 94801920
+Log SHA256: 84a79bf262242d57f5458d43478fe30d3202f52cef89850d94c9598ff64d8d65

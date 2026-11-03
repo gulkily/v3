@@ -103,6 +103,7 @@ final class TaskQueueCommandTest
 
         assertSame(0, $exitCode);
         assertStringContains('Task queue cron reference', $stdout);
+        assertStringContains('Site settings: ' . \ForumRewrite\Support\PrivateConfig::path(dirname(__DIR__)), $stdout);
         assertStringContains('php scripts/task_queue.php run --quiet --limit=1', $stdout);
         assertStringNotContains('enqueue-offline-snapshot', $stdout);
         assertStringContains('/tmp/forum-task-queue-test.log', $stdout);

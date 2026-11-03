@@ -31,7 +31,7 @@ window.forumAccountInitialNameHint = function () {
 };
 window.forumAccountInitialNameHint();
 </script>
-<section class="stack account-page" data-account-key-root data-account-state="guest" data-sky="account" data-username-changes-enabled="<?= $usernameChangesEnabled ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-auth-in-place data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-approved="<?= $viewerApproved ? '1' : '0' ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
+<section class="stack account-page" data-account-key-root data-account-state="guest" data-sky="account" data-username-changes-enabled="<?= $usernameChangesEnabled ? '1' : '0' ?>" data-authenticated-username="<?= $e($authenticatedIdentityId !== '' ? (string) ($viewerProfile['username'] ?? '') : '') ?>" data-private-site-auth-state data-auth-in-place data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-retired="<?= !empty($viewerProfile['retired_at']) ? '1' : '0' ?>" data-viewer-approved="<?= $viewerApproved ? '1' : '0' ?>" data-profile-link-authorized="<?= $viewerProfileHref !== '' ? '1' : '0' ?>">
 <script>
   var accountRootBeforePaint = document.currentScript.parentElement;
   accountRootBeforePaint.dataset.accountState = window.ForumAccountState.accountState(accountRootBeforePaint);
@@ -56,6 +56,7 @@ window.forumAccountInitialNameHint();
         <p class="account-key-line"><span>This browser’s key</span> <span class="chip" data-role="simple-status-badge" hidden></span></p>
       </div>
     </div>
+    <p data-account-when="retired">This key is retired. Restore another approved key, or ask an operator to approve a replacement.</p>
     <p class="meta" data-account-when="waiting">You can post now. Posts from this key show as pending until a member approves it.</p>
     <p class="meta" data-role="join-hint" hidden>Approved members already use <span data-role="join-hint-name"></span>. Posts from this key join <span data-role="join-hint-name"></span> once a member approves it.</p>
     <p class="account-user-link" data-account-when="approved"><a data-role="user-link" href="/users/">All of <span data-role="user-link-name">your</span> posts</a></p>
@@ -263,7 +264,7 @@ No browser private key saved yet.
           if (storedFingerprint() !== fingerprint) {
             return;
           }
-          root.dataset.lookedUpApproval = /^Approved: yes$/m.test(text) ? 'approved' : 'waiting';
+          root.dataset.lookedUpApproval = /^Retired: yes$/m.test(text) ? 'retired' : (/^Approved: yes$/m.test(text) ? 'approved' : 'waiting');
           syncSimpleUI();
         })
         .catch(function () {});

@@ -18,7 +18,7 @@ try {
         if (str_starts_with($arg, '--repository-root=')) { $options['root'] = substr($arg, 18); continue; }
         throw new RuntimeException('Unknown option: ' . $arg . '. Use --help.');
     }
-    $root = realpath($options['root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: dirname(__DIR__) . '/state/local_repository'));
+    $root = realpath($options['root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: dirname(__DIR__) . '/state/local_repository'));
     if ($root === false || !is_dir($root)) throw new RuntimeException('Repository must already exist; use --repository-root.');
     $result = (new ForumRewrite\Support\AgentResponseFormatReadiness($root))->inspect();
     if (isset($options['json'])) echo json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n";

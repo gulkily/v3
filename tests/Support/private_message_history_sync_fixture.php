@@ -26,7 +26,7 @@ if($action==='init' || $action==='seed-approvals') {
 }
 if($action==='messages') {
     $store=new PrivateMessageStore(new PDO('sqlite:'.$root.'/state/private/messages.sqlite3'));
-    foreach($input['messages'] as $message) $store->storeEnvelope($message['id'],$message['time'],$message['sender'],$message['recipient'],$message['fingerprint'],$message['envelope']);
+    foreach($input['messages'] as $message) $store->storeEnvelope($message['id'],$message['time'],$message['sender'],$message['recipient'],str_starts_with($message['fingerprint'],'openpgp:')?$message['fingerprint']:'openpgp:'.$message['fingerprint'],$message['envelope']);
 }
 if($action==='inspect') {
     $db=new PDO('sqlite:'.$root.'/state/private/messages.sqlite3');
@@ -40,4 +40,18 @@ if($action==='contributions') {
     $sync=new PDO('sqlite:'.$root.'/state/private/message_history_sync.sqlite3');
     $q=$sync->prepare('SELECT COUNT(DISTINCT message_id) FROM history_sync_items WHERE source=? AND target=?');
     $q->execute([$input['source'],$input['target']]);echo $q->fetchColumn();
+}
+
+if($action==='settled-scale') {
+    $profiles=new PDO('sqlite:'.$root.'/read.sqlite3');
+    foreach($input['keys'] as $key) {
+        $q=$profiles->prepare('INSERT INTO profiles(identity_id,profile_slug,username,username_token,fallback_label,signer_fingerprint,bootstrap_post_id,bootstrap_thread_id,public_key,is_approved) VALUES (?,?,?,?,?,?,?,?,?,1)');
+        $q->execute(['openpgp:'.$key['fingerprint'],'openpgp-'.$key['fingerprint'],'alice','alice','alice',$key['fingerprint'],'fixture-'.$key['fingerprint'],'fixture-'.$key['fingerprint'],$key['publicKey']]);
+    }
+    $sync=new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(new PDO('sqlite:'.$root.'/state/private/message_history_sync.sqlite3'));
+    foreach($input['transfers'] as $transfer) {
+        $id=$sync->upload($transfer['account'],$input['source'],$transfer['target'],$transfer['ciphertext'],$transfer['items']);
+        if($transfer['account']==='alice')$sync->acknowledge('alice',$transfer['target'],array_map(fn($item)=>$item+['transfer_id'=>$id],$transfer['items']));
+    }
+    echo $profiles->query("SELECT count(*) FROM profiles WHERE username_token='alice' AND is_approved=1")->fetchColumn();
 }

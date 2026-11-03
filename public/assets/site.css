@@ -726,6 +726,11 @@ pre {
   background: linear-gradient(var(--panel), var(--panel)), var(--page-bg, Canvas);
 }
 
+.board-sort__menu--end {
+  left: auto;
+  right: 0;
+}
+
 .board-sort__menu .nav-link[aria-current] {
   color: var(--active-ink);
   background: var(--active-bg);
@@ -832,25 +837,20 @@ pre {
 .users-page__title {
   margin: 0;
 }
-.users-tools {
-  display: flex;
-  gap: 0.5rem;
-}
-.users-tools input[type="search"] {
-  flex: 1 1 auto;
+/* A search field inside the board toolbar (Users); it filters the list already on the page, so it is script-only. */
+.board-toolbar__search {
+  flex: 1 1 12rem;
   min-width: 0;
-  margin: 0;
-}
-.users-tools select {
-  flex: 0 0 auto;
   width: auto;
   margin: 0;
+  padding: 0.45rem 0.7rem;
 }
 @media (scripting: none) {
-  .users-tools {
+  .board-toolbar__search {
     display: none;
   }
 }
+.thread-rows > .thread-row[hidden],
 .account-group > .account-row[hidden],
 .person-head > .starfield.banner:empty {
   display: none;

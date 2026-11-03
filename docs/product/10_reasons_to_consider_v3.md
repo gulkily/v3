@@ -16,7 +16,7 @@ A student club changes officers. A reading group changes organizers. A volunteer
 
 These are ordinary events in the life of a community. They should not put its accumulated work at risk.
 
-v3 stores its canonical discussion records as plain-text files in Git, which tracks their history. Its database and generated pages are built from those records. The Backup page offers downloads of the content repository, including its Git history, and the read-model database; operator tools can import a repository archive and rebuild the site. [Architecture and backup details](../architecture/public_architecture_and_trust.md)
+v3 stores its canonical discussion records as plain-text files in Git, which tracks their history. Its database and generated pages are built from those records. The Backup page offers downloads of the current content repository (without its Git history, which stays with the operator) and the read-model database; operator tools can import a repository archive and rebuild the site. [Architecture and backup details](../architecture/public_architecture_and_trust.md)
 
 That gives a community something concrete to hand to its next steward: the record and a way to reconstruct its discussion space. Preservation still takes backups and someone responsible for them, but continuity is part of the design.
 

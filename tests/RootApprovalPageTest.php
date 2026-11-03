@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 
 use ForumRewrite\Application;
@@ -87,13 +88,13 @@ final class RootApprovalPageTest
         $this->fixture(function ($workspace, $root, $db): void {
             putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
             foreach ([self::URL, '/source/current/' . self::SOURCE] as $url) {
-                $_SESSION = [];
                 $_COOKIE = ['identity_hint' => self::ID];
+                TestViewerSession::signedOut();
                 $denied = $this->render($root, $db, $url);
                 assertSame(401, http_response_code());
                 assertStringNotContains('initial approved fixture user', $denied);
-                $_SESSION = ['authenticated_identity_id' => self::ID];
                 $_COOKIE = [];
+                TestViewerSession::signIn(self::ID);
                 $allowed = $this->render($root, $db, $url);
                 assertSame(200, http_response_code());
                 assertStringContains('initial approved fixture user', $allowed);
@@ -109,17 +110,17 @@ final class RootApprovalPageTest
             $writer = new LocalWriteService($root, $db, $workspace->root . '/artifacts', new CanonicalRecordRepository($root));
             $target = $writer->linkIdentity(['public_key' => file_get_contents(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc')]);
             putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-            $_SESSION = ['authenticated_identity_id' => $target['identity_id']];
+            TestViewerSession::signIn($target['identity_id']);
             $this->render($root, $db, self::URL);
             assertSame(403, http_response_code());
             putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
-            $_SESSION = [];
+            TestViewerSession::signedOut();
             $grant = $writer->approveUser(['approver_identity_id' => self::ID, 'target_identity_id' => $target['identity_id'],
                 'target_profile_slug' => $target['profile_slug'], 'thread_id' => $target['bootstrap_thread_id'], 'parent_id' => $target['bootstrap_post_id']]);
             $html = $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug']);
             assertStringContains('href="/posts/' . $grant['post_id'] . '">Approval evidence</a>', $html);
             putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-            $_SESSION = ['authenticated_identity_id' => $target['identity_id']];
+            TestViewerSession::signIn($target['identity_id']);
             assertStringContains('initial approved fixture user', $this->render($root, $db, self::URL));
             assertSame(200, http_response_code());
         });
@@ -188,18 +189,15 @@ final class RootApprovalPageTest
         $root = $workspace->repository('repository', true);
         $db = $workspace->root . '/read.sqlite3';
         $flag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $session = $_SESSION ?? [];
         $cookies = $_COOKIE;
-        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-        $_SESSION = []; $_COOKIE = [];
+        $_COOKIE = [];
         putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
         try {
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             $test($workspace, $root, $db);
         } finally {
-            $_SESSION = $session; $_COOKIE = $cookies;
+            TestViewerSession::reset(); $_COOKIE = $cookies;
             putenv($flag === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $flag);
-            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         }
     }
 

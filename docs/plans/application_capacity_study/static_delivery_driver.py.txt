@@ -1,0 +1,24 @@
+import collector as c
+import socket,subprocess,time,urllib.request,hashlib,re
+r=c.ROOT;c.ENV['FORUM_STATIC_HTML_ROOT']=str(r/'s7-static');servers=[]
+try:
+ for kind in ('php','files'):
+  sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
+  args=['php','-S',f'127.0.0.1:{port}','-t',str(c.APP/'public'),str(r/'router.php')] if kind=='php' else ['python3','-m','http.server',str(port),'--bind','127.0.0.1','--directory',str(r/'s7-static/current')]
+  log=open(r/f's7-{kind}-server.log','wb');p=subprocess.Popen(args,cwd=c.APP,env=c.ENV,stdout=log,stderr=log);servers.append((p,log))
+  for _ in range(100):
+   try:s=socket.create_connection(('127.0.0.1',port),.1);s.close();break
+   except OSError:time.sleep(.05)
+  for route,file in [('/','index.html'),('/latest/','latest/index.html'),('/top/','top/index.html')]:
+   if kind=='php' and route!='/':route=route.rstrip('/')
+   expected=(r/'s7-static/current'/file).read_bytes()
+   for i in range(3):
+    start=time.monotonic()
+    with urllib.request.urlopen(f'http://127.0.0.1:{port}'+route,timeout=30) as response:body=response.read();status=response.status;cache=response.headers.get('Cache-Control','absent')
+    elapsed=time.monotonic()-start
+    exact=body==expected
+    if kind=='files':assert exact
+    if route!='/':assert len(set(re.findall(rb'thread-20261030000000-qdb-\d+',body)))==25
+    print(f'Delivery: {kind}\nRoute: {route}\nRepeat: {i}\nStatus: {status}\nElapsed seconds: {elapsed:.6f}\nBytes: {len(body)}\nMatches activated HTML bytes: {exact}\nCache-Control: {cache}\nSHA256: {hashlib.sha256(body).hexdigest()}\n',flush=True)
+finally:
+ for p,log in servers:p.terminate();p.wait(timeout=5);log.close()

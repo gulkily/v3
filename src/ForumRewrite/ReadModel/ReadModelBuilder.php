@@ -103,6 +103,7 @@ final class ReadModelBuilder
             $this->measure('index_commits', fn (): mixed => $this->indexCommits($pdo));
             $this->measure('index_reaction_signatures', fn (): mixed => ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot));
             $this->measure('index_activity_evidence', fn (): mixed => ActivityEvidenceIndex::refresh($pdo, $this->repositoryRoot, $this->databasePath));
+            \ForumRewrite\Security\KeyRetirement::apply($pdo, $this->repositoryRoot);
             $this->measure('write_metadata', fn (): mixed => $this->writeMetadata($pdo));
             $this->measure('apply_verified_attribution', fn (): mixed => VerifiedAttribution::sync($pdo, $this->repositoryRoot, $this->attributionCutoff));
             $this->measure('commit_read_model', fn (): bool => $pdo->commit());
@@ -755,10 +756,10 @@ final class ReadModelBuilder
         $insertProfile = $pdo->prepare(
             'INSERT INTO profiles (
                 identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint,
-                bootstrap_post_id, bootstrap_thread_id, public_key
+                bootstrap_post_id, bootstrap_thread_id, public_key, bootstrap_username_token, has_name_history
              ) VALUES (
                 :identity_id, :profile_slug, :username, :username_token, :fallback_label, :signer_fingerprint,
-                :bootstrap_post_id, :bootstrap_thread_id, :public_key
+                :bootstrap_post_id, :bootstrap_thread_id, :public_key, :bootstrap_username_token, :has_name_history
              )'
         );
         $insertUsernameRoute = $pdo->prepare(
@@ -804,6 +805,8 @@ final class ReadModelBuilder
                 'bootstrap_post_id' => $identity->bootstrapByPost,
                 'bootstrap_thread_id' => $identity->bootstrapByThread,
                 'public_key' => $publicKey->armoredKey,
+                'bootstrap_username_token' => strtolower($bootstrapUsername),
+                'has_name_history' => isset($nameHistory[$identity->identityId]) ? 1 : 0,
             ];
 
             $insertProfile->execute($profile);

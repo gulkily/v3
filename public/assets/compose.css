@@ -194,6 +194,22 @@
   visibility: hidden;
 }
 
+/* Phones: the full composer (New post page, paned New Thread dialog) starts at the
+   compact form's body height and reserves nothing between the body and Post, so
+   both fit above the on-screen keyboard. Wider screens keep the taller body and
+   the reserved picker footprint above. */
+@media (max-width: 639px) {
+  .compose-page [data-compose-kind="thread"] textarea[name="body"],
+  .paned-compose-form textarea[name="body"] {
+    height: 5.5rem;
+    min-height: 5.5rem;
+    resize: vertical;
+  }
+  .compose-page .image-compose-fields[hidden] {
+    display: none !important;
+  }
+}
+
 /* A phone reply is one bounded panel: editor, feedback and actions participate
    in the same layout. No independent submit overlay can cover the textarea.
    The repeated attribute keeps theme card padding/stack margins from overriding

@@ -1,0 +1,41 @@
+Sample: signed-post-0
+Response: {"status":"ok","post_id":"thread-20261101064912-ac2af909629ccb765eea7357c80177b1","thread_id":"thread-20261101064912-ac2af909629ccb765eea7357c80177b1","identity_id":"openpgp:4e7193e9d27c80c967a7fec1ec6d3df815421392","profile_slug":"openpgp-4e7193e9d27c80c967a7fec1ec6d3df815421392","bootstrap_post_id":"bootstrap-20261101064912-e3364ed71db73ba7ef604f71d00608db","record_path":"records/posts/2026/11/01/thread-20261101064912-ac2af909629ccb765eea7357c80177b1.txt","signature_path":"records/posts/2026/11/01/thread-20261101064912-ac2af909629ccb765eea7357c80177b1.txt.asc","commit_sha":"4f55d0b2576a9cc535d1cd7a16333d33c9910517","replayed":false}
+
+Elapsed seconds: 0.78778719902039
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-1
+Response: {"status":"ok","post_id":"thread-20261101064912-ac2af909629ccb765eea7357c80177b1","thread_id":"thread-20261101064912-ac2af909629ccb765eea7357c80177b1","identity_id":"openpgp:4e7193e9d27c80c967a7fec1ec6d3df815421392","profile_slug":"openpgp-4e7193e9d27c80c967a7fec1ec6d3df815421392","bootstrap_post_id":"bootstrap-20261101064912-e3364ed71db73ba7ef604f71d00608db","record_path":"records/posts/2026/11/01/thread-20261101064912-ac2af909629ccb765eea7357c80177b1.txt","signature_path":"records/posts/2026/11/01/thread-20261101064912-ac2af909629ccb765eea7357c80177b1.txt.asc","commit_sha":"4f55d0b2576a9cc535d1cd7a16333d33c9910517","replayed":true}
+
+Elapsed seconds: 0.57673501968384
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Sample: signed-post-2
+Response: {"status":"ok","post_id":"thread-20261101064912-ac2af909629ccb765eea7357c80177b1","thread_id":"thread-20261101064912-ac2af909629ccb765eea7357c80177b1","identity_id":"openpgp:4e7193e9d27c80c967a7fec1ec6d3df815421392","profile_slug":"openpgp-4e7193e9d27c80c967a7fec1ec6d3df815421392","bootstrap_post_id":"bootstrap-20261101064912-e3364ed71db73ba7ef604f71d00608db","record_path":"records/posts/2026/11/01/thread-20261101064912-ac2af909629ccb765eea7357c80177b1.txt","signature_path":"records/posts/2026/11/01/thread-20261101064912-ac2af909629ccb765eea7357c80177b1.txt.asc","commit_sha":"4f55d0b2576a9cc535d1cd7a16333d33c9910517","replayed":true}
+
+Elapsed seconds: 0.60245299339294
+HTTP: HTTP/1.1 200 OK
+Persisted byte parity: pass
+Retry commit parity: pass
+
+Session route: /api/auth_challenge
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.011059999465942
+Session route: /api/authenticate_identity
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.095952987670898
+Session result: status=ok | identity_id=openpgp:4e7193e9d27c80c967a7fec1ec6d3df815421392 | approved=0
+Session route: /profiles/openpgp-4e7193e9d27c80c967a7fec1ec6d3df815421392
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.033337116241455
+Session route: /api/get_post?post_id=thread-20261101064912-ac2af909629ccb765eea7357c80177b1
+HTTP: HTTP/1.1 200 OK
+Elapsed seconds: 0.011029005050659
+Session route: /api/auth_status
+HTTP: HTTP/1.1 401 Unauthorized
+Elapsed seconds: 0.009505033493042
+Approval distinction: status=unauthenticated

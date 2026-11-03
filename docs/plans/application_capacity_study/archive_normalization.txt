@@ -1,0 +1,103 @@
+Record: Evidence display normalization
+Original archive revision: c66a1c15
+Transformation: Strip trailing spaces/tabs from lines and surplus blank lines at EOF only. Original bytes remain available with git show c66a1c15:docs/plans/application_capacity_study/FILE. Existing Log SHA256 fields describe raw command stdout, not normalized display files. No sample, failure, field value or canonical content was removed.
+
+File: s5-score-final-audit-0.log.txt
+Original SHA256: 5baf2ea8c62897f5a998675dbf7bea29b12285317f0d7a4af9143f43fdaabf63
+Normalized SHA256: 44dcefab59f5690163d0cccdbb1216c44a7896ee86ff2f3812788ee044d7bc5f
+
+File: s2-reads-10000.log.txt
+Original SHA256: ebdcafecd628dea0d966bc7bb5c9a734ad5097b08f370eedb5a225d19fbdeb83
+Normalized SHA256: c9f099cef21012a76030a277860df36611ec2bfddc019f3e58683744a21f474d
+
+File: s5-samples.txt
+Original SHA256: 36cd83fb9072fa6cbaf42055b81ca15be8dc41ebffe85b42922c29840a9e5977
+Normalized SHA256: 5b869baa875e336b72d5e4a0b71289157c68ed6fc92514171b2ec74c357281fc
+
+File: s7-signed-port-verification.log.txt
+Original SHA256: 0c791820986d966114d5f41373a39a5119befeab2dda4237ba7d70316d9d832b
+Normalized SHA256: bca869d0812fb54dc6d2adbbf3670556839e96bbc423942f091317a821f7fc76
+
+File: s2-final-reads-1000.log.txt
+Original SHA256: e1775089f9b5c7b71d70677a459db8353abb98358cab947f7cb20cef9bbe7beb
+Normalized SHA256: dd88ce552ad5616d1c2837ccef9a5ae902560d9c6a775389086b47552621219b
+
+File: s4-transfers.log.txt
+Original SHA256: 4a2e0b553f81c1bd476d3761cdf6c14a75447bf4b91c28e2ccb90efaa79e9657
+Normalized SHA256: c1f4603503210cb7bd155fe5e08048840ac4286ed440632ece7fd49dcead3cf1
+
+File: s2-signed-session-final.log.txt
+Original SHA256: bd1b14159912aa6f1e50157cabe629ed36cec32cab5a5edcc96968f6248b7691
+Normalized SHA256: ea7155a8af34bd058de0bdf35952b2c305094dc7a18b49204d7704d3dcefa133
+
+File: s5-score-final-audit-1.log.txt
+Original SHA256: 5baf2ea8c62897f5a998675dbf7bea29b12285317f0d7a4af9143f43fdaabf63
+Normalized SHA256: 44dcefab59f5690163d0cccdbb1216c44a7896ee86ff2f3812788ee044d7bc5f
+
+File: s7-static-delivery-final.log.txt
+Original SHA256: f85357478f80d7c8a2985fb751b2979169e80b666c46f748a7dcad75b5bc300b
+Normalized SHA256: 754ccd9dafc7d9d2cc94063911046edecc9d9f80749d1450660afbdf2ae068e3
+
+File: s2-samples.txt
+Original SHA256: e264e86d7824f43cc8b65ef983ebdd3092125caddda4d235c438d63d3d844097
+Normalized SHA256: 6ae4e9ae3d22ab8fefd6428a93c9e08a4bf859ef29e849796a8be9ffd878c29a
+
+File: s3-history-http.log.txt
+Original SHA256: dee607a1165802573b9799f1e1e8269390309618ed7f5ea6ec4e3a2b02a147f3
+Normalized SHA256: cc5e94bf016ecd92b85644ef8ef73d8b21d652615b89e4a5bc889198afd3576b
+
+File: s2-max-record-reads.log.txt
+Original SHA256: 84a79bf262242d57f5458d43478fe30d3202f52cef89850d94c9598ff64d8d65
+Normalized SHA256: 1d55500768a69e6bebfeedb4920e8f1fa0bbd42e8ccf30ea4d167782253c7cd0
+
+File: s2-final-reads-10000.log.txt
+Original SHA256: 1a779f2d2f657d512533b201962982891db6fd424df9c5edc225c24115e42f78
+Normalized SHA256: f3a6ccc88f6491cd8646624f29209151e8f2b832e66b3c2b9b5f2069250a586d
+
+File: s3-samples.txt
+Original SHA256: b17f3ae3214a448af06f05ec0f1d271465eadf35837e6d7c1a3b1934e338d4d5
+Normalized SHA256: f8b2e7b2838237f220172f9429d14ed63d3b2261b87cbffc3664a1971c96e6fd
+
+File: s6-results.txt
+Original SHA256: ef9a5987a8e4b672019dd79656d4f9d3597ccc7e2a1b93d1860fd1b3f1e28e30
+Normalized SHA256: 511e77b455f9cd497c55589787e35e933e0c998482e10e1c42b0416eff1b3205
+
+File: s1-samples.txt
+Original SHA256: 3f7442682ac67a07094e365153c1e43ff09c9bdfe1c1c26b67ab3d22b4aea2c7
+Normalized SHA256: f6296726a9c6279774df890870f532ba5023695084d91198ec1ef401d9da5402
+
+File: s7-samples.txt
+Original SHA256: c87e8076daa65de7869f343d7c65b6a8674561b639c19da60090bcd633291f52
+Normalized SHA256: 2806da18e5997a0aa2e6c13bde944d7c3e9a0a2536bfca16fdb2961f0ef2aa76
+
+File: s5-score-final-audit-2.log.txt
+Original SHA256: 5baf2ea8c62897f5a998675dbf7bea29b12285317f0d7a4af9143f43fdaabf63
+Normalized SHA256: 44dcefab59f5690163d0cccdbb1216c44a7896ee86ff2f3812788ee044d7bc5f
+
+File: s7-fresh-samples.txt
+Original SHA256: 1a17b01e2bfe441450fda113091dd9d0fec1c9ff0cb2c48efa83317e9e56470d
+Normalized SHA256: f0c70bcdeeae66540af9f0c849dc6bedab428f34669fd59b84596cfcb7510f5e
+
+File: s3-static-http.log.txt
+Original SHA256: d5d067b16ad3df724d50d8d9cc429bd41cfb0195e570494a05e289d2266a289f
+Normalized SHA256: ef279907de17b585fc93f51c2717e9add1e4c9d84b05d1bac5bba4e2a46ef128
+
+File: s4-samples.txt
+Original SHA256: ba161f1927f08cc9139b9eea7c5a2cb4f5133a09992a202e6b4863cd676759cd
+Normalized SHA256: 84922fdb2b4bff5370f097a9f8e3969c55c532fcbc5885da3d058ea8b9cbfdc6
+
+File: s2-signed-http.log.txt
+Original SHA256: 63c60d55443b60bfb8abc9b698bf5c90e054333c1540524f32055f7e59aebd3b
+Normalized SHA256: 0e884c8c47418d99fe0acfbec77df363dbce6ea3397a5259a6fe66bef9560874
+
+File: s6-samples.txt
+Original SHA256: 44cce39545cd9bd95b2f91109d815e4d667d098f605095aa61a62eadf1b8dd34
+Normalized SHA256: 28866ed07585bc367eecc4442d7677f7f7299551a2ee11fda75824f855f0e37d
+
+File: s7-signed-port-final.log.txt
+Original SHA256: b1b9afb25fcf57e37b7410daafcb7c2e4979ccfad8732558b0b6a3b96663a753
+Normalized SHA256: c76677d6036e67030216dbb9ae8b98165d4ffa7b05a09a5ac236508d4e386684
+
+File: s2-reads-1000.log.txt
+Original SHA256: 8b6a963f590ecd20240f43d4a0912a7e4c079d69bd661117b3a8b1cfd7182243
+Normalized SHA256: 85718dc28febc42111e7e74fa025296c95bc8d2df685c91df602ddd3aca8eb77

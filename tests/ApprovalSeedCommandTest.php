@@ -251,6 +251,17 @@ final class ApprovalSeedCommandTest
 
     public function testSeedRetiresCachedPagesAndReleaseBeforeServingUpdatedState(): void
     {
+        $previous = getenv('FORUM_STATIC_PROFILE_PAGES_ENABLED');
+        putenv('FORUM_STATIC_PROFILE_PAGES_ENABLED=true');
+        try {
+            $this->seedRetiresCachedPagesAndReleaseBeforeServingUpdatedState();
+        } finally {
+            putenv($previous === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $previous);
+        }
+    }
+
+    private function seedRetiresCachedPagesAndReleaseBeforeServingUpdatedState(): void
+    {
         $this->withFixture(function (string $root, string $db, string $public, string $static): void {
             $target = $this->addApprovalChain($root);
             $this->rebuild($root, $db);
@@ -366,14 +377,9 @@ final class ApprovalSeedCommandTest
         if (!is_link($public . '/assets')) { symlink(dirname(__DIR__) . '/public/assets', $public . '/assets'); }
         $script = <<<'SCRIPT'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 if ($argv[7] === 'member') {
-    if (!is_dir($argv[2] . '/sessions')) { mkdir($argv[2] . '/sessions', 0777, true); }
-    session_save_path($argv[2] . '/sessions');
-    session_id('seed-member');
-    session_start();
-    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-    session_write_close();
-    $_COOKIE[session_name()] = 'seed-member';
+    TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 }
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_SERVER['REQUEST_URI'] = $argv[6];

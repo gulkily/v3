@@ -48,10 +48,10 @@ try {
         throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
     }
 
-    $repositoryRoot = (string) ($options['repository-root'] ?? (getenv('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
-    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $repositoryRoot = (string) ($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
+    $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
     $profile = SiteProfileRegistry::active();
-    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (getenv('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile)));
+    $staticHtmlRoot = (string) ($options['static-html-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile)));
     $queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
     $queueDirectory = dirname($queuePath);
     if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
@@ -70,7 +70,7 @@ try {
         $task = (new ExecutionLock($queueDirectory . '/forum-rewrite-task-queue.lock', 0))->withExclusiveLock(
             static function () use ($projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $store, $postId, $contentHash): array {
                 $application = new Application($projectRoot, $repositoryRoot, $databasePath,
-                    getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'), $staticHtmlRoot);
+                    \ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'), $staticHtmlRoot);
                 $application->retryAgentReplyRequest($postId, $contentHash);
                 return $store->enqueue(SqliteTaskQueueStore::AGENT_REPLY, AgentReplyTask::deduplicationKey($postId, $contentHash));
             }
@@ -310,7 +310,7 @@ try {
                         $projectRoot,
                         $repositoryRoot,
                         $databasePath,
-                        getenv('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'),
+                        \ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: ($projectRoot . '/public'),
                         $staticHtmlRoot,
                     ))
                         ->fulfillAgentReplyRequest($request);
@@ -320,6 +320,7 @@ try {
                     $errorLog->writeThrowable('task_exception', $throwable, ['task_id' => $failedTaskId]);
                 },
                 runRetractionSweep: static fn (): array => $retractionSweep->run($workLimit),
+                runAppUpdate: static fn (): array => \ForumRewrite\Deploy\AppUpdate::forProject($projectRoot)->runQueued(),
             );
             $taskStartedAt = [];
             try {
@@ -452,7 +453,8 @@ try {
         $workerCronLine = '* * * * * cd ' . escapeshellarg($appRoot)
             . ' && php scripts/task_queue.php run --quiet --limit=1 >> '
             . escapeshellarg($logPath) . ' 2>&1';
-        fwrite(STDOUT, "Task queue cron reference\n\nInstall:\n  crontab -e\n  {$workerCronLine}\n");
+        fwrite(STDOUT, "Task queue cron reference\n\nInstall:\n  crontab -e\n  {$workerCronLine}\n\nSite settings: "
+            . \ForumRewrite\Support\PrivateConfig::path($projectRoot) . "\n");
         exit(0);
     }
 

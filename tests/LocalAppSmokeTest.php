@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 require_once __DIR__ . '/Support/ProfileRegressionFixture.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Security\GpgHomeCleaner;
@@ -64,6 +65,68 @@ final class LocalAppSmokeTest
         assertStringContains('[3/3] Read model promoted.', $text);
     }
 
+    public function testHistoryMembershipRevisionChangesOnRepeatedInPlaceRebuild(): void
+    {
+        $database=sys_get_temp_dir().'/sync-repeat-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            $builder=new ReadModelBuilder($this->repositoryRoot,$database,new CanonicalRecordRepository($this->repositoryRoot));
+            $builder->rebuild();$pdo=new PDO('sqlite:'.$database);
+            $before=$pdo->query("SELECT token FROM history_keys_revision WHERE account='*'")->fetchColumn();
+            $builder->rebuild();$pdo=new PDO('sqlite:'.$database);
+            assertTrue($before!==$pdo->query("SELECT token FROM history_keys_revision WHERE account='*'")->fetchColumn());
+        } finally {@unlink($database);}
+    }
+    public function testVersion40StartupBuildsHistoryMembershipRevisions(): void
+    {
+        $database=sys_get_temp_dir().'/sync-revision-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            exec(escapeshellarg(dirname(__DIR__).'/v3').' rebuild '.escapeshellarg($this->repositoryRoot).' '.escapeshellarg($database),$output,$exit);
+            assertSame(0,$exit,implode("\n",$output));
+            $pdo=new PDO('sqlite:'.$database);
+            foreach(['insert','update','delete'] as $event)$pdo->exec('DROP TRIGGER history_keys_'.$event);
+            $pdo->exec('DROP TABLE history_keys_revision');
+            $pdo->exec('DROP INDEX profiles_sync_keys');
+            $pdo->exec("UPDATE metadata SET value='40' WHERE key='schema_version'");
+            $app=new Application(dirname(__DIR__),$this->repositoryRoot,$database);
+            assertStringContains('Hello world',$this->render($app,'/threads/root-001'));
+            $pdo=new PDO('sqlite:'.$database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION,$pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame(3,(int)$pdo->query("SELECT count(*) FROM sqlite_master WHERE type='trigger' AND name LIKE 'history_keys_%'")->fetchColumn());
+            assertSame('profiles_sync_keys',$pdo->query("SELECT name FROM sqlite_master WHERE type='index' AND name='profiles_sync_keys'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
+    public function testVersion41StartupBuildsRetirementStateBeforeProfileLookup(): void
+    {
+        $database = sys_get_temp_dir() . '/retirement-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            exec(escapeshellarg(dirname(__DIR__) . '/v3') . ' rebuild ' . escapeshellarg($this->repositoryRoot) . ' ' . escapeshellarg($database), $output, $exit);
+            assertSame(0, $exit);
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec("UPDATE metadata SET value='41' WHERE key='schema_version'");
+            $pdo->exec('ALTER TABLE profiles DROP COLUMN bootstrap_username_token');
+            $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
+            $this->render($app, '/users/');
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM profiles WHERE bootstrap_username_token='' OR retired_at IS NOT NULL")->fetchColumn());
+        } finally { foreach (glob($database . '*') ?: [] as $file) @unlink($file); }
+    }
+
+    public function testVersion38StartupBuildsBoundedSyncKeyIndex(): void
+    {
+        $database=sys_get_temp_dir().'/sync-key-schema-'.bin2hex(random_bytes(6)).'.sqlite3';
+        try {
+            exec(escapeshellarg(dirname(__DIR__).'/v3').' rebuild '.escapeshellarg($this->repositoryRoot).' '.escapeshellarg($database),$output,$exit);
+            assertSame(0,$exit,implode("\n",$output));
+            $pdo=new PDO('sqlite:'.$database);
+            $pdo->exec('DROP INDEX profiles_sync_keys');
+            $pdo->exec("UPDATE metadata SET value='38' WHERE key='schema_version'");
+            $app=new Application(dirname(__DIR__),$this->repositoryRoot,$database);
+            assertStringContains('Hello world',$this->render($app,'/threads/root-001'));
+            $pdo=new PDO('sqlite:'.$database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION,$pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame('profiles_sync_keys',$pdo->query("SELECT name FROM sqlite_master WHERE type='index' AND name='profiles_sync_keys'")->fetchColumn());
+        } finally { @unlink($database); }
+    }
     public function testVersion21StartupRebuildsAgentProvenanceBeforeServingPage(): void
     {
         $database = sys_get_temp_dir() . '/agent-schema-' . bin2hex(random_bytes(6)) . '.sqlite3';
@@ -413,7 +476,7 @@ final class LocalAppSmokeTest
             assertStringContains('[1/4] Read-model candidate is ready.', $text);
             assertStringContains('[2/4] Rendering static HTML and fingerprinted assets...', $text);
             assertStringContains('[2/4] Fingerprinting and copying assets referenced by rendered pages...', $text);
-            assertStringContains('[2/4] Rendering shared pages (1/10): /.', $text);
+            assertStringContains('[2/4] Rendering shared pages (1/11): /.', $text);
             assertStringNotContains('Rendering documentation', $text);
             assertStringNotContains('Reusing documentation', $text);
             assertStringContains('./v3 docs publish', $text);
@@ -488,7 +551,7 @@ final class LocalAppSmokeTest
                 assertSame(0, $exitCode, $text);
                 assertStringContains('Starting shared static release refresh', $text);
                 assertStringContains('does not rebuild the read model', $text);
-                assertStringContains('[1/2] Rendering shared pages (10/10): /tags/.', $text);
+                assertStringContains('[1/2] Rendering shared pages (11/11): /recent/.', $text);
                 assertStringNotContains('Reusing documentation', $text);
                 assertStringNotContains('Rendering documentation', $text);
                 assertStringContains('[2/2] Shared static release activated.', $text);
@@ -513,15 +576,10 @@ final class LocalAppSmokeTest
     public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-        $sessionId = 'private-approved-' . bin2hex(random_bytes(8));
 
         try {
-            session_id($sessionId);
-            session_start();
-            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-            session_write_close();
+            TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-session-' . bin2hex(random_bytes(6)) . '.sqlite3';
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
@@ -536,15 +594,7 @@ final class LocalAppSmokeTest
             assertStringContains('/assets/auth_navigation.', $board);
             assertSame("status=authenticated\n", $authStatus);
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -558,22 +608,14 @@ final class LocalAppSmokeTest
     {
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 
-$sessionId = 'public-approved-' . bin2hex(random_bytes(8));
 $databasePath = sys_get_temp_dir() . '/forum-rewrite-public-session-' . bin2hex(random_bytes(6)) . '.sqlite3';
 
 try {
-    session_id($sessionId);
-    session_start();
-    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-    session_write_close();
-    session_id('');
-    $_COOKIE[session_name()] = $sessionId;
-    // The CLI test process does not populate the session module from $_COOKIE,
-    // so mirror the web SAPI's request initialization before handling the page.
-    session_id($sessionId);
+    TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
     $application = new Application($argv[1], $argv[2], $databasePath);
     ob_start();
@@ -604,9 +646,7 @@ try {
         throw new RuntimeException('Public session was not resumed for Board and Invite.');
     }
 } finally {
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_write_close();
-    }
+    TestViewerSession::reset();
     @unlink($databasePath);
 }
 PHP;
@@ -625,23 +665,19 @@ PHP;
     {
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 
-$sessionId = 'profile-switch-' . bin2hex(random_bytes(8));
 $databasePath = sys_get_temp_dir() . '/forum-rewrite-profile-switch-' . bin2hex(random_bytes(6)) . '.sqlite3';
 $profileIds = json_decode($argv[3], true, 512, JSON_THROW_ON_ERROR);
 
 try {
-    session_id($sessionId);
-    session_start();
-    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-    session_write_close();
-    $_COOKIE[session_name()] = $sessionId;
+    TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
     foreach ($profileIds as $profileId) {
         putenv('FORUM_SITE_ID=' . $profileId);
-        session_id($sessionId);
+        TestViewerSession::nextRequest();
         $application = new Application($argv[1], $argv[2], $databasePath);
         ob_start();
         $application->handle('GET', '/api/auth_status');
@@ -649,14 +685,10 @@ try {
         if ($authStatus !== "status=authenticated\n") {
             throw new RuntimeException('Profile switch lost the public session for ' . $profileId . '.');
         }
-        session_write_close();
-        session_id('');
     }
 } finally {
     putenv('FORUM_SITE_ID');
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_write_close();
-    }
+    TestViewerSession::reset();
     @unlink($databasePath);
 }
 PHP;
@@ -675,17 +707,19 @@ PHP;
     public function testAnonymousPublicBoardDoesNotStartViewerSession(): void
     {
         $previousCookie = $_COOKIE;
-        $previousSession = $_SESSION ?? null;
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-public-anonymous-' . bin2hex(random_bytes(6)) . '.sqlite3';
 
         try {
             $_COOKIE = [];
-            session_id('');
+            TestViewerSession::reset();
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
 
+            $sessionsBefore = $this->viewerSessionRowCount();
             $board = $this->render($application, '/');
 
-            assertSame(PHP_SESSION_NONE, session_status());
+            // A keyless reader gets no session: no cookie to send and nothing stored.
+            assertSame(['', ''], [TestViewerSession::identityId(), TestViewerSession::cookie()[1]]);
+            assertSame($sessionsBefore, $this->viewerSessionRowCount());
             // Invite is in every viewer's HTML and hidden until the client remembers an approved identity.
             assertStringContains('href="/invites/" data-member-only data-invite-navigation>Invite</a>', $board);
             assertStringContains('data-public-auth-resume="true"', $board);
@@ -699,16 +733,8 @@ PHP;
                 'Theme controls must initialize before the OpenPGP loader.'
             );
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
+            TestViewerSession::reset();
             $_COOKIE = $previousCookie;
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
             @unlink($databasePath);
         }
     }
@@ -716,12 +742,11 @@ PHP;
     public function testPublicNotFoundPageDoesNotAttemptIdentityResume(): void
     {
         $previousCookie = $_COOKIE;
-        $previousSession = $_SESSION ?? null;
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-public-not-found-' . bin2hex(random_bytes(6)) . '.sqlite3';
 
         try {
             $_COOKIE = [];
-            session_id('');
+            TestViewerSession::reset();
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
 
             $notFound = $this->render($application, '/missing-route');
@@ -730,44 +755,99 @@ PHP;
             assertStringNotContains('data-public-auth-resume="true"', $notFound);
             assertStringNotContains('private_site_auth.', $notFound);
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
+            TestViewerSession::reset();
             $_COOKIE = $previousCookie;
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
             @unlink($databasePath);
         }
     }
 
     public function testPrivateViewerSessionCookiePersistsAcrossBrowserRestart(): void
     {
+        // The session and its cookie both last 400 days unless the member signs out.
+        assertSame(34560000, \ForumRewrite\Session\ViewerSessionStore::LIFETIME_SECONDS);
+        $before = time();
+        TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+        try {
+            [, $token] = TestViewerSession::cookie();
+            $store = new \ForumRewrite\Session\ViewerSessionStore(\ForumRewrite\Session\ViewerSessionDatabaseConfig::open('', ['VIEWER_SESSION_DATABASE_PATH' => (string) getenv('VIEWER_SESSION_DATABASE_PATH')]));
+            $expiresAt = $store->resolve($token)?->expiresAt ?? 0;
+            assertTrue($expiresAt >= $before + 34560000, 'Session must last the full cookie lifetime.');
+            assertSame($expiresAt, \ForumRewrite\Session\ViewerSessionCookie::attributes(false, $expiresAt)['expires']);
+        } finally {
+            TestViewerSession::reset();
+        }
+    }
+
+    public function testAppSessionsSurviveIdleSignOutAndSchemeBoundaries(): void
+    {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $previousCookieParameters = session_get_cookie_params();
+        $previousServer = $_SERVER;
+        $previousCookie = $_COOKIE;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-cookie-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $member = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-app-sessions-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $status = function () use ($databasePath): string {
+            return $this->render(new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath), '/api/auth_status');
+        };
 
         try {
-            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
-            $this->render($application, '/api/auth_status');
+            $_COOKIE = [];
+            unset($_SERVER['HTTPS']);
 
-            assertSame(34560000, session_get_cookie_params()['lifetime']);
+            // Idle three hours, far past PHP's old 24-minute default: still signed in.
+            $path = (string) getenv('VIEWER_SESSION_DATABASE_PATH');
+            $past = new \ForumRewrite\Session\ViewerSessionStore(
+                \ForumRewrite\Session\ViewerSessionDatabaseConfig::open('', ['VIEWER_SESSION_DATABASE_PATH' => $path]),
+                static fn (): int => time() - 3 * 3600,
+            );
+            $_COOKIE = ['v3_session' => $past->signIn($member)->token];
+            assertSame("status=authenticated\n", $status());
+
+            // A stale PHP session cookie neither helps nor hurts.
+            $_COOKIE['PHPSESSID'] = 'leftover-from-php-sessions';
+            assertSame("status=authenticated\n", $status());
+
+            // The http cookie never signs in an https request.
+            $_SERVER['HTTPS'] = 'on';
+            assertSame("status=unauthenticated\n", $status());
+            unset($_SERVER['HTTPS']);
+
+            // Sign-out ends the session on the server, so a copy of the cookie stops working.
+            $copy = $_COOKIE['v3_session'];
+            $this->renderMethod(new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath), 'POST', '/api/clear_identity');
+            $_COOKIE = ['v3_session' => $copy];
+            assertSame("status=unauthenticated\n", $status());
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            session_set_cookie_params($previousCookieParameters);
+            TestViewerSession::reset();
+            $_COOKIE = $previousCookie;
+            $_SERVER = $previousServer;
             @unlink($databasePath);
-            if ($previousFlag === false) {
-                putenv('FORUM_APPROVED_MEMBERS_ONLY');
-            } else {
-                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
-            }
+            putenv($previousFlag === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+        }
+    }
+
+    public function testAuthenticationChallengeNeedsNoSessionAndSurvivesAFailedAttempt(): void
+    {
+        $previousPost = $_POST;
+        $previousCookie = $_COOKIE;
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-app-challenge-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            $_COOKIE = [];
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            $response = $this->render($application, '/api/auth_challenge');
+            assertSame(1, preg_match('/^challenge=([a-f0-9]{64})$/m', $response, $match));
+            // No cookie was needed to get a challenge, and none is needed to answer it.
+            assertSame([], $_COOKIE);
+            $_POST = ['identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', 'challenge' => $match[1], 'detached_signature' => 'invalid'];
+            assertStringContains('error=Identity signature verification failed.', $this->renderMethod($application, 'POST', '/api/authenticate_identity'));
+            // A failed signature does not use the challenge up.
+            assertStringContains('error=Identity signature verification failed.', $this->renderMethod($application, 'POST', '/api/authenticate_identity'));
+            $_POST['challenge'] = str_repeat('0', 64);
+            assertStringContains('error=Authentication challenge is missing or expired.', $this->renderMethod($application, 'POST', '/api/authenticate_identity'));
+        } finally {
+            $_POST = $previousPost;
+            $_COOKIE = $previousCookie;
+            @unlink($databasePath);
         }
     }
 
@@ -789,15 +869,10 @@ PHP;
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
         $previousCookie = $_COOKIE;
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-        $sessionId = 'private-clear-identity-' . bin2hex(random_bytes(8));
 
         try {
-            session_id($sessionId);
-            session_start();
-            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-            session_write_close();
+            TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-clear-identity-' . bin2hex(random_bytes(6)) . '.sqlite3';
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
@@ -835,15 +910,7 @@ PHP;
             assertStringNotContains('href="/">Board</a>', $lobbyAfterClear);
         } finally {
             $_COOKIE = $previousCookie;
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -857,19 +924,10 @@ PHP;
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
         $previousPost = $_POST;
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-        $sessionId = 'private-auth-verifier-' . bin2hex(random_bytes(8));
-        $challenge = bin2hex(random_bytes(32));
 
         try {
-            session_id($sessionId);
-            session_start();
-            $_SESSION['forum_auth_challenges'] = [
-                bin2hex(random_bytes(32)) => time() + 300,
-                $challenge => time() + 300,
-            ];
-            session_write_close();
+            $challenge = TestViewerSession::challenge();
 
             $_POST = [
                 'identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
@@ -884,15 +942,7 @@ PHP;
             assertStringContains('error=Identity signature verification failed.', $response);
         } finally {
             $_POST = $previousPost;
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -947,10 +997,7 @@ PHP;
             assertStringContains('Identity not found.', $this->renderMethod($application, 'POST', '/api/prepare_invitation_redemption'));
             assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/asdf'));
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
+            TestViewerSession::reset();
             @unlink($databasePath);
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -963,10 +1010,8 @@ PHP;
     public function testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-forte-resume-' . bin2hex(random_bytes(6)) . '.sqlite3';
-        $sessionId = 'private-forte-resume-' . bin2hex(random_bytes(8));
 
         try {
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
@@ -996,26 +1041,12 @@ PHP;
                 assertStringNotContains('The requested route does not exist in the local test slice.', $response);
             }
 
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id($sessionId);
-            session_start();
-            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-            session_write_close();
+            TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             assertStringContains('Forte', $this->render($application, '/forte/users/'));
             assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/forte/not-a-route'));
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             @unlink($databasePath);
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -1028,20 +1059,15 @@ PHP;
     public function testPendingPrivateSessionNavigationOnlyShowsLobbyOwnProfileAndAccount(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6));
         mkdir($repositoryRoot, 0777, true);
         $this->copyDirectory($this->repositoryRoot, $repositoryRoot);
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6)) . '.sqlite3';
-        $sessionId = 'private-pending-nav-' . bin2hex(random_bytes(8));
 
         try {
-            session_id($sessionId);
-            session_start();
-            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-            session_write_close();
+            TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $lobby = $this->render($application, '/lobby/');
@@ -1059,15 +1085,7 @@ PHP;
             assertStringNotContains('href="/tools/">Tools</a>', $lobby);
             assertStringContains('Entering lobby.', $root);
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             $this->deleteTree($repositoryRoot);
             @unlink($databasePath);
             if ($previousFlag === false) {
@@ -2164,27 +2182,31 @@ PHP;
         assertStringNotContains('Retention:', $instance);
         assertStringNotContains('Installed:', $instance);
         assertStringContains('/activity/', $tools);
-        assertStringContains('Recent forum activity across content, approvals, and identity events.', $tools);
         assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
         assertStringContains('class="nav"', $tools);
         assertSame(1, substr_count($tools, 'href="/tools/">Tools</a>'));
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
-        assertStringContains('Current application version, repository head, and read-model health.', $tools);
         assertStringContains('/tools/feature-flags/', $tools);
-        assertStringContains('Registered site feature flags, defaults, effective values, and override sources.', $tools);
         assertStringContains('tool-launcher-button" href="/tools/operations/"', $tools);
-        assertStringContains('Control how the site is served, including high-traffic mode.', $tools);
         assertStringContains('/tools/visitor-statistics/', $tools);
-        assertStringContains('Privacy-preserving recent aggregate visits, client estimates, and authenticated-user counts.', $tools);
         assertStringContains('/forte', $tools);
-        assertStringContains('Classic three-pane newsreader view of the whole board - folders, thread list, and preview.', $tools);
-        assertStringContains('tool-launcher-button" href="/account/key/"', $tools);
-        assertStringContains('tools-nav-divider', $tools);
-        assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $tools);
-        assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $tools);
-        assertStringContains('System State', $codebase);
+        // Account is in the main navigation, not Tools.
+        assertStringNotContains('tool-launcher-button" href="/account/key/"', $tools);
+        assertStringNotContains('tools-nav .nav-link[href="/account/key/"]', $tools);
+        // One grouped launcher: no Tools bar on /tools/, each tool once, group headings with theme hooks.
+        assertStringNotContains('class="nav tools-nav"', $tools);
+        assertStringNotContains('tool-launcher-description', $tools);
+        foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
+            assertSame(1, substr_count($tools, 'class="tool-launcher-button" href="' . $tool['href'] . '"'), $tool['href']);
+            assertStringContains('data-tone="' . $tool['tone'] . '"', $tools);
+        }
+        foreach (\ForumRewrite\Tools\ToolsPageSupport::groups() as $key => $label) {
+            assertStringContains('data-shape="' . $key . '">' . $label . '</h2>', $tools);
+        }
+        assertOrdered($tools, '>Your device</h2>', '>Operator</h2>');
+        assertStringContains('System status', $codebase);
         assertStringContains('<strong>Name:</strong> zenmemes', $codebase);
         assertStringContains('<strong>Admin:</strong>', $codebase);
         assertStringContains('grep &#039;^Instance-Name:&#039; state/local_repository/records/instance/public.txt', $codebase);
@@ -2192,6 +2214,10 @@ PHP;
         assertStringContains('class="nav"', $codebase);
         assertStringContains('class="nav-link is-active" href="/tools/codebase/"', $codebase);
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $codebase);
+        assertStringContains('<h2>Codebase</h2>', $codebase);
+        assertStringContains('Working tree', $codebase);
+        assertStringContains('Branch', $codebase);
+        assertStringContains(\ForumRewrite\ReadModel\ReadModelMetadata::repositoryHead(dirname(__DIR__)), $codebase);
         assertStringContains('Repository head', $codebase);
         assertStringContains('Read model', $codebase);
         assertStringContains('Schema version', $codebase);
@@ -2218,7 +2244,15 @@ PHP;
         assertStringNotContains('high_traffic_control', $operations);
         assertFingerprintedAsset($operations, 'tool-details.css');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
-        assertStringContains('tools-nav-divider', $featureFlags);
+        // The Tools bar follows the launcher's groups, with a divider between each.
+        $toolsBar = substr($featureFlags, (int) strpos($featureFlags, '<div class="nav tools-nav">'));
+        $toolsBar = substr($toolsBar, 0, (int) strpos($toolsBar, '</div>'));
+        assertSame(3, substr_count($toolsBar, 'tools-nav-divider'));
+        $order = ['href="/tools/outbox/"', 'href="/activity/"', 'href="/tools/user-access/"', 'href="/tools/feature-flags/"', 'href="/tools/operations/"'];
+        for ($i = 1; $i < count($order); $i++) {
+            assertOrdered($toolsBar, $order[$i - 1], $order[$i]);
+        }
+        assertStringNotContains('href="/account/key/"', $toolsBar);
         assertStringContains('class="nav-link nav-link-standalone" href="/activity/"', $featureFlags);
         assertStringContains('class="nav-link nav-link-standalone" href="/forte"', $featureFlags);
         assertFingerprintedAsset($featureFlags, 'feature_flags.js');
@@ -2340,6 +2374,15 @@ PHP;
         assertStringContains('New Post', $composeThread);
         assertStringContains('placeholder="Title — or we’ll use your first line"', $composeThread);
         assertStringContains('data-compose-disclosure="tags">', $composeThread);
+        // Full composer order: body, Post row, Title, then tags (phones keep body and Post above the keyboard).
+        $composeOrder = [strpos($composeThread, '<textarea name="body"'), strpos($composeThread, 'class="compose-form-actions"'), strpos($composeThread, 'class="compose-title"'), strpos($composeThread, 'class="compose-tools"')];
+        assertSame($composeOrder, array_filter($composeOrder, 'is_int'));
+        assertSame($composeOrder, (static function (array $positions): array { sort($positions); return $positions; })($composeOrder));
+        $forteDialogForm = substr($forte, strpos($forte, 'data-paned-new-thread-dialog'));
+        assertSame(true, strpos($forteDialogForm, '<textarea name="body"') < strpos($forteDialogForm, 'class="compose-form-actions"'));
+        assertSame(true, strpos($forteDialogForm, 'class="compose-form-actions"') < strpos($forteDialogForm, 'class="compose-title"'));
+        assertStringNotContains('class="compose-title"', $board);
+        assertStringNotContains('class="compose-tools"', $board);
         assertStringNotContains('data-compose-disclosure="tags" open', $composeThread);
         assertStringNotContains('data-compose-disclosure="tags" open', $prefilledSubjectCompose);
         assertStringContains('aria-label="Title" placeholder="Title — or we’ll use your first line" value="Saved Title"', $prefilledSubjectCompose);
@@ -4147,13 +4190,18 @@ PHP;
             $this->databasePath,
         );
 
+        $previousCookie = $_COOKIE;
         $_COOKIE = [];
-        $response = $this->renderMethod($application, 'POST', '/api/set_identity_hint?identity_hint=OpenPGP-Example');
-        $account = $this->render($application, '/account/key/');
+        try {
+            $response = $this->renderMethod($application, 'POST', '/api/set_identity_hint?identity_hint=OpenPGP-Example');
+            $account = $this->render($application, '/account/key/');
 
-        assertStringContains('identity_hint=openpgp-example', $response);
-        assertSame('openpgp-example', $_COOKIE['identity_hint'] ?? null);
-        assertStringContains('openpgp-example', $account);
+            assertStringContains('identity_hint=openpgp-example', $response);
+            assertSame('openpgp-example', $_COOKIE['identity_hint'] ?? null);
+            assertStringContains('openpgp-example', $account);
+        } finally {
+            $_COOKIE = $previousCookie;
+        }
     }
 
     public function testRequestDataParsesRawFormEncodedBodyWhenPostIsEmpty(): void
@@ -4237,6 +4285,27 @@ PHP;
 
             assertStringContains('Static Board', $response);
             assertStringContains('route-source: static-html', $response);
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
+    public function testRecentStaticArtifactBypassesCursorRequests(): void
+    {
+        @unlink($this->databasePath);
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($staticHtmlRoot . '/current', 0777, true);
+        file_put_contents($staticHtmlRoot . '/current/recent.html', '<!doctype html><html><body><!-- route-source: static-html --><h1>Static Recent</h1></body></html>');
+
+        try {
+            $response = $this->renderFrontController($controller, 'GET', '/recent/', []);
+
+            assertStringContains('Static Recent', $response);
+            assertStringContains('route-source: static-html', $response);
+            $cursor = $this->renderFrontController($controller, 'GET', '/recent/?position=invalid', []);
+            assertFalse(str_contains($cursor, 'Static Recent'));
+            assertStringContains('First page', $cursor);
         } finally {
             $this->deleteTree($staticHtmlRoot);
             $this->deleteTree($publicRoot);
@@ -4661,6 +4730,9 @@ PHP;
             assertTrue(is_file($artifactRoot . '/about/index.html'));
             assertTrue(is_file($artifactRoot . '/instance.html'));
             assertTrue(is_file($artifactRoot . '/activity.html'));
+            assertTrue(is_file($artifactRoot . '/recent.html'));
+            assertTrue($builder->buildSingleRoute('/recent/'));
+            assertStringContains('Recent', (string) file_get_contents($artifactRoot . '/recent.html'));
             assertTrue(is_file($artifactRoot . '/users.html'));
             assertTrue(is_file($artifactRoot . '/tools.html'));
             assertTrue(is_file($artifactRoot . '/tools/index.html'));
@@ -4825,6 +4897,8 @@ PHP;
             assertTrue($failed);
             assertSame($runtimeRelease, realpath($staticRoot . '/current'));
             assertSame([], glob($staticRoot . '/.candidate-*'));
+            assertStringContains('route-source: static-html',
+                $this->renderFrontController($controller, 'GET', '/recent/', []));
             $this->renderFrontController($controller, 'GET', '/threads/root-001', []);
             assertSame(200, http_response_code());
             $pdo = new PDO('sqlite:' . $this->databasePath);
@@ -5134,6 +5208,57 @@ PHP;
         }
     }
 
+    public function testRecentStaticArtifactsAreInvalidatedByContentAndIdentityWrites(): void
+    {
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        mkdir($publicRoot . '/recent', 0777, true);
+        mkdir($staticHtmlRoot . '/recent', 0777, true);
+
+        $invalidations = [
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateBoardThread('thread-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateReply('thread-001', 'reply-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateProfile('openpgp-example');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateApproval('openpgp-example', 'thread-001', 'post-001', 'approval-001');
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateAllGeneratedPresentation();
+            },
+            static function (StaticArtifactInvalidator $invalidator): void {
+                $invalidator->invalidateAccountHistory('alice', ['openpgp-example']);
+            },
+        ];
+
+        try {
+            foreach ($invalidations as $invalidate) {
+                file_put_contents($publicRoot . '/recent.html', 'stale public users');
+                file_put_contents($publicRoot . '/recent/index.html', 'stale public users index');
+                file_put_contents($staticHtmlRoot . '/recent.html', 'stale alternate users');
+                file_put_contents($staticHtmlRoot . '/recent/index.html', 'stale alternate users index');
+
+                $invalidate(new StaticArtifactInvalidator($publicRoot, $staticHtmlRoot));
+
+                assertFalse(is_file($publicRoot . '/recent.html'));
+                assertFalse(is_file($publicRoot . '/recent/index.html'));
+                assertFalse(is_file($staticHtmlRoot . '/recent.html'));
+                assertFalse(is_file($staticHtmlRoot . '/recent/index.html'));
+            }
+        } finally {
+            $this->deleteTree($publicRoot);
+            $this->deleteTree($staticHtmlRoot);
+        }
+    }
+
     public function testBackupStaticArtifactsAreInvalidatedByContentWrites(): void
     {
         $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
@@ -5290,7 +5415,7 @@ PHP;
 
         assertStringContains('status=ready', $status);
         assertStringContains('lock_status=locked', $status);
-        assertStringContains('System State', $codebase);
+        assertStringContains('System status', $codebase);
         assertStringContains('locked', $codebase);
         assertStringContains('Lock status', $codebase);
     }
@@ -5316,7 +5441,7 @@ PHP;
         assertStringContains('status=ready', $status);
         assertStringContains('stale_marker=absent', $status);
         assertStringContains('rebuild_reason=stale_marker', $status);
-        assertStringContains('System State', $codebase);
+        assertStringContains('System status', $codebase);
         assertStringContains('Stale marker', $codebase);
         assertStringContains('absent', $codebase);
     }
@@ -5358,6 +5483,17 @@ PHP;
             assertSame('callback failed', $error->getMessage());
         }
         assertSame(false, $lock->isLocked());
+    }
+
+    private function viewerSessionRowCount(): int
+    {
+        $path = (string) getenv('VIEWER_SESSION_DATABASE_PATH');
+        if (!is_file($path)) {
+            return 0;
+        }
+        $pdo = new PDO('sqlite:' . $path);
+        $table = $pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE name = 'viewer_sessions'")->fetchColumn();
+        return (int) $table === 1 ? (int) $pdo->query('SELECT COUNT(*) FROM viewer_sessions')->fetchColumn() : 0;
     }
 
     private function render(Application $application, string $path): string

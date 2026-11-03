@@ -1,0 +1,7 @@
+import collector as c
+import subprocess
+for n in (1000,10000,40000):
+ c.fixture(n)
+ if c.run(f'prepare-{n}', ['./v3','rebuild',str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite')])!=0:break
+ print(c.parity(n),flush=True)
+ if c.run(f'reads-{n}',['python3',str(c.ROOT/'read_driver.py'),str(n)])!=0:break

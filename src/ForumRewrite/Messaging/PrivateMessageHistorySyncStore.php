@@ -8,6 +8,15 @@ final class PrivateMessageHistorySyncStore
     {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        // The final index is installed only after this additive schema is complete.
+        // Existing stores need no DDL/write-lock attempts on every heartbeat.
+        $ready=$pdo->query("SELECT 1 FROM sqlite_master WHERE type='index' AND name='history_sync_pending'");
+        $installed=$ready->fetchColumn()!==false;$ready->closeCursor();
+        if($installed)return;
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_verification (account TEXT NOT NULL, source TEXT NOT NULL, mode TEXT NOT NULL, state TEXT NOT NULL, PRIMARY KEY(account,source,mode))');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_activity (account TEXT NOT NULL, source TEXT NOT NULL, active_at INTEGER NOT NULL, PRIMARY KEY(account,source))');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_activity_recent ON history_sync_activity(account,active_at DESC,source)');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_admission (account TEXT PRIMARY KEY, events TEXT NOT NULL)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_transfers (transfer_id TEXT PRIMARY KEY, account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, ciphertext TEXT NOT NULL)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_items (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, message_id TEXT NOT NULL, digest TEXT NOT NULL, transfer_id TEXT NOT NULL, PRIMARY KEY(account,source,target,message_id))');
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_items_target ON history_sync_items(account,target,message_id)');
@@ -16,6 +25,86 @@ final class PrivateMessageHistorySyncStore
         $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_coverage_transfer ON history_sync_coverage(transfer_id)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_sender_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
+        foreach(PrivateMessageHistoryRevision::statements('history_sync_transfers','history_arrivals',["@.account || ':' || @.target"]) as $sql) $pdo->exec($sql);
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_donor_revision (account TEXT PRIMARY KEY, token TEXT NOT NULL)');
+        $pdo->exec("CREATE TRIGGER IF NOT EXISTS history_donor_delete AFTER DELETE ON history_sync_transfers BEGIN INSERT INTO history_donor_revision VALUES (OLD.source,lower(hex(randomblob(16)))) ON CONFLICT(account) DO UPDATE SET token=excluded.token; END");
+        PrivateMessageHistoryRevision::ensureEpoch($pdo,'history_arrivals');
+        PrivateMessageHistoryRevision::ensureEpoch($pdo,'history_donor');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_schedule (account TEXT NOT NULL, source TEXT NOT NULL, mode TEXT NOT NULL, state TEXT NOT NULL, PRIMARY KEY(account,source,mode))');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_destinations (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, revision TEXT NOT NULL, after_id TEXT NOT NULL, finished INTEGER NOT NULL, PRIMARY KEY(account,source,target))');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS history_sync_pending ON history_sync_destinations(account,source,revision,finished,target)');
+
+    }
+    /** Bounded, non-secret continuation for only the current work page. */
+    public function verification(string $account, string $source, string $mode): array
+    {
+        $q=$this->pdo->prepare('SELECT state FROM history_sync_verification WHERE account=? AND source=? AND mode=?');
+        $q->execute([$account,$source,$mode]);
+        return json_decode($q->fetchColumn() ?: '[]',true,32,JSON_THROW_ON_ERROR);
+    }
+    public function saveVerification(string $account, string $source, string $mode, array $state): void
+    {
+        $q=$this->pdo->prepare('INSERT INTO history_sync_verification VALUES (?,?,?,?) ON CONFLICT(account,source,mode) DO UPDATE SET state=excluded.state');
+        $q->execute([$account,$source,$mode,json_encode($state,JSON_THROW_ON_ERROR)]);
+    }
+    public function donorRevision(string $source): string { return PrivateMessageHistoryRevision::token($this->pdo,'history_donor',$source); }
+    public function arrivalRevision(string $account, string $source): string
+    { return PrivateMessageHistoryRevision::token($this->pdo,'history_arrivals',$account.':'.$source); }
+    public function schedule(string $account, string $source, string $mode): array
+    {
+        $q=$this->pdo->prepare('SELECT state FROM history_sync_schedule WHERE account=? AND source=? AND mode=?');$q->execute([$account,$source,$mode]);
+        return json_decode($q->fetchColumn()?:'[]',true,32,JSON_THROW_ON_ERROR);
+    }
+    public function saveSchedule(string $account, string $source, string $mode, array $state): void
+    {
+        $q=$this->pdo->prepare('INSERT INTO history_sync_schedule VALUES (?,?,?,?) ON CONFLICT(account,source,mode) DO UPDATE SET state=excluded.state');
+        $q->execute([$account,$source,$mode,json_encode($state,JSON_THROW_ON_ERROR)]);
+    }
+    public function destination(string $account, string $source, string $target, string $revision): array
+    {
+        $q=$this->pdo->prepare('SELECT after_id,finished FROM history_sync_destinations WHERE account=? AND source=? AND target=? AND revision=?');$q->execute([$account,$source,$target,$revision]);
+        return $q->fetch()?:['after_id'=>'','finished'=>0];
+    }
+    public function saveDestination(string $account, string $source, string $target, string $revision, string $after, bool $finished): void
+    {
+        $q=$this->pdo->prepare('INSERT INTO history_sync_destinations VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target) DO UPDATE SET revision=excluded.revision,after_id=excluded.after_id,finished=excluded.finished');
+        $q->execute([$account,$source,$target,$revision,$after,(int)$finished]);
+    }
+    public function pendingDestination(string $account, string $source, string $revision, string $after=''): ?string
+    {
+        $q=$this->pdo->prepare('SELECT target FROM history_sync_destinations WHERE account=? AND source=? AND revision=? AND finished=0 AND target>? ORDER BY target LIMIT 1');
+        $q->execute([$account,$source,$revision,$after]);return $q->fetchColumn()?:null;
+    }
+    public function recordActivity(string $account, string $source, int $now): void
+    {
+        $q=$this->pdo->prepare('INSERT INTO history_sync_activity VALUES (?,?,?) ON CONFLICT(account,source) DO UPDATE SET active_at=excluded.active_at WHERE excluded.active_at>=active_at+5 OR excluded.active_at<active_at');
+        $q->execute([$account,$source,$now]);
+    }
+    public function recentActivity(string $account, int $limit = 16): array
+    {
+        $q=$this->pdo->prepare('SELECT source,active_at FROM history_sync_activity WHERE account=? ORDER BY active_at DESC,source LIMIT '.min(64,max(1,$limit)));
+        $q->execute([$account]);return $q->fetchAll();
+    }
+    /** One bounded row per account; rejected attempts do not extend a lockout. */
+    public function admit(string $account, string $source, float $now): float
+    {
+        $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            $q=$this->pdo->prepare('SELECT events FROM history_sync_admission WHERE account=?');
+            $q->execute([$account]);
+            $events=json_decode($q->fetchColumn() ?: '[]',true,8,JSON_THROW_ON_ERROR);
+            $events=array_values(array_filter($events,static fn($event)=>$event[1]>$now-10 && $event[1]<=$now));
+            $own=array_values(array_filter($events,static fn($event)=>$event[0]===$source));
+            $retry=max(count($events)>=64?$events[0][1]+10-$now:0, count($own)>=16?$own[0][1]+10-$now:0);
+            // Rejected attempts cannot alter or extend admission, so avoid a
+            // redundant durable write while other clients are being admitted.
+            if ($retry>0) {$this->pdo->exec('COMMIT');return $retry;}
+            $events[]=[$source,$now];
+            $q=$this->pdo->prepare('INSERT INTO history_sync_admission VALUES (?,?) ON CONFLICT(account) DO UPDATE SET events=excluded.events');
+            $q->execute([$account,json_encode($events,JSON_THROW_ON_ERROR)]);
+            $this->pdo->exec('COMMIT');
+            return max(0,$retry);
+        } catch (\Throwable $e) { $this->pdo->exec('ROLLBACK');throw $e; }
     }
     public function checkpoint(string $account, string $source, bool $sender = false): array
     {
@@ -30,6 +119,15 @@ final class PrivateMessageHistorySyncStore
         $table=$sender?'history_sync_sender_scan':'history_sync_scan';
         $q=$this->pdo->prepare('INSERT INTO '.$table.' VALUES (?,?,?,?) ON CONFLICT(account,source) DO UPDATE SET target=excluded.target,after_id=excluded.after_id WHERE target!=excluded.target OR after_id!=excluded.after_id');
         $q->execute([$account,$source,$target,$after]);
+    }
+    public function transferItems(string $transfer): array
+    {
+        $q=$this->pdo->prepare('SELECT message_id,digest FROM history_sync_items WHERE transfer_id=? LIMIT 10');$q->execute([$transfer]);return $q->fetchAll();
+    }
+    public function hasCandidate(string $account, string $target, string $id, string $digest): bool
+    {
+        $q=$this->pdo->prepare('SELECT 1 FROM history_sync_items i JOIN history_sync_transfers t ON t.transfer_id=i.transfer_id WHERE i.account=? AND i.target=? AND i.message_id=? AND i.digest=? LIMIT 1');
+        $q->execute([$account,$target,$id,$digest]);return $q->fetchColumn()!==false;
     }
     public function candidates(string $account, string $target, string $id, string $digest, string $after = ''): array
     {

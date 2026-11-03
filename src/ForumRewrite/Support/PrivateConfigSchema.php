@@ -62,7 +62,15 @@ final class PrivateConfigSchema
             'VISITOR_STATISTICS_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH' => self::definition(null, 'path'),
+            'VIEWER_SESSION_DATABASE_PATH' => self::definition(null, 'path'),
             'FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS' => self::definition(5, 'integer'),
+            // Deployment identity and instance paths (DeploymentSettings); absent means the built-in default.
+            'FORUM_SITE_ID' => self::definition(null, 'string'),
+            'FORUM_REPOSITORY_ROOT' => self::definition(null, 'string'),
+            'FORUM_DATABASE_PATH' => self::definition(null, 'string'),
+            'FORUM_STATIC_HTML_ROOT' => self::definition(null, 'string'),
+            'FORUM_PUBLIC_ARTIFACT_ROOT' => self::definition(null, 'string'),
+            'FORUM_IMAGE_ROOT' => self::definition(null, 'string'),
         ];
     }
 

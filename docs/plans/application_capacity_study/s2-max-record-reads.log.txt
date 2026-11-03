@@ -1,0 +1,53 @@
+Sample: read-1-/400000-0
+Status: 200
+Elapsed seconds: 0.712620
+Response bytes: 16822397
+Distinct synthetic IDs: 1
+Ordered ID hash: 2e831ef319a1b3d6b97ade73d0d50b972c2d288108d4b17e16b58b5d222e771f
+IDs stable: True
+Body SHA256: 9de63daa2b71951840e97e207b378cc4c771f4de4e0c6c184ebedf90bb47fde0
+
+Sample: read-1-/400000-1
+Status: 200
+Elapsed seconds: 0.574128
+Response bytes: 16822401
+Distinct synthetic IDs: 1
+Ordered ID hash: 2e831ef319a1b3d6b97ade73d0d50b972c2d288108d4b17e16b58b5d222e771f
+IDs stable: True
+Body SHA256: 268b3467ac21f51e046c6f227613fefff38be8bc95bb32021416282979547dff
+
+Sample: read-1-/400000-2
+Status: 200
+Elapsed seconds: 0.564169
+Response bytes: 16822401
+Distinct synthetic IDs: 1
+Ordered ID hash: 2e831ef319a1b3d6b97ade73d0d50b972c2d288108d4b17e16b58b5d222e771f
+IDs stable: True
+Body SHA256: 40841b060f733a5b34736f67e419b9fc853ba48079bb3066492a4287b9e71012
+
+Sample: read-1-/api/get_post?post_id=thread-20261030000000-qdb-400000-0
+Status: 200
+Elapsed seconds: 0.134407
+Response bytes: 16777229
+Distinct synthetic IDs: 1
+Ordered ID hash: 2e831ef319a1b3d6b97ade73d0d50b972c2d288108d4b17e16b58b5d222e771f
+IDs stable: True
+Body SHA256: e8de61db8ce87a134a6ae70d16aeb5440476ad086e8b4ccf18e45f8b907174a7
+
+Sample: read-1-/api/get_post?post_id=thread-20261030000000-qdb-400000-1
+Status: 200
+Elapsed seconds: 0.148747
+Response bytes: 16777229
+Distinct synthetic IDs: 1
+Ordered ID hash: 2e831ef319a1b3d6b97ade73d0d50b972c2d288108d4b17e16b58b5d222e771f
+IDs stable: True
+Body SHA256: e8de61db8ce87a134a6ae70d16aeb5440476ad086e8b4ccf18e45f8b907174a7
+
+Sample: read-1-/api/get_post?post_id=thread-20261030000000-qdb-400000-2
+Status: 200
+Elapsed seconds: 0.152311
+Response bytes: 16777229
+Distinct synthetic IDs: 1
+Ordered ID hash: 2e831ef319a1b3d6b97ade73d0d50b972c2d288108d4b17e16b58b5d222e771f
+IDs stable: True
+Body SHA256: e8de61db8ce87a134a6ae70d16aeb5440476ad086e8b4ccf18e45f8b907174a7

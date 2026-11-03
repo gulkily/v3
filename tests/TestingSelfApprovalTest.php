@@ -5,6 +5,13 @@ require_once __DIR__ . '/../autoload.php';
 
 final class TestingSelfApprovalTest
 {
+    public function testApprovalCookieNameDiffersPerScheme(): void
+    {
+        // A Secure cookie from an https visit must not block http from storing its own.
+        assertSame('testing_self_approval', \ForumRewrite\Http\RouteServices::testingSelfApprovalCookieName(false));
+        assertSame('__Host-testing_self_approval', \ForumRewrite\Http\RouteServices::testingSelfApprovalCookieName(true));
+    }
+
     public function testMarkerAndDirectPeerAreRequired(): void
     {
         $root = sys_get_temp_dir() . '/self-approval-' . bin2hex(random_bytes(6));

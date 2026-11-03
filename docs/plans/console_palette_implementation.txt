@@ -1,0 +1,12 @@
+Task: Console color selector
+Workflow: Direct; small extension of the existing LCD selector.
+Reuse: templates/partials/theme_menu.php renders both palettes using the existing markup and CSS classes. public/assets/theme_toggle.js shares the existing keyboard, dismissal, focus and storage controller. ThemeRegistry and TemplateRenderer provide canonical choices; templates/layout.php restores preferences before paint. public/assets/theme-console.css owns Console colors and effects.
+Scope: Green, Amber, Cyan and White phosphor colors; independent site-scoped saved selection. Existing LCD rotation remains unchanged. No dependencies, navigation destinations, API or schema changes.
+Completion: Choose Console through the normal account theme menu, select colors, navigate/reload and restore the choice; keyboard dismissal and blocked-storage fallback remain usable. Verify phone/desktop, LCD consumers and stylesheet failure/retry.
+Status: Implementation in progress; verification pending.
+Implemented: Shared palette controller and template; Console Green/Amber/Cyan/White, matching backgrounds/glow/highlights and menu chips; independent pre-paint persistence. LCD visibility narrowed to its own control so the two selectors cannot overlap.
+Verification passed: 25 focused PHP checks (ThemeRegistryTest, ProfileThemePresentationTest, SiteProfileRegistryTest, initial stylesheet hint and warmup smoke checks); PHP syntax for changed templates/classes; git diff --check.
+Browser coverage added: Existing tests/browser/lcd_palettes.mjs now checks Console at 390/1280 widths, all four selections, reload/navigation, independent LCD preference, Escape/focus, selector visibility and overflow, with screenshot capture.
+Verification limitations: Browser suite and JavaScript syntax command could not run because Node and Chromium are absent. Rendered appearance, first paint, Console contrast, keyboard interaction and blocked-storage/stylesheet recovery remain unverified here. Existing LCD browser coverage is retained but not rerun. Full PHP suite not run.
+Dependency delta: Zero; no packages, external assets, manifests or locks added/updated.
+Status: Implementation ready for review; browser verification remains outstanding.

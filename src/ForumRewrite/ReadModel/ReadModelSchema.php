@@ -50,6 +50,7 @@ final class ReadModelSchema
                 retraction_attribution TEXT NULL,
                 sequence_number INTEGER NOT NULL
             )',
+            'CREATE INDEX posts_recent_idx ON posts (created_at DESC, post_id DESC) WHERE is_hidden = 0 AND retracted_at IS NULL',
             'CREATE INDEX posts_author_identity_idx ON posts (author_identity_id)',
             'CREATE TABLE threads (
                 root_post_id TEXT PRIMARY KEY,
@@ -84,6 +85,11 @@ final class ReadModelSchema
                 bootstrap_thread_id TEXT NOT NULL,
                 public_key TEXT NOT NULL,
                 is_approved INTEGER NOT NULL DEFAULT 0,
+                was_approved INTEGER NOT NULL DEFAULT 0,
+                retired_at TEXT NULL,
+                retired_by_identity_id TEXT NULL,
+                bootstrap_username_token TEXT NOT NULL DEFAULT \'\',
+                has_name_history INTEGER NOT NULL DEFAULT 0,
                 approved_by_identity_id TEXT NULL,
                 approved_by_profile_slug TEXT NULL,
                 approved_by_label TEXT NULL,
@@ -94,6 +100,8 @@ final class ReadModelSchema
                 claimed_thread_count INTEGER NOT NULL DEFAULT 0,
                 verified_thread_count INTEGER NOT NULL DEFAULT 0
             )',
+            'CREATE INDEX profiles_sync_keys ON profiles(username_token,is_approved,identity_id)',
+            ...\ForumRewrite\Messaging\PrivateMessageHistoryRevision::profileStatements(),
             'CREATE TABLE username_routes (
                 username_token TEXT PRIMARY KEY,
                 identity_id TEXT NOT NULL

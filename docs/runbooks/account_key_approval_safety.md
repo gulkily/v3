@@ -14,7 +14,7 @@ Authenticated root-approved operators can open `/activity/?view=security` or `/f
 ./v3 approval audit --repository-root=/path/repository --database-path=/path/read-model.sqlite3 --json
 ```
 
-The audit includes acceptance facts separately from current-state categories. The account pages show at most 50 keys per page by default and provide pagination; history-service requests cap page size at 100. Candidate grant reads are bounded per key. A history page is a view of currently approved keys, not a key-revocation log.
+The audit includes acceptance facts separately from current-state categories. The account pages show at most 50 keys per page by default and provide pagination; history-service requests cap page size at 100. Candidate grant reads are bounded per key. History retains approved and retired keys with their acceptance evidence; retired keys cannot be approved again.
 
 ## Deploy and verify
 
@@ -59,7 +59,7 @@ A failed commit removes incomplete grant/signature/receipt files in the handled 
 
 Preserve all committed grants, signatures, and receipts. Rolling back application code does not revoke keys. Older code may ignore the restriction, omit receipts for new grants, or remove expired invitation grants during rebuild. Keep all canonical approval/invitation and legacy generic writers stopped during an unsafe rollback. Do not let an older reader rebuild the live model or publish regenerated artifacts without first verifying receipt/expiry compatibility on a copy. Prefer restoring this compatible release and repairing projections.
 
-Notifications, unfamiliar-key reporting, revocation/session invalidation, pairing, and recovery remain separate work. Neither a policy toggle nor hiding a history entry removes access already granted.
+Notifications, unfamiliar-key reporting, OpenPGP revocation and pairing remain separate work. Neither a policy toggle nor hiding a history entry removes access already granted.
 
 Receipt format: [approval acceptance receipt v1](../specs/approval_acceptance_record_v1.md). Related guidance: [authentication modes](../reference/authentication_modes.md) and [instance content import](instance_content_import.md).
 
@@ -103,3 +103,18 @@ all historical backups. See [CLI recovery](../reference/v3_cli.md#approval-recei
 
 No sunset flag or automatic deletion is introduced. The removal surface is local
 and documented, while backup support remains an explicit compatibility decision.
+
+
+## Retire a key
+
+From Account, open your member page, choose the exact key under Identities, then open Approval details. The same key access page is available through Tools → User Access → Account keys. Using another approved key, choose **Retire this key…**, review the full target and replacement fingerprints, and select **Retire permanently**. Browser-local Remove/Undo only changes that browser's saved key; it does not retire server access.
+
+Keep `FORUM_USERNAME_CHANGES_ENABLED=false` on public instances. Member retirement requires actor and target to share unchanged bootstrap names with no verified rename history. Turning rename off does not undo older or imported changes. Active root-approved operators can assist with renamed or cross-account keys regardless of the ordinary cross-account approval flag. Every retirement requires an unchanged active replacement for the target's current account. If necessary, approve and verify a replacement first, then retire the old key.
+
+Retirement is permanent for that fingerprint. Existing sessions lose privileges on their next protected request; new sign-in, signed writes, reapproval, registration and root-seeding cannot reactivate it. Previously received ciphertext cannot be recalled. Public reading and keyless participation remain available; old posts, approvals, signatures and retained private-message transfers are preserved.
+
+If confirmation is lost, retry the same signed request. If the page reports retirement accepted but refresh incomplete, retry refresh or run `./v3 rebuild` with the instance's configured paths. The canonical retirement remains effective while refresh is pending. The status API and retained record distinguish accepted retirement from an unsubmitted review.
+
+Back up all three files for each key: `records/key-retirements/openpgp-<fingerprint>.txt`, its `.asc` signature, and `records/key-retirement-acceptances/openpgp-<fingerprint>.txt`, along with identities, public keys and historical grants. Administrative `./v3 import-repository` restores complete verified bundles; public content merge excludes local authority. Missing or conflicting evidence requires restoring the complete accepted bundle, not deleting a retirement to unblock startup. Private-message recovery additionally needs the coordinated private message and history-sync stores and a usable active device; canonical records alone cannot recover plaintext.
+
+Deploy or restore retirement-aware code and rebuild schema 42 before serving the instance. Older application code can ignore retirements and must not serve this data or write alongside the new version. Keep backups and recovery copies isolated while verifying retired sign-in rejection, surviving grants and active-device message recovery. Local automated checks do not establish production or physical-device acceptance.

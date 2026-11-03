@@ -66,12 +66,17 @@
     } catch (error) {
       if (history && options.messageId) {
         try {
-          for (const candidate of await history.candidates(options.messageId, String(options.encryptedEnvelope || ''))) {
+          const attempt=async candidate=>{
             try {
-              decrypted = await openpgp.decrypt({message: await openpgp.readMessage({armoredMessage: String(options.encryptedEnvelope || '')}), sessionKeys: candidate.keys, verificationKeys: verificationKeys, format: 'utf8'});
-              restoredTransfer = candidate.transfer_id;
-              break;
-            } catch (_) { /* Try another authenticated donor candidate. */ }
+              decrypted=await openpgp.decrypt({message:await openpgp.readMessage({armoredMessage:String(options.encryptedEnvelope||'')}),sessionKeys:candidate.keys,verificationKeys,format:'utf8'});
+              restoredTransfer=candidate.transfer_id;return true;
+            } catch (_) {return false;}
+          };
+          const shared=options.historyCandidate;
+          if(shared && typeof shared.isCurrent==='function' && shared.isCurrent() && shared.message_id===options.messageId && shared.digest===window.ForumPrivateMessageHistoryCrypto.digest(String(options.encryptedEnvelope||'')))await attempt(shared);
+          if(!decrypted) {
+            const candidates=history.findCandidate?await history.findCandidate(options.messageId,String(options.encryptedEnvelope||''),attempt):await history.candidates(options.messageId,String(options.encryptedEnvelope||''));
+            if(!decrypted)for(const candidate of candidates)if(await attempt(candidate))break;
           }
         } catch (_) { return {kind:'load-failed', message:'History synchronization could not be loaded. Retry reading this message.'}; }
       }
@@ -187,7 +192,15 @@
     if (card.dispatchEvent) card.dispatchEvent(new CustomEvent('private-message-read-state-changed', { bubbles: true }));
   }
 
-  async function readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage) {
+  const senderKeyRequests=new Map();
+  function currentSenderKeys(messaging,account) {
+    if(!senderKeyRequests.has(account)) {
+      const request=(messaging.verificationKeys || messaging.recipientKeys)(account).finally(()=>{if(senderKeyRequests.get(account)===request)senderKeyRequests.delete(account);});
+      senderKeyRequests.set(account,request);
+    }
+    return senderKeyRequests.get(account);
+  }
+  async function readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate) {
     const verification = card && card.querySelector('[data-role="private-message-verification"]');
     const error = card && card.querySelector('[data-role="private-message-reader-error"]');
     const plaintext = card && card.querySelector('[data-role="private-message-plaintext"]');
@@ -230,11 +243,12 @@
       if (!messaging || typeof messaging.recipientKeys !== "function") {
         throw new Error("Sender key lookup is unavailable.");
       }
-      const senderPublicKeyArmors = await messaging.recipientKeys(String(message.sender_username_token || ""));
+      historyCandidate=historyCandidate || window.ForumPrivateMessageHistorySync?.recovered?.(message.message_id,message.encrypted_envelope);
+      const senderPublicKeyArmors = await currentSenderKeys(messaging,String(message.sender_username_token || ""));
       result = await decryptEnvelope({
         messageId: message.message_id,
         encryptedEnvelope: message.encrypted_envelope,
-        senderPublicKeyArmors: senderPublicKeyArmors,
+        senderPublicKeyArmors: senderPublicKeyArmors, historyCandidate: historyCandidate,
       });
     } catch (error) {
       if (!cardMessages.has(card)) mailboxRequests.delete(requestKey(mailbox, counterpartUsernameToken, cardCursors.get(card)));
@@ -248,10 +262,10 @@
     return result;
   }
 
-  function readCard(mailbox, card, counterpartUsernameToken, suppliedMessage) {
+  function readCard(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate) {
     if (!card) return Promise.resolve();
     if (cardRequests.has(card)) return cardRequests.get(card);
-    const request = readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage).finally(function () { cardRequests.delete(card); });
+    const request = readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate).finally(function () { cardRequests.delete(card); });
     cardRequests.set(card, request);
     return request;
   }
@@ -275,12 +289,16 @@
     function retryHistory(event) {
       Array.from(root.querySelectorAll('[data-private-message-id]')).forEach(function (card) {
         const state = card.dataset.readerState;
-        if (!['decryption-failed', 'unavailable', 'load-failed'].includes(state)) return;
+        if (!['loading','decryption-failed', 'unavailable', 'load-failed'].includes(state)) return;
         if (event.detail && event.detail.messageId && event.detail.messageId !== card.dataset.privateMessageId) return;
-        readCard(mailbox, card, counterpartUsernameToken);
+        const message=cardMessages.get(card);
+        const candidate=message && window.ForumPrivateMessageHistorySync?.recovered?.(message.message_id,message.encrypted_envelope);
+        const retry=()=>{if(card.dataset.readerState!=='verified')return readCard(mailbox,card,counterpartUsernameToken,message,candidate);};
+        if(cardRequests.has(card))cardRequests.get(card).then(retry);else retry();
       });
     }
     document.addEventListener('private-message-history-restored', retryHistory);
+    document.addEventListener('private-message-viewer-known', retryHistory, {once:true});
     Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
       cardCursors.set(card, root.dataset.historyPageCursor || '');
       return readCard(mailbox, card, counterpartUsernameToken);

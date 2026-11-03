@@ -1,0 +1,46 @@
+Delivery: php
+Route: /
+Repeat: 0
+Status: 200
+Elapsed seconds: 0.029203
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: public, no-cache, must-revalidate, max-age=0
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Delivery: php
+Route: /
+Repeat: 1
+Status: 200
+Elapsed seconds: 0.006891
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: public, no-cache, must-revalidate, max-age=0
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Delivery: php
+Route: /
+Repeat: 2
+Status: 200
+Elapsed seconds: 0.007434
+Bytes: 41013
+Matches activated HTML bytes: True
+Cache-Control: public, no-cache, must-revalidate, max-age=0
+SHA256: 003ee2fa7cd2d69d2c6b5c439cd1ade0e16dc99c6154e21b353077ced4f223fc
+
+Traceback (most recent call last):
+  File "/tmp/v3-capacity-5wrtjih3/static_delivery_driver.py", line 16, in <module>
+    with urllib.request.urlopen(f'http://127.0.0.1:{port}'+route,timeout=30) as response:body=response.read();status=response.status;cache=response.headers.get('Cache-Control','absent')
+  File "/usr/lib/python3.10/urllib/request.py", line 216, in urlopen
+    return opener.open(url, data, timeout)
+  File "/usr/lib/python3.10/urllib/request.py", line 525, in open
+    response = meth(req, response)
+  File "/usr/lib/python3.10/urllib/request.py", line 634, in http_response
+    response = self.parent.error(
+  File "/usr/lib/python3.10/urllib/request.py", line 563, in error
+    return self._call_chain(*args)
+  File "/usr/lib/python3.10/urllib/request.py", line 496, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.10/urllib/request.py", line 643, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 404: Not Found

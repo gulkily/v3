@@ -17,7 +17,7 @@ try {
         exit(0);
     }
 
-    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
     $runnerProjectRoot = (string) ($options['project-root'] ?? $projectRoot);
     $codexBin = (string) ($options['codex-bin'] ?? (getenv('FORUM_CODEX_EXECUTABLE') ?: 'codex'));
     $limit = max(1, (int) ($options['limit'] ?? 1));

@@ -28,7 +28,11 @@ Most data-touching commands accept optional positional `repository_root` and
 
 1. the relevant `FORUM_*` environment variable (`FORUM_REPOSITORY_ROOT`,
    `FORUM_DATABASE_PATH`, `FORUM_STATIC_HTML_ROOT`)
-2. the default local repository/database bootstrapped under `state/`
+2. the same key in the checkout's private config file
+3. the default local repository/database bootstrapped under `state/`
+
+`./v3 status` lists each deployment setting with its value and source; see
+[Deployment Settings](../runbooks/production_deploy.md#deployment-settings).
 
 See [Local Run](../../README.md#local-run) in the README for the defaults
 and the bootstrap flow.
@@ -354,6 +358,16 @@ For the eight-checkout WSL timing/terminal replay, run
 It retains every cold/warm/slow/offline/busy sample and reports min/median/p95/max;
 the recorded target applies to this host, not arbitrary OS scheduling delays.
 
+## Update the application checkout
+
+```
+./v3 deploy [--check|--status] [--timeout=SECONDS]
+```
+
+Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. The default timeout is 120 seconds.
+
+Local edits to tracked files are kept (stashed, then reapplied after the fast-forward). It refuses with the checkout unchanged when the update conflicts with a local edit, on a branch other than `main`, diverged history or a deploy already running, and prints `Outcome`, `Reason`, `Old-Commit`, `New-Commit` and `Message`. Exit status: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error. Pull only; see [Deploy from the Site](../runbooks/production_deploy.md#deploy-from-the-site).
+
 ## Inspect operator status
 
 ```
@@ -380,7 +394,7 @@ use a saved target. Status never edits these registrations.
 
 For production virtual hosts, HTTPS, or an unresolved/ambiguous target, add
 `'FORUM_STATUS_URL' => 'https://forum.example/'` to the existing
-`../forum-private/secrets.php` (or `FORUM_SECRETS_PATH` file), or set the same
+private config file (`FORUM_SECRETS_PATH`, else `../forum-private/<checkout folder>/secrets.php` when it exists, else `../forum-private/secrets.php`), or set the same
 environment variable. Use the URL whose Host/TLS name routes to this instance.
 Rerun plain status to verify; `--url` temporarily overrides the saved value.
 Malformed targets require correction; credentials and fragments are rejected.
@@ -489,6 +503,25 @@ It refuses recovery while the lock or an open file holder is detected.
 Preview is non-mutating. Run executes one bounded batch immediately; repeat while
 `remaining` is true. The normal queue worker also discovers and continues sweeps.
 See [coverage, exclusions, progress and recovery](retraction_sweep.md). Previous removal/retraction receipt formats are unsupported; no migration is available.
+
+## Purge retracted prose from Git history
+
+```
+./v3 purge-history preview [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--skip-dry-run] [--json]
+./v3 purge-history run [--yes] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--json]
+```
+
+Preview changes nothing: it lists the paths every accepted delete receipt names,
+the commits touching them, blockers, and the time a rewrite took on a temporary
+clone; exit code 0 means run would proceed. Run rewrites all history in place
+under the repository write lock, verifies the old objects are gone, commits a
+[history rewrite record](../specs/history_rewrite_record_v1.md), rebuilds the
+read model and static pages, and names the copies it cannot reach. It cannot be
+undone except from a full backup including `.git`, so it asks you to type `yes`
+on the terminal first; `--yes` skips the question for scripts, and a run without
+a terminal and without `--yes` is refused. Progress for each phase goes to
+stderr with elapsed seconds; the result stays on stdout. Follow the
+[runbook](../runbooks/history_purge.md).
 
 ## Manage the background task queue
 
@@ -630,6 +663,8 @@ alias examples, fixed transfer/archive limits, publication, and recovery.
 ```
 ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
 ```
+
+Accepts `records/`, `local_repository/records/` and current `repository/records/` layouts. Administrative imports validate complete signed key-retirement bundles before copying and reject conflicting accepted evidence. Public content merge remains a separate operation that excludes local approval/retirement authority.
 
 Imports a `.tar.gz` repository archive into the target repository root,
 rebuilds the read model, and rebuilds static artifacts (when an artifact root
@@ -834,7 +869,7 @@ fallbacks, but new writes use `LLM_*` names.
 - `refresh-template` — rewrite the file with current comments/examples and every schema template setting, including `FORUM_STATUS_URL`, while preserving existing values
 - `--force` — overwrite without the usual confirmation/skip behavior
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`
-- `--path=...` — write to a specific file instead of the default `../forum-private/secrets.php` (relative to this checkout)
+- `--path=...` — write to a specific file instead of the default (`FORUM_SECRETS_PATH`, else `../forum-private/<checkout folder>/secrets.php` when it exists, else `../forum-private/secrets.php`, relative to this checkout)
 
 Private-config writers and `edit` coordinate through a private `.lock` sidecar;
 busy saves fail after three seconds and can be retried. Keep that lock file in

@@ -1,0 +1,11 @@
+import collector as c
+import sqlite3
+r=c.ROOT
+assert c.run('s3-history-fixture-final',['python3','tests/Support/qdb_build_time_fixture.py',str(r/'history-fixtures-final')])==0
+c.ENV['FORUM_REPOSITORY_ROOT']=str(r/'history-fixtures-final/ordinary')
+for i in range(3):
+ assert c.run(f's3-history-rebuild-{i}',['./v3','rebuild',str(r/'history-fixtures-final/ordinary'),str(r/'history.sqlite')])==0
+c.ENV['FORUM_DATABASE_PATH']=str(r/'history.sqlite')
+c.ENV['FORUM_STATIC_HTML_ROOT']=str(r/'history-static')
+assert c.run('s3-history-http',['python3',str(r/'history_read_driver.py'),'-1'])==0
+with sqlite3.connect(r/'history.sqlite') as db:print('Indexed commits:',db.execute('select count(*) from commits').fetchone()[0])

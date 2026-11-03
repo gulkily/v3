@@ -17,7 +17,7 @@ try {
         exit(0);
     }
 
-    $databasePath = (string) ($options['database-path'] ?? (getenv('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
     $postId = trim((string) ($options['post-id'] ?? ''));
     $limit = max(1, min(100, (int) ($options['limit'] ?? ($postId === '' ? 25 : 10))));
 
