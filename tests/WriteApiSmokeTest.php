@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
@@ -219,7 +220,8 @@ CODE;
             assertSame(0,(int)ProfileRepository::byIdentityId($pdo,$ids[1])['is_approved']);
             assertSame(1,(int)ProfileRepository::byIdentityId($pdo,$ids[3])['is_approved'],'Earlier beneficiary remains approved after its operator retires');
             assertSame($ids[0],\ForumRewrite\Security\KeyRetirement::read($restored,$ids[1])['Actor-Identity-ID']);
-            $oldSession=$_SESSION??[];$oldPost=$_POST;
+            $oldPost=$_POST;
+            TestViewerSession::signedOut();
             try {
                 $app=new Application(dirname(__DIR__),$restored,$restoredDb,$restoredArtifacts);
                 $challenge=$this->extractValue($this->renderMethod($app,'GET','/api/auth_challenge'),'challenge');
@@ -228,7 +230,7 @@ CODE;
                 if (!str_contains($authResponse,'This key is retired.')) throw new RuntimeException('Unexpected restored authentication response: '.$authResponse);
                 assertSame(403,http_response_code());
                 assertStringContains('Retired',$this->renderMethod($app,'GET','/profiles/'.str_replace(':','-',$ids[1])));
-            } finally {$_SESSION=$oldSession;$_POST=$oldPost;}
+            } finally {TestViewerSession::reset();$_POST=$oldPost;}
             $broken=$artifacts.'/broken-export';mkdir($broken,0700,true);
             $this->runCommand(dirname(__DIR__),'tar -xzf '.escapeshellarg($export['path']).' -C '.escapeshellarg($broken));
             unlink($broken.'/repository/'.\ForumRewrite\Security\KeyRetirement::path($ids[0]).'.asc');
@@ -383,23 +385,26 @@ CODE;
             $now = gmdate('Y-m-d\TH:i:s\Z');
             $direct = 'Post-ID: thread-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(16)) . "\nCreated-At: {$now}\nBoard-Tags: general\nAuthor-Identity-ID: {$ids[1]}\nSubject: Kept draft\n\nRetired direct signed post.\n";
             assertThrowsRuntime(fn()=>$writer->createSignedPost(['canonical_record'=>$direct,'detached_signature'=>$this->signCanonicalRecord($keys[1]['home'],$direct)]),$retiredError);
-            $sessionBefore = $_SESSION ?? [];
             $postBefore = $_POST;
             try {
-                $_SESSION = ['authenticated_identity_id'=>$ids[1]];
+                // A session the key held before it was retired no longer signs anyone in.
+                TestViewerSession::signIn($ids[1]);
                 $app = new Application(dirname(__DIR__),$root,$db,$artifacts);
                 assertStringContains('status=unauthenticated',$this->renderMethod($app,'GET','/api/auth_status'));
                 assertSame(401,http_response_code());
-                $_SESSION = ['forum_auth_challenges'=>['retired-challenge'=>time()+300]];
-                $_POST = ['identity_id'=>$ids[1],'challenge'=>'retired-challenge','detached_signature'=>$this->signCanonicalRecord($keys[1]['home'],'retired-challenge')];
+                // And the retired key cannot start a new one.
+                TestViewerSession::signedOut();
+                $sessionsBefore = TestViewerSession::sessionCount($ids[1]);
+                $challenge = TestViewerSession::challenge();
+                $_POST = ['identity_id'=>$ids[1],'challenge'=>$challenge,'detached_signature'=>$this->signCanonicalRecord($keys[1]['home'],$challenge)];
                 assertStringContains($retiredError,$this->renderMethod($app,'POST','/api/authenticate_identity'));
                 assertSame(403,http_response_code());
-                assertSame(false,isset($_SESSION['authenticated_identity_id']));
+                assertSame($sessionsBefore,TestViewerSession::sessionCount($ids[1]));
                 // Public readers remain welcome without granting this key a session.
-                $_SESSION = [];
+                TestViewerSession::signedOut();
                 $this->renderMethod($app,'GET','/users/');
                 assertSame(200,http_response_code());
-            } finally { $_SESSION=$sessionBefore; $_POST=$postBefore; }
+            } finally { TestViewerSession::reset(); $_POST=$postBefore; }
             $receipt = $root.'/'.\ForumRewrite\Security\KeyRetirement::acceptancePath($ids[1]);
             $bytes = file_get_contents($receipt);
             file_put_contents($receipt,str_replace('Record-SHA256: ','Record-SHA256: 0',$bytes));
@@ -7830,7 +7835,6 @@ NODE;
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
         $key = $this->createSigningKey('security-operator');
-        $previousSession = $_SESSION ?? [];
         $previousFlag = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
         putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
         try {
@@ -7840,9 +7844,9 @@ NODE;
             $_POST = [];
             $operator = $this->extractValue($response, 'identity_id');
             $this->seedApprovedIdentity($root, $operator);
-            $_SESSION = ['authenticated_identity_id' => $operator];
+            TestViewerSession::signIn($operator);
             assertStringContains('No access changes recorded yet.', $this->renderMethod($app, 'GET', '/tools/user-access/'));
-            $_SESSION = [];
+            TestViewerSession::signedOut();
             $target = $this->linkGeneratedIdentity($app, 'security-target');
             $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
             $change = function (bool $value) use ($writer, $operator, $key): void {
@@ -7854,11 +7858,10 @@ NODE;
             $change(true);
             $grant = $this->approveIdentity($writer, $target, $operator);
             $change(false);
-            if (session_status() !== PHP_SESSION_ACTIVE) session_start();
             $paths = ['/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/api/forte_activity_detail?view=security&id=1', '/api/forte_commit_detail?view=security&sha=' . $grant['commit_sha'], '/activity/?view=security&format=rss'];
             foreach ([null, $target['identity_id']] as $viewer) {
-                $_SESSION = $viewer === null ? [] : ['authenticated_identity_id' => $viewer];
                 $_COOKIE = ['identity_hint' => $operator];
+                $viewer === null ? TestViewerSession::signedOut() : TestViewerSession::signIn($viewer);
                 assertStringNotContains('>Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
                 foreach ($paths as $path) {
                     $denied = $this->renderMethod($app, 'GET', $path);
@@ -7872,8 +7875,8 @@ NODE;
                     assertStringNotContains('Acceptance receipt', $denied);
                 }
             }
-            $_SESSION = ['authenticated_identity_id' => $operator];
             $_COOKIE = [];
+            TestViewerSession::signIn($operator);
             $recent = $this->renderMethod($app, 'GET', '/tools/user-access/');
             assertStringContains('<h2>Access history</h2>', $recent);
             assertStringContains('Account key approved for security-target', $recent);
@@ -7929,8 +7932,8 @@ NODE;
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             assertStringContains('security-target', $this->renderMethod($app, 'GET', '/activity/?view=security'));
         } finally {
-            $_POST = []; $_COOKIE = []; $_SESSION = $previousSession;
-            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+            $_POST = []; $_COOKIE = [];
+            TestViewerSession::reset();
             putenv($previousFlag === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previousFlag);
             $this->deleteTree($key['home']);
         }

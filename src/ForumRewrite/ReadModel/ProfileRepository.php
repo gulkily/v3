@@ -19,7 +19,7 @@ use PDO;
  *
  * Deliberately does not include viewer-identity resolution
  * (Application::authenticatedViewerProfile()/resolveViewerProfileFromIdentityHint())
- * even though those also do profile lookups - those read $_SESSION and
+ * even though those also do profile lookups - those read the viewer session and
  * feature-flag state, so they're request-scoped, not a pure data-access
  * concern, and stay on Application.
  */
