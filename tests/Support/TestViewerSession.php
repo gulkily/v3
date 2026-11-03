@@ -14,6 +14,23 @@ declare(strict_types=1);
  */
 final class TestViewerSession
 {
+    private static bool $held = false;
+
+    /**
+     * Keeps one session open for the rest of the test, like the in-process fixtures that
+     * called session_start() up front: later signIn()/signedOut() calls change it in place.
+     * Stage 2-3 compatibility only; app-owned sessions make it unnecessary.
+     */
+    public static function holdOpen(): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            @session_start();
+        }
+        self::$held = true;
+        unset($_COOKIE[session_name()]);
+        $_SESSION = [];
+    }
+
     /** Signs the next requests in as this identity. */
     public static function signIn(string $identityId): void
     {
@@ -29,6 +46,10 @@ final class TestViewerSession
     /** No session and no session cookie. */
     public static function signedOut(): void
     {
+        if (self::$held) {
+            $_SESSION = [];
+            return;
+        }
         self::reset();
         $_SESSION = [];
     }
@@ -49,6 +70,21 @@ final class TestViewerSession
         return (string) (($_SESSION ?? [])['authenticated_identity_id'] ?? '');
     }
 
+    /** Keeps session state under this directory (for fixtures shared with a test server). */
+    public static function useStateDirectory(string $directory): void
+    {
+        if (!is_dir($directory . '/sessions')) {
+            mkdir($directory . '/sessions', 0777, true);
+        }
+        session_save_path($directory . '/sessions');
+    }
+
+    /** @return array{0: string, 1: string} The session cookie's name and value, as a browser would hold them. */
+    public static function cookie(): array
+    {
+        return [session_name(), (string) ($_COOKIE[session_name()] ?? '')];
+    }
+
     /** Prepares for another request from the same browser: the session cookie is sent again. */
     public static function nextRequest(): void
     {
@@ -65,6 +101,7 @@ final class TestViewerSession
     /** Ends whatever session a test set up and forgets its cookie. */
     public static function reset(): void
     {
+        self::$held = false;
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
@@ -76,6 +113,10 @@ final class TestViewerSession
     /** @param array<string, mixed> $data */
     private static function begin(array $data): void
     {
+        if (self::$held) {
+            $_SESSION = $data;
+            return;
+        }
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
@@ -96,6 +137,9 @@ final class TestViewerSession
         $sessionId = session_id();
         $_SESSION = $data;
         session_write_close();
+        // $_SESSION stays filled after session_write_close(); empty it so the application
+        // has to load the session through the cookie, as it would for a real request.
+        $_SESSION = [];
         $_COOKIE[session_name()] = $sessionId;
         // The CLI session module does not read $_COOKIE; mirror the web SAPI.
         session_id($sessionId);

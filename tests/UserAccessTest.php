@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 
 use ForumRewrite\Application;
@@ -37,8 +38,8 @@ final class UserAccessTest
             $target = $writer->linkIdentity(['public_key' => file_get_contents(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc')]);
             $pdo = new PDO('sqlite:' . $db);
             $actor = $pdo->query('SELECT identity_id FROM profiles WHERE is_approved = 1 LIMIT 1')->fetchColumn();
-            foreach ([[], ['authenticated_identity_id' => $target['identity_id']]] as $session) {
-                $_SESSION = $session;
+            foreach (['', $target['identity_id']] as $viewer) {
+                $viewer === '' ? TestViewerSession::signedOut() : TestViewerSession::signIn($viewer);
                 assertStringContains('Only approved users', $this->render($root, $db, '/tools/user-access/pending/'));
                 assertSame(403, http_response_code());
             }
@@ -46,7 +47,7 @@ final class UserAccessTest
             $detail = json_decode($this->render($root, $db, '/api/forte_user_detail?username_token=' . rawurlencode($pendingProfile['username_token'])), true, 512, JSON_THROW_ON_ERROR);
             assertSame('ok', $detail['status']);
             assertStringContains('Pending approval', $detail['html']);
-            $_SESSION = ['authenticated_identity_id' => $actor];
+            TestViewerSession::signIn($actor);
             assertStringContains('/tools/user-access/profiles/' . $target['profile_slug'], $this->render($root, $db, '/tools/user-access/pending/'));
             assertSame(200, http_response_code());
             $html = $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug']);
@@ -65,7 +66,7 @@ final class UserAccessTest
         $this->fixture(function ($workspace, $root, $db): void {
             $pdo = new PDO('sqlite:' . $db);
             $user = $pdo->query('SELECT * FROM profiles WHERE is_approved = 1 LIMIT 1')->fetch(PDO::FETCH_ASSOC);
-            $_SESSION = ['authenticated_identity_id' => $user['identity_id']];
+            TestViewerSession::signIn($user['identity_id']);
             foreach (['/users/', '/user/' . $user['username_token'], '/profiles/' . $user['profile_slug']] as $url) {
                 $html = $this->render($root, $db, $url);
                 assertSame(200, http_response_code());
@@ -78,14 +79,14 @@ final class UserAccessTest
             // Users › Waiting lists the people waiting beside the member directory.
             assertStringContains('Waiting (', $this->render($root, $db, '/users/pending/'));
             assertSame(200, http_response_code());
-            $_SESSION = [];
+            TestViewerSession::signedOut();
             $this->render($root, $db, '/users/pending/');
             assertSame(403, http_response_code());
             // Users is the same page for every viewer; its tabs are member-only and shown before paint by the client.
             $anonymous = $this->render($root, $db, '/users/');
-            $_SESSION = ['authenticated_identity_id' => $user['identity_id']];
+            TestViewerSession::signIn($user['identity_id']);
             $approved = $this->render($root, $db, '/users/');
-            $_SESSION = [];
+            TestViewerSession::signedOut();
             $tabs = static fn (string $html): string => preg_match('#<nav class="board-filter" aria-label="Users" data-member-only>.*?</nav>#s', $html, $match) ? $match[0] : '';
             assertStringContains('Waiting (', $tabs($anonymous));
             assertSame($tabs($anonymous), $tabs($approved));
@@ -152,18 +153,16 @@ final class UserAccessTest
         $root = $workspace->repository('repository', true);
         $db = $workspace->root . '/read.sqlite3';
         $flag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $session = $_SESSION ?? [];
         $cookies = $_COOKIE;
-        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-        $_SESSION = []; $_COOKIE = [];
+        TestViewerSession::holdOpen();
+        $_COOKIE = [];
         putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
         try {
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             $test($workspace, $root, $db);
         } finally {
-            $_SESSION = $session; $_COOKIE = $cookies;
+            TestViewerSession::reset(); $_COOKIE = $cookies;
             putenv($flag === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $flag);
-            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         }
     }
 

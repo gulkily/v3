@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
@@ -7474,8 +7475,8 @@ NODE;
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
         $key = $this->createSigningKey('security-operator');
-        $previousSession = $_SESSION ?? [];
         $previousFlag = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        TestViewerSession::holdOpen();
         putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
         try {
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
@@ -7484,9 +7485,9 @@ NODE;
             $_POST = [];
             $operator = $this->extractValue($response, 'identity_id');
             $this->seedApprovedIdentity($root, $operator);
-            $_SESSION = ['authenticated_identity_id' => $operator];
+            TestViewerSession::signIn($operator);
             assertStringContains('No access changes recorded yet.', $this->renderMethod($app, 'GET', '/tools/user-access/'));
-            $_SESSION = [];
+            TestViewerSession::signedOut();
             $target = $this->linkGeneratedIdentity($app, 'security-target');
             $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
             $change = function (bool $value) use ($writer, $operator, $key): void {
@@ -7498,10 +7499,9 @@ NODE;
             $change(true);
             $grant = $this->approveIdentity($writer, $target, $operator);
             $change(false);
-            if (session_status() !== PHP_SESSION_ACTIVE) session_start();
             $paths = ['/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/api/forte_activity_detail?view=security&id=1', '/api/forte_commit_detail?view=security&sha=' . $grant['commit_sha'], '/activity/?view=security&format=rss'];
             foreach ([null, $target['identity_id']] as $viewer) {
-                $_SESSION = $viewer === null ? [] : ['authenticated_identity_id' => $viewer];
+                $viewer === null ? TestViewerSession::signedOut() : TestViewerSession::signIn($viewer);
                 $_COOKIE = ['identity_hint' => $operator];
                 assertStringNotContains('>Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
                 foreach ($paths as $path) {
@@ -7516,7 +7516,7 @@ NODE;
                     assertStringNotContains('Acceptance receipt', $denied);
                 }
             }
-            $_SESSION = ['authenticated_identity_id' => $operator];
+            TestViewerSession::signIn($operator);
             $_COOKIE = [];
             $recent = $this->renderMethod($app, 'GET', '/tools/user-access/');
             assertStringContains('<h2>Access history</h2>', $recent);
@@ -7573,8 +7573,8 @@ NODE;
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             assertStringContains('security-target', $this->renderMethod($app, 'GET', '/activity/?view=security'));
         } finally {
-            $_POST = []; $_COOKIE = []; $_SESSION = $previousSession;
-            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+            $_POST = []; $_COOKIE = [];
+            TestViewerSession::reset();
             putenv($previousFlag === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previousFlag);
             $this->deleteTree($key['home']);
         }

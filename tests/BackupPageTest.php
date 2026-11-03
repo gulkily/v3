@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 
 use ForumRewrite\Application;
@@ -64,20 +65,18 @@ final class BackupPageTest
             throw new RuntimeException('Unable to create image root.');
         }
         $previous = [getenv('FORUM_APPROVED_MEMBERS_ONLY'), getenv('FORUM_IMAGE_ROOT')];
-        $session = $_SESSION ?? [];
         $cookies = $_COOKIE;
-        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-        $_SESSION = []; $_COOKIE = [];
+        TestViewerSession::holdOpen();
+        $_COOKIE = [];
         putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
         putenv('FORUM_IMAGE_ROOT=' . $images);
         try {
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             $test($root, $db);
         } finally {
-            $_SESSION = $session; $_COOKIE = $cookies;
+            TestViewerSession::reset(); $_COOKIE = $cookies;
             putenv($previous[0] === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $previous[0]);
             putenv($previous[1] === false ? 'FORUM_IMAGE_ROOT' : 'FORUM_IMAGE_ROOT=' . $previous[1]);
-            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         }
     }
 

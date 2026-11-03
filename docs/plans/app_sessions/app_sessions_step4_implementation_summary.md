@@ -60,3 +60,23 @@ Branch: `feat/app-sessions` from `main` `e6493e2f`. Planning commit `eafa09b5`.
 - Estimate details: original scope unchanged; retrospective 0.10 (the strict-mode discovery cost what the mechanical replacement saved).
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Remaining tests use the helper
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - Converted 10 PHP test files and one browser test: `DeployPageTest`, `VisitorStatisticsPageTest`, `ApprovalSeedCommandTest` (child-process fixtures with real cookies); `BackupPageTest`, `FeatureFlagChangePageTest`, `SourceRouteCommitMapTest`, `RootApprovalPageTest`, `UserAccessTest`, `WriteApiSmokeTest`, `PrivateMessageFeatureFlagTest` (in-process fixtures); `tests/browser/testing_self_approval.mjs` (now gets its weak Lobby-only cookie from the new `tests/Support/test_viewer_session_cookie.php`).
+  - Helper additions: `holdOpen()`, `useStateDirectory()`, `cookie()`. The child-process sign-in now empties `$_SESSION` after writing, so the application must load the session through the cookie.
+  - No test outside `SessionRotationTest` (deleted in Stage 4) touches `$_SESSION` or `session_*` directly (grep).
+- Verification:
+  - Baseline full suite on `main` `e6493e2f` (detached worktree): 1825 run, 1810 passed, 15 failed. Failures: 8 `FrmClientTest`, 3 `LocalAppSmokeTest` (as in Stage 2), `ApprovalSeedCommandTest::testUnreadableArtifactDeletionCannotReportSuccess`, `ReactionRecordFormatParityTest::testMixedFormatsBuildTheSameReadModelAsLegacy`, `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts`, `TerminalOperatorUiCommandTest::testNonInteractiveInputPrintsCliFallbackWithoutWork`.
+  - The 10 converted classes on the branch: 235 run, 234 passed; per-class pass counts identical to the baseline; the one failure is the baseline `ApprovalSeedCommandTest` failure. Passed.
+  - `node tests/browser/testing_self_approval.mjs` (headless Chrome via the declared `playwright-core` 1.58.1, installed with `--no-save --no-package-lock`; no manifest change): passed.
+- Notes:
+  - `holdOpen()` exists because the in-process fixtures opened one PHP session up front and changed it in memory, so later requests saw the change regardless of route. Switching them to cookie-loaded sessions now would expose routes outside the session allowlist (the Deploy class of bug) before Stage 4 can fix them. It is a named, temporary shim; Stage 4 removes it.
+- Estimate details: original scope unchanged; retrospective 0.10.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
