@@ -148,3 +148,33 @@ Extended estimates: enabled (inherited)
 - Estimate details: original scope unchanged; retrospective 0.08, below the original because the format-bound evidence extension was not implemented (deviation above) and the remaining work was verification.
 
 *— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 8 - Acceptance, known-user replay and closeout
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes:
+  - New `tests/browser/title_directive_replay.mjs` with `tests/Support/title_directive_browser_fixture.php`: three real identities (author, approved non-operator member, seeded operator). The author retitles their own thread through the ordinary inline reply composer with both flags at defaults; the reply keeps its `title:` line as text; the new title appears on the thread, all-threads board, Recent, Forte listing and pane; the root card reads `Title set by replay-author`. The member's directive is ignored until the operator turns `FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS` on through the Feature Flags page (signed change record), after which it retitles and the line reads `Title set by replay-member`. Turning `FORUM_TITLE_DIRECTIVE_ENABLED` off through the page leaves a later `title:` line as plain text, even for the author.
+  - Full-suite findings fixed: `IncrementalReadModelUpdater` approval refresh (`refreshApprovalSensitiveThreadScores`, `refreshApprovalSensitivePostReactions`) now applies signal eligibility, so a newly approved member's earlier reactions appear in the signals line after an incremental approval exactly as after a rebuild (`WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh` exposed the gap through rendered-page parity and now passes). `tests/QdbPageTest.php` names the `viewer_tags` columns in its fixture insert, as the new `eligible` column requires.
+  - Concept inventory: new [thread title](../../concepts/thread_title.md); [post presentation](../../concepts/post_presentation.md) gains the signals line and sources. Register PF-20261103-F01 moved to blocked with local evidence and the deployment/production next action. Ledger closeout below.
+- Verification:
+  - `node tests/browser/title_directive_replay.mjs`: ok (2026-11-03T18:34:36Z), Chromium.
+  - `php tests/run.php WriteApiSmokeTest`: 193 run, 193 passed. `php tests/run.php ReadModelSignalEligibilityTest QdbPageTest PostSignalsTemplateTest ReadModelThreadSubjectsTest`: all passed.
+  - Full suite `php tests/run.php` before the two fixes above: 1846 run, 1839 passed, 7 failed. Two of the seven were this cycle's (approval-refresh eligibility, QDB fixture insert) and are fixed and re-verified; the other five reproduce on the unchanged baseline `e6493e2f` in a worktree: `LocalAppSmokeTest` private lobby copy, Forte expired-session copy and archive download filename; `ReactionRecordFormatParityTest::testMixedFormatsBuildTheSameReadModelAsLegacy`; `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` (missing `replaying_invitation_posts` timing). The full suite was not rerun after the two fixes; the affected classes were.
+  - `git diff --check` clean. Dependency delta: zero (no manifest or lock changed; `playwright-core` restored into the ignored `node_modules` from the existing `package.json` entry).
+- Notes: the composer click in the replay is dispatched through the DOM because a collapsed same-author card overlaps the root card's Reply link in this fixture; link geometry stays covered by `inline_reply_link.mjs`.
+- Estimate details: original scope unchanged; retrospective 0.15, above the original because the full suite surfaced the approval-refresh gap and the three-identity browser harness took longer than a replay of one flow.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Study closeout
+
+- **Delivered scope:** v2 (Option B plus two flags), all eight planned stages complete on `feat/reply-title-directive`. Starting revision `e6493e2f` (main); planning commit `671715b1`; stage commits `e5f67bfd`, `a90aec05`, `f87b302b`, `616c59df`, `fe5210c8`, `f6821284`, `888afdb8`, and the Stage 8 commit that carries this closeout. A debug-log handoff commit follows.
+- **Verification passed:** focused PHP suites per stage; write API smoke 193/193; three browser tests in Chromium (signed reactions, post signals across 16 themes and two widths with no-JavaScript and in-place append, known-user replay through the composer and Feature Flags page); `./v3 rebuild` at schema 44; prior-version startup rebuild regression. **Reproduced baseline failures:** five, listed in Stage 8. **Pending/unverified:** production on zenmemes.com (deploy, then the maintainer's own retry), Firefox/WebKit, physical phone, full-suite rerun after the final two fixes.
+- **Corrective work versus new requests:** corrective: Stage 3 undefined-method fix in the signed-post hashtag path (pre-existing, unverified by test), Stage 8 approval-refresh eligibility and QDB fixture insert. No new requests accepted; "suggested titles from unauthorized repliers" remains a recorded follow-up. New follow-up: static tag pages are not invalidated on retitle, matching label writes today.
+- **Splits:** none. **Planned deviation:** Stage 7 did not extend the removal-acceptance evidence format; orphaned authored subject records are retained and inert (recorded in Stage 7).
+- **Retrospective scope assessment:** **0.85** for the whole cycle (original projection 0.85 at Steps 1–4 entry), single exposed rater Claude Code, model claude-fable-5-1; independently judged, not the sum of stage values. Stage-work originals and retrospectives are recorded per stage above and are not additive.
+- **Maintainer comfortable-fit judgment and study acceptance:** pending. Technical completion is not an accepted outcome; the accepted-outcome count is unchanged.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*

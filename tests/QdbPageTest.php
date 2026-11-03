@@ -138,7 +138,7 @@ final class QdbPageTest
         $first = QdbPage::page($pdo, 'latest', 1)['threads'];
         $second = QdbPage::page($pdo, 'latest', 2)['threads'];
         $ids = [$first[0]['root_post_id'], $second[0]['root_post_id']];
-        $insert = $pdo->prepare('INSERT INTO viewer_tags VALUES(?,?,?,?)');
+        $insert = $pdo->prepare('INSERT INTO viewer_tags (record_family, target_id, author_identity_id, tag) VALUES(?,?,?,?)');
         foreach ($ids as $id) {
             $insert->execute(['thread-labels', $id, 'viewer-identity', 'upvote']);
             $insert->execute(['post-reactions', $id, 'viewer-identity', 'flag']);

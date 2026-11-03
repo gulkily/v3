@@ -399,7 +399,9 @@ class IncrementalReadModelUpdater
             $stmt->execute([$postId]);
             $author = $stmt->fetchColumn();
             if ($author !== false) {
-                $this->updatePostReactions($pdo, $postId, $this->derivePostReactionState($postId, $author, $recordsByPost[$postId], $approved, VerifiedAttribution::storedCutoff($pdo), VerifiedAttribution::storedEnabled($pdo) ?? false));
+                $state = $this->derivePostReactionState($postId, $author, $recordsByPost[$postId], $approved, VerifiedAttribution::storedCutoff($pdo), VerifiedAttribution::storedEnabled($pdo) ?? false);
+                $this->updatePostReactions($pdo, $postId, $state);
+                SignalEligibility::apply($pdo, 'post-reactions', [$postId => $state['eligible']]);
             }
         }
     }
@@ -1355,6 +1357,7 @@ class IncrementalReadModelUpdater
             $rootSeed = $this->loadRootImportedSeed($threadId);
             $labelState = $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count'], VerifiedAttribution::storedCutoff($pdo));
             $this->updateThreadScoreTotal($pdo, $threadId, $labelState['score_total'], $labelState['verified_score_total']);
+            SignalEligibility::apply($pdo, 'thread-labels', [$threadId => $labelState['eligible']]);
         }
     }
 
