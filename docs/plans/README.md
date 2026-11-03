@@ -28,6 +28,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
+
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
 
