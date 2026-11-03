@@ -20,7 +20,11 @@ $viewerHasFlaggedRoot = isset($viewerFlaggedPostIds[(string) $thread['root_post_
 <?php if (($thread['retracted_at'] ?? null) !== null): ?>
       <div class="body retracted-post" data-retracted="true"><p class="meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::text($thread)) ?></p></div>
 <?php else: ?>
-      <div class="body"><?= $br($thread['root_post_body'] ?? $thread['body_preview']) ?></div>
+<?php if (isset($thread['root_post_body'])): ?>
+      <div class="body<?= $isMarkdownPost($thread, 'root_post_body_format') ? ' post-markdown' : '' ?>"><?= $renderPostBody($thread, (string) $thread['root_post_body'], 'root_post_body_format') ?></div>
+<?php else: ?>
+      <div class="body"><?= $br($thread['body_preview']) ?></div>
+<?php endif; ?>
 <?php endif; ?>
       <div class="paned-reaction-row">
         <button type="button" class="paned-reaction-button" data-action="apply-thread-tag" data-tag="like" data-applied-label="Liked" aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"<?= $viewerHasLiked ? ' disabled' : '' ?>><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>

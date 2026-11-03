@@ -123,7 +123,7 @@ if (!$metaVisible) {
 <?php if ($isRetracted): ?>
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
 <?php else: ?>
-  <div class="body"><?= $br($postBodyDisplay) ?></div>
+  <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post, (string) $postBodyDisplay) ?></div>
 <?php endif; ?>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>

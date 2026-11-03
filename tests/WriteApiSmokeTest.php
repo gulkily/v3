@@ -1261,6 +1261,38 @@ CODE;
         }
     }
 
+    public function testThreadPagesRenderMarkdownOnlyForMarkdownPostsAndRespectTheFlag(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previous = getenv('FORUM_POST_MARKDOWN_ENABLED');
+        try {
+            putenv('FORUM_POST_MARKDOWN_ENABLED');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $markdown = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=MD&body=' . rawurlencode("## Notes\n\n- **one**\n- two")), 'thread_id');
+            $plain = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Plain&body_format=plain&body=' . rawurlencode("## Notes\n- **one**")), 'thread_id');
+            $reply = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_reply?thread_id=' . rawurlencode($markdown) . '&parent_id=' . rawurlencode($markdown) . '&body=' . rawurlencode('*reply*')), 'post_id');
+
+            $page = $this->renderMethod($application, 'GET', '/threads/' . $markdown);
+            assertStringContains('post-markdown', $page);
+            assertStringContains('<h4>Notes</h4>', $page);
+            assertStringContains('<li><p><strong>one</strong></p></li>', $page);
+            assertStringContains('<em>reply</em>', $page);
+            assertStringContains('<em>reply</em>', $this->renderMethod($application, 'GET', '/posts/' . $reply));
+
+            $plainPage = $this->renderMethod($application, 'GET', '/threads/' . $plain);
+            assertStringContains('## Notes<br />', $plainPage);
+            assertStringContains('- **one**', $plainPage);
+            assertStringNotContains('<h4>Notes</h4>', $plainPage);
+
+            putenv('FORUM_POST_MARKDOWN_ENABLED=false');
+            $off = $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/threads/' . $markdown);
+            assertStringNotContains('<h4>Notes</h4>', $off);
+            assertStringContains('- **one**', $off);
+        } finally {
+            $previous === false ? putenv('FORUM_POST_MARKDOWN_ENABLED') : putenv('FORUM_POST_MARKDOWN_ENABLED=' . $previous);
+        }
+    }
+
     public function testRecordsWithoutBodyFormatReportPlain(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

@@ -65,3 +65,26 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Estimate details: original scope unchanged; no revision. Retrospective lower than the original: the shared parser needed only a mode switch, not restructuring.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Thread pages
+
+**Original estimate: 0.20**
+**Retrospective assessment: 0.20**
+
+- Changes:
+  - New site flag `FORUM_POST_MARKDOWN_ENABLED` ("Markdown in posts", Rendering group, on by default, site-mutable).
+  - `MediaEmbedRenderer::render()` takes a `$markdown` argument: text between image references and embed cards goes through `renderPost()`; only embed URLs alone on their line become cards, others stay ordinary links. The plain path is the existing code.
+  - `TemplateRenderer` adds `$isMarkdownPost($record, $formatKey)` and `$renderPostBody($record, $body, $formatKey)`; the four full-post templates (`post_card`, `thread_root_card`, `paned_thread_reply_tree`, `paned_board_content_article`) use them and add a `post-markdown` class.
+  - Full-post queries select `posts.body_format` (thread posts, single post, reply lists, paned board root as `root_post_body_format`, authored content).
+  - `site.css` (non-critical part): spacing, headings, lists, quotes, code, tables, rules and task items for `.post-markdown`, using `currentColor` so themes supply colors.
+- Verification:
+  - New tests: `WriteApiSmokeTest::testThreadPagesRenderMarkdownOnlyForMarkdownPostsAndRespectTheFlag` (Markdown thread/reply/post page render; plain post shows source; flag off shows source), two `MediaEmbedRendererTest` cases (standalone embed card plus inline link; flag-off output byte-identical to the old helper), flag list in `FeatureFlagEvaluatorTest`.
+  - Related suites (BoardList, BoardListingQuery, FeatureFlag x3, Forte x2, LocalAppSmoke, MediaEmbed x7, MusicMediaEmbed, PostMarkdownRenderer, Qdb x7, RecentPost, TemplateRendererMediaEmbedsScript, ThreadTitle): 322 run, 319 passed; the 3 failures are the baseline `LocalAppSmokeTest` failures.
+  - Byte-identical corpus check: every `/threads/{id}` and `/posts/{id}` page for both post fixtures (`parity_minimal_v1`, `retraction_pin_legacy`) rendered with the Stage 2 commit and with this stage; outputs identical after normalizing asset fingerprints.
+  - Browser check (headless Chrome against a local dev server, one Markdown thread with the Nov 2 changelog text and one reply with heading, inline code, code block, table, quote and task items): Light, Word97, Chicago and Midnight at 1280px and 390px. Lists, links, code, tables and quotes read correctly in all eight; the first pass showed task checkboxes stretched by global form styles, fixed with scoped rules before commit. Screenshots kept locally, not committed.
+- Notes:
+  - Post styles sit after the critical-CSS marker, so they load with the deferred stylesheet like other card styles.
+  - Real zenmemes.com posts are checked live in Stage 6 (an existing post must look unchanged).
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
