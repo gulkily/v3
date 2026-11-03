@@ -9,6 +9,7 @@ use PDO;
 
 final class ApprovedUserKeyResolver
 {
+    public function __construct(private readonly ?string $repositoryRoot = null) {}
     /**
      * The public `/user/<username>` contract defines a composite user as all
      * approved profiles sharing the normalized username token. Private
@@ -16,7 +17,7 @@ final class ApprovedUserKeyResolver
      *
      * @return list<array{identity_id:string,profile_slug:string,public_key:string}>
      */
-    public function keysForUsernameToken(PDO $pdo, string $usernameToken): array
+    public function keysForUsernameToken(PDO $pdo, string $usernameToken, bool $historical = false): array
     {
         $usernameToken = strtolower(trim($usernameToken));
         if ($usernameToken === '') {
@@ -25,7 +26,8 @@ final class ApprovedUserKeyResolver
 
         $keys = [];
         foreach (ProfileRepository::byUsernameToken($pdo, $usernameToken) as $profile) {
-            if ((int) ($profile['is_approved'] ?? 0) !== 1) {
+            if ($this->repositoryRoot !== null) $profile = \ForumRewrite\Security\KeyRetirement::profile($this->repositoryRoot, $profile);
+            if ((int) ($profile['is_approved'] ?? 0) !== 1 && !($historical && !empty($profile['retired_at']) && (int)($profile['was_approved'] ?? 0)===1)) {
                 continue;
             }
 

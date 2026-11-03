@@ -1,0 +1,50 @@
+import collector as c
+import sys,socket,subprocess,time,threading,urllib.request,urllib.error,re,hashlib,math,os
+n=int(sys.argv[1]);mode=sys.argv[2];repeat=int(sys.argv[3]);r=c.ROOT
+c.ENV['FORUM_STATIC_HTML_ROOT']=str(r/'overlap-static')
+servers=[];logs=[];ports=[];samples=[];errors=[];stop=threading.Event();job_times=[]
+try:
+ for i in range(n):
+  sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close();ports.append(port)
+  log=open(r/f's6-server-{mode}-{n}-{repeat}-{i}.log','wb');logs.append(log)
+  p=subprocess.Popen(['php','-S',f'127.0.0.1:{port}','-t',str(c.APP/'public'),str(r/'router.php')],cwd=c.APP,env=c.ENV,stdout=log,stderr=log);servers.append(p)
+  for _ in range(100):
+   try:s=socket.create_connection(('127.0.0.1',port),.1);s.close();break
+   except OSError:time.sleep(.05)
+ assert len(set(p.pid for p in servers))==n
+ expected=[f'thread-20261030000000-qdb-{x}'.encode() for x in range(409999,409974,-1)]
+ start=time.monotonic();end=start+30
+ def reader(i):
+  while time.monotonic()<end and not stop.is_set():
+   begin=time.monotonic();status=0
+   try:
+    with urllib.request.urlopen(f'http://127.0.0.1:{ports[i]}/latest',timeout=10) as response:body=response.read();status=response.status
+    ids=list(dict.fromkeys(re.findall(rb'thread-20261030000000-qdb-\d+',body)))
+    if status!=200 or ids!=expected:raise RuntimeError(f'semantic mismatch status={status} ids={len(ids)}')
+   except Exception as e:errors.append(str(e));stop.set()
+   finish=time.monotonic();samples.append((i,begin-start,finish-start,finish-begin,status))
+ def maintenance():
+  if stop.wait(10):return
+  begin=time.monotonic()
+  with (r/f's6-maintenance-{n}-{repeat}.log').open('wb') as out:
+   result=subprocess.run(['./v3','rebuild',str(r/'repository'),str(r/'model.sqlite')],cwd=c.APP,env=c.ENV,stdout=out,stderr=subprocess.STDOUT,timeout=120)
+  job_times.append((begin-start,time.monotonic()-start,result.returncode))
+  if result.returncode:errors.append('maintenance failed');stop.set()
+ threads=[threading.Thread(target=reader,args=(i,)) for i in range(n)]
+ if mode=='overlap':threads.append(threading.Thread(target=maintenance))
+ for t in threads:t.start()
+ for t in threads:t.join()
+ duration=time.monotonic()-start
+ def p95(items):return sorted(items)[max(0,math.ceil(.95*len(items))-1)] if items else None
+ print(f'Window: {mode}-{n}-{repeat}\nDuration seconds: {duration:.6f}\nParallel server PIDs: '+','.join(str(p.pid) for p in servers)+f'\nRequests: {len(samples)}\nRequests per second: {len(samples)/duration:.6f}\nP95 seconds: {p95([x[3] for x in samples])}\nErrors: {len(errors)}\nMaintenance interval: {job_times}\n',flush=True)
+ if job_times:
+  a,b,_=job_times[0];during=[x[3] for x in samples if x[1]<b and x[2]>a]
+  print(f'Requests intersecting maintenance: {len(during)}\nDuring-maintenance p95 seconds: {p95(during)}\n',flush=True)
+ for i,a,b,elapsed,status in sorted(samples,key=lambda x:x[1]):print(f'Request: client={i} start={a:.6f} end={b:.6f} seconds={elapsed:.6f} status={status}')
+ print('Post-window parity: '+c.parity(10000),flush=True)
+ if errors:raise RuntimeError(errors)
+finally:
+ for p in servers:
+  if p.poll() is None:p.terminate()
+ for p in servers:p.wait(timeout=5)
+ for log in logs:log.close()

@@ -28,7 +28,7 @@ final class DocsPublication
     public function isReusableContext(): bool
     {
         // Authenticated/viewer-derived chrome is outside anonymous publication evidence.
-        return ($_COOKIE ?? []) === [] && ($_SESSION ?? []) === [];
+        return ($_COOKIE ?? []) === [];
     }
 
     public function inputSignature(): string

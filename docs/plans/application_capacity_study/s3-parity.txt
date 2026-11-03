@@ -1,0 +1,3 @@
+Offline selected post bodies: 201; every ID/body matched source read model
+Recovery: prior active HTML SHA256 mapping retained after SIGKILL; successful retry activated same relative page paths
+History: 1001 commits indexed; ordinary HTTP activity/thread/API returned 200, stable IDs

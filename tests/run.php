@@ -7,6 +7,7 @@ $runStartedAt = hrtime(true);
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
 $testFiles = [
+    __DIR__ . '/QdbPageTest.php',
     __DIR__ . '/QdbWelcomeSelectionTest.php',
     __DIR__ . '/CommitEvidenceLookupTest.php',
     __DIR__ . '/CommitHistoryReaderTest.php',
@@ -57,7 +58,6 @@ $testFiles = [
     __DIR__ . '/RetractionSweepTest.php',
 
     __DIR__ . '/TestingSelfApprovalTest.php',
-    __DIR__ . '/SessionRotationTest.php',
     __DIR__ . '/ToolsRegistryTest.php',
     __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/TagsIndexMemoryTest.php',
@@ -250,6 +250,7 @@ $testFiles = [
     __DIR__ . '/TerminalOperatorUiCommandTest.php',
     __DIR__ . '/TerminalOperatorUiDashboardTest.php',
     __DIR__ . '/TaskQueueStoreTest.php',
+    __DIR__ . '/ViewerSessionStoreTest.php',
     __DIR__ . '/TaskQueueCommandTest.php',
     __DIR__ . '/TaskQueueWorkerTest.php',
     __DIR__ . '/TestRunHistoryStoreTest.php',
@@ -259,6 +260,8 @@ $testFiles = [
     __DIR__ . '/SqliteFastScoreStoreTest.php',
     __DIR__ . '/StatusCommandTest.php',
     __DIR__ . '/CheckoutsCommandTest.php',
+    __DIR__ . '/AppUpdateTest.php',
+    __DIR__ . '/DeployPageTest.php',
     __DIR__ . '/FastScoreSweepServiceTest.php',
     __DIR__ . '/FastmodHistoricalAuditServiceTest.php',
     __DIR__ . '/FastmodCostEstimatorTest.php',

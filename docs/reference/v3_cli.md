@@ -358,6 +358,16 @@ For the eight-checkout WSL timing/terminal replay, run
 It retains every cold/warm/slow/offline/busy sample and reports min/median/p95/max;
 the recorded target applies to this host, not arbitrary OS scheduling delays.
 
+## Update the application checkout
+
+```
+./v3 deploy [--check|--status] [--timeout=SECONDS]
+```
+
+Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. The default timeout is 120 seconds.
+
+Local edits to tracked files are kept (stashed, then reapplied after the fast-forward). It refuses with the checkout unchanged when the update conflicts with a local edit, on a branch other than `main`, diverged history or a deploy already running, and prints `Outcome`, `Reason`, `Old-Commit`, `New-Commit` and `Message`. Exit status: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error. Pull only; see [Deploy from the Site](../runbooks/production_deploy.md#deploy-from-the-site).
+
 ## Inspect operator status
 
 ```
@@ -653,6 +663,8 @@ alias examples, fixed transfer/archive limits, publication, and recovery.
 ```
 ./v3 import-repository <archive.tar.gz> [repository_root] [database_path] [artifact_root] [--dry-run] [--no-commit]
 ```
+
+Accepts `records/`, `local_repository/records/` and current `repository/records/` layouts. Administrative imports validate complete signed key-retirement bundles before copying and reject conflicting accepted evidence. Public content merge remains a separate operation that excludes local approval/retirement authority.
 
 Imports a `.tar.gz` repository archive into the target repository root,
 rebuilds the read model, and rebuilds static artifacts (when an artifact root

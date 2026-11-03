@@ -1,0 +1,2 @@
+import collector as c
+c.run('max-record-reads',['python3',str(c.ROOT/'read_driver.py'),'1'])

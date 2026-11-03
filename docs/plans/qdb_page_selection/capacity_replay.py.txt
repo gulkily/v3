@@ -1,0 +1,86 @@
+from pathlib import Path
+import collector as c
+import sqlite3,subprocess,socket,time,urllib.request,urllib.parse,re,html,hashlib,sys
+
+def prepared(n):
+ c.fixture(n)
+ with sqlite3.connect(c.ROOT/'model.sqlite') as db:
+  db.row_factory=sqlite3.Row
+  for table,pk in [('posts','post_id'),('threads','root_post_id')]:
+   template=dict(db.execute(f"SELECT * FROM {table} WHERE {pk}='thread-20261030000000-qdb-400000'").fetchone())
+   for i in range(10000,n):
+    ident=f'thread-20261030000000-qdb-{400000+i}'
+    row=dict(template)
+    for key in ['post_id','thread_id','root_post_id','last_post_id']:
+     if key in row:row[key]=ident
+    if 'subject' in row:row['subject']=f'capacity {i:06}'
+    db.execute(f"INSERT INTO {table} ({','.join(row)}) VALUES ({','.join('?' for _ in row)})",list(row.values()))
+  head=subprocess.check_output(['git','-C',str(c.ROOT/'repository'),'rev-parse','HEAD'],text=True).strip()
+  db.execute("UPDATE metadata SET value=? WHERE key='repository_head'",(head,))
+ c.parity(n)
+ print(f'Prepared model: {n}; cloned proven 10000-row shape; every body compared with canonical source',flush=True)
+
+def read(n,maximum=False):
+ sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
+ log=open(c.ROOT/f'page-http-{n}.log','wb')
+ server=subprocess.Popen(['php','-S',f'127.0.0.1:{port}','-t',str(c.APP/'public'),str(c.ROOT/'router.php')],cwd=c.APP,env=c.ENV,stdout=log,stderr=log)
+ try:
+  for _ in range(100):
+   try:
+    with socket.create_connection(('127.0.0.1',port),.1):pass
+    break
+   except OSError:time.sleep(.05)
+  cases=[]
+  pages=[1,max(2,n//50),n//25,999999]
+  for section in ['latest','top','leetness']:
+   for page in pages:cases.append((f'/{section}' if page==1 else f'/{section}/{page}',page,True))
+   cases.append((f'/?{section}=2',2,True))
+  for page in pages:cases.append((f'/search?search=qqqq&page={page}',page,True))
+  for term in ['', 'NoMatchingText', '%', '_', '   ']:cases.append(('/search?search='+urllib.parse.quote(term),1,False))
+  if maximum:cases=[('/latest',1,True),('/top',1,True),('/leetness',1,True),('/search?search=qqqq',1,True),('/search?search=Missing',1,False),('/400000',1,True)]
+  with sqlite3.connect(c.ROOT/'model.sqlite') as db:
+   expected_body=db.execute("SELECT body FROM posts WHERE post_id='thread-20261030000000-qdb-400000'").fetchone()[0]
+  for route,page,matched in cases:
+   before=len((c.ROOT/'php-metrics.txt').read_text().splitlines()) if (c.ROOT/'php-metrics.txt').exists() else 0
+   start=time.monotonic()
+   with urllib.request.urlopen(f'http://127.0.0.1:{port}'+route,timeout=30) as response:
+    body=response.read().decode(); assert response.status==200
+   ids=re.findall(r'<article[^>]*class="[^"]*quote-card"[^>]*data-thread-id="([^"]+)"',body)
+   clamped=max(1,min(page,max(1,(n+24)//25)))
+   expected=[f'thread-20261030000000-qdb-{400000+i}' for i in range(n-1,-1,-1)][(clamped-1)*25:clamped*25] if matched else []
+   if route!='/400000':
+    assert ids==expected,(route,ids,expected)
+    bodies=[re.sub(r'\n[ \t]+', '\n', html.unescape(x.replace('<br />',''))) for x in re.findall(r'<p class="quote-card-body">(.*?)</p>',body,re.S)]
+    assert bodies==[expected_body]*len(expected),(route,'body mismatch',repr(bodies[0][-80:]) if bodies else bodies,repr(expected_body[-80:]),len(bodies[0]) if bodies else 0,len(expected_body))
+    if '/search' in route and 'search=' in route and urllib.parse.parse_qs(urllib.parse.urlparse(route).query).get('search',[''])[0].strip():
+     assert re.search(r'>%d results? for &' % (n if matched else 0),body),route
+    elif '/search' not in route:assert f'{n} '+('quote' if n==1 else 'quotes')+'</p>' in body,route
+   else:assert expected_body in re.sub(r'\n[ \t]+', '\n', html.unescape(body.replace('<br />','')))
+   # Shutdown logging completes after the response; wait briefly for its own metric.
+   for _ in range(100):
+    lines=(c.ROOT/'php-metrics.txt').read_text().splitlines()[before:]
+    matching=[l for l in lines if 'Route: '+route+' |' in l]
+    if matching:break
+    time.sleep(.01)
+   assert matching,(route,'missing telemetry')
+   peak=int(re.search(r'PHP peak bytes: (\d+)',matching[-1])[1])
+   assert peak <= (128 if maximum else 32)*1024*1024,(route,peak)
+   print(f'Records: {n} | Route: {route} | Status: 200 | Selected: {len(ids)} | Parity: pass | PHP peak bytes: {peak} | Seconds: {time.monotonic()-start:.6f}',flush=True)
+ finally:
+  server.terminate();server.wait(timeout=5);log.close()
+
+if __name__=='__main__':
+ for n in [1000,10000]:
+  c.fixture(n)
+  assert c.run(f'page-rebuild-{n}',['./v3','rebuild',str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite')])==0
+  c.parity(n);read(n)
+ prepared(40000);read(40000)
+ # Exact maximum canonical file size, independent of ordinary fixtures.
+ c.fixture(1)
+ source=c.ROOT/'repository/records/posts/thread-20261030000000-qdb-400000.txt'
+ header=source.read_text().split('\n\n',1)[0]+'\n\n'
+ source.write_text(header+'q'*(16*1024*1024-len(header)-1)+'\n')
+ subprocess.run(['git','-C',str(c.ROOT/'repository'),'add','.'],check=True,env=c.ENV)
+ subprocess.run(['git','-C',str(c.ROOT/'repository'),'commit','-qm','maximum valid source'],check=True,env=c.ENV)
+ assert c.run('page-rebuild-maximum',['./v3','rebuild',str(c.ROOT/'repository'),str(c.ROOT/'model.sqlite')])==0
+ c.parity(1);read(1,True)

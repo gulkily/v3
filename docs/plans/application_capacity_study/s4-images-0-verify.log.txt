@@ -1,0 +1,6 @@
+{
+    "status": "verified",
+    "repository_head": "7431948b4fbfc804230d5c991454ba6bfc552b64",
+    "objects": 1,
+    "image_root": "/tmp/v3-capacity-5wrtjih3/restored-images"
+}

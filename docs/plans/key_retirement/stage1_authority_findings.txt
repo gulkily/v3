@@ -1,0 +1,31 @@
+Title: Key retirement Stage 1 authority gate
+Date: 2026-11-01 UTC
+Cycle: v3/key_retirement
+Reviewed revision: f82bdc3e9
+Planning commit: 15373adbb
+Status: Same-account authority gate needs a policy decision; no retirement implementation
+
+Finding: Approved identity plus matching current username is insufficient retirement authority.
+Reproduction: A root-approved key approves an ordinary key as retirement-other. The ordinary key signs a profile-name update to retirement-owner, the operator's existing name. A full rebuild leaves both keys approved with the same username_token. The ordinary key remains non-operator; its preserved approval acceptance still records retirement-other.
+Evidence: tests/WriteApiSmokeTest.php::testRetirementAuthorityCannotBeInferredFromRenamedApprovedProfiles
+Result: PASS against current application; real OpenPGP signatures, actual prepared approval/name writes and full rebuild. This is a characterization of existing behavior, not proof that retirement is implemented or secure.
+
+Source: src/ForumRewrite/Write/LocalWriteService.php prepareProfileName/finalizePreparedProfileName permit a signed name change without account-membership reassessment.
+Source: src/ForumRewrite/ReadModel/ReadModelBuilder.php indexProfiles uses the latest verified name; deriveApprovalState and linkPostAuthors retain approval by identity.
+Source: src/ForumRewrite/Security/ApprovalPolicy.php uses current username_token for own_account_key classification.
+Consequence: Reusing that classification for retirement could give an unrelated member destructive authority. Counting current same-name approved profiles could also treat an unrelated renamed key as a safe replacement.
+
+Finding: Existing acceptance records can preserve the name under which a key was approved, but legacy approvals can have no acceptance record.
+Evidence: ApprovalHistoryTest::testReceiptFactsSurviveCurrentAccountChangesAndPagination passes; deleting the fixture acceptance changes accepted_at/classification to unknown while retaining the historical grant.
+Consequence: Do not manufacture accepted membership from today's name, client dates, or approval graph connectivity. Vouching for another person is not proof that both keys belong to one account.
+
+Finding: Private message transfers have no acceptance timestamp; current eligibility uses current approval for destinations, original signers and donors.
+Evidence: PrivateMessageHistorySyncTest::testSenderTransferRecoveryRechecksEveryOriginalAndMembership shows clearing donor approval hides a retained transfer and rejects its receipt. The 26 history tests passed within the 33-test baseline.
+Disposition: Preserve trusted retained transfers separately from active permission to upload; never invent historical dates. No public retirement record may expose private transfer/message identifiers. This remains downstream of the unresolved account-authority decision.
+
+Verification: php tests/run.php ApprovalAcceptanceTest PrivateMessageHistorySyncTest SessionRotationTest — 33 passed, 0 failed.
+Verification: php tests/run.php WriteApiSmokeTest::testRetirementAuthorityCannotBeInferredFromRenamedApprovedProfiles ApprovalHistoryTest — 2 passed, 0 failed.
+Limits: No production data inspected, no live account altered, no retirement writer/UI/API, no full-suite/browser/deployment claim. No dependency changes.
+
+Recommended decision: Require retained accepted membership evidence for the member retirement path; missing or conflicting evidence requires operator assistance. Matching current names alone never suffices, including for final-key protection. The user must review the reduced self-service coverage for legacy/renamed keys before dependent implementation.
+Alternative: Establish a separate durable account/key association and migration/confirmation flow first. This expands scope and needs its own assessment; do not silently redesign account identity as part of retirement.

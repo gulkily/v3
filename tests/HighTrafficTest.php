@@ -103,7 +103,7 @@ final class HighTrafficTest
         try {
             putenv('FORUM_PHP_CLI=' . $wrapper);
             foreach ([
-                ['usleep(500000);', 'time limit (0.05 seconds)', 0.05, 1048576],
+                ['usleep(3000000);', 'time limit (1 seconds)', 1, 1048576],
                 ['fwrite(STDOUT, str_repeat("x", 100));', 'HTML output limit (100 bytes; maximum 16)', 30, 16],
                 ['fwrite(STDERR, str_repeat("x", 70000));', 'stderr output limit', 30, 1048576],
             ] as [$operation, $expected, $seconds, $bytes]) {
@@ -119,6 +119,7 @@ final class HighTrafficTest
             }
         } finally {
             putenv($oldPhp === false ? 'FORUM_PHP_CLI' : 'FORUM_PHP_CLI=' . $oldPhp);
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($tmp);
         }
     }
 

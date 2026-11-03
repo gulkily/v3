@@ -1,0 +1,27 @@
+import collector as c
+import hashlib,subprocess,os
+from pathlib import Path
+r=c.ROOT
+for n in (1000,10000):
+ c.fixture(n)
+ for repeat in range(3):
+  assert c.run(f's3-rebuild-{n}-{repeat}',['./v3','rebuild',str(r/'repository'),str(r/'model.sqlite')])==0
+  print(c.parity(n),flush=True)
+c.fixture(1000)
+args=['./v3','build-static',str(r/'repository'),str(r/'model.sqlite'),str(r/'static')]
+for repeat in range(3):
+ assert c.run(f's3-static-{repeat}',args)==0
+ assert 'Static release activated.' in (r/f's3-static-{repeat}.log').read_text()
+ print(c.parity(1000),flush=True)
+def hashes():
+ return {str(p.relative_to(r/'static')):hashlib.sha256(p.read_bytes()).hexdigest() for p in (r/'static').rglob('*.html')}
+before=hashes();assert before
+assert c.run('s3-static-interrupted',args,interrupt=.1)!=0
+assert before==hashes(),'prior HTML changed after interruption'
+assert c.run('s3-static-retry',args)==0
+assert set(before)==set(hashes())
+print('Recovery: prior active HTML exact hashes retained after SIGKILL; retry activated same HTML path set',flush=True)
+for repeat in range(3):
+ assert c.run(f's3-shared-{repeat}',['./v3','build-static','--shared-only',str(r/'repository'),str(r/'model.sqlite'),str(r/'static')])==0
+ assert c.run(f's3-offline-{repeat}',['./v3','offline','publish','--repository-root='+str(r/'repository'),'--database-path='+str(r/'model.sqlite'),'--static-html-root='+str(r/'static')])==0
+print(c.parity(1000),flush=True)

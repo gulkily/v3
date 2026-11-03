@@ -1,0 +1,6 @@
+s7-40000-replay 1 2.584 143503360 none
+Failed candidate retained prior live model count: 10003
+s7-recovery-rebuild 0 0.56 49762304 none
+Count and every synthetic body match: 1000
+s7-publication 0 1.978 58150912 none
+Recovery publication: activated

@@ -1,0 +1,13 @@
+Fastmod status
+Score database: /tmp/v3-capacity-5wrtjih3/scores.sqlite
+Active rubric revision: c80a113f317ddd856f46e5e92411542688313d1269102e4eddd1a4c8f8655d9d
+Outstanding work
+  Regular: none
+  Historical backfill: none
+Retained outcomes
+  Result statuses: none
+  Result sources: none
+Backfill batches: none
+Task queue: none
+Next action
+  No pending Fastmod work.

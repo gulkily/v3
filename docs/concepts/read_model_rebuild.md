@@ -9,3 +9,7 @@ Commit indexing uses streamed raw tree changes for file counts, preserving Git's
 See [history evidence indexing](history_evidence_indexing.md) for scratch lifetime, trust parity and measured workload limits.
 
 Recent reader: Schema 42 adds posts_recent_idx for visible, non-retracted posts ordered by created_at/post_id. Startup compatibility rebuilds older derived models before the live Recent query; static deployments also require republishing. Bounded projections cap each page at 50 entries. [Schema](../specs/read_model_schema_v1.md), [compatibility tests](../../tests/RecentPostTest.php).
+
+Local capacity boundary: The [normal-entry study](../plans/application_capacity_study/capacity_report.txt) reproduces a 128 MiB parsing failure at 40000 synthetic 2 KiB-body records, while retaining the prior live candidate-based model. A smaller fixture rebuild/publication succeeds. This is local PHP 8.1 evidence; PHP 8.3 host recovery and other corpus shapes remain unverified.
+
+*— Codex · 2026-11-01 UTC*

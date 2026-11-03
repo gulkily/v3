@@ -34,8 +34,8 @@
     return identity.ensureOpenPgpApi(methods);
   }
 
-  async function recipientKeys(token) {
-    const response = await window.ForumPrivateMessageAvailability.request(`/api/private_messages/recipient_keys?username_token=${encodeURIComponent(usernameToken(token))}`, {
+  async function recipientKeys(token, purpose = "encryption") {
+    const response = await window.ForumPrivateMessageAvailability.request(`/api/private_messages/recipient_keys?username_token=${encodeURIComponent(usernameToken(token))}&purpose=${encodeURIComponent(purpose)}`, {
       credentials: "same-origin",
       headers: { Accept: "application/json" },
     });
@@ -104,6 +104,7 @@
 
   window.ForumPrivateMessages = {
     recipientKeys: recipientKeys,
+    verificationKeys: token => recipientKeys(token, "verification"),
     prepareEnvelope: prepareEnvelope,
   };
 })();

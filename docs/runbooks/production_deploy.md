@@ -231,6 +231,29 @@ withdrawn and PHP serves current content until the next successful publish.
 Do not run the old static-build script from a pre-release checkout: upgrade the
 code before invoking `./v3 build-static`.
 
+## Deploy from the Site
+
+A root-approved operator can update the application checkout from **Tools → Deploy** (`/tools/deploy/`) instead of running `git pull` over SSH. The same routine runs as `./v3 deploy` from the application directory.
+
+- **Deploy** queues the update for the [internal task queue](#internal-task-queue). Queued deploys run before any other queued task, so it normally starts at the next cron minute.
+- **Deploy now** runs it in the web request. Use it for small releases, or when the page says the task worker has not run recently.
+- **Check for updates** fetches from GitHub and shows how far behind `origin/main` the checkout is. Opening the page never contacts GitHub; it shows the result of the last fetch and when it happened.
+
+A deploy is pull only: it fetches `origin/main` and fast-forwards. It does not run `./v3 docs publish`, `./v3 build-static` or any other step; run those yourself when the release needs them (see the Safe Deployment Procedure above). With PHP OPcache configured not to check file timestamps, reload PHP after a deploy.
+
+Local edits to tracked files on the server (typically `public/.htaccess`) are kept: the deploy sets them aside with `git stash`, fast-forwards, puts them back and drops the stash, the same as running `git stash`, `git pull`, `git stash pop` by hand. The Deploy page lists those files. Untracked files are never touched. If the update changes the same lines as a local edit, the deploy goes back to the previous commit with the edit intact and reports `local_changes_conflict`; merge that file over SSH.
+
+It refuses, leaving the checkout exactly as it was, when:
+
+- the update conflicts with a local edit (`local_changes_conflict`, above);
+- the checkout is not on `main` (`wrong_branch`);
+- the server has commits that are not on `origin/main` (`diverged`);
+- another deploy is running (`busy`; a queued deploy retries this on a later run).
+
+Fetch failures and timeouts are reported as `fetch_failed` or `fetch_timeout`. In each case fix the cause over SSH (or run `./v3 deploy` there) and try again. Every attempt, including refusals, is appended to `state/logs/app_update.log` in `Key: value` form; `./v3 deploy --status` shows the latest.
+
+Requirements: the application directory is a Git checkout whose `origin` the web and cron users can fetch without a prompt, and the checkout is writable by those users. The feature cannot install itself: the first release that contains it is deployed with an ordinary `git pull`.
+
 ## Manual OpenPGP Release Check
 
 Run these checks manually after a release. They are intentionally excluded
@@ -439,7 +462,7 @@ Useful manual commands:
 
 ## Internal Task Queue
 
-The internal task queue handles allowlisted maintenance work outside visitor requests, including requested agent replies, read-model rebuild/recovery, Fastmod sweeps, and public offline-snapshot publication. It does not run user-supplied commands and remains separate from the Codex-handoff queue.
+The internal task queue handles allowlisted maintenance work outside visitor requests, including requested agent replies, read-model rebuild/recovery, Fastmod sweeps, public offline-snapshot publication and operator-requested [deploys](#deploy-from-the-site), which it claims ahead of other queued work. It does not run user-supplied commands and remains separate from the Codex-handoff queue.
 
 Install the cron worker with the current-path reference:
 

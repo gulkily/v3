@@ -1,0 +1,5 @@
+Task queue status
+Queue database: /tmp/v3-capacity-5wrtjih3/s5-queue.sqlite
+Queued: 0, running: 0, completed: 0, failed: 0
+Executor: not_observed (last completed: none)
+Automatic schema recovery: idle (detached launch: none)
