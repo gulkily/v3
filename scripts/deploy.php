@@ -11,7 +11,8 @@ Usage: ./v3 deploy [--check|--status] [--timeout=SECONDS]
   (default)   Fetch origin/main and fast-forward this application checkout.
   --check     Fetch and report how far behind origin/main the checkout is.
   --status    Report local state and the latest attempt without contacting GitHub.
-Refuses, leaving the checkout unchanged, when tracked files have local changes,
+Keeps local edits to tracked files (stash, fast-forward, reapply). Refuses,
+leaving the checkout unchanged, when the update conflicts with a local edit,
 the branch is not main, history has diverged, or another deploy is running.
 Pull only: run docs publish or build-static yourself if the release needs them.
 Exit: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error.

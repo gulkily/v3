@@ -366,7 +366,7 @@ the recorded target applies to this host, not arbitrary OS scheduling delays.
 
 Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. The default timeout is 120 seconds.
 
-It refuses with the checkout unchanged on tracked local changes, a branch other than `main`, diverged history or a deploy already running, and prints `Outcome`, `Reason`, `Old-Commit`, `New-Commit` and `Message`. Exit status: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error. Pull only; see [Deploy from the Site](../runbooks/production_deploy.md#deploy-from-the-site).
+Local edits to tracked files are kept (stashed, then reapplied after the fast-forward). It refuses with the checkout unchanged when the update conflicts with a local edit, on a branch other than `main`, diverged history or a deploy already running, and prints `Outcome`, `Reason`, `Old-Commit`, `New-Commit` and `Message`. Exit status: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error. Pull only; see [Deploy from the Site](../runbooks/production_deploy.md#deploy-from-the-site).
 
 ## Inspect operator status
 
