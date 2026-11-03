@@ -15,7 +15,7 @@ use ForumRewrite\Tools\ToolsPageSupport;
  *
  * Both viewerCanInspectLlmExchanges() and llmExchangeStore() stay on
  * Application and are passed in as bound closures rather than moved: the
- * viewer check is session-bound (reads $_SESSION via
+ * viewer check is session-bound (reads the viewer session via
  * resolveViewerProfileFromIdentityHint()), and both are also called from
  * board/thread rendering (showing LLM exchange indicators on posts) and
  * elsewhere, outside this slice's scope. Calling through the closure

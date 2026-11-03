@@ -54,18 +54,8 @@ final class IdentityHintController
             return;
         }
 
-        $authenticatedIdentityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
-        if ($authenticatedIdentityId !== '') {
-            $_SESSION['lobby_identity_id'] = $authenticatedIdentityId;
-        }
-
-        unset(
-            $_SESSION['authenticated_identity_id'],
-            $_SESSION['forum_auth_challenges'],
-        );
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_write_close();
-        }
+        // Ends the signed-in state on the server; the Lobby keeps the identity it signed out of.
+        $this->routeServices->viewerSessions()->signOut();
 
         setcookie('identity_hint', 'guest', [
             'expires' => time() + 86400 * 30,

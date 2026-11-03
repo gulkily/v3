@@ -114,7 +114,8 @@ final class PrivateMessagePageController
         return new PrivateMessageMailboxService(
             ($this->privateMessageStore)(),
             $this->routeServices->pdo(),
-            new ApprovedUserKeyResolver(),
+            new ApprovedUserKeyResolver($this->routeServices->repositoryRoot()),
+            $this->routeServices->repositoryRoot(),
         );
     }
 }

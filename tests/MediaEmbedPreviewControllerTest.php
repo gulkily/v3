@@ -137,7 +137,7 @@ final class MediaEmbedPreviewControllerTest
         $projectRoot = $this->tempProjectRoot();
 
         try {
-            $this->seedCache($projectRoot, 'Cabc123XYZ', null, null, '-5 minutes');
+            $this->seedCache($projectRoot, 'Cabc123XYZ', null, null, '-1 minute');
 
             $callCount = 0;
             $fetcher = new InstagramPagePreviewFetcher(function () use (&$callCount): string {
@@ -152,7 +152,7 @@ final class MediaEmbedPreviewControllerTest
 
             assertSame(0, $callCount);
 
-            $this->seedCache($projectRoot, 'Cabc123XYZ', null, null, '-2 hours');
+            $this->seedCache($projectRoot, 'Cabc123XYZ', null, null, '-3 hours');
 
             ob_start();
             $controller->warmPreview('GET', ['provider' => 'instagram', 'url' => 'https://www.instagram.com/p/Cabc123XYZ/']);
@@ -218,7 +218,7 @@ final class MediaEmbedPreviewControllerTest
         $projectRoot = $this->tempProjectRoot();
 
         try {
-            $this->seedCache($projectRoot, 'abc12345678', null, null, '-5 minutes', 'youtube');
+            $this->seedCache($projectRoot, 'abc12345678', null, null, '-1 minute', 'youtube');
 
             $callCount = 0;
             $youtubeFetcher = new YoutubeOembedTitleFetcher(function () use (&$callCount): string {
@@ -233,7 +233,7 @@ final class MediaEmbedPreviewControllerTest
 
             assertSame(0, $callCount);
 
-            $this->seedCache($projectRoot, 'abc12345678', null, null, '-2 hours', 'youtube');
+            $this->seedCache($projectRoot, 'abc12345678', null, null, '-3 hours', 'youtube');
 
             ob_start();
             $controller->warmPreview('GET', ['provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=abc12345678']);
@@ -382,6 +382,7 @@ final class MediaEmbedPreviewControllerTest
         $cachePath = MediaEmbedPreviewDatabaseConfig::path($projectRoot);
         @unlink($cachePath);
         @rmdir(dirname($cachePath));
+        @rmdir(dirname($cachePath, 2));
         @rmdir($projectRoot);
     }
 
@@ -411,7 +412,7 @@ final class MediaEmbedPreviewControllerTest
         $store->put($provider, $embedId, $title, $thumbnailUrl);
 
         if ($fetchedAtModifier !== null) {
-            $fetchedAt = (new DateTimeImmutable($fetchedAtModifier))->format('c');
+            $fetchedAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->modify($fetchedAtModifier)->format('c');
             $pdo->prepare('UPDATE media_embed_previews SET fetched_at = :fetched_at WHERE provider = :provider AND embed_id = :embed_id')
                 ->execute(['fetched_at' => $fetchedAt, 'provider' => $provider, 'embed_id' => $embedId]);
         }

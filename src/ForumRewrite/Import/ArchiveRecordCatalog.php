@@ -18,6 +18,7 @@ final class ArchiveRecordCatalog
         return $relativePath === 'records/instance/public.txt'
             || $relativePath === 'records/instance/feature-flags.txt'
             || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/(?:key-retirements|key-retirement-acceptances)/openpgp-[a-f0-9]{40}\.txt$#D', $relativePath) === 1
             || preg_match('#^records/approval-acceptances/[A-Za-z0-9][A-Za-z0-9._-]*\.(?:txt|json)$#', $relativePath) === 1
             || preg_match('#^records/post-removals/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-timestamps/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
@@ -53,6 +54,8 @@ final class ArchiveRecordCatalog
         $family = explode('/', $path)[1];
         $name = pathinfo($path, PATHINFO_FILENAME);
         return match ($family) {
+            'key-retirements' => 'key-retirement:' . $name,
+            'key-retirement-acceptances' => 'key-retirement-acceptance:' . $name,
             'posts' => 'post:' . $name,
             'post-removals' => 'post-removal:' . $name,
             'post-retraction-acceptances' => 'post-retraction-acceptance:' . $name,
@@ -85,6 +88,14 @@ final class ArchiveRecordCatalog
         $repository = new CanonicalRecordRepository($repositoryRoot);
 
         try {
+            if (str_starts_with($relativePath, 'records/key-retirements/')) {
+                $record = \ForumRewrite\Security\KeyRetirement::parse((string) file_get_contents($repositoryRoot . '/' . $relativePath));
+                return 'key-retirement:' . str_replace(':', '-', $record['Target-Identity-ID']);
+            }
+            if (str_starts_with($relativePath, 'records/key-retirement-acceptances/')) {
+                (new \ForumRewrite\Canonical\GenericTextRecordParser())->parse((string) file_get_contents($repositoryRoot . '/' . $relativePath));
+                return self::pathIdentityKey($relativePath);
+            }
             if (str_starts_with($relativePath, 'records/post-removals/')) {
                 $id = basename($relativePath, '.txt');
                 return \ForumRewrite\Canonical\LabelRemoval::read($repositoryRoot, $id) === null ? null : 'post-removal:' . $id;

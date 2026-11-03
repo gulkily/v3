@@ -8,6 +8,7 @@ final class VisitorStatisticsPageTest
     {
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Statistics\VisitorStatisticsStore;
@@ -15,7 +16,6 @@ use ForumRewrite\Statistics\VisitorStatisticsStore;
 $databasePath = sys_get_temp_dir() . '/visitor-statistics-page-' . bin2hex(random_bytes(6)) . '.sqlite3';
 $statsPath = sys_get_temp_dir() . '/visitor-statistics-state-' . bin2hex(random_bytes(6)) . '.sqlite3';
 $secretsPath = sys_get_temp_dir() . '/visitor-statistics-secrets-' . bin2hex(random_bytes(6)) . '.php';
-$sessionId = 'visitor-statistics-' . bin2hex(random_bytes(8));
 
 try {
     file_put_contents($secretsPath, '<?php return ' . var_export(['VISITOR_STATISTICS_DATABASE_PATH' => $statsPath], true) . ';');
@@ -23,12 +23,8 @@ try {
     $store = new VisitorStatisticsStore(new PDO('sqlite:' . $statsPath));
     $store->recordVisit(new DateTimeImmutable('now'), 'client-a', 'user-a');
 
-    session_id($sessionId);
-    session_start();
-    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-    session_write_close();
-    session_id($sessionId);
-    $_COOKIE = [session_name() => $sessionId];
+    $_COOKIE = [];
+    TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
     $application = new Application($argv[1], $argv[2], $databasePath);
     ob_start();
@@ -62,11 +58,7 @@ try {
         throw new RuntimeException('Invalid visitor-statistics period did not fall back safely.');
     }
 
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_write_close();
-    }
-    session_id('');
-    unset($_SESSION);
+    TestViewerSession::reset();
     $_COOKIE = ['identity_hint' => 'guest'];
     $application = new Application($argv[1], $argv[2], $databasePath);
     ob_start();
@@ -85,9 +77,7 @@ try {
         throw new RuntimeException('Visitor statistics did not distinguish anonymous and server-authenticated requests.');
     }
 } finally {
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_write_close();
-    }
+    TestViewerSession::reset();
     putenv('FORUM_SECRETS_PATH');
     @unlink($databasePath);
     @unlink($statsPath);

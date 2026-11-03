@@ -34,20 +34,9 @@ final class AuthApiController
             return;
         }
 
-        $now = time();
-        $challenges = is_array($_SESSION['forum_auth_challenges'] ?? null)
-            ? $_SESSION['forum_auth_challenges']
-            : [];
-        foreach ($challenges as $value => $expiresAt) {
-            if (!is_string($value) || (int) $expiresAt < $now) {
-                unset($challenges[$value]);
-            }
-        }
-
-        $challenge = bin2hex(random_bytes(32));
-        $challenges[$challenge] = $now + 300;
-        $_SESSION['forum_auth_challenges'] = $challenges;
-        session_write_close();
+        // Challenges are single-use and need no session, so signing in never depends on a
+        // cookie the browser may have refused.
+        $challenge = $this->routeServices->viewerSessions()->createChallenge();
         $this->routeServices->sendText("challenge={$challenge}\n", 200, $this->routeServices->noStoreHeaders());
     }
 
@@ -65,12 +54,9 @@ final class AuthApiController
         $challenge = trim((string) ($input['challenge'] ?? ''));
         $signature = trim((string) ($input['detached_signature'] ?? ''));
         $identityId = strtolower(trim((string) ($input['identity_id'] ?? '')));
-        $challenges = is_array($_SESSION['forum_auth_challenges'] ?? null)
-            ? $_SESSION['forum_auth_challenges']
-            : [];
-        $expiresAt = (int) ($challenges[$challenge] ?? 0);
+        $sessions = $this->routeServices->viewerSessions();
 
-        if ($challenge === '' || $expiresAt < time()) {
+        if (!$sessions->challengeIsOpen($challenge)) {
             $this->routeServices->sendText("error=Authentication challenge is missing or expired.\n", 400, $this->routeServices->noStoreHeaders());
             return;
         }
@@ -93,13 +79,20 @@ final class AuthApiController
             return;
         }
 
-        SessionRotation::rotate();
-        $_SESSION['authenticated_identity_id'] = $identityId;
-        unset(
-            $_SESSION['lobby_identity_id'],
-            $_SESSION['forum_auth_challenges'],
-        );
-        session_write_close();
+        // Used up only by a verified signature, so a failed attempt can retry with the same challenge.
+        if (!$sessions->consumeChallenge($challenge)) {
+            $this->routeServices->sendText("error=Authentication challenge is missing or expired.\n", 400, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            // A retired key cannot start a session.
+            $this->routeServices->withActiveIdentity($identityId, function () use ($sessions, $identityId): void {
+                $sessions->signIn($identityId);
+            });
+        } catch (\RuntimeException $error) {
+            $this->routeServices->sendText("error=" . $error->getMessage() . "\n", 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
         if ($this->recordHistoryActivity) ($this->recordHistoryActivity)($profile);
         $approved = ((int) ($profile['is_approved'] ?? 0)) === 1 ? '1' : '0';
         $this->routeServices->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n", 200, $this->routeServices->noStoreHeaders());

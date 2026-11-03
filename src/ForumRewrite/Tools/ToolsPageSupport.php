@@ -61,6 +61,7 @@ final class ToolsPageSupport
             ['key' => 'llm-exchanges', 'label' => 'LLM Exchanges', 'href' => '/tools/llm-exchanges/', 'group' => 'operator', 'tone' => 'llm', 'standalone' => false],
             ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/', 'group' => 'operator', 'tone' => 'fastmod', 'standalone' => false],
             ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/', 'group' => 'operator', 'tone' => 'operations', 'standalone' => false],
+            ['key' => 'deploy', 'label' => 'Deploy', 'href' => '/tools/deploy/', 'group' => 'operator', 'tone' => 'deploy', 'standalone' => false],
         ];
     }
 

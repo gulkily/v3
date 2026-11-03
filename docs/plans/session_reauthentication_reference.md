@@ -2,6 +2,8 @@
 
 **Status: implemented behavior with historical design context.** For current settings, access exceptions, recovery instructions, and source/test evidence, use [Authentication Modes and Access](../reference/authentication_modes.md). This document preserves the earlier problem and alternatives; it is not a list of supported authentication modes or an assertion of production verification.
 
+> **Superseded 2026-11-03 for session storage:** the application-owned opaque sessions described under "Session Strategy Options" replaced PHP sessions in the [app_sessions cycle](app_sessions/app_sessions_step4_implementation_summary.md). The "PHP persistence" and "Public-session resumption" bullets below describe the earlier code; the resume document and navigation guard are unchanged. Current behavior: [Authentication Modes and Access](../reference/authentication_modes.md#session-persistence-and-recovery).
+
 ## Current Implementation — Reviewed 2026-10-13
 
 - **PHP persistence:** `Application::startViewerSession()` configures a persistent 400-day cookie. The application imposes no separate idle/absolute session timeout, but cookie lifetime does not guarantee host-side session retention. Approval remains a separate check against the current profile.

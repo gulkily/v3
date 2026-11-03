@@ -17,7 +17,7 @@ final class ApprovalHistory
     /** One key on a profile; the account-wide list belongs on the username page. */
     public function forKey(array $profile): array
     {
-        $rows = (int) $profile['is_approved'] === 1 ? [$this->forProfile($profile)] : [];
+        $rows = ((int) $profile['is_approved'] === 1 || !empty($profile['retired_at'])) ? [$this->forProfile($profile)] : [];
         return ['username' => $profile['username_token'], 'rows' => $rows, 'total' => count($rows),
             'profile_scope' => true, 'offset' => 0, 'next_offset' => null, 'previous_offset' => null];
     }
@@ -26,10 +26,10 @@ final class ApprovalHistory
     {
         $limit = max(1, min(100, $limit));
         $offset = max(0, $offset);
-        $count = $this->pdo->prepare('SELECT COUNT(*) FROM profiles WHERE username_token = ? AND is_approved = 1');
+        $count = $this->pdo->prepare('SELECT COUNT(*) FROM profiles WHERE username_token = ? AND (is_approved = 1 OR retired_at IS NOT NULL)');
         $count->execute([$token]);
         $total = (int) $count->fetchColumn();
-        $query = $this->pdo->prepare('SELECT * FROM profiles WHERE username_token = ? AND is_approved = 1 ORDER BY identity_id LIMIT ? OFFSET ?');
+        $query = $this->pdo->prepare('SELECT * FROM profiles WHERE username_token = ? AND (is_approved = 1 OR retired_at IS NOT NULL) ORDER BY identity_id LIMIT ? OFFSET ?');
         $query->bindValue(1, $token);
         $query->bindValue(2, $limit, PDO::PARAM_INT);
         $query->bindValue(3, $offset, PDO::PARAM_INT);
@@ -47,7 +47,9 @@ final class ApprovalHistory
             'approver_identity_id' => $profile['approved_by_identity_id'], 'approver_label' => $profile['approved_by_label'] ?: 'unknown',
             'classification' => 'unknown', 'accepted_at' => null, 'recorded_at' => null, 'recorded_at_kind' => null, 'existing_key_count' => null,
             'target_username_at_acceptance' => null, 'actor_is_operator' => null, 'cross_account_allowed' => null, 'source_path' => null, 'receipt_path' => null, 'kind' => 'unknown'];
-        if ((int) $profile['is_approved'] !== 1) return $row;
+        $row['retired_at'] = $profile['retired_at'] ?? null;
+        $row['retired_by_identity_id'] = $profile['retired_by_identity_id'] ?? null;
+        if ((int) $profile['is_approved'] !== 1 && empty($profile['retired_at'])) return $row;
         if ($profile['approved_by_identity_id'] === null && ApprovalPolicy::isOperator($this->root, $profile['identity_id'])) {
             $row['kind'] = 'root_seed';
             $row['source_path'] = CanonicalPathResolver::approvalSeed(substr($profile['identity_id'], 8));
