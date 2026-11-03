@@ -115,7 +115,7 @@ final class ApiTextController
 
         $imageNote = str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX) ? "Image-Bytes: separate image backup required\n" : '';
         $this->routeServices->sendText(
-            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\nRetracted: " . self::retractedValue($post) . "\n\n{$post['body']}",
+            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\nRetracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n\n{$post['body']}",
             200
         );
     }
@@ -146,7 +146,8 @@ final class ApiTextController
         $approvedBy = ((int) $profile['is_approved']) === 1 ? (string) ($profile['approved_by_label'] ?? '') : '';
 
         $history = $this->routeServices->approvalHistory()->forProfile($profile);
-        $historyText = 'Approval-Classification: ' . $history['classification'] . "\nAccepted-At: " . ($history['accepted_at'] ?? 'unknown')
+        $historyText = 'Retired: ' . (!empty($profile['retired_at']) ? 'yes' : 'no') . "\nRetired-At: " . ($profile['retired_at'] ?? '') . "\n"
+            . 'Approval-Classification: ' . $history['classification'] . "\nAccepted-At: " . ($history['accepted_at'] ?? 'unknown')
             . "\nApproval-Evidence: " . ($history['source_path'] ?? 'unknown') . "\nAcceptance-Receipt: " . ($history['receipt_path'] ?? 'unknown')
             . "\nAccount-Key-History: /user/" . rawurlencode((string) $profile['username_token']) . "#account-keys\n";
         $this->routeServices->sendText(

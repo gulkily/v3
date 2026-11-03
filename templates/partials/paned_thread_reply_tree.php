@@ -10,7 +10,7 @@ $viewerFlaggedPostIds ??= [];
 $highlightedPostId ??= '';
 $signalActors ??= null;
 $renderNode = null;
-$renderNode = function (array $node, int $depth) use (&$renderNode, $e, $forteAuthor, $timestamp, $br, $partial, $signalActors, $viewerLikedPostIds, $viewerFlaggedPostIds, $highlightedPostId): string {
+$renderNode = function (array $node, int $depth) use (&$renderNode, $e, $forteAuthor, $timestamp, $br, $isMarkdownPost, $renderPostBody, $partial, $signalActors, $viewerLikedPostIds, $viewerFlaggedPostIds, $highlightedPostId): string {
     $post = $node['post'];
     $isAgentPost = (string) ($post['author_label'] ?? '') === 'reply-agent';
 
@@ -30,7 +30,7 @@ $renderNode = function (array $node, int $depth) use (&$renderNode, $e, $forteAu
     $isRetractedReply = ($post['retracted_at'] ?? null) !== null;
     $html .= $isRetractedReply
         ? '<div class="paned-reply-body retracted-post" data-retracted="true"><span class="meta">' . $e(\ForumRewrite\Support\RetractedPostNotice::text($post)) . '</span></div>'
-        : '<div class="paned-reply-body">' . $br($post['body']) . '</div>';
+        : '<div class="paned-reply-body' . ($isMarkdownPost($post) ? ' post-markdown' : '') . '">' . $renderPostBody($post) . '</div>';
     $postSignals = is_array($signalActors) ? ($signalActors['posts'][$postId] ?? []) : [];
     $html .= $partial('partials/post_signals.php', [
         'signals' => ['like' => $postSignals['like'] ?? [], 'flag' => $postSignals['flag'] ?? [], 'title_author' => null],

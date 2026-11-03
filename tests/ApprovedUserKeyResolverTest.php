@@ -48,6 +48,20 @@ final class ApprovedUserKeyResolverTest
         assertSame(1, count((new ApprovedUserKeyResolver())->keysForUsernameToken($pdo, 'ilyag')));
     }
 
+    public function testRetiredKeysAreVerificationMaterialOnly(): void
+    {
+        $pdo=$this->profilesDatabase();
+        $pdo->exec('ALTER TABLE profiles ADD COLUMN retired_at TEXT');
+        $pdo->exec('ALTER TABLE profiles ADD COLUMN was_approved INTEGER DEFAULT 0');
+        $this->addProfile($pdo,'openpgp:active','openpgp-active','alice','ACTIVE',1);
+        $this->addProfile($pdo,'openpgp:retired','openpgp-retired','alice','RETIRED',0);
+        $this->addProfile($pdo,'openpgp:pending','openpgp-pending','alice','PENDING',0);
+        $pdo->exec("UPDATE profiles SET retired_at='2026-11-01T00:00:00Z',was_approved=1 WHERE identity_id='openpgp:retired'");
+        $resolver=new ApprovedUserKeyResolver();
+        assertSame(['ACTIVE'],array_column($resolver->keysForUsernameToken($pdo,'alice'),'public_key'));
+        assertSame(['ACTIVE','RETIRED'],array_column($resolver->keysForUsernameToken($pdo,'alice',true),'public_key'));
+    }
+
     private function profilesDatabase(): PDO
     {
         $pdo = new PDO('sqlite::memory:');

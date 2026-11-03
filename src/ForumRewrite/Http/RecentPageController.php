@@ -29,8 +29,8 @@ final class RecentPageController
             $item['href'] = $item['context_id'] === null ? '/posts/' . rawurlencode($item['post_id'])
                 : '/threads/' . rawurlencode($item['thread_id']) . ($item['is_reply'] ? '#post-' . rawurlencode($item['post_id']) : '');
             $item['context_title'] = $item['context_id'] === null ? 'Unavailable thread'
-                : ThreadTitle::displayTitle((string)$item['context_subject'], (string)$item['context_body'], '', 100);
-            $item['excerpt'] = ThreadTitle::displayTitle('', (string)$item['body'], '', 280);
+                : ThreadTitle::displayTitle((string)$item['context_subject'], \ForumRewrite\Support\PostText::plainPreview((string)$item['context_body'], $item['context_body_format'] ?? null), '', 100);
+            $item['excerpt'] = ThreadTitle::displayTitle('', \ForumRewrite\Support\PostText::plainPreview((string)$item['body'], $item['body_format'] ?? null), '', 280);
             if (trim((string)$item['body']) === '') {
                 $item['excerpt'] = trim((string)$item['subject']) !== '' ? $item['subject'] : 'Post';
             }

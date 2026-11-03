@@ -52,7 +52,7 @@
     <h2>Unapproved Profiles</h2>
     <ul>
 <?php foreach ($unapprovedProfiles as $profile): ?>
-      <li><a href="/forte/profiles/<?= $e($profile['profile_slug']) ?>" title="<?= $e($profile['profile_slug']) ?>" aria-label="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a></li>
+      <li><a href="/forte/profiles/<?= $e($profile['profile_slug']) ?>" title="<?= $e($profile['profile_slug']) ?>" aria-label="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a><?= !empty($profile['retired_at']) ? ' — Retired' : '' ?></li>
 <?php endforeach; ?>
     </ul>
 <?php endif; ?>

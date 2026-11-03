@@ -233,6 +233,8 @@ category and list its offending characters.
 3. `POST /api/prepare_thread` with `author_identity_id`, `subject`, `body`
    and optional `board_tags` (default `general`). For a reply, use
    `POST /api/prepare_reply` with `thread_id`, `parent_id` and `body`.
+   Both take optional `body_format`: `markdown` (the default) or `plain`.
+   See [post format](#post-format).
 4. Sign, then `POST /api/create_prepared_post`. Besides the signing fields,
    send `record_path`, `post_id` and `author_identity_id` exactly as prepare
    returned or received them. The response has `post_id`, `thread_id`,
@@ -320,8 +322,9 @@ and explicitly correct the named character when necessary.
   `prepare_invitation_redemption`). After approval, authenticate: `GET
   /api/auth_challenge`, sign the challenge string, then `POST
   /api/authenticate_identity` with `challenge`, `identity_id` and
-  `detached_signature`. Keep the session cookie from `auth_challenge` onward
-  and send it with later requests.
+  `detached_signature`. The challenge needs no cookie; a successful sign-in
+  sets the session cookie (`v3_session` over http, `__Host-v3_session` over
+  https), which later requests send.
 - Image attachments need images enabled and an approved identity.
 
 ## Text file publisher scripts
@@ -465,3 +468,29 @@ These will change in later cycles of the
   endings.
 - `get_post` and `get_thread` do not yet report the author's identity ID or
   signature status.
+
+
+## Retire one key
+
+A retirement permanently disables one fingerprint's future account access. It preserves public keys, old signatures and historical grants. Use another active approved key; self-retirement and retirement without an unchanged active replacement are refused.
+
+1. `POST /api/prepare_key_retirement` with `actor_identity_id` and `target_identity_id` (optional `replacement_identity_id`). Review `retirement_review` and the exact `canonical_record`.
+2. Sign those exact bytes with the actor's private key, using an armored detached OpenPGP signature.
+3. `POST /api/finalize_key_retirement` with `prepare_token`, `canonical_record` and `detached_signature`.
+
+`status=retired` confirms acceptance. `refresh=pending` means acceptance succeeded but derived refresh needs repair; retry the identical signed request. A lost response can also be retried without creating a second retirement. `GET /api/key_retirement_status?target_identity_id=...` reports the public accepted outcome. `not_retired` does not mean approved. Do not replace a failed signed action with an unsigned action or discard its original input.
+
+Ordinary members require username changes disabled, matching unchanged bootstrap names and no verified rename history on actor/target. Active root-approved operators can assist across accounts or with renamed keys, but must still leave an unchanged active replacement. `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` does not grant retirement authority. See [record and acceptance contract](../specs/key_retirement_record_v1.md).
+
+## Post format
+
+New posts are Markdown by default: headings, lists, bold, links, code and tables
+render on thread and post pages, and previews show the words without markup.
+Send `body_format=plain` to `prepare_thread`, `prepare_reply`, `create_thread`
+or `create_reply` when the text should appear exactly as written (for example
+logs, poems, or anything with stray `*` or `#`). The prepared record then carries
+`Body-Format: plain`; a direct-signed record may include the same header after
+`Subject` (threads) or `Author-Identity-ID` (replies). A record without the header
+is plain text. `GET /api/get_post` always reports `Body-Format: markdown` or
+`Body-Format: plain`. The [Markdown syntax reference](markdown_syntax.md) lists
+what renders.

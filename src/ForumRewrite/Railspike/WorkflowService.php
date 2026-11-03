@@ -15,7 +15,7 @@ final class WorkflowService
 
     public function authorize(?array $actor): void
     {
-        if ($actor === null || ($actor['_authenticated_identity'] ?? false)!==true || (int)($actor['is_approved'] ?? 0)!==1 || !ApprovalPolicy::isOperator($this->repositoryRoot, (string)($actor['identity_id'] ?? ''))) {
+        if ($actor === null || ($actor['_authenticated_identity'] ?? false)!==true || (int)($actor['is_approved'] ?? 0)!==1 || !ApprovalPolicy::isActiveOperator($this->repositoryRoot, (string)($actor['identity_id'] ?? ''))) {
             throw new RuntimeException('Approved operator authentication required.');
         }
     }
@@ -46,7 +46,7 @@ final class WorkflowService
         if (!is_array($a) || ($a['instance'] ?? '')!==$this->store->instance() || ($a['actor'] ?? '')!==$actor['identity_id'] || !is_int($a['expires'] ?? null) || $a['expires']<time() || $a['expires']>time()+300) throw new RuntimeException('Invalid or expired action.');
         $ok=$this->verify !== null ? ($this->verify)($actor,$text,$signature) : (new OpenPgpSignatureVerifier())->verifyDetached((string)$actor['public_key'],$text,$signature,(string)$actor['signer_fingerprint'])['ok'];
         if (!$ok) throw new RuntimeException('Invalid action signature.');
-        return $this->store->transaction(function () use ($a,$text,$signature,$actor): array {
+        return \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, fn (): array => $this->store->transaction(function () use ($a,$text,$signature,$actor): array {
             $this->authorize($actor);
             $receipt=hash('sha256',$text);
             $id=$this->store->receipt($receipt);
@@ -70,7 +70,7 @@ final class WorkflowService
             }
             $this->store->record($receipt,$row['id'],$text,$signature);
             return $row;
-        });
+        }));
     }
 
     private function transition(array $row, array $action, array $actor): array

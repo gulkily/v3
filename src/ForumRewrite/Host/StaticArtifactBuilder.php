@@ -111,7 +111,7 @@ final class StaticArtifactBuilder
     /** Run only in an isolated renderer process: no visitor globals or active session. */
     public function renderHighTrafficRoute(string $route, bool $allowStaleReadModel = false): string
     {
-        if (HighTrafficRoute::canonical($route) === null || $_COOKIE !== [] || session_status() === PHP_SESSION_ACTIVE) {
+        if (HighTrafficRoute::canonical($route) === null || $_COOKIE !== []) {
             throw new RuntimeException('Shared rendering requires an eligible route and isolated session context.');
         }
         if (FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot)

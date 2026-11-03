@@ -36,5 +36,7 @@ assert.equal(styles.word97.background, 'rgb(223, 223, 223)', 'word97: selected n
 assert.equal(styles.word97.border, 'rgb(128, 128, 128) rgb(255, 255, 255) rgb(255, 255, 255) rgb(128, 128, 128)', 'word97: selected nav is sunken');
 assert.equal(styles.midnight.background, 'rgb(60, 60, 60)', 'midnight: selected nav is gray');
 assert.equal(styles.midnight.border, 'rgb(0, 0, 0) rgb(106, 106, 106) rgb(106, 106, 106) rgb(0, 0, 0)', 'midnight: selected nav is sunken');
+assert.equal(styles.arena.background, 'rgb(255, 255, 255)', 'arena: selected nav is filled white, not transparent over the black page');
+assert.equal(styles.arena.color, 'rgb(0, 0, 0)', 'arena: selected nav text is black on the white fill');
 console.log(`Selected nav style checked in both stylesheet orders in ${themes.length} themes.`);
 await browser.close();

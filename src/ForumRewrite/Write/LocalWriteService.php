@@ -47,6 +47,8 @@ use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\SiteProfileRegistry;
 use RuntimeException;
+use ForumRewrite\Security\KeyRetirement;
+use ForumRewrite\Security\KeyRetirementPolicy;
 use ForumRewrite\Images\ImageReference;
 use ForumRewrite\Images\ImageStore;
 
@@ -122,7 +124,8 @@ class LocalWriteService
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
 
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime);
+            $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -202,7 +205,7 @@ class LocalWriteService
                 $this->invalidator()->invalidateReply($threadId, $parentId);
                 return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'already_posted' => true];
             }
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse);
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
@@ -311,7 +314,8 @@ class LocalWriteService
             $eventLocation = $this->normalizeAuthoredLine((string) ($input['event_location'] ?? ''), 'event_location');
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime);
+            $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat);
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -357,7 +361,7 @@ class LocalWriteService
             $this->assertReplyTarget($threadId, $parentId);
 
             $postId = $this->generateRecordId('reply');
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, null, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -609,7 +613,8 @@ class LocalWriteService
         string $eventDate = '',
         string $eventLocation = '',
         string $eventLink = '',
-        string $eventTime = ''
+        string $eventTime = '',
+        ?string $bodyFormat = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -620,6 +625,7 @@ class LocalWriteService
             . ($eventTime !== '' ? "Event-Time: {$eventTime}\n" : '')
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
+            . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
             . "\n{$body}";
     }
 
@@ -647,7 +653,8 @@ class LocalWriteService
         string $parentId,
         string $body,
         ?string $authorIdentityId,
-        ?array $agentResponse = null
+        ?array $agentResponse = null,
+        ?string $bodyFormat = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -656,6 +663,7 @@ class LocalWriteService
             . "Parent-ID: {$parentId}\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . ($agentResponse !== null ? \ForumRewrite\Canonical\AgentResponseMetadata::toHeaders($agentResponse) : '')
+            . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
             . "\n{$body}";
     }
 
@@ -1290,6 +1298,7 @@ class LocalWriteService
             $fingerprintLower = strtolower($fingerprintUpper);
             $username = $inspected['username'];
             $identityId = 'openpgp:' . $fingerprintLower;
+            KeyRetirement::assertActive($this->repositoryRoot, $identityId);
             $postId = 'identity-openpgp-' . $fingerprintLower;
 
             $identityPath = 'records/identity/' . $postId . '.txt';
@@ -1390,7 +1399,7 @@ class LocalWriteService
                 || hash('sha256', $contents) !== $prepared['canonical_sha256']) {
                 throw new RuntimeException('Prepared profile name mismatch or expiry.');
             }
-            $identity = $this->requirePreparedMatch($input, $prepared, 'author_identity_id');
+            $identity = $this->requireOpenPgpIdentityId($this->requirePreparedMatch($input, $prepared, 'author_identity_id'), 'author_identity_id');
             $path = $this->requirePreparedMatch($input, $prepared, 'record_path');
             $record = (new \ForumRewrite\Canonical\ProfileNameRecordParser())->parse($contents);
             if ($record['Author-Identity-ID'] !== $identity || $path !== 'records/profile-names/' . $record['Record-ID'] . '.txt') {
@@ -1432,6 +1441,7 @@ class LocalWriteService
                 $fingerprintUpper = $inspected['fingerprint'];
                 $fingerprintLower = strtolower($fingerprintUpper);
                 $identityId = 'openpgp:' . $fingerprintLower;
+            KeyRetirement::assertActive($this->repositoryRoot, $identityId);
                 $identityPath = 'records/identity/identity-openpgp-' . $fingerprintLower . '.txt';
                 if (is_file($this->repositoryRoot . '/' . $identityPath)) {
                     throw new RuntimeException('Identity already exists for this fingerprint.');
@@ -1530,6 +1540,7 @@ class LocalWriteService
 
             $record = $this->timePhase($timings, 'canonical_record_parse', fn (): PostRecord => (new PostRecordParser())->parse($canonicalRecord));
             $identityId = (string) $prepared['author_identity_id'];
+            KeyRetirement::assertActive($this->repositoryRoot, $identityId);
             if ($record->postId !== (string) $prepared['post_id']
                 || $record->createdAt !== (string) $prepared['created_at']
                 || $record->authorIdentityId !== $identityId
@@ -1622,6 +1633,7 @@ class LocalWriteService
             if (!preg_match('/^openpgp:[a-f0-9]{40}$/', $identityId) || preg_match('/[\r\n]/', $seedReason)) {
                 throw new RuntimeException('Invalid seed identity or reason. Seed not written.');
             }
+            KeyRetirement::assertActive($this->repositoryRoot, $identityId);
             $path = CanonicalPathResolver::approvalSeed(substr($identityId, 8));
             $absolute = $this->repositoryRoot . '/' . $path;
             $contents = "Approved-Identity-ID: {$identityId}\nSeed-Reason: {$seedReason}\n\nSeed this identity as approved.\n";
@@ -1810,6 +1822,72 @@ class LocalWriteService
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
+    public function prepareKeyRetirement(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $actor = $this->requireOpenPgpIdentityId((string)($input['actor_identity_id'] ?? ''),'actor_identity_id');
+            $target = $this->requireOpenPgpIdentityId((string)($input['target_identity_id'] ?? ''),'target_identity_id');
+            // Retirement is infrequent: rebuild here rather than trust a stale or imported projection.
+            $this->rebuildReadModel();
+            $context = (new KeyRetirementPolicy($this->readModelPdo(),$this->repositoryRoot))->evaluate($actor,$target,(string)($input['replacement_identity_id'] ?? ''));
+            $id = 'key-retirement-'.bin2hex(random_bytes(16)); $created = $this->canonicalTimestampNow();
+            $hash = KeyRetirementPolicy::hash($context); $replacement = $context['replacement']['identity_id'];
+            $record = "Version: 1\nAction-ID: {$id}\nCreated-At: {$created}\nActor-Identity-ID: {$actor}\nTarget-Identity-ID: {$target}\nAccount: {$context['target']['username_token']}\nAuthority: {$context['authority']}\nReplacement-Identity-ID: {$replacement}\nContext-SHA256: {$hash}\n\n";
+            KeyRetirement::parse($record); $path = KeyRetirement::path($target);
+            return $this->storePreparedPost($path,$record,['kind'=>'key-retirement','retirement_context'=>$context])
+                + ['status'=>'ok','canonical_record'=>$record,'record_path'=>$path,'retirement_review'=>KeyRetirementPolicy::review($context)];
+        });
+    }
+
+    public function keyRetirementStatus(string $target): array
+    {
+        $record = KeyRetirement::read($this->repositoryRoot,$target);
+        return ['status'=>$record === null?'not_retired':'retired','target_identity_id'=>$target]
+            + ($record === null?[]:['accepted_at'=>$record['Accepted-At'],'actor_identity_id'=>$record['Actor-Identity-ID'],
+                'replacement_identity_id'=>$record['Replacement-Identity-ID'],'record_path'=>$record['source_path']]);
+    }
+
+    public function finalizePreparedKeyRetirement(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $bytes = (string)($input['canonical_record'] ?? ''); $record = KeyRetirement::parse($bytes);
+            $target = $record['Target-Identity-ID']; $signature = (string)($input['detached_signature'] ?? '');
+            if (strlen($signature)>65536 || $signature==='') throw new RuntimeException('Invalid retirement signature.');
+            $existing = KeyRetirement::read($this->repositoryRoot,$target);
+            if ($existing !== null) {
+                if (!hash_equals($existing['canonical_record'],$bytes)
+                    || !hash_equals((string)file_get_contents($this->repositoryRoot.'/'.$existing['source_path'].'.asc'),$signature)) throw new RuntimeException('This key already has a different accepted retirement.');
+                $sha = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+            } else {
+                $token = $this->requireHexToken((string)($input['prepare_token'] ?? ''),'prepare_token');
+                $prepared = $this->loadPreparedPost($token);
+                if (($prepared['kind'] ?? '')!=='key-retirement' || strtotime($prepared['expires_at'])<time()
+                    || !hash_equals($prepared['canonical_sha256'],hash('sha256',$bytes))) throw new RuntimeException('Retirement review changed or expired. Prepare and review it again.');
+                $this->rebuildReadModel();
+                $context = (new KeyRetirementPolicy($this->readModelPdo(),$this->repositoryRoot))->evaluate($record['Actor-Identity-ID'],$target,$record['Replacement-Identity-ID']);
+                if (!hash_equals(KeyRetirementPolicy::hash($context),$record['Context-SHA256'])
+                    || $context !== $prepared['retirement_context']) throw new RuntimeException('Retirement authority changed. Prepare and review it again.');
+                [$key,$fingerprint] = $this->publicKeyForIdentity($record['Actor-Identity-ID']);
+                if (!$this->signatureVerifier->verifyDetached($key,$bytes,$signature,$fingerprint)['ok']) throw new RuntimeException('Retirement signature verification failed.');
+                $path = KeyRetirement::path($target);
+                $sha = (new SignedPostTransaction($this->repositoryRoot))->accept([$path=>$bytes,$path.'.asc'=>$signature,
+                    KeyRetirement::acceptancePath($target)=>KeyRetirement::acceptance($bytes,$signature,$this->canonicalTimestampNow())]);
+            }
+            $result = $this->keyRetirementStatus($target)+['commit_sha'=>$sha,'recovered'=>$existing !== null];
+            try {
+                $this->refreshDerivedStateAfterCommit($sha);
+                $this->invalidator()->invalidateApprovalSeed();
+                if (isset($token)) $this->deletePreparedPost($token);
+                return $result+['refresh'=>'complete'];
+            } catch (\Throwable $error) {
+                // The accepted signature is authoritative even when presentation repair fails.
+                return $result+['refresh'=>'pending','warning'=>'Retirement accepted. Refresh failed; retry the same signed request or rebuild the read model.'];
+            }
+        });
+    }
+
     public function prepareApproval(array $input): array
     {
         return $this->withTimedWriteLock(function () use ($input): array {
@@ -2103,6 +2181,7 @@ class LocalWriteService
                     }
                     return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'recovered' => true];
                 }
+                KeyRetirement::assertActive($this->repositoryRoot, (string) $entry['issued']->post->authorIdentityId);
                 if (strtotime($entry['issued']->expiresAt) <= time()) throw new RuntimeException('Invitation has expired.');
                 if ($this->isApprovedIdentity($authorIdentityId)) {
                     return ['status' => 'ok', 'destination' => $entry['issued']->destination ?? '', 'already_approved' => true];
@@ -2162,6 +2241,7 @@ class LocalWriteService
             $this->assertWritableRepository();
             $recipientIdentityId = $this->requireOpenPgpIdentityId((string) ($input['recipient_identity_id'] ?? ''), 'recipient_identity_id');
             $entry = $this->invitationForToken(trim((string) ($input['invite_token'] ?? '')));
+            if ($entry['redeemed'] === null) KeyRetirement::assertActive($this->repositoryRoot, (string) $entry['issued']->post->authorIdentityId);
             $sameRecipient = $entry['redeemed'] !== null && $entry['redeemed']->post->authorIdentityId === $recipientIdentityId;
             if ($entry['revoked'] !== null || ($entry['redeemed'] !== null && !$sameRecipient)
                 || (!$sameRecipient && strtotime($entry['issued']->expiresAt) <= time())) {
@@ -3895,6 +3975,7 @@ class LocalWriteService
 
     private function isApprovedIdentity(string $identityId): bool
     {
+        KeyRetirement::assertActive($this->repositoryRoot, $identityId);
         $stmt = $this->readModelPdo()->prepare('SELECT is_approved FROM profiles WHERE identity_id = :identity_id');
         $stmt->execute(['identity_id' => $identityId]);
         $value = $stmt->fetchColumn();
@@ -4037,12 +4118,32 @@ class LocalWriteService
             throw new RuntimeException("{$field} must use a lowercase OpenPGP fingerprint.");
         }
 
+        KeyRetirement::assertActive($this->repositoryRoot, $identityId);
         $identityPath = $this->repositoryRoot . '/' . CanonicalPathResolver::identity($fingerprint);
         if (!is_file($identityPath)) {
             throw new RuntimeException("{$field} does not resolve to a known identity.");
         }
 
         return $identityId;
+    }
+
+    /**
+     * Reads the optional `body_format` input. Blank means the caller's default; anything
+     * other than markdown or plain is rejected rather than guessed.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function normalizeBodyFormat(array $input, string $default): string
+    {
+        $value = strtolower(trim((string) ($input['body_format'] ?? '')));
+        if ($value === '') {
+            return $default;
+        }
+        if (!in_array($value, PostRecord::FORMATS, true)) {
+            throw new RuntimeException('body_format must be markdown or plain.');
+        }
+
+        return $value;
     }
 
     private function normalizeBoardTags(string $value): string

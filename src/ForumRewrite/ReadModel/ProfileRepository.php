@@ -19,15 +19,13 @@ use PDO;
  *
  * Deliberately does not include viewer-identity resolution
  * (Application::authenticatedViewerProfile()/resolveViewerProfileFromIdentityHint())
- * even though those also do profile lookups - those read $_SESSION and
+ * even though those also do profile lookups - those read the viewer session and
  * feature-flag state, so they're request-scoped, not a pure data-access
  * concern, and stay on Application.
  */
 final class ProfileRepository
 {
-    private const COLUMNS = 'identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id,
-                    bootstrap_thread_id, public_key, is_approved, approved_by_identity_id, approved_by_profile_slug,
-                    approved_by_label, post_count, thread_count';
+    private const COLUMNS = '*';
 
     /**
      * @return array<string, mixed>|null
@@ -139,7 +137,7 @@ final class ProfileRepository
                  ORDER BY candidate.created_at DESC, candidate.action_key DESC, candidate.id DESC
                  LIMIT 1
              )
-             WHERE is_approved = 0
+             WHERE is_approved = 0 AND retired_at IS NULL
              ORDER BY CASE WHEN latest_activity.created_at IS NULL THEN 1 ELSE 0 END ASC,
                       latest_activity.created_at DESC,
                       latest_activity.action_key DESC,
@@ -156,7 +154,7 @@ final class ProfileRepository
 
     public static function hasPendingDirectoryProfiles(PDO $pdo): bool
     {
-        $stmt = $pdo->query('SELECT 1 FROM profiles WHERE is_approved = 0 LIMIT 1');
+        $stmt = $pdo->query('SELECT 1 FROM profiles WHERE is_approved = 0 AND retired_at IS NULL LIMIT 1');
 
         return $stmt->fetchColumn() !== false;
     }

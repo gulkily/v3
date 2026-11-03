@@ -22,7 +22,11 @@ $rootSignalPosts = is_array($signalActors) ? ($signalActors['posts'][(string) $t
 <?php if (($thread['retracted_at'] ?? null) !== null): ?>
       <div class="body retracted-post" data-retracted="true"><p class="meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::text($thread)) ?></p></div>
 <?php else: ?>
-      <div class="body"><?= $br($thread['root_post_body'] ?? $thread['body_preview']) ?></div>
+<?php if (isset($thread['root_post_body'])): ?>
+      <div class="body<?= $isMarkdownPost($thread, 'root_post_body_format') ? ' post-markdown' : '' ?>"><?= $renderPostBody($thread, (string) $thread['root_post_body'], 'root_post_body_format') ?></div>
+<?php else: ?>
+      <div class="body"><?= $br($thread['body_preview']) ?></div>
+<?php endif; ?>
 <?php endif; ?>
 <?= $indent($partial('partials/post_signals.php', [
     'signals' => [

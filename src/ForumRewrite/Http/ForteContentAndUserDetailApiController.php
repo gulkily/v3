@@ -73,7 +73,7 @@ final class ForteContentAndUserDetailApiController
             'is_reply' => $isReply,
             'title' => ThreadTitle::displayTitle(
                 (string) ($post['subject'] ?? ''),
-                (string) ($post['body'] ?? ''),
+                \ForumRewrite\Support\PostText::plainPreview((string) ($post['body'] ?? ''), $post['body_format'] ?? null),
                 (string) $post['post_id'],
                 80,
                 $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)
@@ -101,9 +101,10 @@ final class ForteContentAndUserDetailApiController
             return;
         }
 
+        $historicalProfiles = array_values(array_filter($profiles, static fn (array $profile): bool => (int)$profile['is_approved']===1 || !empty($profile['retired_at'])));
         $approvedIdentityIds = array_values(array_map(
             static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
+            $historicalProfiles
         ));
 
         $approvedThreads = AuthoredContentRepository::visibleThreads($this->routeServices->pdo(), $approvedIdentityIds);

@@ -67,6 +67,9 @@ final class ApiRouteCatalog
             ['POST', '/api/apply_post_tag', 'hint', 'text', 'Tag a post; signed when canonical_record and detached_signature are sent.'],
             ['POST', '/api/apply_signed_reaction', 'signed', 'text', 'Apply a reaction with a detached signature.'],
             // Approval and invitations
+            ['POST', '/api/prepare_key_retirement', 'signed', 'json', 'Review permanent retirement of target_identity_id by actor_identity_id.'],
+            ['POST', '/api/finalize_key_retirement', 'signed', 'json', 'Accept reviewed retirement with prepare_token, canonical_record and detached_signature.'],
+            ['GET', '/api/key_retirement_status', 'public', 'json', 'Check accepted retirement for target_identity_id.'],
             ['POST', '/api/prepare_approval', 'signed', 'json', 'Prepare a signed approval of profile_slug.'],
             ['POST', '/api/create_prepared_approval', 'signed', 'json', 'Publish a prepared approval.'],
             ['POST', '/api/prepare_invitation', 'member', 'json', 'Prepare an invitation to sign.'],

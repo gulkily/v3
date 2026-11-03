@@ -12,6 +12,7 @@ import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
 const scale=process.argv.includes('--scale');
+const retirement=process.argv.includes('--retirement');
 const senderAssisted=process.argv.includes('--sender'), direct=process.argv.includes('--direct');
 const project=resolve(new URL('../..',import.meta.url).pathname);
 runInThisContext(readFileSync(join(project,'public/assets/openpgp.min.js'),'utf8'));
@@ -56,6 +57,13 @@ async function authenticate(ctx,who) {
 async function approve(ctx,source,destination) {
  const prepared=await json(await ctx.request.post(base+'/api/prepare_approval',{data:{profile_slug:'openpgp-'+destination.fingerprint}}));
  await json(await ctx.request.post(base+'/api/create_prepared_approval',{data:{prepare_token:prepared.prepare_token,post_id:prepared.post_id,record_path:prepared.record_path,author_identity_id:'openpgp:'+source.fingerprint,canonical_record:prepared.canonical_record,detached_signature:await sign(source,prepared.canonical_record)}}));
+}
+async function retire(ctx,who,victim) {
+ const prepared=await json(await ctx.request.post(base+'/api/prepare_key_retirement',{data:{actor_identity_id:'openpgp:'+who.fingerprint,target_identity_id:'openpgp:'+victim.fingerprint}}));
+ const result=await json(await ctx.request.post(base+'/api/finalize_key_retirement',{data:{...prepared,detached_signature:await sign(who,prepared.canonical_record)}}));
+ assert.equal(result.status,'retired');assert.equal(result.refresh,'complete');
+ const challenge=(await (await ctx.request.get(base+'/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
+ assert.equal((await ctx.request.post(base+'/api/authenticate_identity',{data:{challenge,identity_id:'openpgp:'+victim.fingerprint,detached_signature:await sign(victim,challenge)}})).status(),403);
 }
 async function device(who) {
  const ctx=await browser.newContext({viewport:{width:1100,height:800},serviceWorkers:'block'});
@@ -214,7 +222,7 @@ Production replay: Not performed
    console.log('Single sender transfer → canonical preview/read → retained reload passed. Artifacts: '+root);
  } else {
  console.log('Donor A visits a non-Messages page; target returns after donor closes');
- await visit(a);await a.close();
+ await visit(a);if(retirement)await retire(t,target,oldA);await a.close();
  const partial=await t.newPage();await partial.goto(base+'/messages/conversation/bob');
  await partial.waitForFunction(()=>document.querySelector('[data-mailbox="conversation"]')?.dataset.privateMessageReaderSettled==='1');
  await partial.waitForFunction(()=>document.querySelectorAll('[data-reader-state="verified"]').length>0 && document.querySelectorAll('[data-reader-state="decryption-failed"]').length>0);
@@ -222,7 +230,7 @@ Production replay: Not performed
  assert.ok(await partial.locator('[data-reader-state="decryption-failed"]').count()>0);
  await partial.locator('textarea').fill('Draft during partial recovery');
  console.log('Donor B supplies remaining history; target reload preserves the draft and recovers');
- await visit(b);await b.close();await partial.bringToFront();
+ await visit(b);if(retirement)await retire(t,target,oldB);await b.close();await partial.bringToFront();
  await partial.reload();await settled(partial);
  assert.equal(await partial.locator('[data-private-message-history-status]').count(),0);
  assert.equal(await partial.getByRole('button',{name:'Retry history',exact:true}).count(),0);
@@ -267,14 +275,14 @@ Production replay: Not performed
  // Quiescent isolated stores: restore the coordinated pair, removing the test outage send.
  await copyFile(messagePath+'.backup',messagePath);await copyFile(syncPath+'.backup',syncPath);
  const fresh=await device(target);page=await readAll(fresh,31);await page.close();await fresh.close();
- const operator=await device(oldA),member=await device(target);
+ const operator=await device(retirement?bob:oldA),member=await device(target);
  await checkOperatorMessagingFlag(operator,member,base,root,project);
  await operator.close();await member.close();
  assert.deepEqual(JSON.parse(fixture({action:'inspect'})).originals,before);
  assert.deepEqual(errors,[]);
  for(const body of syncBodies) {assert(!body.includes('History secret'));assert(!body.includes('PRIVATE KEY BLOCK'));}
  assert(!log.includes('History secret'));assert(!log.includes('PRIVATE KEY BLOCK'));
- await writeFile(join(root,'report.json'),JSON.stringify({passed:true,mode:senderAssisted?'sender-assisted':'same-account',messages:31,checks:['no global history-sync notice or retry button','real signed approvals',...(senderAssisted?['recipient donors absent','restored sender contribution']:[]),'separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging','signed messaging toggle and member denial','disabled messaging preserves both private stores','environment overrides true and false lock operator control'],syncRequests:syncBodies.length},null,2));
+ await writeFile(join(root,'report.json'),JSON.stringify({passed:true,mode:retirement?'retired-donors':senderAssisted?'sender-assisted':'same-account',messages:31,checks:['no global history-sync notice or retry button','real signed approvals',...(senderAssisted?['recipient donors absent','restored sender contribution']:[]),'separate donor visits','partial donors','three-plus batches','retained reload','restored-device forwarding','mobile','draft preservation','no-store/auth/origin','original ciphertext unchanged','private paired backup/restore','sync outage with normal send','no plaintext/key logging','signed messaging toggle and member denial','disabled messaging preserves both private stores','environment overrides true and false lock operator control'],syncRequests:syncBodies.length},null,2));
  console.log('History sync browser checks passed. Artifacts: '+root);
  }
  }

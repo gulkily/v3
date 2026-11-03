@@ -29,6 +29,9 @@ checklists, and proposals remain at the top level or in the collections below.
 ## Feature folders
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
+- [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
+
+- [App-owned sessions](app_sessions/app_sessions_step3_development_plan.md) — replace PHP sessions with SQLite-backed sign-in sessions and per-scheme cookies; in progress.
 
 - [Operator web deploy](web_deploy/web_deploy_step3_development_plan.md) — Deploy page and `./v3 deploy`: queued (prioritized) or instant fast-forward of the app checkout; in progress.
 
@@ -150,6 +153,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Fastmod graded visibility — neutral intake slice](fastmod_prepublication_hold/) · [Cross-cycle checklist and QDB voting request](fastmod_prepublication_hold/fastmod_development_checklist.md)
 
 - [Compose thread declutter](compose_thread_declutter/)
+- [Mobile compose keyboard](mobile_compose_keyboard/)
 - [Top five media embeds](top_five_media_embeds/)
 - [LLM model and completion failures](llm_model_and_completion_failures/)
 - [Scripture-oriented analysis](scripture_oriented_analysis/)
@@ -378,3 +382,5 @@ and repair its navigation and affected references. See the
 - [Recent conversation](recent_activity/recent_activity_step1_solution_assessment.md) — implemented locally; [verification and release handoff](recent_activity/recent_activity_step4_implementation_summary.md).
 
 - [Message sync activity and limits](message_sync_activity/message_sync_activity_step1_solution_assessment.md) — recent-device priority and bounded, quiet recovery.
+
+- [Key retirement](key_retirement/key_retirement_step1_solution_assessment.md) — signed same-account/operator retirement with retained history; Steps 1–3 approved.

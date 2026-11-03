@@ -320,7 +320,7 @@ final class ComposeAndAccountKeyController
         // The reply context names the thread by its title, linking to it.
         $threadRoot = $threadId !== '' ? ($this->fetchPost)($threadId) : null;
         $threadTitle = is_array($threadRoot)
-            ? ThreadTitle::displayTitle((string) ($threadRoot['subject'] ?? ''), (string) ($threadRoot['body'] ?? ''), $threadId)
+            ? ThreadTitle::displayTitle((string) ($threadRoot['subject'] ?? ''), \ForumRewrite\Support\PostText::plainPreview((string) ($threadRoot['body'] ?? ''), $threadRoot['body_format'] ?? null), $threadId)
             : '';
 
         return $this->routeServices->renderPageTemplate('compose_reply.php', [

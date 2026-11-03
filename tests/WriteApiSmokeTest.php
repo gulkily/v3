@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Activity\ActivityService;
 use ForumRewrite\Application;
@@ -98,6 +99,366 @@ final class WriteApiSmokeTest
             $this->deleteTree($key['home']);
             $this->deleteTree($appRoot);
             $this->deleteTree($root);
+        }
+    }
+
+    public function testRetirementSerializesReciprocalActionsAndPrivateAcceptance(): void
+    {
+        [$root,$db,$artifacts]=$this->createTempEnvironment();$keys=[];$processes=[];
+        try {
+            $writer=new LocalWriteService($root,$db,$artifacts,new CanonicalRecordRepository($root));$ids=[];
+            for($i=0;$i<3;$i++) {
+                $keys[]=$this->createSigningKey('retirement-race');
+                $ids[]=$writer->linkIdentity(['public_key'=>$keys[$i]['public_key']])['identity_id'];
+                $this->seedApprovedIdentity($root,$ids[$i]);
+            }
+            (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+            $prepare=function($a,$t)use($writer,$ids,$keys){$p=$writer->prepareKeyRetirement(['actor_identity_id'=>$ids[$a],'target_identity_id'=>$ids[$t]]);return $p+['detached_signature'=>$this->signCanonicalRecord($keys[$a]['home'],$p['canonical_record'])];};
+            $signed=$prepare(1,0);
+            $viewer=ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(),$ids[0]);
+            $payload=$artifacts.'/race.txt';file_put_contents($payload,serialize(['viewer'=>$viewer,'ids'=>$ids]));
+            $code=<<<'CODE'
+require $argv[1].'/autoload.php';
+$data=unserialize(file_get_contents($argv[5]),['allowed_classes'=>false]);
+$pdo=(new ForumRewrite\ReadModel\ReadModelConnection($argv[3]))->open();
+$messages=new ForumRewrite\Messaging\PrivateMessageStore(new PDO('sqlite::memory:'));
+$messages->storeEnvelope('original','now','retirement-race','other',$data['ids'][0],'cipher');
+file_put_contents($argv[6],'ready');
+try {
+ if($argv[7]==='upload') {
+  $service=new ForumRewrite\Messaging\PrivateMessageHistorySyncService($messages,new ForumRewrite\Messaging\PrivateMessageHistorySyncStore(new PDO('sqlite::memory:')),$pdo,$argv[2]);
+  $service->upload($data['viewer'],['target'=>substr($data['ids'][1],8),'ciphertext'=>"-----BEGIN PGP MESSAGE-----\nopaque\n-----END PGP MESSAGE-----",'items'=>[['message_id'=>'original','digest'=>hash('sha256','cipher')]]]);
+ } else {
+  $service=new ForumRewrite\Messaging\PrivateMessageMailboxService($messages,$pdo,new ForumRewrite\Messaging\ApprovedUserKeyResolver($argv[2]),$argv[2]);
+  $service->send($data['viewer'],['message_id'=>'new','recipient_username_token'=>'retirement-race','encrypted_envelope'=>"-----BEGIN PGP MESSAGE-----\nopaque\n-----END PGP MESSAGE-----"]);
+ }
+ echo 'accepted';
+} catch(RuntimeException $error) {echo 'rejected:'.$error->getMessage();}
+CODE;
+            \ForumRewrite\Support\PublicationLock::withLock($root,function()use($root,$db,$artifacts,$payload,$code,$writer,$signed,&$processes):void {
+                foreach(['upload','send'] as $kind) {
+                    $ready=$artifacts.'/'.$kind.'.ready';$pipes=[];
+                    $process=proc_open([PHP_BINARY,'-r',$code,dirname(__DIR__),$root,$db,$artifacts,$payload,$ready,$kind],[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
+                    if(!is_resource($process))throw new RuntimeException('Unable to start private acceptance race.');
+                    fclose($pipes[0]);$processes[]=[$process,$pipes,$ready];
+                }
+                $until=microtime(true)+10;
+                foreach($processes as [$process,$pipes,$ready]) {while(!is_file($ready)&&microtime(true)<$until)usleep(10000);assertSame(true,is_file($ready));}
+                assertSame('retired',$writer->finalizePreparedKeyRetirement($signed)['status']);
+            });
+            foreach($processes as [$process,$pipes]) {
+                $output=stream_get_contents($pipes[1]);$error=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);
+                assertSame(0,proc_close($process));assertSame('',$error);assertStringContains('rejected:',$output);
+            }
+            $processes=[];
+            // Two separate writers race to consume the remaining replacement.
+            $finalize=<<<'CODE'
+require $argv[1].'/autoload.php';
+$writer=new ForumRewrite\Write\LocalWriteService($argv[2],$argv[3],$argv[4],new ForumRewrite\Canonical\CanonicalRecordRepository($argv[2]));
+try {$result=$writer->finalizePreparedKeyRetirement(unserialize(file_get_contents($argv[5]),['allowed_classes'=>false]));echo $result['status'];}
+catch(RuntimeException $error){echo 'rejected:'.$error->getMessage();}
+CODE;
+            foreach([[1,2],[2,1]] as [$a,$t]) {
+                $file=$artifacts.'/signed-'.$a.'.txt';file_put_contents($file,serialize($prepare($a,$t)));$pipes=[];
+                // Prepare both requests before either child starts.
+                $requests[]=$file;
+            }
+            foreach($requests as $file) {
+                $process=proc_open([PHP_BINARY,'-r',$finalize,dirname(__DIR__),$root,$db,$artifacts,$file],[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);
+                fclose($pipes[0]);$processes[]=[$process,$pipes];
+            }
+            $outcomes=[];
+            foreach($processes as [$process,$pipes]) {$outcomes[]=stream_get_contents($pipes[1]);$error=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);assertSame(0,proc_close($process));assertSame('',$error);}
+            $processes=[];
+            assertSame(1,count(array_filter($outcomes,fn($result)=>$result==='retired')));
+            assertSame(1,count(array_filter($outcomes,fn($result)=>str_starts_with($result,'rejected:'))));
+            assertSame(1,(int)(new ReadModelConnection($db))->open()->query("SELECT COUNT(*) FROM profiles WHERE username_token='retirement-race' AND is_approved=1")->fetchColumn());
+        } finally {
+            foreach($processes as [$process,$pipes])if(is_resource($process)) {proc_terminate($process);foreach($pipes as $pipe)if(is_resource($pipe))fclose($pipe);proc_close($process);}
+            foreach($keys as $key)$this->deleteTree($key['home']);$this->deleteTree($root);$this->deleteTree($artifacts);
+            foreach(glob($db.'*')?:[] as $file)if(is_file($file))unlink($file);
+        }
+    }
+
+    public function testRetirementSurvivesCanonicalExportImportAndDatabaseDeletion(): void
+    {
+        [$root,$db,$artifacts]=$this->createTempEnvironment();
+        [$restored,$restoredDb,$restoredArtifacts]=$this->createTempEnvironment();
+        $keys=[];$exports=[];
+        try {
+            $writer=new LocalWriteService($root,$db,$artifacts,new CanonicalRecordRepository($root));$ids=[];
+            for($i=0;$i<4;$i++) {
+                $keys[]=$this->createSigningKey('retirement-restore');
+                $ids[]=$writer->linkIdentity(['public_key'=>$keys[$i]['public_key']])['identity_id'];
+            }
+            foreach([0,2] as $i) $this->seedApprovedIdentity($root,$ids[$i]);
+            (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+            foreach([1,3] as $i) {
+                $p=ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(),$ids[$i]);
+                $grant=$writer->prepareApproval(['approver_identity_id'=>$ids[0],'target_identity_id'=>$ids[$i],'target_profile_slug'=>$p['profile_slug'],'thread_id'=>$p['bootstrap_thread_id'],'parent_id'=>$p['bootstrap_post_id']]);
+                $writer->finalizePreparedApproval($grant+['author_identity_id'=>$ids[0],'detached_signature'=>$this->signCanonicalRecord($keys[0]['home'],$grant['canonical_record'])]);
+            }
+            foreach([[0,1],[2,0]] as [$actor,$target]) {
+                $p=$writer->prepareKeyRetirement(['actor_identity_id'=>$ids[$actor],'target_identity_id'=>$ids[$target]]);
+                assertSame('complete',$writer->finalizePreparedKeyRetirement($p+['detached_signature'=>$this->signCanonicalRecord($keys[$actor]['home'],$p['canonical_record'])])['refresh']);
+            }
+            $contentPlan=(new \ForumRewrite\Import\ContentImportPlanner())->plan($root,$restored);
+            // Public content merge must not import local access authority.
+            foreach ($contentPlan as $path => $entry) {
+                if (str_contains($path, 'key-retirement')) assertSame('excluded',$entry['state']);
+            }
+            $export=(new \ForumRewrite\Images\ImageBackup($root,$db))->export('tar.gz');$exports[]=$export['path'];fclose($export['stream']);
+            $output=$this->runCommand(dirname(__DIR__),'./v3 import-repository '.escapeshellarg($export['path']).' '.escapeshellarg($restored).' '.escapeshellarg($restoredDb).' '.escapeshellarg($restoredArtifacts));
+            assertStringContains('Imported:',$output);
+            foreach([0,1] as $i) foreach([\ForumRewrite\Security\KeyRetirement::path($ids[$i]),\ForumRewrite\Security\KeyRetirement::path($ids[$i]).'.asc',\ForumRewrite\Security\KeyRetirement::acceptancePath($ids[$i])] as $file) {
+                assertSame(file_get_contents($root.'/'.$file),file_get_contents($restored.'/'.$file));
+            }
+            foreach(glob($restoredDb.'*')?:[] as $file) if(is_file($file))unlink($file);
+            $this->runCommand(dirname(__DIR__),'./v3 rebuild '.escapeshellarg($restored).' '.escapeshellarg($restoredDb));
+            $pdo=(new ReadModelConnection($restoredDb))->open();
+            assertSame(0,(int)ProfileRepository::byIdentityId($pdo,$ids[0])['is_approved']);
+            assertSame(0,(int)ProfileRepository::byIdentityId($pdo,$ids[1])['is_approved']);
+            assertSame(1,(int)ProfileRepository::byIdentityId($pdo,$ids[3])['is_approved'],'Earlier beneficiary remains approved after its operator retires');
+            assertSame($ids[0],\ForumRewrite\Security\KeyRetirement::read($restored,$ids[1])['Actor-Identity-ID']);
+            $oldPost=$_POST;
+            TestViewerSession::signedOut();
+            try {
+                $app=new Application(dirname(__DIR__),$restored,$restoredDb,$restoredArtifacts);
+                $challenge=$this->extractValue($this->renderMethod($app,'GET','/api/auth_challenge'),'challenge');
+                $_POST=['identity_id'=>$ids[0],'challenge'=>$challenge,'detached_signature'=>$this->signCanonicalRecord($keys[0]['home'],$challenge)];
+                $authResponse=$this->renderMethod($app,'POST','/api/authenticate_identity');
+                if (!str_contains($authResponse,'This key is retired.')) throw new RuntimeException('Unexpected restored authentication response: '.$authResponse);
+                assertSame(403,http_response_code());
+                assertStringContains('Retired',$this->renderMethod($app,'GET','/profiles/'.str_replace(':','-',$ids[1])));
+            } finally {TestViewerSession::reset();$_POST=$oldPost;}
+            $broken=$artifacts.'/broken-export';mkdir($broken,0700,true);
+            $this->runCommand(dirname(__DIR__),'tar -xzf '.escapeshellarg($export['path']).' -C '.escapeshellarg($broken));
+            unlink($broken.'/repository/'.\ForumRewrite\Security\KeyRetirement::path($ids[0]).'.asc');
+            $badArchive=$artifacts.'/incomplete.tar.gz';
+            $this->runCommand(dirname(__DIR__),'tar -czf '.escapeshellarg($badArchive).' -C '.escapeshellarg($broken).' repository');
+            $head=$this->latestCommitSha($restored);
+            try {
+                $this->runCommand(dirname(__DIR__),'./v3 import-repository '.escapeshellarg($badArchive).' '.escapeshellarg($restored).' '.escapeshellarg($restoredDb));
+                throw new LogicException('Incomplete retirement archive accepted.');
+            } catch (RuntimeException $error) { assertStringContains('Retirement evidence is missing',$error->getMessage()); }
+            assertSame($head,$this->latestCommitSha($restored));
+            assertSame($ids[2],\ForumRewrite\Security\KeyRetirement::read($restored,$ids[0])['Actor-Identity-ID']);
+        } finally {
+            foreach($keys as $key)$this->deleteTree($key['home']);
+            foreach([$root,$restored,$artifacts,$restoredArtifacts] as $dir)$this->deleteTree($dir);
+            foreach([$db,$restoredDb] as $database)foreach(glob($database.'*')?:[] as $file)if(is_file($file))unlink($file);
+            foreach($exports as $file)if(is_file($file))unlink($file);
+        }
+    }
+
+    public function testSignedRetirementPolicyAcceptanceAndRecovery(): void
+    {
+        [$root,$db,$artifacts]=$this->createTempEnvironment(); $keys=[];
+        $oldRename=getenv('FORUM_USERNAME_CHANGES_ENABLED'); $oldCross=getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
+        try {
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=0');
+            $writer=new LocalWriteService($root,$db,$artifacts,new CanonicalRecordRepository($root));
+            $ids=[];
+            foreach (['retire-operator','retire-alice','retire-alice','retire-alice','retire-bob','retire-bob'] as $name) {
+                $keys[]=$this->createSigningKey($name);
+                $ids[]=$writer->linkIdentity(['public_key'=>$keys[array_key_last($keys)]['public_key']])['identity_id'];
+            }
+            $this->seedApprovedIdentity($root,$ids[0]);
+            (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+            for($i=1;$i<6;$i++) {
+                $profile=ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(),$ids[$i]);
+                $grant=$writer->prepareApproval(['approver_identity_id'=>$ids[0],'target_identity_id'=>$ids[$i],
+                    'target_profile_slug'=>$profile['profile_slug'],'thread_id'=>$profile['bootstrap_thread_id'],'parent_id'=>$profile['bootstrap_post_id']]);
+                $writer->finalizePreparedApproval($grant+['author_identity_id'=>$ids[0],'detached_signature'=>$this->signCanonicalRecord($keys[0]['home'],$grant['canonical_record'])]);
+            }
+            $prepare=fn($a,$t)=>$writer->prepareKeyRetirement(['actor_identity_id'=>$ids[$a],'target_identity_id'=>$ids[$t]]);
+            $sign=fn($a,$prepared)=>$prepared+['detached_signature'=>$this->signCanonicalRecord($keys[$a]['home'],$prepared['canonical_record'])];
+            foreach(['0','1'] as $cross) {
+                putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL='.$cross);
+                assertThrowsRuntime(fn()=>$prepare(1,4),'Member retirement requires unchanged account keys with username changes disabled. Ask a root-approved operator for help.');
+            }
+            $review=$prepare(1,2);
+            assertSame('member',$review['retirement_review']['authority']);
+            assertThrowsRuntime(fn()=>$writer->finalizePreparedKeyRetirement($sign(2,$review)),'Retirement signature verification failed.');
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=1');
+            assertThrowsRuntime(fn()=>$writer->finalizePreparedKeyRetirement($sign(1,$review)),'Member retirement requires unchanged account keys with username changes disabled. Ask a root-approved operator for help.');
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=0');
+            $signed=$sign(1,$review);
+            $broken=new class($root,$db,$artifacts,new CanonicalRecordRepository($root)) extends LocalWriteService {
+                private int $rebuilds=0;
+                protected function rebuildReadModel(): array {
+                    if(++$this->rebuilds===2) throw new RuntimeException('Injected post-commit projection failure.');
+                    return parent::rebuildReadModel();
+                }
+            };
+            $accepted=$broken->finalizePreparedKeyRetirement($signed);
+            assertSame('retired',$accepted['status']); assertSame('pending',$accepted['refresh']);
+            assertSame('retired',$writer->keyRetirementStatus($ids[2])['status']);
+            $retry=$writer->finalizePreparedKeyRetirement($signed);
+            assertSame(true,$retry['recovered']); assertSame('complete',$retry['refresh']);
+            assertSame($accepted['commit_sha'],$retry['commit_sha']);
+            assertSame(0,(int)ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(),$ids[2])['is_approved']);
+            // A renamed-back key stays outside the member/replacement boundary.
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=1');
+            foreach(['retire-bob','retire-alice'] as $name) {
+                $rename=$writer->prepareProfileName(['author_identity_id'=>$ids[3],'username'=>$name]);
+                $writer->finalizePreparedProfileName($rename+['author_identity_id'=>$ids[3],'detached_signature'=>$this->signCanonicalRecord($keys[3]['home'],$rename['canonical_record'])]);
+                sleep(1); // Profile-name ordering uses canonical whole seconds.
+            }
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=0');
+            assertThrowsRuntime(fn()=>$prepare(3,1),'Member retirement requires unchanged account keys with username changes disabled. Ask a root-approved operator for help.');
+            assertThrowsRuntime(fn()=>$prepare(0,1),'Approve an unchanged replacement key for this account before retiring this key.');
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=1');
+            $operator=$prepare(0,3);
+            assertSame('operator',$operator['retirement_review']['authority']);
+            assertSame('retired',$writer->finalizePreparedKeyRetirement($sign(0,$operator))['status']);
+            putenv('FORUM_USERNAME_CHANGES_ENABLED=0');
+            $first=$sign(4,$prepare(4,5)); $reciprocal=$sign(5,$prepare(5,4));
+            assertSame('retired',$writer->finalizePreparedKeyRetirement($first)['status']);
+            assertThrowsRuntime(fn()=>$writer->finalizePreparedKeyRetirement($reciprocal),'This key is retired. Use another approved key or ask an operator to approve a replacement.');
+            assertSame('not_retired',$writer->keyRetirementStatus($ids[4])['status']);
+            assertThrowsRuntime(fn()=>$prepare(0,4),'Approve an unchanged replacement key for this account before retiring this key.');
+            $app=new Application(dirname(__DIR__),$root,$db,$artifacts);
+            $status=json_decode($this->renderMethod($app,'GET','/api/key_retirement_status?target_identity_id='.rawurlencode($ids[2])),true);
+            assertSame('retired',$status['status']);
+        } finally {
+            putenv($oldRename===false?'FORUM_USERNAME_CHANGES_ENABLED':'FORUM_USERNAME_CHANGES_ENABLED='.$oldRename);
+            putenv($oldCross===false?'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL':'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL='.$oldCross);
+            foreach($keys as $key) $this->deleteTree($key['home']);
+            $this->deleteTree($root); $this->deleteTree($artifacts);
+            foreach(glob($db.'*')?:[] as $file) if(is_file($file))unlink($file);
+        }
+    }
+
+    public function testRetirementEvidenceReplaysWithoutPresentActorAuthority(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $keys = [];
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $ids = [];
+            for ($i = 0; $i < 3; $i++) {
+                $keys[] = $this->createSigningKey('retirement-replay');
+                $ids[] = $writer->linkIdentity(['public_key' => $keys[$i]['public_key']])['identity_id'];
+                $this->seedApprovedIdentity($root, $ids[$i]);
+            }
+            $paths = [];
+            foreach ([[0,1,2],[2,0,2]] as [$actor,$target,$replacement]) {
+                $record = "Version: 1\nAction-ID: key-retirement-" . bin2hex(random_bytes(16))
+                    . "\nCreated-At: 2026-11-01T00:00:00Z\nActor-Identity-ID: {$ids[$actor]}\nTarget-Identity-ID: {$ids[$target]}\nAccount: retirement-replay\nAuthority: operator\nReplacement-Identity-ID: {$ids[$replacement]}\nContext-SHA256: " . str_repeat('a',64) . "\n\n";
+                $sig = $this->signCanonicalRecord($keys[$actor]['home'], $record);
+                $path = \ForumRewrite\Security\KeyRetirement::path($ids[$target]);
+                $receipt = \ForumRewrite\Security\KeyRetirement::acceptancePath($ids[$target]);
+                foreach ([$path=>$record,$path.'.asc'=>$sig,$receipt=>\ForumRewrite\Security\KeyRetirement::acceptance($record,$sig,'2026-11-01T00:00:01Z')] as $file=>$bytes) {
+                    if (!is_dir(dirname($root.'/'.$file))) mkdir(dirname($root.'/'.$file),0777,true);
+                    file_put_contents($root.'/'.$file,$bytes);
+                }
+                $paths[] = $path;
+            }
+            (new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild();
+            $pdo = (new ReadModelConnection($db))->open();
+            foreach ([0,1] as $i) {
+                $profile = ProfileRepository::byIdentityId($pdo,$ids[$i]);
+                assertSame(0,(int)$profile['is_approved']);
+                assertSame(1,(int)$profile['was_approved']);
+                assertSame('2026-11-01T00:00:01Z',$profile['retired_at']);
+            }
+            assertSame(1,(int)ProfileRepository::byIdentityId($pdo,$ids[2])['is_approved']);
+            // An incremental approval recomputation must not resurrect either retired seed.
+            (new IncrementalReadModelUpdater($db,$root))->applyApprovalSeedWrite($this->latestCommitSha($root));
+            assertSame(0,(int)ProfileRepository::byIdentityId($pdo,$ids[1])['is_approved']);
+            assertSame($ids[0],\ForumRewrite\Security\KeyRetirement::read($root,$ids[1])['Actor-Identity-ID']);
+            assertSame(true,\ForumRewrite\Import\ArchiveRecordCatalog::isRecordPath($paths[0]));
+            assertSame(true,\ForumRewrite\Import\ArchiveRecordCatalog::isSignaturePath($paths[0].'.asc'));
+            $retiredError = 'This key is retired. Use another approved key or ask an operator to approve a replacement.';
+            // Simulate a committed retirement whose derived refresh failed.
+            $pdo->exec('UPDATE profiles SET is_approved=1, retired_at=NULL');
+            assertSame(0,(int)\ForumRewrite\Security\KeyRetirement::profile($root,ProfileRepository::byIdentityId($pdo,$ids[1]))['is_approved']);
+            assertSame(true,\ForumRewrite\Security\ApprovalPolicy::isOperator($root,$ids[0]));
+            assertSame(false,\ForumRewrite\Security\ApprovalPolicy::isActiveOperator($root,$ids[0]));
+            assertThrowsRuntime(fn()=>$writer->linkIdentity(['public_key'=>$keys[1]['public_key']]),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->seedApprovedIdentity($ids[1],'retry'),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->prepareApproval(['approver_identity_id'=>$ids[2],'target_identity_id'=>$ids[1]]),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->prepareApproval(['approver_identity_id'=>$ids[0],'target_identity_id'=>$ids[2]]),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->prepareThread(['author_identity_id'=>$ids[1],'subject'=>'Kept draft','body'=>'Do not silently publish unsigned.','board_tags'=>'general']),$retiredError);
+            assertThrowsRuntime(fn()=>$writer->prepareInvitation(['issuer_identity_id'=>$ids[1]]),$retiredError);
+            $now = gmdate('Y-m-d\TH:i:s\Z');
+            $direct = 'Post-ID: thread-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(16)) . "\nCreated-At: {$now}\nBoard-Tags: general\nAuthor-Identity-ID: {$ids[1]}\nSubject: Kept draft\n\nRetired direct signed post.\n";
+            assertThrowsRuntime(fn()=>$writer->createSignedPost(['canonical_record'=>$direct,'detached_signature'=>$this->signCanonicalRecord($keys[1]['home'],$direct)]),$retiredError);
+            $postBefore = $_POST;
+            try {
+                // A session the key held before it was retired no longer signs anyone in.
+                TestViewerSession::signIn($ids[1]);
+                $app = new Application(dirname(__DIR__),$root,$db,$artifacts);
+                assertStringContains('status=unauthenticated',$this->renderMethod($app,'GET','/api/auth_status'));
+                assertSame(401,http_response_code());
+                // And the retired key cannot start a new one.
+                TestViewerSession::signedOut();
+                $sessionsBefore = TestViewerSession::sessionCount($ids[1]);
+                $challenge = TestViewerSession::challenge();
+                $_POST = ['identity_id'=>$ids[1],'challenge'=>$challenge,'detached_signature'=>$this->signCanonicalRecord($keys[1]['home'],$challenge)];
+                assertStringContains($retiredError,$this->renderMethod($app,'POST','/api/authenticate_identity'));
+                assertSame(403,http_response_code());
+                assertSame($sessionsBefore,TestViewerSession::sessionCount($ids[1]));
+                // Public readers remain welcome without granting this key a session.
+                TestViewerSession::signedOut();
+                $this->renderMethod($app,'GET','/users/');
+                assertSame(200,http_response_code());
+            } finally { TestViewerSession::reset(); $_POST=$postBefore; }
+            $receipt = $root.'/'.\ForumRewrite\Security\KeyRetirement::acceptancePath($ids[1]);
+            $bytes = file_get_contents($receipt);
+            file_put_contents($receipt,str_replace('Record-SHA256: ','Record-SHA256: 0',$bytes));
+            assertThrowsRuntime(fn()=>\ForumRewrite\Security\KeyRetirement::read($root,$ids[1]),'Invalid retirement signature or acceptance. Restore the accepted evidence.');
+            file_put_contents($receipt,$bytes);
+            unlink($root.'/'.$paths[0].'.asc');
+            assertThrowsRuntime(fn()=>(new ReadModelBuilder($root,$db,new CanonicalRecordRepository($root)))->rebuild(),'Retirement evidence is missing or oversized. Restore the accepted record, signature and receipt.');
+        } finally {
+            foreach ($keys as $key) $this->deleteTree($key['home']);
+            $this->deleteTree($root); $this->deleteTree($artifacts);
+            foreach (glob($db.'*') ?: [] as $file) if(is_file($file)) unlink($file);
+        }
+    }
+
+    public function testRetirementAuthorityCannotBeInferredFromRenamedApprovedProfiles(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $owner = $this->createSigningKey('retirement-owner');
+        $member = $this->createSigningKey('retirement-other');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $ownerId = $writer->linkIdentity(['public_key' => $owner['public_key']])['identity_id'];
+            $memberId = $writer->linkIdentity(['public_key' => $member['public_key']])['identity_id'];
+            $this->seedApprovedIdentity($root, $ownerId);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $pdo = (new ReadModelConnection($db))->open();
+            $profile = ProfileRepository::byIdentityId($pdo, $memberId);
+            $grant = $writer->prepareApproval(['approver_identity_id' => $ownerId, 'target_identity_id' => $memberId,
+                'target_profile_slug' => $profile['profile_slug'], 'thread_id' => $profile['bootstrap_thread_id'],
+                'parent_id' => $profile['bootstrap_post_id']]);
+            $writer->finalizePreparedApproval($grant + ['author_identity_id' => $ownerId,
+                'detached_signature' => $this->signCanonicalRecord($owner['home'], $grant['canonical_record'])]);
+            $receipt = \ForumRewrite\Security\ApprovalAcceptance::read($root, $grant['record_path']);
+            assertSame('retirement-other', $receipt['context']['target_username']);
+            assertSame(false, \ForumRewrite\Security\ApprovalPolicy::isOperator($root, $memberId));
+            $rename = $writer->prepareProfileName(['author_identity_id' => $memberId, 'username' => 'retirement-owner']);
+            $writer->finalizePreparedProfileName($rename + ['author_identity_id' => $memberId,
+                'detached_signature' => $this->signCanonicalRecord($member['home'], $rename['canonical_record'])]);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $memberProfile = ProfileRepository::byIdentityId($pdo, $memberId);
+            $ownerProfile = ProfileRepository::byIdentityId($pdo, $ownerId);
+            assertSame(1, (int) $memberProfile['is_approved']);
+            assertSame(1, (int) $ownerProfile['is_approved']);
+            assertSame($ownerProfile['username_token'], $memberProfile['username_token']);
+            // Equal current names and approvals do not establish accepted membership in the same account.
+            assertSame('retirement-other', \ForumRewrite\Security\ApprovalAcceptance::read($root, $grant['record_path'])['context']['target_username']);
+            assertSame(false, \ForumRewrite\Security\ApprovalPolicy::isOperator($root, $memberId));
+        } finally {
+            $this->deleteTree($owner['home']);
+            $this->deleteTree($member['home']);
+            $this->deleteTree($root);
+            $this->deleteTree($artifacts);
+            foreach (glob($db . '*') ?: [] as $file) if (is_file($file)) unlink($file);
         }
     }
 
@@ -851,6 +1212,143 @@ final class WriteApiSmokeTest
         assertFalse(is_file($artifactRoot . '/posts/' . $replyId . '.html'));
         assertTrue(is_file($artifactRoot . '/posts/' . $threadId . '.html'));
         assertSame($replyCommitSha, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
+    }
+
+    public function testNewPostsRecordBodyFormatAndGetPostReportsIt(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $default = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Formatted&body=%2A%2Abold%2A%2A');
+        $defaultId = $this->extractValue($default, 'thread_id');
+        assertStringContains("Body-Format: markdown\n", (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $defaultId)));
+        assertStringContains("Body-Format: markdown\n", $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . rawurlencode($defaultId)));
+
+        $plain = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Plain&body=1.%20not%20a%20list&body_format=plain');
+        $plainId = $this->extractValue($plain, 'thread_id');
+        assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $plainId)));
+        assertStringContains("Body-Format: plain\n", $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . rawurlencode($plainId)));
+
+        $reply = $this->renderMethod($application, 'POST', '/api/create_reply?thread_id=' . rawurlencode($plainId) . '&parent_id=' . rawurlencode($plainId) . '&body=Reply&body_format=Plain');
+        $replyId = $this->extractValue($reply, 'post_id');
+        assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $replyId)));
+
+        $rejected = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Bad&body=x&body_format=html');
+        assertStringContains('body_format must be markdown or plain', $rejected);
+    }
+
+    public function testSignedPostsCarryBodyFormatThroughPreparedAndDirectPaths(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('format-author');
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $_POST = ['public_key' => $key['public_key']];
+        $linked = $this->renderMethod($app, 'POST', '/api/link_identity');
+        $_POST = [];
+        $identity = $this->extractValue($linked, 'identity_id');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+
+        $prepared = $writer->prepareThread(['author_identity_id' => $identity, 'subject' => 'Prepared', 'body' => 'Prepared body.', 'board_tags' => 'general', 'body_format' => 'plain']);
+        assertStringContains("Body-Format: plain\n", $prepared['canonical_record']);
+        $writer->createPreparedPost($prepared + ['author_identity_id' => $identity, 'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])]);
+        assertSame('plain', (new CanonicalRecordRepository($root))->loadPost($prepared['record_path'])->bodyFormat);
+
+        $preparedDefault = $writer->prepareReply(['author_identity_id' => $identity, 'thread_id' => $prepared['post_id'], 'parent_id' => $prepared['post_id'], 'body' => 'Reply.', 'board_tags' => 'general']);
+        assertStringContains("Body-Format: markdown\n", $preparedDefault['canonical_record']);
+
+        foreach (['', "Body-Format: markdown\n"] as $header) {
+            $now = gmdate('Y-m-d\\TH:i:s\\Z');
+            $direct = 'Post-ID: thread-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(16)) . "\nCreated-At: {$now}\nBoard-Tags: general\nAuthor-Identity-ID: {$identity}\nSubject: Direct\n{$header}\nDirect **body**.\n";
+            $result = $writer->createSignedPost(['canonical_record' => $direct, 'detached_signature' => $this->signCanonicalRecord($key['home'], $direct)]);
+            assertSame('ok', $result['status']);
+            $get = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/api/get_post?post_id=' . rawurlencode($result['post_id']));
+            assertStringContains($header === '' ? "Body-Format: plain\n" : "Body-Format: markdown\n", $get);
+        }
+    }
+
+    public function testThreadPagesRenderMarkdownOnlyForMarkdownPostsAndRespectTheFlag(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previous = getenv('FORUM_POST_MARKDOWN_ENABLED');
+        try {
+            putenv('FORUM_POST_MARKDOWN_ENABLED');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $markdown = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=MD&body=' . rawurlencode("## Notes\n\n- **one**\n- two")), 'thread_id');
+            $plain = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Plain&body_format=plain&body=' . rawurlencode("## Notes\n- **one**")), 'thread_id');
+            $reply = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_reply?thread_id=' . rawurlencode($markdown) . '&parent_id=' . rawurlencode($markdown) . '&body=' . rawurlencode('*reply*')), 'post_id');
+
+            $page = $this->renderMethod($application, 'GET', '/threads/' . $markdown);
+            assertStringContains('post-markdown', $page);
+            assertStringContains('<h4>Notes</h4>', $page);
+            assertStringContains('<li><p><strong>one</strong></p></li>', $page);
+            assertStringContains('<em>reply</em>', $page);
+            assertStringContains('<em>reply</em>', $this->renderMethod($application, 'GET', '/posts/' . $reply));
+
+            $plainPage = $this->renderMethod($application, 'GET', '/threads/' . $plain);
+            assertStringContains('## Notes<br />', $plainPage);
+            assertStringContains('- **one**', $plainPage);
+            assertStringNotContains('<h4>Notes</h4>', $plainPage);
+
+            putenv('FORUM_POST_MARKDOWN_ENABLED=false');
+            $off = $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/threads/' . $markdown);
+            assertStringNotContains('<h4>Notes</h4>', $off);
+            assertStringContains('- **one**', $off);
+        } finally {
+            $previous === false ? putenv('FORUM_POST_MARKDOWN_ENABLED') : putenv('FORUM_POST_MARKDOWN_ENABLED=' . $previous);
+        }
+    }
+
+    public function testPreviewsShowMarkdownPostsAsPlainWords(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $markdown = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&body=' . rawurlencode("## Release **notes** for `v3`\n\n- item")), 'thread_id');
+        $plain = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&body_format=plain&body=' . rawurlencode('## Literal **stars** kept')), 'thread_id');
+        $this->renderMethod($application, 'POST', '/api/create_reply?thread_id=' . rawurlencode($markdown) . '&parent_id=' . rawurlencode($markdown) . '&body=' . rawurlencode('> quoted *reply*'));
+
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
+        assertStringContains('Release notes for v3', $board);
+        assertStringNotContains('## Release', $board);
+        assertStringContains('## Literal **stars** kept', $board);
+
+        $recent = $this->renderMethod($application, 'GET', '/recent/');
+        assertStringContains('quoted reply', $recent);
+        assertStringNotContains('&gt; quoted', $recent);
+        assertStringContains('Release notes for v3', $recent);
+
+        $compose = $this->renderMethod($application, 'GET', '/compose/reply?thread_id=' . rawurlencode($markdown) . '&parent_id=' . rawurlencode($markdown));
+        assertStringContains('Release notes for v3', $compose);
+        assertStringNotContains('**notes**', $compose);
+        assertSame(true, str_contains($this->renderMethod($application, 'GET', '/threads/' . $plain), '## Literal **stars** kept'));
+    }
+
+    public function testComposersOfferPlainTextAndTheUnsignedFormPathHonoursIt(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        foreach (['/compose/thread', '/threads/root-001', '/threads/?view=all'] as $path) {
+            $page = $this->renderMethod($application, 'GET', $path);
+            assertStringContains('<input type="checkbox" name="body_format" value="plain">', $page);
+            assertStringContains('href="/docs/reference/markdown_syntax.md"', $page);
+        }
+
+        $_POST = ['body' => "1. not\n2. a list", 'board_tags' => 'general', 'body_format' => 'plain'];
+        try {
+            $this->renderMethod($application, 'POST', '/compose/thread');
+        } finally {
+            $_POST = [];
+        }
+        $latest = trim($this->gitOutput($repositoryRoot, 'log -1 --name-only --format='));
+        assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n")));
+    }
+
+    public function testRecordsWithoutBodyFormatReportPlain(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod($application, 'GET', '/api/get_post?post_id=root-001');
+        assertStringContains("Body-Format: plain\n", $response);
     }
 
     public function testPostAnalysisEndpointStoresStubResultIdempotently(): void
@@ -3284,7 +3782,7 @@ NODE;
         $bootstrapPostId = $this->extractValue($response, 'bootstrap_post_id');
         $bootstrapThreadId = $this->extractValue($response, 'bootstrap_thread_id');
         $bootstrapRecord = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $bootstrapPostId));
-        $board = $this->renderMethod($application, 'GET', '/');
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
         $identityActivity = $this->renderMethod($application, 'GET', '/activity/?view=identity');
         $bootstrapActivity = $this->renderMethod($application, 'GET', '/activity/?view=bootstrap');
@@ -3438,7 +3936,7 @@ NODE;
         assertTrue(preg_match('#^records/posts/\d{4}/\d{2}/\d{2}/' . preg_quote((string) $payload['post_id'], '#') . '\.txt$#', (string) $payload['record_path']) === 1);
         assertStringContains('Post-ID: ' . $payload['post_id'] . "\n", $payload['canonical_record']);
         assertStringContains("Author-Identity-ID: {$identityId}\n", $payload['canonical_record']);
-        assertStringContains("Subject: Prepared Thread\n\nPrepared body\n", $payload['canonical_record']);
+        assertStringContains("Subject: Prepared Thread\nBody-Format: markdown\n\nPrepared body\n", $payload['canonical_record']);
         assertSame(hash('sha256', $payload['canonical_record']), $payload['canonical_sha256']);
         assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $payload['prepare_token'] . '.json'));
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
@@ -4725,7 +5223,7 @@ NODE;
         assertSame('root-001', $payload['thread_id']);
         assertTrue(preg_match('#^records/posts/\d{4}/\d{2}/\d{2}/' . preg_quote((string) $payload['post_id'], '#') . '\.txt$#', (string) $payload['record_path']) === 1);
         assertStringContains("Thread-ID: root-001\nParent-ID: root-001\n", $payload['canonical_record']);
-        assertStringContains("Author-Identity-ID: {$identityId}\n\nPrepared reply\n", $payload['canonical_record']);
+        assertStringContains("Author-Identity-ID: {$identityId}\nBody-Format: markdown\n\nPrepared reply\n", $payload['canonical_record']);
         assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $payload['prepare_token'] . '.json'));
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
     }
@@ -5813,7 +6311,7 @@ NODE;
 
         $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
         $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
-        $board = $this->renderMethod($application, 'GET', '/');
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
 
         assertStringContains('status=ok', $first);
         assertStringContains('status=ok', $second);
@@ -6747,7 +7245,7 @@ NODE;
         );
         $targetProfile = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $targetProfileSlug);
         $targetProfileApi = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
-        $board = $this->renderMethod($application, 'GET', '/');
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
         $identityActivity = $this->renderMethod($application, 'GET', '/activity/?view=identity');
         $approvalActivity = $this->renderMethod($application, 'GET', '/activity/?view=approval');
@@ -7474,7 +7972,6 @@ NODE;
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
         $key = $this->createSigningKey('security-operator');
-        $previousSession = $_SESSION ?? [];
         $previousFlag = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
         putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
         try {
@@ -7484,9 +7981,9 @@ NODE;
             $_POST = [];
             $operator = $this->extractValue($response, 'identity_id');
             $this->seedApprovedIdentity($root, $operator);
-            $_SESSION = ['authenticated_identity_id' => $operator];
+            TestViewerSession::signIn($operator);
             assertStringContains('No access changes recorded yet.', $this->renderMethod($app, 'GET', '/tools/user-access/'));
-            $_SESSION = [];
+            TestViewerSession::signedOut();
             $target = $this->linkGeneratedIdentity($app, 'security-target');
             $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
             $change = function (bool $value) use ($writer, $operator, $key): void {
@@ -7498,11 +7995,10 @@ NODE;
             $change(true);
             $grant = $this->approveIdentity($writer, $target, $operator);
             $change(false);
-            if (session_status() !== PHP_SESSION_ACTIVE) session_start();
             $paths = ['/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/api/forte_activity_detail?view=security&id=1', '/api/forte_commit_detail?view=security&sha=' . $grant['commit_sha'], '/activity/?view=security&format=rss'];
             foreach ([null, $target['identity_id']] as $viewer) {
-                $_SESSION = $viewer === null ? [] : ['authenticated_identity_id' => $viewer];
                 $_COOKIE = ['identity_hint' => $operator];
+                $viewer === null ? TestViewerSession::signedOut() : TestViewerSession::signIn($viewer);
                 assertStringNotContains('>Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
                 foreach ($paths as $path) {
                     $denied = $this->renderMethod($app, 'GET', $path);
@@ -7516,8 +8012,8 @@ NODE;
                     assertStringNotContains('Acceptance receipt', $denied);
                 }
             }
-            $_SESSION = ['authenticated_identity_id' => $operator];
             $_COOKIE = [];
+            TestViewerSession::signIn($operator);
             $recent = $this->renderMethod($app, 'GET', '/tools/user-access/');
             assertStringContains('<h2>Access history</h2>', $recent);
             assertStringContains('Account key approved for security-target', $recent);
@@ -7573,8 +8069,8 @@ NODE;
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
             assertStringContains('security-target', $this->renderMethod($app, 'GET', '/activity/?view=security'));
         } finally {
-            $_POST = []; $_COOKIE = []; $_SESSION = $previousSession;
-            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+            $_POST = []; $_COOKIE = [];
+            TestViewerSession::reset();
             putenv($previousFlag === false ? 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL' : 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=' . $previousFlag);
             $this->deleteTree($key['home']);
         }

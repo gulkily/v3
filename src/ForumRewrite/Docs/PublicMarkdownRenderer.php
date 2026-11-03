@@ -6,6 +6,27 @@ namespace ForumRewrite\Docs;
 
 final class PublicMarkdownRenderer
 {
+    /** True while rendering an untrusted post body rather than a project document. */
+    private static bool $postMode = false;
+
+    /**
+     * Renders an untrusted post body: no front matter, hidden comments or raw image lines,
+     * http(s) links only (marked user content), bare URLs linked, headings nested inside the
+     * post, and single newlines kept as line breaks. Falls back to escaped plain text.
+     */
+    public static function renderPost(string $markdown): string
+    {
+        $previous = self::$postMode;
+        self::$postMode = true;
+        try {
+            return self::convert($markdown, null, '');
+        } catch (\Throwable) {
+            return nl2br(self::escape($markdown));
+        } finally {
+            self::$postMode = $previous;
+        }
+    }
+
     public static function render(string $markdown, ?string $sourcePath = null, ?string $projectRoot = null): string
     {
         try {
@@ -19,13 +40,14 @@ final class PublicMarkdownRenderer
     {
         // Preserve the current metadata boundary; never apply embedded presentation CSS.
         $metadata = '';
-        if (preg_match('/\A(?:\xEF\xBB\xBF)?---\r?\n(.*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/s', $markdown, $match) === 1) {
+        if (!self::$postMode && preg_match('/\A(?:\xEF\xBB\xBF)?---\r?\n(.*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/s', $markdown, $match) === 1) {
             $metadata = '<details class="docs-metadata"><summary>Document metadata</summary>'
                 . "\n" . '<pre tabindex="0" role="region" aria-label="Document metadata"><code>'
                 . self::escape($match[1]) . '</code></pre></details>';
             $markdown = substr($markdown, strlen($match[0]));
         }
-        $lines = self::withoutProseComments(preg_split('/\r\n|\r|\n/', $markdown) ?: []);
+        $lines = preg_split('/\r\n|\r|\n/', $markdown) ?: [];
+        $lines = self::$postMode ? $lines : self::withoutProseComments($lines);
         $html = [];
         $paragraph = [];
         $inCodeBlock = false;
@@ -79,7 +101,7 @@ final class PublicMarkdownRenderer
                 $skipThrough = $last;
                 continue;
             }
-            if (preg_match('/^\s*<img\b[^>]*>\s*$/i', $line) === 1
+            if (!self::$postMode && preg_match('/^\s*<img\b[^>]*>\s*$/i', $line) === 1
                 && preg_match('/\balt\s*=\s*(["\'])(.*?)\1/is', $line, $alt) === 1) {
                 $flushParagraph(); $flushTable();
                 $html[] = '<p>' . self::escape(html_entity_decode($alt[2], ENT_QUOTES | ENT_HTML5, 'UTF-8') . ' (image unavailable)') . '</p>';
@@ -108,6 +130,12 @@ final class PublicMarkdownRenderer
             if (preg_match('/^(#{1,6})\s+(.+?)\s*#*\s*$/', $line, $matches) === 1) {
                 $flushParagraph();
                 $level = strlen($matches[1]);
+                if (self::$postMode) {
+                    // A post sits inside a card under the page and thread headings.
+                    $level = min(6, $level + 2);
+                    $html[] = "<h{$level}>" . self::inline($matches[2], $sourcePath, $projectRoot) . "</h{$level}>";
+                    continue;
+                }
                 // Keep existing document-fragment navigation when restoring the parser.
                 $slug = mb_strtolower(strip_tags(html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
                 $slug = preg_replace('/[^\pL\pN _-]/u', '', $slug) ?? '';
@@ -391,13 +419,44 @@ final class PublicMarkdownRenderer
                 $label = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $m[2]) ?? $m[2];
                 $label = preg_replace('/(?<!\*)\*([^*]+)\*(?!\*)/', '<em>$1</em>', $label) ?? $label;
                 $label = strtr($label, $tokens);
-                $url = $m[1] === '!' ? null : PlatformDocsCatalog::resolveLink(html_entity_decode($m[3], ENT_QUOTES | ENT_HTML5, 'UTF-8'), $sourcePath, $projectRoot);
+                $target = html_entity_decode($m[3], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                if (self::$postMode) {
+                    $url = $m[1] === '!' ? null : self::postUrl($target);
+                    return $store($url === null ? $m[0] : self::postLink($url, $label));
+                }
+                $url = $m[1] === '!' ? null : PlatformDocsCatalog::resolveLink($target, $sourcePath, $projectRoot);
                 return $store($url === null ? $label . ($m[1] === '!' ? ' (image unavailable)' : ' (source unavailable)')
                     : '<a href="' . self::escape($url) . '">' . $label . '</a>');
             }, $escaped) ?? $escaped;
+        if (self::$postMode) {
+            $escaped = preg_replace_callback('~(?<![\w/="\x1A])https?://[^\s<>\x1A]+~i', static function (array $m) use ($store): string {
+                // Trailing sentence punctuation and escaped quotes belong to the prose.
+                preg_match('~^(.*?)((?:[.,;:!?)\]]|&quot;|&#039;)*)$~s', $m[0], $parts);
+                $url = self::postUrl(html_entity_decode($parts[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                return $url === null ? $m[0] : $store(self::postLink($url, $parts[1])) . $parts[2];
+            }, $escaped) ?? $escaped;
+            // Emphasis needs text against both markers, so "2 * 3 * 4" stays arithmetic.
+            $escaped = preg_replace('/\*\*(?=\S)([^*]+?)(?<=\S)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
+            $escaped = preg_replace('/(?<![*\w])\*(?=\S)([^*]+?)(?<=\S)\*(?![*\w])/', '<em>$1</em>', $escaped) ?? $escaped;
+            return str_replace("\n", "<br>\n", strtr($escaped, $tokens));
+        }
         $escaped = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
         $escaped = preg_replace('/(?<!\*)\*([^*]+)\*(?!\*)/', '<em>$1</em>', $escaped) ?? $escaped;
         return strtr($escaped, $tokens);
+    }
+
+    /** Absolute http(s) URLs only; everything else in a post stays visible source text. */
+    private static function postUrl(string $url): ?string
+    {
+        if (preg_match('~^https?://[^\x00-\x20\x7f\\\\]+$~i', $url) !== 1) {
+            return null;
+        }
+        return filter_var($url, FILTER_VALIDATE_URL) !== false ? $url : null;
+    }
+
+    private static function postLink(string $url, string $labelHtml): string
+    {
+        return '<a href="' . self::escape($url) . '" rel="nofollow ugc noopener">' . $labelHtml . '</a>';
     }
 
     private static function escape(string $value): string

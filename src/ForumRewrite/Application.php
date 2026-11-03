@@ -83,10 +83,9 @@ use RuntimeException;
 
 final class Application
 {
-    private const PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME = 34560000;
     private const LOBBY_GATE_LOG_ROTATE_LINES = 1000;
-    /** This request arrived on a session a sign-in had just replaced and was moved to the new one. */
-    private bool $viewerSessionForwarded = false;
+    /** Who is signed in for the request being handled; replaced at the start of every handle(). */
+    private ?\ForumRewrite\Session\ViewerSessions $viewerSessions = null;
     private ?string $appVersion = null;
     private bool $docsPage = false;
     private ?FeatureFlagEvaluator $featureFlags = null;
@@ -155,16 +154,9 @@ final class Application
         parse_str((string) parse_url($requestUri, PHP_URL_QUERY), $query);
         $securityReviewRequest = ($query['view'] ?? '') === 'security'
             && in_array($path, ['/activity', '/activity/', '/forte/activity', '/forte/activity/', '/api/forte_activity_page', '/api/forte_activity_detail', '/api/forte_commit_detail'], true);
-        if ($securityReviewRequest || $this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/tools/deploy', '/tools/deploy/', '/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/test_self_approval', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
-            || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
-            || str_starts_with($path, '/api/private_messages/history_sync/')
-            || str_starts_with($path, '/messages/conversation/')
-        ) {
-            $this->startViewerSession();
-        } elseif ($this->shouldResumeViewerSession($method, $path, $query)) {
-            $this->resumeViewerSession();
-        }
+        // Every route sees the same answer to "who is signed in"; there is no route list.
+        $this->viewerSessions = $this->openViewerSessions();
+        $this->viewerSessions->retireLegacyCookie();
 
         if ($path === '/api/test_self_approval') {
             $this->testingSelfApproval($method);
@@ -202,7 +194,7 @@ final class Application
                 if (!str_starts_with($path, '/api/') && ($query['format'] ?? '') !== 'rss') {
                     $this->sendHtml($this->routeServices()->renderPageTemplate(
                         'access_history_auth.php',
-                        ['canSignIn' => empty($_SESSION['authenticated_identity_id']), 'authReturnTo' => $path . '?view=security', 'viewerProfile' => null],
+                        ['canSignIn' => $this->viewerSessions()->identityId() === '', 'authReturnTo' => $path . '?view=security', 'viewerProfile' => null],
                         'Access history', 'tools',
                         ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/access_history_auth.js'],
                         false,
@@ -307,7 +299,7 @@ final class Application
             (new \ForumRewrite\Http\PrivateMessageHistorySyncController($this->routeServices(), $this->authenticatedViewerProfile(...), function () {
                 $config=PrivateConfig::load($this->projectRoot);
                 $pdo=\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot,$config);
-                return new \ForumRewrite\Messaging\PrivateMessageHistorySyncService($this->privateMessageStore(),new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo),$this->routeServices()->pdo());
+                return new \ForumRewrite\Messaging\PrivateMessageHistorySyncService($this->privateMessageStore(),new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo),$this->routeServices()->pdo(),$this->repositoryRoot);
             }))->handle($method, substr($path,strlen('/api/private_messages/history_sync/')),$query);
             return;
         }
@@ -530,6 +522,12 @@ final class Application
 
         if ($path === '/api/approve_user') {
             $this->identityApprovalAndInvitationApiController()->approveUser($method);
+            return;
+        }
+
+        if (in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)) {
+            $action = $path === '/api/key_retirement_status' ? 'status' : ($path === '/api/prepare_key_retirement' ? 'prepare' : 'finalize');
+            $this->identityApprovalAndInvitationApiController()->keyRetirement($method,$query,$action);
             return;
         }
 
@@ -1284,7 +1282,7 @@ final class Application
 
         return ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
-            (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
+            \ForumRewrite\Support\PostText::plainPreview((string) ($thread['body_preview'] ?? $thread['body'] ?? ''), $thread['body_format'] ?? null),
             (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? ''),
             80,
             $this->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)
@@ -1302,6 +1300,7 @@ final class Application
         $canApprove = $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
+            && empty($profile['retired_at'])
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
         $approvalReview = null;
         if ($accessManagement && $canApprove) {
@@ -1334,6 +1333,7 @@ final class Application
             $accessManagement ? 'user_access_profile.php' : 'profile.php',
             [
                 'accessManagement' => $accessManagement,
+                'retirementActors' => $accessManagement ? (new \ForumRewrite\Security\KeyRetirementPolicy($this->pdo(),$this->repositoryRoot))->presentationActors($profile) : [],
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
                 'profileHistory' => $accessManagement ? [] : \ForumRewrite\Http\ProfileHistoryView::build($this->pdo(), $profile, $query),
@@ -1350,7 +1350,7 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             $accessManagement ? 'tools' : 'profiles',
-            array_merge($accessManagement ? [] : ['/assets/public_key.js'], $accessManagement && $canApprove
+            array_merge($accessManagement ? $this->identityScripts(['/assets/key_retirement.js']) : ['/assets/public_key.js'], $accessManagement && $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
@@ -1540,6 +1540,7 @@ final class Application
                 $this->staticHtmlRoot,
                 $this->featureFlags(),
                 $this->resolveViewerProfileFromIdentityHint(...),
+                viewerSessions: $this->viewerSessions(...),
             );
         }
 
@@ -1661,7 +1662,7 @@ final class Application
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
                     threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+                    profiles.username_token AS author_username_token, COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -1683,10 +1684,10 @@ final class Application
     private function fetchThreadPosts(string $threadId): array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.agent_response_json,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -1708,8 +1709,8 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
-                    posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, posts.body_format, profiles.username_token AS author_username_token,
+                    COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -1862,7 +1863,7 @@ final class Application
      */
     private function fetchProfileBySlug(string $slug): ?array
     {
-        return ProfileRepository::bySlug($this->pdo(), $slug);
+        return \ForumRewrite\Security\KeyRetirement::profile($this->repositoryRoot, ProfileRepository::bySlug($this->pdo(), $slug));
     }
 
     /**
@@ -1870,7 +1871,7 @@ final class Application
      */
     private function fetchProfileByIdentityId(string $identityId): ?array
     {
-        return ProfileRepository::byIdentityId($this->pdo(), $identityId);
+        return \ForumRewrite\Security\KeyRetirement::profile($this->repositoryRoot, ProfileRepository::byIdentityId($this->pdo(), $identityId));
     }
 
     /**
@@ -1918,7 +1919,7 @@ final class Application
             return $this->lobbyViewerProfile();
         }
 
-        $authenticatedIdentityId = strtolower(trim((string) (($_SESSION ?? [])['authenticated_identity_id'] ?? '')));
+        $authenticatedIdentityId = $this->viewerSessions()->identityId();
         if ($authenticatedIdentityId !== '') {
             $authenticatedProfile = $this->fetchProfileByIdentityId($authenticatedIdentityId);
             if ($authenticatedProfile !== null) {
@@ -2038,7 +2039,7 @@ final class Application
         $expectedOrigin = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://')
             . (string) ($_SERVER['HTTP_HOST'] ?? '');
         $profile = $this->authenticatedViewerProfile();
-        $token = (string) ($_COOKIE[\ForumRewrite\Http\RouteServices::TESTING_SELF_APPROVAL_COOKIE] ?? '');
+        $token = (string) ($_COOKIE[\ForumRewrite\Http\RouteServices::testingSelfApprovalCookieName(\ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER))] ?? '');
         if (!(new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest()
             || $profile === null || $token === ''
             || !hash_equals($token, (string) ($input['token'] ?? ''))
@@ -2058,7 +2059,7 @@ final class Application
 
     private function authenticatedViewerProfile(): ?array
     {
-        $identityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        $identityId = $this->viewerSessions()->identityId();
         if ($identityId === '') {
             return null;
         }
@@ -2078,14 +2079,14 @@ final class Application
             return $profile;
         }
 
-        $identityId = strtolower(trim((string) ($_SESSION['lobby_identity_id'] ?? '')));
+        $identityId = $this->viewerSessions()->lobbyIdentityId();
         if ($identityId === '') {
             return null;
         }
 
         $profile = $this->fetchProfileByIdentityId($identityId);
         if ($profile === null) {
-            unset($_SESSION['lobby_identity_id']);
+            $this->viewerSessions()->forgetLobbyIdentity();
             return null;
         }
 
@@ -2109,6 +2110,7 @@ final class Application
             || $path === '/account/key/' || $path === '/account/key'
             || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity' || $path === '/api/auth_status'
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
+            || in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
             || $path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name'
@@ -2181,6 +2183,7 @@ final class Application
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
+            '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
@@ -2208,7 +2211,7 @@ final class Application
      * confirmed the viewer's identity (authenticated_identity_id is set)
      * and confirmed they're not an approved member - a fact we actually
      * know. A session that only carries the weaker lobby_identity_id signal
-     * (currently only set by handleClearIdentity()'s downgrade-not-forget
+     * (currently only set by sign-out's downgrade-not-forget
      * behavior) hasn't been freshly verified either way, so it falls
      * through to shouldRenderAuthenticationResume() instead, which gives
      * the browser's saved key a chance to silently re-authenticate before
@@ -2273,8 +2276,8 @@ final class Application
             @rename($logPath, $logPath . '.1');
         }
 
-        $authenticatedIdentityId = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
-        $lobbyIdentityId = strtolower(trim((string) ($_SESSION['lobby_identity_id'] ?? '')));
+        $authenticatedIdentityId = $this->viewerSessions()->identityId();
+        $lobbyIdentityId = $this->viewerSessions()->lobbyIdentityId();
         $identityHint = strtolower(trim((string) ($_COOKIE['identity_hint'] ?? '')));
         $viewerProfile = $authenticatedIdentityId !== '' ? $this->fetchProfileByIdentityId($authenticatedIdentityId) : null;
 
@@ -2283,7 +2286,7 @@ final class Application
             'decision' => $decision,
             'method' => $method,
             'path' => $path,
-            'session_cookie_present' => $this->hasViewerSessionCookie(),
+            'session_cookie_present' => $this->viewerSessions()->hasCookie(),
             'has_authenticated_identity_id' => $authenticatedIdentityId !== '',
             'authenticated_identity_suffix' => $authenticatedIdentityId === '' ? null : substr($authenticatedIdentityId, -8),
             'authenticated_identity_is_approved' => $viewerProfile === null ? null : ((int) ($viewerProfile['is_approved'] ?? 0)) === 1,
@@ -2494,79 +2497,22 @@ final class Application
         return implode('/', array_map('rawurlencode', explode('/', $sourcePath)));
     }
 
-    private function startViewerSession(): void
+    /** The request's sign-in state; opened lazily if something asks before handle() set it. */
+    private function viewerSessions(): \ForumRewrite\Session\ViewerSessions
     {
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            return;
-        }
-
-        if (headers_sent()) {
-            return;
-        }
-
-        session_start([
-            'cookie_lifetime' => self::PERSISTENT_VIEWER_SESSION_COOKIE_LIFETIME,
-            'cookie_httponly' => true,
-            'cookie_samesite' => 'Lax',
-            'cookie_secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-            'use_strict_mode' => true,
-        ]);
-        $this->viewerSessionForwarded = session_status() === PHP_SESSION_ACTIVE
-            && \ForumRewrite\Http\SessionRotation::follow();
+        return $this->viewerSessions ??= $this->openViewerSessions();
     }
 
-    /** @param array<string, mixed> $query */
-    private function shouldResumeViewerSession(string $method, string $path, array $query): bool
+    private function openViewerSessions(): \ForumRewrite\Session\ViewerSessions
     {
-        if (!$this->hasViewerSessionCookie()) {
-            return false;
-        }
-
-        if ($method === 'POST') {
-            return $path === '/api/prepare_invitation';
-        }
-
-        if ($method !== 'GET' || !$this->isApplicationRoute($path)) {
-            return false;
-        }
-
-        if (str_starts_with($path, '/api/') || str_starts_with($path, '/downloads/')) {
-            return false;
-        }
-
-        return ($query['format'] ?? null) !== 'rss';
-    }
-
-    private function hasViewerSessionCookie(): bool
-    {
-        $value = $_COOKIE[session_name()] ?? null;
-
-        return is_string($value) && $value !== '';
-    }
-
-    private function resumeViewerSession(): void
-    {
-        $sessionName = session_name();
-        $requestedSessionId = (string) ($_COOKIE[$sessionName] ?? '');
-        $this->startViewerSession();
-
-        // A session replaced by a sign-in moments ago forwards to its replacement: keep that cookie.
-        if (session_status() !== PHP_SESSION_ACTIVE || $requestedSessionId === session_id() || $this->viewerSessionForwarded) {
-            return;
-        }
-
-        session_abort();
-        session_id('');
-        unset($_COOKIE[$sessionName]);
-        $params = session_get_cookie_params();
-        setcookie($sessionName, '', [
-            'expires' => time() - 3600,
-            'path' => $params['path'] ?? '/',
-            'domain' => $params['domain'] ?? '',
-            'secure' => (bool) ($params['secure'] ?? false),
-            'httponly' => (bool) ($params['httponly'] ?? true),
-            'samesite' => $params['samesite'] ?? 'Lax',
-        ]);
+        $projectRoot = $this->projectRoot;
+        return new \ForumRewrite\Session\ViewerSessions(
+            static fn (): \ForumRewrite\Session\ViewerSessionStore => new \ForumRewrite\Session\ViewerSessionStore(
+                \ForumRewrite\Session\ViewerSessionDatabaseConfig::open($projectRoot, PrivateConfig::load($projectRoot))
+            ),
+            $_COOKIE,
+            \ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER),
+        );
     }
 
     /**

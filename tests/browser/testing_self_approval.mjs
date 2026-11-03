@@ -57,10 +57,11 @@ try {
   const anonymous = await browser.newContext();
   assert.equal((await anonymous.request.post(base+'/api/test_self_approval',{form:{token},headers:{Origin:base}})).status(),403);
   // A lobby hint is deliberately weaker than proof of the account key.
-  const weakSession = spawnSync('php', ['-r', `session_save_path($argv[1]); session_id('weak-self-approval'); session_start(); $_SESSION['lobby_identity_id']=$argv[2]; session_write_close();`, join(root,'sessions'), 'openpgp:'+fingerprint], {encoding:'utf8'});
+  const weakSession = spawnSync('php', [join(project,'tests/Support/test_viewer_session_cookie.php'), root, 'lobby-only', 'openpgp:'+fingerprint], {encoding:'utf8', env:{...process.env}});
   assert.equal(weakSession.status,0,weakSession.stderr);
+  const [weakName, weakValue] = weakSession.stdout.trim().split('=');
   // The double-submit cookie is valid here, so only the weak session stops it.
-  await anonymous.addCookies([{name:'PHPSESSID',value:'weak-self-approval',url:base},{name:'testing_self_approval',value:token,url:base}]);
+  await anonymous.addCookies([{name:weakName,value:weakValue,url:base},{name:'testing_self_approval',value:token,url:base}]);
   assert.equal((await anonymous.request.post(base+'/api/test_self_approval',{form:{token},headers:{Origin:base}})).status(),403);
   await anonymous.close();
   await rm(join(root,'.test-self-approval'));
