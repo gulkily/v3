@@ -656,19 +656,25 @@
     return field && field.checked ? String(field.value || "plain") : "";
   }
 
+  // Only an explicit plain-text choice is sent, so default submissions keep their existing fields.
+  function withBodyFormat(form, fields) {
+    const format = composeBodyFormat(form);
+    if (format) fields.body_format = format;
+    return fields;
+  }
+
   function collectReplySubmitFields(form) {
-    return {
+    return withBodyFormat(form, {
       thread_id: composeFormFieldValue(form, "thread_id"),
       parent_id: composeFormFieldValue(form, "parent_id"),
       author_identity_id: composeFormFieldValue(form, "author_identity_id"),
       board_tags: composeFormFieldValue(form, "board_tags"),
       body: composeFormFieldValue(form, "body"),
-      body_format: composeBodyFormat(form),
-    };
+    });
   }
 
   function collectThreadSubmitFields(form) {
-    return {
+    return withBodyFormat(form, {
       author_identity_id: composeFormFieldValue(form, "author_identity_id"),
       board_tags: composeFormFieldValue(form, "board_tags"),
       subject: composeFormFieldValue(form, "subject"),
@@ -677,8 +683,7 @@
       event_time: composeFormFieldValue(form, "event_time"),
       event_location: composeFormFieldValue(form, "event_location"),
       event_link: composeFormFieldValue(form, "event_link"),
-      body_format: composeBodyFormat(form),
-    };
+    });
   }
 
   function collectSignedSubmitFields(form) {

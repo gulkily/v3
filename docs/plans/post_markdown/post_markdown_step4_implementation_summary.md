@@ -129,6 +129,21 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Notes:
   - Not verified in a browser: an actual signed submission with the box ticked (needs a browser key). Stage 6 posts through the live composer.
   - "Discard draft" leaves the checkbox as it was; drafts restored from local storage do not remember it.
+  - Correction after the full suite (separate commit): the first version added `body_format: ""` to every collected field set and `bodyFormat: ""` to every Outbox payload, which changed five exact-shape JS tests (`BrowserSigningNormalizationTest` x3, `OfflineOutboxComposeTest` x2). Now the field is added only when "Plain text" is ticked, so default submissions and stored Outbox items keep their previous shape; `OfflineOutboxComposeTest::testPlainTextChoiceTravelsWithTheDraft` covers the ticked case.
 - Estimate details: original scope unchanged; no revision.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Branch verification before handoff
+
+- Merged `origin/main` (`223c8a8e`, including app-owned sessions and the mobile composer) into the branch as `f7859fc6`; the only conflict was the plan index, resolved by keeping both entries.
+- Full suite on the merged tree: 1870 run, 1850 passed, 20 failed. 15 are the baseline failures; the other 5 were the JS field-shape tests fixed in the Stage 5 correction (84/84 after the fix in `BrowserSigningNormalizationTest OfflineOutboxComposeTest`).
+- Branch pushed to `origin/feature/post-markdown`.
+
+## Stage 6 - Live checks on zenmemes.com
+
+**Original estimate: 0.10**
+
+- Status: pending. It needs the branch merged and deployed (Tools -> Deploy, operator session), which the maintainer does. After deploy, the read model rebuilds on the next request because the schema changed (44 -> 45), unless the site runs in high-traffic mode, where `./v3 high-traffic prepare` comes first.
+- Checks to run after deploy: one Markdown thread and one plain thread from the composer, one agent post through the API with no `body_format`, `get_post` showing `Body-Format` for each, and an existing post (the Nov 2 changelog thread) looking unchanged. Test posts are retracted afterwards unless the maintainer keeps them.
+- Retrospective and ledger closeout are recorded with this stage.

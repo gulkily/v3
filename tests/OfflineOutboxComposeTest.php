@@ -61,4 +61,34 @@ NODE;
         assertSame('Local topic', $item['summary']);
         assertSame(['subject' => 'Local topic', 'body' => 'Local body', 'boardTags' => 'general topic'], $item['payload']);
     }
+
+    public function testPlainTextChoiceTravelsWithTheDraft(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+global.window = { crypto: { randomUUID() { return 'plain-uuid'; } } };
+global.document = { addEventListener() {}, querySelectorAll() { return []; } };
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+vm.runInThisContext(fs.readFileSync(process.argv[2], 'utf8'));
+process.stdout.write(JSON.stringify([
+  window.forumOutboxCompose.threadItem({ subject: 'Log', body: '1. not a list', boardTags: 'general', bodyFormat: 'plain' }).payload,
+  window.forumOutboxCompose.replyItem({ threadId: 'thread-1', parentId: 'thread-1', body: '*x*', bodyFormat: 'plain' }).payload,
+]));
+NODE;
+        $command = sprintf(
+            'node -e %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/assets/outbox_store.js'),
+            escapeshellarg(__DIR__ . '/../public/assets/outbox_compose.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Outbox plain draft helper failed: ' . implode("\n", $output));
+        }
+        [$thread, $reply] = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame('plain', $thread['bodyFormat']);
+        assertSame('plain', $reply['bodyFormat']);
+    }
 }

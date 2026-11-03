@@ -2,8 +2,9 @@
   "use strict";
 
   // Only the explicit "Plain text" choice is kept; an empty value leaves the server default.
-  function plainFormat(fields) {
-    return fields.bodyFormat === "plain" ? "plain" : "";
+  function withFormat(payload, fields) {
+    if (fields.bodyFormat === "plain") payload.bodyFormat = "plain";
+    return payload;
   }
 
   function bodyFormatOf(form) {
@@ -22,7 +23,7 @@
       state: "draft",
       target: { kind: "thread", id: threadId, parentId: parentId },
       summary: "Reply to thread " + threadId,
-      payload: { threadId: threadId, parentId: parentId, body: body, bodyFormat: plainFormat(fields) }
+      payload: withFormat({ threadId: threadId, parentId: parentId, body: body }, fields)
     });
   }
 
@@ -37,7 +38,7 @@
       state: "draft",
       target: { kind: "board" },
       summary: subject || "New post draft",
-      payload: { subject: subject, body: body, boardTags: boardTags, bodyFormat: plainFormat(fields) }
+      payload: withFormat({ subject: subject, body: body, boardTags: boardTags }, fields)
     });
   }
 
