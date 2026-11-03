@@ -1065,6 +1065,7 @@ Authorization: Plan only; await Approved Step 1. No implementation, tests, commi
 
 2026-10-30 UTC — v3/single_request_posting Step 4 local closeout: [entry/stages/limits](./single_request_posting/single_request_posting_step4_implementation_summary.md#closeout-and-release-limits), revised Step 3 v2/B approved. Original baseline/R1/P2/single exposed Codex rater retained; entry projection 1.05 reaffirmed, separate retrospective 1.10. Eight stages complete locally, stage originals 0.16/0.12/0.20/0.18/0.10/0.10/0.08/0.15; retrospectives unchanged except S8 0.22, non-additive. New API preserves dedicated bootstrap, exact signed bytes, key reuse and atomic replay/recovery. Focused PHP 51/51, subsequent final targeted checks and browser evidence in summary; actual rebuild and byte-preserving repacked snapshot import pass. Direct export/import layout mismatch remains an existing limitation; full rebuild latency is unbenchmarked at production scale. Zero dependencies/schema delta, no measured labor, merge/push/deployment or accepted-count increment. Full suite/live release/physical devices/maintainer fit pending; frm.py remains paused; pristine intake missing.
 
+
 ## Cycle v3/load_before_selection_audit
 
 Status: Four documentation audit stages complete; fixes and host validation unimplemented; maintainer acceptance pending.
@@ -1148,6 +1149,8 @@ Authorization: Step 1 requested by the user; awaiting Approved Step 1. No implem
 2026-11-01 UTC correction after closeout: preview now lists accepted delete receipts whose post has no file left in history; [follow-up record](./history_purge/history_purge_step4_implementation_summary.md#follow-up-after-closeout--receipts-without-history-in-preview-2026-11-01). 10/10 focused tests. Scores unchanged, acceptance still pending.
 
 2026-11-01 UTC merge onto `main` (7272877f): no conflicts in code; `scripts/purge_history.php` now resolves its path defaults through `DeploymentSettings` to satisfy the deployment-settings rule that landed after the baseline; [follow-up record](./history_purge/history_purge_step4_implementation_summary.md#follow-up-after-merge--deployment-settings-2026-11-01). 17/17 focused tests. Scores unchanged, acceptance still pending.
+
+2026-10-30 UTC, v3/qdb_rebuild_scope host update: User reports successful production build and activation of release-20261030201011-af62aa46 in 314.961 seconds; 5253 HTML files/53 assets. [Operator evidence](./qdb_rebuild_scope/qdb_rebuild_scope_step4_implementation_summary.md#user-reported-host-recovery--2026-10-30-utc) closes the previously unverified build outcome as user-reported, not agent-observed. Published pagination checks and study comfortable-fit judgment not separately supplied. Timing reduction moves to distinct v3/qdb_build_time; original scope/estimates preserved.
 
 ## Cycle v3/qdb_build_time
 
@@ -1332,3 +1335,33 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-03 UTC Step 4 entry and closeout: Approved Step 3 received; branch `feat/app-sessions` from `e6493e2f`, planning `eafa09b5`, stages `435d1a61` / `414a2bd6` / `8959db42` / `9c1b9ad0` / `78ed137d` / `eebd9fd3` / final stage commit with this ledger. [Closeout](./app_sessions/app_sessions_step4_implementation_summary.md#closeout). **0.95 reaffirmed at entry; 0.95 retrospective scope assessment**; stage originals 0.15/0.10/0.10/0.25/0.07/0.15/0.08, retrospectives 0.12/0.10/0.10/0.25/0.05/0.15/0.08, not summed. Seven of seven stages complete. Final full suite 1839 run, 1824 passed; all 15 failures reproduce on `main`. http/https Chrome replay 7/7 (6/7 fail on `main` with the reported errors). One plan deviation (Stage 4 not split), no new requests or splits. Real iPhone Safari check, merge, deployment and maintainer fit pending; zero dependency delta; R1 hashes re-verified; no measured labor or accepted-count increment.
 
 2026-11-03 UTC merge for review of `v3/app_sessions`: user authorized push and pull request; `main` `fd4d0e02` (incl. key retirement) merged into `feat/app-sessions` without rebasing; [record](./app_sessions/app_sessions_step4_implementation_summary.md#merge-with-main-for-review---2026-11-03). Sign-in keeps the retired-key check; two retirement tests adapted to app-owned sessions. Focused suites and browser checks pass; full suite pending at push. Scores and accepted-count unchanged.
+
+## Cycle v3/rebuild_memory_bound
+
+Date: 2026-11-01 UTC; standing P2 enrollment; reference R1; scope v1/A; baseline 75b5e30eb40b16f6297f69d83214b4e4926499b2.
+Status: Step 1 drafted for review; planning only, uncommitted.
+Canonical checkpoint: [Bounded post-heavy rebuild](./rebuild_memory_bound_step1_solution_assessment.md#study-checkpoint-and-approval).
+Projection: First recorded intake after exposure 1.00; Step 1 handoff 1.00 reaffirmed. All option estimates retained in the artifact, non-additive.
+Relationship: Separate follow-up to v3/application_capacity_study; no predecessor scope reset or duplicate accepted outcome. Host cycle reuses earlier shared-host delivery work rather than replacing it.
+Exposure: Codex single exposed rater; prior capacity campaign and current source inspection disclosed; pristine pre-inspection intake unavailable. Exact frozen hashes verified; debug/extended estimates enabled.
+Outcome: Await Approved Step 1 for this cycle. No implementation, host execution, commits, dependencies, measured labor, independent rating or accepted-count increment. Maintainer fit/acceptance pending.
+
+## Cycle v3/repository_import_compatibility
+
+Date: 2026-11-01 UTC; standing P2 enrollment; reference R1; scope v1/A; baseline 75b5e30eb40b16f6297f69d83214b4e4926499b2.
+Status: Step 1 drafted for review; planning only, uncommitted.
+Canonical checkpoint: [Repository archive import compatibility](./repository_import_compatibility_step1_solution_assessment.md#study-checkpoint-and-approval).
+Projection: First recorded intake after exposure 0.45; Step 1 handoff 0.45 reaffirmed. All option estimates retained in the artifact, non-additive.
+Relationship: Separate follow-up to v3/application_capacity_study; no predecessor scope reset or duplicate accepted outcome. Host cycle reuses earlier shared-host delivery work rather than replacing it.
+Exposure: Codex single exposed rater; prior capacity campaign and current source inspection disclosed; pristine pre-inspection intake unavailable. Exact frozen hashes verified; debug/extended estimates enabled.
+Outcome: Await Approved Step 1 for this cycle. No implementation, host execution, commits, dependencies, measured labor, independent rating or accepted-count increment. Maintainer fit/acceptance pending.
+
+## Cycle v3/php83_host_verification
+
+Date: 2026-11-01 UTC; standing P2 enrollment; reference R1; scope v1/B; baseline 75b5e30eb40b16f6297f69d83214b4e4926499b2.
+Status: Step 1 drafted for review; planning only, uncommitted.
+Canonical checkpoint: [PHP 8.3 and FastCGI host verification](./php83_host_verification_step1_solution_assessment.md#study-checkpoint-and-approval).
+Projection: First recorded intake after exposure 0.65; Step 1 handoff 0.65 reaffirmed. All option estimates retained in the artifact, non-additive.
+Relationship: Separate follow-up to v3/application_capacity_study; no predecessor scope reset or duplicate accepted outcome. Host cycle reuses earlier shared-host delivery work rather than replacing it.
+Exposure: Codex single exposed rater; prior capacity campaign and current source inspection disclosed; pristine pre-inspection intake unavailable. Exact frozen hashes verified; debug/extended estimates enabled.
+Outcome: Await Approved Step 1 for this cycle. No implementation, host execution, commits, dependencies, measured labor, independent rating or accepted-count increment. Maintainer fit/acceptance pending.

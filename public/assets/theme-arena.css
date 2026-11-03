@@ -69,7 +69,13 @@
   background: transparent;
 }
 
+/* The transparent .nav-link rule above outranks site.css's shared
+   selected state, so restate the fill here or the active item goes
+   black on black. */
 :root[data-theme="arena"] .nav-link.is-active {
+  color: var(--active-ink);
+  background: var(--active-bg);
+  border-color: var(--active-line);
   box-shadow: none;
 }
 

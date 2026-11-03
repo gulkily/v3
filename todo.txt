@@ -291,3 +291,15 @@ Checkout housekeeping (seen 2026-11-03)
 	~/agent/v3-codex-4 is stuck mid-merge on docs/plans/effort_estimation_trial.md (UU), resolve or abort
 	~/agent/v3-claude-4 is a main checkout not registered with ./v3 checkouts
 	~/v3, ~/agent/v3-codex and ~/agent/v3-codex-2 list prunable worktrees under /tmp; git worktree prune
+
+Capacity study follow-up cycles (Step 1 drafted 2026-11-01, awaiting Approved Step 1 each)
+	recommended order: import compatibility, then rebuild memory bound, then PHP 8.3 host verification;
+		import and rebuild touch disjoint code and can run in parallel
+	repository archive import compatibility (0.45): import-repository should accept the ordinary TAR
+		download's repository/records layout
+		docs/plans/repository_import_compatibility_step1_solution_assessment.md
+	rebuild memory bound (1.00): normal rebuild exhausts 128 MiB at 40000 records while filling parsedPosts
+		docs/plans/rebuild_memory_bound_step1_solution_assessment.md
+	PHP 8.3 and FastCGI host verification (0.65): staging replay after rebuild acceptance; needs import
+		compatibility if the staging corpus is loaded from an archive
+		docs/plans/php83_host_verification_step1_solution_assessment.md
