@@ -46,3 +46,22 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Estimate details: original scope unchanged; no revision. Retrospective matches: the signed-bundle canonical check was the one unplanned discovery and was small.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Post-safe renderer
+
+**Original estimate: 0.20**
+**Retrospective assessment: 0.15**
+
+- Changes:
+  - `PublicMarkdownRenderer::renderPost(string): string` shares the docs parser through a post-mode switch; docs mode is untouched.
+  - Post mode: no front matter, no hidden comments, no raw `<img>` line handling (all shown as escaped text); headings nested two levels down (`#` -> `h3`, capped at `h6`) without page ids; links only for absolute http(s) URLs, with `rel="nofollow ugc noopener"`, other targets left as visible source; bare http(s) URLs linked with trailing punctuation kept outside; emphasis requires text against both markers; single newlines become `<br>`. Any internal failure falls back to escaped text with line breaks.
+- Verification:
+  - New `tests/PostMarkdownRendererTest.php` (registered in `tests/run.php`): common syntax, heading nesting, hashtag lines stay text, line breaks, bare/explicit links, URLs in code and parentheses, arithmetic asterisks, twelve hostile inputs (raw HTML, `javascript:`/`data:`/protocol-relative/docs links, attribute injection, images, comments, front matter) with no unsafe markup or event-handler attributes, docs mode unchanged after a post render.
+  - `php tests/run.php PostMarkdownRendererTest MarkdownListStructureTest MarkdownTaskListTest MarkdownPipeTableTest PlatformDocsPageTest PlatformDocsCatalogTest`: 61 run, 61 passed.
+  - Docs output comparison: every `.md` under `docs/` (1798 files) rendered with the Stage 1 renderer and the Stage 2 renderer; 0 differ.
+  - Manual render of the Nov 2 changelog post text: lists, links and the hashtag line render as intended.
+- Notes:
+  - The paragraph-then-list shape agents tend to write (a heading-like line followed directly by `- items`) renders as a paragraph and a list, which suits changelogs.
+- Estimate details: original scope unchanged; no revision. Retrospective lower than the original: the shared parser needed only a mode switch, not restructuring.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
