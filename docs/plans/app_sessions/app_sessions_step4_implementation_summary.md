@@ -109,3 +109,20 @@ Branch: `feat/app-sessions` from `main` `e6493e2f`. Planning commit `eafa09b5`.
 - Estimate details: original scope unchanged; retrospective 0.25.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Testing Approve cookie per scheme
+
+**Original estimate: 0.07**
+
+**Retrospective stage work: 0.05**
+
+- Changes:
+  - `RouteServices::testingSelfApprovalCookieName()`: `testing_self_approval` over http, `__Host-testing_self_approval` (Secure) over https. `testingSelfApprovalToken()` and the `/api/test_self_approval` check read and set the scheme's own name. The browser script is unchanged (the cookie is HttpOnly and only checked on the server).
+  - `TestingSelfApprovalTest::testApprovalCookieNameDiffersPerScheme`.
+- Verification:
+  - `php tests/run.php TestingSelfApprovalTest`: 2/2 passed.
+  - `node tests/browser/testing_self_approval.mjs` (headless Chrome, http): passed.
+- Notes: over https the double-submit token is now a `__Host-` cookie, which also stops subdomains from planting it.
+- Estimate details: original scope unchanged; retrospective 0.05.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

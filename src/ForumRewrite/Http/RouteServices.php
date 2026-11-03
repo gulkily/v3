@@ -117,6 +117,15 @@ final class RouteServices
 
     public const TESTING_SELF_APPROVAL_COOKIE = 'testing_self_approval';
 
+    /**
+     * Like the session cookie, one name per scheme: a Secure cookie set over https would
+     * otherwise stop http from storing its own and break testing Approve there.
+     */
+    public static function testingSelfApprovalCookieName(bool $https): string
+    {
+        return $https ? '__Host-' . self::TESTING_SELF_APPROVAL_COOKIE : self::TESTING_SELF_APPROVAL_COOKIE;
+    }
+
     // Account renders the testing Approve button whenever testing approval is on, and shows it while
     // this browser's key waits. The token is a double-submit cookie rather than session data, so it
     // survives the session changes of signing in and out; the endpoint still requires the signed-in key.
@@ -125,7 +134,9 @@ final class RouteServices
         if (!(new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest()) {
             return null;
         }
-        $token = (string) ($_COOKIE[self::TESTING_SELF_APPROVAL_COOKIE] ?? '');
+        $https = \ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER);
+        $name = self::testingSelfApprovalCookieName($https);
+        $token = (string) ($_COOKIE[$name] ?? '');
         if (preg_match('/^[a-f0-9]{64}$/D', $token) === 1) {
             return $token;
         }
@@ -133,13 +144,13 @@ final class RouteServices
             return null;
         }
         $token = bin2hex(random_bytes(32));
-        setcookie(self::TESTING_SELF_APPROVAL_COOKIE, $token, [
+        setcookie($name, $token, [
             'path' => '/',
             'httponly' => true,
             'samesite' => 'Strict',
-            'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'secure' => $https,
         ]);
-        return $_COOKIE[self::TESTING_SELF_APPROVAL_COOKIE] = $token;
+        return $_COOKIE[$name] = $token;
     }
 
     public function pdo(): PDO

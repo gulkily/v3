@@ -2031,7 +2031,7 @@ final class Application
         $expectedOrigin = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://')
             . (string) ($_SERVER['HTTP_HOST'] ?? '');
         $profile = $this->authenticatedViewerProfile();
-        $token = (string) ($_COOKIE[\ForumRewrite\Http\RouteServices::TESTING_SELF_APPROVAL_COOKIE] ?? '');
+        $token = (string) ($_COOKIE[\ForumRewrite\Http\RouteServices::testingSelfApprovalCookieName(\ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER))] ?? '');
         if (!(new \ForumRewrite\Support\TestingSelfApproval($this->projectRoot))->isEnabledForRequest()
             || $profile === null || $token === ''
             || !hash_equals($token, (string) ($input['token'] ?? ''))
