@@ -171,3 +171,22 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Estimate details: original scope unchanged; no revision.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Post-format records in the read model
+
+**Original estimate: 0.25**
+**Retrospective assessment: 0.20**
+
+- Changes:
+  - New spec `docs/specs/post_format_record_v1.md`: `records/post-formats/<Record-ID>.txt` plus `.asc`; headers `Record-ID` (`post-format-<Post-ID>-<timestamp digits>-<8 hex>`), `Created-At`, `Post-ID`, `Body-Format`, `Actor-Identity-ID`, in that order, empty body.
+  - `PostFormatRecord` and `PostFormatRecordParser` (strict order, derived Record-ID, format and identity checks); `CanonicalPathResolver::postFormat()`; `CanonicalRecordRepository::loadPostFormat()` and `loadPostFormatsFor($postId)`.
+  - `ReadModel\PostFormatChanges`: picks the latest record per post and sets `posts.body_format`, recomputing a thread root's `body_preview`; retracted and missing posts are skipped. Used by the full rebuild (new `index_post_formats` phase after thread subjects) and by `IncrementalReadModelUpdater::applyPostFormatWrite($postId, $commitSha)`.
+- Verification:
+  - New `tests/PostFormatRecordTest.php` (registered): parser accepts the canonical record and rejects five variants; an old header-less post switched Markdown -> plain -> Markdown plus a reply switched once give the same `body_format` and thread previews after incremental updates and after a full rebuild; records for missing posts and unparseable files are ignored.
+  - `PostFormatRecordTest CanonicalRecordParsersTest ReadModelBuilderTimingTest ReactionRecordFormatParityTest ReadModelMetadataTest ReadModelProvenanceTest RecentPostTest BoardListTest`: 85 run, 83 passed; the 2 failures are baseline.
+- Notes:
+  - Activity labels derived from a root's first line are not recomputed on a switch; they show the format at posting time until the next rebuild.
+  - The read model does not re-verify signatures; the writer (Stage 9) is the only path that commits these records.
+- Estimate details: original scope unchanged; retrospective lower because the thread-subject pattern carried over directly.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

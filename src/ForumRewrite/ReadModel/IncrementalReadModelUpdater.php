@@ -232,6 +232,32 @@ class IncrementalReadModelUpdater
     /**
      * @return array<string, float>
      */
+    /**
+     * Re-applies every format record for one post after a new one is committed.
+     *
+     * @return array<string, float>
+     */
+    public function applyPostFormatWrite(string $postId, string $commitSha): array
+    {
+        $timings = [];
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+        try {
+            $records = $this->measure($timings, 'load_post_format_records', fn (): array => (new \ForumRewrite\Canonical\CanonicalRecordRepository($this->repositoryRoot))->loadPostFormatsFor($postId));
+            $this->measure($timings, 'apply_post_formats', fn (): mixed => PostFormatChanges::apply($pdo, PostFormatChanges::latestByPost($records)));
+            $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
+            $pdo->commit();
+
+            return $timings;
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
+    }
+
     public function applyThreadSubjectWrite(string $threadId, string $commitSha): array
     {
         $timings = [];
