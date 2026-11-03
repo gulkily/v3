@@ -75,3 +75,30 @@ Findings are advisory; required instructions and approval gates were followed.
 - The "<=1 page" and "<=50 lines of change per stage" limits are not achievable together with eight required bullet fields per stage and the full-contract requirement; this plan exceeds one page and several stages exceed 50 lines. Unclear whether the limits are aspirational or gating.
 
 Findings are advisory; required instructions and approval gates were followed.
+
+## 2026-11-03T18:12:19Z — Step 4 completed-step report
+
+**Necessary/useful instructions**
+
+- `step4_implementation_before.md` › Planning Docs Commit Gate: the ordered branch → organize → inspect staged → commit → verify HEAD sequence caught an untracked-file move that `git mv` silently skipped; without the "inspect staged contents" step the planning commit would have been empty. Retain.
+- `step4_implementation_do.md` › Stage Boundary Protocol: one stage per commit with the summary update kept each stage's verification honest, in particular the Stage 3 incidental fix (undefined `buildThreadLabelRecord`) and the Stage 7 planned deviation were written down at the boundary where they happened. Retain.
+- `step4_implementation_after.md` › "A focused pass is never reported as a full-suite result" and "identify reproduced baseline failures": drove the baseline-worktree comparisons that separated three pre-existing smoke failures and one parity failure from this work, and exposed cross-checkout lock interference as the cause of two transient failures. Retain.
+- `RAILSPIKE.md` › Experimental Effort Estimation › retrospective stage-work assessment separate from originals: made it natural to record Stage 7 at 0.08 against 0.12 with the reason (deviation) instead of silently editing the plan. Retain.
+- `concepts.md` › Implementation and verification: forced the thread-title entry and the post-presentation update to be written against delivered behavior, with link checks. Retain.
+
+**Redundant/unnecessary instructions**
+
+- The effort-estimation paragraphs are repeated in all three Step 4 phase files with largely overlapping text; one pointer per file would carry the same obligations.
+- `step4_implementation_do.md` › "Work stages sequentially, keeping each stage <2 hours" duplicates Step 3's "about <=1 hour" sizing rule with a different number; one limit, stated once, would avoid the question of which applies.
+
+**Inapplicable instructions**
+
+- Documentation-only scope branches in all three phase files; this cycle was application work.
+- One-shot transition rules in the commit gate.
+
+**Uncertain assessments**
+
+- The protocol has no explicit place for a stage that is completed by verification alone with a recorded deviation from the planned "Expected changes" (Stage 7 here). Recording it in the stage section worked, but whether such a deviation should instead reopen Step 3 is not stated; a sentence either way would help.
+- The "debug log-only handoff commit after the final stage" rule and "include the ledger closeout in the final stage commit" interact: the ledger closeout references the debug log's final entry, which is committed separately afterwards. Ordering is workable but not spelled out.
+
+Findings are advisory; required instructions and approval gates were followed.
