@@ -178,3 +178,10 @@ Extended estimates: enabled (inherited)
 - **Maintainer comfortable-fit judgment and study acceptance:** pending. Technical completion is not an accepted outcome; the accepted-outcome count is unchanged.
 
 *— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Merge verification — 2026-11-03T19:37:24Z
+
+- User authorized merge and push. `origin/main` had advanced (key retirement, app-owned sessions, post Markdown); merged into the branch as `699ebd26` with six conflicts resolved, read-model schema advanced to 46 (branch 44, main 44 and 45), then fast-forwarded `main` and pushed.
+- Merged-tree checks: 13 focused suites 120/120; `post_signals.mjs` and `title_directive_replay.mjs` pass. Full suite on the merged tree: 1892 run, 1883 passed, 9 failed. Five are the known baseline failures (three `LocalAppSmokeTest` copy/method cases, reaction format parity, builder timing). The other four (`WriteApiSmokeTest` operator retry, `PostSignalsTemplateTest`, `CheckoutsCommandTest`, `PlatformDocsStaticTest`) ran while other suites or documentation edits were in progress in the same checkout; each passes when rerun alone with the tree quiet, including a replication of the docs static test that matched all 2227 inventory entries and 603 browse pages. No regression attributed to this work.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
