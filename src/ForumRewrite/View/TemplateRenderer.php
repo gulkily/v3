@@ -603,6 +603,10 @@ final class TemplateRenderer
             $protectedDepth = 0;
 
             foreach ($lines as $index => $line) {
+                if ($line !== '' && $protectedDepth === 0) {
+                    $lines[$index] = $prefix . $line;
+                }
+
                 $trimmed = ltrim($line);
                 if ($trimmed !== '') {
                     foreach ($protectedTags as $tag) {
@@ -611,10 +615,6 @@ final class TemplateRenderer
                             break;
                         }
                     }
-                }
-
-                if ($line !== '' && $protectedDepth === 0) {
-                    $lines[$index] = $prefix . $line;
                 }
 
                 if ($trimmed !== '') {
