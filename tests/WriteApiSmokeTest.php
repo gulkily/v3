@@ -1420,9 +1420,48 @@ CODE;
         $this->runCommand($root, 'git commit -m "Protected fixture"');
         assertSame('error', $prepare($operator['identity_id'], 'format-protected', 'markdown')['status']);
 
+        // Two switches in the same second still keep their order, and a stale prepare is refused.
+        $first = $prepare($author['identity_id'], $postId, 'plain');
+        $second = $prepare($author['identity_id'], $postId, 'markdown');
+        assertSame('ok', $finalize($second, $author['identity_id'], $author['home'])['status']);
+        $stale = $finalize($first, $author['identity_id'], $author['home']);
+        assertSame('error', $stale['status']);
+        assertStringContains('Prepare the change again', $stale['error']);
+        assertSame('markdown', $format());
+        $quick = $prepare($author['identity_id'], $postId, 'plain');
+        assertSame('ok', $finalize($quick, $author['identity_id'], $author['home'])['status']);
+        assertSame('plain', $format());
+        $back = $prepare($author['identity_id'], $postId, 'markdown');
+        assertSame('ok', $finalize($back, $author['identity_id'], $author['home'])['status']);
+
         // Rebuilding from records gives the same answer as the incremental updates.
         (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
         assertSame('markdown', $format());
+    }
+
+    public function testFormatSwitchAppearsBesideRetractForAuthorsAndOperatorsOnly(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'switch-author', 'Plain words');
+        $stranger = $this->linkSigningIdentity($app, 'switch-stranger');
+        $operator = $this->linkSigningIdentity($app, 'switch-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        $oldCookies = $_COOKIE;
+        try {
+            foreach ([[$author['identity_id'], true], [$operator['identity_id'], true], [$stranger['identity_id'], false]] as [$viewer, $sees]) {
+                $_COOKIE = ['identity_hint' => $viewer];
+                $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/threads/' . $author['thread_id']);
+                assertSame($sees, str_contains($page, 'data-action="switch-post-format"'));
+            }
+            $_COOKIE = ['identity_hint' => $author['identity_id']];
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/threads/' . $author['thread_id']);
+            $expected = str_contains($page, 'data-body-format="plain"') ? 'Show as plain text' : 'Show as Markdown';
+            assertStringContains($expected, $page);
+        } finally {
+            $_COOKIE = $oldCookies;
+        }
     }
 
     public function testRecordsWithoutBodyFormatReportPlain(): void

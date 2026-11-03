@@ -24,6 +24,7 @@ final class LlmsTxtRenderer
         '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status',
         '/api/create_signed_post', '/api/prepare_thread', '/api/prepare_reply', '/api/create_prepared_post',
         '/api/prepare_retraction', '/api/create_prepared_retraction',
+        '/api/prepare_post_format', '/api/create_prepared_post_format',
         '/api/prepare_profile_name', '/api/finalize_profile_name',
         '/api/inspect_invitation', '/api/prepare_invitation_redemption',
     ];
@@ -87,6 +88,8 @@ final class LlmsTxtRenderer
             '## Post format',
             '',
             'New posts render as Markdown (headings, lists, bold, links, code, tables). Send body_format=plain to prepare_* or create_* to show a post exactly as written. Signed records carry the choice as a Body-Format header; a record without it is plain. get_post reports Body-Format. Syntax: /docs/reference/markdown_syntax.md',
+            '',
+            'To switch an existing post later (your own, or any post if you are a root-approved operator): POST /api/prepare_post_format with post_id, body_format and actor_identity_id, sign canonical_record, then POST /api/create_prepared_post_format with prepare_token, canonical_record, detached_signature, and record_path, post_id and actor_identity_id unchanged. The post itself is not rewritten; get_post shows the new Body-Format.',
             '',
             '## Prepared-flow retries',
             '',

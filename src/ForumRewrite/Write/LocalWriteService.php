@@ -862,6 +862,11 @@ class LocalWriteService
             $post = $this->requireFormattablePost($postId, $actor);
             $threadId = $post->threadId ?? $post->postId;
             $createdAt = $this->canonicalTimestampNow();
+            // Order between switches comes from Created-At, so each one must be strictly later.
+            $latest = $this->latestPostFormatCreatedAt($postId);
+            if ($latest !== null && $createdAt <= $latest) {
+                $createdAt = gmdate('Y-m-d\TH:i:s\Z', strtotime($latest) + 1);
+            }
             $recordId = \ForumRewrite\Canonical\PostFormatRecordParser::RECORD_ID_PREFIX . $postId . '-' . preg_replace('/\D/', '', $createdAt) . '-' . bin2hex(random_bytes(4));
             $contents = "Record-ID: {$recordId}\nCreated-At: {$createdAt}\nPost-ID: {$postId}\nBody-Format: {$format}\nActor-Identity-ID: {$actor}\n\n";
             (new \ForumRewrite\Canonical\PostFormatRecordParser())->parse($contents);
@@ -933,6 +938,10 @@ class LocalWriteService
                 throw new RuntimeException('Prepared post-format record does not match prepared metadata.');
             }
             $post = $this->requireFormattablePost($postId, $actor);
+            $latest = $this->latestPostFormatCreatedAt($postId);
+            if ($latest !== null && $record->createdAt <= $latest) {
+                throw new RuntimeException('A newer format change for this post was saved first. Prepare the change again.');
+            }
             [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($actor);
             $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
             if (!$verification['ok']) {
@@ -971,6 +980,18 @@ class LocalWriteService
                 'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
             ];
         });
+    }
+
+    private function latestPostFormatCreatedAt(string $postId): ?string
+    {
+        $latest = null;
+        foreach ($this->canonicalRepository->loadPostFormatsFor($postId) as $record) {
+            if ($latest === null || $record->createdAt > $latest) {
+                $latest = $record->createdAt;
+            }
+        }
+
+        return $latest;
     }
 
     /** The author, or a root-approved operator, may switch an ordinary post that still exists. */

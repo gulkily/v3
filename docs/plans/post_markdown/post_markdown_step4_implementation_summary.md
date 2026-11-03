@@ -208,3 +208,23 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Estimate details: original scope unchanged; no revision.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 10 - Switch control and docs
+
+**Original estimate: 0.15**
+**Retrospective assessment: 0.20**
+
+- Changes:
+  - The post's ··· panel (the retract control, shown on thread roots, replies and post pages to the author and to operators) gains **Show as Markdown** or **Show as plain text**, whichever is the other format. Clicking it signs the switch in the browser (`ForumBrowserSigning.submitSignedPostFormat`) and reloads the page; errors show in the control's feedback line.
+  - llms.txt describes the switch and lists the two routes for agents; `agent_api.md`, the syntax reference and the concept entry describe it.
+  - Stage 9 correction found while running this stage's suites: two switches within the same second could sort either way, because order comes from `Created-At` and the tie-break was random. The writer now issues each record strictly after the latest one for that post (moving a second forward if needed) and refuses to commit a prepared switch that is no longer the latest ("Prepare the change again"). The spec says so.
+- Verification:
+  - New `WriteApiSmokeTest::testFormatSwitchAppearsBesideRetractForAuthorsAndOperatorsOnly`: the author and an operator see the control with the right label; another member does not.
+  - Stage 9 test extended: a stale prepare is refused after a newer switch, and three switches in quick succession end in the last one chosen; repeated runs pass.
+  - `WriteApiSmokeTest PostFormatRecordTest`: 209 run, 209 passed. `BrowserSigningNormalizationTest OfflineOutboxComposeTest LocalAppSmokeTest` with the write suite: only the 3 baseline `LocalAppSmokeTest` failures. `LlmsTxtRendererTest ApiRouteCatalogTest PlatformDocsPageTest`: pass. `node --check` on both edited scripts.
+- Notes:
+  - Not checked in a real browser: signing a switch needs a browser key on a running site. Stage 6 covers it live on zenmemes.com.
+  - The page reloads after a switch rather than re-rendering the post in place.
+- Estimate details: original scope unchanged; retrospective higher because of the Stage 9 ordering correction.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

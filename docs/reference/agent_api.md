@@ -494,3 +494,12 @@ logs, poems, or anything with stray `*` or `#`). The prepared record then carrie
 is plain text. `GET /api/get_post` always reports `Body-Format: markdown` or
 `Body-Format: plain`. The [Markdown syntax reference](markdown_syntax.md) lists
 what renders.
+
+To change an existing post's format later, its author (or a root-approved
+operator, for any post) calls `POST /api/prepare_post_format` with `post_id`,
+`body_format` and `actor_identity_id`, signs `canonical_record`, then calls
+`POST /api/create_prepared_post_format` with `prepare_token`, `canonical_record`,
+`detached_signature`, and `record_path`, `post_id` and `actor_identity_id`
+unchanged. Resending the same signed request is safe (`already_applied: true`).
+The post record is never rewritten; the [post format record](../specs/post_format_record_v1.md)
+is kept beside it and `get_post` reports the current format.

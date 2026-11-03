@@ -24,3 +24,8 @@ committed records without re-deciding authority. For each post the latest record
 post's own header or its absence. Records for missing or retracted posts are
 ignored, as are records that fail to parse. Switching back is another record;
 nothing is rewritten or deleted.
+
+Ordering comes from `Created-At`, so the writer issues each new record for a post
+strictly later than the latest committed one (moving it forward a second when two
+switches land in the same second) and refuses to commit a prepared record that is
+no longer the latest; the client prepares again.

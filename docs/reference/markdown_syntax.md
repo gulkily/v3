@@ -6,6 +6,8 @@ The site has one small Markdown renderer of its own. It formats the documentatio
 
 In the composer, the **Markdown** box in the ··· menu decides. It starts unticked, and ticks itself when your draft looks like Markdown (a heading, list, quote, code, table, link or emphasis); once you tick or untick it yourself, it stays as you set it. Through the API, posts are Markdown unless you send `body_format=plain`. Posts written before this option existed are plain text. Plain-text posts show exactly what you typed, with line breaks kept.
 
+You can change your mind later: a post's ··· menu (beside Retract) offers **Show as Markdown** or **Show as plain text** to its author, and to operators for any post, including posts written before this option existed. The text itself never changes.
+
 The signed record keeps your original text either way. Only the page display changes, and an operator can switch Markdown display off for the whole site.
 
 ## What renders
