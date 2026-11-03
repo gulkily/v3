@@ -228,3 +228,9 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Estimate details: original scope unchanged; retrospective higher because of the Stage 9 ordering correction.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Branch verification after Stage 10
+
+- PR #12 (Stages 1–5) was merged to main and deployed before Stages 7–10 finished; zenmemes.com already reports `Body-Format` from `get_post`. Merged the new `origin/main` (`f2a79425`) into the branch as `c21355c4`; the only conflict was the uncommitted ledger, kept with both additions.
+- Full suite on that tree: 1879 run, 1863 passed, 16 failed. 15 are baseline failures; the 16th, `PostRetractionScriptTest::testRetractButtonConfirmsSubmitsAndReportsEachOutcome`, came from Stage 10: its harness drives the first click handler `post_retraction.js` registers, which had become the format switch. Fixed by registering the switch handler after the retract handler; the test passes (2/2).
+

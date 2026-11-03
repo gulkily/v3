@@ -131,6 +131,21 @@
     menu.querySelector("summary").focus();
   });
 
+  document.addEventListener("click", function (event) {
+    const button = event.target instanceof Element ? event.target.closest('[data-action="retract-post"]') : null;
+    if (!button || button.hasAttribute("disabled")) {
+      return;
+    }
+
+    event.preventDefault();
+    const confirmText = button.getAttribute("data-confirm") || "Retract this post?";
+    if (!window.confirm(confirmText)) {
+      return;
+    }
+
+    retractPost(button);
+  });
+
   // "Show as Markdown" / "Show as plain text": sign the switch, then reload to show the result.
   document.addEventListener("click", async function (event) {
     const button = event.target instanceof Element ? event.target.closest('[data-action="switch-post-format"]') : null;
@@ -158,20 +173,5 @@
     }
     button.removeAttribute("disabled");
     setFeedback(feedback, (result && result.error) || "Unable to change the format.", "error");
-  });
-
-  document.addEventListener("click", function (event) {
-    const button = event.target instanceof Element ? event.target.closest('[data-action="retract-post"]') : null;
-    if (!button || button.hasAttribute("disabled")) {
-      return;
-    }
-
-    event.preventDefault();
-    const confirmText = button.getAttribute("data-confirm") || "Retract this post?";
-    if (!window.confirm(confirmText)) {
-      return;
-    }
-
-    retractPost(button);
   });
 })();
