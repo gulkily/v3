@@ -18,7 +18,7 @@ final class DocsPageRenderer
 
     public function __construct(string $projectRoot, string $repositoryRoot, string $version)
     {
-        if (($_COOKIE ?? []) !== [] || ($_SESSION ?? []) !== []) {
+        if (($_COOKIE ?? []) !== []) {
             throw new RuntimeException('Docs publication requires an anonymous process.');
         }
         $flags = FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot);

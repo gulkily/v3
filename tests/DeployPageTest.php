@@ -38,24 +38,20 @@ final class DeployPageTest
     {
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 
 $databasePath = sys_get_temp_dir() . '/deploy-page-' . bin2hex(random_bytes(6)) . '.sqlite3';
 putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . sys_get_temp_dir() . '/deploy-page-missing-' . bin2hex(random_bytes(6)) . '/tasks.sqlite3');
-$sessionId = 'deploy-page-' . bin2hex(random_bytes(8));
 $render = static function (Application $app, string $path): string {
     ob_start();
     $app->handle('GET', $path);
     return (string) ob_get_clean();
 };
 try {
-    session_id($sessionId);
-    session_start();
-    $_SESSION['authenticated_identity_id'] = $argv[3];
-    session_write_close();
-    session_id($sessionId);
-    $_COOKIE = [session_name() => $sessionId];
+    $_COOKIE = [];
+    TestViewerSession::signIn($argv[3]);
     $app = new Application($argv[1], $argv[2], $databasePath);
     $render($app, '/threads/');
     $page = $render($app, '/tools/deploy/');
@@ -65,9 +61,7 @@ try {
     $tools = $render($app, '/tools/');
     if (!str_contains($tools, 'href="/tools/deploy/"')) throw new RuntimeException('Tools launcher does not list Deploy.');
 
-    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
-    session_id('');
-    unset($_SESSION);
+    TestViewerSession::reset();
     $_COOKIE = ['identity_hint' => $argv[3]];
     $app = new Application($argv[1], $argv[2], $databasePath);
     $render($app, '/threads/');
@@ -76,7 +70,7 @@ try {
         throw new RuntimeException('Identity-hint-only viewer must see the read-only page without controls.');
     }
 } finally {
-    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+    TestViewerSession::reset();
     @unlink($databasePath);
 }
 PHP;
@@ -123,6 +117,7 @@ PHP;
     {
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 
@@ -131,14 +126,7 @@ $databasePath = sys_get_temp_dir() . '/deploy-actions-' . bin2hex(random_bytes(6
 putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . sys_get_temp_dir() . '/deploy-actions-queue-' . bin2hex(random_bytes(6)) . '.sqlite3');
 $_COOKIE = [];
 if ($identity !== null) {
-    $sid = 'deploy-actions-' . bin2hex(random_bytes(8));
-    session_id($sid);
-    session_start();
-    $_SESSION['authenticated_identity_id'] = $identity;
-    session_write_close();
-    session_id($sid);
-    $_SESSION = [];
-    $_COOKIE[session_name()] = $sid;
+    TestViewerSession::signIn($identity);
 }
 if ($hint !== null) $_COOKIE['identity_hint'] = $hint;
 $_SERVER = array_merge($_SERVER, ['HTTP_X_REQUESTED_WITH' => 'ForumDeploy', 'HTTP_HOST' => 'forum.test'], $server);
@@ -180,19 +168,14 @@ PHP;
 
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 
 $databasePath = $argv[4] . '/index.sqlite3';
 putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $argv[4] . '/tasks.sqlite3');
-$sid = 'deploy-self-' . bin2hex(random_bytes(8));
-session_id($sid);
-session_start();
-$_SESSION['authenticated_identity_id'] = $argv[3];
-session_write_close();
-session_id($sid);
-$_SESSION = [];
-$_COOKIE = [session_name() => $sid];
+$_COOKIE = [];
+TestViewerSession::signIn($argv[3]);
 $_SERVER = array_merge($_SERVER, ['HTTP_X_REQUESTED_WITH' => 'ForumDeploy', 'HTTP_HOST' => 'forum.test', 'HTTP_SEC_FETCH_SITE' => 'same-origin']);
 $app = new Application($argv[4] . '/app', $argv[2], $databasePath);
 $send = static function (string $action) use ($app): array {

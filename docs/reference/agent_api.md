@@ -322,8 +322,9 @@ and explicitly correct the named character when necessary.
   `prepare_invitation_redemption`). After approval, authenticate: `GET
   /api/auth_challenge`, sign the challenge string, then `POST
   /api/authenticate_identity` with `challenge`, `identity_id` and
-  `detached_signature`. Keep the session cookie from `auth_challenge` onward
-  and send it with later requests.
+  `detached_signature`. The challenge needs no cookie; a successful sign-in
+  sets the session cookie (`v3_session` over http, `__Host-v3_session` over
+  https), which later requests send.
 - Image attachments need images enabled and an approved identity.
 
 ## Text file publisher scripts
