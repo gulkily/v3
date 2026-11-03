@@ -33,3 +33,20 @@ Extended estimates: enabled (inherited)
 - Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective 0.06: smaller than planned because the reaction parser's validation transferred directly.
 
 *— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 2 - Feature flags
+
+**Original estimate: 0.08**
+**Retrospective stage-work assessment: 0.08**
+
+- Changes:
+  - `FeatureFlagRegistry`: `FORUM_TITLE_DIRECTIVE_ENABLED` (default on, site-mutable) and `FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS` (default off, site-mutable, requires the first), appended to the Forum experience presentation list, parent then child.
+  - `tests/FeatureFlagEvaluatorTest.php`: both keys added to the public-flag list and the environment-reset list; new dependency test (defaults on/off; child blocked with source `dependency` when parent off).
+- Verification:
+  - `php tests/run.php FeatureFlagsBehaviorTest FeatureFlagEvaluatorTest FeatureFlagChangePageTest`: all passed (2026-11-03T17:15:11Z); order/completeness/dependency assertions cover the new flags.
+  - `php tests/run.php LocalAppSmokeTest`: 162 run, 159 passed; all five Feature Flags page tests pass, including every registered flag rendered once and dependency dimming. The 3 failures (private lobby copy, Forte expired-session copy, archive download filename) reproduce identically on the unchanged baseline `e6493e2f` in a throwaway worktree; not regressions.
+  - `git diff --check` clean. No reference doc lists flags individually (the registry is canonical); nothing to update there.
+- Notes: flags have no consumer yet; Stage 3 reads them in the write path.
+- Estimate details: original scope unchanged; no revisions; retrospective 0.08 as planned.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*

@@ -17,6 +17,8 @@ final class FeatureFlagRegistry
     public const EVENT_SUPPORT_ENABLED = 'FORUM_EVENT_SUPPORT_ENABLED';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
+    public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
+    public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const STATIC_PROFILE_PAGES_ENABLED = 'FORUM_STATIC_PROFILE_PAGES_ENABLED';
@@ -42,7 +44,8 @@ final class FeatureFlagRegistry
             self::VERIFIED_ATTRIBUTION],
         'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED],
-        'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED],
+        'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
+            self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -226,6 +229,25 @@ final class FeatureFlagRegistry
                 false,
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
                 siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::TITLE_DIRECTIVE_ENABLED,
+                'Title directive in replies',
+                'A reply line "title: New name" retitles its thread when the replier is the thread author or an operator. On by default; off leaves the line as plain text.',
+                true,
+                self::TITLE_DIRECTIVE_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::TITLE_DIRECTIVE_APPROVED_MEMBERS,
+                'Title directive for approved members',
+                'Let any approved member retitle a thread with a "title:" reply, not only its author or an operator. Off by default; requires Title directive in replies.',
+                false,
+                self::TITLE_DIRECTIVE_APPROVED_MEMBERS,
+                siteMutable: true,
+                requiresEnabledFlag: self::TITLE_DIRECTIVE_ENABLED,
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
