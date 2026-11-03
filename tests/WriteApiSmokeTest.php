@@ -1322,13 +1322,14 @@ CODE;
         assertSame(true, str_contains($this->renderMethod($application, 'GET', '/threads/' . $plain), '## Literal **stars** kept'));
     }
 
-    public function testComposersOfferPlainTextAndTheUnsignedFormPathHonoursIt(): void
+    public function testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         foreach (['/compose/thread', '/threads/root-001', '/threads/?view=all'] as $path) {
             $page = $this->renderMethod($application, 'GET', $path);
-            assertStringContains('<input type="checkbox" name="body_format" value="plain">', $page);
+            assertStringContains('<input type="hidden" name="body_format" value="plain">', $page);
+            assertStringContains('<input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown', $page);
             assertStringContains('href="/docs/reference/markdown_syntax.md"', $page);
         }
 
@@ -1340,6 +1341,16 @@ CODE;
         }
         $latest = trim($this->gitOutput($repositoryRoot, 'log -1 --name-only --format='));
         assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n")));
+
+        // A ticked box arrives after the hidden fallback, so its value wins.
+        $_POST = ['body' => '# Ticked', 'board_tags' => 'general', 'body_format' => 'markdown'];
+        try {
+            $this->renderMethod($application, 'POST', '/compose/thread');
+        } finally {
+            $_POST = [];
+        }
+        $latest = trim($this->gitOutput($repositoryRoot, 'log -1 --name-only --format='));
+        assertStringContains("Body-Format: markdown\n", (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n")));
     }
 
     public function testRecordsWithoutBodyFormatReportPlain(): void

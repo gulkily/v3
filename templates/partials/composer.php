@@ -56,7 +56,8 @@ HTML;
 <?php endif; ?>
         <button type="submit" data-action="submit-anonymous-compose"><?= $e($composerAnonymousLabel) ?></button>
         <button type="button" data-action="save-compose-outbox" disabled>Save to Outbox</button>
-        <label class="compose-action-menu-check"><input type="checkbox" name="body_format" value="plain"> Plain text (no Markdown)</label>
+        <input type="hidden" name="body_format" value="plain">
+        <label class="compose-action-menu-check"><input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown</label>
         <a class="compose-action-menu-link" href="/docs/reference/markdown_syntax.md" target="_blank" rel="noopener">Formatting help</a>
 <?= $composerMenuExtra ?>
         <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Discard draft</button>

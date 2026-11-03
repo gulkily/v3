@@ -175,6 +175,7 @@ $testFiles = [
     __DIR__ . '/MarkdownTaskListTest.php',
     __DIR__ . '/PostMarkdownRendererTest.php',
     __DIR__ . '/PostTextTest.php',
+    __DIR__ . '/MarkdownDetectTest.php',
     __DIR__ . '/PlatformDocsStaticTest.php',
     __DIR__ . '/PrivateMessageDatabaseConfigTest.php',
     __DIR__ . '/PrivateMessageApiRoutingTest.php',

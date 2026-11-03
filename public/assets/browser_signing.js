@@ -650,13 +650,14 @@
     return field ? field.value : "";
   }
 
-  // The composer's "Plain text" box opts one post out of Markdown; unchecked leaves the server default.
+  // The composer's Markdown box decides the format; forms without it leave the server default.
   function composeBodyFormat(form) {
-    const field = form.querySelector('[name="body_format"]');
-    return field && field.checked ? String(field.value || "plain") : "";
+    const toggle = form.querySelector('input[type="checkbox"][name="body_format"]');
+    if (!toggle) return "";
+    return toggle.checked ? "markdown" : "plain";
   }
 
-  // Only an explicit plain-text choice is sent, so default submissions keep their existing fields.
+  // Only forms with the Markdown box send a format, so other submissions keep their existing fields.
   function withBodyFormat(form, fields) {
     const format = composeBodyFormat(form);
     if (format) fields.body_format = format;

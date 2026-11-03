@@ -150,3 +150,24 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Status: pending. It needs the branch merged and deployed (Tools -> Deploy, operator session), which the maintainer does. After deploy, the read model rebuilds on the next request because the schema changed (44 -> 45), unless the site runs in high-traffic mode, where `./v3 high-traffic prepare` comes first.
 - Checks to run after deploy: one Markdown thread and one plain thread from the composer, one agent post through the API with no `body_format`, `get_post` showing `Body-Format` for each, and an existing post (the Nov 2 changelog thread) looking unchanged. Test posts are retracted afterwards unless the maintainer keeps them.
 - Retrospective and ledger closeout are recorded with this stage.
+
+## Stage 7 - Markdown box and detector
+
+**Original estimate: 0.10**
+**Retrospective assessment: 0.10**
+
+- Changes:
+  - Composer menu: a **Markdown** checkbox (`body_format=markdown`), unticked by default, after a hidden `body_format=plain` fallback, so an unticked box posts plain text with or without JavaScript. "Plain text (no Markdown)" is gone.
+  - New `public/assets/markdown_detect.js`, loaded on every page from the layout: `ForumMarkdownDetect.looksLikeMarkdown(text)` checks for headings, bullet/numbered lists, quotes, code fences, table rows, `**bold**`, `*emphasis*`, `[label](https://...)` links and inline code. It ticks the box as the author types until they change the box by hand; Discard draft resets that. Composers inserted later bind on first focus.
+  - `browser_signing.js` and `outbox_compose.js` send `markdown` or `plain` from the box for composer forms; forms without the box (and older Outbox drafts) still leave the server default.
+  - API default unchanged (Markdown). Syntax reference and both concept entries describe the box.
+- Verification:
+  - New `tests/MarkdownDetectTest.php` (registered): 11 Markdown drafts detected; 11 ordinary drafts (`2 * 3 * 4`, `a*b*c`, hashtags, a bare URL, `-`, an email address) not detected; a manual choice sticks and Discard draft resets it.
+  - `WriteApiSmokeTest::testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt`: pages carry the hidden fallback and the box; unticked unsigned post records `plain`, ticked records `markdown`. `OfflineOutboxComposeTest` covers the format travelling with Outbox drafts.
+  - `MarkdownDetectTest OfflineOutboxComposeTest BrowserSigningNormalizationTest LocalAppSmokeTest` plus the composer test: 254 run, 251 passed; the 3 failures are the baseline `LocalAppSmokeTest` ones.
+  - Browser (headless Chrome, New post page, typing simulated with an input event): `## Heading` ticks the box; `plain words only` and `2 * 3 * 4` do not.
+- Notes:
+  - The box lives in the ··· menu, so an author sees whether it ticked only by opening the menu. If that turns out to be too hidden, a small visible "Markdown" label beside Post is an easy follow-up.
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

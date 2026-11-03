@@ -246,6 +246,7 @@ final class TemplateRenderer
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'replyViewportScriptPath' => $this->assetPath('/assets/reply_viewport.js'),
             'composeDisclosureScriptPath' => $this->assetPath('/assets/compose_disclosure.js'),
+            'markdownDetectScriptPath' => $this->assetPath('/assets/markdown_detect.js'),
             'inviteNavigationScriptPath' => $this->assetPath('/assets/invite_navigation.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
