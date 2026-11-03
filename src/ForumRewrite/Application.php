@@ -156,7 +156,7 @@ final class Application
         $securityReviewRequest = ($query['view'] ?? '') === 'security'
             && in_array($path, ['/activity', '/activity/', '/forte/activity', '/forte/activity/', '/api/forte_activity_page', '/api/forte_activity_detail', '/api/forte_commit_detail'], true);
         if ($securityReviewRequest || $this->approvedMembersOnlyEnabled()
-            || in_array($path, ['/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/test_self_approval', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
+            || in_array($path, ['/tools/deploy', '/tools/deploy/', '/api/railspike_workflow', '/api/feature_flags/navigation', '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/test_self_approval', '/api/clear_identity', '/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/recipient_keys', '/messages/inbox', '/messages/sent'], true)
             || in_array($path, ['/messages', '/messages/', '/api/private_messages/conversations', '/api/private_messages/conversation', '/api/private_messages/unread', '/api/private_messages/read'], true)
             || str_starts_with($path, '/api/private_messages/history_sync/')
             || str_starts_with($path, '/messages/conversation/')
@@ -593,6 +593,11 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/deploy/' || $path === '/tools/deploy') && $method === 'POST') {
+            $this->deployController()->submit($query);
+            return;
+        }
+
         if (($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') && $method === 'POST') {
             $this->toolsPageController()->submitFeatureFlagSubmit($query);
             return;
@@ -875,6 +880,11 @@ final class Application
 
         if ($path === '/tools/operations/' || $path === '/tools/operations') {
             $this->sendHtml($this->toolsPageController()->operations(), 200);
+            return;
+        }
+
+        if ($path === '/tools/deploy/' || $path === '/tools/deploy') {
+            $this->sendHtml($this->deployController()->render(), 200, ['Cache-Control: no-store']);
             return;
         }
 
@@ -1202,6 +1212,15 @@ final class Application
             $this->executionLock(),
             $this->staleMarker(),
             $this->projectRoot,
+        );
+    }
+
+    private function deployController(): \ForumRewrite\Http\DeployController
+    {
+        return new \ForumRewrite\Http\DeployController(
+            $this->routeServices(),
+            \ForumRewrite\Deploy\AppUpdate::forProject($this->projectRoot),
+            TaskQueueDatabaseConfig::path($this->projectRoot),
         );
     }
 
@@ -2147,7 +2166,7 @@ final class Application
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
-            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',

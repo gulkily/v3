@@ -34,6 +34,8 @@ final class TaskQueueWorker
         /** @var (callable(int, Throwable):void)|null */
         private readonly mixed $onTaskThrowable = null,
         private readonly mixed $runRetractionSweep = null,
+        /** @var (callable():array<string, mixed>)|null returns an AppUpdate::deploy() attempt */
+        private readonly mixed $runAppUpdate = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
@@ -102,6 +104,7 @@ final class TaskQueueWorker
             SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT => $this->runOfflineSnapshotPublication($id),
             SqliteTaskQueueStore::RAILSPIKE_ASSESSMENT => $this->runRailspike($id, $task),
             SqliteTaskQueueStore::AGENT_REPLY => $this->runAgentReply($id, $task),
+            SqliteTaskQueueStore::APP_UPDATE => $this->runAppUpdateTask($id),
             default => $this->store->markFailed($id, 'unsupported_task_type', 'The worker does not support this task type.', false),
         };
     }
@@ -133,6 +136,34 @@ final class TaskQueueWorker
     }
 
     /** @return array<string, mixed> */
+    /**
+     * A busy refusal (an instant deploy holds the lock) is retried on a later
+     * run; every other refusal or failure is final and shown on the Deploy page.
+     *
+     * @return array<string, mixed>
+     */
+    private function runAppUpdateTask(int $id): array
+    {
+        if (!is_callable($this->runAppUpdate)) {
+            return $this->store->markFailed($id, 'app_update_unavailable', 'Deploys are not configured for this worker.', false);
+        }
+        try {
+            $attempt = ($this->runAppUpdate)();
+        } catch (Throwable $throwable) {
+            $this->reportThrowable($id, $throwable);
+            return $this->store->markFailed($id, 'app_update_failed', $throwable->getMessage(), false);
+        }
+        if (in_array($attempt['outcome'] ?? null, ['deployed', 'up_to_date'], true)) {
+            $task = $this->store->markCompleted($id);
+        } else {
+            $reason = (string) ($attempt['reason'] ?? 'app_update_failed');
+            $task = $this->store->markFailed($id, $reason, (string) ($attempt['message'] ?? 'Deploy did not complete.'), $reason === 'busy');
+        }
+        $task['app_update'] = $attempt;
+
+        return $task;
+    }
+
     private function runFastScoreSweep(int $id): array
     {
         if ($this->runFastScoreSweep === null) {

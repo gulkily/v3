@@ -358,6 +358,16 @@ For the eight-checkout WSL timing/terminal replay, run
 It retains every cold/warm/slow/offline/busy sample and reports min/median/p95/max;
 the recorded target applies to this host, not arbitrary OS scheduling delays.
 
+## Update the application checkout
+
+```
+./v3 deploy [--check|--status] [--timeout=SECONDS]
+```
+
+Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. The default timeout is 120 seconds.
+
+It refuses with the checkout unchanged on tracked local changes, a branch other than `main`, diverged history or a deploy already running, and prints `Outcome`, `Reason`, `Old-Commit`, `New-Commit` and `Message`. Exit status: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error. Pull only; see [Deploy from the Site](../runbooks/production_deploy.md#deploy-from-the-site).
+
 ## Inspect operator status
 
 ```
