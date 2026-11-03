@@ -19,6 +19,7 @@ final class FeatureFlagRegistry
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
+    public const POST_MARKDOWN_ENABLED = 'FORUM_POST_MARKDOWN_ENABLED';
     public const STATIC_PROFILE_PAGES_ENABLED = 'FORUM_STATIC_PROFILE_PAGES_ENABLED';
     public const STATIC_DETAIL_PAGES_ENABLED = 'FORUM_STATIC_DETAIL_PAGES_ENABLED';
     public const DEDALUS_AGENT_REPLIES_ENABLED = 'DEDALUS_AGENT_REPLIES_ENABLED';
@@ -44,7 +45,7 @@ final class FeatureFlagRegistry
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
-            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED],
+            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
         'FASTMOD' => [self::FAST_SCORING_ENABLED, self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
             self::FASTMOD_AUTOMATIC_TAGGING_ENABLED],
@@ -245,6 +246,15 @@ final class FeatureFlagRegistry
                 self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
                 siteMutable: true,
                 requiresEnabledFlag: self::MEDIA_EMBEDS_ENABLED,
+                group: 'RENDERING',
+            ),
+            new FeatureFlagDefinition(
+                self::POST_MARKDOWN_ENABLED,
+                'Markdown in posts',
+                'Format posts their authors marked as Markdown (headings, lists, links, code) on thread and post pages. Turning it off shows every post as plain text; nothing stored changes.',
+                true,
+                self::POST_MARKDOWN_ENABLED,
+                siteMutable: true,
                 group: 'RENDERING',
             ),
             new FeatureFlagDefinition(

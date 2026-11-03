@@ -73,7 +73,7 @@ final class ForteContentAndUserDetailApiController
             'is_reply' => $isReply,
             'title' => ThreadTitle::displayTitle(
                 (string) ($post['subject'] ?? ''),
-                (string) ($post['body'] ?? ''),
+                \ForumRewrite\Support\PostText::plainPreview((string) ($post['body'] ?? ''), $post['body_format'] ?? null),
                 (string) $post['post_id'],
                 80,
                 $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)

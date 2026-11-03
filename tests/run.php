@@ -173,6 +173,8 @@ $testFiles = [
     __DIR__ . '/MarkdownPipeTableTest.php',
     __DIR__ . '/MarkdownListStructureTest.php',
     __DIR__ . '/MarkdownTaskListTest.php',
+    __DIR__ . '/PostMarkdownRendererTest.php',
+    __DIR__ . '/PostTextTest.php',
     __DIR__ . '/PlatformDocsStaticTest.php',
     __DIR__ . '/PrivateMessageDatabaseConfigTest.php',
     __DIR__ . '/PrivateMessageApiRoutingTest.php',

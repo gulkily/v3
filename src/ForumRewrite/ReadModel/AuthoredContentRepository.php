@@ -69,6 +69,10 @@ final class AuthoredContentRepository
             FROM posts WHERE $pageWhere ORDER BY posts.created_at $order, posts.post_id $order LIMIT $limit");
         $stmt->execute($parameters);
         $items = $stmt->fetchAll();
+        foreach ($items as &$row) {
+            $row['body_preview'] = \ForumRewrite\Support\PostText::plainPreview((string) $row['body_preview'], $row['body_format'] ?? null);
+        }
+        unset($row);
         if ($direction === 'previous') $items = array_reverse($items);
         $key = static fn (array $row): array => ['created_at' => (string) $row['created_at'], 'post_id' => (string) $row['post_id']];
         $first = $items === [] ? $boundary : $key($items[0]);
@@ -132,7 +136,7 @@ final class AuthoredContentRepository
 
         $stmt = self::prepareIdentityListQuery(
             $pdo,
-            'SELECT posts.post_id, posts.created_at, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
+            'SELECT posts.post_id, posts.created_at, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved, posts.board_tags_json
              FROM posts

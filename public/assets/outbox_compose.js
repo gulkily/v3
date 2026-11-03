@@ -1,6 +1,17 @@
 (function () {
   "use strict";
 
+  // Only the explicit "Plain text" choice is kept; an empty value leaves the server default.
+  function withFormat(payload, fields) {
+    if (fields.bodyFormat === "plain") payload.bodyFormat = "plain";
+    return payload;
+  }
+
+  function bodyFormatOf(form) {
+    var field = form.querySelector('[name="body_format"]');
+    return field && field.checked ? "plain" : "";
+  }
+
   function replyItem(fields) {
     var threadId = String(fields.threadId || "").trim();
     var parentId = String(fields.parentId || "").trim();
@@ -12,7 +23,7 @@
       state: "draft",
       target: { kind: "thread", id: threadId, parentId: parentId },
       summary: "Reply to thread " + threadId,
-      payload: { threadId: threadId, parentId: parentId, body: body }
+      payload: withFormat({ threadId: threadId, parentId: parentId, body: body }, fields)
     });
   }
 
@@ -27,7 +38,7 @@
       state: "draft",
       target: { kind: "board" },
       summary: subject || "New post draft",
-      payload: { subject: subject, body: body, boardTags: boardTags }
+      payload: withFormat({ subject: subject, body: body, boardTags: boardTags }, fields)
     });
   }
 
@@ -53,7 +64,8 @@
           item = replyItem({
             threadId: form.querySelector('[name="thread_id"]').value,
             parentId: form.querySelector('[name="parent_id"]').value,
-            body: form.querySelector('[name="body"]').value
+            body: form.querySelector('[name="body"]').value,
+            bodyFormat: bodyFormatOf(form)
           });
         } catch (error) {
           status.textContent = error.message;
@@ -91,7 +103,8 @@
           item = threadItem({
             subject: form.querySelector('[name="subject"]').value,
             body: form.querySelector('[name="body"]').value,
-            boardTags: form.querySelector('[name="board_tags"]').value
+            boardTags: form.querySelector('[name="board_tags"]').value,
+            bodyFormat: bodyFormatOf(form)
           });
         } catch (error) {
           status.textContent = error.message;

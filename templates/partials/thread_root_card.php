@@ -115,7 +115,7 @@ if (!$metaVisible) {
 <?php if ($isRetracted): ?>
   <p class="quote-card-body meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::text($post)) ?></p>
 <?php else: ?>
-  <p class="quote-card-body"><?= $br($postBody) ?></p>
+  <p class="quote-card-body"><?= $br($plainText($post, $postBody)) ?></p>
 <?php endif; ?>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>
@@ -123,7 +123,7 @@ if (!$metaVisible) {
 <?php if ($isRetracted): ?>
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
 <?php else: ?>
-  <div class="body"><?= $br($postBodyDisplay) ?></div>
+  <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post, (string) $postBodyDisplay) ?></div>
 <?php endif; ?>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>

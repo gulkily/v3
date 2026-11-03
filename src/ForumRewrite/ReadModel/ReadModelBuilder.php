@@ -186,8 +186,8 @@ final class ReadModelBuilder
     private function indexPosts(PDO $pdo): array
     {
         $insertPost = $pdo->prepare(
-            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, agent_response_json, author_identity_id, retracted_at, retraction_class, retraction_attribution, sequence_number)
-             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :sequence_number)'
+            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, agent_response_json, body_format, author_identity_id, retracted_at, retraction_class, retraction_attribution, sequence_number)
+             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
             'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, retracted_at, retraction_class, retraction_attribution)
@@ -221,6 +221,7 @@ final class ReadModelBuilder
                 'board_tags_json' => json_encode($record->boardTags, JSON_THROW_ON_ERROR),
                 'thread_type' => $record->threadType,
                 'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
+                'body_format' => $record->bodyFormat,
                 'author_identity_id' => $record->authorIdentityId,
                 'imported_score_seed' => $record->importedScoreSeed,
                 'imported_vote_count_seed' => $record->importedVoteCountSeed,
@@ -241,7 +242,7 @@ final class ReadModelBuilder
                 'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
                 'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
                 'retracted_at' => $removal['accepted_at'], 'retraction_class' => $removal['classification'] ?? 'operator', 'retraction_attribution' => $removal['attribution'] ?? 'operator',
-                'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null,
+                'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null, 'body_format' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
                 'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null,
                 'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
@@ -284,6 +285,7 @@ final class ReadModelBuilder
                 'board_tags_json' => $post['board_tags_json'],
                 'thread_type' => $post['thread_type'],
                 'agent_response_json' => $post['agent_response_json'],
+                'body_format' => $post['body_format'],
                 'author_identity_id' => $post['author_identity_id'],
                 'retracted_at' => $post['retracted_at'],
                 'retraction_class' => $post['retraction_class'],
@@ -297,7 +299,7 @@ final class ReadModelBuilder
                     'root_post_created_at' => $post['created_at'],
                     'last_activity_at' => $post['created_at'],
                     'subject' => $post['subject'],
-                    'body_preview' => $this->preview($post['body']),
+                    'body_preview' => $this->preview(\ForumRewrite\Support\PostText::plainPreview($post['body'], $post['body_format'])),
                     'reply_count' => 0,
                     'last_post_id' => $post['post_id'],
                     'board_tags_json' => $post['board_tags_json'],
@@ -1195,7 +1197,7 @@ final class ReadModelBuilder
             return 'Invitation ' . $action[1] . ': ' . $hash[1];
         }
 
-        return $post['subject'] ?? $this->preview($post['body']);
+        return $post['subject'] ?? $this->preview(\ForumRewrite\Support\PostText::plainPreview($post['body'], $post['body_format'] ?? null));
     }
 
     private function writeMetadata(PDO $pdo): void

@@ -650,18 +650,31 @@
     return field ? field.value : "";
   }
 
+  // The composer's "Plain text" box opts one post out of Markdown; unchecked leaves the server default.
+  function composeBodyFormat(form) {
+    const field = form.querySelector('[name="body_format"]');
+    return field && field.checked ? String(field.value || "plain") : "";
+  }
+
+  // Only an explicit plain-text choice is sent, so default submissions keep their existing fields.
+  function withBodyFormat(form, fields) {
+    const format = composeBodyFormat(form);
+    if (format) fields.body_format = format;
+    return fields;
+  }
+
   function collectReplySubmitFields(form) {
-    return {
+    return withBodyFormat(form, {
       thread_id: composeFormFieldValue(form, "thread_id"),
       parent_id: composeFormFieldValue(form, "parent_id"),
       author_identity_id: composeFormFieldValue(form, "author_identity_id"),
       board_tags: composeFormFieldValue(form, "board_tags"),
       body: composeFormFieldValue(form, "body"),
-    };
+    });
   }
 
   function collectThreadSubmitFields(form) {
-    return {
+    return withBodyFormat(form, {
       author_identity_id: composeFormFieldValue(form, "author_identity_id"),
       board_tags: composeFormFieldValue(form, "board_tags"),
       subject: composeFormFieldValue(form, "subject"),
@@ -670,7 +683,7 @@
       event_time: composeFormFieldValue(form, "event_time"),
       event_location: composeFormFieldValue(form, "event_location"),
       event_link: composeFormFieldValue(form, "event_link"),
-    };
+    });
   }
 
   function collectSignedSubmitFields(form) {
@@ -1432,12 +1445,14 @@
         parent_id: String((payload && payload.parentId) || ""),
         board_tags: String((payload && payload.boardTags) || "general"),
         body: String((payload && payload.body) || ""),
+        body_format: String((payload && payload.bodyFormat) || ""),
         author_identity_id: authorIdentityId,
       }
       : {
         board_tags: String((payload && payload.boardTags) || "general"),
         subject: String((payload && payload.subject) || ""),
         body: String((payload && payload.body) || ""),
+        body_format: String((payload && payload.bodyFormat) || ""),
         author_identity_id: authorIdentityId,
       };
     const response = await submitUrlEncoded(isReply ? "/api/prepare_reply" : "/api/prepare_thread", fields);

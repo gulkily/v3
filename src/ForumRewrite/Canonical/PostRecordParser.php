@@ -119,6 +119,11 @@ final class PostRecordParser
             $taskSources = $this->splitSemicolonSeparated($record->headers['Task-Sources'] ?? '');
         }
 
+        $bodyFormat = $record->headers['Body-Format'] ?? null;
+        if ($bodyFormat !== null && !in_array($bodyFormat, PostRecord::FORMATS, true)) {
+            throw new CanonicalRecordParseException('Body-Format must be markdown or plain when present.');
+        }
+
         $eventDate = isset($record->headers['Event-Date']) ? $this->parseEventDate($record->headers['Event-Date']) : null;
         $eventLocation = $record->headers['Event-Location'] ?? null;
         $eventLink = $record->headers['Event-Link'] ?? null;
@@ -146,6 +151,7 @@ final class PostRecordParser
             $eventLink,
             $eventTime,
             AgentResponseMetadata::fromHeaders($record->headers, $parentId),
+            $bodyFormat,
         );
     }
 

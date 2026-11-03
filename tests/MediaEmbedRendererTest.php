@@ -60,6 +60,26 @@ final class MediaEmbedRendererTest
         return nl2br(htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
     }
 
+    public function testMarkdownPostsRenderTextAndKeepStandaloneEmbedsAsCards(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        $body = "Intro **bold**\n\nhttps://youtu.be/dQw4w9WgXcQ\n\n- item with https://youtu.be/dQw4w9WgXcQ inline";
+
+        $html = $renderer->render($body, true, false, false, true);
+        assertStringContains('<p>Intro <strong>bold</strong></p>', $html);
+        assertSame(1, substr_count($html, 'data-media-embed-card'));
+        assertStringContains('<ul><li><p>item with <a href="https://youtu.be/dQw4w9WgXcQ" rel="nofollow ugc noopener">', $html);
+        assertStringNotContains('<br />', $html);
+    }
+
+    public function testMarkdownFlagOffKeepsPlainOutput(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        $body = "Intro **bold**\n- item";
+
+        assertSame($this->todaysBrOutput($body), $renderer->render($body, true, false, false, false));
+    }
+
     public function testFlagOffIsByteIdenticalToTodaysBrOutputEvenWithAMatchableUrl(): void
     {
         $renderer = new MediaEmbedRenderer();

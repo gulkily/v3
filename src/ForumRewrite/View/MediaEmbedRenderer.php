@@ -24,7 +24,11 @@ final class MediaEmbedRenderer
     ) {
     }
 
-    public function render(string $body, bool $enabled, bool $inlinePlayerEnabled = false, bool $imagesEnabled = false): string
+    /**
+     * With $markdown, text between image and embed cards renders through the post-safe Markdown
+     * renderer, and only embed URLs alone on their line become cards (others are ordinary links).
+     */
+    public function render(string $body, bool $enabled, bool $inlinePlayerEnabled = false, bool $imagesEnabled = false, bool $markdown = false): string
     {
         try { $image = \ForumRewrite\Images\ImageReference::fromBody($body); }
         catch (\RuntimeException) { $image = null; }
@@ -41,12 +45,18 @@ final class MediaEmbedRenderer
                 $html .= '<img src="/images/' . \ForumRewrite\Images\ImageReference::filename($image) . '" alt="' . $description . '" width="' . $image['width'] . '" height="' . $image['height'] . '" loading="lazy" style="max-width:100%;height:auto">';
             }
             $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable' . ($description === '' ? '' : ' — ')) . $description . '</span></span>';
-            return $this->render($before, $enabled, $inlinePlayerEnabled, false) . $html . $this->render($after, $enabled, $inlinePlayerEnabled, false);
+            return $this->render($before, $enabled, $inlinePlayerEnabled, false, $markdown) . $html . $this->render($after, $enabled, $inlinePlayerEnabled, false, $markdown);
         }
         $matches = $enabled ? $this->detector->detect($body) : [];
+        if ($markdown) {
+            $matches = array_values(array_filter($matches, static fn (array $match): bool => self::standsAlone($body, $match)));
+        }
+        $text = $markdown
+            ? static fn (string $segment): string => trim($segment) === '' ? '' : \ForumRewrite\Docs\PublicMarkdownRenderer::renderPost(trim($segment, "\r\n"))
+            : fn (string $segment): string => $this->escapeAndBreak($segment);
 
         if ($matches === []) {
-            return $this->escapeAndBreak($body);
+            return $text($body);
         }
 
         usort($matches, static fn (array $a, array $b): int => $a['offset'] <=> $b['offset']);
@@ -55,14 +65,26 @@ final class MediaEmbedRenderer
         $cursor = 0;
 
         foreach ($matches as $match) {
-            $result .= $this->escapeAndBreak(substr($body, $cursor, $match['offset'] - $cursor));
+            $result .= $text(substr($body, $cursor, $match['offset'] - $cursor));
             $result .= $this->renderCard($match, $inlinePlayerEnabled);
             $cursor = $match['offset'] + $match['length'];
         }
 
-        $result .= $this->escapeAndBreak(substr($body, $cursor));
+        $result .= $text(substr($body, $cursor));
 
         return $result;
+    }
+
+    /** @param array{offset:int,length:int} $match */
+    private static function standsAlone(string $body, array $match): bool
+    {
+        $lineStart = strrpos(substr($body, 0, $match['offset']), "\n");
+        $before = substr($body, $lineStart === false ? 0 : $lineStart + 1, $match['offset'] - ($lineStart === false ? 0 : $lineStart + 1));
+        $rest = substr($body, $match['offset'] + $match['length']);
+        $lineEnd = strpos($rest, "\n");
+        $after = $lineEnd === false ? $rest : substr($rest, 0, $lineEnd);
+
+        return trim($before) === '' && trim($after) === '';
     }
 
     public function hasEmbeds(string $body): bool

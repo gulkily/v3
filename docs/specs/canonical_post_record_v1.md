@@ -35,6 +35,7 @@ Key: Value
 - `Author-Identity-ID`: optional canonical identity reference for authored posts
 - `Subject`: optional, mainly useful for thread roots
 - `Thread-Type`: optional for thread roots, omitted for replies
+- `Body-Format`: optional, `markdown` or `plain`. Absent means plain, which is how every record written before this header existed renders. New posts made through the composer and the `create_*`/`prepare_*` routes record it, defaulting to `markdown` (`plain` for QDB quotes); the `body_format` input overrides the default. In client-built signed records it follows `Subject` (threads) or `Author-Identity-ID` (replies).
 
 ## Typed Root Headers
 
@@ -54,6 +55,7 @@ The first supported typed root is `Thread-Type: task`. Task roots add:
 - The body is plain ASCII text.
 - The body may include quoting and plain links.
 - The body should remain understandable without rendering.
+- With `Body-Format: markdown`, readers render the post-safe subset in the [Markdown syntax reference](../reference/markdown_syntax.md); the stored body is unchanged.
 
 ## Thread Semantics
 
@@ -182,8 +184,9 @@ Its client IDs are `thread-YYYYMMDDHHMMSS-<32 lowercase random hex>`,
 server time; already accepted retries are exempt.
 
 Threads use headers in order: Post-ID, Created-At, Board-Tags,
-Author-Identity-ID, optional nonempty Subject. Replies use Post-ID, Created-At,
-Board-Tags, Thread-ID, Parent-ID, Author-Identity-ID. Unknown, repeated or
+Author-Identity-ID, optional nonempty Subject, optional Body-Format. Replies use
+Post-ID, Created-At, Board-Tags, Thread-ID, Parent-ID, Author-Identity-ID,
+optional Body-Format. A record without Body-Format is plain text. Unknown, repeated or
 out-of-order headers are rejected. Protocol-only tags and image attachments
 are excluded from ordinary submissions. Existing APIs and historical records
 retain their existing formats.
