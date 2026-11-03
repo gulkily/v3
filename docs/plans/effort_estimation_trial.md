@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/fastmod_ownership
+
+2026-11-03 UTC — standing P2 enrollment; [canonical Step 1 checkpoint](./fastmod_ownership/fastmod_ownership_step1_solution_assessment.md). Scope v1/A: selectable authorship-claim probability and most likely claimed name/unknown through existing Fastmod scoring, storage, ordinary display, transfer and retry recovery. Baseline `622bb4fa6fce203e0edf0416a6bc3d6824e9a736`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because source inspection preceded rating; Step 1 whole-cycle projection 0.65, alternative B 0.85, single exposed Codex rater. No parent/replacement, implementation, measured labor, independent rating or accepted-count increment; maintainer acceptance pending. Await Approved Step 1; user explicitly authorized plan merge/push on 2026-11-03, without implementation approval. Worktree copies share this stable ID.
+
 ## Cycle v3/activity_load_performance
 
 2026-10-28 Step 4 local closeout: [canonical entry/stages/outcome](./activity_load_performance/activity_load_performance_step4_implementation_summary.md#closeout-and-study-outcome). Step 3 explicitly approved; branch feat/activity-load-performance, planning 2028f6d3a and seven stage commits. Same v3/C/original baseline/R1/P2/single exposed Codex rater; entry 0.95 reaffirmed, no prospective revision, separate retrospective scope 1.00. Stage originals 0.08/0.18/0.18/0.15/0.10/0.12/0.15; retrospectives unchanged except S7 0.20, non-additive. Final focused 54/54 plus browser/HTTP/recovery checks pass; broader runs have four baseline failures documented separately, not a full-suite pass. Both views read compact evidence/totals; schema 36, transactional updates/rebuild recovery, zero dependency delta. Production/deployment, physical devices and maintainer acceptance pending; no measured labor, independent rating or accepted-count increment. Prior snapshots retained; deduplicate worktree copies.
