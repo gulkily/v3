@@ -140,6 +140,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Fastmod graded visibility — neutral intake slice](fastmod_prepublication_hold/) · [Cross-cycle checklist and QDB voting request](fastmod_prepublication_hold/fastmod_development_checklist.md)
 
 - [Compose thread declutter](compose_thread_declutter/)
+- [Mobile compose keyboard](mobile_compose_keyboard/)
 - [Top five media embeds](top_five_media_embeds/)
 - [LLM model and completion failures](llm_model_and_completion_failures/)
 - [Scripture-oriented analysis](scripture_oriented_analysis/)
