@@ -14,6 +14,14 @@ require __DIR__ . '/../autoload.php';
 
 final class LlmsTxtRendererTest
 {
+    public function testDocumentsTheOptionalPostFormat(): void
+    {
+        $text = $this->render([]);
+        assertStringContains('## Post format', $text);
+        assertStringContains('body_format=plain', $text);
+        assertStringContains('/docs/reference/markdown_syntax.md', $text);
+    }
+
     public function testEachInstanceFactFollowsItsFlag(): void
     {
         $cases = [

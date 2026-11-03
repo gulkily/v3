@@ -1317,6 +1317,26 @@ CODE;
         assertSame(true, str_contains($this->renderMethod($application, 'GET', '/threads/' . $plain), '## Literal **stars** kept'));
     }
 
+    public function testComposersOfferPlainTextAndTheUnsignedFormPathHonoursIt(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        foreach (['/compose/thread', '/threads/root-001', '/threads/?view=all'] as $path) {
+            $page = $this->renderMethod($application, 'GET', $path);
+            assertStringContains('<input type="checkbox" name="body_format" value="plain">', $page);
+            assertStringContains('href="/docs/reference/markdown_syntax.md"', $page);
+        }
+
+        $_POST = ['body' => "1. not\n2. a list", 'board_tags' => 'general', 'body_format' => 'plain'];
+        try {
+            $this->renderMethod($application, 'POST', '/compose/thread');
+        } finally {
+            $_POST = [];
+        }
+        $latest = trim($this->gitOutput($repositoryRoot, 'log -1 --name-only --format='));
+        assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n")));
+    }
+
     public function testRecordsWithoutBodyFormatReportPlain(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

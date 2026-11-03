@@ -650,6 +650,12 @@
     return field ? field.value : "";
   }
 
+  // The composer's "Plain text" box opts one post out of Markdown; unchecked leaves the server default.
+  function composeBodyFormat(form) {
+    const field = form.querySelector('[name="body_format"]');
+    return field && field.checked ? String(field.value || "plain") : "";
+  }
+
   function collectReplySubmitFields(form) {
     return {
       thread_id: composeFormFieldValue(form, "thread_id"),
@@ -657,6 +663,7 @@
       author_identity_id: composeFormFieldValue(form, "author_identity_id"),
       board_tags: composeFormFieldValue(form, "board_tags"),
       body: composeFormFieldValue(form, "body"),
+      body_format: composeBodyFormat(form),
     };
   }
 
@@ -670,6 +677,7 @@
       event_time: composeFormFieldValue(form, "event_time"),
       event_location: composeFormFieldValue(form, "event_location"),
       event_link: composeFormFieldValue(form, "event_link"),
+      body_format: composeBodyFormat(form),
     };
   }
 
@@ -1432,12 +1440,14 @@
         parent_id: String((payload && payload.parentId) || ""),
         board_tags: String((payload && payload.boardTags) || "general"),
         body: String((payload && payload.body) || ""),
+        body_format: String((payload && payload.bodyFormat) || ""),
         author_identity_id: authorIdentityId,
       }
       : {
         board_tags: String((payload && payload.boardTags) || "general"),
         subject: String((payload && payload.subject) || ""),
         body: String((payload && payload.body) || ""),
+        body_format: String((payload && payload.bodyFormat) || ""),
         author_identity_id: authorIdentityId,
       };
     const response = await submitUrlEncoded(isReply ? "/api/prepare_reply" : "/api/prepare_thread", fields);

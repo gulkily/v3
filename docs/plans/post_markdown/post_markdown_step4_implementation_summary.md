@@ -109,3 +109,26 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Estimate details: original scope unchanged; scope of call sites larger than understood at Step 3 (new understanding, not changed scope).
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Composer, API and docs
+
+**Original estimate: 0.15**
+**Retrospective assessment: 0.15**
+
+- Changes:
+  - Shared composer: the ··· menu gains "Plain text (no Markdown)" (`body_format=plain` checkbox, unchecked) and a "Formatting help" link to the syntax reference, so every composer (new post, compact board/QDB add, replies, paned dialog) has it.
+  - `browser_signing.js` sends `body_format` from the checkbox for signed threads and replies (including the phone reply continuation, which reuses the reply field collector); `outbox_compose.js` stores the choice in Outbox drafts and the Outbox send path forwards it. Unsigned no-script submissions carry it as an ordinary form field.
+  - `compose.css`: menu rows for the checkbox and link.
+  - Docs: new `docs/reference/markdown_syntax.md`; linked from the renderer runbook and the post record spec; spec's client-signed subset allows the optional header; `agent_api.md` gains a Post format section; llms.txt gains "## Post format".
+  - Concepts: new `post_body_formatting.md`; `post_presentation.md` and `shared_composer.md` updated.
+- Verification:
+  - New `WriteApiSmokeTest::testComposersOfferPlainTextAndTheUnsignedFormPathHonoursIt` (checkbox and help link on the New post page, a thread page reply composer and the all-threads Board; unsigned `/compose/thread` with the box ticked writes `Body-Format: plain`) and `LlmsTxtRendererTest::testDocumentsTheOptionalPostFormat`.
+  - `LlmsTxtRendererTest AgentApiWorkedExampleTest PlatformDocsPageTest PlatformDocsCatalogTest`: 35 run, 35 passed (before the new llms test); with the new tests 9/9 in the focused run.
+  - `node --check` on both edited scripts.
+  - Browser check: New post page with the menu open in Word97 at 1280px and Midnight at 390px; the checkbox and link sit with the other menu rows, and clicking the checkbox does not close the menu (only menu buttons close it).
+- Notes:
+  - Not verified in a browser: an actual signed submission with the box ticked (needs a browser key). Stage 6 posts through the live composer.
+  - "Discard draft" leaves the checkbox as it was; drafts restored from local storage do not remember it.
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

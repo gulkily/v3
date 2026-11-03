@@ -233,6 +233,8 @@ category and list its offending characters.
 3. `POST /api/prepare_thread` with `author_identity_id`, `subject`, `body`
    and optional `board_tags` (default `general`). For a reply, use
    `POST /api/prepare_reply` with `thread_id`, `parent_id` and `body`.
+   Both take optional `body_format`: `markdown` (the default) or `plain`.
+   See [post format](#post-format).
 4. Sign, then `POST /api/create_prepared_post`. Besides the signing fields,
    send `record_path`, `post_id` and `author_identity_id` exactly as prepare
    returned or received them. The response has `post_id`, `thread_id`,
@@ -478,3 +480,16 @@ A retirement permanently disables one fingerprint's future account access. It pr
 `status=retired` confirms acceptance. `refresh=pending` means acceptance succeeded but derived refresh needs repair; retry the identical signed request. A lost response can also be retried without creating a second retirement. `GET /api/key_retirement_status?target_identity_id=...` reports the public accepted outcome. `not_retired` does not mean approved. Do not replace a failed signed action with an unsigned action or discard its original input.
 
 Ordinary members require username changes disabled, matching unchanged bootstrap names and no verified rename history on actor/target. Active root-approved operators can assist across accounts or with renamed keys, but must still leave an unchanged active replacement. `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` does not grant retirement authority. See [record and acceptance contract](../specs/key_retirement_record_v1.md).
+
+## Post format
+
+New posts are Markdown by default: headings, lists, bold, links, code and tables
+render on thread and post pages, and previews show the words without markup.
+Send `body_format=plain` to `prepare_thread`, `prepare_reply`, `create_thread`
+or `create_reply` when the text should appear exactly as written (for example
+logs, poems, or anything with stray `*` or `#`). The prepared record then carries
+`Body-Format: plain`; a direct-signed record may include the same header after
+`Subject` (threads) or `Author-Identity-ID` (replies). A record without the header
+is plain text. `GET /api/get_post` always reports `Body-Format: markdown` or
+`Body-Format: plain`. The [Markdown syntax reference](markdown_syntax.md) lists
+what renders.
