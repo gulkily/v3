@@ -126,3 +126,23 @@ Branch: `feat/app-sessions` from `main` `e6493e2f`. Planning commit `eafa09b5`.
 - Estimate details: original scope unchanged; retrospective 0.05.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Replay of the reported failures over http and https
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `tests/browser/app_sessions_http_https.mjs`: headless Chrome against one `php -S` served over http and, through a local TLS proxy (Node's built-in `https`, self-signed certificate from `openssl`), over https on the same host and different ports, so the browser shares cookies between them like the iPhone did. Uses the made-up host `app.test` mapped to 127.0.0.1, because Chrome treats `localhost`/`127.0.0.1` as secure and would send Secure cookies over http, hiding the bug; Chrome runs with `--no-proxy-server` because this environment's outbound proxy settings would otherwise capture `https://app.test`.
+  - `tests/Support/app_sessions_browser_router.php`: marks proxied requests as https, then defers to the existing invite router. PHP's own file-session cleanup is set to 2 seconds, so "idle past cleanup" takes seconds; app-owned sessions ignore it.
+  - Seven checks: https sign-in; http sign-in after an https visit; still signed in on reload; a browser holding a Secure `PHPSESSID` signs in over http; an https visit retires that `PHPSESSID`; operator Deploy POST after idle cleanup (over https, where every version signs in, so a refusal can only mean a lost session); a copied cookie is dead after sign-out.
+- Verification:
+  - On `main` `e6493e2f` (files copied into the detached worktree): 1 of 7 passed. http sign-in after https and the old-`PHPSESSID` browser failed with the server's reply "error=Authentication challenge is missing or expired." (the iPhone error, twice: first try and the client's retry); Deploy after idle cleanup refused with 403 "Deploying requires a signed-in root-approved operator."; the remaining failures follow from these or are new behavior. The replay reproduces the reported failures. Passed.
+  - On the branch: 7 of 7 passed, twice. Passed.
+- Notes:
+  - Chromium evidence only. The real iPhone Safari check over http after an https visit remains the acceptance item for the maintainer (Stage 7 records the steps).
+  - Harness lessons kept in the test's header comment: loopback hosts hide Secure-cookie shadowing; Playwright's `context.request` resolves names in Node, so checks fetch from inside a page.
+- Estimate details: original scope unchanged; retrospective 0.15 (proxy and loopback issues cost what was budgeted as uncertainty).
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
