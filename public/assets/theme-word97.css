@@ -500,6 +500,15 @@
     inset 1px 1px 0 0 #808080;
 }
 
+/* Post actions (Reply, Like, Flag, Agent, Retract) default to inherited body
+   text with an underline; in Word 97 they are UI controls, so they take the
+   UI font and no underline. */
+:root[data-theme="word97"] .post-card-actions > a[href^="/compose/reply"],
+:root[data-theme="word97"] .thread-reaction-button {
+  font-family: var(--ui-font);
+  text-decoration: none;
+}
+
 :root[data-theme="word97"] .nav-link {
   border: 1px solid transparent;
   background: transparent;
