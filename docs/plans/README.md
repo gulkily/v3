@@ -28,6 +28,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [App-owned sessions](app_sessions/app_sessions_step3_development_plan.md) — replace PHP sessions with SQLite-backed sign-in sessions and per-scheme cookies; in progress.
+
 - [Operator web deploy](web_deploy/web_deploy_step3_development_plan.md) — Deploy page and `./v3 deploy`: queued (prioritized) or instant fast-forward of the app checkout; in progress.
 
 - [QDB page selection](qdb_page_selection/qdb_page_selection_step3_development_plan.md) — bounded numbered-page selection; implementation and capacity evidence in its feature folder.
