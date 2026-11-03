@@ -176,6 +176,17 @@ if (!is_array($postAnalysisLabels)) {
 <?php if ($agentReplyIsUnfinished): ?>
   <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
 <?php endif; ?>
+<?php if (!$isQdbQuoteRoot): ?>
+<?php $signalActors ??= null; $rootSignalPosts = is_array($signalActors) ? ($signalActors['posts'][(string) $post['post_id']] ?? []) : []; ?>
+<?= $indent($partial('partials/post_signals.php', [
+    'signals' => [
+        'like' => is_array($signalActors) ? ($signalActors['thread_likes'] ?? []) : [],
+        'flag' => $rootSignalPosts['flag'] ?? [],
+        'title_author' => is_array($signalActors) ? ($signalActors['title_author'] ?? null) : null,
+    ],
+    'signalsScope' => 'thread',
+]), 1) ?>
+<?php endif; ?>
   <div class="button-row button-row-natural post-card-actions thread-root-actions">
 <?php if (!$isQdbQuoteRoot): ?>
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>" data-inline-reply-link>Reply</a>

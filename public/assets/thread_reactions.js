@@ -544,6 +544,42 @@
     button.setAttribute("aria-pressed", "true");
   }
 
+  function viewerSignalName() {
+    try {
+      return String(window.localStorage.getItem("forum_pki_username") || "").trim();
+    } catch (error) {
+      return "";
+    }
+  }
+
+  // The signals line is server-rendered for every viewer; after the viewer's own saved,
+  // counted reaction, add their name in place so the line matches what the next load shows.
+  function appendSignalActor(signalsNode, tag, name) {
+    if (!signalsNode || !name || typeof signalsNode.querySelector !== "function") {
+      return;
+    }
+    const segment = signalsNode.querySelector(`[data-signal-tag="${tag}"]`);
+    const names = segment ? segment.querySelector("[data-signal-names]") : null;
+    const more = segment ? segment.querySelector("[data-signal-more]") : null;
+    if (!segment || !names) {
+      return;
+    }
+    const existing = String(names.textContent || "").split(",").map((part) => part.trim());
+    if (existing.includes(name)) {
+      return;
+    }
+    const count = parseInt(segment.getAttribute("data-signal-count") || "0", 10) || 0;
+    if (count < 3) {
+      names.appendChild(document.createTextNode((names.childNodes.length ? ", " : "") + name));
+    } else if (more) {
+      more.textContent = ` +${count - 2}`;
+      more.hidden = false;
+    }
+    segment.setAttribute("data-signal-count", String(count + 1));
+    segment.hidden = false;
+    signalsNode.hidden = false;
+  }
+
   function notifyReactionApplied() {
     if (typeof document.dispatchEvent !== "function" || typeof Event !== "function") {
       return;
@@ -873,6 +909,9 @@
         setThreadScore(scoreNode, scoreTotal, voteCount);
 
         setConfirmedReactionButton(button, appliedLabel);
+        if (wroteRecord && tag === "like" && parseResponseValue(text, "viewer_is_approved") === "yes") {
+          appendSignalActor(root.querySelector('[data-role="post-signals"][data-signal-scope="thread"]'), "like", viewerSignalName());
+        }
         const marker = reactionMarker("thread", threadId, tag);
         if (marker) {
           rememberReactionMarker(marker.kind, marker.id, marker.tag, viewerIdentityId);
@@ -970,6 +1009,9 @@
         const viewerIdentityId = reactionIdentityId(parseResponseValue(text, "viewer_identity_id")) || currentReactionIdentityId();
 
         setConfirmedReactionButton(button, appliedLabel);
+        if (wroteRecord && (tag === "like" || tag === "flag") && parseResponseValue(text, "viewer_is_approved") === "yes") {
+          appendSignalActor(root.querySelector('[data-role="post-signals"]'), tag, viewerSignalName());
+        }
         const marker = reactionMarker("post", postId, tag);
         if (marker) {
           rememberReactionMarker(marker.kind, marker.id, marker.tag, viewerIdentityId);

@@ -146,6 +146,11 @@ if (!is_array($postAnalysisLabels)) {
 <?php if ($agentReplyIsUnfinished): ?>
   <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
 <?php endif; ?>
+<?php $signalActors ??= null; $postSignals = is_array($signalActors) ? ($signalActors['posts'][(string) $post['post_id']] ?? []) : []; ?>
+<?= $indent($partial('partials/post_signals.php', [
+    'signals' => ['like' => $postSignals['like'] ?? [], 'flag' => $postSignals['flag'] ?? [], 'title_author' => null],
+    'signalsScope' => 'post',
+]), 1) ?>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
 <?php if (!$isRetracted): ?>

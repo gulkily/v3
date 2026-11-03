@@ -21,6 +21,12 @@
 .thread-reaction-feedback {
   margin-top: 0.75rem;
 }
+.post-signals {
+  margin-top: 0.75rem;
+}
+.post-signals > span:not([hidden]) ~ span:not([hidden])::before {
+  content: " \00b7 ";
+}
 .post-card-actions .thread-reaction-feedback,
 .post-card-actions .agent-reply-feedback,
 .post-card-actions .codex-handoff-feedback {

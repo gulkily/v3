@@ -7,6 +7,8 @@
 $replyCount = (int) ($thread['reply_count'] ?? 0);
 $viewerHasLiked = isset($viewerLikedThreadIds[(string) $thread['root_post_id']]);
 $viewerHasFlaggedRoot = isset($viewerFlaggedPostIds[(string) $thread['root_post_id']]);
+$signalActors ??= null;
+$rootSignalPosts = is_array($signalActors) ? ($signalActors['posts'][(string) $thread['root_post_id']] ?? []) : [];
 ?>
   <article class="paned-content-post" data-paned-board-content-post-id="<?= $e($thread['root_post_id']) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>"<?= $isSelectedThread ? '' : ' hidden' ?>>
     <div class="paned-content-head">
@@ -22,6 +24,15 @@ $viewerHasFlaggedRoot = isset($viewerFlaggedPostIds[(string) $thread['root_post_
 <?php else: ?>
       <div class="body"><?= $br($thread['root_post_body'] ?? $thread['body_preview']) ?></div>
 <?php endif; ?>
+<?= $indent($partial('partials/post_signals.php', [
+    'signals' => [
+        'like' => is_array($signalActors) ? ($signalActors['thread_likes'] ?? []) : [],
+        'flag' => $rootSignalPosts['flag'] ?? [],
+        'title_author' => is_array($signalActors) ? ($signalActors['title_author'] ?? null) : null,
+    ],
+    'signalsScope' => 'thread',
+    'signalsClass' => 'paned-post-signals',
+]), 3) ?>
       <div class="paned-reaction-row">
         <button type="button" class="paned-reaction-button" data-action="apply-thread-tag" data-tag="like" data-applied-label="Liked" aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"<?= $viewerHasLiked ? ' disabled' : '' ?>><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>
         <button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="<?= $e($thread['root_post_id']) ?>" data-applied-label="Flagged" aria-pressed="<?= $viewerHasFlaggedRoot ? 'true' : 'false' ?>"<?= $viewerHasFlaggedRoot ? ' disabled' : '' ?>><?= $viewerHasFlaggedRoot ? 'Flagged' : 'Flag' ?></button>

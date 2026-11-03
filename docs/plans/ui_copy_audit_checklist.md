@@ -839,3 +839,10 @@ only; subsequent implementation and verification are recorded separately above.
 - [x] Full composer order is now body, Post row, Title, tags and event; no copy added, removed or reworded. The Title placeholder and all button labels are unchanged.
 - [x] Phone body height and the dropped picker reservation are layout only; verified in 13 themes at 375 by 667 and 375 by 300 in Chromium (`compose_layout_stability.mjs --phone-fit-only`).
 - [ ] Maintainer's iPhone SE check in Firefox and Safari with the keyboard open is pending.
+
+## Post signals line — 2026-11-03
+
+- [x] Added one server-rendered line per thread root and reply card: `Liked by a, b, c +N · Flagged by d · Title set by e`, names linking to profiles, hidden when empty. No other copy added or changed; Like/Flag button labels are untouched, so the line is the only place names appear. Classic, single-post, paned reply tree and Forte article variants share `templates/partials/post_signals.php`.
+- [x] Server HTML is identical for every viewer; the viewer's own saved, counted Like or Flag appends their name in place (`public/assets/thread_reactions.js`). Unapproved viewers see no change, matching the score.
+- [x] Verified in Chromium (`tests/browser/post_signals.mjs`): 16 themes at 375×667 and 1280×800 on the thread page and Forte pane, line inside the viewport and Like button visible; no-JavaScript anonymous render; in-place append then reload parity. `PostSignalsTemplateTest` covers the +N cap, empty state and all page inclusions.
+- [ ] Firefox/WebKit and a physical phone remain unchecked; long usernames at phone width wrap but were only checked visually by bounding box, not by eye.

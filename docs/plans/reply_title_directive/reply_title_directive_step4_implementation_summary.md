@@ -109,3 +109,25 @@ Extended estimates: enabled (inherited)
 - Estimate details: original scope unchanged; retrospective 0.12 as planned. One assertion in the new test initially ignored the fixture's two pre-existing labels; corrected to the real row count.
 
 *— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 6 - Signals line UI
+
+**Original estimate: 0.20**
+**Retrospective stage-work assessment: 0.22**
+
+- Changes:
+  - New shared partial `templates/partials/post_signals.php`: `Liked by a, b, c +N · Flagged by d · Title set by e`, names linking to profiles, up to three names then `+N`, each segment and the whole line `hidden` when empty; separators are CSS so hidden segments leave no stray dots. Included by `thread_root_card.php` (thread likes, root flags, title author; skipped for QDB quote roots), `post_card.php`, `paned_thread_reply_tree.php` and `paned_board_content_article.php`.
+  - `ThreadAndPostPageController` (thread and single post pages) and `ForteBoardController` (initial page and fragment) load `SignalActors` once per page and pass `signalActors`; partials inherit it through the renderer's merged data.
+  - `thread_reactions.js`: after a saved reaction the server reports as counted (`wrote_record=yes`, `viewer_is_approved=yes`), the viewer's stored username is appended to the matching segment in place (or `+N` grows past three); unapproved viewers see no change, matching the score.
+  - Styles: `.post-signals` in `content-interactions.css`; `.paned-post-signals` in `forte.css` using paned ink variables. Themes style the line through the existing `.meta` class; no theme file changed.
+  - Tests: `tests/PostSignalsTemplateTest.php` (partial cap/empty state; thread, post and Forte pages render actors and the authored title from a fixture read model); `tests/browser/post_signals.mjs` with `tests/Support/post_signals_browser_fixture.php` (anonymous no-JavaScript render, 16 themes × phone/desktop on thread page and Forte pane with line inside viewport and Like visible, approved viewer's Like appends in place and survives reload). UI checklist entry added.
+- Verification:
+  - `php tests/run.php PostSignalsTemplateTest MediaEmbedBeaconTemplatesTest TemplateRendererMediaEmbedsScriptTest`: all passed (2026-11-03T18:02:14Z).
+  - `node tests/browser/post_signals.mjs`: ok (Chromium `/opt/google/chrome/chrome`, playwright-core 1.58.1 restored into the ignored `node_modules` from the approved `package.json` entry; no manifest or lock change).
+  - `node tests/browser/signed_reactions.mjs`: all six scenarios pass (classic, guest, legacy keyless, Forte, QDB).
+  - `php tests/run.php LocalAppSmokeTest ForteBoardReaderTest Word97ThemeCoverageTest ProfileThemePresentationTest LocalWriteServiceTitleDirectiveTest`: smoke 162 run, 159 passed, the same 3 baseline failures. Two additional smoke failures seen in one run (`testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding`, `testApplicationRendersTextApisAndRss`) were caused by another checkout's concurrent test run holding the shared `/tmp/forum-rewrite.lock`; both pass at baseline and Stage 5 in worktrees and pass again here once that run went idle.
+  - `git diff --check` clean.
+- Notes: Firefox/WebKit and a physical phone not checked; long usernames at phone width were checked by bounding box only. Actor order is by username (Stage 5 note).
+- Estimate details: original scope unchanged; retrospective 0.22, slightly above because the Forte page assembles article data key by key and needed its own pass-through, found by the template test.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
