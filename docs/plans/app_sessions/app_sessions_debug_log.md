@@ -69,3 +69,28 @@ Mode: enabled (inherited). Agent: Claude (claude-opus-5-5).
 
 - Stage sizing "<=1 hour or <=50 lines": Stage 4 is mostly deletions and exceeds 50 lines. The plan adds a split trigger on non-deletion lines; it is unclear whether deletions count toward the limit.
 - One-page limit: seven fully specified stages with extended estimates exceed one page. Unclear which rule should yield.
+
+## 2026-11-03T04:30Z — Step 4 (implementation)
+
+Mode: enabled (inherited). Agent: Claude (claude-opus-5-5).
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md` › Planning Docs Commit Gate: kept the approved plans in their own commit (`eafa09b5`) before any code, which made every later diff purely implementation. Retain.
+- `RAILSPIKE.md` › Key Rules ("a focused pass is never an unqualified full-suite result") with the host's "replay that condition or explicitly report it unverified": drove the baseline full-suite comparison per stage and running the http/https replay on `main` first. That run is what proved the harness faithful; an earlier version hid the bug behind Chrome's loopback treatment and the environment's proxy. Retain.
+- `step4_implementation_do.md` › Stage Boundary Protocol: committing per stage exposed two test-conversion mistakes in Stage 4 that a single end-of-cycle commit would have blended into the cutover. Retain.
+- Host `AGENTS.md` › Implementation standards ("For a reported user/environment failure, replay that condition or explicitly report it unverified"): kept the iPhone check pending rather than letting the Chromium replay stand in. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_after.md` › Effort estimation and `step4_implementation_do.md` › Effort estimation repeat the retrospective/original/revision rules from `effort-estimation.md`. Suggest one link.
+- `RAILSPIKE.md` › Step 4 commit cadence lists the same "1 + stages" rule in three places (cadence, Key Rules, After checklist). Consolidate.
+
+### Inapplicable instructions
+
+- Follow-up cycles before merge; one-shot transition; documentation-only scope.
+
+### Uncertain assessments
+
+- Stage split triggers written into a plan (Stage 4's "split if over about 150 lines") conflict with the rule that each stage commit leave a working state. Railspike does not say which wins; this cycle kept one commit and recorded the deviation. Suggest guidance that a split must itself leave each commit releasable.
+- Running the browser tests needed installing an already-declared dev dependency without changing manifests. The dependency rules cover adding/updating components but not installing declared ones locally for verification; the behavior seems allowed but is not stated.
