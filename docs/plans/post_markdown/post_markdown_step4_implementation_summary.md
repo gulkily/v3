@@ -190,3 +190,21 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Estimate details: original scope unchanged; retrospective lower because the thread-subject pattern carried over directly.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 9 - Signed format switches
+
+**Original estimate: 0.20**
+**Retrospective assessment: 0.20**
+
+- Changes:
+  - `LocalWriteService::preparePostFormat()` and `createPreparedPostFormat()`: prepare builds the canonical record for `post_id` and `body_format` (required, `markdown` or `plain`) signed by `actor_identity_id`; create checks the prepared token, record and metadata, re-checks authority, verifies the detached signature against the actor's key, commits the record and its `.asc`, applies it incrementally (or rebuilds), and invalidates the thread's static pages. An exact replay after token cleanup returns `already_applied`.
+  - Authority (`requireFormattablePost`): the post's author, or an approved identity that `RetractionAuthority::currentOperator()` accepts, the same rule as operator retraction. Header-less and anonymous posts can be switched by operators. Missing or retracted posts and identity/approval/invitation posts are refused.
+  - Routes `POST /api/prepare_post_format` and `/api/create_prepared_post_format`, listed in the API catalog.
+- Verification:
+  - New `WriteApiSmokeTest::testPostFormatSwitchesAreSignedByTheAuthorOrAnOperator`: another member is refused at prepare; an invalid format is refused; the author's switch to plain is refused with another key's signature and with none, then accepted; `get_post` and the read model show `plain`; an exact replay returns `already_applied`; a root-approved operator switches it back and the thread page renders the Markdown; an operator switches the header-less fixture `root-001`; an identity/approval post is refused; a full rebuild agrees.
+  - `WriteApiSmokeTest ApiRouteCatalogTest LlmsTxtRendererTest PostFormatRecordTest`: 219 run, 219 passed.
+- Notes:
+  - Operators are checked at prepare and again at create, so losing operator status between the two steps refuses the switch.
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
