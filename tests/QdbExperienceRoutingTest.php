@@ -19,7 +19,8 @@ final class QdbExperienceRoutingTest
             putenv('FORUM_SITE_ID=' . $profileId);
             try {
                 foreach ($experienceRoutes as $requestUri) {
-                    $expectedStatus = $contract['experience'] === 'qdb' ? 200 : 404;
+                    // Other profiles serve their own board search at /search; every other QDB path and flag is rejected.
+                    $expectedStatus = $contract['experience'] === 'qdb' || str_starts_with($requestUri, '/search') ? 200 : 404;
                     assertSame($expectedStatus, $this->statusFor($application, $requestUri), "Unexpected {$contract['experience']} route status for {$requestUri}");
                 }
             } finally {

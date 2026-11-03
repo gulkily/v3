@@ -37,8 +37,7 @@ final class QdbPage
             threads.root_post_created_at COLLATE BINARY DESC, threads.root_post_id COLLATE BINARY DESC';
         if ($section === 'search') {
             $term = trim($term);
-            $pdo->sqliteCreateFunction('qdb_page_matches', static fn ($body): bool =>
-                stripos((string) $body, $term) !== false, 1);
+            LiteralTextMatch::register($pdo, 'qdb_page_matches', $term);
             $base .= $term === '' ? ' AND 0' : ' AND qdb_page_matches(posts.body)';
             $order = 'threads.last_activity_at COLLATE BINARY DESC, threads.root_post_id COLLATE BINARY DESC';
         }

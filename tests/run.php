@@ -62,6 +62,7 @@ $testFiles = [
     __DIR__ . '/BoardListingQueryTest.php',
     __DIR__ . '/TagsIndexMemoryTest.php',
     __DIR__ . '/TagPaginationTest.php',
+    __DIR__ . '/BoardSearchTest.php',
     __DIR__ . '/RailspikeWorkflowTest.php',
     __DIR__ . '/RailspikeFeatureFlagTest.php',
     __DIR__ . '/FastmodCsvTest.php',

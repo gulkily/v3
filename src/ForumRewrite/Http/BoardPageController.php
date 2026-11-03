@@ -231,30 +231,35 @@ final class BoardPageController
     }
 
     /**
-     * QDB classic URL: /search, /?search(=term). Only meaningful for the
-     * qdb site profile - other profiles have no public search page.
+     * Board search (`/search?q=`) over top-level threads for non-QDB
+     * profiles; QDB keeps its own classic search in QdbExperience.
      */
-    public function search(string $term): string
+    public function search(mixed $term, mixed $position): string
     {
-        $term = trim($term);
-        $threads = $term === '' ? [] : array_values(array_filter(
-            ThreadRepository::fetchThreads($this->routeServices->pdo()),
-            fn (array $thread): bool => stripos((string) $thread['root_post_body'], $term) !== false
-        ));
-        $viewerReactionState = $this->viewerReactionStateForThreads($threads, true);
+        $term = is_string($term) ? trim($term) : '';
+        $context = \ForumRewrite\ReadModel\ThreadSearchPage::context($term);
+        $error = null;
+        try {
+            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
+            $cursor = $position === null ? null : \ForumRewrite\Pagination\PageNavigation::decode($position, $context);
+            $page = \ForumRewrite\ReadModel\ThreadSearchPage::page($this->routeServices->pdo(), $term, $cursor['boundary'] ?? null, $cursor['direction'] ?? 'next');
+        } catch (\InvalidArgumentException $exception) {
+            $error = $exception->getMessage();
+            $page = ['items' => [], 'previous' => null, 'next' => null];
+        }
+        $pagination = \ForumRewrite\Pagination\PageNavigation::links('/search', $term === '' ? [] : ['q' => $term], $context,
+            $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
 
         return $this->routeServices->renderPageTemplate(
-            'qdb_search.php',
+            'board_search.php',
             [
-                'threads' => $threads,
                 'term' => $term,
-                'viewerVotedThreadIds' => $viewerReactionState['voted'],
-                'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
-                'qdbVoteTags' => ['upvote', 'downvote'],
+                'threads' => $page['items'],
+                'pagination' => $pagination,
+                'paginationError' => $error,
             ],
-            'Search',
+            $term === '' ? 'Search' : $term . ' - Search',
             'search',
-            ['/assets/lazy_compose_signing.js', '/assets/thread_reactions.js'],
         );
     }
 

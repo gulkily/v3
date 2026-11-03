@@ -1,7 +1,9 @@
 # Implementing pagination
 
 Use the shared native-link pagination contract for new bounded lists. Standard
-Activity is the first consumer. Keep list-specific queries and access rules in
+Activity is the first consumer. Tag pages and board search share one thread
+adapter, [ThreadKeysetPage](../../src/ForumRewrite/ReadModel/ThreadKeysetPage.php),
+which adds a membership condition to board eligibility. Keep list-specific queries and access rules in
 the list's service; reuse position handling and navigation controls instead of
 building another paginator.
 

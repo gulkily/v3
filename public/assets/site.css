@@ -837,7 +837,8 @@ pre {
 .users-page__title {
   margin: 0;
 }
-/* A search field inside the board toolbar (Users); it filters the list already on the page, so it is script-only. */
+/* A search field inside the board toolbar. Users filters the list already on the page, so its field is script-only;
+   board search submits a native form and stays visible. */
 .board-toolbar__search {
   flex: 1 1 12rem;
   min-width: 0;
@@ -845,8 +846,13 @@ pre {
   margin: 0;
   padding: 0.45rem 0.7rem;
 }
+.board-toolbar > button {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+}
 @media (scripting: none) {
-  .board-toolbar__search {
+  .board-toolbar__search[data-users-search] {
     display: none;
   }
 }

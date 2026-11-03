@@ -35,7 +35,7 @@ own intake snapshot under protocol P2.
 
 ## Checklist
 
-- [ ] **1. Thread-only search, like qdb.**
+- [x] **1. Thread-only search, like qdb.**
   **Estimate: 0.25**
   Search the subject and body of opening posts only, using the same
   case-insensitive substring match as qdb. Exclude retracted threads and
@@ -54,6 +54,13 @@ own intake snapshot under protocol P2.
     pages and a just-retracted thread all behave correctly. Run the qdb
     search tests to confirm qdb is unchanged.
   - No read-model schema change and no new dependency.
+  - _Done 2026-11-03 as the [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md)._
+    Two planning assumptions were corrected during execution. The shared
+    Previous/Next pagination is canonical for new lists, so search shares a
+    keyset adapter with tag pages rather than qdb's numbered count/select
+    flow; only the literal match rule is shared with qdb. The new query also
+    needed read-model version 47 under the CONTRIBUTING query contract.
+    Search sits in the app account menu, not the phone tab bar.
 - [ ] **2. Include replies.**
   **Estimate: 0.30**
   Match reply bodies as well. Show each matching post with an excerpt,
@@ -77,7 +84,9 @@ own intake snapshot under protocol P2.
 
 ## Open questions
 
-- Whether high-traffic static mode needs special handling for a dynamic
-  search page.
-- Whether item 1 should use `q` or qdb's `search` parameter. Item 1 assumes
-  `q`, matching docs search, and leaves qdb's classic URL alone.
+- Resolved 2026-11-03: high-traffic mode and the offline worker do not cover
+  `/search`, so no special handling is needed.
+- Resolved 2026-11-03: the user chose `q`. qdb's classic `search` parameter
+  is unchanged.
+- Open: whether Search should move into the phone tab bar, which would need
+  a decision about what it displaces.

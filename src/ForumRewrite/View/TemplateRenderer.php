@@ -413,6 +413,11 @@ final class TemplateRenderer
                 ['href' => '/account/key/', 'label' => 'Account', 'section' => 'account'],
             ];
 
+        // Board search sits in the app account menu; the phone tab bar is already full.
+        if (PresentationSlotRegistry::resolve($activeProfile, 'navigation') === 'app') {
+            array_splice($items, 2, 0, [['href' => '/search', 'label' => 'Search', 'section' => 'search']]);
+        }
+
         // Tools stays reachable by direct URL even when hidden from the nav,
         // same precedent qdb already sets for Account/Invite below.
         if (!$isQdbNavigation && $hideToolsNav) {

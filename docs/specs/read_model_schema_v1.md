@@ -20,6 +20,9 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 47 adds the board thread search query without changing tables; see
+[Version 47](#version-47--board-thread-search).
+
 Version 46 adds `threads.subject_author_identity_id` (who set the effective
 title through a `title:` reply, null for the root's own or a system-fetched
 subject) and `viewer_tags.eligible` (0, 1 or 2: not counted, counted in claimed totals,
@@ -668,3 +671,13 @@ also counted in the verified totals; rows for unapproved authors, inactive label
 or non-scored tags stay 0. `SignalActors` reads rows at or above the level the
 verified-attribution flag selects, so the names shown match the number shown. Integrated after main's versions 44 and 45; the branch used 44 locally. Normal startup rebuilds
 version 45 and older models before these columns are read.
+
+## Version 47 — Board thread search
+
+Board search (`/search?q=` on non-QDB profiles) selects listed roots whose
+`threads.subject` or root `posts.body` contains the query, using the QDB
+case-insensitive literal rule (`LiteralTextMatch`). Eligibility, activity/ID
+descending order, page boundaries and 25-root hydration are shared with tag
+pages through `ThreadKeysetPage`. The match still scans every listed root, as
+QDB search does. Tables and indexes are unchanged; normal startup rebuilds
+version 46 and older models before the new query runs.

@@ -121,7 +121,8 @@ final class QdbExperience
      */
     public function rejects(string $path, array $query): bool
     {
-        if ($this->isEnabled() || !$this->isPrimaryRoutePath($path)) {
+        // Other profiles serve their own board search at /search; the ?search flag stays QDB-only.
+        if ($this->isEnabled() || !$this->isPrimaryRoutePath($path) || $path === '/search') {
             return false;
         }
 

@@ -40,7 +40,7 @@ final class AppNavigationPlacementTest
                     assertSame('main', $placements['/'], $name);
                     assertSame('main', $placements['/recent/'], $name);
                     assertSame('main', $placements['/users/'], $name);
-                    foreach (['/about/', '/tools/', '/account/key/'] as $href) {
+                    foreach (['/search', '/about/', '/tools/', '/account/key/'] as $href) {
                         assertSame('menu', $placements[$href], $name . ' ' . $href);
                     }
                     // Member-only links are rendered for every viewer and shown before paint by the client.
@@ -67,7 +67,10 @@ final class AppNavigationPlacementTest
     {
         foreach (['chouse', 'qdb', 'mitrapclub'] as $site) {
             $this->withSite($site, function () use ($site): void {
-                foreach ($this->renderer()->navigationItems(self::VIEWERS['approved']) as $item) {
+                $items = $this->renderer()->navigationItems(self::VIEWERS['approved']);
+                // Board search is linked from the app navigation only; QDB keeps its own Search.
+                assertSame($site === 'qdb' ? 1 : 0, count(array_filter($items, static fn (array $item): bool => $item['href'] === '/search')), $site);
+                foreach ($items as $item) {
                     assertSame(false, array_key_exists('placement', $item), $site);
                 }
             });
