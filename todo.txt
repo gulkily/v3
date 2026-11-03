@@ -303,3 +303,10 @@ Capacity study follow-up cycles (Step 1 drafted 2026-11-01, awaiting Approved St
 	PHP 8.3 and FastCGI host verification (0.65): staging replay after rebuild acceptance; needs import
 		compatibility if the staging corpus is loaded from an archive
 		docs/plans/php83_host_verification_step1_solution_assessment.md
+
+Key retirement follow-up (noted 2026-11-03 while merging origin/main into the invitation branch)
+	profile-name writes are not guarded by key retirement: prepareProfileName and
+		finalizePreparedProfileName in src/ForumRewrite/Write/LocalWriteService.php never call
+		KeyRetirement::assertActive, so a retired key can still submit a username or initial-name record
+		identity, invitation and message writes are guarded; add the same check to profile-name
+		prepare/finalize and cover it in WriteApiSmokeTest alongside the existing retirement cases

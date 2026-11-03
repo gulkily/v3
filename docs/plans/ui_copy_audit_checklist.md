@@ -791,7 +791,7 @@ Limits and follow-up: signing in regenerates the session ID and deletes the old 
 - Reuse: extended the existing `setFeedback` helper and issuance request in `public/assets/invite_issuance.js`, preserving the signed `expires_at` contract; updated the existing result paragraph in `templates/pages/invites.php`. No new component or API field.
 - [x] Changed new browser-issued invitations from seven days to 30 days and updated the result label to “Expires 30 days after creation.” No expiry selector. Existing signed expiry timestamps and API custom-expiry support remain unchanged.
 - Verification: `InvitationIssuanceTest` passed 10/10, including the 30-day request assertion. A real signed-issuance browser probe (`/tmp/invite-expiry-review.mjs`) verified the prepared canonical expiry and rendered result at 320/1280px in Light, Word97, Chicago and Midnight on public and members-only sites, with no horizontal overflow. Inspected Chicago phone and Midnight desktop screenshots (`/tmp/invite-expiry-*.png`). `invite_zero_click.mjs` passed the complete public/members-only entry, redemption, naming/rebuild, expiry/revocation and recovery flows; the deliberately short-lived expiry fixture is checked against its own lifetime. Template syntax and diff checks passed.
-- Limits: physical devices, other engines and deployment unchecked. Multi-redemption remains proposed in [the Step 1 assessment](multi_redemption_invites_step1_solution_assessment.md); no change to single-use behavior.
+- Limits: physical devices, other engines and deployment unchecked. Multi-redemption remains proposed in [the Step 1 assessment](multi_redemption_invites/multi_redemption_invites_step1_solution_assessment.md); no change to single-use behavior.
 
 Publication verification: 2026-10-30 UTC — user authorized commit and push. Integrated current `origin/main` at `ade35a65`, preserving both study-ledger append blocks. On the combined tree, `InvitationIssuanceTest` passed 10/10 and `invite_zero_click.mjs` passed public/members-only creation, redemption and recovery. Earlier theme evidence remains scoped to the pre-integration tree; no new visual run or deployment claim. Multi-redemption remains a Step 1 proposal.
 
@@ -827,6 +827,13 @@ Also retained copy/revocation confirmations and backup download feedback as
 potentially necessary signals for effects outside the visible page. The scan itself was documentation
 only; subsequent implementation and verification are recorded separately above.
 
+## Inline invitation username — 2026-11-01
+
+- [x] Replace the untargeted invitation's missing naming step with Username above Redeem; remove the redundant destination explanation and routine “Choose Redeem” notice. Preserve validation/storage/access errors and retry links. Existing Account editor supports initial guest naming with later renaming off.
+- [x] Verify public/private fresh and automatic guest flows, same-key lost-response retries, field retention, Account cancellation/recovery, and named/targeted compatibility. Rendered checks cover 16 permitted themes at phone/desktop widths, first-frame controls, long values, errors, expanded editor and overflow. Existing name normalization retained; no silent guest fallback.
+- [x] Keep authenticated state and naming hints in the client; streamed Account markup now determines guest control/state before child markup. No new server personalization.
+- [ ] Actual user-site replay remains unverified; no instance/browser was supplied. Local results are not a deployment claim. See [implementation evidence](restore_invitation_prompt/restore_invitation_prompt_step4_implementation_summary.md#stage-5---release-proof).
+
 ## System State codebase Git information — 2026-10-31
 
 - [x] Added a separate Codebase facts table with application commit, branch, latest commit date/subject and clean/modified working-tree status. App version now uses the application checkout rather than the content repository. No remote URLs or changed file paths are exposed.
@@ -860,3 +867,9 @@ Key retirement final integration — 2026-11-02: Ordinary message readers verifi
 - [x] Server HTML is identical for every viewer; the viewer's own saved, counted Like or Flag appends their name in place (`public/assets/thread_reactions.js`). Unapproved viewers see no change, matching the score.
 - [x] Verified in Chromium (`tests/browser/post_signals.mjs`): 16 themes at 375×667 and 1280×800 on the thread page and Forte pane, line inside the viewport and Like button visible; no-JavaScript anonymous render; in-place append then reload parity. `PostSignalsTemplateTest` covers the +N cap, empty state and all page inclusions.
 - [ ] Firefox/WebKit and a physical phone remain unchecked; long usernames at phone width wrap but were only checked visually by bounding box, not by eye.
+
+## Thread title live update — 2026-11-03
+
+- [x] After an accepted retitling reply, the thread page's root heading, tab title and `Title set by` line update in place from the same server-rendered document the reply render pass already fetches. No new copy; this is a post-paint update for a real state change the viewer just caused, per `CONTRIBUTING.md`.
+- [x] Verified in Chromium (`tests/browser/title_directive_replay.mjs`): author and approved-member retitles update before any reload; inline reply, signed reaction and signals browser tests still pass.
+- [ ] Forte pane composer is outside this path; Firefox/WebKit and a physical phone unchecked.

@@ -69,7 +69,7 @@ final class AccountKeyPageHooksTest
         }
     }
 
-    public function testChooseUsernameButtonIsHiddenUnlessUsernameChangesAreEnabled(): void
+    public function testNameControlStartsConservativelyAndClientResolvesGuestEligibility(): void
     {
         foreach ([false, true] as $enabled) {
             $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates', 'test', new FeatureFlagEvaluator(

@@ -171,7 +171,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::USERNAME_CHANGES_ENABLED,
                 'Username changes',
-                "Warning: Keep disabled on public instances. Renamed keys keep their approval and can appear under another account's username. Turning this off stops new renames and hides rename activity; it does not undo saved names or approvals.",
+                "Warning: Keep disabled on public instances. Renamed keys keep their approval and can appear under another account's username. Turning this off stops new renames and hides rename activity; it does not undo saved names or approvals. Guests can still choose an initial name.",
                 false,
                 self::USERNAME_CHANGES_ENABLED,
                 siteMutable: true,

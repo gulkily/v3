@@ -650,13 +650,14 @@
     return field ? field.value : "";
   }
 
-  // The composer's "Plain text" box opts one post out of Markdown; unchecked leaves the server default.
+  // The composer's Markdown box decides the format; forms without it leave the server default.
   function composeBodyFormat(form) {
-    const field = form.querySelector('[name="body_format"]');
-    return field && field.checked ? String(field.value || "plain") : "";
+    const toggle = form.querySelector('input[type="checkbox"][name="body_format"]');
+    if (!toggle) return "";
+    return toggle.checked ? "markdown" : "plain";
   }
 
-  // Only an explicit plain-text choice is sent, so default submissions keep their existing fields.
+  // Only forms with the Markdown box send a format, so other submissions keep their existing fields.
   function withBodyFormat(form, fields) {
     const format = composeBodyFormat(form);
     if (format) fields.body_format = format;
@@ -1374,6 +1375,40 @@
     finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
 
     return finalized;
+  }
+
+  // Switches how an existing post displays; the signer must be its author or an operator.
+  async function submitSignedPostFormat(postId, bodyFormat) {
+    await ensureActionIdentity(null, null);
+    const actorIdentityId = currentAuthorIdentityId();
+    if (!actorIdentityId) {
+      return { ok: false, error: "No saved browser identity is available to sign this change." };
+    }
+    const parse = function (response, fallback) {
+      try {
+        const data = JSON.parse(response.text);
+        if (data && data.status === "ok") return { ok: true, data: data };
+        return { ok: false, error: (data && data.error) || fallback };
+      } catch (error) {
+        return { ok: false, error: fallback };
+      }
+    };
+    const prepared = parse(await submitUrlEncoded("/api/prepare_post_format", {
+      post_id: String(postId || ""),
+      body_format: String(bodyFormat || ""),
+      actor_identity_id: actorIdentityId,
+    }), "Unable to prepare the format change.");
+    if (!prepared.ok) return prepared;
+    const record = prepared.data;
+    const detachedSignature = await signCanonicalRecord(record.canonical_record);
+    return parse(await submitUrlEncoded("/api/create_prepared_post_format", {
+      prepare_token: record.prepare_token,
+      post_id: record.post_id,
+      record_path: record.record_path,
+      actor_identity_id: actorIdentityId,
+      canonical_record: record.canonical_record,
+      detached_signature: detachedSignature,
+    }), "Unable to save the format change.");
   }
 
   async function retrySignedPreparedPostAfterDetachedFailure(form, prepare, timing, previousResult) {
@@ -2720,24 +2755,56 @@
     await privateSiteAuth.authenticate();
   }
 
-  // Renames a registered key with a signed profile-name record; its posts move to the new name.
+  function normalizeProfileName(value) {
+    const raw = String(value || '').trim();
+    const name = normalizeUsername(raw);
+    if (!raw || name.length > 80 || (name === 'guest' && raw.toLowerCase() !== 'guest')) {
+      throw new Error('Enter a username using letters, numbers, dots, underscores or hyphens (up to 80 characters).');
+    }
+    return name;
+  }
+
+  // Name the existing key with a signed profile-name record; posts keep the same owner.
   async function saveRegisteredName(chosen, root, statusNode) {
+    const username = normalizeProfileName(chosen);
     await ensureActionIdentity(root || null, statusNode || null);
     const identity = currentAuthorIdentityId();
+    const pendingKey = "forum_pending_profile_name:" + identity;
+    const assertIdentity = () => {
+      if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Return to the original key to retry naming.");
+    };
     const postName = async (endpoint, values) => {
+      assertIdentity();
       const response = await fetch(endpoint, { method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(values).toString() });
       const result = await response.json();
       if (!response.ok || result.status !== "ok") throw new Error(result.error || "Unable to save username.");
       return result;
     };
-    const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: normalizeUsername(chosen) });
-    const signature = await signCanonicalRecord(prepared.canonical_record);
-    const result = await postName("/api/finalize_profile_name", { prepare_token: prepared.prepare_token,
-      record_path: prepared.record_path, author_identity_id: identity,
-      canonical_record: prepared.canonical_record, detached_signature: signature });
-    if (currentAuthorIdentityId() !== identity) throw new Error("Browser identity changed. Reload Account to see the saved name.");
+    let pending = JSON.parse(localStorage.getItem(pendingKey) || "null");
+    if (!pending) {
+      const prepared = await postName("/api/prepare_profile_name", { author_identity_id: identity, username: username });
+      assertIdentity();
+      const signature = await signCanonicalRecord(prepared.canonical_record);
+      assertIdentity();
+      pending = { prepare_token: prepared.prepare_token, record_path: prepared.record_path,
+        author_identity_id: identity, canonical_record: prepared.canonical_record, detached_signature: signature };
+      // Persist before sending: a lost response must not strand a one-time initial name.
+      localStorage.setItem(pendingKey, JSON.stringify(pending));
+    }
+    let result;
+    try {
+      result = await postName("/api/finalize_profile_name", pending);
+    } catch (error) {
+      // Committed recovery runs first; definitive unaccepted requests must not strand a later retry.
+      if (/^Prepared post not found\.|^Prepared profile name mismatch or expiry\.|^Username changes are disabled\.|^A newer username was saved\./.test(error.message)) {
+        if (localStorage.getItem(pendingKey) === JSON.stringify(pending)) localStorage.removeItem(pendingKey);
+      }
+      throw error;
+    }
+    assertIdentity();
     localStorage.setItem(storageKeys.username, result.username);
+    if (localStorage.getItem(pendingKey) === JSON.stringify(pending)) localStorage.removeItem(pendingKey);
     window.dispatchEvent(new Event("forum:identity-changed"));
     return result.username;
   }
@@ -3022,8 +3089,8 @@
             if (username === "guest") {
               throw new Error("Type a name first.");
             }
-            // A registered automatic key keeps its posts and invitations: name it rather than replace it.
-            if (isRegisteredIdentity() && root.dataset.usernameChangesEnabled === "1") {
+            // Name an existing automatic key; never replace it to choose a name.
+            if (hasBrowserKeypair()) {
               await renameTo(username, null);
               return;
             }
@@ -3733,6 +3800,23 @@
 
     let replyRenderDocumentPromise = null;
     let reconciledReplyDocument = null;
+    // A reply can change thread state the root card shows: a `title:` line retitles the
+    // thread, and the signals line names it. The fetched page is server-rendered and
+    // identical for every viewer, so copying those two pieces is the same as a reload.
+    function syncThreadRootFromDocument(doc) {
+      const liveRoot = document.querySelector('.thread-root-card');
+      const canonicalRoot = doc.querySelector('.thread-root-card');
+      if (!liveRoot || !canonicalRoot) return;
+      const liveHeading = liveRoot.querySelector('h1');
+      const heading = canonicalRoot.querySelector('h1');
+      if (liveHeading && heading && liveHeading.textContent !== heading.textContent) {
+        liveHeading.textContent = heading.textContent;
+        if (doc.title) document.title = doc.title;
+      }
+      const liveSignals = liveRoot.querySelector('[data-role="post-signals"][data-signal-scope="thread"]');
+      const signals = canonicalRoot.querySelector('[data-role="post-signals"][data-signal-scope="thread"]');
+      if (liveSignals && signals && liveSignals.outerHTML !== signals.outerHTML) liveSignals.replaceWith(document.importNode(signals, true));
+    }
     function loadReplyRenderDocument(url) {
       if (!replyRenderDocumentPromise) {
         replyRenderDocumentPromise = fetch(url, {credentials:'same-origin', cache:'no-store'})
@@ -3795,6 +3879,7 @@
           const editorTop = editor.getBoundingClientRect().top;
           if (reconciledReplyDocument !== doc) {
             reconciledReplyDocument = doc;
+            syncThreadRootFromDocument(doc);
             for (const canonical of doc.querySelectorAll('.post-card[data-post-id]')) {
               const live = document.getElementById(canonical.id);
               if (!live?.matches('.post-card[data-post-id]')) continue;
@@ -3977,8 +4062,11 @@
   window.ForumBrowserSigning = window.ForumBrowserSigning || {};
   window.ForumBrowserSigning.init = initBrowserSigning;
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
+  window.ForumBrowserSigning.saveRegisteredName = saveRegisteredName;
+  window.ForumBrowserSigning.normalizeProfileName = normalizeProfileName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
+  window.ForumBrowserSigning.submitSignedPostFormat = submitSignedPostFormat;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
   window.ForumBrowserSigning.prepareOutboxPost = prepareOutboxPost;
   window.ForumBrowserSigning.finalizeOutboxPost = finalizeOutboxPost;

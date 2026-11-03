@@ -190,6 +190,7 @@ final class IdentityApprovalAndInvitationApiController
             }
             $input = $this->routeServices->requestData($query);
             $result = $this->routeServices->writer()->prepareInvitation([
+                ...(array_key_exists('max_redemptions', $input) ? ['max_redemptions' => $input['max_redemptions']] : []),
                 'issuer_identity_id' => (string) $viewer['identity_id'],
                 'thread_id' => (string) $viewer['bootstrap_thread_id'],
                 'parent_id' => (string) $viewer['bootstrap_post_id'],

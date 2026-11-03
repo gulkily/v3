@@ -502,6 +502,27 @@ final class CanonicalRecordParsersTest
         assertSame('/threads/root-001', $record->destination);
     }
 
+    public function testInvitationLimitsAreBoundedAndLegacyBytesArePreserved(): void
+    {
+        $parser = new InvitationRecordParser();
+        $legacy = $this->invitationContents('issue', 'openpgp:' . str_repeat('a', 40));
+        assertSame(1, $parser->parse($legacy)->maxRedemptions);
+        foreach (['1', '2', '1000'] as $value) {
+            $contents = str_replace('Expires-At:', "Max-Redemptions: {$value}\nExpires-At:", $legacy);
+            assertSame((int) $value, $parser->parse($contents)->maxRedemptions);
+        }
+        foreach (['0', '-1', '01', '1.5', '1001', '999999999999999999999', '2 ', "2\nMax-Redemptions: 3"] as $value) {
+            $contents = str_replace('Expires-At:', "Max-Redemptions: {$value}\nExpires-At:", $legacy);
+            $failed = false;
+            try { $parser->parse($contents); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { $failed = true; }
+            assertTrue($failed, 'Invalid limit accepted: ' . $value);
+        }
+        $redeem = $this->invitationContents('redeem', 'openpgp:' . str_repeat('b', 40));
+        assertThrows(fn () => $parser->parse(str_replace('Verification-Hash:', "Max-Redemptions: 2\nVerification-Hash:", $redeem)),
+            'Max-Redemptions must be an integer from 1 to 1000 on issuance only.');
+        assertSame(1, $parser->parse($legacy)->maxRedemptions);
+    }
+
     public function testRejectsExternalInvitationDestination(): void
     {
         assertThrows(
@@ -524,14 +545,15 @@ final class CanonicalRecordParsersTest
         $ledger = new InvitationLedger([$issued, $redeemed]);
         assertTrue($ledger->find('invite-0123456789abcdef')['redeemed'] !== null);
 
+        $ledger->apply($parser->parse($this->invitationContents('redeem', $recipient, null, 'reply-invite-redeem-2')));
+        assertSame(1, count($ledger->find('invite-0123456789abcdef')['recipients']));
         try {
-            $ledger->apply($parser->parse($this->invitationContents('redeem', $recipient, null, 'reply-invite-redeem-2')));
-        } catch (RuntimeException $exception) {
-            assertSame('Invitation is no longer redeemable.', $exception->getMessage());
+            $ledger->apply($parser->parse($this->invitationContents('redeem', 'openpgp:' . str_repeat('b', 40))));
+        } catch (RuntimeException $error) {
+            assertSame('Invitation is no longer redeemable.', $error->getMessage());
             return;
         }
-
-        throw new RuntimeException('Expected invitation reuse to fail.');
+        throw new RuntimeException('Expected excess recipient rejection.');
     }
 
     public function testInvitationBearerTokenAcceptsNewAndPreviousFormats(): void

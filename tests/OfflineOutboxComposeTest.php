@@ -62,7 +62,7 @@ NODE;
         assertSame(['subject' => 'Local topic', 'body' => 'Local body', 'boardTags' => 'general topic'], $item['payload']);
     }
 
-    public function testPlainTextChoiceTravelsWithTheDraft(): void
+    public function testFormatChoiceTravelsWithTheDraft(): void
     {
         $script = <<<'NODE'
 const fs = require('fs');
@@ -73,7 +73,7 @@ vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 vm.runInThisContext(fs.readFileSync(process.argv[2], 'utf8'));
 process.stdout.write(JSON.stringify([
   window.forumOutboxCompose.threadItem({ subject: 'Log', body: '1. not a list', boardTags: 'general', bodyFormat: 'plain' }).payload,
-  window.forumOutboxCompose.replyItem({ threadId: 'thread-1', parentId: 'thread-1', body: '*x*', bodyFormat: 'plain' }).payload,
+  window.forumOutboxCompose.replyItem({ threadId: 'thread-1', parentId: 'thread-1', body: '*x*', bodyFormat: 'markdown' }).payload,
 ]));
 NODE;
         $command = sprintf(
@@ -89,6 +89,6 @@ NODE;
         [$thread, $reply] = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
 
         assertSame('plain', $thread['bodyFormat']);
-        assertSame('plain', $reply['bodyFormat']);
+        assertSame('markdown', $reply['bodyFormat']);
     }
 }

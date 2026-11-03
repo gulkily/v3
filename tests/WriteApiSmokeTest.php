@@ -559,6 +559,86 @@ CODE;
         }
     }
 
+    public function testGuestInitialNameWorksOnceWithRenamingDisabled(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('guest');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(false));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $bootstrap = $root . '/records/identity/identity-' . str_replace(':', '-', $identity) . '.txt';
+            file_put_contents($bootstrap, str_replace("Username: guest\n", '', file_get_contents($bootstrap)));
+            $this->runCommand($root, 'git add records/identity');
+            $this->runCommand($root, 'git commit -qm "Legacy guest fixture without Username"');
+            $bootstrapBytes = file_get_contents($bootstrap);
+            $sign = fn ($prepared) => $prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            $refuse = function ($action) {
+                try { $action(); throw new LogicException('Expected disabled rename.'); }
+                catch (RuntimeException $e) { assertStringContains('Username changes are disabled', $e->getMessage()); }
+            };
+            $refuse(fn () => $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'guest']));
+            $first = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'initial-reader']));
+            $competing = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'competing']));
+            assertSame('initial-reader', $writer->finalizePreparedProfileName($first)['username']);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame('initial-reader', ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $identity)['username']);
+            assertSame($bootstrapBytes, file_get_contents($bootstrap));
+            $refuse(fn () => $writer->finalizePreparedProfileName($competing));
+            $refuse(fn () => $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'second']));
+            $enabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $enabled->finalizePreparedProfileName($sign($enabled->prepareProfileName(['author_identity_id' => $identity, 'username' => 'guest'])));
+            $refuse(fn () => $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'bypass']));
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame('guest', ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $identity)['username']);
+        } finally { $this->deleteTree($key['home']); }
+    }
+
+    public function testInitialNameRecoversCommittedRefreshFailureAndLostResponse(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('guest');
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(false));
+            $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
+            $sign = fn ($prepared) => $prepared + ['author_identity_id' => $identity,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])];
+            $signed = $sign($writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'recovered']));
+            $hook = $root . '/.git/hooks/pre-commit';
+            file_put_contents($hook, "#!/bin/sh\nexit 1\n"); chmod($hook, 0700);
+            try { $writer->finalizePreparedProfileName($signed); throw new LogicException('Expected commit failure'); }
+            catch (RuntimeException $e) { assertStringContains('Git operation failed', $e->getMessage()); }
+            assertSame(false, is_file($root . '/' . $signed['record_path']));
+            assertSame('', trim($this->gitOutput($root, 'status --porcelain')));
+            unlink($hook);
+            $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(false)) extends LocalWriteService {
+                protected function rebuildReadModel(): array { throw new RuntimeException('injected name refresh failure'); }
+            };
+            try { $failing->finalizePreparedProfileName($signed); throw new LogicException('Expected refresh failure'); }
+            catch (RuntimeException $e) { assertStringContains('Canonical write committed', $e->getMessage()); }
+            $head = $this->latestCommitSha($root);
+            $signed['prepare_token'] = str_repeat('0', 32);
+            $result = $writer->finalizePreparedProfileName($signed);
+            assertSame(true, $result['recovered']);
+            assertSame('recovered', $result['username']);
+            assertSame($head, $this->latestCommitSha($root));
+            $this->assertReadModelHealthy($db);
+            assertSame(true, $writer->finalizePreparedProfileName($signed)['recovered']);
+            $forged = $signed; $forged['detached_signature'] = 'forged';
+            try { $writer->finalizePreparedProfileName($forged); throw new LogicException('Accepted forgery'); }
+            catch (RuntimeException $e) { assertStringContains('Prepared post not found', $e->getMessage()); }
+            $enabled = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root),
+                featureFlags: $this->usernameChangeFlags(true));
+            $enabled->finalizePreparedProfileName($sign($enabled->prepareProfileName(['author_identity_id' => $identity, 'username' => 'newer'])));
+            assertSame('newer', $writer->finalizePreparedProfileName($signed)['username']);
+            assertSame(2, count(glob($root . '/records/profile-names/*.txt')));
+        } finally { $this->deleteTree($key['home']); }
+    }
+
     private function usernameChangeFlags(bool $enabled): FeatureFlagEvaluator
     {
         return new FeatureFlagEvaluator(new FeatureFlagRegistry(), [FeatureFlagRegistry::USERNAME_CHANGES_ENABLED => $enabled]);
@@ -1322,13 +1402,14 @@ CODE;
         assertSame(true, str_contains($this->renderMethod($application, 'GET', '/threads/' . $plain), '## Literal **stars** kept'));
     }
 
-    public function testComposersOfferPlainTextAndTheUnsignedFormPathHonoursIt(): void
+    public function testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         foreach (['/compose/thread', '/threads/root-001', '/threads/?view=all'] as $path) {
             $page = $this->renderMethod($application, 'GET', $path);
-            assertStringContains('<input type="checkbox" name="body_format" value="plain">', $page);
+            assertStringContains('<input type="hidden" name="body_format" value="plain">', $page);
+            assertStringContains('<input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown', $page);
             assertStringContains('href="/docs/reference/markdown_syntax.md"', $page);
         }
 
@@ -1340,6 +1421,127 @@ CODE;
         }
         $latest = trim($this->gitOutput($repositoryRoot, 'log -1 --name-only --format='));
         assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n")));
+
+        // A ticked box arrives after the hidden fallback, so its value wins.
+        $_POST = ['body' => '# Ticked', 'board_tags' => 'general', 'body_format' => 'markdown'];
+        try {
+            $this->renderMethod($application, 'POST', '/compose/thread');
+        } finally {
+            $_POST = [];
+        }
+        $latest = trim($this->gitOutput($repositoryRoot, 'log -1 --name-only --format='));
+        assertStringContains("Body-Format: markdown\n", (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n")));
+    }
+
+    public function testPostFormatSwitchesAreSignedByTheAuthorOrAnOperator(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'format-author', '## Not yet *formatted*');
+        $stranger = $this->linkSigningIdentity($app, 'format-stranger');
+        $operator = $this->linkSigningIdentity($app, 'format-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $postId = $author['thread_id'];
+        $prepare = function (string $actor, string $target, string $format) use ($app): array {
+            $_POST = ['actor_identity_id' => $actor, 'post_id' => $target, 'body_format' => $format];
+            try {
+                return json_decode($this->renderMethod($app, 'POST', '/api/prepare_post_format'), true);
+            } finally {
+                $_POST = [];
+            }
+        };
+        $finalize = function (array $prepared, string $actor, string $home, ?string $signature = null) use ($app): array {
+            $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'], 'record_path' => $prepared['record_path'],
+                'actor_identity_id' => $actor, 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $signature ?? ($home === '' ? '' : $this->signCanonicalRecord($home, $prepared['canonical_record']))];
+            try {
+                return json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_post_format'), true);
+            } finally {
+                $_POST = [];
+            }
+        };
+        $format = fn (): string => (string) (new PDO('sqlite:' . $db))->query("SELECT COALESCE(body_format, 'none') FROM posts WHERE post_id = " . (new PDO('sqlite::memory:'))->quote($postId))->fetchColumn();
+
+        // Another member cannot even prepare a switch.
+        $denied = $prepare($stranger['identity_id'], $postId, 'plain');
+        assertSame('error', $denied['status']);
+        assertStringContains('Only the post author or an approved operator', $denied['error']);
+        assertSame('error', $prepare($author['identity_id'], $postId, 'html')['status']);
+
+        // The author switches to plain; a forged signature and a missing one are refused first.
+        $prepared = $prepare($author['identity_id'], $postId, 'plain');
+        assertSame('ok', $prepared['status']);
+        assertStringContains("Body-Format: plain\nActor-Identity-ID: " . $author['identity_id'] . "\n\n", $prepared['canonical_record']);
+        assertSame('error', $finalize($prepared, $author['identity_id'], $stranger['home'])['status']);
+        assertSame('error', $finalize($prepared, $author['identity_id'], '')['status']);
+        $signature = $this->signCanonicalRecord($author['home'], $prepared['canonical_record']);
+        $done = $finalize($prepared, $author['identity_id'], $author['home'], $signature);
+        assertSame('ok', $done['status']);
+        assertSame('plain', $format());
+        assertTrue(is_file($root . '/' . $done['record_path'] . '.asc'));
+        assertStringContains("Body-Format: plain\n", $this->renderMethod($app, 'GET', '/api/get_post?post_id=' . rawurlencode($postId)));
+        $replay = $finalize($prepared, $author['identity_id'], $author['home'], $signature);
+        assertSame('ok', $replay['status']);
+        assertSame(true, $replay['already_applied']);
+
+        // A root-approved operator switches it back to Markdown; the page renders it.
+        $operatorPrepared = $prepare($operator['identity_id'], $postId, 'markdown');
+        assertSame('ok', $finalize($operatorPrepared, $operator['identity_id'], $operator['home'])['status']);
+        assertSame('markdown', $format());
+        assertStringContains('<em>formatted</em>', $this->renderMethod($app, 'GET', '/threads/' . $postId));
+
+        // Old header-less posts can be switched by an operator; authority posts cannot.
+        $old = $prepare($operator['identity_id'], 'root-001', 'markdown');
+        assertSame('ok', $finalize($old, $operator['identity_id'], $operator['home'])['status']);
+        $protectedPath = 'records/posts/format-protected.txt';
+        file_put_contents($root . '/' . $protectedPath, "Post-ID: format-protected\nCreated-At: 2026-10-14T12:00:00Z\nBoard-Tags: identity approval\n"
+            . 'Author-Identity-ID: ' . $author['identity_id'] . "\n\nProtected.\n");
+        $this->runCommand($root, 'git add ' . escapeshellarg($protectedPath));
+        $this->runCommand($root, 'git commit -m "Protected fixture"');
+        assertSame('error', $prepare($operator['identity_id'], 'format-protected', 'markdown')['status']);
+
+        // Two switches in the same second still keep their order, and a stale prepare is refused.
+        $first = $prepare($author['identity_id'], $postId, 'plain');
+        $second = $prepare($author['identity_id'], $postId, 'markdown');
+        assertSame('ok', $finalize($second, $author['identity_id'], $author['home'])['status']);
+        $stale = $finalize($first, $author['identity_id'], $author['home']);
+        assertSame('error', $stale['status']);
+        assertStringContains('Prepare the change again', $stale['error']);
+        assertSame('markdown', $format());
+        $quick = $prepare($author['identity_id'], $postId, 'plain');
+        assertSame('ok', $finalize($quick, $author['identity_id'], $author['home'])['status']);
+        assertSame('plain', $format());
+        $back = $prepare($author['identity_id'], $postId, 'markdown');
+        assertSame('ok', $finalize($back, $author['identity_id'], $author['home'])['status']);
+
+        // Rebuilding from records gives the same answer as the incremental updates.
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        assertSame('markdown', $format());
+    }
+
+    public function testFormatSwitchAppearsBesideRetractForAuthorsAndOperatorsOnly(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'switch-author', 'Plain words');
+        $stranger = $this->linkSigningIdentity($app, 'switch-stranger');
+        $operator = $this->linkSigningIdentity($app, 'switch-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        $oldCookies = $_COOKIE;
+        try {
+            foreach ([[$author['identity_id'], true], [$operator['identity_id'], true], [$stranger['identity_id'], false]] as [$viewer, $sees]) {
+                $_COOKIE = ['identity_hint' => $viewer];
+                $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/threads/' . $author['thread_id']);
+                assertSame($sees, str_contains($page, 'data-action="switch-post-format"'));
+            }
+            $_COOKIE = ['identity_hint' => $author['identity_id']];
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/threads/' . $author['thread_id']);
+            $expected = str_contains($page, 'data-body-format="plain"') ? 'Show as plain text' : 'Show as Markdown';
+            assertStringContains($expected, $page);
+        } finally {
+            $_COOKIE = $oldCookies;
+        }
     }
 
     public function testRecordsWithoutBodyFormatReportPlain(): void
@@ -7738,6 +7940,169 @@ NODE;
             $_POST = [];
             $_COOKIE = [];
             $this->deleteTree($signingKey['home']);
+        }
+    }
+
+    public function testMultiRedemptionCapacityRacesAndRecovery(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $keys = []; $profiles = [];
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            foreach (['sponsor', 'first', 'second', 'third'] as $name) {
+                $key = $this->createSigningKey('multi-' . $name); $keys[] = $key;
+                $profiles[] = $writer->linkIdentity(['public_key' => $key['public_key']]);
+            }
+            $this->approveIdentity($writer, $profiles[0]);
+            $issueInput = ['issuer_identity_id' => $profiles[0]['identity_id'],
+                'thread_id' => $profiles[0]['bootstrap_thread_id'], 'parent_id' => $profiles[0]['bootstrap_post_id'],
+                'verification_hash' => 'sha256:' . hash('sha256', str_repeat('a', 32)),
+                'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 3600), 'max_redemptions' => 2,
+                'destination' => '/threads/root-001'];
+            $sign = fn (array $prepared, int $n) => $prepared + ['author_identity_id' => $profiles[$n]['identity_id'],
+                'detached_signature' => $this->signCanonicalRecord($keys[$n]['home'], $prepared['canonical_record'])];
+            foreach ([0, 1001, 2.0, true, null, [], '02'] as $bad) {
+                assertThrowsRuntime(fn () => $writer->prepareInvitation(array_replace($issueInput, ['max_redemptions' => $bad])),
+                    'max_redemptions must be an integer from 1 to 1000 on issuance only.');
+            }
+            $issue = $writer->prepareInvitation($issueInput);
+            assertStringContains("Max-Redemptions: 2\n", $issue['canonical_record']);
+            $tampered = $sign($issue, 0); $tampered['canonical_record'] = str_replace('Max-Redemptions: 2', 'Max-Redemptions: 3', $tampered['canonical_record']);
+            assertThrowsRuntime(fn () => $writer->finalizePreparedInvitation($tampered), 'Prepared post canonical record mismatch.');
+            $writer->finalizePreparedInvitation($sign($issue, 0));
+            $prepare = fn (int $n) => $writer->prepareInvitationRedemption(['recipient_identity_id' => $profiles[$n]['identity_id'],
+                'thread_id' => $profiles[$n]['bootstrap_thread_id'], 'parent_id' => $profiles[$n]['bootstrap_post_id'],
+                'invite_token' => str_repeat('a', 32)]);
+            $first = $sign($prepare(1), 1);
+            // Inject a pre-commit failure: no acceptance or capacity can survive it.
+            $hook = $root . '/.git/hooks/pre-commit'; file_put_contents($hook, "#!/bin/sh\nexit 1\n"); chmod($hook, 0755);
+            $failed = false;
+            try { $writer->finalizePreparedInvitation($first); } catch (RuntimeException) { $failed = true; }
+            assertTrue($failed); unlink($hook);
+            assertFalse(is_file($root . '/' . $first['record_path']));
+            assertSame('available', $writer->inspectInvitation(str_repeat('a', 32))['state']);
+            $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root)) extends LocalWriteService {
+                protected function incrementalReadModelUpdater(): IncrementalReadModelUpdater
+                {
+                    return new class($this->databasePath(), $this->repositoryRoot()) extends IncrementalReadModelUpdater {
+                        public function applyApprovalWrite(\ForumRewrite\Canonical\PostRecord $record, string $commitSha): array { throw new RuntimeException('test incremental failure'); }
+                    };
+                }
+                protected function rebuildReadModel(): array { throw new RuntimeException('test rebuild failure'); }
+            };
+            try { $failing->finalizePreparedInvitation($first); throw new RuntimeException('Expected refresh failure.'); }
+            catch (RuntimeException $error) { assertStringContains('Canonical write committed at', $error->getMessage()); }
+            assertSame(true, $writer->finalizePreparedInvitation($first)['recovered']);
+            $head = $this->latestCommitSha($root);
+            assertSame(true, $writer->finalizePreparedInvitation($first)['recovered']);
+            assertSame($head, $this->latestCommitSha($root));
+            assertSame('available', $writer->inspectInvitation(str_repeat('a', 32))['state']);
+            $claims = [$sign($prepare(2), 2), $sign($prepare(3), 3)];
+            $race = function (array $claims) use ($root, $db, $artifacts): array {
+            $children = []; $pipes = [];
+            $script = 'require ' . var_export(dirname(__DIR__) . '/autoload.php', true) . ';'
+                . '$writer = new ForumRewrite\\Write\\LocalWriteService($argv[1], $argv[2], $argv[3], new ForumRewrite\\Canonical\\CanonicalRecordRepository($argv[1]));'
+                . 'try { $result = $writer->finalizePreparedInvitation(json_decode(base64_decode($argv[4]), true)); echo !empty($result["recovered"]) ? "recovered" : "accepted"; }'
+                . 'catch (RuntimeException $e) { echo $e->getMessage(); }';
+            foreach ($claims as $i => $claim) {
+                $children[$i] = proc_open([PHP_BINARY, '-r', $script, $root, $db, $artifacts, base64_encode(json_encode($claim))],
+                    [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes[$i]);
+                fclose($pipes[$i][0]);
+            }
+            $results = [];
+            foreach ($children as $i => $process) {
+                $results[$i] = stream_get_contents($pipes[$i][1]); fclose($pipes[$i][1]);
+                $error = stream_get_contents($pipes[$i][2]); fclose($pipes[$i][2]);
+                assertSame(0, proc_close($process), $error);
+            }
+                return $results;
+            };
+            $results = $race($claims);
+            assertSame(1, count(array_filter($results, fn ($value) => $value === 'accepted')));
+            assertSame(1, count(array_filter($results, fn ($value) => str_contains($value, 'used by another identity'))));
+            assertSame('used', $writer->inspectInvitation(str_repeat('a', 32))['state']);
+            $winner = $results[0] === 'accepted' ? 2 : 3;
+            assertSame(true, $writer->finalizePreparedInvitation($sign($prepare($winner), $winner))['recovered']);
+            $revokeInput = $issueInput; unset($revokeInput['max_redemptions']);
+            $revoke = $writer->prepareInvitation(array_replace($revokeInput, ['action' => 'revoke', 'invitation_id' => $issue['invitation_id']]));
+            $writer->finalizePreparedInvitation($sign($revoke, 0));
+            assertSame('used', $writer->inspectInvitation(str_repeat('a', 32))['state']);
+            assertSame(true, $writer->finalizePreparedInvitation($sign($prepare(1), 1))['recovered']);
+            // A separately capped link closes unused capacity after its first acceptance.
+            $partialToken = str_repeat('b', 32);
+            $partialInput = array_replace($issueInput, ['verification_hash' => 'sha256:' . hash('sha256', $partialToken)]);
+            $partialIssue = $writer->prepareInvitation($partialInput);
+            $writer->finalizePreparedInvitation($sign($partialIssue, 0));
+            $loser = $winner === 2 ? 3 : 2;
+            $partialPrepare = fn (int $n) => $writer->prepareInvitationRedemption(['recipient_identity_id' => $profiles[$n]['identity_id'],
+                'thread_id' => $profiles[$n]['bootstrap_thread_id'], 'parent_id' => $profiles[$n]['bootstrap_post_id'], 'invite_token' => $partialToken]);
+            $partialClaim = $sign($partialPrepare($loser), $loser);
+            $sameKeyResults = $race([$partialClaim, $partialClaim]); sort($sameKeyResults);
+            assertSame(['accepted', 'recovered'], $sameKeyResults);
+            assertSame('available', $writer->inspectInvitation($partialToken)['state']);
+            unset($partialInput['max_redemptions']);
+            $partialRevoke = $writer->prepareInvitation(array_replace($partialInput, ['action' => 'revoke', 'invitation_id' => $partialIssue['invitation_id']]));
+            $writer->finalizePreparedInvitation($sign($partialRevoke, 0));
+            assertThrowsRuntime(fn () => $partialPrepare(0), 'Invitation is expired, revoked, or used by another identity.');
+            assertSame(true, $writer->finalizePreparedInvitation($partialClaim)['recovered']);
+            assertSame(true, $writer->finalizePreparedInvitation($sign($partialPrepare($loser), $loser))['recovered']);
+            // Recovery cannot restore membership independently withdrawn from the derived state.
+            $pdo = (new ReadModelConnection($db))->open();
+            $pdo->prepare('UPDATE profiles SET is_approved = 0 WHERE identity_id = ?')->execute([$profiles[$loser]['identity_id']]);
+            assertThrowsRuntime(fn () => $writer->finalizePreparedInvitation($partialClaim), 'Invitation member access is unavailable.');
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            foreach ([1, $winner] as $n) {
+                $profile = ProfileRepository::byIdentityId((new ReadModelConnection($db))->open(), $profiles[$n]['identity_id']);
+                assertSame(1, (int) $profile['is_approved']);
+            }
+            require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+            $workspace = new ImportTestWorkspace();
+            // Exercise the ordinary exporter, preserving every signed byte. Its existing
+            // repository/ wrapper needs repacking for the legacy import-repository CLI.
+            $export = (new \ForumRewrite\Images\ImageBackup($root, $db))->export('tar.gz');
+            fclose($export['stream']);
+            $unpacked = $workspace->root . '/unpacked'; mkdir($unpacked);
+            [$code, $output] = $workspace->command(['tar', '-xzf', $export['path'], '-C', $unpacked]);
+            assertSame(0, $code, $output);
+            $archive = $workspace->root . '/invites.tar.gz';
+            [$code, $output] = $workspace->command(['tar', '-czf', $archive, '-C', $unpacked . '/repository', 'records']);
+            assertSame(0, $code, $output);
+            $restored = $workspace->repository('restored', true); $workspace->git($restored);
+            $restoreDb = $workspace->root . '/restored.sqlite3';
+            [$code, $output] = $workspace->command([__DIR__ . '/../v3', 'import-repository', $archive, $restored, $restoreDb]);
+            assertSame(0, $code, $output);
+            $restoredWriter = new LocalWriteService($restored, $restoreDb, $workspace->root . '/static', new CanonicalRecordRepository($restored));
+            foreach ([$issue, $first, $claims[$winner - 2], $partialIssue, $partialClaim, $partialRevoke] as $record) {
+                foreach ([$record['record_path'], $record['record_path'] . '.asc'] as $path) {
+                    assertSame(file_get_contents($root . '/' . $path), file_get_contents($restored . '/' . $path));
+                }
+            }
+            foreach ([$first, $claims[$winner - 2], $partialClaim] as $claim) {
+                assertSame(\ForumRewrite\Security\ApprovalAcceptance::read($root, $claim['record_path']),
+                    \ForumRewrite\Security\ApprovalAcceptance::read($restored, $claim['record_path']));
+                assertSame(true, $restoredWriter->finalizePreparedInvitation($claim)['recovered']);
+            }
+            assertSame('used', $restoredWriter->inspectInvitation(str_repeat('a', 32))['state']);
+            assertSame('used', $restoredWriter->inspectInvitation($partialToken)['state']);
+            $target = $workspace->repository('content-target', true); $workspace->git($target);
+            $targetDb = $workspace->root . '/content.sqlite3';
+            $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($root, $target);
+            foreach ([$issue, $first, $partialIssue, $partialClaim] as $record) assertSame('excluded', $plan[$record['record_path']]['state']);
+            $receiptPath = \ForumRewrite\Security\ApprovalAcceptance::path($first['post_id']);
+            assertSame('excluded', $plan[$receiptPath]['state']);
+            $run = (new \ForumRewrite\Import\ContentImportRunner($target, $targetDb))->run($root, static function () use ($target, $targetDb): void {
+                (new ReadModelBuilder($target, $targetDb, new CanonicalRecordRepository($target)))->rebuild();
+            });
+            assertSame('complete', $run['status']);
+            assertFalse(is_file($target . '/' . $issue['record_path']));
+            assertFalse(is_file($target . '/' . $receiptPath));
+            // A damaged restore cannot turn an accepted invitation into fresh capacity.
+            unlink($restored . '/' . $receiptPath);
+            assertThrowsRuntime(fn () => $restoredWriter->inspectInvitation(str_repeat('a', 32)), 'Multi-use invitation acceptance receipt is missing.');
+            assertThrowsRuntime(fn () => (new ReadModelBuilder($restored, $restoreDb, new CanonicalRecordRepository($restored)))->rebuild(),
+                'Multi-use invitation acceptance receipt is missing.');
+        } finally {
+            foreach ($keys as $key) $this->deleteTree($key['home']);
         }
     }
 

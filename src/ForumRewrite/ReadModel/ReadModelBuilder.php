@@ -86,6 +86,7 @@ final class ReadModelBuilder
             $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
             $this->measure('index_thread_labels', fn (): mixed => $this->indexThreadLabels($pdo, $approvalState));
             $this->measure('index_thread_subjects', fn (): mixed => $this->indexThreadSubjects($pdo));
+            $this->measure('index_post_formats', fn (): mixed => $this->indexPostFormats($pdo));
             $postAttribution = $this->measure('derive_post_attribution', fn (): array => $this->derivePostAttribution($posts));
             $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts, $postAttribution));
             $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState, $profileCounts, $postAttribution));
@@ -503,6 +504,23 @@ final class ReadModelBuilder
             ]);
         }
         $this->measure('write_thread_label_eligibility', fn () => SignalEligibility::apply($pdo, 'thread-labels', $eligibleByThread));
+    }
+
+    /** Later post-format records override the format each post was written with. */
+    private function indexPostFormats(PDO $pdo): void
+    {
+        $records = [];
+        foreach ($this->findRelativePaths('records/post-formats') as $relativePath) {
+            if (!str_ends_with($relativePath, '.txt')) {
+                continue;
+            }
+            try {
+                $records[] = $this->canonicalRepository->loadPostFormat($relativePath);
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+        }
+        PostFormatChanges::apply($pdo, PostFormatChanges::latestByPost($records));
     }
 
     private function indexThreadSubjects(PDO $pdo): void

@@ -6,15 +6,24 @@ const source = fs.readFileSync(require('node:path').resolve(__dirname, '../../pu
 async function run({ targeted = true, failure = '', token = 'a'.repeat(32) } = {}) {
   const calls = [], readiness = [], navigations = [], auth = [];
   const status = { dataset: {} }, button = { addEventListener(_, fn) { this.click = fn; } };
-  const root = { querySelector(s) { return s.includes('feedback') ? status : button; } };
+  const nameInput = { value: 'reader', addEventListener() {} };
+  const form = { addEventListener(_, fn) { button.click = () => fn({ preventDefault() {} }); } };
+  const root = { querySelector(s) {
+    if (s.includes('feedback')) return status;
+    if (s.includes('name-form')) return form;
+    if (s.includes('name-field')) return { hidden: false };
+    if (s.includes('username')) return nameInput;
+    return button;
+  } };
   let ready;
   const fingerprint = 'b'.repeat(40);
   const sandbox = { crypto: webcrypto, Uint8Array, URLSearchParams,
-    localStorage: { getItem() { if (failure === 'storage') throw Error('Storage unavailable'); return fingerprint; } },
+    sessionStorage: { setItem(){}, removeItem(){} },
+    localStorage: { getItem(key) { if (failure === 'storage') throw Error('Storage unavailable'); return key === 'forum_pki_fingerprint' ? fingerprint : null; } },
     document: { addEventListener(_, fn) { ready = fn; }, querySelector() { return root; } },
-    window: { location: { hash: '#invite=' + token, replace(url) { navigations.push(url); } },
-      __forumBrowserIdentity: { async ensureActionIdentity(_root, _status, opts) { readiness.push(opts); } },
-      ForumBrowserSigning: { async signCanonicalRecord() { return 'signature'; } },
+    window: { addEventListener(){}, location: { hash: '#invite=' + token, replace(url) { navigations.push(url); } },
+      __forumBrowserIdentity: { currentAuthorIdentityId() { return 'openpgp:' + fingerprint; }, async ensureActionIdentity(_root, _status, opts) { readiness.push(opts); } },
+      ForumBrowserSigning: { normalizeProfileName: value => value, async signCanonicalRecord() { return 'signature'; } },
       PrivateSiteAuth: { async authenticate(opts) { auth.push(opts); return { status: failure === 'auth' ? 'pending' : 'approved', identityId: 'openpgp:' + fingerprint }; } } },
     fetch: async (url, options) => {
       calls.push(url);
@@ -41,7 +50,7 @@ async function run({ targeted = true, failure = '', token = 'a'.repeat(32) } = {
   assert.equal(manual.readiness.length, 0);
   manual.button.click(); await manual.flush();
   assert.equal(manual.readiness.length, 1);
-  assert.equal(manual.readiness[0].temporaryName, undefined);
+  assert.equal(manual.readiness[0].temporaryName, 'reader');
   const retry = await run({ failure: 'network' });
   assert.equal(retry.readiness.length, 0);
   assert.equal(retry.button.hidden, false);

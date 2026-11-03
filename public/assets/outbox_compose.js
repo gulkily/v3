@@ -1,15 +1,16 @@
 (function () {
   "use strict";
 
-  // Only the explicit "Plain text" choice is kept; an empty value leaves the server default.
+  // The composer's Markdown box travels with the draft; drafts without it leave the server default.
   function withFormat(payload, fields) {
-    if (fields.bodyFormat === "plain") payload.bodyFormat = "plain";
+    if (fields.bodyFormat === "plain" || fields.bodyFormat === "markdown") payload.bodyFormat = fields.bodyFormat;
     return payload;
   }
 
   function bodyFormatOf(form) {
-    var field = form.querySelector('[name="body_format"]');
-    return field && field.checked ? "plain" : "";
+    var toggle = form.querySelector('input[type="checkbox"][name="body_format"]');
+    if (!toggle) return "";
+    return toggle.checked ? "markdown" : "plain";
   }
 
   function replyItem(fields) {

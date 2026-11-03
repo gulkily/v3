@@ -30,6 +30,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
+
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
 
@@ -380,6 +382,10 @@ and repair its navigation and affected references. See the
 - [Bounded tag pages and QDB rebuild catalog](./qdb_rebuild_scope/qdb_rebuild_scope_step1_solution_assessment.md) — implemented and locally verified; all sites; live-host acceptance pending.
 
 - [QDB build-time reduction](./qdb_build_time/qdb_build_time_step1_solution_assessment.md) — combined profile publication and history optimization, locally implemented and measured; production replay pending.
+
+- [Multi-redemption invites](multi_redemption_invites/multi_redemption_invites_step3_development_plan.md): backend-only scope v2; six stages implemented locally; verification and release limitations in the [summary](multi_redemption_invites/multi_redemption_invites_step4_implementation_summary.md).
+
+- [Invitation username selection](restore_invitation_prompt/restore_invitation_prompt_step1_solution_assessment.md) — inline naming and same-key guest recovery.
 
 - [Recent conversation](recent_activity/recent_activity_step1_solution_assessment.md) — implemented locally; [verification and release handoff](recent_activity/recent_activity_step4_implementation_summary.md).
 

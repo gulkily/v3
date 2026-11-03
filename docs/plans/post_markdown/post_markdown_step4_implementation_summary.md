@@ -21,6 +21,9 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 | Request | Disposition and reason | Approval status | Outcome |
 | --- | --- | --- | --- |
 | Rewrite the Nov 2 changelog post | Separate: content change | Requested by maintainer | Done before Step 4 |
+| Label the composer option "Markdown" instead of "Plain text" (2026-11-03) | Changed scope: inverts the Step 2 composer requirement | Revised Steps 2 and 3 approved 2026-11-03 | Stage 7 |
+| Markdown box starts unchecked and a naive JS detector ticks it when the draft looks like Markdown (2026-11-03) | Changed scope: composer default becomes plain unless detected or ticked | Revised Steps 2 and 3 approved 2026-11-03 | Stage 7 |
+| Change an existing post's format after posting, e.g. switch old posts to Markdown (2026-11-03) | Changed scope: new signed format-change record (like thread subject changes), read-model and UI support; Step 2 excluded editing after publication | Folded into this cycle; revised Steps 2 and 3 approved 2026-11-03 (authors and root-approved operators may switch) | Stages 8–10 |
 
 ## Stage 1 - Record format
 
@@ -147,3 +150,87 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Status: pending. It needs the branch merged and deployed (Tools -> Deploy, operator session), which the maintainer does. After deploy, the read model rebuilds on the next request because the schema changed (44 -> 45), unless the site runs in high-traffic mode, where `./v3 high-traffic prepare` comes first.
 - Checks to run after deploy: one Markdown thread and one plain thread from the composer, one agent post through the API with no `body_format`, `get_post` showing `Body-Format` for each, and an existing post (the Nov 2 changelog thread) looking unchanged. Test posts are retracted afterwards unless the maintainer keeps them.
 - Retrospective and ledger closeout are recorded with this stage.
+
+## Stage 7 - Markdown box and detector
+
+**Original estimate: 0.10**
+**Retrospective assessment: 0.10**
+
+- Changes:
+  - Composer menu: a **Markdown** checkbox (`body_format=markdown`), unticked by default, after a hidden `body_format=plain` fallback, so an unticked box posts plain text with or without JavaScript. "Plain text (no Markdown)" is gone.
+  - New `public/assets/markdown_detect.js`, loaded on every page from the layout: `ForumMarkdownDetect.looksLikeMarkdown(text)` checks for headings, bullet/numbered lists, quotes, code fences, table rows, `**bold**`, `*emphasis*`, `[label](https://...)` links and inline code. It ticks the box as the author types until they change the box by hand; Discard draft resets that. Composers inserted later bind on first focus.
+  - `browser_signing.js` and `outbox_compose.js` send `markdown` or `plain` from the box for composer forms; forms without the box (and older Outbox drafts) still leave the server default.
+  - API default unchanged (Markdown). Syntax reference and both concept entries describe the box.
+- Verification:
+  - New `tests/MarkdownDetectTest.php` (registered): 11 Markdown drafts detected; 11 ordinary drafts (`2 * 3 * 4`, `a*b*c`, hashtags, a bare URL, `-`, an email address) not detected; a manual choice sticks and Discard draft resets it.
+  - `WriteApiSmokeTest::testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt`: pages carry the hidden fallback and the box; unticked unsigned post records `plain`, ticked records `markdown`. `OfflineOutboxComposeTest` covers the format travelling with Outbox drafts.
+  - `MarkdownDetectTest OfflineOutboxComposeTest BrowserSigningNormalizationTest LocalAppSmokeTest` plus the composer test: 254 run, 251 passed; the 3 failures are the baseline `LocalAppSmokeTest` ones.
+  - Browser (headless Chrome, New post page, typing simulated with an input event): `## Heading` ticks the box; `plain words only` and `2 * 3 * 4` do not.
+- Notes:
+  - The box lives in the ··· menu, so an author sees whether it ticked only by opening the menu. If that turns out to be too hidden, a small visible "Markdown" label beside Post is an easy follow-up.
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Post-format records in the read model
+
+**Original estimate: 0.25**
+**Retrospective assessment: 0.20**
+
+- Changes:
+  - New spec `docs/specs/post_format_record_v1.md`: `records/post-formats/<Record-ID>.txt` plus `.asc`; headers `Record-ID` (`post-format-<Post-ID>-<timestamp digits>-<8 hex>`), `Created-At`, `Post-ID`, `Body-Format`, `Actor-Identity-ID`, in that order, empty body.
+  - `PostFormatRecord` and `PostFormatRecordParser` (strict order, derived Record-ID, format and identity checks); `CanonicalPathResolver::postFormat()`; `CanonicalRecordRepository::loadPostFormat()` and `loadPostFormatsFor($postId)`.
+  - `ReadModel\PostFormatChanges`: picks the latest record per post and sets `posts.body_format`, recomputing a thread root's `body_preview`; retracted and missing posts are skipped. Used by the full rebuild (new `index_post_formats` phase after thread subjects) and by `IncrementalReadModelUpdater::applyPostFormatWrite($postId, $commitSha)`.
+- Verification:
+  - New `tests/PostFormatRecordTest.php` (registered): parser accepts the canonical record and rejects five variants; an old header-less post switched Markdown -> plain -> Markdown plus a reply switched once give the same `body_format` and thread previews after incremental updates and after a full rebuild; records for missing posts and unparseable files are ignored.
+  - `PostFormatRecordTest CanonicalRecordParsersTest ReadModelBuilderTimingTest ReactionRecordFormatParityTest ReadModelMetadataTest ReadModelProvenanceTest RecentPostTest BoardListTest`: 85 run, 83 passed; the 2 failures are baseline.
+- Notes:
+  - Activity labels derived from a root's first line are not recomputed on a switch; they show the format at posting time until the next rebuild.
+  - The read model does not re-verify signatures; the writer (Stage 9) is the only path that commits these records.
+- Estimate details: original scope unchanged; retrospective lower because the thread-subject pattern carried over directly.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 9 - Signed format switches
+
+**Original estimate: 0.20**
+**Retrospective assessment: 0.20**
+
+- Changes:
+  - `LocalWriteService::preparePostFormat()` and `createPreparedPostFormat()`: prepare builds the canonical record for `post_id` and `body_format` (required, `markdown` or `plain`) signed by `actor_identity_id`; create checks the prepared token, record and metadata, re-checks authority, verifies the detached signature against the actor's key, commits the record and its `.asc`, applies it incrementally (or rebuilds), and invalidates the thread's static pages. An exact replay after token cleanup returns `already_applied`.
+  - Authority (`requireFormattablePost`): the post's author, or an approved identity that `RetractionAuthority::currentOperator()` accepts, the same rule as operator retraction. Header-less and anonymous posts can be switched by operators. Missing or retracted posts and identity/approval/invitation posts are refused.
+  - Routes `POST /api/prepare_post_format` and `/api/create_prepared_post_format`, listed in the API catalog.
+- Verification:
+  - New `WriteApiSmokeTest::testPostFormatSwitchesAreSignedByTheAuthorOrAnOperator`: another member is refused at prepare; an invalid format is refused; the author's switch to plain is refused with another key's signature and with none, then accepted; `get_post` and the read model show `plain`; an exact replay returns `already_applied`; a root-approved operator switches it back and the thread page renders the Markdown; an operator switches the header-less fixture `root-001`; an identity/approval post is refused; a full rebuild agrees.
+  - `WriteApiSmokeTest ApiRouteCatalogTest LlmsTxtRendererTest PostFormatRecordTest`: 219 run, 219 passed.
+- Notes:
+  - Operators are checked at prepare and again at create, so losing operator status between the two steps refuses the switch.
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 10 - Switch control and docs
+
+**Original estimate: 0.15**
+**Retrospective assessment: 0.20**
+
+- Changes:
+  - The post's ··· panel (the retract control, shown on thread roots, replies and post pages to the author and to operators) gains **Show as Markdown** or **Show as plain text**, whichever is the other format. Clicking it signs the switch in the browser (`ForumBrowserSigning.submitSignedPostFormat`) and reloads the page; errors show in the control's feedback line.
+  - llms.txt describes the switch and lists the two routes for agents; `agent_api.md`, the syntax reference and the concept entry describe it.
+  - Stage 9 correction found while running this stage's suites: two switches within the same second could sort either way, because order comes from `Created-At` and the tie-break was random. The writer now issues each record strictly after the latest one for that post (moving a second forward if needed) and refuses to commit a prepared switch that is no longer the latest ("Prepare the change again"). The spec says so.
+- Verification:
+  - New `WriteApiSmokeTest::testFormatSwitchAppearsBesideRetractForAuthorsAndOperatorsOnly`: the author and an operator see the control with the right label; another member does not.
+  - Stage 9 test extended: a stale prepare is refused after a newer switch, and three switches in quick succession end in the last one chosen; repeated runs pass.
+  - `WriteApiSmokeTest PostFormatRecordTest`: 209 run, 209 passed. `BrowserSigningNormalizationTest OfflineOutboxComposeTest LocalAppSmokeTest` with the write suite: only the 3 baseline `LocalAppSmokeTest` failures. `LlmsTxtRendererTest ApiRouteCatalogTest PlatformDocsPageTest`: pass. `node --check` on both edited scripts.
+- Notes:
+  - Not checked in a real browser: signing a switch needs a browser key on a running site. Stage 6 covers it live on zenmemes.com.
+  - The page reloads after a switch rather than re-rendering the post in place.
+- Estimate details: original scope unchanged; retrospective higher because of the Stage 9 ordering correction.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Branch verification after Stage 10
+
+- PR #12 (Stages 1–5) was merged to main and deployed before Stages 7–10 finished; zenmemes.com already reports `Body-Format` from `get_post`. Merged the new `origin/main` (`f2a79425`) into the branch as `c21355c4`; the only conflict was the uncommitted ledger, kept with both additions.
+- Full suite on that tree: 1879 run, 1863 passed, 16 failed. 15 are baseline failures; the 16th, `PostRetractionScriptTest::testRetractButtonConfirmsSubmitsAndReportsEachOutcome`, came from Stage 10: its harness drives the first click handler `post_retraction.js` registers, which had become the format switch. Fixed by registering the switch handler after the retract handler; the test passes (2/2).
+

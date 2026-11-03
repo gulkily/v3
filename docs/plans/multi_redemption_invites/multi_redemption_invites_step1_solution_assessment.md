@@ -1,6 +1,6 @@
-> **Feature plan:** [Step 1](./multi_redemption_invites_step1_solution_assessment.md) · Step 2 (not started) · Step 3 (not started) · Step 4 (not authorized)
+> **Feature plan:** [Step 1](./multi_redemption_invites_step1_solution_assessment.md) · [Step 2](./multi_redemption_invites_step2_feature_description.md) · [Step 3](./multi_redemption_invites_step3_development_plan.md) · [Step 4](./multi_redemption_invites_step4_implementation_summary.md)
 Debug mode: enabled
-Effort study: railspike-effort / v3/multi_redemption_invites; [P2 ledger](effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2)
+Effort study: railspike-effort / v3/multi_redemption_invites; [P2 ledger](../effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2)
 Extended estimates: enabled
 Cycle estimate: 0.85
 
@@ -36,7 +36,7 @@ Choose A as one releasable vertical slice: issue a capped link, admit several ke
 
 Acceptance boundaries: count each successfully accepted recipient key once; retries and already-approved entry consume no additional use; concurrent claims cannot exceed the cap; revocation stops future admissions even after partial use without removing earlier approvals. Expiry must not erase accepted grants on rebuild. Preserve existing single-use records, signatures, same-recipient recovery and targeted/untargeted entry. Verify malformed limits, expiry, exhausted/revoked links, concurrent final-slot claims, lost responses, full/incremental replay and export/import, plus phone/desktop issuance and recovery. Define old-reader behavior before introducing reusable records; older readers currently assume one redemption. Retain readable `Key: value` records and existing approval authority; no dependencies or deployment proposed.
 
-Concepts touched: [Invitation approval replay](../concepts/approval_acceptance.md#invitation-approval-replay) changes for either option; [Approval acceptance](../concepts/approval_acceptance.md#approval-acceptance) and [Signed approval review](../concepts/approval_acceptance.md#signed-approval-review) retain their authority semantics. Invitation lifecycle inventory entry is proposed, to be added only during authorized implementation.
+Concepts touched: [Invitation approval replay](../../concepts/approval_acceptance.md#invitation-approval-replay) changes for either option; [Approval acceptance](../../concepts/approval_acceptance.md#approval-acceptance) and [Signed approval review](../../concepts/approval_acceptance.md#signed-approval-review) retain their authority semantics. Invitation lifecycle inventory entry is proposed, to be added only during authorized implementation.
 
 Enhancement requests: the 30-day default/no-selector change is separately authorized and implemented directly; existing signed expiry dates remain unchanged. Multi-redemption implementation and Steps 2–4 are not authorized.
 
@@ -52,3 +52,15 @@ Step 1 handoff: 2026-10-30 UTC; scope v1 / R1 / P2; 0.85 projected total reaffir
 Publication authorization: 2026-10-30 UTC — user requested “please commit and push what we have so far.” This authorizes publishing the current planning draft and study records, not Step 1 approval or multi-redemption implementation.
 
 *— Codex · 2026-10-30 UTC*
+
+Step 1 approval: 2026-10-31 UTC — user said “approved step 1.” Proceed with recommended Option A (fixed redemption limit); Step 2 requirements drafted, implementation still unauthorized. Earlier pending/publication states above are historical.
+
+*— Codex · 2026-10-31 UTC*
+
+Scope revision — 2026-10-31 UTC: user directs backend-only multi-redemption, with no UI updates. Option A retains bounded signed limits; remove its issuer UI/control work. Current requirements and stages are scope v2; the earlier UI proposal and mockups are superseded, with originals retained in [v1 history](multi_redemption_invites_scope_v1_history.md). This is not implementation approval.
+
+*— Revised by Codex · 2026-10-31 UTC*
+
+Approval confirmation — 2026-10-31 UTC: user explicitly approved Steps 1 and 2 again after the backend-only revision. Scope v2 is approved for development planning; Step 3/implementation remains pending.
+
+*— Codex · 2026-10-31 UTC*

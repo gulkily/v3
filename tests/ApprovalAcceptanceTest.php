@@ -64,6 +64,48 @@ final class ApprovalAcceptanceTest
         });
     }
 
+    public function testMultiUseReplayPreservesReceiptsAcrossRevocationAndRejectsExcess(): void
+    {
+        $this->fixture(function (string $root, array $context): void {
+            $prefix = "Invitation-ID: invite-aaaaaaaaaaaaaaaa\nVerification-Hash: sha256:" . str_repeat('a', 64) . "\n";
+            $rows = []; $records = []; $receipts = [];
+            $parser = new \ForumRewrite\Canonical\InvitationRecordParser();
+            foreach (['issue', 'revoke', 'redeem-one', 'redeem-two'] as $id) {
+                $action = str_starts_with($id, 'redeem') ? 'redeem' : $id;
+                $recipient = $id === 'redeem-two' ? 'openpgp:' . str_repeat('c', 40) : $context['target_identity_id'];
+                $author = $action === 'redeem' ? $recipient : $context['actor_identity_id'];
+                $body = $prefix . "Invitation-Action: {$action}\n";
+                if ($action === 'issue') $body .= "Expires-At: 2026-01-01T00:06:00Z\nMax-Redemptions: 2\n";
+                $contents = $this->post($id, 'identity invitation internal', $author, $body);
+                $path = 'records/posts/' . $id . '.txt'; file_put_contents($root . '/' . $path, $contents);
+                $record = $parser->parse($contents); $records[] = $record; $post = $record->post;
+                $rows[] = ['post_id' => $id, 'created_at' => $post->createdAt, 'thread_id' => $post->threadId,
+                    'parent_id' => $post->parentId, 'author_identity_id' => $author, 'body' => $post->body,
+                    'board_tags_json' => json_encode($post->boardTags), 'source_path' => $path];
+                if ($action === 'redeem') {
+                    $ctx = $context; $ctx['target_identity_id'] = $recipient;
+                    file_put_contents($root . '/' . ApprovalAcceptance::path($id),
+                        ApprovalAcceptance::encode($contents, $ctx, '2026-01-01T00:05:00Z', 'invitation'));
+                    $receipts[$id] = ApprovalAcceptance::read($root, $path);
+                }
+            }
+            $ledger = new \ForumRewrite\Invitation\InvitationLedger($records, $receipts);
+            $entry = $ledger->find('invite-aaaaaaaaaaaaaaaa');
+            assertSame(2, count($entry['recipients']));
+            assertTrue($entry['revoked'] !== null);
+            $candidates = InvitationApprovalReplay::candidates($root, array_reverse($rows));
+            assertSame(array_keys($entry['recipients']), array_column($candidates, 'target_identity_id'));
+            assertSame($candidates, InvitationApprovalReplay::candidates($root, array_merge($rows, [$rows[2]])));
+            unlink($root . '/' . ApprovalAcceptance::path('redeem-two'));
+            $this->rejects(fn () => InvitationApprovalReplay::candidates($root, $rows));
+            $extra = str_replace(['redeem-two', 'openpgp:' . str_repeat('c', 40)], ['redeem-three', 'openpgp:' . str_repeat('d', 40)],
+                file_get_contents($root . '/records/posts/redeem-two.txt'));
+            $ctx = $context; $ctx['target_identity_id'] = 'openpgp:' . str_repeat('d', 40);
+            $receipt = \ForumRewrite\Security\ApprovalReceiptText::decode(ApprovalAcceptance::encode($extra, $ctx, '2026-01-01T00:05:00Z', 'invitation'));
+            $this->rejects(fn () => $ledger->apply($parser->parse($extra), $receipt));
+        });
+    }
+
     public function testTextPreservesSignedContextOrderAndRejectsMalformedEvidence(): void
     {
         $this->fixture(function (string $root, array $context): void {
@@ -110,7 +152,7 @@ final class ApprovalAcceptanceTest
 
     private function post(string $id, string $tags, string $author, string $body): string
     {
-        return "Post-ID: {$id}\nCreated-At: 2026-01-01T00:00:00Z\nBoard-Tags: {$tags}\nThread-ID: bootstrap\nParent-ID: bootstrap\nAuthor-Identity-ID: {$author}\n\n{$body}";
+        return "Post-ID: {$id}\nCreated-At: 2026-01-01T00:00:00Z\nBoard-Tags: {$tags}\nThread-ID: bootstrap\nParent-ID: bootstrap\nAuthor-Identity-ID: {$author}\n\n{$body}\n";
     }
 
     private function rejects(callable $callback): void

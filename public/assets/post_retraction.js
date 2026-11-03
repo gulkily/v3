@@ -145,4 +145,33 @@
 
     retractPost(button);
   });
+
+  // "Show as Markdown" / "Show as plain text": sign the switch, then reload to show the result.
+  document.addEventListener("click", async function (event) {
+    const button = event.target instanceof Element ? event.target.closest('[data-action="switch-post-format"]') : null;
+    if (!button || button.hasAttribute("disabled")) return;
+    event.preventDefault();
+    const signing = window.ForumBrowserSigning || null;
+    const feedback = feedbackNodeFor(button);
+    if (!signing || typeof signing.submitSignedPostFormat !== "function") {
+      setFeedback(feedback, "Signing unavailable. Refresh and try again.", "error");
+      return;
+    }
+    const menu = button.closest("details.post-more-actions");
+    if (menu) menu.open = false;
+    button.setAttribute("disabled", "disabled");
+    setFeedback(feedback, "Changing format…", "ok");
+    let result;
+    try {
+      result = await signing.submitSignedPostFormat(button.getAttribute("data-post-id") || "", button.getAttribute("data-body-format") || "");
+    } catch (error) {
+      result = { ok: false, error: (error && error.message) || "Unable to change the format." };
+    }
+    if (result && result.ok) {
+      window.location.reload();
+      return;
+    }
+    button.removeAttribute("disabled");
+    setFeedback(feedback, (result && result.error) || "Unable to change the format.", "error");
+  });
 })();

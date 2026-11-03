@@ -211,7 +211,10 @@ category and list its offending characters.
   a second `prepare_identity` for the same key fails with
   `Identity already exists for this fingerprint.`
 - Username changes use `prepare_profile_name` and `finalize_profile_name` and
-  only work when `/llms.txt` says they are enabled.
+  follow the live rename flag, except that an original `guest` identity with no
+  verified name update may choose its initial name even when renaming is disabled.
+  Exact committed signed naming requests may be retried after prepare-token expiry
+  or a lost response; recovery returns the latest verified name.
 
 ## Signing
 
@@ -326,6 +329,13 @@ and explicitly correct the named character when necessary.
   sets the session cookie (`v3_session` over http, `__Host-v3_session` over
   https), which later requests send.
 - Image attachments need images enabled and an approved identity.
+
+Approved API clients may issue a capped link with `max_redemptions` (1–1000) on
+`POST /api/prepare_invitation`, then sign the exact canonical record and finalize
+through `POST /api/create_prepared_invitation`. Omission remains single-use.
+Recipients use the existing redemption endpoints; same-key recovery consumes no
+extra slot. See [invitation API and recovery](invitation_entry.md#capped-invitations-through-the-api)
+for request fields, revocation and upgrade requirements.
 
 ## Text file publisher scripts
 
@@ -494,3 +504,12 @@ logs, poems, or anything with stray `*` or `#`). The prepared record then carrie
 is plain text. `GET /api/get_post` always reports `Body-Format: markdown` or
 `Body-Format: plain`. The [Markdown syntax reference](markdown_syntax.md) lists
 what renders.
+
+To change an existing post's format later, its author (or a root-approved
+operator, for any post) calls `POST /api/prepare_post_format` with `post_id`,
+`body_format` and `actor_identity_id`, signs `canonical_record`, then calls
+`POST /api/create_prepared_post_format` with `prepare_token`, `canonical_record`,
+`detached_signature`, and `record_path`, `post_id` and `actor_identity_id`
+unchanged. Resending the same signed request is safe (`already_applied: true`).
+The post record is never rewritten; the [post format record](../specs/post_format_record_v1.md)
+is kept beside it and `get_post` reports the current format.

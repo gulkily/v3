@@ -49,7 +49,7 @@ final class ApiRouteCatalog
             ['GET', '/api/auth_challenge', 'public', 'text', 'Challenge to sign for authenticate_identity.'],
             ['POST', '/api/authenticate_identity', 'signed', 'text', 'Start a session with a signed challenge.'],
             ['GET', '/api/auth_status', 'session', 'text', 'Current session identity.'],
-            ['POST', '/api/prepare_profile_name', 'signed', 'json', 'Prepare a username change (when username changes are enabled).'],
+            ['POST', '/api/prepare_profile_name', 'signed', 'json', 'Prepare an initial guest name, or a later rename when username changes are enabled.'],
             ['POST', '/api/finalize_profile_name', 'signed', 'json', 'Submit a signed username change.'],
             // Posting
             ['POST', '/api/prepare_thread', 'signed', 'json', 'Prepare a signed thread: send author_identity_id and body, receive the bytes to sign.'],
@@ -62,6 +62,8 @@ final class ApiRouteCatalog
             ['POST', '/api/create_quote', 'anonymous', 'text', 'Unsigned quote; anonymous unless author_identity_id is sent (QDB sites only).'],
             ['POST', '/api/prepare_retraction', 'signed', 'json', 'Prepare a signed retraction of your own post.'],
             ['POST', '/api/create_prepared_retraction', 'signed', 'json', 'Publish a prepared retraction.'],
+            ['POST', '/api/prepare_post_format', 'signed', 'json', 'Prepare a signed switch of a post between Markdown and plain text (author or operator).'],
+            ['POST', '/api/create_prepared_post_format', 'signed', 'json', 'Publish a prepared post-format switch.'],
             // Tags and reactions
             ['POST', '/api/apply_thread_tag', 'hint', 'text', 'Tag a thread; signed when canonical_record and detached_signature are sent.'],
             ['POST', '/api/apply_post_tag', 'hint', 'text', 'Tag a post; signed when canonical_record and detached_signature are sent.'],
