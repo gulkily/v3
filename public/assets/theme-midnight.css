@@ -64,6 +64,7 @@
 :root[data-theme="midnight"] .account-card,
 :root[data-theme="midnight"] .thread-rows,
 :root[data-theme="midnight"] .account-group,
+:root[data-theme="midnight"] .account-page > .account-key-advanced,
 :root[data-theme="midnight"] .board-toolbar,
 :root[data-theme="midnight"] .stack > .board-filter {
   border: 2px solid;
@@ -77,8 +78,27 @@
 }
 
 :root[data-theme="midnight"] .thread-rows,
-:root[data-theme="midnight"] .account-group {
+:root[data-theme="midnight"] .account-group,
+:root[data-theme="midnight"] .account-page > .account-key-advanced {
   background: #121212;
+}
+
+/* Account's Advanced disclosure sits between grouped rows, so it takes the same
+   frame and a row-height summary instead of floating on the page background. */
+:root[data-theme="midnight"] .account-page > .account-key-advanced {
+  padding-top: 0;
+}
+
+:root[data-theme="midnight"] .account-page > .account-key-advanced summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 1rem;
+}
+
+:root[data-theme="midnight"] .account-page > .account-key-advanced > div {
+  margin-top: 0;
+  padding: 0.25rem 1rem 1rem;
 }
 
 :root[data-theme="midnight"] .card {
