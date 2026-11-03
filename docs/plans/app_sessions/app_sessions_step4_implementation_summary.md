@@ -209,7 +209,7 @@ User authorization: "yes please <3" (push the branch and open a pull request). `
 - Verification on the merged tree:
   - Focused: `ViewerSessionStoreTest TestingSelfApprovalTest RootApprovalPageTest UserAccessTest DeployPageTest ApprovedUserKeyResolverTest PrivateMessageHistorySyncTest` 63/63 passed; `WriteApiSmokeTest LocalAppSmokeTest` 363 run, 360 passed, the 3 long-standing `LocalAppSmokeTest` failures.
   - Browser (headless Chrome): `key_retirement.mjs` (main's new journey), `app_sessions_http_https.mjs` 7/7, `background_sign_in.mjs` passed.
-  - Full suite on the merged tree: pending at push time.
+  - Full suite on the merged tree (after push): 1847 run, 1832 passed, 15 failed; exactly the 15 failures of the original `main` baseline, none new.
 - Study: merge integration only; scores, retrospectives and acceptance count unchanged.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
