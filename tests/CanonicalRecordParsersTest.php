@@ -328,6 +328,30 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testParsesThreadSubjectWithAuthorAndReplyProvenance(): void
+    {
+        $hash = str_repeat('ab', 32);
+        $contents = "Record-ID: thread-subject-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: set\nSubject: Better name\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\nSource-Post-ID: reply-001\nSource-Post-SHA256: {$hash}\nReason: Title directive in reply\n\n";
+
+        $record = (new ThreadSubjectRecordParser())->parse($contents);
+
+        assertSame('Better name', $record->subject);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->authorIdentityId);
+        assertSame('reply-001', $record->sourcePostId);
+        assertSame($hash, $record->sourcePostSha256);
+    }
+
+    public function testRejectsThreadSubjectWithIncompleteOrInvalidProvenance(): void
+    {
+        $base = "Record-ID: thread-subject-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: set\nSubject: Better name\n";
+        $expected = 'Thread-subject source requires a valid post ID and SHA-256 together.';
+
+        assertThrows(static fn () => (new ThreadSubjectRecordParser())->parse($base . "Source-Post-ID: reply-001\n\n"), $expected);
+        assertThrows(static fn () => (new ThreadSubjectRecordParser())->parse($base . 'Source-Post-SHA256: ' . str_repeat('ab', 32) . "\n\n"), $expected);
+        assertThrows(static fn () => (new ThreadSubjectRecordParser())->parse($base . "Source-Post-ID: reply 001\nSource-Post-SHA256: " . str_repeat('ab', 32) . "\n\n"), $expected);
+        assertThrows(static fn () => (new ThreadSubjectRecordParser())->parse($base . "Source-Post-ID: reply-001\nSource-Post-SHA256: nothex\n\n"), $expected);
+    }
+
     public function testRejectsThreadSubjectWithMissingRequiredHeaders(): void
     {
         $headers = [

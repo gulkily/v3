@@ -17,6 +17,8 @@ final class ThreadSubjectRecord
         public readonly string $body,
         public readonly ?string $actionAt = null,
         public readonly ?string $intentId = null,
+        public readonly ?string $sourcePostId = null,
+        public readonly ?string $sourcePostSha256 = null,
     ) {
     }
 }
