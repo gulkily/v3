@@ -122,7 +122,8 @@ class LocalWriteService
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
 
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime);
+            $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -202,7 +203,7 @@ class LocalWriteService
                 $this->invalidator()->invalidateReply($threadId, $parentId);
                 return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'already_posted' => true];
             }
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse);
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
@@ -301,7 +302,8 @@ class LocalWriteService
             $eventLocation = $this->normalizeAuthoredLine((string) ($input['event_location'] ?? ''), 'event_location');
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime);
+            $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat);
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -347,7 +349,7 @@ class LocalWriteService
             $this->assertReplyTarget($threadId, $parentId);
 
             $postId = $this->generateRecordId('reply');
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, null, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -583,7 +585,8 @@ class LocalWriteService
         string $eventDate = '',
         string $eventLocation = '',
         string $eventLink = '',
-        string $eventTime = ''
+        string $eventTime = '',
+        ?string $bodyFormat = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -594,6 +597,7 @@ class LocalWriteService
             . ($eventTime !== '' ? "Event-Time: {$eventTime}\n" : '')
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
+            . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
             . "\n{$body}";
     }
 
@@ -621,7 +625,8 @@ class LocalWriteService
         string $parentId,
         string $body,
         ?string $authorIdentityId,
-        ?array $agentResponse = null
+        ?array $agentResponse = null,
+        ?string $bodyFormat = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -630,6 +635,7 @@ class LocalWriteService
             . "Parent-ID: {$parentId}\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . ($agentResponse !== null ? \ForumRewrite\Canonical\AgentResponseMetadata::toHeaders($agentResponse) : '')
+            . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
             . "\n{$body}";
     }
 
@@ -4041,6 +4047,25 @@ class LocalWriteService
         }
 
         return $identityId;
+    }
+
+    /**
+     * Reads the optional `body_format` input. Blank means the caller's default; anything
+     * other than markdown or plain is rejected rather than guessed.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function normalizeBodyFormat(array $input, string $default): string
+    {
+        $value = strtolower(trim((string) ($input['body_format'] ?? '')));
+        if ($value === '') {
+            return $default;
+        }
+        if (!in_array($value, PostRecord::FORMATS, true)) {
+            throw new RuntimeException('body_format must be markdown or plain.');
+        }
+
+        return $value;
     }
 
     private function normalizeBoardTags(string $value): string

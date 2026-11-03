@@ -89,6 +89,38 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testPostBodyFormatHeaderIsOptionalAndValidated(): void
+    {
+        $base = "Post-ID: format-test\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\n";
+        $parser = new PostRecordParser();
+
+        assertNullValue($parser->parse($base . "\n*kept*\n")->bodyFormat);
+        assertTrue(!$parser->parse($base . "\n*kept*\n")->rendersMarkdown());
+        assertSame('markdown', $parser->parse($base . "Body-Format: markdown\n\nBody.\n")->bodyFormat);
+        assertTrue($parser->parse($base . "Body-Format: markdown\n\nBody.\n")->rendersMarkdown());
+        assertSame('plain', $parser->parse($base . "Body-Format: plain\n\nBody.\n")->bodyFormat);
+        assertSame('plain', $parser->parse($base . "Thread-ID: root-001\nParent-ID: root-001\nBody-Format: plain\n\nReply.\n")->bodyFormat);
+        assertThrows(fn () => $parser->parse($base . "Body-Format: html\n\nBody.\n"), 'Body-Format must be markdown or plain when present.');
+    }
+
+    public function testCanonicalPostBuildersAppendBodyFormatOnlyWhenGiven(): void
+    {
+        $service = $this->localWriteServiceForBuilderTests();
+        $thread = new ReflectionMethod(LocalWriteService::class, 'buildThreadPostRecord');
+        $thread->setAccessible(true);
+        $reply = new ReflectionMethod(LocalWriteService::class, 'buildReplyPostRecord');
+        $reply->setAccessible(true);
+
+        assertSame(
+            "Post-ID: t\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\nSubject: S\nBody-Format: markdown\n\nBody.\n",
+            $thread->invoke($service, 't', '2026-11-03T12:00:00Z', 'general', 'S', "Body.\n", null, '', '', '', '', 'markdown')
+        );
+        assertSame(
+            "Post-ID: r\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\nThread-ID: t\nParent-ID: t\nBody-Format: plain\n\nReply.\n",
+            $reply->invoke($service, 'r', '2026-11-03T12:00:00Z', 'general', 't', 't', "Reply.\n", null, null, 'plain')
+        );
+    }
+
     public function testCanonicalReplyPostBuilderPreservesRecordBytes(): void
     {
         $service = $this->localWriteServiceForBuilderTests();

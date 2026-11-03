@@ -35,6 +35,7 @@ Key: Value
 - `Author-Identity-ID`: optional canonical identity reference for authored posts
 - `Subject`: optional, mainly useful for thread roots
 - `Thread-Type`: optional for thread roots, omitted for replies
+- `Body-Format`: optional, `markdown` or `plain`. Absent means plain, which is how every record written before this header existed renders. New posts made through the composer and the `create_*`/`prepare_*` routes record it, defaulting to `markdown` (`plain` for QDB quotes); the `body_format` input overrides the default. In client-built signed records it follows `Subject` (threads) or `Author-Identity-ID` (replies).
 
 ## Typed Root Headers
 

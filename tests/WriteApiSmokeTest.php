@@ -1209,6 +1209,67 @@ CODE;
         assertSame($replyCommitSha, $this->gitOutput($repositoryRoot, 'rev-parse HEAD'));
     }
 
+    public function testNewPostsRecordBodyFormatAndGetPostReportsIt(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $default = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Formatted&body=%2A%2Abold%2A%2A');
+        $defaultId = $this->extractValue($default, 'thread_id');
+        assertStringContains("Body-Format: markdown\n", (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $defaultId)));
+        assertStringContains("Body-Format: markdown\n", $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . rawurlencode($defaultId)));
+
+        $plain = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Plain&body=1.%20not%20a%20list&body_format=plain');
+        $plainId = $this->extractValue($plain, 'thread_id');
+        assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $plainId)));
+        assertStringContains("Body-Format: plain\n", $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . rawurlencode($plainId)));
+
+        $reply = $this->renderMethod($application, 'POST', '/api/create_reply?thread_id=' . rawurlencode($plainId) . '&parent_id=' . rawurlencode($plainId) . '&body=Reply&body_format=Plain');
+        $replyId = $this->extractValue($reply, 'post_id');
+        assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $replyId)));
+
+        $rejected = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Bad&body=x&body_format=html');
+        assertStringContains('body_format must be markdown or plain', $rejected);
+    }
+
+    public function testSignedPostsCarryBodyFormatThroughPreparedAndDirectPaths(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $key = $this->createSigningKey('format-author');
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $_POST = ['public_key' => $key['public_key']];
+        $linked = $this->renderMethod($app, 'POST', '/api/link_identity');
+        $_POST = [];
+        $identity = $this->extractValue($linked, 'identity_id');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+
+        $prepared = $writer->prepareThread(['author_identity_id' => $identity, 'subject' => 'Prepared', 'body' => 'Prepared body.', 'board_tags' => 'general', 'body_format' => 'plain']);
+        assertStringContains("Body-Format: plain\n", $prepared['canonical_record']);
+        $writer->createPreparedPost($prepared + ['author_identity_id' => $identity, 'detached_signature' => $this->signCanonicalRecord($key['home'], $prepared['canonical_record'])]);
+        assertSame('plain', (new CanonicalRecordRepository($root))->loadPost($prepared['record_path'])->bodyFormat);
+
+        $preparedDefault = $writer->prepareReply(['author_identity_id' => $identity, 'thread_id' => $prepared['post_id'], 'parent_id' => $prepared['post_id'], 'body' => 'Reply.', 'board_tags' => 'general']);
+        assertStringContains("Body-Format: markdown\n", $preparedDefault['canonical_record']);
+
+        foreach (['', "Body-Format: markdown\n"] as $header) {
+            $now = gmdate('Y-m-d\\TH:i:s\\Z');
+            $direct = 'Post-ID: thread-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(16)) . "\nCreated-At: {$now}\nBoard-Tags: general\nAuthor-Identity-ID: {$identity}\nSubject: Direct\n{$header}\nDirect **body**.\n";
+            $result = $writer->createSignedPost(['canonical_record' => $direct, 'detached_signature' => $this->signCanonicalRecord($key['home'], $direct)]);
+            assertSame('ok', $result['status']);
+            $get = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/api/get_post?post_id=' . rawurlencode($result['post_id']));
+            assertStringContains($header === '' ? "Body-Format: plain\n" : "Body-Format: markdown\n", $get);
+        }
+    }
+
+    public function testRecordsWithoutBodyFormatReportPlain(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $response = $this->renderMethod($application, 'GET', '/api/get_post?post_id=root-001');
+        assertStringContains("Body-Format: plain\n", $response);
+    }
+
     public function testPostAnalysisEndpointStoresStubResultIdempotently(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -3794,7 +3855,7 @@ NODE;
         assertTrue(preg_match('#^records/posts/\d{4}/\d{2}/\d{2}/' . preg_quote((string) $payload['post_id'], '#') . '\.txt$#', (string) $payload['record_path']) === 1);
         assertStringContains('Post-ID: ' . $payload['post_id'] . "\n", $payload['canonical_record']);
         assertStringContains("Author-Identity-ID: {$identityId}\n", $payload['canonical_record']);
-        assertStringContains("Subject: Prepared Thread\n\nPrepared body\n", $payload['canonical_record']);
+        assertStringContains("Subject: Prepared Thread\nBody-Format: markdown\n\nPrepared body\n", $payload['canonical_record']);
         assertSame(hash('sha256', $payload['canonical_record']), $payload['canonical_sha256']);
         assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $payload['prepare_token'] . '.json'));
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
@@ -5081,7 +5142,7 @@ NODE;
         assertSame('root-001', $payload['thread_id']);
         assertTrue(preg_match('#^records/posts/\d{4}/\d{2}/\d{2}/' . preg_quote((string) $payload['post_id'], '#') . '\.txt$#', (string) $payload['record_path']) === 1);
         assertStringContains("Thread-ID: root-001\nParent-ID: root-001\n", $payload['canonical_record']);
-        assertStringContains("Author-Identity-ID: {$identityId}\n\nPrepared reply\n", $payload['canonical_record']);
+        assertStringContains("Author-Identity-ID: {$identityId}\nBody-Format: markdown\n\nPrepared reply\n", $payload['canonical_record']);
         assertTrue(is_file(dirname($databasePath) . '/prepared-posts/' . $payload['prepare_token'] . '.json'));
         assertFalse(is_file($repositoryRoot . '/' . $payload['record_path']));
     }
