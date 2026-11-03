@@ -21,6 +21,8 @@ use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadSubjectRecordParser;
+use ForumRewrite\Security\TitleDirectiveAuthority;
+use ForumRewrite\Support\TitleDirective;
 use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
@@ -228,18 +230,28 @@ class LocalWriteService
                 [$labelRecordPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
+            $subjectRecord = $this->titleDirectiveRecord($threadId, $postId, $contents, $body, $authorIdentityId, $createdAt);
+            if ($subjectRecord !== null) {
+                $this->writeFile($subjectRecord[0], $subjectRecord[1]);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
             $phaseStartedAt = hrtime(true);
             $writtenPaths = $signature !== null ? [$recordPath, $recordPath . '.asc'] : [$recordPath];
             if ($labelRecordPath !== null) {
                 $writtenPaths[] = $labelRecordPath;
             }
+            if ($subjectRecord !== null) {
+                $writtenPaths[] = $subjectRecord[0];
+            }
             $commitResult = $this->commitCanonicalWrite($writtenPaths, 'Create reply ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
-            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null, $subjectRecord !== null));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateReply($threadId, $postId);
+            if ($subjectRecord !== null) {
+                $this->invalidator()->invalidateBoardThread($threadId);
+            }
             if (($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION) {
                 $this->invalidator()->invalidateReply($threadId, $parentId);
             }
@@ -458,11 +470,20 @@ class LocalWriteService
                 [$labelRecordPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, $threadLabels, $authorIdentityId, $record->createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $canonicalRecord));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
+            $subjectRecord = $record->isReply()
+                ? $this->titleDirectiveRecord($threadId, $postId, $canonicalRecord, $record->body, $authorIdentityId, $record->createdAt)
+                : null;
+            if ($subjectRecord !== null) {
+                $this->writeFile($subjectRecord[0], $subjectRecord[1]);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
             $writtenPaths = [$recordPath, $recordPath . '.asc'];
             if ($labelRecordPath !== null) {
                 $writtenPaths[] = $labelRecordPath;
+            }
+            if ($subjectRecord !== null) {
+                $writtenPaths[] = $subjectRecord[0];
             }
             $commitResult = $this->commitCanonicalWrite($writtenPaths, ($record->isReply() ? 'Create signed reply ' : 'Create signed thread ') . $postId);
             $commitSha = $commitResult['commit_sha'];
@@ -473,11 +494,14 @@ class LocalWriteService
                 }
             }
             $timings = array_merge($timings, $commitResult['timings']);
-            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null, $subjectRecord !== null));
 
             $phaseStartedAt = hrtime(true);
             if ($record->isReply()) {
                 $this->invalidator()->invalidateReply($threadId, $postId);
+                if ($subjectRecord !== null) {
+                    $this->invalidator()->invalidateBoardThread($threadId);
+                }
             } else {
                 $this->invalidator()->invalidateBoardThread($postId);
             }
@@ -536,8 +560,12 @@ class LocalWriteService
                 $files[$path . '.asc'] = $input['detached_signature'];
                 $labels = $this->extractThreadLabelsFromBody($post->body);
                 if ($labels !== []) {
-                    [$labelPath,$labelBytes] = $this->buildThreadLabelRecord($post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
+                    [$labelPath,$labelBytes] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
                     $files[$labelPath] = $labelBytes;
+                }
+                if ($post->isReply()) {
+                    $subjectRecord = $this->titleDirectiveRecord($post->threadId, $post->postId, $input['canonical_record'], $post->body, $post->authorIdentityId, $post->createdAt);
+                    if ($subjectRecord !== null) $files[$subjectRecord[0]] = $subjectRecord[1];
                 }
                 $commit = $tx->accept($files);
             }
@@ -2586,7 +2614,7 @@ class LocalWriteService
     /**
      * @return array<string, float>
      */
-    private function synchronizePostDerivedState(PostRecord $record, string $commitSha, bool $hasThreadLabelWrite = false): array
+    private function synchronizePostDerivedState(PostRecord $record, string $commitSha, bool $hasThreadLabelWrite = false, bool $hasThreadSubjectWrite = false): array
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
@@ -2615,6 +2643,11 @@ class LocalWriteService
                 }
             } else {
                 $incrementalTimings = $postTimings;
+            }
+            if ($hasThreadSubjectWrite) {
+                foreach ($updater->applyThreadSubjectWrite($record->threadId ?? $record->postId, $commitSha) as $name => $duration) {
+                    $incrementalTimings['thread_subject_' . $name] = $duration;
+                }
             }
 
             $this->staleMarker()->clear();
@@ -3653,8 +3686,15 @@ class LocalWriteService
     /**
      * @return array{string,string}
      */
-    private function buildThreadSubjectRecord(string $threadId, string $subject, string $createdAt): array
-    {
+    private function buildThreadSubjectRecord(
+        string $threadId,
+        string $subject,
+        string $createdAt,
+        ?string $authorIdentityId = null,
+        ?string $sourcePostId = null,
+        ?string $sourcePostSha256 = null,
+        string $reason = 'Fetched title for bare media-embed URL',
+    ): array {
         $recordId = $this->generateRecordId('thread-subject');
         $subject = trim(str_replace(["\r\n", "\r", "\n"], ' ', $subject));
         $contents = "Record-ID: {$recordId}\n"
@@ -3662,7 +3702,9 @@ class LocalWriteService
             . "Thread-ID: {$threadId}\n"
             . "Operation: set\n"
             . "Subject: {$subject}\n"
-            . "Reason: Fetched title for bare media-embed URL\n"
+            . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . ($sourcePostId !== null ? "Source-Post-ID: {$sourcePostId}\nSource-Post-SHA256: {$sourcePostSha256}\n" : '')
+            . "Reason: {$reason}\n"
             . "\n";
 
         (new ThreadSubjectRecordParser())->parse($contents);
@@ -3671,6 +3713,42 @@ class LocalWriteService
             CanonicalPathResolver::threadSubject($recordId),
             $contents,
         ];
+    }
+
+    /**
+     * The authored thread-subject record a reply's `title:` line produces, or null when
+     * the reply has no usable directive or its author lacks authority. The reply itself
+     * is never changed or rejected by this decision.
+     *
+     * @return array{string,string}|null [record path, contents]
+     */
+    private function titleDirectiveRecord(string $threadId, string $replyPostId, string $replyContents, string $body, ?string $authorIdentityId, string $createdAt): ?array
+    {
+        if ($authorIdentityId === null || !$this->featureFlags->isEnabled(FeatureFlagRegistry::TITLE_DIRECTIVE_ENABLED)) {
+            return null;
+        }
+        $title = TitleDirective::extract($body);
+        if ($title === null) {
+            return null;
+        }
+        try {
+            $title = $this->normalizeAuthoredLine($title, 'title');
+        } catch (RuntimeException) {
+            return null;
+        }
+        if ($title === '') {
+            return null;
+        }
+        try {
+            $root = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+        } catch (\ForumRewrite\Canonical\CanonicalRecordParseException | RuntimeException) {
+            return null;
+        }
+        if (!TitleDirectiveAuthority::allows($this->repositoryRoot, $this->readModelPdo(), $root, $authorIdentityId, $this->featureFlags)) {
+            return null;
+        }
+
+        return $this->buildThreadSubjectRecord($threadId, $title, $createdAt, $authorIdentityId, $replyPostId, hash('sha256', $replyContents), TitleDirective::REASON);
     }
 
     private function normalizeThreadTag(string $value, bool $allowQdbCaptionTag = false): string
