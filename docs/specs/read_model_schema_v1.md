@@ -22,8 +22,8 @@ behind this layer.
 
 Version 44 adds `threads.subject_author_identity_id` (who set the effective
 title through a `title:` reply, null for the root's own or a system-fetched
-subject) and `viewer_tags.eligible` (1 when that reaction row is one the score
-reducers count). Thread titles now derive from [thread-subject records](thread_subject_record_v1.md)
+subject) and `viewer_tags.eligible` (0, 1 or 2: not counted, counted in claimed totals,
+also counted in verified totals). Thread titles now derive from [thread-subject records](thread_subject_record_v1.md)
 with latest-authored-wins precedence; prior-version startup rebuild is required.
 
 When changing a core read-model table, column, index, constraint, or a query
@@ -560,7 +560,7 @@ viewer_tags (
     target_id TEXT NOT NULL,           -- post_id for post-reactions, thread_id for thread-labels
     author_identity_id TEXT NOT NULL,
     tag TEXT NOT NULL,                 -- reaction tag / thread label, e.g. 'like', 'flag', 'upvote'
-    eligible INTEGER NOT NULL DEFAULT 0, -- 1 when the score reducers count this row (schema 44)
+    eligible INTEGER NOT NULL DEFAULT 0, -- 0 not counted; 1 counted in claimed totals; 2 also in verified totals (schema 44)
     PRIMARY KEY (record_family, target_id, author_identity_id, tag)
 )
 Index: viewer_tags_identity_idx (author_identity_id, record_family, tag, target_id)
@@ -646,6 +646,9 @@ records (no author) still fill only an empty root subject, earliest first. When
 the latest authored record is withdrawn, the effective title falls back to the
 next active one, then to the root's own `Subject`. `posts.subject` for the root
 row mirrors `threads.subject`. `eligible` is populated by the reaction reducers
-for the rows they count toward scores and flag counts; rows for unapproved
-authors, inactive labels or duplicate votes stay 0. Normal startup rebuilds
+through `SignalEligibility`: 1 when the row is counted in the claimed approved
+totals (approved author, active record, first per identity and tag), 2 when it is
+also counted in the verified totals; rows for unapproved authors, inactive labels
+or non-scored tags stay 0. `SignalActors` reads rows at or above the level the
+verified-attribution flag selects, so the names shown match the number shown. Normal startup rebuilds
 version 43 and older models before these columns are read.

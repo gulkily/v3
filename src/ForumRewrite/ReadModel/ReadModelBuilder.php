@@ -412,6 +412,7 @@ final class ReadModelBuilder
         $countedVerifiedScoredTagsByThread = [];
         $voteCountByThread = [];
         $countedVoteTagsByThread = [];
+        $eligibleByThread = [];
         foreach ($this->progressItems('deriving_thread_label_records', $records) as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadLabelRecordCount++;
@@ -453,6 +454,7 @@ final class ReadModelBuilder
                 if ($recordCountsVerified && !isset($countedVerifiedScoredTagsByThread[$record->threadId][$dedupeKey])) {
                     $countedVerifiedScoredTagsByThread[$record->threadId][$dedupeKey] = true;
                     $verifiedScoreByThread[$record->threadId] += $this->threadLabelScoreValue($label);
+                    $eligibleByThread[$record->threadId][$record->authorIdentityId][$label] = SignalEligibility::VERIFIED;
                 }
                 if (isset($countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey])) {
                     continue;
@@ -460,6 +462,7 @@ final class ReadModelBuilder
 
                 $countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey] = true;
                 $scoreByThread[$record->threadId] += $this->threadLabelScoreValue($label);
+                $eligibleByThread[$record->threadId][$record->authorIdentityId][$label] ??= SignalEligibility::CLAIMED;
             }
 
             if ($labelsAdded !== []) {
@@ -496,6 +499,7 @@ final class ReadModelBuilder
                 'root_post_id' => $threadId,
             ]);
         }
+        $this->measure('write_thread_label_eligibility', fn () => SignalEligibility::apply($pdo, 'thread-labels', $eligibleByThread));
     }
 
     private function indexThreadSubjects(PDO $pdo): void
@@ -610,6 +614,7 @@ final class ReadModelBuilder
         $verifiedScoreByPost = [];
         $verifiedFlaggersByPost = [];
         $countedVerifiedScoredTagsByPost = [];
+        $eligibleByPost = [];
         foreach ($this->progressItems('deriving_post_reaction_records', $records) as $record) {
             if (!isset($knownPosts[$record->postId])) {
                 continue;
@@ -644,8 +649,10 @@ final class ReadModelBuilder
                 $recordCountsVerified ??= VerifiedAttribution::counts($this->repositoryRoot, $this->attributionCutoff, CanonicalPathResolver::postReaction($record->recordId), $record->authorIdentityId, $record->createdAt);
                 if ($tag === 'flag') {
                     $flaggersByPost[$record->postId][$record->authorIdentityId] = true;
+                    $eligibleByPost[$record->postId][$record->authorIdentityId]['flag'] ??= SignalEligibility::CLAIMED;
                     if ($recordCountsVerified) {
                         $verifiedFlaggersByPost[$record->postId][$record->authorIdentityId] = true;
+                        $eligibleByPost[$record->postId][$record->authorIdentityId]['flag'] = SignalEligibility::VERIFIED;
                     }
                 }
 
@@ -657,6 +664,7 @@ final class ReadModelBuilder
                 if ($recordCountsVerified && !isset($countedVerifiedScoredTagsByPost[$record->postId][$dedupeKey])) {
                     $countedVerifiedScoredTagsByPost[$record->postId][$dedupeKey] = true;
                     $verifiedScoreByPost[$record->postId] += TagScore::scoreValueForTag($tag);
+                    $eligibleByPost[$record->postId][$record->authorIdentityId][$tag] = SignalEligibility::VERIFIED;
                 }
                 if (isset($countedApprovedScoredTagsByPost[$record->postId][$dedupeKey])) {
                     continue;
@@ -664,8 +672,10 @@ final class ReadModelBuilder
 
                 $countedApprovedScoredTagsByPost[$record->postId][$dedupeKey] = true;
                 $scoreByPost[$record->postId] += TagScore::scoreValueForTag($tag);
+                $eligibleByPost[$record->postId][$record->authorIdentityId][$tag] ??= SignalEligibility::CLAIMED;
             }
         }
+        $this->measure('write_post_reaction_eligibility', fn () => SignalEligibility::apply($pdo, 'post-reactions', $eligibleByPost));
 
         $updatePost = $pdo->prepare(
             'UPDATE posts

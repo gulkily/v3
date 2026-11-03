@@ -90,3 +90,22 @@ Extended estimates: enabled (inherited)
 - Estimate details: original scope unchanged; retrospective 0.15 as planned.
 
 *— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 5 - Signal eligibility and actor query
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.12**
+
+- Changes:
+  - New `ReadModel/SignalEligibility`: levels 0 (not counted), 1 `CLAIMED`, 2 `VERIFIED`; `apply(pdo, family, target→identity→tag→level)` updates `viewer_tags.eligible`; `threshold(pdo)` picks 2 when verified attribution is stored enabled, else 1.
+  - `ReadModelBuilder` thread-label and post-reaction reducers, and `IncrementalReadModelUpdater::deriveThreadLabelState`/`derivePostReactionState`, record the level at the exact points where they credit a claimed or verified score or flag (first per identity and tag; approved authors only; inactive and publication-excluded records never reach the loop). Incremental writes apply the levels after the existing viewer_tags refresh for the target.
+  - New `ReadModel/SignalActors::load(pdo, threadId, postIds)`: eligible thread likers, per-post eligible likers and flaggers, and the title author, joined to `profiles` for username and slug, ordered by username (viewer_tags has no record time; this is a documented simplification of the plan's "ordered by record time"). Reads only read-model rows.
+  - Spec: `viewer_tags.eligible` semantics corrected to the three levels; Version 44 note extended.
+  - New `tests/ReadModelSignalEligibilityTest.php` (registered): eligible like rows equal `claimed_score_total` / `claimed_post_score_total` contributions and eligible flag rows equal `claimed_approved_flag_count`, with unapproved and non-scored rows at 0; actors resolve to the fixture username; incremental post-reaction and thread-label writes produce byte-identical viewer_tags rows to a fresh rebuild.
+- Verification:
+  - `php tests/run.php ReadModelSignalEligibilityTest ReadModelPostReactionsTest ReadModelThreadLabelsTest ReadModelViewerTagsRebuildTest ReadModelThreadTitleRebuildTest ReadModelThreadSubjectsTest ActivityProjectionTest LocalWriteServiceTitleDirectiveTest`: 29 run, 29 passed (2026-11-03T17:36:16Z). `ReactionRecordFormatParityTest` keeps its one baseline failure (unchanged, see Stage 3).
+  - `git diff --check` clean. No UI change in this stage.
+- Notes: the verified-attribution flag flip needs no recompute: both levels are stored and the read threshold selects the set, matching how effective score columns are swapped.
+- Estimate details: original scope unchanged; retrospective 0.12 as planned. One assertion in the new test initially ignored the fixture's two pre-existing labels; corrected to the real row count.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
