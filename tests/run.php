@@ -245,6 +245,7 @@ $testFiles = [
     __DIR__ . '/ReadModelThreadTitleRebuildTest.php',
     __DIR__ . '/ReadModelSignalEligibilityTest.php',
     __DIR__ . '/PostSignalsTemplateTest.php',
+    __DIR__ . '/ThreadTitleWithdrawalAndConsumersTest.php',
     __DIR__ . '/ResumeTargetTest.php',
     __DIR__ . '/DeploymentSettingsTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',

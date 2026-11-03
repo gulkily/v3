@@ -131,3 +131,20 @@ Extended estimates: enabled (inherited)
 - Estimate details: original scope unchanged; retrospective 0.22, slightly above because the Forte page assembles article data key by key and needed its own pass-through, found by the template test.
 
 *— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 7 - Withdrawal, deletion and shared consumers
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.08**
+
+- Changes:
+  - No production code change. Inspection showed the planned pieces already hold: both removal entry points (`finalizePreparedRetraction` and `delete-record`/`SourceLabelRemoval::run`) rebuild the read model fully, so the Stage 4 resolver withdraws a retitle whose source reply is retracted, removed or missing; every committed write already enqueues offline-snapshot publication; the Stage 3 retitle path already calls the label-write invalidation (`invalidateBoardThread`), which covers index, instance, Recent, Activity, users, thread and root post artifacts, the same set a hashtag label write invalidates.
+  - Planned deviation, recorded here: authored subject records bound to a deleted source are **not** added to the removal-acceptance evidence or deleted. The receipt format (`removal_acceptance_record_v1`) binds only `records/thread-labels/` paths with a strict path check, and changing a trust-bearing format needs its own spec decision. The orphaned record is retained as history and is inert: the resolver ignores any authored record whose source is gone, retracted or removed (Stage 4 tests plus this stage's tests). This matches the plan's own mitigation for that risk.
+  - New `tests/ThreadTitleWithdrawalAndConsumersTest.php` (registered): accepted author retraction of the source reply reverts the title and clears the title author; `SourceLabelRemoval::run` deletion reverts the title, removes the reply and leaves the inert subject record; an operator's `title:` reply invalidates seeded static artifacts, enqueues the snapshot exactly once, and the new title appears on the all-threads board, the tag page, the thread page, Recent, Forte listing and pane, the text API thread and index, and both RSS feeds, with the old title gone from the index.
+- Verification:
+  - `php tests/run.php ThreadTitleWithdrawalAndConsumersTest`: 3 run, 3 passed (2026-11-03T18:06:57Z).
+  - `git diff --check` clean. No UI or schema change in this stage.
+- Notes: the default board view lists liked threads only and single-post pages do not show the thread subject, so neither is a title consumer; the test targets `/?view=all` and `/tags/general` instead. Static tag pages are not invalidated by label writes either; parity kept, follow-up noted for closeout.
+- Estimate details: original scope unchanged; retrospective 0.08, below the original because the format-bound evidence extension was not implemented (deviation above) and the remaining work was verification.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
