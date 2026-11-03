@@ -66,7 +66,6 @@ final class BackupPageTest
         }
         $previous = [getenv('FORUM_APPROVED_MEMBERS_ONLY'), getenv('FORUM_IMAGE_ROOT')];
         $cookies = $_COOKIE;
-        TestViewerSession::holdOpen();
         $_COOKIE = [];
         putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
         putenv('FORUM_IMAGE_ROOT=' . $images);

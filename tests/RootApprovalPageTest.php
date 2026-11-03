@@ -88,13 +88,13 @@ final class RootApprovalPageTest
         $this->fixture(function ($workspace, $root, $db): void {
             putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
             foreach ([self::URL, '/source/current/' . self::SOURCE] as $url) {
-                TestViewerSession::signedOut();
                 $_COOKIE = ['identity_hint' => self::ID];
+                TestViewerSession::signedOut();
                 $denied = $this->render($root, $db, $url);
                 assertSame(401, http_response_code());
                 assertStringNotContains('initial approved fixture user', $denied);
-                TestViewerSession::signIn(self::ID);
                 $_COOKIE = [];
+                TestViewerSession::signIn(self::ID);
                 $allowed = $this->render($root, $db, $url);
                 assertSame(200, http_response_code());
                 assertStringContains('initial approved fixture user', $allowed);
@@ -190,7 +190,6 @@ final class RootApprovalPageTest
         $db = $workspace->root . '/read.sqlite3';
         $flag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
         $cookies = $_COOKIE;
-        TestViewerSession::holdOpen();
         $_COOKIE = [];
         putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
         try {

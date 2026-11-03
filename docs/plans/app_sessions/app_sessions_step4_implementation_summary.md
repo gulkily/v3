@@ -80,3 +80,32 @@ Branch: `feat/app-sessions` from `main` `e6493e2f`. Planning commit `eafa09b5`.
 - Estimate details: original scope unchanged; retrospective 0.10.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Cutover to app-owned sessions
+
+**Original estimate: 0.25**
+
+**Retrospective stage work: 0.25**
+
+- Changes:
+  - `ViewerSessions` (new, request-scoped): the one answer to "who is signed in" and the one place that signs in or out. `Application::handle()` creates it fresh for every request from that request's cookies; `RouteServices::viewerSessions()` exposes it to controllers.
+  - Readers switched: `Application` (viewer, lobby, Access history `canSignIn`, lobby-gate diagnostics), `RouteServices::securityReviewAllowed`, `DeployController`, `UserAccessController`.
+  - `AuthApiController`: challenges from the store; a challenge is used up only by a verified signature, so a failed attempt can retry; sign-in issues or reuses the session and sets the cookie. Response text unchanged.
+  - `IdentityHintController::clearIdentity`: sign-out ends the session on the server and keeps the Lobby identity.
+  - A request still carrying `PHPSESSID` gets it expired.
+  - Removed: `SessionRotation`, the session-start route allowlist, `shouldResumeViewerSession`/`resumeViewerSession`/`hasViewerSessionCookie`, every PHP session call; `SessionRotationTest`, `session_rotation_http.mjs`. Static/docs checks no longer look at `$_SESSION` (cookie presence alone, as before).
+  - Test helper now creates real store sessions and cookies (temporary store via `VIEWER_SESSION_DATABASE_PATH`, inherited by child processes); `holdOpen()` removed. Two `LocalAppSmokeTest` mechanism tests rewritten (no session for keyless readers; 400-day session lifetime); two new tests (idle three hours, stale `PHPSESSID`, http cookie refused over https, copied cookie dead after sign-out; challenge needs no session and survives a failed attempt).
+  - `docs/reference/agent_api.md`: the session cookie now arrives at sign-in, not at the challenge. No shipped client (`frm.py`, scripts) relied on the old timing.
+- Verification:
+  - `grep` for `$_SESSION`, `session_*()` and `SessionRotation` in `src/` and `templates/`: none (comments updated). Passed.
+  - Full suite: 1836 run, 1818 passed, 18 failed. All 15 baseline failures reproduced. Three new:
+    - `WriteApiSmokeTest::testOperatorSecurityReview…` and `RootApprovalPageTest::testPrivateSeedPage…`: conversion mistakes in the tests (setting `$_COOKIE` after sign-in discarded the session cookie). Fixed by ordering; both classes rerun in full: 200/200 passed.
+    - `CheckoutsCommandTest::testRealGitOperatorAcceptance`: no session or cookie involvement; passes alone (59 s). Load-induced timing under the full run. Not attributed.
+  - `DeployPageTest` signed-in POST in a fresh single-request process (the 2026-11-02 failure): passed.
+  - Browser (headless Chrome): `testing_self_approval.mjs` and `background_sign_in.mjs` passed; `access_history.mjs` fails identically on `main` (pre-existing "Temporary authentication failure" wait). 
+- Notes:
+  - Plan deviation: the split trigger fired (about 200 added source lines, 128 in the new `ViewerSessions`). Not split, because readers cannot move to the store before sign-in writes to it, so either half alone would leave sign-in broken between commits. Same outcome as planned.
+  - `public/assets/private_site_auth.js` still says "PHP sessions hold one challenge"; its queueing is harmless. Left for the deferred client-simplification follow-up rather than changing a fingerprinted asset here.
+- Estimate details: original scope unchanged; retrospective 0.25.
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

@@ -27,7 +27,6 @@ final class PrivateMessageFeatureFlagTest
         symlink(dirname(__DIR__) . '/public', $root . '/public');
         $keys = [FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED, 'PRIVATE_MESSAGE_DATABASE_PATH', 'FORUM_SECRETS_PATH'];
         $previous = array_map('getenv', $keys);
-        TestViewerSession::holdOpen();
         try {
             putenv($keys[0] . '=false');
             putenv($keys[1] . '=' . $root . '/messages.sqlite3');

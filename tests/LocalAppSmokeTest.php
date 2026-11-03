@@ -698,9 +698,12 @@ PHP;
             TestViewerSession::reset();
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
 
+            $sessionsBefore = $this->viewerSessionRowCount();
             $board = $this->render($application, '/');
 
-            assertSame(PHP_SESSION_NONE, session_status());
+            // A keyless reader gets no session: no cookie to send and nothing stored.
+            assertSame(['', ''], [TestViewerSession::identityId(), TestViewerSession::cookie()[1]]);
+            assertSame($sessionsBefore, $this->viewerSessionRowCount());
             // Invite is in every viewer's HTML and hidden until the client remembers an approved identity.
             assertStringContains('href="/invites/" data-member-only data-invite-navigation>Invite</a>', $board);
             assertStringContains('data-public-auth-resume="true"', $board);
@@ -744,25 +747,91 @@ PHP;
 
     public function testPrivateViewerSessionCookiePersistsAcrossBrowserRestart(): void
     {
-        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $previousCookieParameters = session_get_cookie_params();
-        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-        $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-cookie-' . bin2hex(random_bytes(6)) . '.sqlite3';
-
+        // The session and its cookie both last 400 days unless the member signs out.
+        assertSame(34560000, \ForumRewrite\Session\ViewerSessionStore::LIFETIME_SECONDS);
+        $before = time();
+        TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         try {
-            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
-            $this->render($application, '/api/auth_status');
-
-            assertSame(34560000, session_get_cookie_params()['lifetime']);
+            [, $token] = TestViewerSession::cookie();
+            $store = new \ForumRewrite\Session\ViewerSessionStore(\ForumRewrite\Session\ViewerSessionDatabaseConfig::open('', ['VIEWER_SESSION_DATABASE_PATH' => (string) getenv('VIEWER_SESSION_DATABASE_PATH')]));
+            $expiresAt = $store->resolve($token)?->expiresAt ?? 0;
+            assertTrue($expiresAt >= $before + 34560000, 'Session must last the full cookie lifetime.');
+            assertSame($expiresAt, \ForumRewrite\Session\ViewerSessionCookie::attributes(false, $expiresAt)['expires']);
         } finally {
             TestViewerSession::reset();
-            session_set_cookie_params($previousCookieParameters);
+        }
+    }
+
+    public function testAppSessionsSurviveIdleSignOutAndSchemeBoundaries(): void
+    {
+        $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
+        $previousServer = $_SERVER;
+        $previousCookie = $_COOKIE;
+        putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+        $member = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-app-sessions-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $status = function () use ($databasePath): string {
+            return $this->render(new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath), '/api/auth_status');
+        };
+
+        try {
+            $_COOKIE = [];
+            unset($_SERVER['HTTPS']);
+
+            // Idle three hours, far past PHP's old 24-minute default: still signed in.
+            $path = (string) getenv('VIEWER_SESSION_DATABASE_PATH');
+            $past = new \ForumRewrite\Session\ViewerSessionStore(
+                \ForumRewrite\Session\ViewerSessionDatabaseConfig::open('', ['VIEWER_SESSION_DATABASE_PATH' => $path]),
+                static fn (): int => time() - 3 * 3600,
+            );
+            $_COOKIE = ['v3_session' => $past->signIn($member)->token];
+            assertSame("status=authenticated\n", $status());
+
+            // A stale PHP session cookie neither helps nor hurts.
+            $_COOKIE['PHPSESSID'] = 'leftover-from-php-sessions';
+            assertSame("status=authenticated\n", $status());
+
+            // The http cookie never signs in an https request.
+            $_SERVER['HTTPS'] = 'on';
+            assertSame("status=unauthenticated\n", $status());
+            unset($_SERVER['HTTPS']);
+
+            // Sign-out ends the session on the server, so a copy of the cookie stops working.
+            $copy = $_COOKIE['v3_session'];
+            $this->renderMethod(new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath), 'POST', '/api/clear_identity');
+            $_COOKIE = ['v3_session' => $copy];
+            assertSame("status=unauthenticated\n", $status());
+        } finally {
+            TestViewerSession::reset();
+            $_COOKIE = $previousCookie;
+            $_SERVER = $previousServer;
             @unlink($databasePath);
-            if ($previousFlag === false) {
-                putenv('FORUM_APPROVED_MEMBERS_ONLY');
-            } else {
-                putenv('FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
-            }
+            putenv($previousFlag === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $previousFlag);
+        }
+    }
+
+    public function testAuthenticationChallengeNeedsNoSessionAndSurvivesAFailedAttempt(): void
+    {
+        $previousPost = $_POST;
+        $previousCookie = $_COOKIE;
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-app-challenge-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            $_COOKIE = [];
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
+            $response = $this->render($application, '/api/auth_challenge');
+            assertSame(1, preg_match('/^challenge=([a-f0-9]{64})$/m', $response, $match));
+            // No cookie was needed to get a challenge, and none is needed to answer it.
+            assertSame([], $_COOKIE);
+            $_POST = ['identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', 'challenge' => $match[1], 'detached_signature' => 'invalid'];
+            assertStringContains('error=Identity signature verification failed.', $this->renderMethod($application, 'POST', '/api/authenticate_identity'));
+            // A failed signature does not use the challenge up.
+            assertStringContains('error=Identity signature verification failed.', $this->renderMethod($application, 'POST', '/api/authenticate_identity'));
+            $_POST['challenge'] = str_repeat('0', 64);
+            assertStringContains('error=Authentication challenge is missing or expired.', $this->renderMethod($application, 'POST', '/api/authenticate_identity'));
+        } finally {
+            $_POST = $previousPost;
+            $_COOKIE = $previousCookie;
+            @unlink($databasePath);
         }
     }
 
@@ -5398,6 +5467,17 @@ PHP;
             assertSame('callback failed', $error->getMessage());
         }
         assertSame(false, $lock->isLocked());
+    }
+
+    private function viewerSessionRowCount(): int
+    {
+        $path = (string) getenv('VIEWER_SESSION_DATABASE_PATH');
+        if (!is_file($path)) {
+            return 0;
+        }
+        $pdo = new PDO('sqlite:' . $path);
+        $table = $pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE name = 'viewer_sessions'")->fetchColumn();
+        return (int) $table === 1 ? (int) $pdo->query('SELECT COUNT(*) FROM viewer_sessions')->fetchColumn() : 0;
     }
 
     private function render(Application $application, string $path): string

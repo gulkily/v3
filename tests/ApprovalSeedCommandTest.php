@@ -379,8 +379,6 @@ final class ApprovalSeedCommandTest
 require $argv[1] . '/autoload.php';
 require $argv[1] . '/tests/Support/TestViewerSession.php';
 if ($argv[7] === 'member') {
-    if (!is_dir($argv[2] . '/sessions')) { mkdir($argv[2] . '/sessions', 0777, true); }
-    session_save_path($argv[2] . '/sessions');
     TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 }
 $_SERVER['REQUEST_METHOD'] = 'GET';

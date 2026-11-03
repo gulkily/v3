@@ -51,6 +51,8 @@ use RuntimeException;
  */
 final class RouteServices
 {
+    private ?\ForumRewrite\Session\ViewerSessions $fallbackViewerSessions = null;
+
     private ?PDO $tagReadConnection = null;
     private bool $viewerProfileResolved = false;
     private ?array $resolvedViewerProfile = null;
@@ -75,7 +77,25 @@ final class RouteServices
         private readonly FeatureFlagEvaluator $featureFlags,
         private readonly \Closure $lenientViewerProfileResolver,
         private readonly bool $readModelAccessAllowed = true,
+        /** @var (\Closure(): \ForumRewrite\Session\ViewerSessions)|null */
+        private readonly ?\Closure $viewerSessions = null,
     ) {
+    }
+
+    /** Who is signed in for the current request (see ViewerSessions). */
+    public function viewerSessions(): \ForumRewrite\Session\ViewerSessions
+    {
+        if ($this->viewerSessions !== null) {
+            return ($this->viewerSessions)();
+        }
+        $projectRoot = $this->projectRoot;
+        return $this->fallbackViewerSessions ??= new \ForumRewrite\Session\ViewerSessions(
+            static fn (): \ForumRewrite\Session\ViewerSessionStore => new \ForumRewrite\Session\ViewerSessionStore(
+                \ForumRewrite\Session\ViewerSessionDatabaseConfig::open($projectRoot, \ForumRewrite\Support\PrivateConfig::load($projectRoot))
+            ),
+            $_COOKIE,
+            \ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER),
+        );
     }
 
     public function highTrafficStatus(): array
@@ -179,7 +199,7 @@ final class RouteServices
 
     public function securityReviewAllowed(): bool
     {
-        $id = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        $id = $this->viewerSessions()->identityId();
         if ($id === '' || !\ForumRewrite\Security\ApprovalPolicy::isOperator($this->repositoryRoot, $id)) return false;
         $profile = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->pdo(), $id);
         return $profile !== null && (int) $profile['is_approved'] === 1;

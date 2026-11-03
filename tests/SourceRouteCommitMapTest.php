@@ -95,7 +95,6 @@ final class SourceRouteCommitMapTest
         $db = $workspace->root . '/read.sqlite3';
         $flag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
         $cookies = $_COOKIE;
-        TestViewerSession::holdOpen();
         $_COOKIE = [];
         putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
         try {

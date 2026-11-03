@@ -63,7 +63,7 @@ final class DeployController
         }
         $input = $this->routeServices->requestData($query);
         $action = (string) ($input['action'] ?? '');
-        $actor = strtolower(trim((string) ($_SESSION['authenticated_identity_id'] ?? '')));
+        $actor = $this->routeServices->viewerSessions()->identityId();
 
         $result = match ($action) {
             'status' => ['outcome' => 'status', 'message' => ''],

@@ -7476,7 +7476,6 @@ NODE;
         [$root, $db, $artifacts] = $this->createTempEnvironment();
         $key = $this->createSigningKey('security-operator');
         $previousFlag = getenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
-        TestViewerSession::holdOpen();
         putenv('FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL');
         try {
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
@@ -7501,8 +7500,8 @@ NODE;
             $change(false);
             $paths = ['/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/api/forte_activity_detail?view=security&id=1', '/api/forte_commit_detail?view=security&sha=' . $grant['commit_sha'], '/activity/?view=security&format=rss'];
             foreach ([null, $target['identity_id']] as $viewer) {
-                $viewer === null ? TestViewerSession::signedOut() : TestViewerSession::signIn($viewer);
                 $_COOKIE = ['identity_hint' => $operator];
+                $viewer === null ? TestViewerSession::signedOut() : TestViewerSession::signIn($viewer);
                 assertStringNotContains('>Security review</a>', $this->renderMethod($app, 'GET', '/tools/user-access/'));
                 foreach ($paths as $path) {
                     $denied = $this->renderMethod($app, 'GET', $path);
@@ -7516,8 +7515,8 @@ NODE;
                     assertStringNotContains('Acceptance receipt', $denied);
                 }
             }
-            TestViewerSession::signIn($operator);
             $_COOKIE = [];
+            TestViewerSession::signIn($operator);
             $recent = $this->renderMethod($app, 'GET', '/tools/user-access/');
             assertStringContains('<h2>Access history</h2>', $recent);
             assertStringContains('Account key approved for security-target', $recent);
