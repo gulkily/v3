@@ -3800,6 +3800,23 @@
 
     let replyRenderDocumentPromise = null;
     let reconciledReplyDocument = null;
+    // A reply can change thread state the root card shows: a `title:` line retitles the
+    // thread, and the signals line names it. The fetched page is server-rendered and
+    // identical for every viewer, so copying those two pieces is the same as a reload.
+    function syncThreadRootFromDocument(doc) {
+      const liveRoot = document.querySelector('.thread-root-card');
+      const canonicalRoot = doc.querySelector('.thread-root-card');
+      if (!liveRoot || !canonicalRoot) return;
+      const liveHeading = liveRoot.querySelector('h1');
+      const heading = canonicalRoot.querySelector('h1');
+      if (liveHeading && heading && liveHeading.textContent !== heading.textContent) {
+        liveHeading.textContent = heading.textContent;
+        if (doc.title) document.title = doc.title;
+      }
+      const liveSignals = liveRoot.querySelector('[data-role="post-signals"][data-signal-scope="thread"]');
+      const signals = canonicalRoot.querySelector('[data-role="post-signals"][data-signal-scope="thread"]');
+      if (liveSignals && signals && liveSignals.outerHTML !== signals.outerHTML) liveSignals.replaceWith(document.importNode(signals, true));
+    }
     function loadReplyRenderDocument(url) {
       if (!replyRenderDocumentPromise) {
         replyRenderDocumentPromise = fetch(url, {credentials:'same-origin', cache:'no-store'})
@@ -3862,6 +3879,7 @@
           const editorTop = editor.getBoundingClientRect().top;
           if (reconciledReplyDocument !== doc) {
             reconciledReplyDocument = doc;
+            syncThreadRootFromDocument(doc);
             for (const canonical of doc.querySelectorAll('.post-card[data-post-id]')) {
               const live = document.getElementById(canonical.id);
               if (!live?.matches('.post-card[data-post-id]')) continue;

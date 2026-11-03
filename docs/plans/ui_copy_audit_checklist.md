@@ -867,3 +867,9 @@ Key retirement final integration — 2026-11-02: Ordinary message readers verifi
 - [x] Server HTML is identical for every viewer; the viewer's own saved, counted Like or Flag appends their name in place (`public/assets/thread_reactions.js`). Unapproved viewers see no change, matching the score.
 - [x] Verified in Chromium (`tests/browser/post_signals.mjs`): 16 themes at 375×667 and 1280×800 on the thread page and Forte pane, line inside the viewport and Like button visible; no-JavaScript anonymous render; in-place append then reload parity. `PostSignalsTemplateTest` covers the +N cap, empty state and all page inclusions.
 - [ ] Firefox/WebKit and a physical phone remain unchecked; long usernames at phone width wrap but were only checked visually by bounding box, not by eye.
+
+## Thread title live update — 2026-11-03
+
+- [x] After an accepted retitling reply, the thread page's root heading, tab title and `Title set by` line update in place from the same server-rendered document the reply render pass already fetches. No new copy; this is a post-paint update for a real state change the viewer just caused, per `CONTRIBUTING.md`.
+- [x] Verified in Chromium (`tests/browser/title_directive_replay.mjs`): author and approved-member retitles update before any reload; inline reply, signed reaction and signals browser tests still pass.
+- [ ] Forte pane composer is outside this path; Firefox/WebKit and a physical phone unchecked.

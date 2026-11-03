@@ -55,7 +55,7 @@ try {
   }
 
   /** Posts a reply through the thread page's ordinary inline composer and returns the finalize response text. */
-  async function replyThroughComposer(context, body) {
+  async function replyThroughComposer(context, body, expectLiveTitle = null) {
     const page = await context.newPage();
     page.on('dialog', dialog => dialog.dismiss());
     await page.goto(base + '/threads/' + threadId);
@@ -71,6 +71,12 @@ try {
     const response = await finalize;
     const text = await response.text();
     assert.equal(response.status(), 200, text);
+    if (expectLiveTitle !== null) {
+      // No reload: the accepted reply's render pass must bring the root card up to date.
+      await page.waitForFunction(expected => document.querySelector('.thread-root-card h1')?.textContent === expected, expectLiveTitle, { timeout: 15000 });
+      assert.match(await page.title(), new RegExp(expectLiveTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      await page.waitForFunction(() => /Title set by/.test(document.querySelector('[data-role="post-signals"][data-signal-scope="thread"]')?.textContent || ''), null, { timeout: 15000 });
+    }
     await page.close();
     return text;
   }
@@ -97,7 +103,7 @@ try {
   // 1. The author retitles their own thread with the flags at their defaults.
   const authorContext = await contextFor(author);
   assert.equal((await threadState(authorContext)).title, 'Replay original title');
-  await replyThroughComposer(authorContext, 'title: Renamed by the author\nThanks for the discussion.');
+  await replyThroughComposer(authorContext, 'title: Renamed by the author\nThanks for the discussion.', 'Renamed by the author');
   let state = await threadState(authorContext);
   assert.equal(state.title, 'Renamed by the author');
   assert.match(state.signals, /Title set by replay-author/);
@@ -129,7 +135,7 @@ try {
     await page.close();
   }
   await toggle(operatorContext, 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS', true);
-  await replyThroughComposer(memberContext, 'title: Member attempt two');
+  await replyThroughComposer(memberContext, 'title: Member attempt two', 'Member attempt two');
   state = await threadState(memberContext);
   assert.equal(state.title, 'Member attempt two');
   assert.match(state.signals, /Title set by replay-member/);
