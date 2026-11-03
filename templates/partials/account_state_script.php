@@ -33,7 +33,7 @@
     function accountState(root) {
       var fingerprint = storedFingerprint();
       var serverKnowsThisKey = fingerprint !== '' && root.dataset.viewerIdentityId === 'openpgp:' + fingerprint;
-      var approval = serverKnowsThisKey ? (root.dataset.viewerApproved === '1' ? 'approved' : 'waiting') : (root.dataset.lookedUpApproval || '');
+      var approval = serverKnowsThisKey && root.dataset.viewerRetired === '1' ? 'retired' : serverKnowsThisKey ? (root.dataset.viewerApproved === '1' ? 'approved' : 'waiting') : (root.dataset.lookedUpApproval || '');
       if (!hasBrowserKeypair() || !isRegistered(root)) {
         return 'guest';
       }

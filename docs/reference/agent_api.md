@@ -465,3 +465,16 @@ These will change in later cycles of the
   endings.
 - `get_post` and `get_thread` do not yet report the author's identity ID or
   signature status.
+
+
+## Retire one key
+
+A retirement permanently disables one fingerprint's future account access. It preserves public keys, old signatures and historical grants. Use another active approved key; self-retirement and retirement without an unchanged active replacement are refused.
+
+1. `POST /api/prepare_key_retirement` with `actor_identity_id` and `target_identity_id` (optional `replacement_identity_id`). Review `retirement_review` and the exact `canonical_record`.
+2. Sign those exact bytes with the actor's private key, using an armored detached OpenPGP signature.
+3. `POST /api/finalize_key_retirement` with `prepare_token`, `canonical_record` and `detached_signature`.
+
+`status=retired` confirms acceptance. `refresh=pending` means acceptance succeeded but derived refresh needs repair; retry the identical signed request. A lost response can also be retried without creating a second retirement. `GET /api/key_retirement_status?target_identity_id=...` reports the public accepted outcome. `not_retired` does not mean approved. Do not replace a failed signed action with an unsigned action or discard its original input.
+
+Ordinary members require username changes disabled, matching unchanged bootstrap names and no verified rename history on actor/target. Active root-approved operators can assist across accounts or with renamed keys, but must still leave an unchanged active replacement. `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` does not grant retirement authority. See [record and acceptance contract](../specs/key_retirement_record_v1.md).

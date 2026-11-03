@@ -32,9 +32,17 @@ final class ApprovalPolicy
         }
     }
 
+    /** Current authority only; historical signature/grant replay uses isOperator. */
+    public static function isActiveOperator(string $repositoryRoot, string $identityId): bool
+    {
+        return self::isOperator($repositoryRoot, $identityId) && KeyRetirement::read($repositoryRoot, $identityId) === null;
+    }
+
     /** This is also the prepared authorization context; do not include presentation-only state. */
     public function evaluate(string $actorId, string $targetId): array
     {
+        KeyRetirement::assertActive($this->repositoryRoot, $actorId);
+        KeyRetirement::assertActive($this->repositoryRoot, $targetId);
         $actor = ProfileRepository::byIdentityId($this->pdo, $actorId);
         $target = ProfileRepository::byIdentityId($this->pdo, $targetId);
         if ($actor === null || (int) $actor['is_approved'] !== 1) {

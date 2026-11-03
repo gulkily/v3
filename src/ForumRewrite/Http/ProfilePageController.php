@@ -60,9 +60,10 @@ final class ProfilePageController
             $profiles,
             static fn (array $profile): bool => ((int) $profile['is_approved']) === 1
         ));
+        $historicalProfiles = array_values(array_filter($profiles, static fn (array $profile): bool => (int)$profile['is_approved']===1 || !empty($profile['retired_at'])));
         $approvedIdentityIds = array_values(array_map(
             static fn (array $profile): string => (string) $profile['identity_id'],
-            $approvedProfiles
+            $historicalProfiles
         ));
         $ownIdentityIds = array_values(array_map(
             static fn (array $profile): string => (string) $profile['identity_id'],
@@ -82,6 +83,7 @@ final class ProfilePageController
                 'usernameToken' => $usernameToken,
                 'historyOffset' => max(0, (int) ($query['key_offset'] ?? 0)),
                 'approvedProfiles' => $approvedProfiles,
+                'historicalProfiles' => $historicalProfiles,
                 'approverUsernames' => self::aggregateApproverUsernames($approvedProfiles, $ownIdentityIds),
                 'approvedThreadCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, true),
                 'approvedPostCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, false),

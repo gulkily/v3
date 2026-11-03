@@ -307,7 +307,7 @@ final class Application
             (new \ForumRewrite\Http\PrivateMessageHistorySyncController($this->routeServices(), $this->authenticatedViewerProfile(...), function () {
                 $config=PrivateConfig::load($this->projectRoot);
                 $pdo=\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot,$config);
-                return new \ForumRewrite\Messaging\PrivateMessageHistorySyncService($this->privateMessageStore(),new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo),$this->routeServices()->pdo());
+                return new \ForumRewrite\Messaging\PrivateMessageHistorySyncService($this->privateMessageStore(),new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore($pdo),$this->routeServices()->pdo(),$this->repositoryRoot);
             }))->handle($method, substr($path,strlen('/api/private_messages/history_sync/')),$query);
             return;
         }
@@ -530,6 +530,12 @@ final class Application
 
         if ($path === '/api/approve_user') {
             $this->identityApprovalAndInvitationApiController()->approveUser($method);
+            return;
+        }
+
+        if (in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)) {
+            $action = $path === '/api/key_retirement_status' ? 'status' : ($path === '/api/prepare_key_retirement' ? 'prepare' : 'finalize');
+            $this->identityApprovalAndInvitationApiController()->keyRetirement($method,$query,$action);
             return;
         }
 
@@ -1302,6 +1308,7 @@ final class Application
         $canApprove = $viewerProfile !== null
             && ((int) $viewerProfile['is_approved']) === 1
             && ((int) $profile['is_approved']) !== 1
+            && empty($profile['retired_at'])
             && ((string) $viewerProfile['identity_id']) !== ((string) $profile['identity_id']);
         $approvalReview = null;
         if ($accessManagement && $canApprove) {
@@ -1334,6 +1341,7 @@ final class Application
             $accessManagement ? 'user_access_profile.php' : 'profile.php',
             [
                 'accessManagement' => $accessManagement,
+                'retirementActors' => $accessManagement ? (new \ForumRewrite\Security\KeyRetirementPolicy($this->pdo(),$this->repositoryRoot))->presentationActors($profile) : [],
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
                 'profileHistory' => $accessManagement ? [] : \ForumRewrite\Http\ProfileHistoryView::build($this->pdo(), $profile, $query),
@@ -1350,7 +1358,7 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             $accessManagement ? 'tools' : 'profiles',
-            array_merge($accessManagement ? [] : ['/assets/public_key.js'], $accessManagement && $canApprove
+            array_merge($accessManagement ? $this->identityScripts(['/assets/key_retirement.js']) : ['/assets/public_key.js'], $accessManagement && $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
@@ -1661,7 +1669,7 @@ final class Application
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
                     threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time,
-                    profiles.username_token AS author_username_token, COALESCE(profiles.is_approved, 0) AS author_is_approved
+                    profiles.username_token AS author_username_token, COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -1686,7 +1694,7 @@ final class Application
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.agent_response_json,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -1709,7 +1717,7 @@ final class Application
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
                     posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, profiles.username_token AS author_username_token,
-                    COALESCE(profiles.is_approved, 0) AS author_is_approved,
+                    COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -1862,7 +1870,7 @@ final class Application
      */
     private function fetchProfileBySlug(string $slug): ?array
     {
-        return ProfileRepository::bySlug($this->pdo(), $slug);
+        return \ForumRewrite\Security\KeyRetirement::profile($this->repositoryRoot, ProfileRepository::bySlug($this->pdo(), $slug));
     }
 
     /**
@@ -1870,7 +1878,7 @@ final class Application
      */
     private function fetchProfileByIdentityId(string $identityId): ?array
     {
-        return ProfileRepository::byIdentityId($this->pdo(), $identityId);
+        return \ForumRewrite\Security\KeyRetirement::profile($this->repositoryRoot, ProfileRepository::byIdentityId($this->pdo(), $identityId));
     }
 
     /**
@@ -2109,6 +2117,7 @@ final class Application
             || $path === '/account/key/' || $path === '/account/key'
             || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity' || $path === '/api/auth_status'
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
+            || in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
             || $path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name'
@@ -2181,6 +2190,7 @@ final class Application
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
+            '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
