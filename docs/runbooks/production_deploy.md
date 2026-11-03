@@ -241,9 +241,11 @@ A root-approved operator can update the application checkout from **Tools → De
 
 A deploy is pull only: it fetches `origin/main` and fast-forwards. It does not run `./v3 docs publish`, `./v3 build-static` or any other step; run those yourself when the release needs them (see the Safe Deployment Procedure above). With PHP OPcache configured not to check file timestamps, reload PHP after a deploy.
 
+Local edits to tracked files on the server (typically `public/.htaccess`) are kept: the deploy sets them aside with `git stash`, fast-forwards, puts them back and drops the stash, the same as running `git stash`, `git pull`, `git stash pop` by hand. The Deploy page lists those files. Untracked files are never touched. If the update changes the same lines as a local edit, the deploy goes back to the previous commit with the edit intact and reports `local_changes_conflict`; merge that file over SSH.
+
 It refuses, leaving the checkout exactly as it was, when:
 
-- tracked files have local changes on the server (`local_changes`);
+- the update conflicts with a local edit (`local_changes_conflict`, above);
 - the checkout is not on `main` (`wrong_branch`);
 - the server has commits that are not on `origin/main` (`diverged`);
 - another deploy is running (`busy`; a queued deploy retries this on a later run).

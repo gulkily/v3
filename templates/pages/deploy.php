@@ -36,7 +36,7 @@ $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'sta
 <?php if (($s['local_changes'] ?? 0) > 0): ?>
         <tr>
           <th scope="row">Local changes</th>
-          <td><?= (int) $s['local_changes'] ?> tracked file<?= (int) $s['local_changes'] === 1 ? '' : 's' ?></td>
+          <td><?php foreach ($s['changed_files'] as $i => $file): ?><?= $i > 0 ? ', ' : '' ?><code><?= $e($file) ?></code><?php endforeach; ?><br><span class="meta">Kept across deploys.</span></td>
         </tr>
 <?php endif; ?>
         <tr>

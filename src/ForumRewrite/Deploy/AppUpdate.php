@@ -29,6 +29,9 @@ final class AppUpdate
 
     private const LOG_ROTATE_BYTES = 262144;
 
+    /** `git stash` needs an identity; servers often have none configured. */
+    private const STASH_IDENTITY = ['-c', 'user.name=Forum deploy', '-c', 'user.email=deploy@localhost'];
+
     private string $lockPath;
     private string $logPath;
     private string $queuedPath;
@@ -111,6 +114,7 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             'subject' => null,
             'branch' => null,
             'local_changes' => null,
+            'changed_files' => [],
             'remote_commit' => null,
             'behind' => null,
             'ahead' => null,
@@ -124,7 +128,9 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         $state['commit'] = $this->gitValue(['rev-parse', '--verify', 'HEAD']);
         $state['subject'] = $this->gitValue(['log', '-1', '--format=%s']);
         $state['branch'] = $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']);
-        $state['local_changes'] = $this->trackedChangeCount();
+        $changed = $this->trackedChangedFiles();
+        $state['local_changes'] = $changed === null ? null : count($changed);
+        $state['changed_files'] = $changed ?? [];
         $remote = $this->gitValue(['rev-parse', '--verify', '--quiet', 'refs/remotes/' . self::REMOTE . '/' . self::BRANCH]);
         $state['remote_commit'] = $remote;
         if ($remote !== null && $state['commit'] !== null) {
@@ -243,12 +249,9 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             if ($branch !== self::BRANCH) {
                 return $refuse('wrong_branch', 'The checkout is on ' . ($branch ?? 'a detached HEAD') . ', not ' . self::BRANCH . '.', $old);
             }
-            $changes = $this->trackedChangeCount();
-            if ($changes === null) {
+            $changed = $this->trackedChangedFiles();
+            if ($changed === null) {
                 return $refuse('git_failed', 'Could not read the working tree status.', $old, 'failed');
-            }
-            if ($changes > 0) {
-                return $refuse('local_changes', $changes . ' tracked file' . ($changes === 1 ? ' has' : 's have') . ' local changes on the server.', $old);
             }
             $fetch = $this->fetch($timeoutSeconds);
             if ($fetch !== null) {
@@ -264,13 +267,42 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             if ($this->git(['merge-base', '--is-ancestor', 'HEAD', $remote], 30)['code'] !== 0) {
                 return $refuse('diverged', 'The server has commits that are not on ' . self::REMOTE . '/' . self::BRANCH . '; resolve over SSH.', $old);
             }
+            // Local edits to tracked files (typically public/.htaccess) are set
+            // aside, the update applied, and the edits put back, as an operator
+            // would with `git stash`, `git pull`, `git stash pop`.
+            $stashed = false;
+            if ($changed !== []) {
+                $stash = $this->git([...self::STASH_IDENTITY, 'stash', 'push', '--quiet', '-m', 'deploy ' . gmdate('Y-m-d\TH:i:s\Z') . ': local changes kept'], 30);
+                if ($stash['code'] !== 0) {
+                    return $refuse('stash_failed', 'Could not set aside local changes: ' . $this->summarize($stash['err']), $old, 'failed');
+                }
+                $stashed = true;
+            }
             $merge = $this->git(['merge', '--ff-only', '--quiet', $remote], $timeoutSeconds);
             $new = $this->gitValue(['rev-parse', '--verify', 'HEAD']);
             if ($merge['code'] !== 0 || $new !== $remote) {
-                return ['outcome' => 'failed', 'reason' => 'merge_failed', 'message' => 'The fast-forward did not complete: ' . $this->summarize($merge['err']), 'old_commit' => $old, 'new_commit' => $new];
+                $restored = !$stashed || $this->restoreAt($old);
+                $message = 'The fast-forward did not complete: ' . $this->summarize($merge['err']);
+                if (!$restored) {
+                    $message .= ' Local changes are saved in `git stash`; run `git stash pop` over SSH.';
+                }
+                return ['outcome' => 'failed', 'reason' => 'merge_failed', 'message' => $message, 'old_commit' => $old, 'new_commit' => $new];
             }
+            if ($stashed) {
+                $apply = $this->git(['stash', 'apply', '--quiet'], 30);
+                if ($apply['code'] !== 0 || $this->hasUnmergedPaths()) {
+                    // The update and the local edits touch the same lines: go
+                    // back to the previous commit with the edits intact.
+                    if (!$this->restoreAt($old)) {
+                        return ['outcome' => 'failed', 'reason' => 'stash_restore_failed', 'message' => 'The update conflicts with local changes to ' . implode(', ', $changed) . ', and they could not be put back automatically. They are saved in `git stash`; resolve over SSH.', 'old_commit' => $old, 'new_commit' => $this->gitValue(['rev-parse', '--verify', 'HEAD'])];
+                    }
+                    return $refuse('local_changes_conflict', 'The update changes the same lines as local edits to ' . implode(', ', $changed) . '. Nothing was changed; merge them over SSH (git stash, git pull, git stash pop).', $old);
+                }
+                $this->git(['stash', 'drop', '--quiet'], 30);
+            }
+            $kept = $changed === [] ? '' : ' Kept local changes to ' . implode(', ', $changed) . '.';
 
-            return ['outcome' => 'deployed', 'reason' => null, 'message' => 'Updated to ' . substr($new, 0, 12) . '.', 'old_commit' => $old, 'new_commit' => $new];
+            return ['outcome' => 'deployed', 'reason' => null, 'message' => 'Updated to ' . substr($new, 0, 12) . '.' . $kept, 'old_commit' => $old, 'new_commit' => $new];
         } finally {
             $this->releaseLock($lock);
         }
@@ -297,15 +329,48 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         return is_dir($this->appRoot . '/.git') || is_file($this->appRoot . '/.git');
     }
 
-    private function trackedChangeCount(): ?int
+    /**
+     * Paths of tracked files with local changes (staged or not); untracked
+     * files are not included and are never touched by a deploy.
+     *
+     * @return list<string>|null
+     */
+    private function trackedChangedFiles(): ?array
     {
         $result = $this->git(['status', '--porcelain', '--untracked-files=no'], 30);
         if ($result['code'] !== 0) {
             return null;
         }
-        $lines = array_filter(explode("\n", $result['out']), static fn (string $l): bool => trim($l) !== '');
+        $files = [];
+        foreach (explode("\n", $result['out']) as $line) {
+            if (strlen($line) > 3) {
+                $path = substr($line, 3);
+                $arrow = strpos($path, ' -> ');
+                $files[] = $arrow === false ? $path : substr($path, $arrow + 4);
+            }
+        }
 
-        return count($lines);
+        return $files;
+    }
+
+    private function hasUnmergedPaths(): bool
+    {
+        $result = $this->git(['diff', '--name-only', '--diff-filter=U'], 30);
+
+        return $result['code'] !== 0 || trim($result['out']) !== '';
+    }
+
+    /**
+     * Return to $commit and put the stashed local changes back on it, where
+     * they came from, so they apply cleanly.
+     */
+    private function restoreAt(string $commit): bool
+    {
+        if ($this->git(['reset', '--hard', '--quiet', $commit], 30)['code'] !== 0) {
+            return false;
+        }
+
+        return $this->git(['stash', 'pop', '--quiet'], 30)['code'] === 0;
     }
 
     private function lastFetchTime(): ?string

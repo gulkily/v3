@@ -70,18 +70,88 @@ final class AppUpdateTest
         assertSame($head, $this->head($app));
     }
 
-    public function testRefusesWhenTrackedFilesHaveLocalChanges(): void
+    public function testKeepsLocalChangesToFilesTheUpdateDoesNotTouch(): void
     {
         [$app, $seed] = $this->fixture();
-        $this->pushCommit($seed, 'remote');
+        $new = $this->pushCommit($seed, 'remote');
+        file_put_contents($app . '/README.md', "edited on the server\n");
+
+        $state = (new AppUpdate($app))->inspect();
+        assertSame(['README.md'], $state['changed_files']);
+        $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+
+        assertSame('deployed', $result['outcome']);
+        assertSame($new, $this->head($app));
+        assertSame("edited on the server\n", file_get_contents($app . '/README.md'));
+        assertStringContains('Kept local changes to README.md', $result['message']);
+        assertSame('', trim($this->git($app, ['stash', 'list'])));
+    }
+
+    public function testKeepsLocalEditsOnOtherLinesOfAFileTheUpdateChanges(): void
+    {
+        [$app, $seed] = $this->fixture();
+        file_put_contents($seed . '/README.md', "one\ntwo\nthree\nfour\nfive\nsix\n");
+        $this->git($seed, ['commit', '-q', '-am', 'longer readme']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
+        (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+        file_put_contents($seed . '/README.md', "one\ntwo\nthree\nfour\nfive\nSIX FROM MAIN\n");
+        $this->git($seed, ['commit', '-q', '-am', 'edit last line']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
+        $new = $this->head($seed);
+        file_put_contents($app . '/README.md', "ONE ON SERVER\ntwo\nthree\nfour\nfive\nsix\n");
+
+        $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+
+        assertSame('deployed', $result['outcome']);
+        assertSame($new, $this->head($app));
+        assertSame("ONE ON SERVER\ntwo\nthree\nfour\nfive\nSIX FROM MAIN\n", file_get_contents($app . '/README.md'));
+        assertSame('', trim($this->git($app, ['stash', 'list'])));
+    }
+
+    public function testConflictingLocalEditRollsBackWithTheEditIntact(): void
+    {
+        [$app, $seed] = $this->fixture();
+        file_put_contents($seed . '/README.md', "from main\n");
+        $this->git($seed, ['commit', '-q', '-am', 'change readme']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
         file_put_contents($app . '/README.md', "edited on the server\n");
         $head = $this->head($app);
 
         $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
 
         assertSame('refused', $result['outcome']);
-        assertSame('local_changes', $result['reason']);
+        assertSame('local_changes_conflict', $result['reason']);
+        assertStringContains('README.md', $result['message']);
         assertSame($head, $this->head($app));
+        assertSame("edited on the server\n", file_get_contents($app . '/README.md'));
+        assertSame('', trim($this->git($app, ['stash', 'list'])));
+        assertSame('', trim($this->git($app, ['diff', '--name-only', '--diff-filter=U'])));
+    }
+
+    public function testKeepsLocalChangesWithoutAGitIdentityConfigured(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $new = $this->pushCommit($seed, 'remote');
+        file_put_contents($app . '/README.md', "edited on the server\n");
+        $previous = getenv('GIT_CONFIG_GLOBAL');
+        // No global identity, and no guessing from the host name: as on a
+        // shared host where Git cannot auto-detect an email address.
+        putenv('GIT_CONFIG_GLOBAL=/dev/null');
+        putenv('GIT_CONFIG_NOSYSTEM=1');
+        putenv('GIT_CONFIG_COUNT=1');
+        putenv('GIT_CONFIG_KEY_0=user.useConfigOnly');
+        putenv('GIT_CONFIG_VALUE_0=true');
+        try {
+            $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+        } finally {
+            putenv($previous === false ? 'GIT_CONFIG_GLOBAL' : 'GIT_CONFIG_GLOBAL=' . $previous);
+            foreach (['GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0'] as $name) {
+                putenv($name);
+            }
+        }
+
+        assertSame('deployed', $result['outcome'], $result['message']);
+        assertSame($new, $this->head($app));
         assertSame("edited on the server\n", file_get_contents($app . '/README.md'));
     }
 
@@ -265,7 +335,9 @@ final class AppUpdateTest
     public function testRefusedQueuedDeployFailsWithTheReason(): void
     {
         [$app, $seed] = $this->fixture();
-        $this->pushCommit($seed, 'refused');
+        file_put_contents($seed . '/README.md', "from main\n");
+        $this->git($seed, ['commit', '-q', '-am', 'change readme']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
         file_put_contents($app . '/README.md', "edited\n");
         $store = $this->store($app);
         $queued = (new AppUpdate($app))->queue($store, 'openpgp:operator');
@@ -274,7 +346,7 @@ final class AppUpdateTest
 
         $task = $store->findById($queued['task_id']);
         assertSame('failed', $task['status']);
-        assertSame('local_changes', $task['failure_code']);
+        assertSame('local_changes_conflict', $task['failure_code']);
     }
 
     private function store(string $app): SqliteTaskQueueStore
