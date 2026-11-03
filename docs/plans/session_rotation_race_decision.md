@@ -2,6 +2,8 @@
 
 Status: decided 2026-10-30 — option A with a 30-second grace period; implemented on `fix/session-rotation-race` (see Implementation).
 Date: 2026-10-30.
+
+> **Superseded 2026-11-03:** PHP sessions and `SessionRotation` were removed in the [app_sessions cycle](app_sessions/app_sessions_step4_implementation_summary.md). The decision itself carries over: a replaced session token forwards to its replacement for 30 seconds, now inside the app-owned session store, and an unknown token never clears the cookie.
 Found while fixing testing Approve (merged in `3c404b302`); see the [UI copy checklist entry](ui_copy_audit_checklist.md) "Testing Approve works after Remove and Continue".
 
 ## Problem

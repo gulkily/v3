@@ -1,0 +1,67 @@
+Record: Controlled parallel worker results
+Source revision: 3dc2c3feaa17af591eb6e819a055d26ab6990efb
+Corpus: 10000 synthetic posts plus 3 fixture posts; 2048-byte bodies
+Fixture Git HEAD: 072ec07bf77e871712796e501947d8d2e91397fb
+Fixture tree: 3debb908ef0537b997b9b9d009b7b77deda62657
+CPU: 12th Gen Intel(R) Core(TM) i7-1255U
+Logical and affinity CPUs: 12 / 12
+Cgroup v2 limits: unavailable at standard paths
+Worker model: independent persistent PHP development servers, one client assigned to each; no static artifact for latest route
+RSS: sampled tree aggregate including Python driver; lower bound; includes post-window parity work
+
+Case: baseline, clients=1
+Windows: 3 x 30 seconds
+Requests per second min/median/max: 6.056012 / 6.149005 / 6.321671
+P95 seconds min/median/max: 0.226673 / 0.233361 / 0.243644
+RSS min/median/max: 155627520.000000 / 155697152.000000 / 155701248.000000
+Errors: 0
+Ordered page IDs: all requests match expected descending 409999 through 409975
+Post-window full synthetic body/count parity: pass
+
+Case: baseline, clients=2
+Windows: 3 x 30 seconds
+Requests per second min/median/max: 6.960480 / 10.523646 / 11.507657
+P95 seconds min/median/max: 0.224656 / 0.250205 / 0.475309
+RSS min/median/max: 265744384.000000 / 266031104.000000 / 266063872.000000
+Errors: 0
+Ordered page IDs: all requests match expected descending 409999 through 409975
+Post-window full synthetic body/count parity: pass
+
+Case: baseline, clients=4
+Windows: 3 x 30 seconds
+Requests per second min/median/max: 7.929762 / 10.413906 / 10.997557
+P95 seconds min/median/max: 0.481410 / 0.527212 / 0.792444
+RSS min/median/max: 477802496.000000 / 483475456.000000 / 484040704.000000
+Errors: 0
+Ordered page IDs: all requests match expected descending 409999 through 409975
+Post-window full synthetic body/count parity: pass
+
+Case: overlap, clients=1
+Windows: 3 x 30 seconds
+Requests per second min/median/max: 3.867498 / 3.891779 / 5.098444
+P95 seconds min/median/max: 0.330557 / 0.505215 / 0.593776
+RSS min/median/max: 283152384.000000 / 291696640.000000 / 292007936.000000
+During-maintenance p95 seconds: 0.2688662000000477, 0.2908000150000589, 0.8501055460001226
+Errors: 0
+Ordered page IDs: all requests match expected descending 409999 through 409975
+Post-window full synthetic body/count parity: pass
+
+Case: overlap, clients=2
+Windows: 3 x 30 seconds
+Requests per second min/median/max: 7.948894 / 8.465118 / 9.579981
+P95 seconds min/median/max: 0.297801 / 0.335555 / 0.340030
+RSS min/median/max: 404000768.000000 / 405000192.000000 / 405094400.000000
+During-maintenance p95 seconds: 0.3411584789992048, 0.41758797999955277, 0.30172120799943514
+Errors: 0
+Ordered page IDs: all requests match expected descending 409999 through 409975
+Post-window full synthetic body/count parity: pass
+
+Case: overlap, clients=4
+Windows: 3 x 30 seconds
+Requests per second min/median/max: 12.158358 / 12.662018 / 12.847844
+P95 seconds min/median/max: 0.375149 / 0.414574 / 0.419638
+RSS min/median/max: 626876416.000000 / 627625984.000000 / 628301824.000000
+During-maintenance p95 seconds: 0.4381663000003755, 0.34975258899976325, 0.4525799940001889
+Errors: 0
+Ordered page IDs: all requests match expected descending 409999 through 409975
+Post-window full synthetic body/count parity: pass

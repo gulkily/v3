@@ -320,6 +320,7 @@ try {
                     $errorLog->writeThrowable('task_exception', $throwable, ['task_id' => $failedTaskId]);
                 },
                 runRetractionSweep: static fn (): array => $retractionSweep->run($workLimit),
+                runAppUpdate: static fn (): array => \ForumRewrite\Deploy\AppUpdate::forProject($projectRoot)->runQueued(),
             );
             $taskStartedAt = [];
             try {

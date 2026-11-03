@@ -48,9 +48,9 @@ try {
   await writer.page.goto(base + '/compose/thread');
   assert.equal(await writer.page.getByRole('heading', { name: 'New post' }).isVisible(), true);
   const form = writer.page.locator('[data-compose-kind="thread"]');
-  const order = await form.evaluate(f => ['.compose-title', 'textarea[name="body"]', '.compose-tools', '.compose-form-actions']
+  const order = await form.evaluate(f => ['textarea[name="body"]', '.compose-form-actions', '.compose-title', '.compose-tools']
     .map(q => f.querySelector(q).getBoundingClientRect().top));
-  assert.deepEqual([...order].sort((a, b) => a - b), order, 'Title, body, tools, then Post');
+  assert.deepEqual([...order].sort((a, b) => a - b), order, 'body, Post, then Title and tools');
   await form.getByRole('textbox', { name: 'Title' }).fill('Composer with a title');
   await form.getByRole('textbox', { name: 'Body' }).fill('Body of the titled post');
   await form.locator('[data-compose-disclosure="tags"] > summary').click();

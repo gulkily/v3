@@ -71,9 +71,9 @@ $firstLine = static function (string $body): string {
 
   <h2 class="person-identities__title">Identities</h2>
   <div class="account-group" id="account-keys">
-<?php foreach ($approvedProfiles as $profile): ?>
+<?php foreach ($historicalProfiles as $profile): ?>
 <?php $approvedBy = trim((string) ($profile['approved_by_label'] ?? '')); ?>
-    <a class="account-row account-row--link" data-tone="neutral" href="/profiles/<?= $e($profile['profile_slug']) ?>"><span class="account-row__title account-key-fingerprint-value" title="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug((string) $profile['profile_slug'])) ?></span><span class="account-row__value"><?= $approvedBy !== '' ? 'Approved by ' . $e($approvedBy) : 'Approved' ?></span></a>
+    <a class="account-row account-row--link" data-tone="neutral" href="/profiles/<?= $e($profile['profile_slug']) ?>"><span class="account-row__title account-key-fingerprint-value" title="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug((string) $profile['profile_slug'])) ?></span><span class="account-row__value"><?= !empty($profile['retired_at']) ? 'Retired' : ($approvedBy !== '' ? 'Approved by ' . $e($approvedBy) : 'Approved') ?></span></a>
 <?php endforeach; ?>
   </div>
 <?php endif; ?>

@@ -1,0 +1,1061 @@
+Starting read-model rebuild.
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Database: /tmp/v3-capacity-5wrtjih3/model.sqlite
+[1/3] Scanning source record counts...
+[1/3] Source scan complete: 10003 posts, 1 identities, 1 approval seeds.
+[2/3] Building and validating a read-model candidate...
+[2/3] Read model: drop schema...
+[2/3] Read model: drop schema complete (0.5 ms).
+[2/3] Read model: create schema...
+[2/3] Read model: create schema complete (3.9 ms).
+[2/3] Read model: resolve attribution cutoff...
+[2/3] Read model: resolve attribution cutoff complete (0.5 ms).
+[2/3] Read model: index posts...
+[2/3] Read model: resolve legacy post creation times...
+[2/3] Read model: resolve legacy post creation times complete (18.9 ms).
+[2/3] Read model: resolve post source commits...
+[2/3] Read model: read source history...
+[2/3] Read model: read source history complete (11.8 ms).
+[2/3] Read model: resolve post source commits complete (14.7 ms).
+[2/3] Read model: parsing post records (0/10003).
+[2/3] Read model: parsing post records (101/10003).
+[2/3] Read model: parsing post records (202/10003).
+[2/3] Read model: parsing post records (303/10003).
+[2/3] Read model: parsing post records (404/10003).
+[2/3] Read model: parsing post records (505/10003).
+[2/3] Read model: parsing post records (606/10003).
+[2/3] Read model: parsing post records (707/10003).
+[2/3] Read model: parsing post records (808/10003).
+[2/3] Read model: parsing post records (909/10003).
+[2/3] Read model: parsing post records (1010/10003).
+[2/3] Read model: parsing post records (1111/10003).
+[2/3] Read model: parsing post records (1212/10003).
+[2/3] Read model: parsing post records (1313/10003).
+[2/3] Read model: parsing post records (1414/10003).
+[2/3] Read model: parsing post records (1515/10003).
+[2/3] Read model: parsing post records (1616/10003).
+[2/3] Read model: parsing post records (1717/10003).
+[2/3] Read model: parsing post records (1818/10003).
+[2/3] Read model: parsing post records (1919/10003).
+[2/3] Read model: parsing post records (2020/10003).
+[2/3] Read model: parsing post records (2121/10003).
+[2/3] Read model: parsing post records (2222/10003).
+[2/3] Read model: parsing post records (2323/10003).
+[2/3] Read model: parsing post records (2424/10003).
+[2/3] Read model: parsing post records (2525/10003).
+[2/3] Read model: parsing post records (2626/10003).
+[2/3] Read model: parsing post records (2727/10003).
+[2/3] Read model: parsing post records (2828/10003).
+[2/3] Read model: parsing post records (2929/10003).
+[2/3] Read model: parsing post records (3030/10003).
+[2/3] Read model: parsing post records (3131/10003).
+[2/3] Read model: parsing post records (3232/10003).
+[2/3] Read model: parsing post records (3333/10003).
+[2/3] Read model: parsing post records (3434/10003).
+[2/3] Read model: parsing post records (3535/10003).
+[2/3] Read model: parsing post records (3636/10003).
+[2/3] Read model: parsing post records (3737/10003).
+[2/3] Read model: parsing post records (3838/10003).
+[2/3] Read model: parsing post records (3939/10003).
+[2/3] Read model: parsing post records (4040/10003).
+[2/3] Read model: parsing post records (4141/10003).
+[2/3] Read model: parsing post records (4242/10003).
+[2/3] Read model: parsing post records (4343/10003).
+[2/3] Read model: parsing post records (4444/10003).
+[2/3] Read model: parsing post records (4545/10003).
+[2/3] Read model: parsing post records (4646/10003).
+[2/3] Read model: parsing post records (4747/10003).
+[2/3] Read model: parsing post records (4848/10003).
+[2/3] Read model: parsing post records (4949/10003).
+[2/3] Read model: parsing post records (5050/10003).
+[2/3] Read model: parsing post records (5151/10003).
+[2/3] Read model: parsing post records (5252/10003).
+[2/3] Read model: parsing post records (5353/10003).
+[2/3] Read model: parsing post records (5454/10003).
+[2/3] Read model: parsing post records (5555/10003).
+[2/3] Read model: parsing post records (5656/10003).
+[2/3] Read model: parsing post records (5757/10003).
+[2/3] Read model: parsing post records (5858/10003).
+[2/3] Read model: parsing post records (5959/10003).
+[2/3] Read model: parsing post records (6060/10003).
+[2/3] Read model: parsing post records (6161/10003).
+[2/3] Read model: parsing post records (6262/10003).
+[2/3] Read model: parsing post records (6363/10003).
+[2/3] Read model: parsing post records (6464/10003).
+[2/3] Read model: parsing post records (6565/10003).
+[2/3] Read model: parsing post records (6666/10003).
+[2/3] Read model: parsing post records (6767/10003).
+[2/3] Read model: parsing post records (6868/10003).
+[2/3] Read model: parsing post records (6969/10003).
+[2/3] Read model: parsing post records (7070/10003).
+[2/3] Read model: parsing post records (7171/10003).
+[2/3] Read model: parsing post records (7272/10003).
+[2/3] Read model: parsing post records (7373/10003).
+[2/3] Read model: parsing post records (7474/10003).
+[2/3] Read model: parsing post records (7575/10003).
+[2/3] Read model: parsing post records (7676/10003).
+[2/3] Read model: parsing post records (7777/10003).
+[2/3] Read model: parsing post records (7878/10003).
+[2/3] Read model: parsing post records (7979/10003).
+[2/3] Read model: parsing post records (8080/10003).
+[2/3] Read model: parsing post records (8181/10003).
+[2/3] Read model: parsing post records (8282/10003).
+[2/3] Read model: parsing post records (8383/10003).
+[2/3] Read model: parsing post records (8484/10003).
+[2/3] Read model: parsing post records (8585/10003).
+[2/3] Read model: parsing post records (8686/10003).
+[2/3] Read model: parsing post records (8787/10003).
+[2/3] Read model: parsing post records (8888/10003).
+[2/3] Read model: parsing post records (8989/10003).
+[2/3] Read model: parsing post records (9090/10003).
+[2/3] Read model: parsing post records (9191/10003).
+[2/3] Read model: parsing post records (9292/10003).
+[2/3] Read model: parsing post records (9393/10003).
+[2/3] Read model: parsing post records (9494/10003).
+[2/3] Read model: parsing post records (9595/10003).
+[2/3] Read model: parsing post records (9696/10003).
+[2/3] Read model: parsing post records (9797/10003).
+[2/3] Read model: parsing post records (9898/10003).
+[2/3] Read model: parsing post records (9999/10003).
+[2/3] Read model: parsing post records (10003/10003).
+[2/3] Read model: parsing post records complete (371.3 ms).
+[2/3] Read model: sort posts...
+[2/3] Read model: sort posts complete (11.7 ms).
+[2/3] Read model: writing post records (0/10003).
+[2/3] Read model: writing post records (101/10003).
+[2/3] Read model: writing post records (202/10003).
+[2/3] Read model: writing post records (303/10003).
+[2/3] Read model: writing post records (404/10003).
+[2/3] Read model: writing post records (505/10003).
+[2/3] Read model: writing post records (606/10003).
+[2/3] Read model: writing post records (707/10003).
+[2/3] Read model: writing post records (808/10003).
+[2/3] Read model: writing post records (909/10003).
+[2/3] Read model: writing post records (1010/10003).
+[2/3] Read model: writing post records (1111/10003).
+[2/3] Read model: writing post records (1212/10003).
+[2/3] Read model: writing post records (1313/10003).
+[2/3] Read model: writing post records (1414/10003).
+[2/3] Read model: writing post records (1515/10003).
+[2/3] Read model: writing post records (1616/10003).
+[2/3] Read model: writing post records (1717/10003).
+[2/3] Read model: writing post records (1818/10003).
+[2/3] Read model: writing post records (1919/10003).
+[2/3] Read model: writing post records (2020/10003).
+[2/3] Read model: writing post records (2121/10003).
+[2/3] Read model: writing post records (2222/10003).
+[2/3] Read model: writing post records (2323/10003).
+[2/3] Read model: writing post records (2424/10003).
+[2/3] Read model: writing post records (2525/10003).
+[2/3] Read model: writing post records (2626/10003).
+[2/3] Read model: writing post records (2727/10003).
+[2/3] Read model: writing post records (2828/10003).
+[2/3] Read model: writing post records (2929/10003).
+[2/3] Read model: writing post records (3030/10003).
+[2/3] Read model: writing post records (3131/10003).
+[2/3] Read model: writing post records (3232/10003).
+[2/3] Read model: writing post records (3333/10003).
+[2/3] Read model: writing post records (3434/10003).
+[2/3] Read model: writing post records (3535/10003).
+[2/3] Read model: writing post records (3636/10003).
+[2/3] Read model: writing post records (3737/10003).
+[2/3] Read model: writing post records (3838/10003).
+[2/3] Read model: writing post records (3939/10003).
+[2/3] Read model: writing post records (4040/10003).
+[2/3] Read model: writing post records (4141/10003).
+[2/3] Read model: writing post records (4242/10003).
+[2/3] Read model: writing post records (4343/10003).
+[2/3] Read model: writing post records (4444/10003).
+[2/3] Read model: writing post records (4545/10003).
+[2/3] Read model: writing post records (4646/10003).
+[2/3] Read model: writing post records (4747/10003).
+[2/3] Read model: writing post records (4848/10003).
+[2/3] Read model: writing post records (4949/10003).
+[2/3] Read model: writing post records (5050/10003).
+[2/3] Read model: writing post records (5151/10003).
+[2/3] Read model: writing post records (5252/10003).
+[2/3] Read model: writing post records (5353/10003).
+[2/3] Read model: writing post records (5454/10003).
+[2/3] Read model: writing post records (5555/10003).
+[2/3] Read model: writing post records (5656/10003).
+[2/3] Read model: writing post records (5757/10003).
+[2/3] Read model: writing post records (5858/10003).
+[2/3] Read model: writing post records (5959/10003).
+[2/3] Read model: writing post records (6060/10003).
+[2/3] Read model: writing post records (6161/10003).
+[2/3] Read model: writing post records (6262/10003).
+[2/3] Read model: writing post records (6363/10003).
+[2/3] Read model: writing post records (6464/10003).
+[2/3] Read model: writing post records (6565/10003).
+[2/3] Read model: writing post records (6666/10003).
+[2/3] Read model: writing post records (6767/10003).
+[2/3] Read model: writing post records (6868/10003).
+[2/3] Read model: writing post records (6969/10003).
+[2/3] Read model: writing post records (7070/10003).
+[2/3] Read model: writing post records (7171/10003).
+[2/3] Read model: writing post records (7272/10003).
+[2/3] Read model: writing post records (7373/10003).
+[2/3] Read model: writing post records (7474/10003).
+[2/3] Read model: writing post records (7575/10003).
+[2/3] Read model: writing post records (7676/10003).
+[2/3] Read model: writing post records (7777/10003).
+[2/3] Read model: writing post records (7878/10003).
+[2/3] Read model: writing post records (7979/10003).
+[2/3] Read model: writing post records (8080/10003).
+[2/3] Read model: writing post records (8181/10003).
+[2/3] Read model: writing post records (8282/10003).
+[2/3] Read model: writing post records (8383/10003).
+[2/3] Read model: writing post records (8484/10003).
+[2/3] Read model: writing post records (8585/10003).
+[2/3] Read model: writing post records (8686/10003).
+[2/3] Read model: writing post records (8787/10003).
+[2/3] Read model: writing post records (8888/10003).
+[2/3] Read model: writing post records (8989/10003).
+[2/3] Read model: writing post records (9090/10003).
+[2/3] Read model: writing post records (9191/10003).
+[2/3] Read model: writing post records (9292/10003).
+[2/3] Read model: writing post records (9393/10003).
+[2/3] Read model: writing post records (9494/10003).
+[2/3] Read model: writing post records (9595/10003).
+[2/3] Read model: writing post records (9696/10003).
+[2/3] Read model: writing post records (9797/10003).
+[2/3] Read model: writing post records (9898/10003).
+[2/3] Read model: writing post records (9999/10003).
+[2/3] Read model: writing post records (10003/10003).
+[2/3] Read model: writing post records complete (169.3 ms).
+[2/3] Read model: writing thread summaries (0/10002).
+[2/3] Read model: writing thread summaries (101/10002).
+[2/3] Read model: writing thread summaries (202/10002).
+[2/3] Read model: writing thread summaries (303/10002).
+[2/3] Read model: writing thread summaries (404/10002).
+[2/3] Read model: writing thread summaries (505/10002).
+[2/3] Read model: writing thread summaries (606/10002).
+[2/3] Read model: writing thread summaries (707/10002).
+[2/3] Read model: writing thread summaries (808/10002).
+[2/3] Read model: writing thread summaries (909/10002).
+[2/3] Read model: writing thread summaries (1010/10002).
+[2/3] Read model: writing thread summaries (1111/10002).
+[2/3] Read model: writing thread summaries (1212/10002).
+[2/3] Read model: writing thread summaries (1313/10002).
+[2/3] Read model: writing thread summaries (1414/10002).
+[2/3] Read model: writing thread summaries (1515/10002).
+[2/3] Read model: writing thread summaries (1616/10002).
+[2/3] Read model: writing thread summaries (1717/10002).
+[2/3] Read model: writing thread summaries (1818/10002).
+[2/3] Read model: writing thread summaries (1919/10002).
+[2/3] Read model: writing thread summaries (2020/10002).
+[2/3] Read model: writing thread summaries (2121/10002).
+[2/3] Read model: writing thread summaries (2222/10002).
+[2/3] Read model: writing thread summaries (2323/10002).
+[2/3] Read model: writing thread summaries (2424/10002).
+[2/3] Read model: writing thread summaries (2525/10002).
+[2/3] Read model: writing thread summaries (2626/10002).
+[2/3] Read model: writing thread summaries (2727/10002).
+[2/3] Read model: writing thread summaries (2828/10002).
+[2/3] Read model: writing thread summaries (2929/10002).
+[2/3] Read model: writing thread summaries (3030/10002).
+[2/3] Read model: writing thread summaries (3131/10002).
+[2/3] Read model: writing thread summaries (3232/10002).
+[2/3] Read model: writing thread summaries (3333/10002).
+[2/3] Read model: writing thread summaries (3434/10002).
+[2/3] Read model: writing thread summaries (3535/10002).
+[2/3] Read model: writing thread summaries (3636/10002).
+[2/3] Read model: writing thread summaries (3737/10002).
+[2/3] Read model: writing thread summaries (3838/10002).
+[2/3] Read model: writing thread summaries (3939/10002).
+[2/3] Read model: writing thread summaries (4040/10002).
+[2/3] Read model: writing thread summaries (4141/10002).
+[2/3] Read model: writing thread summaries (4242/10002).
+[2/3] Read model: writing thread summaries (4343/10002).
+[2/3] Read model: writing thread summaries (4444/10002).
+[2/3] Read model: writing thread summaries (4545/10002).
+[2/3] Read model: writing thread summaries (4646/10002).
+[2/3] Read model: writing thread summaries (4747/10002).
+[2/3] Read model: writing thread summaries (4848/10002).
+[2/3] Read model: writing thread summaries (4949/10002).
+[2/3] Read model: writing thread summaries (5050/10002).
+[2/3] Read model: writing thread summaries (5151/10002).
+[2/3] Read model: writing thread summaries (5252/10002).
+[2/3] Read model: writing thread summaries (5353/10002).
+[2/3] Read model: writing thread summaries (5454/10002).
+[2/3] Read model: writing thread summaries (5555/10002).
+[2/3] Read model: writing thread summaries (5656/10002).
+[2/3] Read model: writing thread summaries (5757/10002).
+[2/3] Read model: writing thread summaries (5858/10002).
+[2/3] Read model: writing thread summaries (5959/10002).
+[2/3] Read model: writing thread summaries (6060/10002).
+[2/3] Read model: writing thread summaries (6161/10002).
+[2/3] Read model: writing thread summaries (6262/10002).
+[2/3] Read model: writing thread summaries (6363/10002).
+[2/3] Read model: writing thread summaries (6464/10002).
+[2/3] Read model: writing thread summaries (6565/10002).
+[2/3] Read model: writing thread summaries (6666/10002).
+[2/3] Read model: writing thread summaries (6767/10002).
+[2/3] Read model: writing thread summaries (6868/10002).
+[2/3] Read model: writing thread summaries (6969/10002).
+[2/3] Read model: writing thread summaries (7070/10002).
+[2/3] Read model: writing thread summaries (7171/10002).
+[2/3] Read model: writing thread summaries (7272/10002).
+[2/3] Read model: writing thread summaries (7373/10002).
+[2/3] Read model: writing thread summaries (7474/10002).
+[2/3] Read model: writing thread summaries (7575/10002).
+[2/3] Read model: writing thread summaries (7676/10002).
+[2/3] Read model: writing thread summaries (7777/10002).
+[2/3] Read model: writing thread summaries (7878/10002).
+[2/3] Read model: writing thread summaries (7979/10002).
+[2/3] Read model: writing thread summaries (8080/10002).
+[2/3] Read model: writing thread summaries (8181/10002).
+[2/3] Read model: writing thread summaries (8282/10002).
+[2/3] Read model: writing thread summaries (8383/10002).
+[2/3] Read model: writing thread summaries (8484/10002).
+[2/3] Read model: writing thread summaries (8585/10002).
+[2/3] Read model: writing thread summaries (8686/10002).
+[2/3] Read model: writing thread summaries (8787/10002).
+[2/3] Read model: writing thread summaries (8888/10002).
+[2/3] Read model: writing thread summaries (8989/10002).
+[2/3] Read model: writing thread summaries (9090/10002).
+[2/3] Read model: writing thread summaries (9191/10002).
+[2/3] Read model: writing thread summaries (9292/10002).
+[2/3] Read model: writing thread summaries (9393/10002).
+[2/3] Read model: writing thread summaries (9494/10002).
+[2/3] Read model: writing thread summaries (9595/10002).
+[2/3] Read model: writing thread summaries (9696/10002).
+[2/3] Read model: writing thread summaries (9797/10002).
+[2/3] Read model: writing thread summaries (9898/10002).
+[2/3] Read model: writing thread summaries (9999/10002).
+[2/3] Read model: writing thread summaries (10002/10002).
+[2/3] Read model: writing thread summaries complete (75.2 ms).
+[2/3] Read model: index posts complete (689.6 ms).
+[2/3] Read model: index profiles...
+[2/3] Read model: parsing identity records (0/1).
+[2/3] Read model: parsing identity records (1/1).
+[2/3] Read model: parsing identity records complete (0.3 ms).
+[2/3] Read model: index profiles complete (0.6 ms).
+[2/3] Read model: derive approval state...
+[2/3] Read model: approval pass 1.
+[2/3] Read model: checking approval posts (0/10003).
+[2/3] Read model: checking approval posts (101/10003).
+[2/3] Read model: checking approval posts (202/10003).
+[2/3] Read model: checking approval posts (303/10003).
+[2/3] Read model: checking approval posts (404/10003).
+[2/3] Read model: checking approval posts (505/10003).
+[2/3] Read model: checking approval posts (606/10003).
+[2/3] Read model: checking approval posts (707/10003).
+[2/3] Read model: checking approval posts (808/10003).
+[2/3] Read model: checking approval posts (909/10003).
+[2/3] Read model: checking approval posts (1010/10003).
+[2/3] Read model: checking approval posts (1111/10003).
+[2/3] Read model: checking approval posts (1212/10003).
+[2/3] Read model: checking approval posts (1313/10003).
+[2/3] Read model: checking approval posts (1414/10003).
+[2/3] Read model: checking approval posts (1515/10003).
+[2/3] Read model: checking approval posts (1616/10003).
+[2/3] Read model: checking approval posts (1717/10003).
+[2/3] Read model: checking approval posts (1818/10003).
+[2/3] Read model: checking approval posts (1919/10003).
+[2/3] Read model: checking approval posts (2020/10003).
+[2/3] Read model: checking approval posts (2121/10003).
+[2/3] Read model: checking approval posts (2222/10003).
+[2/3] Read model: checking approval posts (2323/10003).
+[2/3] Read model: checking approval posts (2424/10003).
+[2/3] Read model: checking approval posts (2525/10003).
+[2/3] Read model: checking approval posts (2626/10003).
+[2/3] Read model: checking approval posts (2727/10003).
+[2/3] Read model: checking approval posts (2828/10003).
+[2/3] Read model: checking approval posts (2929/10003).
+[2/3] Read model: checking approval posts (3030/10003).
+[2/3] Read model: checking approval posts (3131/10003).
+[2/3] Read model: checking approval posts (3232/10003).
+[2/3] Read model: checking approval posts (3333/10003).
+[2/3] Read model: checking approval posts (3434/10003).
+[2/3] Read model: checking approval posts (3535/10003).
+[2/3] Read model: checking approval posts (3636/10003).
+[2/3] Read model: checking approval posts (3737/10003).
+[2/3] Read model: checking approval posts (3838/10003).
+[2/3] Read model: checking approval posts (3939/10003).
+[2/3] Read model: checking approval posts (4040/10003).
+[2/3] Read model: checking approval posts (4141/10003).
+[2/3] Read model: checking approval posts (4242/10003).
+[2/3] Read model: checking approval posts (4343/10003).
+[2/3] Read model: checking approval posts (4444/10003).
+[2/3] Read model: checking approval posts (4545/10003).
+[2/3] Read model: checking approval posts (4646/10003).
+[2/3] Read model: checking approval posts (4747/10003).
+[2/3] Read model: checking approval posts (4848/10003).
+[2/3] Read model: checking approval posts (4949/10003).
+[2/3] Read model: checking approval posts (5050/10003).
+[2/3] Read model: checking approval posts (5151/10003).
+[2/3] Read model: checking approval posts (5252/10003).
+[2/3] Read model: checking approval posts (5353/10003).
+[2/3] Read model: checking approval posts (5454/10003).
+[2/3] Read model: checking approval posts (5555/10003).
+[2/3] Read model: checking approval posts (5656/10003).
+[2/3] Read model: checking approval posts (5757/10003).
+[2/3] Read model: checking approval posts (5858/10003).
+[2/3] Read model: checking approval posts (5959/10003).
+[2/3] Read model: checking approval posts (6060/10003).
+[2/3] Read model: checking approval posts (6161/10003).
+[2/3] Read model: checking approval posts (6262/10003).
+[2/3] Read model: checking approval posts (6363/10003).
+[2/3] Read model: checking approval posts (6464/10003).
+[2/3] Read model: checking approval posts (6565/10003).
+[2/3] Read model: checking approval posts (6666/10003).
+[2/3] Read model: checking approval posts (6767/10003).
+[2/3] Read model: checking approval posts (6868/10003).
+[2/3] Read model: checking approval posts (6969/10003).
+[2/3] Read model: checking approval posts (7070/10003).
+[2/3] Read model: checking approval posts (7171/10003).
+[2/3] Read model: checking approval posts (7272/10003).
+[2/3] Read model: checking approval posts (7373/10003).
+[2/3] Read model: checking approval posts (7474/10003).
+[2/3] Read model: checking approval posts (7575/10003).
+[2/3] Read model: checking approval posts (7676/10003).
+[2/3] Read model: checking approval posts (7777/10003).
+[2/3] Read model: checking approval posts (7878/10003).
+[2/3] Read model: checking approval posts (7979/10003).
+[2/3] Read model: checking approval posts (8080/10003).
+[2/3] Read model: checking approval posts (8181/10003).
+[2/3] Read model: checking approval posts (8282/10003).
+[2/3] Read model: checking approval posts (8383/10003).
+[2/3] Read model: checking approval posts (8484/10003).
+[2/3] Read model: checking approval posts (8585/10003).
+[2/3] Read model: checking approval posts (8686/10003).
+[2/3] Read model: checking approval posts (8787/10003).
+[2/3] Read model: checking approval posts (8888/10003).
+[2/3] Read model: checking approval posts (8989/10003).
+[2/3] Read model: checking approval posts (9090/10003).
+[2/3] Read model: checking approval posts (9191/10003).
+[2/3] Read model: checking approval posts (9292/10003).
+[2/3] Read model: checking approval posts (9393/10003).
+[2/3] Read model: checking approval posts (9494/10003).
+[2/3] Read model: checking approval posts (9595/10003).
+[2/3] Read model: checking approval posts (9696/10003).
+[2/3] Read model: checking approval posts (9797/10003).
+[2/3] Read model: checking approval posts (9898/10003).
+[2/3] Read model: checking approval posts (9999/10003).
+[2/3] Read model: checking approval posts (10003/10003).
+[2/3] Read model: checking approval posts complete (4.0 ms).
+[2/3] Read model: checking invitation candidates (0/0).
+[2/3] Read model: checking invitation candidates complete (0.1 ms).
+[2/3] Read model: derive approval state complete (109.5 ms).
+[2/3] Read model: index thread labels...
+[2/3] Read model: parsing thread label records (0/2).
+[2/3] Read model: parsing thread label records (2/2).
+[2/3] Read model: parsing thread label records complete (0.1 ms).
+[2/3] Read model: sort thread labels...
+[2/3] Read model: sort thread labels complete (0.0 ms).
+[2/3] Read model: resolve thread label source commits...
+[2/3] Read model: read source history...
+[2/3] Read model: read source history complete (2.1 ms).
+[2/3] Read model: resolve thread label source commits complete (2.2 ms).
+[2/3] Read model: deriving thread label records (0/2).
+[2/3] Read model: deriving thread label records (2/2).
+[2/3] Read model: deriving thread label records complete (1.3 ms).
+[2/3] Read model: writing thread labels (0/10002).
+[2/3] Read model: writing thread labels (101/10002).
+[2/3] Read model: writing thread labels (202/10002).
+[2/3] Read model: writing thread labels (303/10002).
+[2/3] Read model: writing thread labels (404/10002).
+[2/3] Read model: writing thread labels (505/10002).
+[2/3] Read model: writing thread labels (606/10002).
+[2/3] Read model: writing thread labels (707/10002).
+[2/3] Read model: writing thread labels (808/10002).
+[2/3] Read model: writing thread labels (909/10002).
+[2/3] Read model: writing thread labels (1010/10002).
+[2/3] Read model: writing thread labels (1111/10002).
+[2/3] Read model: writing thread labels (1212/10002).
+[2/3] Read model: writing thread labels (1313/10002).
+[2/3] Read model: writing thread labels (1414/10002).
+[2/3] Read model: writing thread labels (1515/10002).
+[2/3] Read model: writing thread labels (1616/10002).
+[2/3] Read model: writing thread labels (1717/10002).
+[2/3] Read model: writing thread labels (1818/10002).
+[2/3] Read model: writing thread labels (1919/10002).
+[2/3] Read model: writing thread labels (2020/10002).
+[2/3] Read model: writing thread labels (2121/10002).
+[2/3] Read model: writing thread labels (2222/10002).
+[2/3] Read model: writing thread labels (2323/10002).
+[2/3] Read model: writing thread labels (2424/10002).
+[2/3] Read model: writing thread labels (2525/10002).
+[2/3] Read model: writing thread labels (2626/10002).
+[2/3] Read model: writing thread labels (2727/10002).
+[2/3] Read model: writing thread labels (2828/10002).
+[2/3] Read model: writing thread labels (2929/10002).
+[2/3] Read model: writing thread labels (3030/10002).
+[2/3] Read model: writing thread labels (3131/10002).
+[2/3] Read model: writing thread labels (3232/10002).
+[2/3] Read model: writing thread labels (3333/10002).
+[2/3] Read model: writing thread labels (3434/10002).
+[2/3] Read model: writing thread labels (3535/10002).
+[2/3] Read model: writing thread labels (3636/10002).
+[2/3] Read model: writing thread labels (3737/10002).
+[2/3] Read model: writing thread labels (3838/10002).
+[2/3] Read model: writing thread labels (3939/10002).
+[2/3] Read model: writing thread labels (4040/10002).
+[2/3] Read model: writing thread labels (4141/10002).
+[2/3] Read model: writing thread labels (4242/10002).
+[2/3] Read model: writing thread labels (4343/10002).
+[2/3] Read model: writing thread labels (4444/10002).
+[2/3] Read model: writing thread labels (4545/10002).
+[2/3] Read model: writing thread labels (4646/10002).
+[2/3] Read model: writing thread labels (4747/10002).
+[2/3] Read model: writing thread labels (4848/10002).
+[2/3] Read model: writing thread labels (4949/10002).
+[2/3] Read model: writing thread labels (5050/10002).
+[2/3] Read model: writing thread labels (5151/10002).
+[2/3] Read model: writing thread labels (5252/10002).
+[2/3] Read model: writing thread labels (5353/10002).
+[2/3] Read model: writing thread labels (5454/10002).
+[2/3] Read model: writing thread labels (5555/10002).
+[2/3] Read model: writing thread labels (5656/10002).
+[2/3] Read model: writing thread labels (5757/10002).
+[2/3] Read model: writing thread labels (5858/10002).
+[2/3] Read model: writing thread labels (5959/10002).
+[2/3] Read model: writing thread labels (6060/10002).
+[2/3] Read model: writing thread labels (6161/10002).
+[2/3] Read model: writing thread labels (6262/10002).
+[2/3] Read model: writing thread labels (6363/10002).
+[2/3] Read model: writing thread labels (6464/10002).
+[2/3] Read model: writing thread labels (6565/10002).
+[2/3] Read model: writing thread labels (6666/10002).
+[2/3] Read model: writing thread labels (6767/10002).
+[2/3] Read model: writing thread labels (6868/10002).
+[2/3] Read model: writing thread labels (6969/10002).
+[2/3] Read model: writing thread labels (7070/10002).
+[2/3] Read model: writing thread labels (7171/10002).
+[2/3] Read model: writing thread labels (7272/10002).
+[2/3] Read model: writing thread labels (7373/10002).
+[2/3] Read model: writing thread labels (7474/10002).
+[2/3] Read model: writing thread labels (7575/10002).
+[2/3] Read model: writing thread labels (7676/10002).
+[2/3] Read model: writing thread labels (7777/10002).
+[2/3] Read model: writing thread labels (7878/10002).
+[2/3] Read model: writing thread labels (7979/10002).
+[2/3] Read model: writing thread labels (8080/10002).
+[2/3] Read model: writing thread labels (8181/10002).
+[2/3] Read model: writing thread labels (8282/10002).
+[2/3] Read model: writing thread labels (8383/10002).
+[2/3] Read model: writing thread labels (8484/10002).
+[2/3] Read model: writing thread labels (8585/10002).
+[2/3] Read model: writing thread labels (8686/10002).
+[2/3] Read model: writing thread labels (8787/10002).
+[2/3] Read model: writing thread labels (8888/10002).
+[2/3] Read model: writing thread labels (8989/10002).
+[2/3] Read model: writing thread labels (9090/10002).
+[2/3] Read model: writing thread labels (9191/10002).
+[2/3] Read model: writing thread labels (9292/10002).
+[2/3] Read model: writing thread labels (9393/10002).
+[2/3] Read model: writing thread labels (9494/10002).
+[2/3] Read model: writing thread labels (9595/10002).
+[2/3] Read model: writing thread labels (9696/10002).
+[2/3] Read model: writing thread labels (9797/10002).
+[2/3] Read model: writing thread labels (9898/10002).
+[2/3] Read model: writing thread labels (9999/10002).
+[2/3] Read model: writing thread labels (10002/10002).
+[2/3] Read model: writing thread labels complete (37.9 ms).
+[2/3] Read model: index thread labels complete (60.9 ms).
+[2/3] Read model: index thread subjects...
+[2/3] Read model: parsing thread subject records (0/1).
+[2/3] Read model: parsing thread subject records (1/1).
+[2/3] Read model: parsing thread subject records complete (0.3 ms).
+[2/3] Read model: sort thread subjects...
+[2/3] Read model: sort thread subjects complete (0.0 ms).
+[2/3] Read model: deriving thread subject records (0/1).
+[2/3] Read model: deriving thread subject records (1/1).
+[2/3] Read model: deriving thread subject records complete (0.0 ms).
+[2/3] Read model: index thread subjects complete (15.2 ms).
+[2/3] Read model: derive post attribution...
+[2/3] Read model: deriving post attribution (0/10003).
+[2/3] Read model: deriving post attribution (101/10003).
+[2/3] Read model: deriving post attribution (202/10003).
+[2/3] Read model: deriving post attribution (303/10003).
+[2/3] Read model: deriving post attribution (404/10003).
+[2/3] Read model: deriving post attribution (505/10003).
+[2/3] Read model: deriving post attribution (606/10003).
+[2/3] Read model: deriving post attribution (707/10003).
+[2/3] Read model: deriving post attribution (808/10003).
+[2/3] Read model: deriving post attribution (909/10003).
+[2/3] Read model: deriving post attribution (1010/10003).
+[2/3] Read model: deriving post attribution (1111/10003).
+[2/3] Read model: deriving post attribution (1212/10003).
+[2/3] Read model: deriving post attribution (1313/10003).
+[2/3] Read model: deriving post attribution (1414/10003).
+[2/3] Read model: deriving post attribution (1515/10003).
+[2/3] Read model: deriving post attribution (1616/10003).
+[2/3] Read model: deriving post attribution (1717/10003).
+[2/3] Read model: deriving post attribution (1818/10003).
+[2/3] Read model: deriving post attribution (1919/10003).
+[2/3] Read model: deriving post attribution (2020/10003).
+[2/3] Read model: deriving post attribution (2121/10003).
+[2/3] Read model: deriving post attribution (2222/10003).
+[2/3] Read model: deriving post attribution (2323/10003).
+[2/3] Read model: deriving post attribution (2424/10003).
+[2/3] Read model: deriving post attribution (2525/10003).
+[2/3] Read model: deriving post attribution (2626/10003).
+[2/3] Read model: deriving post attribution (2727/10003).
+[2/3] Read model: deriving post attribution (2828/10003).
+[2/3] Read model: deriving post attribution (2929/10003).
+[2/3] Read model: deriving post attribution (3030/10003).
+[2/3] Read model: deriving post attribution (3131/10003).
+[2/3] Read model: deriving post attribution (3232/10003).
+[2/3] Read model: deriving post attribution (3333/10003).
+[2/3] Read model: deriving post attribution (3434/10003).
+[2/3] Read model: deriving post attribution (3535/10003).
+[2/3] Read model: deriving post attribution (3636/10003).
+[2/3] Read model: deriving post attribution (3737/10003).
+[2/3] Read model: deriving post attribution (3838/10003).
+[2/3] Read model: deriving post attribution (3939/10003).
+[2/3] Read model: deriving post attribution (4040/10003).
+[2/3] Read model: deriving post attribution (4141/10003).
+[2/3] Read model: deriving post attribution (4242/10003).
+[2/3] Read model: deriving post attribution (4343/10003).
+[2/3] Read model: deriving post attribution (4444/10003).
+[2/3] Read model: deriving post attribution (4545/10003).
+[2/3] Read model: deriving post attribution (4646/10003).
+[2/3] Read model: deriving post attribution (4747/10003).
+[2/3] Read model: deriving post attribution (4848/10003).
+[2/3] Read model: deriving post attribution (4949/10003).
+[2/3] Read model: deriving post attribution (5050/10003).
+[2/3] Read model: deriving post attribution (5151/10003).
+[2/3] Read model: deriving post attribution (5252/10003).
+[2/3] Read model: deriving post attribution (5353/10003).
+[2/3] Read model: deriving post attribution (5454/10003).
+[2/3] Read model: deriving post attribution (5555/10003).
+[2/3] Read model: deriving post attribution (5656/10003).
+[2/3] Read model: deriving post attribution (5757/10003).
+[2/3] Read model: deriving post attribution (5858/10003).
+[2/3] Read model: deriving post attribution (5959/10003).
+[2/3] Read model: deriving post attribution (6060/10003).
+[2/3] Read model: deriving post attribution (6161/10003).
+[2/3] Read model: deriving post attribution (6262/10003).
+[2/3] Read model: deriving post attribution (6363/10003).
+[2/3] Read model: deriving post attribution (6464/10003).
+[2/3] Read model: deriving post attribution (6565/10003).
+[2/3] Read model: deriving post attribution (6666/10003).
+[2/3] Read model: deriving post attribution (6767/10003).
+[2/3] Read model: deriving post attribution (6868/10003).
+[2/3] Read model: deriving post attribution (6969/10003).
+[2/3] Read model: deriving post attribution (7070/10003).
+[2/3] Read model: deriving post attribution (7171/10003).
+[2/3] Read model: deriving post attribution (7272/10003).
+[2/3] Read model: deriving post attribution (7373/10003).
+[2/3] Read model: deriving post attribution (7474/10003).
+[2/3] Read model: deriving post attribution (7575/10003).
+[2/3] Read model: deriving post attribution (7676/10003).
+[2/3] Read model: deriving post attribution (7777/10003).
+[2/3] Read model: deriving post attribution (7878/10003).
+[2/3] Read model: deriving post attribution (7979/10003).
+[2/3] Read model: deriving post attribution (8080/10003).
+[2/3] Read model: deriving post attribution (8181/10003).
+[2/3] Read model: deriving post attribution (8282/10003).
+[2/3] Read model: deriving post attribution (8383/10003).
+[2/3] Read model: deriving post attribution (8484/10003).
+[2/3] Read model: deriving post attribution (8585/10003).
+[2/3] Read model: deriving post attribution (8686/10003).
+[2/3] Read model: deriving post attribution (8787/10003).
+[2/3] Read model: deriving post attribution (8888/10003).
+[2/3] Read model: deriving post attribution (8989/10003).
+[2/3] Read model: deriving post attribution (9090/10003).
+[2/3] Read model: deriving post attribution (9191/10003).
+[2/3] Read model: deriving post attribution (9292/10003).
+[2/3] Read model: deriving post attribution (9393/10003).
+[2/3] Read model: deriving post attribution (9494/10003).
+[2/3] Read model: deriving post attribution (9595/10003).
+[2/3] Read model: deriving post attribution (9696/10003).
+[2/3] Read model: deriving post attribution (9797/10003).
+[2/3] Read model: deriving post attribution (9898/10003).
+[2/3] Read model: deriving post attribution (9999/10003).
+[2/3] Read model: deriving post attribution (10003/10003).
+[2/3] Read model: deriving post attribution complete (6.4 ms).
+[2/3] Read model: derive post attribution complete (6.5 ms).
+[2/3] Read model: derive profile counts...
+[2/3] Read model: initializing profile counts (0/1).
+[2/3] Read model: initializing profile counts (1/1).
+[2/3] Read model: initializing profile counts complete (0.0 ms).
+[2/3] Read model: counting profile posts (0/10003).
+[2/3] Read model: counting profile posts (101/10003).
+[2/3] Read model: counting profile posts (202/10003).
+[2/3] Read model: counting profile posts (303/10003).
+[2/3] Read model: counting profile posts (404/10003).
+[2/3] Read model: counting profile posts (505/10003).
+[2/3] Read model: counting profile posts (606/10003).
+[2/3] Read model: counting profile posts (707/10003).
+[2/3] Read model: counting profile posts (808/10003).
+[2/3] Read model: counting profile posts (909/10003).
+[2/3] Read model: counting profile posts (1010/10003).
+[2/3] Read model: counting profile posts (1111/10003).
+[2/3] Read model: counting profile posts (1212/10003).
+[2/3] Read model: counting profile posts (1313/10003).
+[2/3] Read model: counting profile posts (1414/10003).
+[2/3] Read model: counting profile posts (1515/10003).
+[2/3] Read model: counting profile posts (1616/10003).
+[2/3] Read model: counting profile posts (1717/10003).
+[2/3] Read model: counting profile posts (1818/10003).
+[2/3] Read model: counting profile posts (1919/10003).
+[2/3] Read model: counting profile posts (2020/10003).
+[2/3] Read model: counting profile posts (2121/10003).
+[2/3] Read model: counting profile posts (2222/10003).
+[2/3] Read model: counting profile posts (2323/10003).
+[2/3] Read model: counting profile posts (2424/10003).
+[2/3] Read model: counting profile posts (2525/10003).
+[2/3] Read model: counting profile posts (2626/10003).
+[2/3] Read model: counting profile posts (2727/10003).
+[2/3] Read model: counting profile posts (2828/10003).
+[2/3] Read model: counting profile posts (2929/10003).
+[2/3] Read model: counting profile posts (3030/10003).
+[2/3] Read model: counting profile posts (3131/10003).
+[2/3] Read model: counting profile posts (3232/10003).
+[2/3] Read model: counting profile posts (3333/10003).
+[2/3] Read model: counting profile posts (3434/10003).
+[2/3] Read model: counting profile posts (3535/10003).
+[2/3] Read model: counting profile posts (3636/10003).
+[2/3] Read model: counting profile posts (3737/10003).
+[2/3] Read model: counting profile posts (3838/10003).
+[2/3] Read model: counting profile posts (3939/10003).
+[2/3] Read model: counting profile posts (4040/10003).
+[2/3] Read model: counting profile posts (4141/10003).
+[2/3] Read model: counting profile posts (4242/10003).
+[2/3] Read model: counting profile posts (4343/10003).
+[2/3] Read model: counting profile posts (4444/10003).
+[2/3] Read model: counting profile posts (4545/10003).
+[2/3] Read model: counting profile posts (4646/10003).
+[2/3] Read model: counting profile posts (4747/10003).
+[2/3] Read model: counting profile posts (4848/10003).
+[2/3] Read model: counting profile posts (4949/10003).
+[2/3] Read model: counting profile posts (5050/10003).
+[2/3] Read model: counting profile posts (5151/10003).
+[2/3] Read model: counting profile posts (5252/10003).
+[2/3] Read model: counting profile posts (5353/10003).
+[2/3] Read model: counting profile posts (5454/10003).
+[2/3] Read model: counting profile posts (5555/10003).
+[2/3] Read model: counting profile posts (5656/10003).
+[2/3] Read model: counting profile posts (5757/10003).
+[2/3] Read model: counting profile posts (5858/10003).
+[2/3] Read model: counting profile posts (5959/10003).
+[2/3] Read model: counting profile posts (6060/10003).
+[2/3] Read model: counting profile posts (6161/10003).
+[2/3] Read model: counting profile posts (6262/10003).
+[2/3] Read model: counting profile posts (6363/10003).
+[2/3] Read model: counting profile posts (6464/10003).
+[2/3] Read model: counting profile posts (6565/10003).
+[2/3] Read model: counting profile posts (6666/10003).
+[2/3] Read model: counting profile posts (6767/10003).
+[2/3] Read model: counting profile posts (6868/10003).
+[2/3] Read model: counting profile posts (6969/10003).
+[2/3] Read model: counting profile posts (7070/10003).
+[2/3] Read model: counting profile posts (7171/10003).
+[2/3] Read model: counting profile posts (7272/10003).
+[2/3] Read model: counting profile posts (7373/10003).
+[2/3] Read model: counting profile posts (7474/10003).
+[2/3] Read model: counting profile posts (7575/10003).
+[2/3] Read model: counting profile posts (7676/10003).
+[2/3] Read model: counting profile posts (7777/10003).
+[2/3] Read model: counting profile posts (7878/10003).
+[2/3] Read model: counting profile posts (7979/10003).
+[2/3] Read model: counting profile posts (8080/10003).
+[2/3] Read model: counting profile posts (8181/10003).
+[2/3] Read model: counting profile posts (8282/10003).
+[2/3] Read model: counting profile posts (8383/10003).
+[2/3] Read model: counting profile posts (8484/10003).
+[2/3] Read model: counting profile posts (8585/10003).
+[2/3] Read model: counting profile posts (8686/10003).
+[2/3] Read model: counting profile posts (8787/10003).
+[2/3] Read model: counting profile posts (8888/10003).
+[2/3] Read model: counting profile posts (8989/10003).
+[2/3] Read model: counting profile posts (9090/10003).
+[2/3] Read model: counting profile posts (9191/10003).
+[2/3] Read model: counting profile posts (9292/10003).
+[2/3] Read model: counting profile posts (9393/10003).
+[2/3] Read model: counting profile posts (9494/10003).
+[2/3] Read model: counting profile posts (9595/10003).
+[2/3] Read model: counting profile posts (9696/10003).
+[2/3] Read model: counting profile posts (9797/10003).
+[2/3] Read model: counting profile posts (9898/10003).
+[2/3] Read model: counting profile posts (9999/10003).
+[2/3] Read model: counting profile posts (10003/10003).
+[2/3] Read model: counting profile posts complete (5.0 ms).
+[2/3] Read model: derive profile counts complete (5.0 ms).
+[2/3] Read model: link post authors...
+[2/3] Read model: linking author profiles (0/1).
+[2/3] Read model: linking author profiles (1/1).
+[2/3] Read model: linking author profiles complete (0.2 ms).
+[2/3] Read model: link post authors complete (0.5 ms).
+[2/3] Read model: index post reactions...
+[2/3] Read model: parsing post reaction records (0/0).
+[2/3] Read model: parsing post reaction records complete (0.0 ms).
+[2/3] Read model: sort post reactions...
+[2/3] Read model: sort post reactions complete (0.0 ms).
+[2/3] Read model: resolve post reaction source commits...
+[2/3] Read model: resolve post reaction source commits complete (0.0 ms).
+[2/3] Read model: deriving post reaction records (0/0).
+[2/3] Read model: deriving post reaction records complete (0.0 ms).
+[2/3] Read model: writing post reactions (0/10003).
+[2/3] Read model: writing post reactions (101/10003).
+[2/3] Read model: writing post reactions (202/10003).
+[2/3] Read model: writing post reactions (303/10003).
+[2/3] Read model: writing post reactions (404/10003).
+[2/3] Read model: writing post reactions (505/10003).
+[2/3] Read model: writing post reactions (606/10003).
+[2/3] Read model: writing post reactions (707/10003).
+[2/3] Read model: writing post reactions (808/10003).
+[2/3] Read model: writing post reactions (909/10003).
+[2/3] Read model: writing post reactions (1010/10003).
+[2/3] Read model: writing post reactions (1111/10003).
+[2/3] Read model: writing post reactions (1212/10003).
+[2/3] Read model: writing post reactions (1313/10003).
+[2/3] Read model: writing post reactions (1414/10003).
+[2/3] Read model: writing post reactions (1515/10003).
+[2/3] Read model: writing post reactions (1616/10003).
+[2/3] Read model: writing post reactions (1717/10003).
+[2/3] Read model: writing post reactions (1818/10003).
+[2/3] Read model: writing post reactions (1919/10003).
+[2/3] Read model: writing post reactions (2020/10003).
+[2/3] Read model: writing post reactions (2121/10003).
+[2/3] Read model: writing post reactions (2222/10003).
+[2/3] Read model: writing post reactions (2323/10003).
+[2/3] Read model: writing post reactions (2424/10003).
+[2/3] Read model: writing post reactions (2525/10003).
+[2/3] Read model: writing post reactions (2626/10003).
+[2/3] Read model: writing post reactions (2727/10003).
+[2/3] Read model: writing post reactions (2828/10003).
+[2/3] Read model: writing post reactions (2929/10003).
+[2/3] Read model: writing post reactions (3030/10003).
+[2/3] Read model: writing post reactions (3131/10003).
+[2/3] Read model: writing post reactions (3232/10003).
+[2/3] Read model: writing post reactions (3333/10003).
+[2/3] Read model: writing post reactions (3434/10003).
+[2/3] Read model: writing post reactions (3535/10003).
+[2/3] Read model: writing post reactions (3636/10003).
+[2/3] Read model: writing post reactions (3737/10003).
+[2/3] Read model: writing post reactions (3838/10003).
+[2/3] Read model: writing post reactions (3939/10003).
+[2/3] Read model: writing post reactions (4040/10003).
+[2/3] Read model: writing post reactions (4141/10003).
+[2/3] Read model: writing post reactions (4242/10003).
+[2/3] Read model: writing post reactions (4343/10003).
+[2/3] Read model: writing post reactions (4444/10003).
+[2/3] Read model: writing post reactions (4545/10003).
+[2/3] Read model: writing post reactions (4646/10003).
+[2/3] Read model: writing post reactions (4747/10003).
+[2/3] Read model: writing post reactions (4848/10003).
+[2/3] Read model: writing post reactions (4949/10003).
+[2/3] Read model: writing post reactions (5050/10003).
+[2/3] Read model: writing post reactions (5151/10003).
+[2/3] Read model: writing post reactions (5252/10003).
+[2/3] Read model: writing post reactions (5353/10003).
+[2/3] Read model: writing post reactions (5454/10003).
+[2/3] Read model: writing post reactions (5555/10003).
+[2/3] Read model: writing post reactions (5656/10003).
+[2/3] Read model: writing post reactions (5757/10003).
+[2/3] Read model: writing post reactions (5858/10003).
+[2/3] Read model: writing post reactions (5959/10003).
+[2/3] Read model: writing post reactions (6060/10003).
+[2/3] Read model: writing post reactions (6161/10003).
+[2/3] Read model: writing post reactions (6262/10003).
+[2/3] Read model: writing post reactions (6363/10003).
+[2/3] Read model: writing post reactions (6464/10003).
+[2/3] Read model: writing post reactions (6565/10003).
+[2/3] Read model: writing post reactions (6666/10003).
+[2/3] Read model: writing post reactions (6767/10003).
+[2/3] Read model: writing post reactions (6868/10003).
+[2/3] Read model: writing post reactions (6969/10003).
+[2/3] Read model: writing post reactions (7070/10003).
+[2/3] Read model: writing post reactions (7171/10003).
+[2/3] Read model: writing post reactions (7272/10003).
+[2/3] Read model: writing post reactions (7373/10003).
+[2/3] Read model: writing post reactions (7474/10003).
+[2/3] Read model: writing post reactions (7575/10003).
+[2/3] Read model: writing post reactions (7676/10003).
+[2/3] Read model: writing post reactions (7777/10003).
+[2/3] Read model: writing post reactions (7878/10003).
+[2/3] Read model: writing post reactions (7979/10003).
+[2/3] Read model: writing post reactions (8080/10003).
+[2/3] Read model: writing post reactions (8181/10003).
+[2/3] Read model: writing post reactions (8282/10003).
+[2/3] Read model: writing post reactions (8383/10003).
+[2/3] Read model: writing post reactions (8484/10003).
+[2/3] Read model: writing post reactions (8585/10003).
+[2/3] Read model: writing post reactions (8686/10003).
+[2/3] Read model: writing post reactions (8787/10003).
+[2/3] Read model: writing post reactions (8888/10003).
+[2/3] Read model: writing post reactions (8989/10003).
+[2/3] Read model: writing post reactions (9090/10003).
+[2/3] Read model: writing post reactions (9191/10003).
+[2/3] Read model: writing post reactions (9292/10003).
+[2/3] Read model: writing post reactions (9393/10003).
+[2/3] Read model: writing post reactions (9494/10003).
+[2/3] Read model: writing post reactions (9595/10003).
+[2/3] Read model: writing post reactions (9696/10003).
+[2/3] Read model: writing post reactions (9797/10003).
+[2/3] Read model: writing post reactions (9898/10003).
+[2/3] Read model: writing post reactions (9999/10003).
+[2/3] Read model: writing post reactions (10003/10003).
+[2/3] Read model: writing post reactions complete (153.9 ms).
+[2/3] Read model: index post reactions complete (170.7 ms).
+[2/3] Read model: index instance...
+[2/3] Read model: index instance complete (0.2 ms).
+[2/3] Read model: index activity...
+[2/3] Read model: writing post activity (0/10003).
+[2/3] Read model: writing post activity (101/10003).
+[2/3] Read model: writing post activity (202/10003).
+[2/3] Read model: writing post activity (303/10003).
+[2/3] Read model: writing post activity (404/10003).
+[2/3] Read model: writing post activity (505/10003).
+[2/3] Read model: writing post activity (606/10003).
+[2/3] Read model: writing post activity (707/10003).
+[2/3] Read model: writing post activity (808/10003).
+[2/3] Read model: writing post activity (909/10003).
+[2/3] Read model: writing post activity (1010/10003).
+[2/3] Read model: writing post activity (1111/10003).
+[2/3] Read model: writing post activity (1212/10003).
+[2/3] Read model: writing post activity (1313/10003).
+[2/3] Read model: writing post activity (1414/10003).
+[2/3] Read model: writing post activity (1515/10003).
+[2/3] Read model: writing post activity (1616/10003).
+[2/3] Read model: writing post activity (1717/10003).
+[2/3] Read model: writing post activity (1818/10003).
+[2/3] Read model: writing post activity (1919/10003).
+[2/3] Read model: writing post activity (2020/10003).
+[2/3] Read model: writing post activity (2121/10003).
+[2/3] Read model: writing post activity (2222/10003).
+[2/3] Read model: writing post activity (2323/10003).
+[2/3] Read model: writing post activity (2424/10003).
+[2/3] Read model: writing post activity (2525/10003).
+[2/3] Read model: writing post activity (2626/10003).
+[2/3] Read model: writing post activity (2727/10003).
+[2/3] Read model: writing post activity (2828/10003).
+[2/3] Read model: writing post activity (2929/10003).
+[2/3] Read model: writing post activity (3030/10003).
+[2/3] Read model: writing post activity (3131/10003).
+[2/3] Read model: writing post activity (3232/10003).
+[2/3] Read model: writing post activity (3333/10003).
+[2/3] Read model: writing post activity (3434/10003).
+[2/3] Read model: writing post activity (3535/10003).
+[2/3] Read model: writing post activity (3636/10003).
+[2/3] Read model: writing post activity (3737/10003).
+[2/3] Read model: writing post activity (3838/10003).
+[2/3] Read model: writing post activity (3939/10003).
+[2/3] Read model: writing post activity (4040/10003).
+[2/3] Read model: writing post activity (4141/10003).
+[2/3] Read model: writing post activity (4242/10003).
+[2/3] Read model: writing post activity (4343/10003).
+[2/3] Read model: writing post activity (4444/10003).
+[2/3] Read model: writing post activity (4545/10003).
+[2/3] Read model: writing post activity (4646/10003).
+[2/3] Read model: writing post activity (4747/10003).
+[2/3] Read model: writing post activity (4848/10003).
+[2/3] Read model: writing post activity (4949/10003).
+[2/3] Read model: writing post activity (5050/10003).
+[2/3] Read model: writing post activity (5151/10003).
+[2/3] Read model: writing post activity (5252/10003).
+[2/3] Read model: writing post activity (5353/10003).
+[2/3] Read model: writing post activity (5454/10003).
+[2/3] Read model: writing post activity (5555/10003).
+[2/3] Read model: writing post activity (5656/10003).
+[2/3] Read model: writing post activity (5757/10003).
+[2/3] Read model: writing post activity (5858/10003).
+[2/3] Read model: writing post activity (5959/10003).
+[2/3] Read model: writing post activity (6060/10003).
+[2/3] Read model: writing post activity (6161/10003).
+[2/3] Read model: writing post activity (6262/10003).
+[2/3] Read model: writing post activity (6363/10003).
+[2/3] Read model: writing post activity (6464/10003).
+[2/3] Read model: writing post activity (6565/10003).
+[2/3] Read model: writing post activity (6666/10003).
+[2/3] Read model: writing post activity (6767/10003).
+[2/3] Read model: writing post activity (6868/10003).
+[2/3] Read model: writing post activity (6969/10003).
+[2/3] Read model: writing post activity (7070/10003).
+[2/3] Read model: writing post activity (7171/10003).
+[2/3] Read model: writing post activity (7272/10003).
+[2/3] Read model: writing post activity (7373/10003).
+[2/3] Read model: writing post activity (7474/10003).
+[2/3] Read model: writing post activity (7575/10003).
+[2/3] Read model: writing post activity (7676/10003).
+[2/3] Read model: writing post activity (7777/10003).
+[2/3] Read model: writing post activity (7878/10003).
+[2/3] Read model: writing post activity (7979/10003).
+[2/3] Read model: writing post activity (8080/10003).
+[2/3] Read model: writing post activity (8181/10003).
+[2/3] Read model: writing post activity (8282/10003).
+[2/3] Read model: writing post activity (8383/10003).
+[2/3] Read model: writing post activity (8484/10003).
+[2/3] Read model: writing post activity (8585/10003).
+[2/3] Read model: writing post activity (8686/10003).
+[2/3] Read model: writing post activity (8787/10003).
+[2/3] Read model: writing post activity (8888/10003).
+[2/3] Read model: writing post activity (8989/10003).
+[2/3] Read model: writing post activity (9090/10003).
+[2/3] Read model: writing post activity (9191/10003).
+[2/3] Read model: writing post activity (9292/10003).
+[2/3] Read model: writing post activity (9393/10003).
+[2/3] Read model: writing post activity (9494/10003).
+[2/3] Read model: writing post activity (9595/10003).
+[2/3] Read model: writing post activity (9696/10003).
+[2/3] Read model: writing post activity (9797/10003).
+[2/3] Read model: writing post activity (9898/10003).
+[2/3] Read model: writing post activity (9999/10003).
+[2/3] Read model: writing post activity (10003/10003).
+[2/3] Read model: writing post activity complete (505.1 ms).
+[2/3] Read model: writing thread label activity (0/2).
+[2/3] Read model: writing thread label activity (2/2).
+[2/3] Read model: writing thread label activity complete (0.3 ms).
+[2/3] Read model: writing post reaction activity (0/0).
+[2/3] Read model: writing post reaction activity complete (0.0 ms).
+[2/3] Read model: writing profile name activity (0/0).
+[2/3] Read model: writing profile name activity complete (0.0 ms).
+[2/3] Read model: derive signed flag activity...
+[2/3] Read model: resolve feature flag source commits...
+[2/3] Read model: resolve feature flag source commits complete (0.0 ms).
+[2/3] Read model: parsing feature flag changes (0/0).
+[2/3] Read model: parsing feature flag changes complete (0.0 ms).
+[2/3] Read model: sort feature flag activity...
+[2/3] Read model: sort feature flag activity complete (0.0 ms).
+[2/3] Read model: derive signed flag activity complete (0.0 ms).
+[2/3] Read model: writing signed flag activity (0/0).
+[2/3] Read model: writing signed flag activity complete (0.0 ms).
+[2/3] Read model: read legacy flag activity...
+[2/3] Read model: read legacy flag activity complete (0.0 ms).
+[2/3] Read model: writing legacy flag activity (0/0).
+[2/3] Read model: writing legacy flag activity complete (0.0 ms).
+[2/3] Read model: writing handoff activity (0/0).
+[2/3] Read model: writing handoff activity complete (0.0 ms).
+[2/3] Read model: index activity complete (505.9 ms).
+[2/3] Read model: mark activity attribution...
+[2/3] Read model: mark activity attribution complete (27.1 ms).
+[2/3] Read model: index commits...
+[2/3] Read model: read commit history...
+[2/3] Read model: processing commit history lines...
+[2/3] Read model: processing commit history lines complete (32.5 ms).
+[2/3] Read model: read commit history complete (32.5 ms).
+[2/3] Read model: index commits complete (32.6 ms).
+[2/3] Read model: index reaction signatures...
+[2/3] Read model: index reaction signatures complete (0.4 ms).
+[2/3] Read model: index activity evidence...
+[2/3] Read model: index activity evidence complete (245.9 ms).
+[2/3] Read model: write metadata...
+[2/3] Read model: write metadata complete (3.2 ms).
+[2/3] Read model: apply verified attribution...
+[2/3] Read model: apply verified attribution complete (211.2 ms).
+[2/3] Read model: commit read model...
+[2/3] Read model: commit read model complete (72.2 ms).
+[2/3] Read model: validating candidate...
+[2/3] Read model: validating candidate complete (45.3 ms).
+[2/3] Read-model candidate is ready.
+[3/3] Promoting the read-model candidate...
+[3/3] Waiting for the exclusive read-model lock...
+[3/3] Exclusive read-model lock acquired (0.2 ms).
+[3/3] Validating candidate before promotion...
+[3/3] Validating candidate before promotion complete (46.2 ms).
+[3/3] Replacing the live read model...
+[3/3] Replacing the live read model complete (8.8 ms).
+[3/3] Read-model promotion complete.
+[3/3] Read model promoted.
+Offline snapshot bootstrap...
+Offline snapshot bootstrap complete (0.2 ms).
+Offline snapshot bootstrap: already available at /tmp/v3-capacity-5wrtjih3/static/offline/snapshot.sqlite3
+Rebuilt read model at /tmp/v3-capacity-5wrtjih3/model.sqlite
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Source records: 10003 posts, 1 identities, 1 approval seeds
+Read model: 10003 posts, 10002 threads, 1 profiles, 10005 activity rows
+Elapsed: 2.297 seconds

@@ -59,7 +59,7 @@
       historyCandidate=historyCandidate || window.ForumPrivateMessageHistorySync?.recovered?.(message.message_id,message.encrypted_envelope);
       try {
         if (!senderKeys.has(message.sender_username_token)) {
-          const request = window.ForumPrivateMessages.recipientKeys(message.sender_username_token);
+          const request = (window.ForumPrivateMessages.verificationKeys || window.ForumPrivateMessages.recipientKeys)(message.sender_username_token);
           senderKeys.set(message.sender_username_token, request);
           request.catch(function () { senderKeys.delete(message.sender_username_token); });
         }

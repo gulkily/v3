@@ -43,6 +43,7 @@ final class TemplateRenderer
         'instance.php' => ['/assets/tool-details.css'],
         'feature_flags.php' => ['/assets/tool-details.css'],
         'operations.php' => ['/assets/tool-details.css'],
+        'deploy.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -361,7 +362,7 @@ final class TemplateRenderer
             return $items;
         }
 
-        $mainSections = ['board', 'profiles', 'messages', 'lobby'];
+        $mainSections = ['board', 'recent', 'profiles', 'messages', 'lobby'];
         foreach ($items as $index => $item) {
             // Users is main; a personal profile link (members-only mode) belongs in the account menu.
             $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
@@ -405,6 +406,7 @@ final class TemplateRenderer
             ? QdbPresentation::navigation()
             : [
                 ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/recent/', 'label' => 'Recent', 'section' => 'recent'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
                 ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
                 ['href' => '/tools/', 'label' => 'Tools', 'section' => 'tools'],

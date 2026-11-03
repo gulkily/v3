@@ -1,6 +1,7 @@
 <?php
 /**
- * The one composer: Title (full new post only), body, tools, then Post and the ··· menu.
+ * The one composer: body, then Post and the ··· menu, then Title and tools (full new post only).
+ * The body comes first so that on a phone it and Post fit above the keyboard; the optional Title and tags follow.
  * Attach image stays in the menu: it appears only once the browser knows the viewer may attach images,
  * and in the menu that never shifts the page.
  * thread_compose_form.php and reply_form.php set its options and include it (sharing their variables);
@@ -39,10 +40,6 @@ $composerNormalizationStatus = static fn (string $field): string => <<<HTML
 HTML;
 ?>
 <form method="post"<?= $composerAction !== '' ? ' action="' . $e($composerAction) . '"' : '' ?> class="<?= $e($composerFormClass) ?>" data-compose-form data-compose-kind="<?= $e($composerKind) ?>"<?= $composerFormAttributes ?>>
-<?php if ($composerFull): ?>
-  <input type="text" name="subject" class="compose-title" data-compose-field-label="Subject" aria-label="Title" placeholder="Title — or we’ll use your first line" value="<?= $e($subject) ?>">
-<?= $composerNormalizationStatus('subject') ?>
-<?php endif; ?>
   <textarea name="body" data-compose-field-label="Body" rows="<?= $e($composerBodyRows) ?>" placeholder="<?= $e($composerBodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
 <?= $composerNormalizationStatus('body') ?>
   <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
@@ -50,6 +47,23 @@ HTML;
   </p>
 <?php if ($imageContentEnabled ?? false): ?>
 <?= $partial('partials/image_compose_fields.php', ['imageChooseInMenu' => true]) ?>
+<?php endif; ?>
+  <div class="compose-form-actions<?= $composerIsThread && $composerCompact ? ' compact-thread-compose-actions' : '' ?>">
+    <button type="submit"><?= $e($composerSubmitLabel) ?></button>
+<?php ob_start(); ?>
+<?php if ($imageContentEnabled ?? false): ?>
+        <button type="button" class="image-upload-choose" hidden>Attach image</button>
+<?php endif; ?>
+        <button type="submit" data-action="submit-anonymous-compose"><?= $e($composerAnonymousLabel) ?></button>
+        <button type="button" data-action="save-compose-outbox" disabled>Save to Outbox</button>
+<?= $composerMenuExtra ?>
+        <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Discard draft</button>
+<?php $composerMenuItems = (string) ob_get_clean(); ?>
+<?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $composerMenuItems]) ?>
+  </div>
+<?php if ($composerFull): ?>
+  <input type="text" name="subject" class="compose-title" data-compose-field-label="Subject" aria-label="Title" placeholder="Title — or we’ll use your first line" value="<?= $e($subject) ?>">
+<?= $composerNormalizationStatus('subject') ?>
 <?php endif; ?>
 <?php if ($composerFull): ?>
   <div class="compose-tools">
@@ -69,18 +83,5 @@ HTML;
 <?php endif; ?>
   </div>
 <?php endif; ?>
-  <div class="compose-form-actions<?= $composerIsThread && $composerCompact ? ' compact-thread-compose-actions' : '' ?>">
-    <button type="submit"><?= $e($composerSubmitLabel) ?></button>
-<?php ob_start(); ?>
-<?php if ($imageContentEnabled ?? false): ?>
-        <button type="button" class="image-upload-choose" hidden>Attach image</button>
-<?php endif; ?>
-        <button type="submit" data-action="submit-anonymous-compose"><?= $e($composerAnonymousLabel) ?></button>
-        <button type="button" data-action="save-compose-outbox" disabled>Save to Outbox</button>
-<?= $composerMenuExtra ?>
-        <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Discard draft</button>
-<?php $composerMenuItems = (string) ob_get_clean(); ?>
-<?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $composerMenuItems]) ?>
-  </div>
 <?= $composerHiddenFields ?>
 </form>

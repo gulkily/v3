@@ -1,0 +1,21 @@
+Sample: s7-fresh-setup-rebuild
+Command: ./v3 rebuild /tmp/v3-capacity-1o0d51rv/repository /tmp/v3-capacity-1o0d51rv/model.sqlite
+Exit: 0
+Stop: none
+Elapsed seconds: 2.111043
+Sampled aggregate RSS bytes: 51732480
+Observed processes: 4
+Sampled read bytes: 0
+Sampled write bytes: 24842240
+Log SHA256: bcb9329a2e6e9318b26403e10728a5ccbb7338e9799b70c5691d9b995017bcaa
+
+Sample: s7-fresh-setup-http
+Command: python3 /tmp/v3-capacity-1o0d51rv/read_driver.py 1000
+Exit: 0
+Stop: none
+Elapsed seconds: 1.006957
+Sampled aggregate RSS bytes: 67215360
+Observed processes: 2
+Sampled read bytes: 0
+Sampled write bytes: 2707456
+Log SHA256: 3d569a675be82820ef864e16f161b376fe13535ae867ebc495688c51b1dc8486

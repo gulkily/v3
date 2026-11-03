@@ -1,0 +1,7 @@
+page-rebuild-maximum 0 0.803 91049984 none
+Records: 1 | Route: /latest | Status: 200 | Selected: 1 | Parity: pass | PHP peak bytes: 86081536 | Seconds: 1.361539
+Records: 1 | Route: /top | Status: 200 | Selected: 1 | Parity: pass | PHP peak bytes: 86081536 | Seconds: 1.337322
+Records: 1 | Route: /leetness | Status: 200 | Selected: 1 | Parity: pass | PHP peak bytes: 86081536 | Seconds: 0.926720
+Records: 1 | Route: /search?search=qqqq | Status: 200 | Selected: 1 | Parity: pass | PHP peak bytes: 86077440 | Seconds: 1.002624
+Records: 1 | Route: /search?search=Missing | Status: 200 | Selected: 0 | Parity: pass | PHP peak bytes: 18874368 | Seconds: 0.182638
+Records: 1 | Route: /400000 | Status: 200 | Selected: 0 | Parity: pass | PHP peak bytes: 104857600 | Seconds: 1.711343

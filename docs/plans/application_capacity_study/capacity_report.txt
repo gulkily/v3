@@ -1,0 +1,73 @@
+Report: Application capacity study
+Date: 2026-11-01 UTC
+Scope: v1/B documentation-only investigation; no runtime fixes
+Source revision: 3dc2c3feaa17af591eb6e819a055d26ab6990efb
+Environment: PHP 8.1.2 CLI/development server; Linux WSL2; Intel i7-1255U; 12 logical/affinity CPUs; 128 MiB PHP limit
+Evidence: S1 contract/environment, S2 HTTP/signing, S3 maintenance/history, S4 transfer/recovery, S5 queue/audit, S6 concurrency, S7 replay; files in this directory
+Coverage: coverage_matrix.txt
+Reproduction: reproduction.txt; archived source files end in .py.txt or .php.txt
+
+Conclusion: Fixed-page runtime reading fits the tested 128 MiB process limit at 10000 ordinary records, but violates the proposed 32 MiB public ceiling. A 40000-record normal rebuild fails at that limit. A local 1000-record full rebuild/publication completes and survives tested interruption/retry. These are measured configurations, not a universal record-count limit or a production sizing recommendation.
+Historical host evidence: The user previously reported successful QDB build/activation of release-20261030201011-af62aa46 on 2026-10-30: 314.961 seconds, 5253 HTML files and 53 assets. See ../qdb_rebuild_scope/qdb_rebuild_scope_step4_implementation_summary.md, User-reported host recovery, and ../qdb_build_time/qdb_build_time_step1_solution_assessment.md. Preserve this operator-observed success separately; this study did not replay that host or establish its concurrent capacity.
+Qualification: No new PHP 8.3/FastCGI host replay, production load, long soak or provider execution. Synthetic ordinary bodies are 2048 bytes, one tag, minimal reactions/pins/history unless separately stated. Three extra fixture posts accompany synthetic counts.
+
+Finding: QDB numbered-page input work exceeds visible output
+Measurements: /latest, /top and body search return 25 stable ordered synthetic IDs at 1000 and 10000 records. PHP peak rises from 10 MiB to 72 MiB. All final normal HTTP samples return 200. Root welcome responds but contains no synthetic IDs in this fixture; it is not a populated-welcome capacity result.
+Budget result: 1000 fits proposed public 16 MiB typical/32 MiB ceiling; 10000 exceeds both. Same 72 MiB request peak appears throughout S6.
+Mechanism: Source inspection at Qdb/QdbExperience.php:233 calls ThreadRepository::fetchThreads, which materializes all eligible rows before QdbBoardPolicy selection. Internal loaded-row counts were not instrumented; this is a source-supported explanation, not a measured counter.
+Evidence: s2-final-reads-1000.log.txt, s2-final-reads-10000.log.txt, s2-php-metrics.txt, s6-php-metrics.txt
+
+Finding: Ordinary rebuild retains too much input for the 40000-record corpus
+Measurements: Three 1000-record rebuilds take 0.608-0.640 seconds; three 10000-record rebuilds take 2.343-3.208 seconds. PHP peaks 14 and 108 MiB respectively. 40000 fails twice with Allowed memory size of 134217728 bytes exhausted in ReadModelBuilder.php:211, while filling parsedPosts.
+Budget result: 1000 fits proposed maintenance 48/64 MiB; 10000 exceeds both; 40000 fails actual 128 MiB cap. Do not infer an exact crossover from these three points.
+Recovery: S7 failure leaves the prior 10003-row live posts table intact. Reset to the documented 1000-record fixture, ordinary rebuild, and full publication succeed with all synthetic bodies preserved. This is disposable-fixture recovery, not permission to delete production content.
+Evidence: s2-prepare-40000.log.txt, s3-rebuild-*.log.txt, s7-40000-replay.log.txt, s7-replay.txt
+
+Finding: One valid large record is a separate budget case
+Measurements: Exact 16777216-byte canonical record, one synthetic root plus minimal fixture. Normal rebuild peaks at 36 MiB; numeric quote rendering peaks at 100 MiB; exact-post API peaks at about 52 MiB. Three quote/API requests succeed. This is the RecordLimits::TEXT boundary, not a new content limit.
+Budget result: Reads exceed public 32 MiB while remaining within 128 MiB. Multiple maximum-sized bodies, escape-heavy text and large reply trees are unverified.
+Evidence: s2-max-record-clean.log.txt, s2-max-record-reads.log.txt, s2-php-metrics.txt
+
+Finding: Local publication works at the representative 1000-record size
+Measurements: Three full builds take 1.687-2.159 seconds through activation; shared-only refresh takes 0.255-0.265 seconds; offline publish takes 1.194-1.316 seconds and produces 201 posts whose IDs/bodies match source. Final replay full publication peaks at 18 MiB PHP, takes 1.978 seconds and activates.
+Recovery: Kill during candidate work leaves exact prior active HTML hashes intact; retry activates the same relative page set. Candidate interruption does not test every activation race.
+Delivery distinction: PHP frontend serves the root artifact byte-for-byte with public cache headers. Its /latest and /top requests still render dynamically; do not treat all post-build requests as static hits. Separate Python standard-library file serving of /latest/ and /top/ returns exact activated HTML in roughly 0.002-0.003 seconds, with no PHP execution. Different server/route forms and cache headers make this a delivery check, not an Apache speedup benchmark. The PHP router returns 404 for /latest/; the initial wrong-form test is retained.
+Evidence: s3-static-*.log.txt, s3-recovery-driver.txt, s3-parity.txt, s7-publication.log.txt, s7-static-delivery-final.log.txt
+
+Finding: Parallel local reading passes latency criteria but requires substantial aggregate memory
+Workload: 18 independent 30-second windows, three repeats each at 1/2/4 clients with and without one normal rebuild; each client has its own persistent PHP server process. 10000-record corpus, /latest, exact ordered 25-ID check on every response.
+Outcome: 4627 requests, zero errors, full-window p95 at most 0.793 seconds; during-maintenance p95 at most 0.851 seconds. All rebuilds complete and post-window full synthetic body/count parity passes.
+Read-only throughput ranges: 1 client 6.06-6.32 requests/s; 2 clients 6.96-11.51; 4 clients 7.93-11.00.
+Rebuild-overlap throughput ranges: 1 client 3.87-5.10 requests/s; 2 clients 7.95-9.58; 4 clients 12.16-12.85.
+Maximum sampled aggregate RSS: Read-only 148.5 / 253.7 / 461.6 MiB at 1/2/4 clients; overlap 278.5 / 386.3 / 599.2 MiB. Includes client driver, PHP and observed descendants; shared mappings may be counted twice and short-lived processes can be missed.
+Interpretation: Overlap running faster than some baselines is variability, not evidence that rebuilds improve throughput. Baseline/overlap phases were not interleaved and background host activity was uncontrolled. No sustainable production requests/s, FPM pool size or linear concurrency extrapolation follows.
+Evidence: s6-results.txt; s6-baseline-*.log.txt; s6-overlap-*.log.txt; s6-samples.txt
+
+Finding: Normal signed write/session and image retry preserve authority and bytes
+Outcome: First signed post persists exact bytes; two identical retries preserve commit identity. Challenge authentication succeeds for an unapproved identity; auth_status remains 401 as required. Operator approval enables multipart image preparation. Invalid bytes are refused; valid upload and duplicate retry preserve exact record/image and commit. Browser draft preservation is unverified; the driver retains its draft.
+Boundary: This measures local signing/verification and small image handling. Hint-only roles, general approved-session throughput, maximum image size/count and provider workflows have no capacity claim.
+Evidence: s2-signed-session-final.log.txt, s4-image-http.log.txt, s4-image-approved-http.log.txt, s7-signed-port-final.log.txt
+
+Finding: Archive parity passes, but two import commands accept different layouts
+Outcome: Three HTTP downloads per TAR/ZIP/image format; both content formats preserve all 1025 canonical file hashes and warm archives are byte-stable. import-repository rejects repository/records/ layout from the unchanged normal TAR download. Do not silently repack and call that a successful direct round trip.
+Recovery: import-instance accepts the loopback source. Final forced interruption after saved journal, server shutdown, then --resume succeeds without remote access; 1000 synthetic records match exact bytes and database count. Journal clears; a further --resume reports no interrupted import. Settings/authority exclusions remain intentional; image bytes transfer separately. images verify/restore/repeated restore/verify passes for the tiny image fixture.
+Evidence: s4-transfers.log.txt, s4-import-0.log.txt, s4-import-recovery-final.log.txt, s4-import-resume-final-0.log.txt, s4-recovery-driver-final.txt
+
+Finding: Local queue recovery is delayed, not immediate
+Outcome: Three duplicate-safe local rebuild batches complete; interrupted running claim is not immediately reclaimed. Backdating only its disposable timestamp exercises the 900-second stale-claim branch; the ordinary worker then completes attempt 2. No actual 15-minute wait was measured. reset-recovery concerns automatic schema recovery, not arbitrary running jobs.
+Scoring: Empty-store status and historical audit work with explicit zero synthetic price inputs, without any provider call. Missing price inputs produce actionable refusal. Populated score-store/provider capacity is unverified.
+Evidence: s5-driver-final.txt, s5-final-status.log.txt, s5-score-final-*.log.txt
+
+Metrics: PHP peak is interpreter allocation, not host RSS. CLI/HTTP elapsed includes collector overhead; no overhead subtraction. Initial process-group RSS/I/O missed setsid descendants, so S1 through early S4 values are incomplete lower bounds. Final S4 and later use PPID descendant supervision. All samples can miss short-lived processes; physical I/O counters do not measure logical bytes loaded. No internal loaded-row counter was added.
+I/O example: Final 1000-record recovery rebuild sampled 0 physical read bytes and 10006528 write bytes; final full publication sampled 0 read bytes and 28786688 write bytes. Zero physical reads reflect warm cache/sampling, not zero data access. Raw per-command I/O and process counts are retained in s7-samples.txt.
+Timing: Only the first HTTP request per server is process-cold; later requests, including first visits to other routes, are process-warm. OS/disk-cold state was never established. Persistent workers lived 30 seconds, not hours. Per-process peak attribution and long-term leakage are unavailable.
+Harness integrity: Retained initial wrong route/search/profile assumptions, accidental overlapping fixture reset, process-group-only import interruption, transient du race, and static route/ephemeral-port corrections. Excluded attempts are identified in the implementation summary. Later corrections do not erase original failures. Final source uses ephemeral signing-server ports, explicit session/temp directories and named PHP sample labels.
+
+Priority 1: Bound QDB numbered-page selection/hydration while preserving exact order, eligibility, votes and paging. Acceptance should retain 25-ID/body parity at 1000/10000/40000 plus reaction/pin/role variants; this study implements no fix.
+Priority 2: Bound parsedPosts and dependent rebuild passes, preserving full canonical traversal, trust evidence, candidate validation and recoverability. Replay the exact 40000-record fixture at 128 MiB; include full activation and actual PHP 8.3 host recovery before claiming production repair.
+Priority 3: Resolve or clearly document direct import-repository/export layout compatibility. Preserve the unrepacked failure and import-instance resume contract.
+Priority 4: Measure uncovered shapes and real worker environment before selecting operational limits: large reply trees, reaction/pin density, maximum images, large commits, populated scoring state and longer/interleaved host runs. Preserve current complete-output contracts; do not truncate content to make a budget pass.
+Dependency/runtime/schema delta: Zero
+Deployment/new host replay: Unverified in this study; historical user-reported successful activation retained above. Separate authorized host replay is required for current capacity claims.
+
+Archive formatting: archive_normalization.txt maps raw and normalized hashes. c66a1c15 retains original archived bytes; final display files trim trailing whitespace/extra EOF blank lines only. Raw stdout hash fields remain unchanged.

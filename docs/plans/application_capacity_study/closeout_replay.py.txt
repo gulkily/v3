@@ -1,0 +1,15 @@
+import collector as c
+import sqlite3,hashlib
+r=c.ROOT
+with sqlite3.connect(r/'model.sqlite') as db:before=db.execute('select count(*) from posts').fetchone()[0]
+c.fixture(40000)
+assert c.run('s7-40000-replay',['./v3','rebuild',str(r/'repository'),str(r/'model.sqlite')])!=0
+assert 'Allowed memory size of 134217728 bytes exhausted' in (r/'s7-40000-replay.log').read_text()
+with sqlite3.connect(r/'model.sqlite') as db:assert before==db.execute('select count(*) from posts').fetchone()[0]
+print('Failed candidate retained prior live model count:',before,flush=True)
+c.fixture(1000)
+assert c.run('s7-recovery-rebuild',['./v3','rebuild',str(r/'repository'),str(r/'model.sqlite')])==0
+print(c.parity(1000),flush=True)
+assert c.run('s7-publication',['./v3','build-static',str(r/'repository'),str(r/'model.sqlite'),str(r/'s7-static')])==0
+assert 'Static release activated.' in (r/'s7-publication.log').read_text()
+print('Recovery publication: activated',flush=True)

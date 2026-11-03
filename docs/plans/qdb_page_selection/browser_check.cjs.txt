@@ -1,0 +1,35 @@
+const {chromium}=require('/home/wsl/dedalus-e2e/node_modules/playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:'/snap/bin/chromium',args:['--no-sandbox']});
+ const themes=['auto','light','dark','console','lcd','chicago','vapor','forge','sticker','arena','thermal','whitehot','word97','midnight','qdb'];
+ let checked=0;const failures=[];
+ for(const width of [390,1366]) for(const theme of themes){
+  const context=await browser.newContext({viewport:{width,height:900}});
+  await context.addInitScript(t=>localStorage.setItem('forum-qdb-theme',t),theme);
+  const page=await context.newPage();
+  page.on('response',r=>{if(r.url().includes('/assets/')&&r.status()>=400)failures.push({asset:r.url(),status:r.status()});});
+  for(const route of ['/latest/2','/top','/leetness','/search?search=qqqq','/search?search=Missing']) {
+   await page.goto('http://127.0.0.1:18793'+route,{waitUntil:'networkidle'});
+   const data=await page.evaluate(()=>({theme:document.documentElement.dataset.theme,overflow:document.documentElement.scrollWidth>innerWidth+1,cards:document.querySelectorAll('.quote-card').length,buttons:document.querySelectorAll('.quote-card:first-of-type button').length,body:document.querySelector('.quote-card-body')?.textContent.length}));
+   const expected=route.includes('Missing')?0:25;
+   if(data.cards!==expected||data.overflow||(theme!=='auto'&&data.theme!==theme))failures.push({width,theme,route,...data});
+   checked++;
+  }
+  if(['qdb','word97','chicago','midnight'].includes(theme)){
+   await page.goto('http://127.0.0.1:18793/latest/2');
+   await page.screenshot({path:`/tmp/qdb-${theme}-${width}.png`});
+  }
+  console.log(`Completed: ${width} / ${theme}`);
+  await context.close();
+ }
+ const context=await browser.newContext({viewport:{width:390,height:844},javaScriptEnabled:false});
+ const page=await context.newPage();
+  page.on('response',r=>{if(r.url().includes('/assets/')&&r.status()>=400)failures.push({asset:r.url(),status:r.status()});}); await page.goto('http://127.0.0.1:18793/latest');
+ if(await page.locator('.quote-card').count()!==25)failures.push('No-JS cards');
+ await page.locator('a[href="/latest/2"]').first().click();
+ if(!page.url().endsWith('/latest/2'))failures.push('No-JS pagination');
+ await context.close();await browser.close();
+ console.log('Rendered cases: '+checked+'; no-JS page navigation checked');
+ console.log('Findings: '+JSON.stringify(failures));
+ if(failures.length)process.exitCode=1;
+})().catch(e=>{console.error(e);process.exitCode=1;});

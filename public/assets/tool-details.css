@@ -503,3 +503,10 @@ form.feature-flag-control,
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
+
+.deploy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

@@ -1,0 +1,20 @@
+s6-prepare 0 4.545 160190464 none
+Count and every synthetic body match: 10000
+s6-baseline-1-0 0 30.552 155627520 none
+s6-baseline-1-1 0 30.437 155697152 none
+s6-baseline-1-2 0 30.582 155701248 none
+s6-baseline-2-0 0 30.684 266063872 none
+s6-baseline-2-1 0 30.571 265744384 none
+s6-baseline-2-2 0 30.757 266031104 none
+s6-baseline-4-0 0 30.784 477802496 none
+s6-baseline-4-1 0 31.115 483475456 none
+s6-baseline-4-2 0 31.492 484040704 none
+s6-overlap-1-0 0 30.68 292007936 none
+s6-overlap-1-1 0 31.005 291696640 none
+s6-overlap-1-2 0 30.648 283152384 none
+s6-overlap-2-0 0 30.756 404000768 none
+s6-overlap-2-1 0 30.674 405094400 none
+s6-overlap-2-2 0 30.663 405000192 none
+s6-overlap-4-0 0 30.684 628301824 none
+s6-overlap-4-1 0 30.838 626876416 none
+s6-overlap-4-2 0 30.981 627625984 none

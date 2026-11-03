@@ -1,0 +1,39 @@
+import collector as c
+from pathlib import Path
+import subprocess,time,socket,urllib.request,urllib.error,tarfile,zipfile,hashlib,shutil
+r=c.ROOT
+sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
+log=open(r/'s4-server.log','wb')
+p=subprocess.Popen(['php','-S',f'127.0.0.1:{port}','-t',str(c.APP/'public'),str(r/'router.php')],cwd=c.APP,env=c.ENV,stdout=log,stderr=log)
+try:
+ for _ in range(100):
+  try:s=socket.create_connection(('127.0.0.1',port),.1);s.close();break
+  except OSError:time.sleep(.05)
+ for name in ('repository.tar.gz','repository.zip','images.zip'):
+  previous=None
+  for i in range(3):
+   start=time.monotonic()
+   try:
+    with urllib.request.urlopen(f'http://127.0.0.1:{port}/downloads/{name}',timeout=30) as response:data=response.read();status=response.status
+   except urllib.error.HTTPError as e:data=e.read();status=e.code
+   print(f'Download: {name}\nRepeat: {i}\nHTTP: {status}\nElapsed seconds: {time.monotonic()-start:.6f}\nBytes: {len(data)}\nSHA256: {hashlib.sha256(data).hexdigest()}\n',flush=True)
+   if status!=200:raise RuntimeError(data[:500])
+   if previous is not None:assert previous==data,'warm archive bytes changed'
+   previous=data;(r/name).write_bytes(data)
+ expected={str(x.relative_to(r/'repository')):hashlib.sha256(x.read_bytes()).hexdigest() for x in (r/'repository/records').rglob('*') if x.is_file()}
+ for name in ('repository.tar.gz','repository.zip'):
+  if name.endswith('.zip'):
+   with zipfile.ZipFile(r/name) as z:actual={n.removeprefix('repository/'):hashlib.sha256(z.read(n)).hexdigest() for n in z.namelist() if n.startswith('repository/records/') and not n.endswith('/')}
+  else:
+   with tarfile.open(r/name) as t:actual={m.name.removeprefix('repository/'):hashlib.sha256(t.extractfile(m).read()).hexdigest() for m in t if m.isfile() and m.name.startswith('repository/records/')}
+  assert actual==expected,(name,len(actual),len(expected))
+  print(f'Exact canonical record archive parity: {name}, {len(expected)} files',flush=True)
+ dest=r/'import-target';shutil.copytree(c.APP/'tests/fixtures/parity_minimal_v1',dest)
+ for args in (['init','-q'],['config','user.name','Import fixture'],['config','user.email','fixture@example.invalid'],['add','.'],['commit','-qm','initial']):subprocess.run(['git','-C',str(dest),*args],env=c.ENV,check=True)
+ env=dict(c.ENV);env.update({'FORUM_REPOSITORY_ROOT':str(dest),'FORUM_DATABASE_PATH':str(r/'import.sqlite'),'FORUM_STATIC_HTML_ROOT':str(r/'import-static'),'FORUM_PUBLIC_ARTIFACT_ROOT':str(r/'import-public'),'FORUM_IMAGE_ROOT':str(r/'import-images')})
+ commands=[['./v3','import-repository',str(r/'repository.tar.gz'),str(dest),str(r/'import.sqlite'),str(r/'import-public'),'--dry-run'],['./v3','import-instance',f'http://127.0.0.1:{port}','--repository-root='+str(dest),'--database-path='+str(r/'import.sqlite'),'--static-html-root='+str(r/'import-static'),'--dry-run'],['./v3','import-instance','--resume','--repository-root='+str(dest),'--database-path='+str(r/'import.sqlite'),'--static-html-root='+str(r/'import-static')]]
+ for i,cmd in enumerate(commands):
+  start=time.monotonic()
+  with (r/f's4-import-{i}.log').open('wb') as out:result=subprocess.run(cmd,cwd=c.APP,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=120)
+  print(f'Import case: {i}\nCommand: {cmd}\nExit: {result.returncode}\nElapsed seconds: {time.monotonic()-start:.6f}\n',flush=True)
+finally:p.terminate();p.wait(timeout=5);log.close()

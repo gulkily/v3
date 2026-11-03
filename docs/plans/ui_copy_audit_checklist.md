@@ -795,6 +795,11 @@ Limits and follow-up: signing in regenerates the session ID and deletes the old 
 
 Publication verification: 2026-10-30 UTC — user authorized commit and push. Integrated current `origin/main` at `ade35a65`, preserving both study-ledger append blocks. On the combined tree, `InvitationIssuanceTest` passed 10/10 and `invite_zero_click.mjs` passed public/members-only creation, redemption and recovery. Earlier theme evidence remains scoped to the pre-integration tree; no new visual run or deployment claim. Multi-redemption remains a Step 1 proposal.
 
+## 2026-10-30 — Recent conversation
+
+Change: Recent reuses the board's thread rows: thread title linking to the thread anchored at the reply (own page only when the thread is unavailable), one-line excerpt, compact "guest · Oct 30 · Reply" meta; shared Previous/Next controls and the board's empty block. Removed the page heading, the long byline, the separate thread link and the page's own stylesheet. Essential empty/invalid-position recovery retained; no technical event details or feed explanation.
+Verification: 13 themes at 390/1280px, six themes visually reviewed at both widths plus invalid-position recovery, long-content overflow, keyboard/no-JavaScript paging, anchored reply, thread open/Back/reload and offline reconnect passed. PHP checks cover empty, invalid, unavailable context and escaping. [Evidence and limits](recent_activity/recent_activity_step4_implementation_summary.md#design-revision--2026-10-30-direct-work). Physical phone and production acceptance pending; screenshots outside repository.
+
 ## Next phase — new candidates
 
 Current queue, expanded October 30, 2026. These observations need rendered review before deciding what to remove. Keep this section at the end of the file. A decision to retain useful copy can close a review; source matches alone cannot.
@@ -828,3 +833,23 @@ only; subsequent implementation and verification are recorded separately above.
 - [x] Source-only deployments and failed Git commands show unavailable; detached HEAD is identified. Linked-worktree .git files are accepted. Existing content-repository and read-model details remain separate.
 - [x] Core-route rendered HTML smoke check passed; PHP syntax and diff whitespace checks passed. Reused the existing wrapping facts table. Dependency delta: zero.
 - [ ] Browser verification remains outstanding for phone/desktop, affected themes, long commit subjects, source-only deployments and detached HEAD; the HTML smoke check does not establish visual layout.
+
+## Compose keyboard fit — 2026-11-02
+
+- [x] Full composer order is now body, Post row, Title, tags and event; no copy added, removed or reworded. The Title placeholder and all button labels are unchanged.
+- [x] Phone body height and the dropped picker reservation are layout only; verified in 13 themes at 375 by 667 and 375 by 300 in Chromium (`compose_layout_stability.mjs --phone-fit-only`).
+- [ ] Maintainer's iPhone SE check in Firefox and Safari with the keyboard open is pending.
+## Username changes flag warning — 2026-11-01
+
+- [x] Replaced the flag's ordinary description with a visible warning to keep username changes disabled on public instances: renamed keys retain approval and can appear under another account's name. Retained the consequences of disabling: stops new renames, hides rename activity, leaves saved names/approvals intact. Reuses the existing always-visible description beside the toggle; no new controls or post-paint text.
+- [x] PHP syntax and 23 existing FeatureFlagEvaluator/FeatureFlagsBehavior tests passed. Rendered the production template using its canonical-registry browser fixture at 375/1280 widths with light/dark/console/Word97/Chicago/Midnight theme settings, JavaScript on/off: 24 combinations showed the warning and default-off toggle with no horizontal page overflow. Inspected representative phone/desktop row screenshots. The initial disposable probe stalled on dynamically loading styles with JavaScript disabled; stopped it and used stylesheet links in initial HTML for the completed run.
+- [x] Whitespace checked; dependency delta zero. No instance settings, permissions or flag defaults changed. Live deployment, actual flag-mutation success/failure, physical devices and full application suite were not exercised for this copy-only change.
+
+
+## Key retirement — 2026-11-01
+
+- Reused profile access, approval history, Account state and browser signing. Retirement review shows the exact target/replacement and one permanent-action warning; retained history is distinct from pending approval. No navigation destination or icon mapping added.
+- Verified: `tests/browser/key_retirement.mjs`, ordinary Account/member and operator replacement-first flows, six roles, first-frame visibility, keyboard, canceled review, accepted-response loss/retry, no-JavaScript retained history, all 16 themes at phone/desktop widths. Phone and desktop screenshots visually inspected; full fingerprints wrap. Focused profile/history/access tests passed.
+- Boundaries: Local Chromium, not physical devices or deployed instances. Browser-local Remove/Undo remains a separate local operation. Implementation evidence: [Stage 6](key_retirement/key_retirement_step4_implementation_summary.md#stage-6---shared-retirement-journeys-and-retained-status).
+
+Key retirement final integration — 2026-11-02: Ordinary message readers verified retained signatures with retired keys during the real private-history browser journey. Existing active-key Approved yes/no labels retained after focused regression verification; retirement keeps its distinct status. No additional UI copy or navigation destinations. See [acceptance](key_retirement/acceptance.txt).

@@ -38,6 +38,7 @@ final class AppNavigationPlacementTest
                     $placements = array_column($items, 'placement', 'href');
                     assertSame(count($items), count($placements), $name);
                     assertSame('main', $placements['/'], $name);
+                    assertSame('main', $placements['/recent/'], $name);
                     assertSame('main', $placements['/users/'], $name);
                     foreach (['/about/', '/tools/', '/account/key/'] as $href) {
                         assertSame('menu', $placements[$href], $name . ' ' . $href);
@@ -80,7 +81,7 @@ final class AppNavigationPlacementTest
                 ->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
             preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $bar);
             preg_match('/<details class="account-menu".*?<\/details>/s', $html, $menu);
-            foreach (['/', '/users/', '/messages'] as $href) {
+            foreach (['/', '/recent/', '/users/', '/messages'] as $href) {
                 assertStringContains('href="' . $href . '"', $bar[0]);
             }
             foreach (['/about/', '/tools/', '/account/key/', '/invites/'] as $href) {

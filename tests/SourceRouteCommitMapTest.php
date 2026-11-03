@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 
 use ForumRewrite\Application;
@@ -93,18 +94,15 @@ final class SourceRouteCommitMapTest
         $root = $workspace->repository('repository', true);
         $db = $workspace->root . '/read.sqlite3';
         $flag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $session = $_SESSION ?? [];
         $cookies = $_COOKIE;
-        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-        $_SESSION = []; $_COOKIE = [];
+        $_COOKIE = [];
         putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
         try {
             $workspace->git($root);
             $test($workspace, $root, $db);
         } finally {
-            $_SESSION = $session; $_COOKIE = $cookies;
+            TestViewerSession::reset(); $_COOKIE = $cookies;
             putenv($flag === false ? 'FORUM_APPROVED_MEMBERS_ONLY' : 'FORUM_APPROVED_MEMBERS_ONLY=' . $flag);
-            if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         }
     }
 

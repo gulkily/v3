@@ -1,0 +1,13 @@
+[0.74s] PASS QdbPageTest::testLatestMatchesLegacyAndLoadsOnlySelectedBodies [0.06s]
+[0.82s] PASS QdbPageTest::testScorePagesMatchLegacyPinsAndTies [0.08s]
+[1.15s] PASS QdbPageTest::testSearchPreservesLiteralMatchingAndActivityOrder [0.33s]
+[2.36s] PASS QdbPageTest::testSearchLargeBodyAndFailureRetry [1.21s]
+[2.41s] PASS QdbPageTest::testSelectedPagesKeepViewerReactionState [0.05s]
+[2.84s] PASS QdbPageTest::testPriorVersionStartupRebuildsBeforeLatest [0.43s]
+[2.84s] PASS QdbBoardPolicyTest::testPaginatesEveryQdbQuoteListingSection [0.00s]
+[2.84s] PASS QdbBoardPolicyTest::testUsesDistanceFrom1337ForLeetness [0.00s]
+[2.84s] PASS QdbBoardPolicyTest::testRetainsOnlyThreadsWithCanonicalQuoteIds [0.00s]
+[2.84s] PASS QdbBoardPolicyTest::testPaginatesEligibleQuotesWithoutLegacyRootsCreatingSparsePages [0.00s]
+[2.84s] PASS QdbBoardPolicyTest::testSelectsNewsThreadsByAuthoredDateWithoutQuoteIdRequirement [0.00s]
+
+Summary: 11 run, 11 passed, 0 failed

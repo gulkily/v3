@@ -13,7 +13,7 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
  service.stderr.pipe(process.stderr);
  const call=input=>new Promise(resolve=>{pending.push(resolve);service.stdin.write(JSON.stringify(input)+'\n');});
  try {
-  assert.equal((await call({action:'setup',keys:keys.map(({fp,publicKey})=>({fp,publicKey})),source:source.fp,envelope})).status,'ok');
+  assert.equal((await call({action:'setup',keys:keys.map(({fp,publicKey})=>({fp,publicKey})),source:source.fp,envelope,submitting:keys[1].fp,retired:process.argv.includes('--retired')?[keys[1].fp,signer.fp]:[]})).status,'ok');
   const values={forum_pki_username:'alice',forum_pki_public_key:source.publicKey,forum_pki_private_key:source.privateKey};
   global.localStorage={getItem:k=>values[k]||'',setItem:()=>assert.fail('No secrets persisted')};
   global.sessionStorage={getItem:()=>'',setItem:()=>{}};

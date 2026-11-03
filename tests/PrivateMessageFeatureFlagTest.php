@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Messaging\PrivateMessageStore;
@@ -26,7 +27,6 @@ final class PrivateMessageFeatureFlagTest
         symlink(dirname(__DIR__) . '/public', $root . '/public');
         $keys = [FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED, 'PRIVATE_MESSAGE_DATABASE_PATH', 'FORUM_SECRETS_PATH'];
         $previous = array_map('getenv', $keys);
-        $previousSession = $_SESSION ?? [];
         try {
             putenv($keys[0] . '=false');
             putenv($keys[1] . '=' . $root . '/messages.sqlite3');
@@ -35,8 +35,8 @@ final class PrivateMessageFeatureFlagTest
             $store->storeEnvelope('retained-message', '2026-10-13T00:00:00Z', 'alice', 'bob', 'alice-key', 'retained ciphertext');
             unset($store);
             $before = hash_file('sha256', $root . '/messages.sqlite3');
-            foreach ([[], ['authenticated_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954']] as $session) {
-                $_SESSION = $session;
+            foreach (['', 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'] as $viewer) {
+                $viewer === '' ? TestViewerSession::signedOut() : TestViewerSession::signIn($viewer);
                 foreach (['/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent',
                     '/api/private_messages/conversation?username_token=bob', '/api/private_messages/conversations',
                     '/api/private_messages/recipient_keys?username_token=bob', '/api/private_messages/unread',
@@ -60,7 +60,7 @@ final class PrivateMessageFeatureFlagTest
             }
             $pdo = new PDO('sqlite:' . $root . '/read.sqlite3');
             $profile = $pdo->query("SELECT * FROM profiles WHERE is_approved = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-            $_SESSION = ['authenticated_identity_id' => $profile['identity_id']];
+            TestViewerSession::signIn($profile['identity_id']);
             $profile['identity_id'] = 'test-messaging-recipient';
             $profile['profile_slug'] = 'test-messaging-recipient';
             $profile['username'] = $profile['username_token'] = 'messaging-recipient';
@@ -83,7 +83,7 @@ final class PrivateMessageFeatureFlagTest
             assertSame($before, hash_file('sha256', $root . '/messages.sqlite3'));
             assertSame(false, is_file($root . '/state/private/message_history_sync.sqlite3'));
             // A new request re-evaluates deployment state; normal authentication resumes.
-            $_SESSION = [];
+            TestViewerSession::signedOut();
             putenv($keys[0] . '=true');
             [$status, $body] = $this->request($root, 'GET', '/api/private_messages/inbox');
             assertSame(401, $status);
@@ -91,8 +91,7 @@ final class PrivateMessageFeatureFlagTest
             assertSame($before, hash_file('sha256', $root . '/messages.sqlite3'));
         } finally {
             foreach ($keys as $i => $key) { putenv($previous[$i] === false ? $key : $key . '=' . $previous[$i]); }
-            $_SESSION = $previousSession;
-            if (session_status() === PHP_SESSION_ACTIVE) { session_write_close(); }
+            TestViewerSession::reset();
             $this->remove($root);
         }
     }

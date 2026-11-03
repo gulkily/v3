@@ -125,7 +125,9 @@ final class PrivateMessageApiController
         }
 
         try {
-            $keys = $this->service()->recipientKeys($viewer, (string) ($query['username_token'] ?? ''));
+            $purpose = (string)($query['purpose'] ?? 'encryption');
+            if (!in_array($purpose,['encryption','verification'],true)) throw new InvalidArgumentException('Invalid key purpose.');
+            $keys = $this->service()->recipientKeys($viewer, (string) ($query['username_token'] ?? ''), $purpose==='verification');
             $this->routeServices->sendJson(['status' => 'ok', 'keys' => $keys], 200, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $exception) {
             $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
@@ -221,7 +223,8 @@ final class PrivateMessageApiController
         return new PrivateMessageMailboxService(
             ($this->privateMessageStore)(),
             $this->routeServices->pdo(),
-            new ApprovedUserKeyResolver(),
+            new ApprovedUserKeyResolver($this->routeServices->repositoryRoot()),
+            $this->routeServices->repositoryRoot(),
         );
     }
 

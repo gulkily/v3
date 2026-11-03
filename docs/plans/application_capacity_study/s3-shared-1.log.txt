@@ -1,0 +1,25 @@
+Starting shared static release refresh
+Repository: /tmp/v3-capacity-5wrtjih3/repository
+Read-model database: /tmp/v3-capacity-5wrtjih3/model.sqlite
+Static artifact root: /tmp/v3-capacity-5wrtjih3/static
+This keeps existing tag, thread, post, and profile pages. It does not rebuild the read model.
+[1/2] Copying the active static release and refreshing shared pages...
+[1/2] Fingerprinting and copying assets referenced by rendered pages...
+[1/2] Rendering shared pages (0/10).
+[1/2] Rendering shared pages (1/10): /.
+[1/2] Rendering shared pages (2/10): /threads/.
+[1/2] Rendering shared pages (3/10): /about/.
+[1/2] Rendering shared pages (4/10): /instance/.
+[1/2] Rendering shared pages (5/10): /activity/.
+[1/2] Rendering shared pages (6/10): /users/.
+[1/2] Rendering shared pages (7/10): /tools/.
+[1/2] Rendering shared pages (8/10): /tools/bookmarklets/.
+[1/2] Rendering shared pages (9/10): /tools/feature-flags/.
+[1/2] Rendering shared pages (10/10): /tags/.
+[1/2] Rendering shared pages complete (10/10).
+[1/2] Static docs are not published; run ./v3 docs publish with the same destination/profile.
+[1/2] Shared static release is ready: /tmp/v3-capacity-5wrtjih3/static/releases/release-20261101065050-a96d24bd
+[2/2] Activating the shared static release...
+[2/2] Shared static release activated.
+Refreshed and activated shared static release /tmp/v3-capacity-5wrtjih3/static/releases/release-20261101065050-a96d24bd
+Elapsed: 0.218 seconds

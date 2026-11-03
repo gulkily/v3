@@ -23,7 +23,7 @@ const paths = [
   '/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001',
   '/tags', '/tags/', '/tags/general', '/tags/bug-fix', '/tags/BUG-Fix/', '/tags/Bad',
   '/tools/outbox/',
-  '/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security',
+  '/recent/', '/recent/?position=test', '/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security',
   '/compose/thread', '/profiles/alice', '/profiles/alice?posts_position=test', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'
 ];
 vm.runInThisContext(source);
@@ -54,7 +54,7 @@ NODE;
         foreach (['/', '/threads', '/threads/?view=liked&sort=top', '/threads/root-001', '/tags', '/tags/', '/tags/general', '/tags/bug-fix', '/tags/BUG-Fix/', '/tags/Bad'] as $path) {
             assertSame(true, $policy[$path]);
         }
-        foreach (['/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/compose/thread', '/profiles/alice', '/profiles/alice?posts_position=test', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'] as $path) {
+        foreach (['/recent/', '/recent/?position=test', '/activity/', '/activity/?view=all&position=test', '/activity/?view=security', '/forte/activity/?view=security', '/api/forte_activity_page?view=security', '/compose/thread', '/profiles/alice', '/profiles/alice?posts_position=test', '/search/', '/tags/bug/extra', '/TAGS/bug', '/tags/bug_fix'] as $path) {
             assertSame(false, $policy[$path]);
         }
     }
@@ -69,11 +69,13 @@ global.caches = { open: async () => ({ match: async () => { cacheLookups++; retu
 global.fetch = async () => { throw new Error('offline'); };
 vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 (async () => {
-  const request = new Request('https://forum.test/activity/?view=all&position=abc');
+  for (const path of ['/activity/?view=all&position=abc', '/recent/', '/recent/?position=abc']) {
+  const request = new Request('https://forum.test' + path);
   if (cacheableRequest(request)) throw new Error('Activity position was cacheable');
   try { await networkFirstNavigation(request); throw new Error('Wrong fallback supplied'); }
   catch (error) { if (error.message !== 'offline') throw error; }
   if (cacheLookups !== 0) throw new Error('An unrelated shell was read');
+  }
 })().catch(error => { console.error(error); process.exitCode = 1; });
 NODE;
         $output = [];

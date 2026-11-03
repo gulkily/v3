@@ -1,0 +1,13 @@
+Interrupted at saved journal: True
+Exit: -9
+Elapsed seconds: 0.565804
+Importer sampled RSS bytes: 49586176
+Resume: 0
+Exit: 0
+Elapsed seconds: 1.818909
+Resume: 1
+Exit: 1
+Elapsed seconds: 0.065128
+Imported synthetic record byte/count parity: 1000
+Journal cleared: yes
+Repeated resume: explicit no interrupted import
