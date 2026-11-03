@@ -89,6 +89,38 @@ final class CanonicalRecordParsersTest
         );
     }
 
+    public function testPostBodyFormatHeaderIsOptionalAndValidated(): void
+    {
+        $base = "Post-ID: format-test\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\n";
+        $parser = new PostRecordParser();
+
+        assertNullValue($parser->parse($base . "\n*kept*\n")->bodyFormat);
+        assertTrue(!$parser->parse($base . "\n*kept*\n")->rendersMarkdown());
+        assertSame('markdown', $parser->parse($base . "Body-Format: markdown\n\nBody.\n")->bodyFormat);
+        assertTrue($parser->parse($base . "Body-Format: markdown\n\nBody.\n")->rendersMarkdown());
+        assertSame('plain', $parser->parse($base . "Body-Format: plain\n\nBody.\n")->bodyFormat);
+        assertSame('plain', $parser->parse($base . "Thread-ID: root-001\nParent-ID: root-001\nBody-Format: plain\n\nReply.\n")->bodyFormat);
+        assertThrows(fn () => $parser->parse($base . "Body-Format: html\n\nBody.\n"), 'Body-Format must be markdown or plain when present.');
+    }
+
+    public function testCanonicalPostBuildersAppendBodyFormatOnlyWhenGiven(): void
+    {
+        $service = $this->localWriteServiceForBuilderTests();
+        $thread = new ReflectionMethod(LocalWriteService::class, 'buildThreadPostRecord');
+        $thread->setAccessible(true);
+        $reply = new ReflectionMethod(LocalWriteService::class, 'buildReplyPostRecord');
+        $reply->setAccessible(true);
+
+        assertSame(
+            "Post-ID: t\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\nSubject: S\nBody-Format: markdown\n\nBody.\n",
+            $thread->invoke($service, 't', '2026-11-03T12:00:00Z', 'general', 'S', "Body.\n", null, '', '', '', '', 'markdown')
+        );
+        assertSame(
+            "Post-ID: r\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\nThread-ID: t\nParent-ID: t\nBody-Format: plain\n\nReply.\n",
+            $reply->invoke($service, 'r', '2026-11-03T12:00:00Z', 'general', 't', 't', "Reply.\n", null, null, 'plain')
+        );
+    }
+
     public function testCanonicalReplyPostBuilderPreservesRecordBytes(): void
     {
         $service = $this->localWriteServiceForBuilderTests();
@@ -326,6 +358,30 @@ final class CanonicalRecordParsersTest
             static fn () => (new ThreadSubjectRecordParser())->parse($contents),
             'Thread-subject Operation must be set in V1.'
         );
+    }
+
+    public function testParsesThreadSubjectWithAuthorAndReplyProvenance(): void
+    {
+        $hash = str_repeat('ab', 32);
+        $contents = "Record-ID: thread-subject-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: set\nSubject: Better name\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\nSource-Post-ID: reply-001\nSource-Post-SHA256: {$hash}\nReason: Title directive in reply\n\n";
+
+        $record = (new ThreadSubjectRecordParser())->parse($contents);
+
+        assertSame('Better name', $record->subject);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->authorIdentityId);
+        assertSame('reply-001', $record->sourcePostId);
+        assertSame($hash, $record->sourcePostSha256);
+    }
+
+    public function testRejectsThreadSubjectWithIncompleteOrInvalidProvenance(): void
+    {
+        $base = "Record-ID: thread-subject-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nThread-ID: root-001\nOperation: set\nSubject: Better name\n";
+        $expected = 'Thread-subject source requires a valid post ID and SHA-256 together.';
+
+        assertThrows(static fn () => (new ThreadSubjectRecordParser())->parse($base . "Source-Post-ID: reply-001\n\n"), $expected);
+        assertThrows(static fn () => (new ThreadSubjectRecordParser())->parse($base . 'Source-Post-SHA256: ' . str_repeat('ab', 32) . "\n\n"), $expected);
+        assertThrows(static fn () => (new ThreadSubjectRecordParser())->parse($base . "Source-Post-ID: reply 001\nSource-Post-SHA256: " . str_repeat('ab', 32) . "\n\n"), $expected);
+        assertThrows(static fn () => (new ThreadSubjectRecordParser())->parse($base . "Source-Post-ID: reply-001\nSource-Post-SHA256: nothex\n\n"), $expected);
     }
 
     public function testRejectsThreadSubjectWithMissingRequiredHeaders(): void

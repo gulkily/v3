@@ -418,6 +418,16 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_post_format') {
+            $this->writePostAndIdentityApiController()->preparePostFormat($method, $query);
+            return;
+        }
+
+        if ($path === '/api/create_prepared_post_format') {
+            $this->writePostAndIdentityApiController()->createPreparedPostFormat($method, $query);
+            return;
+        }
+
         if ($path === '/api/create_identity') {
             $this->writePostAndIdentityApiController()->createIdentity($method, $query);
             return;
@@ -1282,7 +1292,7 @@ final class Application
 
         return ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
-            (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
+            \ForumRewrite\Support\PostText::plainPreview((string) ($thread['body_preview'] ?? $thread['body'] ?? ''), $thread['body_format'] ?? null),
             (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? ''),
             80,
             $this->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)
@@ -1684,7 +1694,7 @@ final class Application
     private function fetchThreadPosts(string $threadId): array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.agent_response_json,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
@@ -1709,7 +1719,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
-                    posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, profiles.username_token AS author_username_token,
+                    posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, posts.body_format, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
              FROM posts
@@ -2179,7 +2189,7 @@ final class Application
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
-            '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/create_identity',
+            '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/prepare_post_format', '/api/create_prepared_post_format', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
             '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',

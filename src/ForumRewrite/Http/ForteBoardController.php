@@ -98,6 +98,7 @@ final class ForteBoardController
                 ] : [],
                 'viewerLikedThreadIds' => $selectedThreadData['viewerLikedThreadIds'] ?? [],
                 'viewerLikedPostIds' => $selectedThreadData['viewerLikedPostIds'] ?? [],
+                'signalActors' => $selectedThreadData['signalActors'] ?? null,
                 'viewerFlaggedPostIds' => $selectedThreadData['viewerFlaggedPostIds'] ?? [],
                 'highlightedPostId' => $selectedThreadData['highlightedPostId'] ?? '',
                 'viewerProfile' => $viewerProfile,
@@ -178,6 +179,7 @@ final class ForteBoardController
 
         return [
             'replyTree' => $this->buildReplyTree($replyPosts),
+            'signalActors' => \ForumRewrite\ReadModel\SignalActors::load($pdo, $threadId, $allPostIds),
             'viewerLikedThreadIds' => $viewerLikedThreadIds,
             'viewerLikedPostIds' => $viewerLikedPostIds,
             'viewerFlaggedPostIds' => $viewerFlaggedPostIds,

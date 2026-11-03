@@ -95,7 +95,7 @@ if ($isRunTail) {
 <?php if ($isRetracted): ?>
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
 <?php else: ?>
-  <div class="body"><?= $br($post['body']) ?></div>
+  <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post) ?></div>
 <?php endif; ?>
 <?php if ($metaLine !== '' && $isContinuation): ?>
   <?= $metaLine ?>
@@ -146,6 +146,11 @@ if (!is_array($postAnalysisLabels)) {
 <?php if ($agentReplyIsUnfinished): ?>
   <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
 <?php endif; ?>
+<?php $signalActors ??= null; $postSignals = is_array($signalActors) ? ($signalActors['posts'][(string) $post['post_id']] ?? []) : []; ?>
+<?= $indent($partial('partials/post_signals.php', [
+    'signals' => ['like' => $postSignals['like'] ?? [], 'flag' => $postSignals['flag'] ?? [], 'title_author' => null],
+    'signalsScope' => 'post',
+]), 1) ?>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
 <?php if (!$isRetracted): ?>

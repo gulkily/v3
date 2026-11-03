@@ -86,6 +86,7 @@ final class ReadModelBuilder
             $approvalState = $this->measure('derive_approval_state', fn (): array => $this->deriveApprovalState($profiles, $posts));
             $this->measure('index_thread_labels', fn (): mixed => $this->indexThreadLabels($pdo, $approvalState));
             $this->measure('index_thread_subjects', fn (): mixed => $this->indexThreadSubjects($pdo));
+            $this->measure('index_post_formats', fn (): mixed => $this->indexPostFormats($pdo));
             $postAttribution = $this->measure('derive_post_attribution', fn (): array => $this->derivePostAttribution($posts));
             $profileCounts = $this->measure('derive_profile_counts', fn (): array => $this->deriveProfileCounts($profiles, $posts, $postAttribution));
             $this->measure('link_post_authors', fn (): mixed => $this->linkPostAuthors($pdo, $profiles, $approvalState, $profileCounts, $postAttribution));
@@ -186,8 +187,8 @@ final class ReadModelBuilder
     private function indexPosts(PDO $pdo): array
     {
         $insertPost = $pdo->prepare(
-            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, agent_response_json, author_identity_id, retracted_at, retraction_class, retraction_attribution, sequence_number)
-             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :sequence_number)'
+            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, agent_response_json, body_format, author_identity_id, retracted_at, retraction_class, retraction_attribution, sequence_number)
+             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
             'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, retracted_at, retraction_class, retraction_attribution)
@@ -221,6 +222,7 @@ final class ReadModelBuilder
                 'board_tags_json' => json_encode($record->boardTags, JSON_THROW_ON_ERROR),
                 'thread_type' => $record->threadType,
                 'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
+                'body_format' => $record->bodyFormat,
                 'author_identity_id' => $record->authorIdentityId,
                 'imported_score_seed' => $record->importedScoreSeed,
                 'imported_vote_count_seed' => $record->importedVoteCountSeed,
@@ -241,7 +243,7 @@ final class ReadModelBuilder
                 'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
                 'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
                 'retracted_at' => $removal['accepted_at'], 'retraction_class' => $removal['classification'] ?? 'operator', 'retraction_attribution' => $removal['attribution'] ?? 'operator',
-                'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null,
+                'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null, 'body_format' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
                 'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null,
                 'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
@@ -284,6 +286,7 @@ final class ReadModelBuilder
                 'board_tags_json' => $post['board_tags_json'],
                 'thread_type' => $post['thread_type'],
                 'agent_response_json' => $post['agent_response_json'],
+                'body_format' => $post['body_format'],
                 'author_identity_id' => $post['author_identity_id'],
                 'retracted_at' => $post['retracted_at'],
                 'retraction_class' => $post['retraction_class'],
@@ -297,7 +300,7 @@ final class ReadModelBuilder
                     'root_post_created_at' => $post['created_at'],
                     'last_activity_at' => $post['created_at'],
                     'subject' => $post['subject'],
-                    'body_preview' => $this->preview($post['body']),
+                    'body_preview' => $this->preview(\ForumRewrite\Support\PostText::plainPreview($post['body'], $post['body_format'])),
                     'reply_count' => 0,
                     'last_post_id' => $post['post_id'],
                     'board_tags_json' => $post['board_tags_json'],
@@ -413,6 +416,7 @@ final class ReadModelBuilder
         $countedVerifiedScoredTagsByThread = [];
         $voteCountByThread = [];
         $countedVoteTagsByThread = [];
+        $eligibleByThread = [];
         foreach ($this->progressItems('deriving_thread_label_records', $records) as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadLabelRecordCount++;
@@ -454,6 +458,7 @@ final class ReadModelBuilder
                 if ($recordCountsVerified && !isset($countedVerifiedScoredTagsByThread[$record->threadId][$dedupeKey])) {
                     $countedVerifiedScoredTagsByThread[$record->threadId][$dedupeKey] = true;
                     $verifiedScoreByThread[$record->threadId] += $this->threadLabelScoreValue($label);
+                    $eligibleByThread[$record->threadId][$record->authorIdentityId][$label] = SignalEligibility::VERIFIED;
                 }
                 if (isset($countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey])) {
                     continue;
@@ -461,6 +466,7 @@ final class ReadModelBuilder
 
                 $countedApprovedScoredTagsByThread[$record->threadId][$dedupeKey] = true;
                 $scoreByThread[$record->threadId] += $this->threadLabelScoreValue($label);
+                $eligibleByThread[$record->threadId][$record->authorIdentityId][$label] ??= SignalEligibility::CLAIMED;
             }
 
             if ($labelsAdded !== []) {
@@ -497,6 +503,24 @@ final class ReadModelBuilder
                 'root_post_id' => $threadId,
             ]);
         }
+        $this->measure('write_thread_label_eligibility', fn () => SignalEligibility::apply($pdo, 'thread-labels', $eligibleByThread));
+    }
+
+    /** Later post-format records override the format each post was written with. */
+    private function indexPostFormats(PDO $pdo): void
+    {
+        $records = [];
+        foreach ($this->findRelativePaths('records/post-formats') as $relativePath) {
+            if (!str_ends_with($relativePath, '.txt')) {
+                continue;
+            }
+            try {
+                $records[] = $this->canonicalRepository->loadPostFormat($relativePath);
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+        }
+        PostFormatChanges::apply($pdo, PostFormatChanges::latestByPost($records));
     }
 
     private function indexThreadSubjects(PDO $pdo): void
@@ -514,64 +538,43 @@ final class ReadModelBuilder
             }
         }
 
-        $records = [];
+        $recordsByThread = [];
         $paths = $this->findRelativePaths('records/thread-subjects');
         foreach ($this->progressItems('parsing_thread_subject_records', $paths) as $index => $relativePath) {
             try {
-                $records[] = $this->canonicalRepository->loadThreadSubject($relativePath);
+                $record = $this->canonicalRepository->loadThreadSubject($relativePath);
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadSubjectRecordCount++;
+                continue;
             }
-        }
-
-        $this->measure('sort_thread_subjects', function () use (&$records): void {
-            usort($records, static function (ThreadSubjectRecord $left, ThreadSubjectRecord $right): int {
-                if ($left->createdAt !== $right->createdAt) {
-                    return $left->createdAt <=> $right->createdAt;
-                }
-
-                return $left->recordId <=> $right->recordId;
-            });
-        });
-
-        $resolvedSubjectByThread = [];
-        foreach ($this->progressItems('deriving_thread_subject_records', $records) as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadSubjectRecordCount++;
                 continue;
             }
-
             if (isset($retractedThreads[$record->threadId])) {
                 continue;
             }
-
-            $currentSubject = $currentSubjectByThread[$record->threadId];
-            if ($currentSubject !== null && trim((string) $currentSubject) !== '') {
-                continue;
-            }
-
-            if (isset($resolvedSubjectByThread[$record->threadId])) {
-                continue;
-            }
-
-            $resolvedSubjectByThread[$record->threadId] = $record->subject;
+            $recordsByThread[$record->threadId][] = $record;
         }
 
-        if ($resolvedSubjectByThread === []) {
+        if ($recordsByThread === []) {
             return;
         }
 
-        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject WHERE root_post_id = :root_post_id');
+        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject, subject_author_identity_id = :author WHERE root_post_id = :root_post_id');
         $updatePost = $pdo->prepare('UPDATE posts SET subject = :subject WHERE post_id = :post_id');
-        foreach ($this->progressItems('writing_thread_subjects', $resolvedSubjectByThread) as $threadId => $subject) {
-            $updateThread->execute([
-                'subject' => $subject,
-                'root_post_id' => $threadId,
-            ]);
-            $updatePost->execute([
-                'subject' => $subject,
-                'post_id' => $threadId,
-            ]);
+        foreach ($this->progressItems('deriving_thread_subject_records', $recordsByThread) as $threadId => $records) {
+            $rootSubject = $currentSubjectByThread[$threadId];
+            $resolved = ThreadSubjectState::resolve(
+                $rootSubject,
+                ThreadSubjectState::sort($records),
+                fn (ThreadSubjectRecord $record): bool => ThreadSubjectState::sourceActive($this->repositoryRoot, $pdo, $record),
+            );
+            if ($resolved['subject'] === $rootSubject && $resolved['author'] === null) {
+                continue;
+            }
+            $updateThread->execute(['subject' => $resolved['subject'], 'author' => $resolved['author'], 'root_post_id' => $threadId]);
+            $updatePost->execute(['subject' => $resolved['subject'], 'post_id' => $threadId]);
         }
     }
 
@@ -632,6 +635,7 @@ final class ReadModelBuilder
         $verifiedScoreByPost = [];
         $verifiedFlaggersByPost = [];
         $countedVerifiedScoredTagsByPost = [];
+        $eligibleByPost = [];
         foreach ($this->progressItems('deriving_post_reaction_records', $records) as $record) {
             if (!isset($knownPosts[$record->postId])) {
                 continue;
@@ -666,8 +670,10 @@ final class ReadModelBuilder
                 $recordCountsVerified ??= VerifiedAttribution::counts($this->repositoryRoot, $this->attributionCutoff, CanonicalPathResolver::postReaction($record->recordId), $record->authorIdentityId, $record->createdAt);
                 if ($tag === 'flag') {
                     $flaggersByPost[$record->postId][$record->authorIdentityId] = true;
+                    $eligibleByPost[$record->postId][$record->authorIdentityId]['flag'] ??= SignalEligibility::CLAIMED;
                     if ($recordCountsVerified) {
                         $verifiedFlaggersByPost[$record->postId][$record->authorIdentityId] = true;
+                        $eligibleByPost[$record->postId][$record->authorIdentityId]['flag'] = SignalEligibility::VERIFIED;
                     }
                 }
 
@@ -679,6 +685,7 @@ final class ReadModelBuilder
                 if ($recordCountsVerified && !isset($countedVerifiedScoredTagsByPost[$record->postId][$dedupeKey])) {
                     $countedVerifiedScoredTagsByPost[$record->postId][$dedupeKey] = true;
                     $verifiedScoreByPost[$record->postId] += TagScore::scoreValueForTag($tag);
+                    $eligibleByPost[$record->postId][$record->authorIdentityId][$tag] = SignalEligibility::VERIFIED;
                 }
                 if (isset($countedApprovedScoredTagsByPost[$record->postId][$dedupeKey])) {
                     continue;
@@ -686,8 +693,10 @@ final class ReadModelBuilder
 
                 $countedApprovedScoredTagsByPost[$record->postId][$dedupeKey] = true;
                 $scoreByPost[$record->postId] += TagScore::scoreValueForTag($tag);
+                $eligibleByPost[$record->postId][$record->authorIdentityId][$tag] ??= SignalEligibility::CLAIMED;
             }
         }
+        $this->measure('write_post_reaction_eligibility', fn () => SignalEligibility::apply($pdo, 'post-reactions', $eligibleByPost));
 
         $updatePost = $pdo->prepare(
             'UPDATE posts
@@ -1195,7 +1204,7 @@ final class ReadModelBuilder
             return 'Invitation ' . $action[1] . ': ' . $hash[1];
         }
 
-        return $post['subject'] ?? $this->preview($post['body']);
+        return $post['subject'] ?? $this->preview(\ForumRewrite\Support\PostText::plainPreview($post['body'], $post['body_format'] ?? null));
     }
 
     private function writeMetadata(PDO $pdo): void

@@ -7,6 +7,11 @@ has no third-party parser bundle, Composer installation or dependency-download s
 
 ## Rendering boundary
 
+For a short list of what renders, for docs and for posts marked Markdown, see the
+[Markdown syntax reference](../reference/markdown_syntax.md). Posts use a stricter
+mode of the same parser (`PublicMarkdownRenderer::renderPost()`); the rules below
+are for documentation.
+
 The project parser renders headings, paragraphs, basic asterisk emphasis,
 inline code/links, backtick fences, quotes, thematic breaks and supported lists.
 Integration retains duplicate-safe heading IDs, catalog link safety, collapsed

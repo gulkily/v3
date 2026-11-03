@@ -21,6 +21,8 @@ use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadSubjectRecordParser;
+use ForumRewrite\Security\TitleDirectiveAuthority;
+use ForumRewrite\Support\TitleDirective;
 use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
@@ -122,7 +124,8 @@ class LocalWriteService
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
 
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime);
+            $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -202,7 +205,7 @@ class LocalWriteService
                 $this->invalidator()->invalidateReply($threadId, $parentId);
                 return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'already_posted' => true];
             }
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse);
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
@@ -230,18 +233,28 @@ class LocalWriteService
                 [$labelRecordPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, $threadLabels, $authorIdentityId, $createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $contents));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
+            $subjectRecord = $this->titleDirectiveRecord($threadId, $postId, $contents, $body, $authorIdentityId, $createdAt);
+            if ($subjectRecord !== null) {
+                $this->writeFile($subjectRecord[0], $subjectRecord[1]);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
             $phaseStartedAt = hrtime(true);
             $writtenPaths = $signature !== null ? [$recordPath, $recordPath . '.asc'] : [$recordPath];
             if ($labelRecordPath !== null) {
                 $writtenPaths[] = $labelRecordPath;
             }
+            if ($subjectRecord !== null) {
+                $writtenPaths[] = $subjectRecord[0];
+            }
             $commitResult = $this->commitCanonicalWrite($writtenPaths, 'Create reply ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
-            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null, $subjectRecord !== null));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateReply($threadId, $postId);
+            if ($subjectRecord !== null) {
+                $this->invalidator()->invalidateBoardThread($threadId);
+            }
             if (($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION) {
                 $this->invalidator()->invalidateReply($threadId, $parentId);
             }
@@ -301,7 +314,8 @@ class LocalWriteService
             $eventLocation = $this->normalizeAuthoredLine((string) ($input['event_location'] ?? ''), 'event_location');
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime);
+            $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat);
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -347,7 +361,7 @@ class LocalWriteService
             $this->assertReplyTarget($threadId, $parentId);
 
             $postId = $this->generateRecordId('reply');
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId);
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, null, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -460,11 +474,20 @@ class LocalWriteService
                 [$labelRecordPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, $threadLabels, $authorIdentityId, $record->createdAt, sourcePostId: $postId, sourcePostSha256: hash('sha256', $canonicalRecord));
                 $this->writeFile($labelRecordPath, $labelContents);
             }
+            $subjectRecord = $record->isReply()
+                ? $this->titleDirectiveRecord($threadId, $postId, $canonicalRecord, $record->body, $authorIdentityId, $record->createdAt)
+                : null;
+            if ($subjectRecord !== null) {
+                $this->writeFile($subjectRecord[0], $subjectRecord[1]);
+            }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
             $writtenPaths = [$recordPath, $recordPath . '.asc'];
             if ($labelRecordPath !== null) {
                 $writtenPaths[] = $labelRecordPath;
+            }
+            if ($subjectRecord !== null) {
+                $writtenPaths[] = $subjectRecord[0];
             }
             $commitResult = $this->commitCanonicalWrite($writtenPaths, ($record->isReply() ? 'Create signed reply ' : 'Create signed thread ') . $postId);
             $commitSha = $commitResult['commit_sha'];
@@ -475,11 +498,14 @@ class LocalWriteService
                 }
             }
             $timings = array_merge($timings, $commitResult['timings']);
-            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null));
+            $timings = array_merge($timings, $this->synchronizePostDerivedState($record, $commitSha, $labelRecordPath !== null, $subjectRecord !== null));
 
             $phaseStartedAt = hrtime(true);
             if ($record->isReply()) {
                 $this->invalidator()->invalidateReply($threadId, $postId);
+                if ($subjectRecord !== null) {
+                    $this->invalidator()->invalidateBoardThread($threadId);
+                }
             } else {
                 $this->invalidator()->invalidateBoardThread($postId);
             }
@@ -538,8 +564,12 @@ class LocalWriteService
                 $files[$path . '.asc'] = $input['detached_signature'];
                 $labels = $this->extractThreadLabelsFromBody($post->body);
                 if ($labels !== []) {
-                    [$labelPath,$labelBytes] = $this->buildThreadLabelRecord($post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
+                    [$labelPath,$labelBytes] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
                     $files[$labelPath] = $labelBytes;
+                }
+                if ($post->isReply()) {
+                    $subjectRecord = $this->titleDirectiveRecord($post->threadId, $post->postId, $input['canonical_record'], $post->body, $post->authorIdentityId, $post->createdAt);
+                    if ($subjectRecord !== null) $files[$subjectRecord[0]] = $subjectRecord[1];
                 }
                 $commit = $tx->accept($files);
             }
@@ -583,7 +613,8 @@ class LocalWriteService
         string $eventDate = '',
         string $eventLocation = '',
         string $eventLink = '',
-        string $eventTime = ''
+        string $eventTime = '',
+        ?string $bodyFormat = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -594,6 +625,7 @@ class LocalWriteService
             . ($eventTime !== '' ? "Event-Time: {$eventTime}\n" : '')
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
+            . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
             . "\n{$body}";
     }
 
@@ -621,7 +653,8 @@ class LocalWriteService
         string $parentId,
         string $body,
         ?string $authorIdentityId,
-        ?array $agentResponse = null
+        ?array $agentResponse = null,
+        ?string $bodyFormat = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -630,6 +663,7 @@ class LocalWriteService
             . "Parent-ID: {$parentId}\n"
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . ($agentResponse !== null ? \ForumRewrite\Canonical\AgentResponseMetadata::toHeaders($agentResponse) : '')
+            . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
             . "\n{$body}";
     }
 
@@ -833,6 +867,186 @@ class LocalWriteService
 
             return $this->retractionResult($postId, $threadId, $recordPath, $failedStep, $timings, hrtime(true) - $totalStartedAt, false, $commitSha);
         });
+    }
+
+    /**
+     * Prepares a signed change of how an existing post displays (Markdown or plain). The actor
+     * is the post's author or a root-approved operator; the post itself is never rewritten.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function preparePostFormat(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $totalStartedAt = hrtime(true);
+            $actor = $this->requireOpenPgpIdentityId((string) ($input['actor_identity_id'] ?? $input['author_identity_id'] ?? ''), 'author_identity_id');
+            $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
+            $format = strtolower(trim((string) ($input['body_format'] ?? '')));
+            if (!in_array($format, PostRecord::FORMATS, true)) {
+                throw new RuntimeException('body_format must be markdown or plain.');
+            }
+            $post = $this->requireFormattablePost($postId, $actor);
+            $threadId = $post->threadId ?? $post->postId;
+            $createdAt = $this->canonicalTimestampNow();
+            // Order between switches comes from Created-At, so each one must be strictly later.
+            $latest = $this->latestPostFormatCreatedAt($postId);
+            if ($latest !== null && $createdAt <= $latest) {
+                $createdAt = gmdate('Y-m-d\TH:i:s\Z', strtotime($latest) + 1);
+            }
+            $recordId = \ForumRewrite\Canonical\PostFormatRecordParser::RECORD_ID_PREFIX . $postId . '-' . preg_replace('/\D/', '', $createdAt) . '-' . bin2hex(random_bytes(4));
+            $contents = "Record-ID: {$recordId}\nCreated-At: {$createdAt}\nPost-ID: {$postId}\nBody-Format: {$format}\nActor-Identity-ID: {$actor}\n\n";
+            (new \ForumRewrite\Canonical\PostFormatRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::postFormat($recordId);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'post-format',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'author_identity_id' => $actor,
+                'created_at' => $createdAt,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'body_format' => $format,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+                'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
+            ]);
+        });
+    }
+
+    /**
+     * Verifies the actor's signature, commits the format record and its signature, and updates
+     * derived state. Replaying an already accepted request returns the same result.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function createPreparedPostFormat(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $totalStartedAt = hrtime(true);
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            if (!is_file($this->preparedPostPath($prepareToken))) {
+                // The response may be lost after commit and token cleanup: an exact replay succeeds.
+                $recordPath = (string) ($input['record_path'] ?? '');
+                $existing = str_starts_with($recordPath, 'records/post-formats/') && !str_contains($recordPath, '..') ? $this->repositoryRoot . '/' . $recordPath : '';
+                if ($existing !== '' && is_file($existing) && is_file($existing . '.asc')
+                    && file_get_contents($existing) === $canonicalRecord && trim((string) file_get_contents($existing . '.asc')) === trim($signature)) {
+                    $record = (new \ForumRewrite\Canonical\PostFormatRecordParser())->parse($canonicalRecord);
+                    return ['status' => 'ok', 'post_id' => $record->postId, 'body_format' => $record->bodyFormat, 'record_path' => $recordPath, 'already_applied' => true,
+                        'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)]];
+                }
+            }
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'post-format') {
+                throw new RuntimeException('Prepared request is not a post-format change.');
+            }
+            if (strtotime((string) $prepared['expires_at']) < time()) {
+                throw new RuntimeException('Prepared post has expired.');
+            }
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared post canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
+            $actor = $this->requireOpenPgpIdentityId(
+                $this->requirePreparedMatch(array_merge($input, ['author_identity_id' => $input['actor_identity_id'] ?? $input['author_identity_id'] ?? '']), $prepared, 'author_identity_id'),
+                'author_identity_id'
+            );
+            $record = (new \ForumRewrite\Canonical\PostFormatRecordParser())->parse($canonicalRecord);
+            if ($record->postId !== $postId || $record->actorIdentityId !== $actor || CanonicalPathResolver::postFormat($record->recordId) !== $recordPath) {
+                throw new RuntimeException('Prepared post-format record does not match prepared metadata.');
+            }
+            $post = $this->requireFormattablePost($postId, $actor);
+            $latest = $this->latestPostFormatCreatedAt($postId);
+            if ($latest !== null && $record->createdAt <= $latest) {
+                throw new RuntimeException('A newer format change for this post was saved first. Prepare the change again.');
+            }
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($actor);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $commitSha = $this->commitCanonicalWrite([$recordPath, $recordPath . '.asc'], 'Set post format ' . $postId . ' to ' . $record->bodyFormat)['commit_sha'];
+            $this->deletePreparedPost($prepareToken);
+            $failedStep = null;
+            try {
+                if ($this->canIncrementallyUpdateReadModel()) {
+                    $this->incrementalReadModelUpdater()->applyPostFormatWrite($postId, $commitSha);
+                } else {
+                    $this->refreshDerivedStateAfterCommit($commitSha);
+                }
+            } catch (\Throwable) {
+                $failedStep = 'read_model_refresh';
+                $this->staleMarker()->mark(['reason' => 'post_format_refresh_failed', 'commit_sha' => $commitSha, 'failed_at' => gmdate('c')]);
+            }
+            try {
+                $this->invalidator()->invalidateBoardThread($post->threadId ?? $post->postId);
+            } catch (\Throwable) {
+                $failedStep ??= 'artifact_invalidate';
+            }
+
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $post->threadId ?? $post->postId,
+                'body_format' => $record->bodyFormat,
+                'record_path' => $recordPath,
+                'commit_sha' => $commitSha,
+                'failed_step' => $failedStep,
+                'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
+            ];
+        });
+    }
+
+    private function latestPostFormatCreatedAt(string $postId): ?string
+    {
+        $latest = null;
+        foreach ($this->canonicalRepository->loadPostFormatsFor($postId) as $record) {
+            if ($latest === null || $record->createdAt > $latest) {
+                $latest = $record->createdAt;
+            }
+        }
+
+        return $latest;
+    }
+
+    /** The author, or a root-approved operator, may switch an ordinary post that still exists. */
+    private function requireFormattablePost(string $postId, string $actor): PostRecord
+    {
+        $post = null;
+        foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate)) {
+                $post = $this->canonicalRepository->loadPost($candidate);
+                break;
+            }
+        }
+        if ($post === null || AcceptedRetraction::read($this->repositoryRoot, $postId) !== null) {
+            throw new RuntimeException('Post to switch was not found.');
+        }
+        if (RetractedPosts::isAuthorityPost($post)) {
+            throw new RuntimeException('Identity, approval, and invitation records keep their format.');
+        }
+        if ($post->authorIdentityId !== $actor) {
+            $allowed = $this->isApprovedIdentity($actor)
+                && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, $actor);
+            if (!$allowed) {
+                throw new RuntimeException('Only the post author or an approved operator can change its format.');
+            }
+        }
+
+        return $post;
     }
 
     /** Local acceptance metadata only: never part of the signer's canonical record. */
@@ -2716,7 +2930,7 @@ class LocalWriteService
     /**
      * @return array<string, float>
      */
-    private function synchronizePostDerivedState(PostRecord $record, string $commitSha, bool $hasThreadLabelWrite = false): array
+    private function synchronizePostDerivedState(PostRecord $record, string $commitSha, bool $hasThreadLabelWrite = false, bool $hasThreadSubjectWrite = false): array
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
@@ -2745,6 +2959,11 @@ class LocalWriteService
                 }
             } else {
                 $incrementalTimings = $postTimings;
+            }
+            if ($hasThreadSubjectWrite) {
+                foreach ($updater->applyThreadSubjectWrite($record->threadId ?? $record->postId, $commitSha) as $name => $duration) {
+                    $incrementalTimings['thread_subject_' . $name] = $duration;
+                }
             }
 
             $this->staleMarker()->clear();
@@ -3795,8 +4014,15 @@ class LocalWriteService
     /**
      * @return array{string,string}
      */
-    private function buildThreadSubjectRecord(string $threadId, string $subject, string $createdAt): array
-    {
+    private function buildThreadSubjectRecord(
+        string $threadId,
+        string $subject,
+        string $createdAt,
+        ?string $authorIdentityId = null,
+        ?string $sourcePostId = null,
+        ?string $sourcePostSha256 = null,
+        string $reason = 'Fetched title for bare media-embed URL',
+    ): array {
         $recordId = $this->generateRecordId('thread-subject');
         $subject = trim(str_replace(["\r\n", "\r", "\n"], ' ', $subject));
         $contents = "Record-ID: {$recordId}\n"
@@ -3804,7 +4030,9 @@ class LocalWriteService
             . "Thread-ID: {$threadId}\n"
             . "Operation: set\n"
             . "Subject: {$subject}\n"
-            . "Reason: Fetched title for bare media-embed URL\n"
+            . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
+            . ($sourcePostId !== null ? "Source-Post-ID: {$sourcePostId}\nSource-Post-SHA256: {$sourcePostSha256}\n" : '')
+            . "Reason: {$reason}\n"
             . "\n";
 
         (new ThreadSubjectRecordParser())->parse($contents);
@@ -3813,6 +4041,42 @@ class LocalWriteService
             CanonicalPathResolver::threadSubject($recordId),
             $contents,
         ];
+    }
+
+    /**
+     * The authored thread-subject record a reply's `title:` line produces, or null when
+     * the reply has no usable directive or its author lacks authority. The reply itself
+     * is never changed or rejected by this decision.
+     *
+     * @return array{string,string}|null [record path, contents]
+     */
+    private function titleDirectiveRecord(string $threadId, string $replyPostId, string $replyContents, string $body, ?string $authorIdentityId, string $createdAt): ?array
+    {
+        if ($authorIdentityId === null || !$this->featureFlags->isEnabled(FeatureFlagRegistry::TITLE_DIRECTIVE_ENABLED)) {
+            return null;
+        }
+        $title = TitleDirective::extract($body);
+        if ($title === null) {
+            return null;
+        }
+        try {
+            $title = $this->normalizeAuthoredLine($title, 'title');
+        } catch (RuntimeException) {
+            return null;
+        }
+        if ($title === '') {
+            return null;
+        }
+        try {
+            $root = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($threadId));
+        } catch (\ForumRewrite\Canonical\CanonicalRecordParseException | RuntimeException) {
+            return null;
+        }
+        if (!TitleDirectiveAuthority::allows($this->repositoryRoot, $this->readModelPdo(), $root, $authorIdentityId, $this->featureFlags)) {
+            return null;
+        }
+
+        return $this->buildThreadSubjectRecord($threadId, $title, $createdAt, $authorIdentityId, $replyPostId, hash('sha256', $replyContents), TitleDirective::REASON);
     }
 
     private function normalizeThreadTag(string $value, bool $allowQdbCaptionTag = false): string
@@ -4109,6 +4373,25 @@ class LocalWriteService
         }
 
         return $identityId;
+    }
+
+    /**
+     * Reads the optional `body_format` input. Blank means the caller's default; anything
+     * other than markdown or plain is rejected rather than guessed.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function normalizeBodyFormat(array $input, string $default): string
+    {
+        $value = strtolower(trim((string) ($input['body_format'] ?? '')));
+        if ($value === '') {
+            return $default;
+        }
+        if (!in_array($value, PostRecord::FORMATS, true)) {
+            throw new RuntimeException('body_format must be markdown or plain.');
+        }
+
+        return $value;
     }
 
     private function normalizeBoardTags(string $value): string

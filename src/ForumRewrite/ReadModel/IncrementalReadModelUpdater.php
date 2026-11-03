@@ -127,10 +127,10 @@ class IncrementalReadModelUpdater
                 $stmt = $pdo->prepare(
                     'INSERT INTO posts (
                         post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                        thread_type, agent_response_json, author_identity_id, author_profile_slug, author_label, sequence_number
+                        thread_type, agent_response_json, body_format, author_identity_id, author_profile_slug, author_label, sequence_number
                      ) VALUES (
                         :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                        :thread_type, :agent_response_json, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+                        :thread_type, :agent_response_json, :body_format, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
                      )'
                 );
                 $stmt->execute([
@@ -143,6 +143,7 @@ class IncrementalReadModelUpdater
                     'board_tags_json' => $boardTagsJson,
                     'thread_type' => $record->threadType,
                     'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
+                    'body_format' => $record->bodyFormat,
                     'author_identity_id' => $record->authorIdentityId,
                     'author_profile_slug' => $author['profile_slug'],
                     'author_label' => $author['label'],
@@ -210,6 +211,11 @@ class IncrementalReadModelUpdater
             );
             $this->measure(
                 $timings,
+                'write_thread_label_eligibility',
+                fn (): mixed => SignalEligibility::apply($pdo, 'thread-labels', [$threadId => $labelState['eligible']])
+            );
+            $this->measure(
+                $timings,
                 'refresh_thread_label_activity',
                 fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'])
             );
@@ -231,6 +237,32 @@ class IncrementalReadModelUpdater
     /**
      * @return array<string, float>
      */
+    /**
+     * Re-applies every format record for one post after a new one is committed.
+     *
+     * @return array<string, float>
+     */
+    public function applyPostFormatWrite(string $postId, string $commitSha): array
+    {
+        $timings = [];
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+        try {
+            $records = $this->measure($timings, 'load_post_format_records', fn (): array => (new \ForumRewrite\Canonical\CanonicalRecordRepository($this->repositoryRoot))->loadPostFormatsFor($postId));
+            $this->measure($timings, 'apply_post_formats', fn (): mixed => PostFormatChanges::apply($pdo, PostFormatChanges::latestByPost($records)));
+            $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
+            $pdo->commit();
+
+            return $timings;
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
+    }
+
     public function applyThreadSubjectWrite(string $threadId, string $commitSha): array
     {
         $timings = [];
@@ -245,17 +277,19 @@ class IncrementalReadModelUpdater
                 return $timings;
             }
 
-            $currentSubject = $this->measure($timings, 'load_thread_subject', fn (): ?string => $this->loadThreadSubjectColumn($pdo, $threadId));
+            $this->measure($timings, 'load_thread_subject', fn (): ?string => $this->loadThreadSubjectColumn($pdo, $threadId));
+            $rootSubject = $this->measure($timings, 'load_thread_root_subject', fn (): ?string => $this->loadRootPostSubject($threadId));
             $records = $this->measure($timings, 'load_thread_subject_records', fn (): array => $this->loadThreadSubjectRecords($threadId));
-            $resolvedSubject = $this->measure(
+            $resolved = $this->measure(
                 $timings,
                 'derive_thread_subject_state',
-                fn (): ?string => $this->deriveThreadSubjectState($currentSubject, $records)
+                fn (): array => ThreadSubjectState::resolve(
+                    $rootSubject,
+                    $records,
+                    fn (ThreadSubjectRecord $record): bool => ThreadSubjectState::sourceActive($this->repositoryRoot, $pdo, $record),
+                )
             );
-
-            if ($resolvedSubject !== null) {
-                $this->measure($timings, 'update_thread_subject', fn (): mixed => $this->updateThreadSubject($pdo, $threadId, $resolvedSubject));
-            }
+            $this->measure($timings, 'update_thread_subject', fn (): mixed => $this->updateThreadSubject($pdo, $threadId, $resolved['subject'], $resolved['author']));
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
 
@@ -297,6 +331,11 @@ class IncrementalReadModelUpdater
                 $timings,
                 'refresh_post_reaction_viewer_tags',
                 fn (): mixed => $this->refreshViewerTagsForTarget($pdo, 'post-reactions', $postId)
+            );
+            $this->measure(
+                $timings,
+                'write_post_reaction_eligibility',
+                fn (): mixed => SignalEligibility::apply($pdo, 'post-reactions', [$postId => $state['eligible']])
             );
             $this->measure(
                 $timings,
@@ -387,7 +426,9 @@ class IncrementalReadModelUpdater
             $stmt->execute([$postId]);
             $author = $stmt->fetchColumn();
             if ($author !== false) {
-                $this->updatePostReactions($pdo, $postId, $this->derivePostReactionState($postId, $author, $recordsByPost[$postId], $approved, VerifiedAttribution::storedCutoff($pdo), VerifiedAttribution::storedEnabled($pdo) ?? false));
+                $state = $this->derivePostReactionState($postId, $author, $recordsByPost[$postId], $approved, VerifiedAttribution::storedCutoff($pdo), VerifiedAttribution::storedEnabled($pdo) ?? false);
+                $this->updatePostReactions($pdo, $postId, $state);
+                SignalEligibility::apply($pdo, 'post-reactions', [$postId => $state['eligible']]);
             }
         }
     }
@@ -1012,10 +1053,10 @@ class IncrementalReadModelUpdater
         $stmt = $pdo->prepare(
             'INSERT INTO posts (
                 post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                thread_type, agent_response_json, author_identity_id, author_profile_slug, author_label, sequence_number
+                thread_type, agent_response_json, body_format, author_identity_id, author_profile_slug, author_label, sequence_number
              ) VALUES (
                 :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                :thread_type, :agent_response_json, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+                :thread_type, :agent_response_json, :body_format, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
              )'
         );
         $stmt->execute([
@@ -1028,6 +1069,7 @@ class IncrementalReadModelUpdater
             'board_tags_json' => $boardTagsJson,
             'thread_type' => $record->threadType,
                     'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
+            'body_format' => $record->bodyFormat,
             'author_identity_id' => $record->authorIdentityId,
             'author_profile_slug' => $author['profile_slug'],
             'author_label' => $author['label'],
@@ -1049,7 +1091,7 @@ class IncrementalReadModelUpdater
             'root_post_created_at' => $record->createdAt,
             'last_activity_at' => $record->createdAt,
             'subject' => $record->subject,
-            'body_preview' => $this->preview($record->body),
+            'body_preview' => $this->preview(\ForumRewrite\Support\PostText::plainPreview($record->body, $record->bodyFormat)),
             'reply_count' => 0,
             'last_post_id' => $record->postId,
             'board_tags_json' => $boardTagsJson,
@@ -1165,7 +1207,7 @@ class IncrementalReadModelUpdater
             return 'Invitation ' . $action[1] . ': ' . $hash[1];
         }
 
-        return $record->subject ?? $this->preview($record->body);
+        return $record->subject ?? $this->preview(\ForumRewrite\Support\PostText::plainPreview($record->body, $record->bodyFormat));
     }
 
     private function postSourcePath(string $postId): string
@@ -1346,6 +1388,7 @@ class IncrementalReadModelUpdater
             $rootSeed = $this->loadRootImportedSeed($threadId);
             $labelState = $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count'], VerifiedAttribution::storedCutoff($pdo));
             $this->updateThreadScoreTotal($pdo, $threadId, $labelState['score_total'], $labelState['verified_score_total']);
+            SignalEligibility::apply($pdo, 'thread-labels', [$threadId => $labelState['eligible']]);
         }
     }
 
@@ -1545,31 +1588,19 @@ class IncrementalReadModelUpdater
             $records[] = $record;
         }
 
-        usort($records, static function (ThreadSubjectRecord $left, ThreadSubjectRecord $right): int {
-            if ($left->createdAt !== $right->createdAt) {
-                return $left->createdAt <=> $right->createdAt;
-            }
-
-            return $left->recordId <=> $right->recordId;
-        });
+        $records = ThreadSubjectState::sort($records);
 
         return $records;
     }
 
-    /**
-     * @param list<ThreadSubjectRecord> $records
-     */
-    private function deriveThreadSubjectState(?string $currentSubject, array $records): ?string
+    /** The root post's own Subject header, the baseline every retitle can be withdrawn back to. */
+    private function loadRootPostSubject(string $threadId): ?string
     {
-        if ($currentSubject !== null && trim($currentSubject) !== '') {
+        try {
+            return (new CanonicalRecordRepository($this->repositoryRoot))->loadPost(CanonicalPathResolver::post($threadId))->subject;
+        } catch (\Throwable) {
             return null;
         }
-
-        if ($records === []) {
-            return null;
-        }
-
-        return $records[0]->subject;
     }
 
     private function threadIsRetracted(PDO $pdo, string $threadId): bool
@@ -1580,11 +1611,12 @@ class IncrementalReadModelUpdater
         return $stmt->fetchColumn() !== null;
     }
 
-    private function updateThreadSubject(PDO $pdo, string $threadId, string $subject): void
+    private function updateThreadSubject(PDO $pdo, string $threadId, ?string $subject, ?string $authorIdentityId): void
     {
-        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject WHERE root_post_id = :thread_id');
+        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject, subject_author_identity_id = :author WHERE root_post_id = :thread_id');
         $updateThread->execute([
             'subject' => $subject,
+            'author' => $authorIdentityId,
             'thread_id' => $threadId,
         ]);
 
@@ -1661,6 +1693,7 @@ class IncrementalReadModelUpdater
         $verifiedScoreTotal = 0;
         $verifiedFlaggers = [];
         $countedVerifiedScoredTags = [];
+        $eligible = [];
 
         foreach ($records as $record) {
             if ($record->postId !== $postId) {
@@ -1678,8 +1711,10 @@ class IncrementalReadModelUpdater
                 $recordCountsVerified ??= VerifiedAttribution::counts($this->repositoryRoot, $cutoffAt, CanonicalPathResolver::postReaction($record->recordId), $record->authorIdentityId, $record->createdAt);
                 if ($tag === 'flag') {
                     $approvedFlaggers[$record->authorIdentityId] = true;
+                    $eligible[$record->authorIdentityId]['flag'] ??= SignalEligibility::CLAIMED;
                     if ($recordCountsVerified) {
                         $verifiedFlaggers[$record->authorIdentityId] = true;
+                        $eligible[$record->authorIdentityId]['flag'] = SignalEligibility::VERIFIED;
                     }
                 }
 
@@ -1691,6 +1726,7 @@ class IncrementalReadModelUpdater
                 if ($recordCountsVerified && !isset($countedVerifiedScoredTags[$dedupeKey])) {
                     $countedVerifiedScoredTags[$dedupeKey] = true;
                     $verifiedScoreTotal += TagScore::scoreValueForTag($tag);
+                    $eligible[$record->authorIdentityId][$tag] = SignalEligibility::VERIFIED;
                 }
                 if (isset($countedApprovedScoredTags[$dedupeKey])) {
                     continue;
@@ -1698,6 +1734,7 @@ class IncrementalReadModelUpdater
 
                 $countedApprovedScoredTags[$dedupeKey] = true;
                 $scoreTotal += TagScore::scoreValueForTag($tag);
+                $eligible[$record->authorIdentityId][$tag] ??= SignalEligibility::CLAIMED;
             }
         }
 
@@ -1718,6 +1755,7 @@ class IncrementalReadModelUpdater
             'verified_approved_flag_count' => $verifiedFlagCount,
             'is_hidden' => $isHidden ? 1 : 0,
             'hidden_reason' => $isHidden ? 'approved_flagged_reply_agent' : null,
+            'eligible' => $eligible,
         ];
     }
 
@@ -1843,6 +1881,7 @@ class IncrementalReadModelUpdater
         $countedApprovedScoredTags = [];
         $countedVoteTags = [];
         $activityEvents = [];
+        $eligible = [];
 
         foreach ($records as $record) {
             if ($record->threadId !== $threadId) {
@@ -1879,6 +1918,7 @@ class IncrementalReadModelUpdater
                 if ($recordCountsVerified && !isset($countedVerifiedScoredTags[$dedupeKey])) {
                     $countedVerifiedScoredTags[$dedupeKey] = true;
                     $verifiedScoreTotal += $this->threadLabelScoreValue($label);
+                    $eligible[$record->authorIdentityId][$label] = SignalEligibility::VERIFIED;
                 }
                 if (isset($countedApprovedScoredTags[$dedupeKey])) {
                     continue;
@@ -1886,6 +1926,7 @@ class IncrementalReadModelUpdater
 
                 $countedApprovedScoredTags[$dedupeKey] = true;
                 $scoreTotal += $this->threadLabelScoreValue($label);
+                $eligible[$record->authorIdentityId][$label] ??= SignalEligibility::CLAIMED;
             }
 
             if ($labelsAdded !== []) {
@@ -1908,6 +1949,7 @@ class IncrementalReadModelUpdater
             'verified_score_total' => $verifiedScoreTotal,
             'vote_count' => $voteCount,
             'activity_events' => $activityEvents,
+            'eligible' => $eligible,
         ];
     }
 

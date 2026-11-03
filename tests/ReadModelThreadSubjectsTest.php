@@ -118,6 +118,98 @@ final class ReadModelThreadSubjectsTest
         assertSame($rebuiltPostSubject, $incrementalPostSubject);
     }
 
+    public function testLatestActiveAuthoredRecordOverridesRootSubjectAndStoresAuthor(): void
+    {
+        $repositoryRoot = $this->createTempFixtureRoot();
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-thread-subjects-authored-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        @unlink($databasePath);
+        $author = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $this->writeAuthoredReply($repositoryRoot, 'reply-title-1', 'root-001', $author, "title: First rename\n");
+        $this->writeAuthoredReply($repositoryRoot, 'reply-title-2', 'root-001', $author, "title: Second rename\n");
+        $this->writeAuthoredReply($repositoryRoot, 'reply-title-3', 'root-001', $author, "title: Tampered later\n");
+        $this->writeAuthoredSubjectRecord($repositoryRoot, 'thread-subject-20260415160000-aa000001', '2026-04-15T16:00:00Z', 'root-001', 'First rename', $author, 'reply-title-1');
+        $this->writeAuthoredSubjectRecord($repositoryRoot, 'thread-subject-20260415160100-aa000002', '2026-04-15T16:01:00Z', 'root-001', 'Second rename', $author, 'reply-title-2');
+        // Later record whose source reply changed after the record was written: inactive.
+        $this->writeAuthoredSubjectRecord($repositoryRoot, 'thread-subject-20260415160200-aa000003', '2026-04-15T16:02:00Z', 'root-001', 'Tampered later', $author, 'reply-title-3', str_repeat('00', 32));
+        // System record beside an existing root subject: still never overrides.
+        file_put_contents(
+            $repositoryRoot . '/records/thread-subjects/thread-subject-20260415160300-aa000004.txt',
+            "Record-ID: thread-subject-20260415160300-aa000004\nCreated-At: 2026-04-15T16:03:00Z\nThread-ID: root-001\nOperation: set\nSubject: Fetched much later\n\n"
+        );
+
+        (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot), 'thread_subject_authored_test'))->rebuild();
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $row = $pdo->query("SELECT subject, subject_author_identity_id FROM threads WHERE root_post_id = 'root-001'")->fetch(PDO::FETCH_ASSOC);
+        assertSame('Second rename', $row['subject']);
+        assertSame($author, $row['subject_author_identity_id']);
+        assertSame('Second rename', $pdo->query("SELECT subject FROM posts WHERE post_id = 'root-001'")->fetchColumn());
+    }
+
+    public function testAuthoredRecordWithMissingSourceIsIgnoredAndRootSubjectStands(): void
+    {
+        $repositoryRoot = $this->createTempFixtureRoot();
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-thread-subjects-missing-source-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        @unlink($databasePath);
+        $author = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $this->writeAuthoredSubjectRecord($repositoryRoot, 'thread-subject-20260415160000-aa000001', '2026-04-15T16:00:00Z', 'root-001', 'Orphaned rename', $author, 'reply-gone', str_repeat('ab', 32));
+
+        (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot), 'thread_subject_missing_source_test'))->rebuild();
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $row = $pdo->query("SELECT subject, subject_author_identity_id FROM threads WHERE root_post_id = 'root-001'")->fetch(PDO::FETCH_ASSOC);
+        assertSame('Hello world', $row['subject']);
+        assertSame(null, $row['subject_author_identity_id']);
+    }
+
+    public function testIncrementalAuthoredWriteAndWithdrawalMatchFreshRebuild(): void
+    {
+        $repositoryRoot = $this->createTempFixtureRoot();
+        $author = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $incrementalDatabasePath = sys_get_temp_dir() . '/forum-rewrite-thread-subjects-authored-incremental-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        @unlink($incrementalDatabasePath);
+        $this->writeAuthoredReply($repositoryRoot, 'reply-title-1', 'root-001', $author, "title: Renamed once\n");
+        (new ReadModelBuilder($repositoryRoot, $incrementalDatabasePath, new CanonicalRecordRepository($repositoryRoot), 'authored_incremental_baseline'))->rebuild();
+
+        $this->writeAuthoredSubjectRecord($repositoryRoot, 'thread-subject-20260415160000-aa000001', '2026-04-15T16:00:00Z', 'root-001', 'Renamed once', $author, 'reply-title-1');
+        $updater = new IncrementalReadModelUpdater($incrementalDatabasePath, $repositoryRoot);
+        $updater->applyThreadSubjectWrite('root-001', 'deadbeef');
+        $incrementalPdo = new PDO('sqlite:' . $incrementalDatabasePath);
+        assertSame('Renamed once', $incrementalPdo->query("SELECT subject FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+        assertSame($author, $incrementalPdo->query("SELECT subject_author_identity_id FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+
+        // Withdrawal: the source reply disappears, so the retitle no longer applies and the root subject returns.
+        unlink($repositoryRoot . '/records/posts/reply-title-1.txt');
+        $updater->applyThreadSubjectWrite('root-001', 'deadbeef');
+        $rebuiltDatabasePath = sys_get_temp_dir() . '/forum-rewrite-thread-subjects-authored-rebuilt-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        @unlink($rebuiltDatabasePath);
+        (new ReadModelBuilder($repositoryRoot, $rebuiltDatabasePath, new CanonicalRecordRepository($repositoryRoot), 'authored_incremental_comparison'))->rebuild();
+        $rebuiltPdo = new PDO('sqlite:' . $rebuiltDatabasePath);
+        foreach (['subject', 'subject_author_identity_id'] as $column) {
+            $rebuilt = $rebuiltPdo->query("SELECT {$column} FROM threads WHERE root_post_id = 'root-001'")->fetchColumn();
+            assertSame($rebuilt, $incrementalPdo->query("SELECT {$column} FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+        }
+        assertSame('Hello world', $incrementalPdo->query("SELECT subject FROM threads WHERE root_post_id = 'root-001'")->fetchColumn());
+        assertSame('Hello world', $incrementalPdo->query("SELECT subject FROM posts WHERE post_id = 'root-001'")->fetchColumn());
+    }
+
+    private function writeAuthoredReply(string $repositoryRoot, string $postId, string $threadId, string $author, string $body): void
+    {
+        file_put_contents(
+            $repositoryRoot . '/records/posts/' . $postId . '.txt',
+            "Post-ID: {$postId}\nCreated-At: 2026-04-15T15:59:00Z\nBoard-Tags: general\nThread-ID: {$threadId}\nParent-ID: {$threadId}\nAuthor-Identity-ID: {$author}\n\n" . $body
+        );
+    }
+
+    private function writeAuthoredSubjectRecord(string $repositoryRoot, string $recordId, string $createdAt, string $threadId, string $subject, string $author, string $sourcePostId, ?string $sourceSha = null): void
+    {
+        $sourceSha ??= hash('sha256', (string) file_get_contents($repositoryRoot . '/records/posts/' . $sourcePostId . '.txt'));
+        file_put_contents(
+            $repositoryRoot . '/records/thread-subjects/' . $recordId . '.txt',
+            "Record-ID: {$recordId}\nCreated-At: {$createdAt}\nThread-ID: {$threadId}\nOperation: set\nSubject: {$subject}\nAuthor-Identity-ID: {$author}\nSource-Post-ID: {$sourcePostId}\nSource-Post-SHA256: {$sourceSha}\nReason: Title directive in reply\n\n"
+        );
+    }
+
     private function writeNoSubjectRootPost(string $repositoryRoot, string $postId): void
     {
         file_put_contents(

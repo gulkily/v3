@@ -650,18 +650,32 @@
     return field ? field.value : "";
   }
 
+  // The composer's Markdown box decides the format; forms without it leave the server default.
+  function composeBodyFormat(form) {
+    const toggle = form.querySelector('input[type="checkbox"][name="body_format"]');
+    if (!toggle) return "";
+    return toggle.checked ? "markdown" : "plain";
+  }
+
+  // Only forms with the Markdown box send a format, so other submissions keep their existing fields.
+  function withBodyFormat(form, fields) {
+    const format = composeBodyFormat(form);
+    if (format) fields.body_format = format;
+    return fields;
+  }
+
   function collectReplySubmitFields(form) {
-    return {
+    return withBodyFormat(form, {
       thread_id: composeFormFieldValue(form, "thread_id"),
       parent_id: composeFormFieldValue(form, "parent_id"),
       author_identity_id: composeFormFieldValue(form, "author_identity_id"),
       board_tags: composeFormFieldValue(form, "board_tags"),
       body: composeFormFieldValue(form, "body"),
-    };
+    });
   }
 
   function collectThreadSubmitFields(form) {
-    return {
+    return withBodyFormat(form, {
       author_identity_id: composeFormFieldValue(form, "author_identity_id"),
       board_tags: composeFormFieldValue(form, "board_tags"),
       subject: composeFormFieldValue(form, "subject"),
@@ -670,7 +684,7 @@
       event_time: composeFormFieldValue(form, "event_time"),
       event_location: composeFormFieldValue(form, "event_location"),
       event_link: composeFormFieldValue(form, "event_link"),
-    };
+    });
   }
 
   function collectSignedSubmitFields(form) {
@@ -1363,6 +1377,40 @@
     return finalized;
   }
 
+  // Switches how an existing post displays; the signer must be its author or an operator.
+  async function submitSignedPostFormat(postId, bodyFormat) {
+    await ensureActionIdentity(null, null);
+    const actorIdentityId = currentAuthorIdentityId();
+    if (!actorIdentityId) {
+      return { ok: false, error: "No saved browser identity is available to sign this change." };
+    }
+    const parse = function (response, fallback) {
+      try {
+        const data = JSON.parse(response.text);
+        if (data && data.status === "ok") return { ok: true, data: data };
+        return { ok: false, error: (data && data.error) || fallback };
+      } catch (error) {
+        return { ok: false, error: fallback };
+      }
+    };
+    const prepared = parse(await submitUrlEncoded("/api/prepare_post_format", {
+      post_id: String(postId || ""),
+      body_format: String(bodyFormat || ""),
+      actor_identity_id: actorIdentityId,
+    }), "Unable to prepare the format change.");
+    if (!prepared.ok) return prepared;
+    const record = prepared.data;
+    const detachedSignature = await signCanonicalRecord(record.canonical_record);
+    return parse(await submitUrlEncoded("/api/create_prepared_post_format", {
+      prepare_token: record.prepare_token,
+      post_id: record.post_id,
+      record_path: record.record_path,
+      actor_identity_id: actorIdentityId,
+      canonical_record: record.canonical_record,
+      detached_signature: detachedSignature,
+    }), "Unable to save the format change.");
+  }
+
   async function retrySignedPreparedPostAfterDetachedFailure(form, prepare, timing, previousResult) {
     markActionTiming(timing, "forum_signature_retry_start");
     await ensureCurrentComposeAuthorIdentity(form);
@@ -1432,12 +1480,14 @@
         parent_id: String((payload && payload.parentId) || ""),
         board_tags: String((payload && payload.boardTags) || "general"),
         body: String((payload && payload.body) || ""),
+        body_format: String((payload && payload.bodyFormat) || ""),
         author_identity_id: authorIdentityId,
       }
       : {
         board_tags: String((payload && payload.boardTags) || "general"),
         subject: String((payload && payload.subject) || ""),
         body: String((payload && payload.body) || ""),
+        body_format: String((payload && payload.bodyFormat) || ""),
         author_identity_id: authorIdentityId,
       };
     const response = await submitUrlEncoded(isReply ? "/api/prepare_reply" : "/api/prepare_thread", fields);
@@ -3998,6 +4048,7 @@
   window.ForumBrowserSigning.normalizeProfileName = normalizeProfileName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
+  window.ForumBrowserSigning.submitSignedPostFormat = submitSignedPostFormat;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
   window.ForumBrowserSigning.prepareOutboxPost = prepareOutboxPost;
   window.ForumBrowserSigning.finalizeOutboxPost = finalizeOutboxPost;

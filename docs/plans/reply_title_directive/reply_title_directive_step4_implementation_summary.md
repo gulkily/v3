@@ -1,0 +1,180 @@
+> **Feature plan:** [Step 1](./reply_title_directive_step1_solution_assessment.md) · [Step 2](./reply_title_directive_step2_feature_description.md) · [Step 3](./reply_title_directive_step3_development_plan.md) · [Step 4](./reply_title_directive_step4_implementation_summary.md)
+
+Debug mode: enabled (inherited)
+Effort study: `railspike-effort` / `v3/reply_title_directive` — [host ledger](../effort_estimation_trial.md#cycle-v3reply_title_directive); standing enrollment under protocol P2
+Extended estimates: enabled (inherited)
+**Cycle estimate: 0.85** (Step 3 projection reaffirmed at entry)
+
+# Reply title directive — Step 4: Implementation Summary
+
+## Entry
+
+- 2026-11-03T17:10:31Z: Step 3 explicitly approved ("approved step 3"). Branch `feat/reply-title-directive` from `main` at `e6493e2f`; planning commit `671715b1` (Steps 1–3, debug log, planning index). Ledger and register updates stay uncommitted until closeout.
+- Step 4 entry projection: **0.85 reaffirmed**, scope v2, R1/P2, Claude Code single exposed rater (model claude-fable-5-1). Stage identities and original stage-work estimates copied from the approved Step 3 plan (copying is not a new rating): S1 0.08, S2 0.08, S3 0.15, S4 0.15, S5 0.12, S6 0.20, S7 0.12, S8 0.12; non-additive.
+- Enhancement requests: "suggested titles from unauthorized repliers" pending, out of scope.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 1 - Subject record provenance and spec
+
+**Original estimate: 0.08**
+**Retrospective stage-work assessment: 0.06**
+
+- Changes:
+  - `ThreadSubjectRecord` gains nullable `sourcePostId` and `sourcePostSha256`.
+  - `ThreadSubjectRecordParser` reads `Source-Post-ID`/`Source-Post-SHA256` with the reaction-record validation (both or neither, ID token and 64 lowercase hex).
+  - New `docs/specs/thread_subject_record_v1.md`: format, system versus authored records, precedence and withdrawal, signature and compatibility notes.
+  - `tests/CanonicalRecordParsersTest.php`: provenance pair parses; lone or invalid headers rejected.
+- Verification:
+  - `php tests/run.php CanonicalRecordParsersTest`: 54 run, 54 passed (2026-11-03T17:11:59Z).
+  - `php tests/run.php LocalWriteServiceThreadSubjectTest ReadModelThreadSubjectsTest`: all passed; existing system records parse unchanged.
+  - `git diff --check` clean. UI, deployment and migration checks not applicable: no behavior or schema change in this stage.
+- Notes: precedence and withdrawal described in the spec are implemented in Stages 4 and 7; until then the spec documents intended behavior for this branch.
+- Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective 0.06: smaller than planned because the reaction parser's validation transferred directly.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 2 - Feature flags
+
+**Original estimate: 0.08**
+**Retrospective stage-work assessment: 0.08**
+
+- Changes:
+  - `FeatureFlagRegistry`: `FORUM_TITLE_DIRECTIVE_ENABLED` (default on, site-mutable) and `FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS` (default off, site-mutable, requires the first), appended to the Forum experience presentation list, parent then child.
+  - `tests/FeatureFlagEvaluatorTest.php`: both keys added to the public-flag list and the environment-reset list; new dependency test (defaults on/off; child blocked with source `dependency` when parent off).
+- Verification:
+  - `php tests/run.php FeatureFlagsBehaviorTest FeatureFlagEvaluatorTest FeatureFlagChangePageTest`: all passed (2026-11-03T17:15:11Z); order/completeness/dependency assertions cover the new flags.
+  - `php tests/run.php LocalAppSmokeTest`: 162 run, 159 passed; all five Feature Flags page tests pass, including every registered flag rendered once and dependency dimming. The 3 failures (private lobby copy, Forte expired-session copy, archive download filename) reproduce identically on the unchanged baseline `e6493e2f` in a throwaway worktree; not regressions.
+  - `git diff --check` clean. No reference doc lists flags individually (the registry is canonical); nothing to update there.
+- Notes: flags have no consumer yet; Stage 3 reads them in the write path.
+- Estimate details: original scope unchanged; no revisions; retrospective 0.08 as planned.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 3 - Directive extraction, authority and write
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.18**
+
+- Changes:
+  - New `Support/TitleDirective`: `extract(string $body): ?string` with hashtag line rules (quoted lines skipped, first match, case-insensitive key, trimmed one-line value, empty ignored).
+  - New `Security/TitleDirectiveAuthority::allows(root, pdo, rootPost, identity, flags)`: directive flag on, then verified root author (`posts.attribution_verified`), current operator, or approved member when the second flag is on.
+  - `LocalWriteService`: `buildThreadSubjectRecord` takes author, provenance and reason; new `titleDirectiveRecord()` decides and builds the authored record (invalid title text or a missing root yields no record, never an error); `createReply`, `createPreparedPost` (replies only) and `createSignedPost` (replies only) write it in the same commit as the reply; `synchronizePostDerivedState` gains a subject-write flag that runs `applyThreadSubjectWrite`; a retitle also invalidates board/thread static artifacts.
+  - Incidental correction in the code edited: `createSignedPost` called an undefined `buildThreadLabelRecord`; it now calls `buildReactionRecord(THREAD, …)` with the same arguments. Pre-existing bug on the hashtag path of signed bundles; no test exercises that path, so this correction is unverified by test and is flagged for review.
+  - New `tests/LocalWriteServiceTitleDirectiveTest.php` (registered in `tests/run.php`): extraction rules; author retitles through unsigned reply with a linked identity; operator retitles any thread; stranger, guest, quoted and empty directives write nothing and the stranger's reply keeps its line; directive flag off (site record) blocks the operator; authority unit test for approved-member flag and unverified root; signed prepared reply through the real API routes with a generated key writes the record in the same commit as the reply.
+- Verification:
+  - `php tests/run.php LocalWriteServiceTitleDirectiveTest`: 7 run, 7 passed (2026-11-03T17:25:33Z).
+  - `php tests/run.php WriteApiSmokeTest LocalWriteServiceThreadSubjectTest ReadModelThreadSubjectsTest ReactionRecordFormatParityTest`: 201 run, 200 passed. The one failure, `ReactionRecordFormatParityTest::testMixedFormatsBuildTheSameReadModelAsLegacy`, fails identically on the unchanged baseline `e6493e2f`; not a regression.
+  - `git diff --check` clean. Displayed title does not change yet: the reducer still fills only empty subjects until Stage 4, so these tests assert record contents, not page output.
+- Notes: unsigned replies require a linked identity (`author_identity_id` must resolve), so tests link real keys. Authority reads the read model current at write time.
+- Estimate details: original scope unchanged; retrospective 0.18, above the original because the signed-path test needed real key generation and the identity requirement was discovered during testing (new understanding, not changed scope).
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 4 - Read-model precedence and schema
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes:
+  - `ReadModelMetadata::SCHEMA_VERSION` 43 → 44; `threads.subject_author_identity_id TEXT NULL` and `viewer_tags.eligible INTEGER NOT NULL DEFAULT 0` (populated in Stage 5) added to `ReadModelSchema`.
+  - New `ReadModel/ThreadSubjectState`: shared `sort`, `resolve(rootSubject, records, sourceActive)` and `sourceActive(root, pdo, record)` (source reply row exists, same thread, not retracted or removed; file bytes match the recorded SHA-256 and author).
+  - `ReadModelBuilder::indexThreadSubjects` and `IncrementalReadModelUpdater::applyThreadSubjectWrite` both resolve through it: latest active authored record wins and stores its author; system records fill only an empty root subject; otherwise the root's own `Subject` (read from the canonical root post in the incremental path) stands, so a withdrawn retitle reverts. `posts.subject` for the root mirrors the thread.
+  - `docs/specs/read_model_schema_v1.md`: contract paragraph, `threads` and `viewer_tags` column notes, "Version 44" section.
+  - Tests: `ReadModelThreadSubjectsTest` gains authored-overrides-root with latest-wins, tampered-source and system-beside-root cases; missing-source record ignored; incremental write and withdrawal (source file removed) match a fresh rebuild. New `ReadModelThreadTitleRebuildTest` (registered): a version-43 model with both columns dropped rebuilds on normal startup and the thread page shows the authored title.
+- Verification:
+  - `php tests/run.php ReadModelThreadSubjectsTest ReadModelThreadTitleRebuildTest ReadModelViewerTagsRebuildTest ReadModelHotIndexRebuildTest LocalWriteServiceThreadSubjectTest LocalWriteServiceTitleDirectiveTest CanonicalRecordParsersTest`: 73 run, 73 passed (2026-11-03T17:30:33Z).
+  - `./v3 rebuild` on the local repository: rebuilt at schema 44; its one system-fetched subject record targets a root that already has a subject and still does not apply (`Hello world`, author NULL), as before.
+  - `git diff --check` clean. UI checks deferred to Stage 6; no template changed here.
+- Notes: the plan's "withdrawn source" rule is implemented here by the resolver (retracted/removed row, missing or changed file); Stage 7 adds deletion-evidence cleanup and invalidation coverage on top of it.
+- Estimate details: original scope unchanged; retrospective 0.15 as planned.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 5 - Signal eligibility and actor query
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.12**
+
+- Changes:
+  - New `ReadModel/SignalEligibility`: levels 0 (not counted), 1 `CLAIMED`, 2 `VERIFIED`; `apply(pdo, family, target→identity→tag→level)` updates `viewer_tags.eligible`; `threshold(pdo)` picks 2 when verified attribution is stored enabled, else 1.
+  - `ReadModelBuilder` thread-label and post-reaction reducers, and `IncrementalReadModelUpdater::deriveThreadLabelState`/`derivePostReactionState`, record the level at the exact points where they credit a claimed or verified score or flag (first per identity and tag; approved authors only; inactive and publication-excluded records never reach the loop). Incremental writes apply the levels after the existing viewer_tags refresh for the target.
+  - New `ReadModel/SignalActors::load(pdo, threadId, postIds)`: eligible thread likers, per-post eligible likers and flaggers, and the title author, joined to `profiles` for username and slug, ordered by username (viewer_tags has no record time; this is a documented simplification of the plan's "ordered by record time"). Reads only read-model rows.
+  - Spec: `viewer_tags.eligible` semantics corrected to the three levels; Version 44 note extended.
+  - New `tests/ReadModelSignalEligibilityTest.php` (registered): eligible like rows equal `claimed_score_total` / `claimed_post_score_total` contributions and eligible flag rows equal `claimed_approved_flag_count`, with unapproved and non-scored rows at 0; actors resolve to the fixture username; incremental post-reaction and thread-label writes produce byte-identical viewer_tags rows to a fresh rebuild.
+- Verification:
+  - `php tests/run.php ReadModelSignalEligibilityTest ReadModelPostReactionsTest ReadModelThreadLabelsTest ReadModelViewerTagsRebuildTest ReadModelThreadTitleRebuildTest ReadModelThreadSubjectsTest ActivityProjectionTest LocalWriteServiceTitleDirectiveTest`: 29 run, 29 passed (2026-11-03T17:36:16Z). `ReactionRecordFormatParityTest` keeps its one baseline failure (unchanged, see Stage 3).
+  - `git diff --check` clean. No UI change in this stage.
+- Notes: the verified-attribution flag flip needs no recompute: both levels are stored and the read threshold selects the set, matching how effective score columns are swapped.
+- Estimate details: original scope unchanged; retrospective 0.12 as planned. One assertion in the new test initially ignored the fixture's two pre-existing labels; corrected to the real row count.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 6 - Signals line UI
+
+**Original estimate: 0.20**
+**Retrospective stage-work assessment: 0.22**
+
+- Changes:
+  - New shared partial `templates/partials/post_signals.php`: `Liked by a, b, c +N · Flagged by d · Title set by e`, names linking to profiles, up to three names then `+N`, each segment and the whole line `hidden` when empty; separators are CSS so hidden segments leave no stray dots. Included by `thread_root_card.php` (thread likes, root flags, title author; skipped for QDB quote roots), `post_card.php`, `paned_thread_reply_tree.php` and `paned_board_content_article.php`.
+  - `ThreadAndPostPageController` (thread and single post pages) and `ForteBoardController` (initial page and fragment) load `SignalActors` once per page and pass `signalActors`; partials inherit it through the renderer's merged data.
+  - `thread_reactions.js`: after a saved reaction the server reports as counted (`wrote_record=yes`, `viewer_is_approved=yes`), the viewer's stored username is appended to the matching segment in place (or `+N` grows past three); unapproved viewers see no change, matching the score.
+  - Styles: `.post-signals` in `content-interactions.css`; `.paned-post-signals` in `forte.css` using paned ink variables. Themes style the line through the existing `.meta` class; no theme file changed.
+  - Tests: `tests/PostSignalsTemplateTest.php` (partial cap/empty state; thread, post and Forte pages render actors and the authored title from a fixture read model); `tests/browser/post_signals.mjs` with `tests/Support/post_signals_browser_fixture.php` (anonymous no-JavaScript render, 16 themes × phone/desktop on thread page and Forte pane with line inside viewport and Like visible, approved viewer's Like appends in place and survives reload). UI checklist entry added.
+- Verification:
+  - `php tests/run.php PostSignalsTemplateTest MediaEmbedBeaconTemplatesTest TemplateRendererMediaEmbedsScriptTest`: all passed (2026-11-03T18:02:14Z).
+  - `node tests/browser/post_signals.mjs`: ok (Chromium `/opt/google/chrome/chrome`, playwright-core 1.58.1 restored into the ignored `node_modules` from the approved `package.json` entry; no manifest or lock change).
+  - `node tests/browser/signed_reactions.mjs`: all six scenarios pass (classic, guest, legacy keyless, Forte, QDB).
+  - `php tests/run.php LocalAppSmokeTest ForteBoardReaderTest Word97ThemeCoverageTest ProfileThemePresentationTest LocalWriteServiceTitleDirectiveTest`: smoke 162 run, 159 passed, the same 3 baseline failures. Two additional smoke failures seen in one run (`testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding`, `testApplicationRendersTextApisAndRss`) were caused by another checkout's concurrent test run holding the shared `/tmp/forum-rewrite.lock`; both pass at baseline and Stage 5 in worktrees and pass again here once that run went idle.
+  - `git diff --check` clean.
+- Notes: Firefox/WebKit and a physical phone not checked; long usernames at phone width were checked by bounding box only. Actor order is by username (Stage 5 note).
+- Estimate details: original scope unchanged; retrospective 0.22, slightly above because the Forte page assembles article data key by key and needed its own pass-through, found by the template test.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 7 - Withdrawal, deletion and shared consumers
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.08**
+
+- Changes:
+  - No production code change. Inspection showed the planned pieces already hold: both removal entry points (`finalizePreparedRetraction` and `delete-record`/`SourceLabelRemoval::run`) rebuild the read model fully, so the Stage 4 resolver withdraws a retitle whose source reply is retracted, removed or missing; every committed write already enqueues offline-snapshot publication; the Stage 3 retitle path already calls the label-write invalidation (`invalidateBoardThread`), which covers index, instance, Recent, Activity, users, thread and root post artifacts, the same set a hashtag label write invalidates.
+  - Planned deviation, recorded here: authored subject records bound to a deleted source are **not** added to the removal-acceptance evidence or deleted. The receipt format (`removal_acceptance_record_v1`) binds only `records/thread-labels/` paths with a strict path check, and changing a trust-bearing format needs its own spec decision. The orphaned record is retained as history and is inert: the resolver ignores any authored record whose source is gone, retracted or removed (Stage 4 tests plus this stage's tests). This matches the plan's own mitigation for that risk.
+  - New `tests/ThreadTitleWithdrawalAndConsumersTest.php` (registered): accepted author retraction of the source reply reverts the title and clears the title author; `SourceLabelRemoval::run` deletion reverts the title, removes the reply and leaves the inert subject record; an operator's `title:` reply invalidates seeded static artifacts, enqueues the snapshot exactly once, and the new title appears on the all-threads board, the tag page, the thread page, Recent, Forte listing and pane, the text API thread and index, and both RSS feeds, with the old title gone from the index.
+- Verification:
+  - `php tests/run.php ThreadTitleWithdrawalAndConsumersTest`: 3 run, 3 passed (2026-11-03T18:06:57Z).
+  - `git diff --check` clean. No UI or schema change in this stage.
+- Notes: the default board view lists liked threads only and single-post pages do not show the thread subject, so neither is a title consumer; the test targets `/?view=all` and `/tags/general` instead. Static tag pages are not invalidated by label writes either; parity kept, follow-up noted for closeout.
+- Estimate details: original scope unchanged; retrospective 0.08, below the original because the format-bound evidence extension was not implemented (deviation above) and the remaining work was verification.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 8 - Acceptance, known-user replay and closeout
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes:
+  - New `tests/browser/title_directive_replay.mjs` with `tests/Support/title_directive_browser_fixture.php`: three real identities (author, approved non-operator member, seeded operator). The author retitles their own thread through the ordinary inline reply composer with both flags at defaults; the reply keeps its `title:` line as text; the new title appears on the thread, all-threads board, Recent, Forte listing and pane; the root card reads `Title set by replay-author`. The member's directive is ignored until the operator turns `FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS` on through the Feature Flags page (signed change record), after which it retitles and the line reads `Title set by replay-member`. Turning `FORUM_TITLE_DIRECTIVE_ENABLED` off through the page leaves a later `title:` line as plain text, even for the author.
+  - Full-suite findings fixed: `IncrementalReadModelUpdater` approval refresh (`refreshApprovalSensitiveThreadScores`, `refreshApprovalSensitivePostReactions`) now applies signal eligibility, so a newly approved member's earlier reactions appear in the signals line after an incremental approval exactly as after a rebuild (`WriteApiSmokeTest::testIncrementalApprovalMatchesFreshRebuildForTransitiveApprovalAndScoreRefresh` exposed the gap through rendered-page parity and now passes). `tests/QdbPageTest.php` names the `viewer_tags` columns in its fixture insert, as the new `eligible` column requires.
+  - Concept inventory: new [thread title](../../concepts/thread_title.md); [post presentation](../../concepts/post_presentation.md) gains the signals line and sources. Register PF-20261103-F01 moved to blocked with local evidence and the deployment/production next action. Ledger closeout below.
+- Verification:
+  - `node tests/browser/title_directive_replay.mjs`: ok (2026-11-03T18:34:36Z), Chromium.
+  - `php tests/run.php WriteApiSmokeTest`: 193 run, 193 passed. `php tests/run.php ReadModelSignalEligibilityTest QdbPageTest PostSignalsTemplateTest ReadModelThreadSubjectsTest`: all passed.
+  - Full suite `php tests/run.php` before the two fixes above: 1846 run, 1839 passed, 7 failed. Two of the seven were this cycle's (approval-refresh eligibility, QDB fixture insert) and are fixed and re-verified; the other five reproduce on the unchanged baseline `e6493e2f` in a worktree: `LocalAppSmokeTest` private lobby copy, Forte expired-session copy and archive download filename; `ReactionRecordFormatParityTest::testMixedFormatsBuildTheSameReadModelAsLegacy`; `ReadModelBuilderTimingTest::testProgressSeparatesParsingDerivationAndWritingWithBoundedCounts` (missing `replaying_invitation_posts` timing). The full suite was not rerun after the two fixes; the affected classes were.
+  - `git diff --check` clean. Dependency delta: zero (no manifest or lock changed; `playwright-core` restored into the ignored `node_modules` from the existing `package.json` entry).
+- Notes: the composer click in the replay is dispatched through the DOM because a collapsed same-author card overlaps the root card's Reply link in this fixture; link geometry stays covered by `inline_reply_link.mjs`.
+- Estimate details: original scope unchanged; retrospective 0.15, above the original because the full suite surfaced the approval-refresh gap and the three-identity browser harness took longer than a replay of one flow.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Study closeout
+
+- **Delivered scope:** v2 (Option B plus two flags), all eight planned stages complete on `feat/reply-title-directive`. Starting revision `e6493e2f` (main); planning commit `671715b1`; stage commits `e5f67bfd`, `a90aec05`, `f87b302b`, `616c59df`, `fe5210c8`, `f6821284`, `888afdb8`, and the Stage 8 commit that carries this closeout. A debug-log handoff commit follows.
+- **Verification passed:** focused PHP suites per stage; write API smoke 193/193; three browser tests in Chromium (signed reactions, post signals across 16 themes and two widths with no-JavaScript and in-place append, known-user replay through the composer and Feature Flags page); `./v3 rebuild` at schema 44; prior-version startup rebuild regression. **Reproduced baseline failures:** five, listed in Stage 8. **Pending/unverified:** production on zenmemes.com (deploy, then the maintainer's own retry), Firefox/WebKit, physical phone, full-suite rerun after the final two fixes.
+- **Corrective work versus new requests:** corrective: Stage 3 undefined-method fix in the signed-post hashtag path (pre-existing, unverified by test), Stage 8 approval-refresh eligibility and QDB fixture insert. No new requests accepted; "suggested titles from unauthorized repliers" remains a recorded follow-up. New follow-up: static tag pages are not invalidated on retitle, matching label writes today.
+- **Splits:** none. **Planned deviation:** Stage 7 did not extend the removal-acceptance evidence format; orphaned authored subject records are retained and inert (recorded in Stage 7).
+- **Retrospective scope assessment:** **0.85** for the whole cycle (original projection 0.85 at Steps 1–4 entry), single exposed rater Claude Code, model claude-fable-5-1; independently judged, not the sum of stage values. Stage-work originals and retrospectives are recorded per stage above and are not additive.
+- **Maintainer comfortable-fit judgment and study acceptance:** pending. Technical completion is not an accepted outcome; the accepted-outcome count is unchanged.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*

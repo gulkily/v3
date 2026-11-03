@@ -6,6 +6,10 @@ namespace ForumRewrite\Canonical;
 
 final class PostRecord
 {
+    public const FORMAT_MARKDOWN = 'markdown';
+    public const FORMAT_PLAIN = 'plain';
+    public const FORMATS = [self::FORMAT_MARKDOWN, self::FORMAT_PLAIN];
+
     /**
      * @param string[] $boardTags
      * @param string[] $taskDependsOn
@@ -33,7 +37,14 @@ final class PostRecord
         public readonly ?string $eventLink = null,
         public readonly ?string $eventTime = null,
         public readonly ?array $agentResponse = null,
+        /** `markdown`, `plain`, or null when the record predates Body-Format (renders as plain). */
+        public readonly ?string $bodyFormat = null,
     ) {
+    }
+
+    public function rendersMarkdown(): bool
+    {
+        return $this->bodyFormat === self::FORMAT_MARKDOWN;
     }
 
     public function isReply(): bool

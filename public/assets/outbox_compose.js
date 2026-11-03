@@ -1,6 +1,18 @@
 (function () {
   "use strict";
 
+  // The composer's Markdown box travels with the draft; drafts without it leave the server default.
+  function withFormat(payload, fields) {
+    if (fields.bodyFormat === "plain" || fields.bodyFormat === "markdown") payload.bodyFormat = fields.bodyFormat;
+    return payload;
+  }
+
+  function bodyFormatOf(form) {
+    var toggle = form.querySelector('input[type="checkbox"][name="body_format"]');
+    if (!toggle) return "";
+    return toggle.checked ? "markdown" : "plain";
+  }
+
   function replyItem(fields) {
     var threadId = String(fields.threadId || "").trim();
     var parentId = String(fields.parentId || "").trim();
@@ -12,7 +24,7 @@
       state: "draft",
       target: { kind: "thread", id: threadId, parentId: parentId },
       summary: "Reply to thread " + threadId,
-      payload: { threadId: threadId, parentId: parentId, body: body }
+      payload: withFormat({ threadId: threadId, parentId: parentId, body: body }, fields)
     });
   }
 
@@ -27,7 +39,7 @@
       state: "draft",
       target: { kind: "board" },
       summary: subject || "New post draft",
-      payload: { subject: subject, body: body, boardTags: boardTags }
+      payload: withFormat({ subject: subject, body: body, boardTags: boardTags }, fields)
     });
   }
 
@@ -53,7 +65,8 @@
           item = replyItem({
             threadId: form.querySelector('[name="thread_id"]').value,
             parentId: form.querySelector('[name="parent_id"]').value,
-            body: form.querySelector('[name="body"]').value
+            body: form.querySelector('[name="body"]').value,
+            bodyFormat: bodyFormatOf(form)
           });
         } catch (error) {
           status.textContent = error.message;
@@ -91,7 +104,8 @@
           item = threadItem({
             subject: form.querySelector('[name="subject"]').value,
             body: form.querySelector('[name="body"]').value,
-            boardTags: form.querySelector('[name="board_tags"]').value
+            boardTags: form.querySelector('[name="board_tags"]').value,
+            bodyFormat: bodyFormatOf(form)
           });
         } catch (error) {
           status.textContent = error.message;

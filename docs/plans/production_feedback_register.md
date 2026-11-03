@@ -28,6 +28,7 @@ Workflow and delivery evidence are independent. No entry is closed by this migra
 | [PF-20261021-B03](#pf-20261021-b03) | Saved draft starts collapsed | blocked | Local only; deployment pending |
 | [PF-20261021-B04](#pf-20261021-b04) | Slow reply feedback | untriaged | Unverified |
 | [PF-20261021-B05](#pf-20261021-b05) | QDB temporarily busy | untriaged | Unverified |
+| [PF-20261103-F01](#pf-20261103-f01) | Retitle thread by reply; visible likes/flags | blocked (implemented locally; deployment pending) | Locally verified; deployment and production acceptance pending |
 
 ## Proposed next work
 
@@ -202,3 +203,12 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 ## Related historical reports awaiting reconciliation
 
 B04 and F01 overlap earlier slow-reply/focus reports, including October 18 Feature 09/Bug 04. These are relationships, not confirmed duplicates or closures. October 18 Feature 33 concerns different browser-identity wording from F02. Same-day composer reports outside the October 21 snapshot are not silently added; review them as new intake. Older inventories and excluded external Codex feedback remain outside this register's 16-entry coverage.
+
+<a id="pf-20261103-f01"></a>
+
+## PF-20261103-F01 — Retitle thread by reply; visible likes and flags
+
+- **Alias:** none (direct intake 2026-11-03, outside the October 21 batch); **workflow state:** blocked — Steps 1–3 approved and all eight stages implemented on `feat/reply-title-directive` ([Step 4 summary](reply_title_directive/reply_title_directive_step4_implementation_summary.md)); awaiting merge, deployment and the production retry; **delivery evidence:** locally verified 2026-11-03 (PHP suites, Chromium replay of the maintainer's flow, 16-theme signals check), deployment and production acceptance pending.
+- **Request:** Comment `title: some text here` and, with authority, change the thread's title; roll it into the same visibility layer as likes and flags, which should be visible and currently are not really. **Reports:** [thread-20261103051304-2fa9fbd6](https://zenmemes.com/threads/thread-20261103051304-2fa9fbd6) (root post, no replies at intake). **Inherited estimate:** none; source-informed Step 1 projection 0.80 (recommended Option B), recorded in the [effort ledger](effort_estimation_trial.md#cycle-v3reply_title_directive). **Recommended workflow:** staged Railspike (not approval).
+- **Done when:** An authorized reply with a `title:` line changes the thread title everywhere it is shown; an unauthorized one posts unchanged with no effect; readers see likes, flags and title changes on the thread without being signed in. **Next action:** Merge and deploy `feat/reply-title-directive`; the maintainer replies `title: …` on an own zenmemes.com thread with flags at defaults and confirms the new title on the thread, board and Recent plus `Title set by ilyag` on the root card. Both flags are on the Feature Flags page (Forum experience). Follow-ups: suggested titles from unauthorized repliers; static tag pages are not invalidated on retitle (same as label writes today).
+- **Recorded evidence/context:** Existing `records/thread-subjects/` family is system-only and fills empty subjects only; reaction counts exist in the read model but are not rendered on cards. [Write path](../../src/ForumRewrite/Write/LocalWriteService.php) · [Root card](../../templates/partials/thread_root_card.php).

@@ -821,6 +821,12 @@ body.paned-reader-body {
   color: var(--paned-ink-soft);
 }
 
+.paned-window .paned-post-signals {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--paned-ink-soft);
+}
+
 .paned-window .paned-permalink-link {
   align-self: center;
   color: var(--paned-ink-soft);

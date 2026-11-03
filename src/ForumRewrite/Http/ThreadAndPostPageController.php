@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Agent\AgentResponseTask;
+use ForumRewrite\ReadModel\SignalActors;
 use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Support\ThreadTitle;
@@ -126,6 +127,7 @@ final class ThreadAndPostPageController
         $viewerPostLikes = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
             : [];
+        $signalActors = SignalActors::load($this->routeServices->pdo(), $threadId, array_values(array_unique([$threadId, ...array_map('strval', array_column($posts, 'post_id'))])));
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $viewerCanUseCodexHandoff = $service->viewerCanUseCodexHandoff($viewerProfile);
@@ -156,6 +158,7 @@ final class ThreadAndPostPageController
                 'qdbVoteTags' => $qdbVoteTags,
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
+                'signalActors' => $signalActors,
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
@@ -240,6 +243,7 @@ final class ThreadAndPostPageController
         $viewerPostLikes = $viewerProfile !== null
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
             : [];
+        $signalActors = SignalActors::load($this->routeServices->pdo(), (string) $post['thread_id'], [(string) $post['post_id']]);
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $viewerCanUseCodexHandoff = $service->viewerCanUseCodexHandoff($viewerProfile);
@@ -263,6 +267,7 @@ final class ThreadAndPostPageController
                     && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, (string) $viewerProfile['identity_id']),
                 'viewerPostFlags' => $viewerPostFlags,
                 'viewerPostLikes' => $viewerPostLikes,
+                'signalActors' => $signalActors,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
                 'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,

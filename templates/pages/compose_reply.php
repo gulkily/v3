@@ -3,7 +3,7 @@ $replyThreadTitle = (string) ($replyThreadTitle ?? '');
 $parentAuthorName = is_array($parentPost)
     ? trim(str_replace('(unapproved)', '', strip_tags($author($parentPost))))
     : '';
-$parentBody = is_array($parentPost) ? (string) ($parentPost['body'] ?? '') : '';
+$parentBody = is_array($parentPost) ? $plainText($parentPost, (string) ($parentPost['body'] ?? '')) : '';
 // Long parents are clamped to a few lines; the full post is one tap away.
 $parentIsLong = mb_strlen($parentBody) > 280 || substr_count($parentBody, "\n") >= 4;
 ?>

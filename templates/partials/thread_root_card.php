@@ -115,7 +115,7 @@ if (!$metaVisible) {
 <?php if ($isRetracted): ?>
   <p class="quote-card-body meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::text($post)) ?></p>
 <?php else: ?>
-  <p class="quote-card-body"><?= $br($postBody) ?></p>
+  <p class="quote-card-body"><?= $br($plainText($post, $postBody)) ?></p>
 <?php endif; ?>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>
@@ -123,7 +123,7 @@ if (!$metaVisible) {
 <?php if ($isRetracted): ?>
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
 <?php else: ?>
-  <div class="body"><?= $br($postBodyDisplay) ?></div>
+  <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post, (string) $postBodyDisplay) ?></div>
 <?php endif; ?>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
@@ -175,6 +175,17 @@ if (!is_array($postAnalysisLabels)) {
 ?>
 <?php if ($agentReplyIsUnfinished): ?>
   <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"><?= $e($agentReplyFeedbackText) ?></p>
+<?php endif; ?>
+<?php if (!$isQdbQuoteRoot): ?>
+<?php $signalActors ??= null; $rootSignalPosts = is_array($signalActors) ? ($signalActors['posts'][(string) $post['post_id']] ?? []) : []; ?>
+<?= $indent($partial('partials/post_signals.php', [
+    'signals' => [
+        'like' => is_array($signalActors) ? ($signalActors['thread_likes'] ?? []) : [],
+        'flag' => $rootSignalPosts['flag'] ?? [],
+        'title_author' => is_array($signalActors) ? ($signalActors['title_author'] ?? null) : null,
+    ],
+    'signalsScope' => 'thread',
+]), 1) ?>
 <?php endif; ?>
   <div class="button-row button-row-natural post-card-actions thread-root-actions">
 <?php if (!$isQdbQuoteRoot): ?>

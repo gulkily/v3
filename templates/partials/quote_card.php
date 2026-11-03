@@ -27,5 +27,5 @@ $scoreValueClass = 'quote-card-score-value' . ($scoreSignClass === '' ? '' : ' '
     'viewerHasFlagged' => $viewerHasFlagged,
 ]) ?>
   </p>
-  <p class="quote-card-body"><?= $br($thread['root_post_body']) ?></p>
+  <p class="quote-card-body"><?= $br($plainText($thread, (string) $thread['root_post_body'], 'root_post_body_format')) ?></p>
 </article>

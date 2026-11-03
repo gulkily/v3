@@ -860,3 +860,10 @@ only; subsequent implementation and verification are recorded separately above.
 - Boundaries: Local Chromium, not physical devices or deployed instances. Browser-local Remove/Undo remains a separate local operation. Implementation evidence: [Stage 6](key_retirement/key_retirement_step4_implementation_summary.md#stage-6---shared-retirement-journeys-and-retained-status).
 
 Key retirement final integration — 2026-11-02: Ordinary message readers verified retained signatures with retired keys during the real private-history browser journey. Existing active-key Approved yes/no labels retained after focused regression verification; retirement keeps its distinct status. No additional UI copy or navigation destinations. See [acceptance](key_retirement/acceptance.txt).
+
+## Post signals line — 2026-11-03
+
+- [x] Added one server-rendered line per thread root and reply card: `Liked by a, b, c +N · Flagged by d · Title set by e`, names linking to profiles, hidden when empty. No other copy added or changed; Like/Flag button labels are untouched, so the line is the only place names appear. Classic, single-post, paned reply tree and Forte article variants share `templates/partials/post_signals.php`.
+- [x] Server HTML is identical for every viewer; the viewer's own saved, counted Like or Flag appends their name in place (`public/assets/thread_reactions.js`). Unapproved viewers see no change, matching the score.
+- [x] Verified in Chromium (`tests/browser/post_signals.mjs`): 16 themes at 375×667 and 1280×800 on the thread page and Forte pane, line inside the viewport and Like button visible; no-JavaScript anonymous render; in-place append then reload parity. `PostSignalsTemplateTest` covers the +N cap, empty state and all page inclusions.
+- [ ] Firefox/WebKit and a physical phone remain unchecked; long usernames at phone width wrap but were only checked visually by bounding box, not by eye.

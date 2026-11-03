@@ -192,8 +192,11 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::EVENT_SUPPORT_ENABLED,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
+            FeatureFlagRegistry::TITLE_DIRECTIVE_ENABLED,
+            FeatureFlagRegistry::TITLE_DIRECTIVE_APPROVED_MEMBERS,
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+            FeatureFlagRegistry::POST_MARKDOWN_ENABLED,
             FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
@@ -314,6 +317,22 @@ PHP);
             assertSame(false, $inlinePlayer->effectiveValue);
             assertSame('dependency', $inlinePlayer->source);
             assertSame(true, $inlinePlayer->siteValue);
+        });
+    }
+
+    public function testTitleDirectiveApprovedMembersDependsOnTitleDirectiveEnabled(): void
+    {
+        $this->withEnvironment([], function (): void {
+            $defaults = FeatureFlagEvaluator::forRepository($this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\n"));
+            assertSame(true, $defaults->isEnabled(FeatureFlagRegistry::TITLE_DIRECTIVE_ENABLED));
+            assertSame(false, $defaults->isEnabled(FeatureFlagRegistry::TITLE_DIRECTIVE_APPROVED_MEMBERS));
+
+            $repositoryRoot = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS: true\nFORUM_TITLE_DIRECTIVE_ENABLED: false\n");
+            $approvedMembers = FeatureFlagEvaluator::forRepository($repositoryRoot)->evaluate(FeatureFlagRegistry::TITLE_DIRECTIVE_APPROVED_MEMBERS);
+
+            assertSame(false, $approvedMembers->effectiveValue);
+            assertSame('dependency', $approvedMembers->source);
+            assertSame(true, $approvedMembers->siteValue);
         });
     }
 
@@ -484,8 +503,11 @@ PHP);
             FeatureFlagRegistry::EVENT_SUPPORT_ENABLED,
             FeatureFlagRegistry::APP_VERSION_NOTIFICATION,
             FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED,
+            FeatureFlagRegistry::TITLE_DIRECTIVE_ENABLED,
+            FeatureFlagRegistry::TITLE_DIRECTIVE_APPROVED_MEMBERS,
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+            FeatureFlagRegistry::POST_MARKDOWN_ENABLED,
             FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,

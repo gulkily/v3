@@ -40,6 +40,14 @@ final class ThreadSubjectRecordParser
             throw new CanonicalRecordParseException('Author-Identity-ID must use the retained lowercase OpenPGP identity form.');
         }
 
+        $sourcePostId = $record->headers['Source-Post-ID'] ?? null;
+        $sourcePostSha256 = $record->headers['Source-Post-SHA256'] ?? null;
+        if (($sourcePostId === null) !== ($sourcePostSha256 === null)
+            || ($sourcePostId !== null && (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,200}$/D', $sourcePostId)
+                || !preg_match('/^[a-f0-9]{64}$/D', $sourcePostSha256)))) {
+            throw new CanonicalRecordParseException('Thread-subject source requires a valid post ID and SHA-256 together.');
+        }
+
         return new ThreadSubjectRecord(
             $record->headers['Record-ID'],
             $createdAt,
@@ -51,6 +59,8 @@ final class ThreadSubjectRecordParser
             $record->body,
             $this->optionalActionAt($record->headers['Action-At'] ?? null),
             $record->headers['Intent-ID'] ?? null,
+            $sourcePostId,
+            $sourcePostSha256,
         );
     }
 
