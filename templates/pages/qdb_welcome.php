@@ -26,7 +26,7 @@
 <?php if (trim((string) ($thread['subject'] ?? '')) !== ''): ?>
           <strong class="qdb-news-title"><?= $e(trim((string) $thread['subject'])) ?></strong>
 <?php endif; ?>
-          <span class="qdb-news-body"><?= $br($thread['root_post_body']) ?></span>
+          <span class="qdb-news-body"><?= $br($plainText($thread, (string) $thread['root_post_body'], 'root_post_body_format')) ?></span>
         </div>
 <?php endforeach; ?>
 <?php if ($hasMoreNews): ?>

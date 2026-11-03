@@ -299,7 +299,7 @@ final class ReadModelBuilder
                     'root_post_created_at' => $post['created_at'],
                     'last_activity_at' => $post['created_at'],
                     'subject' => $post['subject'],
-                    'body_preview' => $this->preview($post['body']),
+                    'body_preview' => $this->preview(\ForumRewrite\Support\PostText::plainPreview($post['body'], $post['body_format'])),
                     'reply_count' => 0,
                     'last_post_id' => $post['post_id'],
                     'board_tags_json' => $post['board_tags_json'],
@@ -1197,7 +1197,7 @@ final class ReadModelBuilder
             return 'Invitation ' . $action[1] . ': ' . $hash[1];
         }
 
-        return $post['subject'] ?? $this->preview($post['body']);
+        return $post['subject'] ?? $this->preview(\ForumRewrite\Support\PostText::plainPreview($post['body'], $post['body_format'] ?? null));
     }
 
     private function writeMetadata(PDO $pdo): void

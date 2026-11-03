@@ -1293,6 +1293,30 @@ CODE;
         }
     }
 
+    public function testPreviewsShowMarkdownPostsAsPlainWords(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $markdown = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&body=' . rawurlencode("## Release **notes** for `v3`\n\n- item")), 'thread_id');
+        $plain = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&body_format=plain&body=' . rawurlencode('## Literal **stars** kept')), 'thread_id');
+        $this->renderMethod($application, 'POST', '/api/create_reply?thread_id=' . rawurlencode($markdown) . '&parent_id=' . rawurlencode($markdown) . '&body=' . rawurlencode('> quoted *reply*'));
+
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
+        assertStringContains('Release notes for v3', $board);
+        assertStringNotContains('## Release', $board);
+        assertStringContains('## Literal **stars** kept', $board);
+
+        $recent = $this->renderMethod($application, 'GET', '/recent/');
+        assertStringContains('quoted reply', $recent);
+        assertStringNotContains('&gt; quoted', $recent);
+        assertStringContains('Release notes for v3', $recent);
+
+        $compose = $this->renderMethod($application, 'GET', '/compose/reply?thread_id=' . rawurlencode($markdown) . '&parent_id=' . rawurlencode($markdown));
+        assertStringContains('Release notes for v3', $compose);
+        assertStringNotContains('**notes**', $compose);
+        assertSame(true, str_contains($this->renderMethod($application, 'GET', '/threads/' . $plain), '## Literal **stars** kept'));
+    }
+
     public function testRecordsWithoutBodyFormatReportPlain(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -3733,7 +3757,7 @@ NODE;
         $bootstrapPostId = $this->extractValue($response, 'bootstrap_post_id');
         $bootstrapThreadId = $this->extractValue($response, 'bootstrap_thread_id');
         $bootstrapRecord = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $bootstrapPostId));
-        $board = $this->renderMethod($application, 'GET', '/');
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
         $identityActivity = $this->renderMethod($application, 'GET', '/activity/?view=identity');
         $bootstrapActivity = $this->renderMethod($application, 'GET', '/activity/?view=bootstrap');
@@ -6262,7 +6286,7 @@ NODE;
 
         $threadPage = $this->renderMethod($application, 'GET', '/threads/root-001');
         $threadApi = $this->renderMethod($application, 'GET', '/api/get_thread?thread_id=root-001');
-        $board = $this->renderMethod($application, 'GET', '/');
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
 
         assertStringContains('status=ok', $first);
         assertStringContains('status=ok', $second);
@@ -7196,7 +7220,7 @@ NODE;
         );
         $targetProfile = $this->renderMethod($application, 'GET', '/tools/user-access/profiles/' . $targetProfileSlug);
         $targetProfileApi = $this->renderMethod($application, 'GET', '/api/get_profile?profile_slug=' . rawurlencode($targetProfileSlug));
-        $board = $this->renderMethod($application, 'GET', '/');
+        $board = $this->renderMethod($application, 'GET', '/threads/?view=all');
         $activity = $this->renderMethod($application, 'GET', '/activity/?view=all');
         $identityActivity = $this->renderMethod($application, 'GET', '/activity/?view=identity');
         $approvalActivity = $this->renderMethod($application, 'GET', '/activity/?view=approval');

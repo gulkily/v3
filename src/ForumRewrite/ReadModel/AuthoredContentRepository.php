@@ -69,6 +69,10 @@ final class AuthoredContentRepository
             FROM posts WHERE $pageWhere ORDER BY posts.created_at $order, posts.post_id $order LIMIT $limit");
         $stmt->execute($parameters);
         $items = $stmt->fetchAll();
+        foreach ($items as &$row) {
+            $row['body_preview'] = \ForumRewrite\Support\PostText::plainPreview((string) $row['body_preview'], $row['body_format'] ?? null);
+        }
+        unset($row);
         if ($direction === 'previous') $items = array_reverse($items);
         $key = static fn (array $row): array => ['created_at' => (string) $row['created_at'], 'post_id' => (string) $row['post_id']];
         $first = $items === [] ? $boundary : $key($items[0]);

@@ -88,3 +88,24 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 - Estimate details: original scope unchanged; no revision.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Previews
+
+**Original estimate: 0.10**
+**Retrospective assessment: 0.15**
+
+- Changes:
+  - New `ForumRewrite\Support\PostText::plainPreview(string $body, ?string $format): string`: plain and legacy posts pass through unchanged; Markdown posts lose heading, quote, task, emphasis, inline-code and link markup, fence and delimiter lines, and table pipes, keeping their words line by line.
+  - Read model: thread `body_preview` and activity labels go through it in the builder and the incremental updater, so Board, RSS, Forte sorting and every `body_preview` consumer see plain words.
+  - Titles and excerpts built from raw bodies use it too: thread titles (`Application`, `TemplateRenderer`, `BoardPageController`), Forte content titles, the reply composer's thread title, Recent excerpts and context titles (Recent now selects the post and root formats), and profile post lists (`AuthoredContentRepository`).
+  - Templates: `$plainText($record, $text, $formatKey)` helper used for the Board card preview, quote cards, the QDB welcome news body, the QDB quote root body and the reply composer's parent.
+- Verification:
+  - New `tests/PostTextTest.php` (registered): passthrough for plain/legacy, every markup element, fence-only bodies.
+  - New `WriteApiSmokeTest::testPreviewsShowMarkdownPostsAsPlainWords`: all-threads Board, Recent and the reply composer show `Release notes for v3` for a `## Release **notes** for \`v3\`` post and never the markup; a plain post's literal `## ... **stars**` text stays as typed.
+  - Related suites (Board x2, Forte x2, Qdb x7, RecentPost, ThreadTitle, PostText, PostMarkdownRenderer, Profile, Activity, TagPagination): 107 run, 107 passed. Full `WriteApiSmokeTest`: 203 run, 203 passed.
+- Notes:
+  - Retrospective above the original: more title/excerpt paths derive text from raw bodies than the Step 3 grep found (compose title, Forte titles, Recent context titles, activity labels).
+  - Board search (`?q=`) still matches against the raw body, so searching for `**` or `##` can match Markdown posts; left as is.
+- Estimate details: original scope unchanged; scope of call sites larger than understood at Step 3 (new understanding, not changed scope).
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

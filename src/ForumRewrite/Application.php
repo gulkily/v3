@@ -1290,7 +1290,7 @@ final class Application
 
         return ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
-            (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
+            \ForumRewrite\Support\PostText::plainPreview((string) ($thread['body_preview'] ?? $thread['body'] ?? ''), $thread['body_format'] ?? null),
             (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? ''),
             80,
             $this->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED)

@@ -1051,7 +1051,7 @@ class IncrementalReadModelUpdater
             'root_post_created_at' => $record->createdAt,
             'last_activity_at' => $record->createdAt,
             'subject' => $record->subject,
-            'body_preview' => $this->preview($record->body),
+            'body_preview' => $this->preview(\ForumRewrite\Support\PostText::plainPreview($record->body, $record->bodyFormat)),
             'reply_count' => 0,
             'last_post_id' => $record->postId,
             'board_tags_json' => $boardTagsJson,
@@ -1167,7 +1167,7 @@ class IncrementalReadModelUpdater
             return 'Invitation ' . $action[1] . ': ' . $hash[1];
         }
 
-        return $record->subject ?? $this->preview($record->body);
+        return $record->subject ?? $this->preview(\ForumRewrite\Support\PostText::plainPreview($record->body, $record->bodyFormat));
     }
 
     private function postSourcePath(string $postId): string

@@ -555,6 +555,8 @@ final class TemplateRenderer
         // A post renders as Markdown only when its record says so and the site has not switched it off.
         $isMarkdownPost = static fn (array $record, string $formatKey = 'body_format'): bool => $postMarkdownEnabled
             && ($record[$formatKey] ?? null) === 'markdown';
+        // Previews, quotes and titles never render markup; Markdown posts lose it, plain posts pass through.
+        $plainText = static fn (array $record, string $text, string $formatKey = 'body_format'): string => \ForumRewrite\Support\PostText::plainPreview($text, isset($record[$formatKey]) ? (string) $record[$formatKey] : null);
         $renderPostBody = fn (array $record, ?string $body = null, string $formatKey = 'body_format'): string => $this->mediaEmbedRenderer->render(
             $body ?? (string) ($record['body'] ?? ''),
             $mediaEmbedsEnabled,
@@ -578,7 +580,7 @@ final class TemplateRenderer
             ? RetractedPostNotice::TITLE
             : ThreadTitle::displayTitle(
             (string) ($thread['subject'] ?? ''),
-            (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
+            \ForumRewrite\Support\PostText::plainPreview((string) ($thread['body_preview'] ?? $thread['body'] ?? ''), $thread['body_format'] ?? null),
             (string) ($thread['root_post_id'] ?? $thread['thread_id'] ?? $thread['post_id'] ?? ''),
             80,
             $mediaEmbedsEnabled

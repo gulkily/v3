@@ -115,7 +115,7 @@ if (!$metaVisible) {
 <?php if ($isRetracted): ?>
   <p class="quote-card-body meta"><?= $e(\ForumRewrite\Support\RetractedPostNotice::text($post)) ?></p>
 <?php else: ?>
-  <p class="quote-card-body"><?= $br($postBody) ?></p>
+  <p class="quote-card-body"><?= $br($plainText($post, $postBody)) ?></p>
 <?php endif; ?>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>
