@@ -7,7 +7,7 @@ Extended estimates: enabled (new-cycle default; no real alternatives or work uni
 
 **Cycle estimate: 0.30**
 
-Status: technically complete locally; next action: merge into main and push to origin, which the user authorized on 2026-11-03.
+Status: technically complete; merged into main and pushed to origin on 2026-11-03. Next action: maintainer acceptance.
 
 ## Request and authorization
 
@@ -93,6 +93,8 @@ The browser check used Playwright from `/home/wsl/v3/node_modules/playwright-cor
 
 ## Commit/merge/publication status
 
-Completion commit on `feat/board-thread-search`: hash pending, since a record cannot contain its own commit. Merge into main and push to origin follow, as the user authorized. No deployment.
+Completion commit `543ca782` on `feat/board-thread-search`. Merge of origin/main `c51ea976` into the branch: `c567c82e`. The only conflict was in the study ledger, where both sides appended a cycle section; both were kept. This record-only handoff commit follows. Local main is then fast-forwarded and pushed to origin, as the user authorized. No deployment.
+
+On the merged code, the focused suites passed 39 of 39. The browser check passed in the default theme, Word97, Chicago and Midnight at both widths. The full suite passed 1908 of 1913, failing only the same five tests that fail on `446aa34c`.
 
 *— Claude (claude-opus-5-5) · 2026-11-03 UTC*
