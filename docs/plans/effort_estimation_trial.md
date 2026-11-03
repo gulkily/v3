@@ -1279,3 +1279,22 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-02 UTC: Step 3 approved and implementation completed on feature/qdb-page-selection. [Step 4 closeout](./qdb_page_selection/qdb_page_selection_step4_implementation_summary.md#study-closeout): entry projection 0.80 reaffirmed, retrospective cycle scope 0.80; S1–S5 original/retrospective stage values retained separately. R1/P2, scope v1/A, baseline and exposed-rater history unchanged. Ordinary HTTP capacity, schema recovery, shared consumers and rendered themes verified locally; four smoke failures reproduced on baseline, PHP 8.3/FastCGI not claimed. No measured labor, independent rating or accepted-count increment; maintainer acceptance pending. Sibling cycles remain Step 1.
 
 2026-11-02 UTC: User authorized QDB merge/push. Integration with main 99522a99 advances the combined schema identity to 43, preserving message/Recent indexes; 70 focused tests and normal CLI/HTTP upgrade recovery passed. Original cycle snapshots and acceptance-count boundary remain unchanged; see the Step 4 merge-verification entry.
+
+## Cycle v3/session_replacement
+
+Status: Step 1 drafted; awaiting Approved Step 1; standing enrollment P2.
+Scope: v1 / Option A recommended; baseline e6493e2ff4869f8bf98e5f43b3f6388814742c26; R1 / P2.
+Canonical checkpoint: [Step 1 assessment](./session_replacement_step1_solution_assessment.md#study-checkpoint), 2026-11-03T05:33:43Z.
+Intake 0.95 (2026-11-03T05:31:50Z, after todo/rules/ledger reading, before session source inspection); Step 1 projection 0.95 reaffirmed; alternatives B 1.10 / C 0.45, complete-cycle, not additive.
+Rater: Claude (claude-opus-5-5), single exposed rater; all three frozen R1 hashes verified. Extended estimates and debug enabled. No implementation, measured labor or accepted outcome. Records uncommitted.
+
+2026-11-03T05:50Z Step 1 revision 1: user asked to add Option B later as a feature flag and keep it in mind for A; [revision](./session_replacement_step1_solution_assessment.md#revision-1--keep-a-signed-cookie-mode-addable). Scope v1.1 (design constraints only: one entry point with issue/verify/end, versioned cookie value, single end step, behavior-level round-trip tests). **0.95 reaffirmed**; same baseline/R1/P2/rater. B moved to follow-up `v3/session_signed_cookie`. Not approval; awaiting Approved Step 1; uncommitted.
+
+## Cycle v3/session_signed_cookie
+
+Status: Step 1 drafted; parked until parent `v3/session_replacement` ships; standing enrollment P2.
+Scope: v1 / Option A recommended (signed cookie for identity, parent's challenge rows, deny list; flag controls issuance only); baseline e6493e2ff4869f8bf98e5f43b3f6388814742c26 (pre-parent); R1 / P2.
+Relationship: distinct follow-up to `v3/session_replacement` (its Option B, deferred as a feature flag); not a split of the parent's scope or an extra outcome for it.
+Canonical checkpoint: [Step 1 assessment](./session_signed_cookie_step1_solution_assessment.md#study-checkpoint), 2026-11-03T05:50:13Z.
+Intake 0.55 (fully exposed to parent's inspection and estimates; no pristine intake); Step 1 projection 0.55 reaffirmed; alternatives B 0.70 / C 0.75, complete-cycle, not additive. Estimates assume the parent's delivered seam; re-rate against post-parent code at Step 2.
+Rater: Claude (claude-opus-5-5), single exposed rater; all three frozen R1 hashes verified. Extended estimates and debug enabled. No implementation, measured labor or accepted outcome. Records uncommitted.
