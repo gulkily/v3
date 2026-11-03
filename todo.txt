@@ -227,3 +227,49 @@ let users pass on operator status
 
 probably do not list local changes on the Deploy page
 	it currently names the locally changed tracked files (e.g. public/.htaccess)
+
+replace PHP's built-in session management (flaky, causes many hard-to-diagnose issues)
+	outline for a Railspike Step 1 (solution assessment) in a new conversation:
+	problem
+		sign-in silently drops or never sticks, and each failure looks different; PHP sessions hide state in
+			server files, cookies and ini settings the app does not control
+	observed failures (2026-11-02 unless noted)
+		POST /tools/deploy/ ran without a session: sessions only start for an allowlist of paths in
+			Application::handle(), so new routes are signed out unless added there
+		operator session lapsed mid-evening: cookie lasts ~400 days, but PHP's server-side session files
+			expire on its own GC schedule (default 24 minutes idle)
+		"Authentication challenge is missing or expired" on the phone: a Secure PHPSESSID set over https
+			is not sent over http and blocks http from setting a new one, so every http request got a
+			fresh empty session; the server itself was fine
+		earlier: sign-in rotation race needed the SessionRotation forwarding workaround
+			(docs/plans/session_rotation_race_decision.md)
+		tests: $_SESSION stays populated after session_write_close(), which hid the deploy bug above
+	current inventory
+		only three session keys: authenticated_identity_id, forum_auth_challenges, lobby_identity_id
+		readers/writers: Application (start/resume + path allowlist), RouteServices::securityReviewAllowed,
+			AuthApiController (challenge + sign-in), SessionRotation, IdentityHintController,
+			UserAccessController, LlmExchangesController, ProfileRepository, Docs renderer/publication,
+			DeployController
+		cookie: PHPSESSID, Lax, HttpOnly, Secure only when the request is https, strict mode on
+	options to compare
+		A: app-owned server sessions: random token cookie, rows in a small SQLite table (identity,
+			created/last-seen/expires, rotated-from), explicit expiry and rotation, no PHP session
+			functions or ini settings
+		B: stateless signed cookie: identity + expiry signed with a server secret from private config;
+			challenges become signed nonces with a short replay table; no server session state at all
+		C: keep PHP sessions but harden: one start point for every route, own save path and lifetime
+			matching the cookie, redirect http to https, one cookie name
+		combinations: e.g. B for identity, A-style table only for challenge replay
+	constraints and questions
+		minimal dependencies, inspectable state, Key: value where human-facing; server HTML stays the
+			same for every viewer
+		members-only mode, lobby, private messages and operator tools all depend on the signed-in check
+		revocation: can sign-out or key removal end a session immediately (A yes, B needs a deny list)?
+		migration: existing PHPSESSID sessions end; browsers holding a key should sign back in silently
+		http vs https: decide whether to force https site-wide regardless of the option chosen
+	success criteria to carry into Step 2
+		one function answers "who is signed in" for every route and test, with no path allowlist
+		a signed-in operator stays signed in for the cookie's stated lifetime unless they sign out
+		sign-in works the same over http and https (or http redirects)
+		tests exercise the real cookie round trip, not a pre-filled $_SESSION
+	related todo: Deploy page Sign in button (reuse the Access history sign-in)
