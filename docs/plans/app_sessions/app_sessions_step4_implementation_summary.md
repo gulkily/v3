@@ -41,3 +41,22 @@ Branch: `feat/app-sessions` from `main` `e6493e2f`. Planning commit `eafa09b5`.
 - Estimate details: original scope unchanged; retrospective 0.12 (store simpler than expected; concurrency check worked first time).
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Shared signed-in test helper and LocalAppSmokeTest
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - `tests/Support/TestViewerSession.php`: `signIn()`, `lobbyOnly()`, `signedOut()`, `challenge()`, `identityId()`, `nextRequest()`, `reset()`. Tests now say who is signed in; the helper decides how. For now it drives PHP sessions as the tests did.
+  - `tests/LocalAppSmokeTest.php`: all session setup and teardown moved to the helper (24 insertions, 120 deletions). The two tests that check the PHP mechanism itself (`session_status()`, PHP cookie parameters) are left for Stage 4, where the mechanism changes.
+- Verification:
+  - `php tests/run.php LocalAppSmokeTest` on the branch and on `main` (`e6493e2f` worktree): both 162 run, 159 passed, 3 failed, with the same three failures (`testPrivateLobbyOnlyExposesLobbyAccountAndAuthenticationSurfaces`, `testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound`, `testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp`). Behavior-neutral. Passed.
+  - `php -l`: passed.
+- Notes:
+  - Finding: the runner writes to STDOUT, so `headers_sent()` stays false and in-process tests do start real PHP sessions. Once the application has started one, `use_strict_mode` stays on for the whole process, and a self-chosen session ID is silently replaced. The old tests passed only because they never sent a cookie and the application reused the replacement ID PHP had generated, which is another way pre-filled sessions masked real behavior. The helper lets PHP generate the ID.
+  - Baseline full suite still running at commit time; recorded in Stage 3.
+- Estimate details: original scope unchanged; retrospective 0.10 (the strict-mode discovery cost what the mechanical replacement saved).
+
+*— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*

@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/Support/ProfileRegressionContract.php';
 require_once __DIR__ . '/Support/ProfileRegressionFixture.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Security\GpgHomeCleaner;
@@ -559,15 +560,10 @@ final class LocalAppSmokeTest
     public function testApprovedPrivateSessionCanViewOwnProfileAndBoard(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-        $sessionId = 'private-approved-' . bin2hex(random_bytes(8));
 
         try {
-            session_id($sessionId);
-            session_start();
-            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-            session_write_close();
+            TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-session-' . bin2hex(random_bytes(6)) . '.sqlite3';
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
@@ -582,15 +578,7 @@ final class LocalAppSmokeTest
             assertStringContains('/assets/auth_navigation.', $board);
             assertSame("status=authenticated\n", $authStatus);
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -604,22 +592,14 @@ final class LocalAppSmokeTest
     {
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 
-$sessionId = 'public-approved-' . bin2hex(random_bytes(8));
 $databasePath = sys_get_temp_dir() . '/forum-rewrite-public-session-' . bin2hex(random_bytes(6)) . '.sqlite3';
 
 try {
-    session_id($sessionId);
-    session_start();
-    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-    session_write_close();
-    session_id('');
-    $_COOKIE[session_name()] = $sessionId;
-    // The CLI test process does not populate the session module from $_COOKIE,
-    // so mirror the web SAPI's request initialization before handling the page.
-    session_id($sessionId);
+    TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
     $application = new Application($argv[1], $argv[2], $databasePath);
     ob_start();
@@ -650,9 +630,7 @@ try {
         throw new RuntimeException('Public session was not resumed for Board and Invite.');
     }
 } finally {
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_write_close();
-    }
+    TestViewerSession::reset();
     @unlink($databasePath);
 }
 PHP;
@@ -671,23 +649,19 @@ PHP;
     {
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 
-$sessionId = 'profile-switch-' . bin2hex(random_bytes(8));
 $databasePath = sys_get_temp_dir() . '/forum-rewrite-profile-switch-' . bin2hex(random_bytes(6)) . '.sqlite3';
 $profileIds = json_decode($argv[3], true, 512, JSON_THROW_ON_ERROR);
 
 try {
-    session_id($sessionId);
-    session_start();
-    $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-    session_write_close();
-    $_COOKIE[session_name()] = $sessionId;
+    TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
     foreach ($profileIds as $profileId) {
         putenv('FORUM_SITE_ID=' . $profileId);
-        session_id($sessionId);
+        TestViewerSession::nextRequest();
         $application = new Application($argv[1], $argv[2], $databasePath);
         ob_start();
         $application->handle('GET', '/api/auth_status');
@@ -695,14 +669,10 @@ try {
         if ($authStatus !== "status=authenticated\n") {
             throw new RuntimeException('Profile switch lost the public session for ' . $profileId . '.');
         }
-        session_write_close();
-        session_id('');
     }
 } finally {
     putenv('FORUM_SITE_ID');
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_write_close();
-    }
+    TestViewerSession::reset();
     @unlink($databasePath);
 }
 PHP;
@@ -721,12 +691,11 @@ PHP;
     public function testAnonymousPublicBoardDoesNotStartViewerSession(): void
     {
         $previousCookie = $_COOKIE;
-        $previousSession = $_SESSION ?? null;
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-public-anonymous-' . bin2hex(random_bytes(6)) . '.sqlite3';
 
         try {
             $_COOKIE = [];
-            session_id('');
+            TestViewerSession::reset();
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
 
             $board = $this->render($application, '/');
@@ -745,16 +714,8 @@ PHP;
                 'Theme controls must initialize before the OpenPGP loader.'
             );
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
+            TestViewerSession::reset();
             $_COOKIE = $previousCookie;
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
             @unlink($databasePath);
         }
     }
@@ -762,12 +723,11 @@ PHP;
     public function testPublicNotFoundPageDoesNotAttemptIdentityResume(): void
     {
         $previousCookie = $_COOKIE;
-        $previousSession = $_SESSION ?? null;
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-public-not-found-' . bin2hex(random_bytes(6)) . '.sqlite3';
 
         try {
             $_COOKIE = [];
-            session_id('');
+            TestViewerSession::reset();
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
 
             $notFound = $this->render($application, '/missing-route');
@@ -776,16 +736,8 @@ PHP;
             assertStringNotContains('data-public-auth-resume="true"', $notFound);
             assertStringNotContains('private_site_auth.', $notFound);
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
+            TestViewerSession::reset();
             $_COOKIE = $previousCookie;
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
             @unlink($databasePath);
         }
     }
@@ -803,10 +755,7 @@ PHP;
 
             assertSame(34560000, session_get_cookie_params()['lifetime']);
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
+            TestViewerSession::reset();
             session_set_cookie_params($previousCookieParameters);
             @unlink($databasePath);
             if ($previousFlag === false) {
@@ -835,15 +784,10 @@ PHP;
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
         $previousCookie = $_COOKIE;
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-        $sessionId = 'private-clear-identity-' . bin2hex(random_bytes(8));
 
         try {
-            session_id($sessionId);
-            session_start();
-            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-            session_write_close();
+            TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-clear-identity-' . bin2hex(random_bytes(6)) . '.sqlite3';
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
@@ -881,15 +825,7 @@ PHP;
             assertStringNotContains('href="/">Board</a>', $lobbyAfterClear);
         } finally {
             $_COOKIE = $previousCookie;
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -903,19 +839,10 @@ PHP;
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
         $previousPost = $_POST;
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
-        $sessionId = 'private-auth-verifier-' . bin2hex(random_bytes(8));
-        $challenge = bin2hex(random_bytes(32));
 
         try {
-            session_id($sessionId);
-            session_start();
-            $_SESSION['forum_auth_challenges'] = [
-                bin2hex(random_bytes(32)) => time() + 300,
-                $challenge => time() + 300,
-            ];
-            session_write_close();
+            $challenge = TestViewerSession::challenge();
 
             $_POST = [
                 'identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
@@ -930,15 +857,7 @@ PHP;
             assertStringContains('error=Identity signature verification failed.', $response);
         } finally {
             $_POST = $previousPost;
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             @unlink($databasePath ?? '');
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -993,10 +912,7 @@ PHP;
             assertStringContains('Identity not found.', $this->renderMethod($application, 'POST', '/api/prepare_invitation_redemption'));
             assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/asdf'));
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
+            TestViewerSession::reset();
             @unlink($databasePath);
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -1009,10 +925,8 @@ PHP;
     public function testPrivateForteRoutesRecoverExpiredSessionsInsteadOfReturningFalseNotFound(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-forte-resume-' . bin2hex(random_bytes(6)) . '.sqlite3';
-        $sessionId = 'private-forte-resume-' . bin2hex(random_bytes(8));
 
         try {
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
@@ -1042,26 +956,12 @@ PHP;
                 assertStringNotContains('The requested route does not exist in the local test slice.', $response);
             }
 
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id($sessionId);
-            session_start();
-            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-            session_write_close();
+            TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             assertStringContains('Forte', $this->render($application, '/forte/users/'));
             assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/forte/not-a-route'));
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             @unlink($databasePath);
             if ($previousFlag === false) {
                 putenv('FORUM_APPROVED_MEMBERS_ONLY');
@@ -1074,20 +974,15 @@ PHP;
     public function testPendingPrivateSessionNavigationOnlyShowsLobbyOwnProfileAndAccount(): void
     {
         $previousFlag = getenv('FORUM_APPROVED_MEMBERS_ONLY');
-        $previousSession = $_SESSION ?? null;
         putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6));
         mkdir($repositoryRoot, 0777, true);
         $this->copyDirectory($this->repositoryRoot, $repositoryRoot);
         $this->deleteDirectoryContents($repositoryRoot . '/records/approval-seeds');
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-pending-nav-' . bin2hex(random_bytes(6)) . '.sqlite3';
-        $sessionId = 'private-pending-nav-' . bin2hex(random_bytes(8));
 
         try {
-            session_id($sessionId);
-            session_start();
-            $_SESSION['authenticated_identity_id'] = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
-            session_write_close();
+            TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $lobby = $this->render($application, '/lobby/');
@@ -1105,15 +1000,7 @@ PHP;
             assertStringNotContains('href="/tools/">Tools</a>', $lobby);
             assertStringContains('Entering lobby.', $root);
         } finally {
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_write_close();
-            }
-            session_id('');
-            if ($previousSession === null) {
-                unset($_SESSION);
-            } else {
-                $_SESSION = $previousSession;
-            }
+            TestViewerSession::reset();
             $this->deleteTree($repositoryRoot);
             @unlink($databasePath);
             if ($previousFlag === false) {
