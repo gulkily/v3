@@ -1322,13 +1322,14 @@ CODE;
         assertSame(true, str_contains($this->renderMethod($application, 'GET', '/threads/' . $plain), '## Literal **stars** kept'));
     }
 
-    public function testComposersOfferPlainTextAndTheUnsignedFormPathHonoursIt(): void
+    public function testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
         foreach (['/compose/thread', '/threads/root-001', '/threads/?view=all'] as $path) {
             $page = $this->renderMethod($application, 'GET', $path);
-            assertStringContains('<input type="checkbox" name="body_format" value="plain">', $page);
+            assertStringContains('<input type="hidden" name="body_format" value="plain">', $page);
+            assertStringContains('<input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown', $page);
             assertStringContains('href="/docs/reference/markdown_syntax.md"', $page);
         }
 
@@ -1340,6 +1341,127 @@ CODE;
         }
         $latest = trim($this->gitOutput($repositoryRoot, 'log -1 --name-only --format='));
         assertStringContains("Body-Format: plain\n", (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n")));
+
+        // A ticked box arrives after the hidden fallback, so its value wins.
+        $_POST = ['body' => '# Ticked', 'board_tags' => 'general', 'body_format' => 'markdown'];
+        try {
+            $this->renderMethod($application, 'POST', '/compose/thread');
+        } finally {
+            $_POST = [];
+        }
+        $latest = trim($this->gitOutput($repositoryRoot, 'log -1 --name-only --format='));
+        assertStringContains("Body-Format: markdown\n", (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n")));
+    }
+
+    public function testPostFormatSwitchesAreSignedByTheAuthorOrAnOperator(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'format-author', '## Not yet *formatted*');
+        $stranger = $this->linkSigningIdentity($app, 'format-stranger');
+        $operator = $this->linkSigningIdentity($app, 'format-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $postId = $author['thread_id'];
+        $prepare = function (string $actor, string $target, string $format) use ($app): array {
+            $_POST = ['actor_identity_id' => $actor, 'post_id' => $target, 'body_format' => $format];
+            try {
+                return json_decode($this->renderMethod($app, 'POST', '/api/prepare_post_format'), true);
+            } finally {
+                $_POST = [];
+            }
+        };
+        $finalize = function (array $prepared, string $actor, string $home, ?string $signature = null) use ($app): array {
+            $_POST = ['prepare_token' => $prepared['prepare_token'], 'post_id' => $prepared['post_id'], 'record_path' => $prepared['record_path'],
+                'actor_identity_id' => $actor, 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $signature ?? ($home === '' ? '' : $this->signCanonicalRecord($home, $prepared['canonical_record']))];
+            try {
+                return json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_post_format'), true);
+            } finally {
+                $_POST = [];
+            }
+        };
+        $format = fn (): string => (string) (new PDO('sqlite:' . $db))->query("SELECT COALESCE(body_format, 'none') FROM posts WHERE post_id = " . (new PDO('sqlite::memory:'))->quote($postId))->fetchColumn();
+
+        // Another member cannot even prepare a switch.
+        $denied = $prepare($stranger['identity_id'], $postId, 'plain');
+        assertSame('error', $denied['status']);
+        assertStringContains('Only the post author or an approved operator', $denied['error']);
+        assertSame('error', $prepare($author['identity_id'], $postId, 'html')['status']);
+
+        // The author switches to plain; a forged signature and a missing one are refused first.
+        $prepared = $prepare($author['identity_id'], $postId, 'plain');
+        assertSame('ok', $prepared['status']);
+        assertStringContains("Body-Format: plain\nActor-Identity-ID: " . $author['identity_id'] . "\n\n", $prepared['canonical_record']);
+        assertSame('error', $finalize($prepared, $author['identity_id'], $stranger['home'])['status']);
+        assertSame('error', $finalize($prepared, $author['identity_id'], '')['status']);
+        $signature = $this->signCanonicalRecord($author['home'], $prepared['canonical_record']);
+        $done = $finalize($prepared, $author['identity_id'], $author['home'], $signature);
+        assertSame('ok', $done['status']);
+        assertSame('plain', $format());
+        assertTrue(is_file($root . '/' . $done['record_path'] . '.asc'));
+        assertStringContains("Body-Format: plain\n", $this->renderMethod($app, 'GET', '/api/get_post?post_id=' . rawurlencode($postId)));
+        $replay = $finalize($prepared, $author['identity_id'], $author['home'], $signature);
+        assertSame('ok', $replay['status']);
+        assertSame(true, $replay['already_applied']);
+
+        // A root-approved operator switches it back to Markdown; the page renders it.
+        $operatorPrepared = $prepare($operator['identity_id'], $postId, 'markdown');
+        assertSame('ok', $finalize($operatorPrepared, $operator['identity_id'], $operator['home'])['status']);
+        assertSame('markdown', $format());
+        assertStringContains('<em>formatted</em>', $this->renderMethod($app, 'GET', '/threads/' . $postId));
+
+        // Old header-less posts can be switched by an operator; authority posts cannot.
+        $old = $prepare($operator['identity_id'], 'root-001', 'markdown');
+        assertSame('ok', $finalize($old, $operator['identity_id'], $operator['home'])['status']);
+        $protectedPath = 'records/posts/format-protected.txt';
+        file_put_contents($root . '/' . $protectedPath, "Post-ID: format-protected\nCreated-At: 2026-10-14T12:00:00Z\nBoard-Tags: identity approval\n"
+            . 'Author-Identity-ID: ' . $author['identity_id'] . "\n\nProtected.\n");
+        $this->runCommand($root, 'git add ' . escapeshellarg($protectedPath));
+        $this->runCommand($root, 'git commit -m "Protected fixture"');
+        assertSame('error', $prepare($operator['identity_id'], 'format-protected', 'markdown')['status']);
+
+        // Two switches in the same second still keep their order, and a stale prepare is refused.
+        $first = $prepare($author['identity_id'], $postId, 'plain');
+        $second = $prepare($author['identity_id'], $postId, 'markdown');
+        assertSame('ok', $finalize($second, $author['identity_id'], $author['home'])['status']);
+        $stale = $finalize($first, $author['identity_id'], $author['home']);
+        assertSame('error', $stale['status']);
+        assertStringContains('Prepare the change again', $stale['error']);
+        assertSame('markdown', $format());
+        $quick = $prepare($author['identity_id'], $postId, 'plain');
+        assertSame('ok', $finalize($quick, $author['identity_id'], $author['home'])['status']);
+        assertSame('plain', $format());
+        $back = $prepare($author['identity_id'], $postId, 'markdown');
+        assertSame('ok', $finalize($back, $author['identity_id'], $author['home'])['status']);
+
+        // Rebuilding from records gives the same answer as the incremental updates.
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        assertSame('markdown', $format());
+    }
+
+    public function testFormatSwitchAppearsBesideRetractForAuthorsAndOperatorsOnly(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'switch-author', 'Plain words');
+        $stranger = $this->linkSigningIdentity($app, 'switch-stranger');
+        $operator = $this->linkSigningIdentity($app, 'switch-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        $oldCookies = $_COOKIE;
+        try {
+            foreach ([[$author['identity_id'], true], [$operator['identity_id'], true], [$stranger['identity_id'], false]] as [$viewer, $sees]) {
+                $_COOKIE = ['identity_hint' => $viewer];
+                $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/threads/' . $author['thread_id']);
+                assertSame($sees, str_contains($page, 'data-action="switch-post-format"'));
+            }
+            $_COOKIE = ['identity_hint' => $author['identity_id']];
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/threads/' . $author['thread_id']);
+            $expected = str_contains($page, 'data-body-format="plain"') ? 'Show as plain text' : 'Show as Markdown';
+            assertStringContains($expected, $page);
+        } finally {
+            $_COOKIE = $oldCookies;
+        }
     }
 
     public function testRecordsWithoutBodyFormatReportPlain(): void

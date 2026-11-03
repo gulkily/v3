@@ -14,6 +14,14 @@ $canRetractPost = ($post['retracted_at'] ?? null) === null
       <details class="post-more-actions">
         <summary aria-label="More actions">…</summary>
         <div class="post-more-actions-panel">
+<?php $formatTarget = ($post['body_format'] ?? null) === 'markdown' ? 'plain' : 'markdown'; ?>
+          <button
+            type="button"
+            class="thread-reaction-button"
+            data-action="switch-post-format"
+            data-post-id="<?= $e($post['post_id']) ?>"
+            data-body-format="<?= $e($formatTarget) ?>"
+          ><?= $formatTarget === 'markdown' ? 'Show as Markdown' : 'Show as plain text' ?></button>
           <button
             type="button"
             class="thread-reaction-button"

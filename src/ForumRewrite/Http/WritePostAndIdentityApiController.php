@@ -296,6 +296,18 @@ final class WritePostAndIdentityApiController
         $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->finalizePreparedRetraction($input));
     }
 
+    /** @param array<string, mixed> $query */
+    public function preparePostFormat(string $method, array $query): void
+    {
+        $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->preparePostFormat($input));
+    }
+
+    /** @param array<string, mixed> $query */
+    public function createPreparedPostFormat(string $method, array $query): void
+    {
+        $this->handleWrite($method, $query, fn (array $input): array => $this->routeServices->writer()->createPreparedPostFormat($input));
+    }
+
     /**
      * @param array<string, mixed> $query
      * @param callable(array<string, mixed>): array<string, mixed> $write

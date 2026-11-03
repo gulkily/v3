@@ -62,6 +62,8 @@ final class ApiRouteCatalog
             ['POST', '/api/create_quote', 'anonymous', 'text', 'Unsigned quote; anonymous unless author_identity_id is sent (QDB sites only).'],
             ['POST', '/api/prepare_retraction', 'signed', 'json', 'Prepare a signed retraction of your own post.'],
             ['POST', '/api/create_prepared_retraction', 'signed', 'json', 'Publish a prepared retraction.'],
+            ['POST', '/api/prepare_post_format', 'signed', 'json', 'Prepare a signed switch of a post between Markdown and plain text (author or operator).'],
+            ['POST', '/api/create_prepared_post_format', 'signed', 'json', 'Publish a prepared post-format switch.'],
             // Tags and reactions
             ['POST', '/api/apply_thread_tag', 'hint', 'text', 'Tag a thread; signed when canonical_record and detached_signature are sent.'],
             ['POST', '/api/apply_post_tag', 'hint', 'text', 'Tag a post; signed when canonical_record and detached_signature are sent.'],

@@ -869,6 +869,186 @@ class LocalWriteService
         });
     }
 
+    /**
+     * Prepares a signed change of how an existing post displays (Markdown or plain). The actor
+     * is the post's author or a root-approved operator; the post itself is never rewritten.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function preparePostFormat(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $totalStartedAt = hrtime(true);
+            $actor = $this->requireOpenPgpIdentityId((string) ($input['actor_identity_id'] ?? $input['author_identity_id'] ?? ''), 'author_identity_id');
+            $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
+            $format = strtolower(trim((string) ($input['body_format'] ?? '')));
+            if (!in_array($format, PostRecord::FORMATS, true)) {
+                throw new RuntimeException('body_format must be markdown or plain.');
+            }
+            $post = $this->requireFormattablePost($postId, $actor);
+            $threadId = $post->threadId ?? $post->postId;
+            $createdAt = $this->canonicalTimestampNow();
+            // Order between switches comes from Created-At, so each one must be strictly later.
+            $latest = $this->latestPostFormatCreatedAt($postId);
+            if ($latest !== null && $createdAt <= $latest) {
+                $createdAt = gmdate('Y-m-d\TH:i:s\Z', strtotime($latest) + 1);
+            }
+            $recordId = \ForumRewrite\Canonical\PostFormatRecordParser::RECORD_ID_PREFIX . $postId . '-' . preg_replace('/\D/', '', $createdAt) . '-' . bin2hex(random_bytes(4));
+            $contents = "Record-ID: {$recordId}\nCreated-At: {$createdAt}\nPost-ID: {$postId}\nBody-Format: {$format}\nActor-Identity-ID: {$actor}\n\n";
+            (new \ForumRewrite\Canonical\PostFormatRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::postFormat($recordId);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'post-format',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'author_identity_id' => $actor,
+                'created_at' => $createdAt,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $threadId,
+                'body_format' => $format,
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+                'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
+            ]);
+        });
+    }
+
+    /**
+     * Verifies the actor's signature, commits the format record and its signature, and updates
+     * derived state. Replaying an already accepted request returns the same result.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function createPreparedPostFormat(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $totalStartedAt = hrtime(true);
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            if (!is_file($this->preparedPostPath($prepareToken))) {
+                // The response may be lost after commit and token cleanup: an exact replay succeeds.
+                $recordPath = (string) ($input['record_path'] ?? '');
+                $existing = str_starts_with($recordPath, 'records/post-formats/') && !str_contains($recordPath, '..') ? $this->repositoryRoot . '/' . $recordPath : '';
+                if ($existing !== '' && is_file($existing) && is_file($existing . '.asc')
+                    && file_get_contents($existing) === $canonicalRecord && trim((string) file_get_contents($existing . '.asc')) === trim($signature)) {
+                    $record = (new \ForumRewrite\Canonical\PostFormatRecordParser())->parse($canonicalRecord);
+                    return ['status' => 'ok', 'post_id' => $record->postId, 'body_format' => $record->bodyFormat, 'record_path' => $recordPath, 'already_applied' => true,
+                        'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)]];
+                }
+            }
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'post-format') {
+                throw new RuntimeException('Prepared request is not a post-format change.');
+            }
+            if (strtotime((string) $prepared['expires_at']) < time()) {
+                throw new RuntimeException('Prepared post has expired.');
+            }
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) $prepared['canonical_sha256']) {
+                throw new RuntimeException('Prepared post canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
+            $actor = $this->requireOpenPgpIdentityId(
+                $this->requirePreparedMatch(array_merge($input, ['author_identity_id' => $input['actor_identity_id'] ?? $input['author_identity_id'] ?? '']), $prepared, 'author_identity_id'),
+                'author_identity_id'
+            );
+            $record = (new \ForumRewrite\Canonical\PostFormatRecordParser())->parse($canonicalRecord);
+            if ($record->postId !== $postId || $record->actorIdentityId !== $actor || CanonicalPathResolver::postFormat($record->recordId) !== $recordPath) {
+                throw new RuntimeException('Prepared post-format record does not match prepared metadata.');
+            }
+            $post = $this->requireFormattablePost($postId, $actor);
+            $latest = $this->latestPostFormatCreatedAt($postId);
+            if ($latest !== null && $record->createdAt <= $latest) {
+                throw new RuntimeException('A newer format change for this post was saved first. Prepare the change again.');
+            }
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($actor);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $commitSha = $this->commitCanonicalWrite([$recordPath, $recordPath . '.asc'], 'Set post format ' . $postId . ' to ' . $record->bodyFormat)['commit_sha'];
+            $this->deletePreparedPost($prepareToken);
+            $failedStep = null;
+            try {
+                if ($this->canIncrementallyUpdateReadModel()) {
+                    $this->incrementalReadModelUpdater()->applyPostFormatWrite($postId, $commitSha);
+                } else {
+                    $this->refreshDerivedStateAfterCommit($commitSha);
+                }
+            } catch (\Throwable) {
+                $failedStep = 'read_model_refresh';
+                $this->staleMarker()->mark(['reason' => 'post_format_refresh_failed', 'commit_sha' => $commitSha, 'failed_at' => gmdate('c')]);
+            }
+            try {
+                $this->invalidator()->invalidateBoardThread($post->threadId ?? $post->postId);
+            } catch (\Throwable) {
+                $failedStep ??= 'artifact_invalidate';
+            }
+
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $post->threadId ?? $post->postId,
+                'body_format' => $record->bodyFormat,
+                'record_path' => $recordPath,
+                'commit_sha' => $commitSha,
+                'failed_step' => $failedStep,
+                'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
+            ];
+        });
+    }
+
+    private function latestPostFormatCreatedAt(string $postId): ?string
+    {
+        $latest = null;
+        foreach ($this->canonicalRepository->loadPostFormatsFor($postId) as $record) {
+            if ($latest === null || $record->createdAt > $latest) {
+                $latest = $record->createdAt;
+            }
+        }
+
+        return $latest;
+    }
+
+    /** The author, or a root-approved operator, may switch an ordinary post that still exists. */
+    private function requireFormattablePost(string $postId, string $actor): PostRecord
+    {
+        $post = null;
+        foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate)) {
+                $post = $this->canonicalRepository->loadPost($candidate);
+                break;
+            }
+        }
+        if ($post === null || AcceptedRetraction::read($this->repositoryRoot, $postId) !== null) {
+            throw new RuntimeException('Post to switch was not found.');
+        }
+        if (RetractedPosts::isAuthorityPost($post)) {
+            throw new RuntimeException('Identity, approval, and invitation records keep their format.');
+        }
+        if ($post->authorIdentityId !== $actor) {
+            $allowed = $this->isApprovedIdentity($actor)
+                && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, $actor);
+            if (!$allowed) {
+                throw new RuntimeException('Only the post author or an approved operator can change its format.');
+            }
+        }
+
+        return $post;
+    }
+
     /** Local acceptance metadata only: never part of the signer's canonical record. */
     private function retractionAttribution(\ForumRewrite\Canonical\PostRetractionRecord $record): string
     {
