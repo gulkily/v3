@@ -218,3 +218,11 @@ Users Waiting (N) count in shared HTML (from viewer_nav_prepaint, option A)
 recent posts/threads selector would be clutch
 
 i need a button that lets me push a post/thread to live website from localhost once it's composed
+hide the Deploy page (/tools/deploy/) from non-operator users
+	now it is read-only for everyone, like Operations and Feature Flags; only the buttons are operator-only
+
+let users pass on operator status
+	deploy and other operator actions require root-approved operator status, which can only be granted by an approval seed today
+
+probably do not list local changes on the Deploy page
+	it currently names the locally changed tracked files (e.g. public/.htaccess)
