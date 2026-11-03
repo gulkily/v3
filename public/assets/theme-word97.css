@@ -509,6 +509,27 @@
   text-decoration: none;
 }
 
+/* Like and Flag sit inline in the action row, so the generic button's dark
+   #404040 outline reads as a heavy black box and its zero padding crowds the
+   label. Draw the raised bevel from the border itself (light top-left, grey
+   bottom-right) and give the label room on the sides. The selector repeats the
+   generic button rule's :not() chain so it outranks it. */
+:root[data-theme="word97"] .post-card-actions button.thread-reaction-button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row) {
+  padding: 0 0.6em;
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow:
+    inset 1px 1px 0 0 #dfdfdf,
+    inset -1px -1px 0 0 #a0a0a0;
+}
+
+:root[data-theme="word97"] .post-card-actions button.thread-reaction-button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row):active {
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow:
+    inset 1px 1px 0 0 #a0a0a0,
+    inset -1px -1px 0 0 #dfdfdf;
+}
+
 :root[data-theme="word97"] .nav-link {
   border: 1px solid transparent;
   background: transparent;
