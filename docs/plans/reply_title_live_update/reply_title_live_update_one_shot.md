@@ -67,6 +67,6 @@ Intake 0.15; execution entry 0.15 reaffirmed; **retrospective scope assessment 0
 
 ## Commit status
 
-Completion commit pending at the time of writing; its hash is appended afterwards in a record-only handoff commit. Merge and push are not covered by this cycle's authority.
+Completion commit `8d31e736` on `feat/reply-title-live-update` (confirmed with Git after the commit; this line was added in the record-only handoff commit). Merge and push are not covered by this cycle's authority.
 
 *— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
