@@ -650,13 +650,14 @@
     return field ? field.value : "";
   }
 
-  // The composer's "Plain text" box opts one post out of Markdown; unchecked leaves the server default.
+  // The composer's Markdown box decides the format; forms without it leave the server default.
   function composeBodyFormat(form) {
-    const field = form.querySelector('[name="body_format"]');
-    return field && field.checked ? String(field.value || "plain") : "";
+    const toggle = form.querySelector('input[type="checkbox"][name="body_format"]');
+    if (!toggle) return "";
+    return toggle.checked ? "markdown" : "plain";
   }
 
-  // Only an explicit plain-text choice is sent, so default submissions keep their existing fields.
+  // Only forms with the Markdown box send a format, so other submissions keep their existing fields.
   function withBodyFormat(form, fields) {
     const format = composeBodyFormat(form);
     if (format) fields.body_format = format;
@@ -1374,6 +1375,40 @@
     finalized.serverTiming = Object.assign({}, prepared.serverTiming || {}, finalized.serverTiming || {});
 
     return finalized;
+  }
+
+  // Switches how an existing post displays; the signer must be its author or an operator.
+  async function submitSignedPostFormat(postId, bodyFormat) {
+    await ensureActionIdentity(null, null);
+    const actorIdentityId = currentAuthorIdentityId();
+    if (!actorIdentityId) {
+      return { ok: false, error: "No saved browser identity is available to sign this change." };
+    }
+    const parse = function (response, fallback) {
+      try {
+        const data = JSON.parse(response.text);
+        if (data && data.status === "ok") return { ok: true, data: data };
+        return { ok: false, error: (data && data.error) || fallback };
+      } catch (error) {
+        return { ok: false, error: fallback };
+      }
+    };
+    const prepared = parse(await submitUrlEncoded("/api/prepare_post_format", {
+      post_id: String(postId || ""),
+      body_format: String(bodyFormat || ""),
+      actor_identity_id: actorIdentityId,
+    }), "Unable to prepare the format change.");
+    if (!prepared.ok) return prepared;
+    const record = prepared.data;
+    const detachedSignature = await signCanonicalRecord(record.canonical_record);
+    return parse(await submitUrlEncoded("/api/create_prepared_post_format", {
+      prepare_token: record.prepare_token,
+      post_id: record.post_id,
+      record_path: record.record_path,
+      actor_identity_id: actorIdentityId,
+      canonical_record: record.canonical_record,
+      detached_signature: detachedSignature,
+    }), "Unable to save the format change.");
   }
 
   async function retrySignedPreparedPostAfterDetachedFailure(form, prepare, timing, previousResult) {
@@ -3997,6 +4032,7 @@
   window.ForumBrowserSigning.ensureActionIdentity = ensureActionIdentity;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
+  window.ForumBrowserSigning.submitSignedPostFormat = submitSignedPostFormat;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
   window.ForumBrowserSigning.prepareOutboxPost = prepareOutboxPost;
   window.ForumBrowserSigning.finalizeOutboxPost = finalizeOutboxPost;

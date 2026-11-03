@@ -216,6 +216,35 @@ final class CanonicalRecordRepository
         return $record;
     }
 
+    public function loadPostFormat(string $relativePath): PostFormatRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/post-formats/');
+        $record = (new PostFormatRecordParser())->parse($this->read($relativePath));
+        if ($relativePath !== CanonicalPathResolver::postFormat($record->recordId)) {
+            throw new CanonicalRecordParseException('Post-format record path must match Record-ID.');
+        }
+
+        return $record;
+    }
+
+    /** @return list<PostFormatRecord> every readable format change for one post, oldest first */
+    public function loadPostFormatsFor(string $postId): array
+    {
+        $records = [];
+        foreach (glob($this->repositoryRoot . '/records/post-formats/' . PostFormatRecordParser::RECORD_ID_PREFIX . $postId . '-*.txt') ?: [] as $path) {
+            try {
+                $record = $this->loadPostFormat(substr($path, strlen($this->repositoryRoot) + 1));
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+            if ($record->postId === $postId) {
+                $records[] = $record;
+            }
+        }
+
+        return $records;
+    }
+
     public function loadThreadSubject(string $relativePath): ThreadSubjectRecord
     {
         $this->assertPathIsWithinFamily($relativePath, 'records/thread-subjects/');

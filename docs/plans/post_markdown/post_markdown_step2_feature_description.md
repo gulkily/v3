@@ -4,7 +4,7 @@ Debug mode: enabled (inherited from Step 1)
 Effort study: `railspike-effort` / `v3/post_markdown` ([ledger](../effort_estimation_trial.md#cycle-v3post_markdown)); standing enrollment P2
 Extended estimates: enabled
 
-**Cycle estimate: 0.85**
+**Cycle estimate: 1.20** (revised from 0.85; see Revision)
 
 ## Problem
 
@@ -102,6 +102,47 @@ The maintainer reading and posting on zenmemes.com, and agents (such as `claude`
 | Syntax reference doc | In-scope refinement | Approved with Step 1 | In delivery scope |
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+## Revision 2026-11-03 (Step 4 enhancement requests)
+
+Requested by the maintainer after Stages 1–5 were built: "the markdown checkbox should be a markdown checkbox (not plain text)", "should start out unchecked, and become check with naive javascript markdown detector", and "I want to be able to post-factum change post format (eg switch existing posts to markdown)". Decisions in the same session: fold into this cycle; API default stays Markdown; authors and root-approved operators may switch a post's format. The original requirements above are kept as approved history; these replace them where they conflict.
+
+**Changed requirements**
+
+- Composer: a **Markdown** checkbox, unchecked by default. A small in-page detector ticks it when the draft looks like Markdown (a heading, list, emphasis, link, code fence, quote or table) and leaves it alone once the author has changed the box by hand. Ticked sends `body_format=markdown`; unticked sends `plain`. Without JavaScript the box simply stays as the author sets it.
+- API: unchanged. A missing `body_format` still means Markdown for `prepare_*` and `create_*`.
+- After posting: the post's author, or a root-approved operator, can switch any post between Markdown and plain, including old posts with no recorded format. The switch is its own signed record (append-only; the latest one counts); the original post record never changes. Thread pages, previews and `get_post` follow the current format.
+- Still excluded: editing a post's text.
+
+**User stories added**
+
+- As an author, I want the composer to notice when I am writing Markdown so that I do not have to remember the box.
+- As an author or operator, I want to switch an existing post to Markdown (or back) so that older posts and mistakes can be fixed without reposting.
+
+**Completion boundary additions**
+
+- Entry: the post's action row (beside Retract) for author or operator, or a signed API request.
+- Outcome: after switching, the thread page and previews show the post in its new format and `get_post` reports it.
+- Recovery: switch back the same way.
+
+**Risks added**
+
+- **Authority for switching others' posts.** High: only the author or a root-approved operator may switch. Validate with signed tests for author, operator, other member and forged signature.
+- **Read-model ordering.** Medium: format records must apply after the posts they name in both full rebuild and incremental updates, and refresh thread previews. Validate with rebuild-versus-incremental equality.
+- **Detector false positives.** Low: the author sees the box ticked before posting and can untick it.
+
+**Shared components added**
+
+| Existing surface | Use |
+| --- | --- |
+| Post retraction flow (`prepare_retraction` / `create_prepared_retraction`, author-or-operator check, `retract_post_control.php`) | Pattern for a prepared, signed post-format change and its control |
+| Thread subject records (`records/` side records applied in the read model) | Pattern for a side record that changes how a post displays without touching it |
+
+*— Revised by Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+| Checkpoint | UTC | Score | Scope / reference / protocol | Rater and exposure | Reason |
+| --- | --- | --- | --- | --- | --- |
+| Step 2 revision | 2026-11-03T18:25Z | 1.20 | v3 / R1 / P2, original baseline `fd4d0e0227c18ed840c166e2ce4948233d148769` | Claude (claude-opus-5-5), single exposed rater; inspected retraction and thread-subject flows | Scope change: composer default and detector (small) plus a new signed format-change record with authority, read-model, UI and docs (large). Above 1.0, which Railspike treats as a prompt to discuss a split; the maintainer chose to keep it in one cycle. |
 
 ## Study checkpoint
 
