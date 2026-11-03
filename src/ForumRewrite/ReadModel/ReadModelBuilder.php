@@ -513,64 +513,43 @@ final class ReadModelBuilder
             }
         }
 
-        $records = [];
+        $recordsByThread = [];
         $paths = $this->findRelativePaths('records/thread-subjects');
         foreach ($this->progressItems('parsing_thread_subject_records', $paths) as $index => $relativePath) {
             try {
-                $records[] = $this->canonicalRepository->loadThreadSubject($relativePath);
+                $record = $this->canonicalRepository->loadThreadSubject($relativePath);
             } catch (CanonicalRecordParseException) {
                 $this->invalidThreadSubjectRecordCount++;
+                continue;
             }
-        }
-
-        $this->measure('sort_thread_subjects', function () use (&$records): void {
-            usort($records, static function (ThreadSubjectRecord $left, ThreadSubjectRecord $right): int {
-                if ($left->createdAt !== $right->createdAt) {
-                    return $left->createdAt <=> $right->createdAt;
-                }
-
-                return $left->recordId <=> $right->recordId;
-            });
-        });
-
-        $resolvedSubjectByThread = [];
-        foreach ($this->progressItems('deriving_thread_subject_records', $records) as $record) {
             if (!isset($knownRootThreads[$record->threadId])) {
                 $this->invalidThreadSubjectRecordCount++;
                 continue;
             }
-
             if (isset($retractedThreads[$record->threadId])) {
                 continue;
             }
-
-            $currentSubject = $currentSubjectByThread[$record->threadId];
-            if ($currentSubject !== null && trim((string) $currentSubject) !== '') {
-                continue;
-            }
-
-            if (isset($resolvedSubjectByThread[$record->threadId])) {
-                continue;
-            }
-
-            $resolvedSubjectByThread[$record->threadId] = $record->subject;
+            $recordsByThread[$record->threadId][] = $record;
         }
 
-        if ($resolvedSubjectByThread === []) {
+        if ($recordsByThread === []) {
             return;
         }
 
-        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject WHERE root_post_id = :root_post_id');
+        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject, subject_author_identity_id = :author WHERE root_post_id = :root_post_id');
         $updatePost = $pdo->prepare('UPDATE posts SET subject = :subject WHERE post_id = :post_id');
-        foreach ($this->progressItems('writing_thread_subjects', $resolvedSubjectByThread) as $threadId => $subject) {
-            $updateThread->execute([
-                'subject' => $subject,
-                'root_post_id' => $threadId,
-            ]);
-            $updatePost->execute([
-                'subject' => $subject,
-                'post_id' => $threadId,
-            ]);
+        foreach ($this->progressItems('deriving_thread_subject_records', $recordsByThread) as $threadId => $records) {
+            $rootSubject = $currentSubjectByThread[$threadId];
+            $resolved = ThreadSubjectState::resolve(
+                $rootSubject,
+                ThreadSubjectState::sort($records),
+                fn (ThreadSubjectRecord $record): bool => ThreadSubjectState::sourceActive($this->repositoryRoot, $pdo, $record),
+            );
+            if ($resolved['subject'] === $rootSubject && $resolved['author'] === null) {
+                continue;
+            }
+            $updateThread->execute(['subject' => $resolved['subject'], 'author' => $resolved['author'], 'root_post_id' => $threadId]);
+            $updatePost->execute(['subject' => $resolved['subject'], 'post_id' => $threadId]);
         }
     }
 

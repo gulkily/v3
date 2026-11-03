@@ -70,3 +70,23 @@ Extended estimates: enabled (inherited)
 - Estimate details: original scope unchanged; retrospective 0.18, above the original because the signed-path test needed real key generation and the identity requirement was discovered during testing (new understanding, not changed scope).
 
 *— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*
+
+## Stage 4 - Read-model precedence and schema
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes:
+  - `ReadModelMetadata::SCHEMA_VERSION` 43 → 44; `threads.subject_author_identity_id TEXT NULL` and `viewer_tags.eligible INTEGER NOT NULL DEFAULT 0` (populated in Stage 5) added to `ReadModelSchema`.
+  - New `ReadModel/ThreadSubjectState`: shared `sort`, `resolve(rootSubject, records, sourceActive)` and `sourceActive(root, pdo, record)` (source reply row exists, same thread, not retracted or removed; file bytes match the recorded SHA-256 and author).
+  - `ReadModelBuilder::indexThreadSubjects` and `IncrementalReadModelUpdater::applyThreadSubjectWrite` both resolve through it: latest active authored record wins and stores its author; system records fill only an empty root subject; otherwise the root's own `Subject` (read from the canonical root post in the incremental path) stands, so a withdrawn retitle reverts. `posts.subject` for the root mirrors the thread.
+  - `docs/specs/read_model_schema_v1.md`: contract paragraph, `threads` and `viewer_tags` column notes, "Version 44" section.
+  - Tests: `ReadModelThreadSubjectsTest` gains authored-overrides-root with latest-wins, tampered-source and system-beside-root cases; missing-source record ignored; incremental write and withdrawal (source file removed) match a fresh rebuild. New `ReadModelThreadTitleRebuildTest` (registered): a version-43 model with both columns dropped rebuilds on normal startup and the thread page shows the authored title.
+- Verification:
+  - `php tests/run.php ReadModelThreadSubjectsTest ReadModelThreadTitleRebuildTest ReadModelViewerTagsRebuildTest ReadModelHotIndexRebuildTest LocalWriteServiceThreadSubjectTest LocalWriteServiceTitleDirectiveTest CanonicalRecordParsersTest`: 73 run, 73 passed (2026-11-03T17:30:33Z).
+  - `./v3 rebuild` on the local repository: rebuilt at schema 44; its one system-fetched subject record targets a root that already has a subject and still does not apply (`Hello world`, author NULL), as before.
+  - `git diff --check` clean. UI checks deferred to Stage 6; no template changed here.
+- Notes: the plan's "withdrawn source" rule is implemented here by the resolver (retracted/removed row, missing or changed file); Stage 7 adds deletion-evidence cleanup and invalidation coverage on top of it.
+- Estimate details: original scope unchanged; retrospective 0.15 as planned.
+
+*— Claude Code · 2026-11-03 UTC · Model: claude-fable-5-1*

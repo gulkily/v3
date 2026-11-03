@@ -20,13 +20,11 @@ behind this layer.
 
 ## Schema-change contract
 
-Version 43 adds QDB numbered-page selection over existing thread/post fields,
-counting eligible rows and selecting IDs in one read snapshot before loading
-at most 25 bodies. PHP scalar predicates preserve quote-ID and legacy tag-list
-semantics; Search retains trimmed literal PHP stripos matching and activity/ID
-order. Latest/Top/Leetness preserve pin priority and creation/ID tie breaks,
-with score/distance ordering where applicable. No stored columns change;
-prior-version startup rebuild is required.
+Version 44 adds `threads.subject_author_identity_id` (who set the effective
+title through a `title:` reply, null for the root's own or a system-fetched
+subject) and `viewer_tags.eligible` (1 when that reaction row is one the score
+reducers count). Thread titles now derive from [thread-subject records](thread_subject_record_v1.md)
+with latest-authored-wins precedence; prior-version startup rebuild is required.
 
 When changing a core read-model table, column, index, constraint, or a query
 that requires one, increment `ReadModelMetadata::SCHEMA_VERSION` in the same
@@ -142,7 +140,8 @@ One row per thread (keyed by its root post).
 | `root_post_id` | TEXT PK | |
 | `root_post_created_at` | TEXT | |
 | `last_activity_at` | TEXT | |
-| `subject` | TEXT NULL | |
+| `subject` | TEXT NULL | effective title: latest active authored subject record, else the root's own `Subject`, else the earliest system subject record (schema 44) |
+| `subject_author_identity_id` | TEXT NULL | identity that set the effective title through a `title:` reply; null otherwise (schema 44) |
 | `body_preview` | TEXT | |
 | `reply_count` | INTEGER | |
 | `last_post_id` | TEXT | |
@@ -561,6 +560,7 @@ viewer_tags (
     target_id TEXT NOT NULL,           -- post_id for post-reactions, thread_id for thread-labels
     author_identity_id TEXT NOT NULL,
     tag TEXT NOT NULL,                 -- reaction tag / thread label, e.g. 'like', 'flag', 'upvote'
+    eligible INTEGER NOT NULL DEFAULT 0, -- 1 when the score reducers count this row (schema 44)
     PRIMARY KEY (record_family, target_id, author_identity_id, tag)
 )
 Index: viewer_tags_identity_idx (author_identity_id, record_family, tag, target_id)
@@ -633,3 +633,19 @@ Combines main's version-41 message recovery and version-42 Recent indexes with
 QDB count/select-before-hydration queries. The QDB branch used version 41 locally;
 integration advances to 43 so either lineage rebuilds before the new queries run.
 No additional tables or indexes are needed for QDB selection.
+
+## Version 44 — Thread title precedence and signal eligibility
+
+Adds `threads.subject_author_identity_id` and `viewer_tags.eligible`. The
+thread-subject reducers (`ReadModelBuilder::indexThreadSubjects`,
+`IncrementalReadModelUpdater::applyThreadSubjectWrite`) share
+`ThreadSubjectState`: an authored record whose source reply exists unchanged,
+keeps its author and thread, and is not retracted or removed overrides the root's
+own `Subject`; the latest such record wins and its author is stored. System
+records (no author) still fill only an empty root subject, earliest first. When
+the latest authored record is withdrawn, the effective title falls back to the
+next active one, then to the root's own `Subject`. `posts.subject` for the root
+row mirrors `threads.subject`. `eligible` is populated by the reaction reducers
+for the rows they count toward scores and flag counts; rows for unapproved
+authors, inactive labels or duplicate votes stay 0. Normal startup rebuilds
+version 43 and older models before these columns are read.

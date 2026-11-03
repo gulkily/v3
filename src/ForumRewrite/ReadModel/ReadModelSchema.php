@@ -57,6 +57,7 @@ final class ReadModelSchema
                 root_post_created_at TEXT NOT NULL,
                 last_activity_at TEXT NOT NULL,
                 subject TEXT NULL,
+                subject_author_identity_id TEXT NULL,
                 body_preview TEXT NOT NULL,
                 reply_count INTEGER NOT NULL,
                 last_post_id TEXT NOT NULL,
@@ -159,6 +160,7 @@ final class ReadModelSchema
                 target_id TEXT NOT NULL,
                 author_identity_id TEXT NOT NULL,
                 tag TEXT NOT NULL,
+                eligible INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (record_family, target_id, author_identity_id, tag)
             )',
             'CREATE INDEX viewer_tags_identity_idx ON viewer_tags (author_identity_id, record_family, tag, target_id)',

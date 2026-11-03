@@ -245,17 +245,19 @@ class IncrementalReadModelUpdater
                 return $timings;
             }
 
-            $currentSubject = $this->measure($timings, 'load_thread_subject', fn (): ?string => $this->loadThreadSubjectColumn($pdo, $threadId));
+            $this->measure($timings, 'load_thread_subject', fn (): ?string => $this->loadThreadSubjectColumn($pdo, $threadId));
+            $rootSubject = $this->measure($timings, 'load_thread_root_subject', fn (): ?string => $this->loadRootPostSubject($threadId));
             $records = $this->measure($timings, 'load_thread_subject_records', fn (): array => $this->loadThreadSubjectRecords($threadId));
-            $resolvedSubject = $this->measure(
+            $resolved = $this->measure(
                 $timings,
                 'derive_thread_subject_state',
-                fn (): ?string => $this->deriveThreadSubjectState($currentSubject, $records)
+                fn (): array => ThreadSubjectState::resolve(
+                    $rootSubject,
+                    $records,
+                    fn (ThreadSubjectRecord $record): bool => ThreadSubjectState::sourceActive($this->repositoryRoot, $pdo, $record),
+                )
             );
-
-            if ($resolvedSubject !== null) {
-                $this->measure($timings, 'update_thread_subject', fn (): mixed => $this->updateThreadSubject($pdo, $threadId, $resolvedSubject));
-            }
+            $this->measure($timings, 'update_thread_subject', fn (): mixed => $this->updateThreadSubject($pdo, $threadId, $resolved['subject'], $resolved['author']));
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
 
@@ -1542,31 +1544,19 @@ class IncrementalReadModelUpdater
             $records[] = $record;
         }
 
-        usort($records, static function (ThreadSubjectRecord $left, ThreadSubjectRecord $right): int {
-            if ($left->createdAt !== $right->createdAt) {
-                return $left->createdAt <=> $right->createdAt;
-            }
-
-            return $left->recordId <=> $right->recordId;
-        });
+        $records = ThreadSubjectState::sort($records);
 
         return $records;
     }
 
-    /**
-     * @param list<ThreadSubjectRecord> $records
-     */
-    private function deriveThreadSubjectState(?string $currentSubject, array $records): ?string
+    /** The root post's own Subject header, the baseline every retitle can be withdrawn back to. */
+    private function loadRootPostSubject(string $threadId): ?string
     {
-        if ($currentSubject !== null && trim($currentSubject) !== '') {
+        try {
+            return (new CanonicalRecordRepository($this->repositoryRoot))->loadPost(CanonicalPathResolver::post($threadId))->subject;
+        } catch (\Throwable) {
             return null;
         }
-
-        if ($records === []) {
-            return null;
-        }
-
-        return $records[0]->subject;
     }
 
     private function threadIsRetracted(PDO $pdo, string $threadId): bool
@@ -1577,11 +1567,12 @@ class IncrementalReadModelUpdater
         return $stmt->fetchColumn() !== null;
     }
 
-    private function updateThreadSubject(PDO $pdo, string $threadId, string $subject): void
+    private function updateThreadSubject(PDO $pdo, string $threadId, ?string $subject, ?string $authorIdentityId): void
     {
-        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject WHERE root_post_id = :thread_id');
+        $updateThread = $pdo->prepare('UPDATE threads SET subject = :subject, subject_author_identity_id = :author WHERE root_post_id = :thread_id');
         $updateThread->execute([
             'subject' => $subject,
+            'author' => $authorIdentityId,
             'thread_id' => $threadId,
         ]);
 
