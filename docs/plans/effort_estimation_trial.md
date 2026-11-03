@@ -2,6 +2,8 @@
 
 ## Cycle v3/fastmod_ownership
 
+2026-11-03T17:24:49Z — Step 1 Option A explicitly approved; [Step 2 checkpoint](./fastmod_ownership/fastmod_ownership_step2_feature_description.md#study-checkpoint) defines opt-in selection, claim probability, supported name/unknown, shared scoring/post/transfer behavior and exact local URL acceptance plus retry. Whole-cycle 0.65 reaffirmed, same v1/A/baseline/R1/P2 and exposed single Codex rater; three frozen hashes reverified. Prior intake remains missing and Step 1 estimate retained. No runtime work, measured labor or accepted-count increment; await Approved Step 2. User authorized merging the current tree on 2026-11-03; publication does not approve Step 2 or implementation.
+
 2026-11-03 UTC — standing P2 enrollment; [canonical Step 1 checkpoint](./fastmod_ownership/fastmod_ownership_step1_solution_assessment.md). Scope v1/A: selectable authorship-claim probability and most likely claimed name/unknown through existing Fastmod scoring, storage, ordinary display, transfer and retry recovery. Baseline `622bb4fa6fce203e0edf0416a6bc3d6824e9a736`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because source inspection preceded rating; Step 1 whole-cycle projection 0.65, alternative B 0.85, single exposed Codex rater. No parent/replacement, implementation, measured labor, independent rating or accepted-count increment; maintainer acceptance pending. Await Approved Step 1; user explicitly authorized plan merge/push on 2026-11-03, without implementation approval. Worktree copies share this stable ID.
 
 ## Cycle v3/activity_load_performance
