@@ -21,6 +21,9 @@ Original stage-work estimates copied from Step 3 (not new ratings): S1 0.20, S2 
 | Request | Disposition and reason | Approval status | Outcome |
 | --- | --- | --- | --- |
 | Rewrite the Nov 2 changelog post | Separate: content change | Requested by maintainer | Done before Step 4 |
+| Label the composer option "Markdown" instead of "Plain text" (2026-11-03) | Changed scope: inverts the Step 2 composer requirement | Revised Steps 2 and 3 approved 2026-11-03 | Stage 7 |
+| Markdown box starts unchecked and a naive JS detector ticks it when the draft looks like Markdown (2026-11-03) | Changed scope: composer default becomes plain unless detected or ticked | Revised Steps 2 and 3 approved 2026-11-03 | Stage 7 |
+| Change an existing post's format after posting, e.g. switch old posts to Markdown (2026-11-03) | Changed scope: new signed format-change record (like thread subject changes), read-model and UI support; Step 2 excluded editing after publication | Folded into this cycle; revised Steps 2 and 3 approved 2026-11-03 (authors and root-approved operators may switch) | Stages 8–10 |
 
 ## Stage 1 - Record format
 

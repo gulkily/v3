@@ -4,7 +4,7 @@ Debug mode: enabled (inherited from Step 2)
 Effort study: `railspike-effort` / `v3/post_markdown` ([ledger](../effort_estimation_trial.md#cycle-v3post_markdown)); standing enrollment P2
 Extended estimates: enabled
 
-**Cycle estimate: 0.85**
+**Cycle estimate: 1.20** (revised from 0.85; see Revision)
 
 ## Completion Contract
 
@@ -110,6 +110,95 @@ Extended estimates: enabled
   - Early warning / validation: the Deploy page result and one reload.
   - Mitigation: turn the flag off and fix forward.
 - Canonical components/API contracts touched: none new.
+
+## Revision 2026-11-03 (after Step 2 revision)
+
+Step 2 was revised and re-approved for three enhancement requests (Markdown checkbox, naive detector, post-factum format changes). Stages 1–5 are complete and unchanged. Stage 6 (live checks) now runs last and also covers the new behavior. New stages 7–10 follow. The cycle now has ten stages, past Railspike's guide of eight; the maintainer chose one cycle over a split.
+
+**Completion Contract additions**
+
+- Entry: the composer's Markdown box; a post's action row (beside Retract) for its author or a root-approved operator; `prepare_post_format` / `create_prepared_post_format` for signed clients.
+- Outcome: composer posts are plain unless the box is ticked (by hand or by the detector); a switched post shows its new format on thread pages, previews and `get_post`.
+- Recovery: switch back the same way.
+
+**Key Risks additions**
+
+- **High risk:** switching someone else's post. Only the author or a root-approved operator; validate in Stage 9 with author, operator, other member, unsigned and forged-signature cases before the UI exists.
+- **High risk:** rebuild and incremental read models disagreeing about a post's format. Validate in Stage 8 by comparing a full rebuild with incremental updates after several switches.
+
+## Stage 7
+
+**Estimate: 0.10**
+
+- Goal: the composer offers a **Markdown** box, unchecked, that a small detector ticks.
+- Dependencies: Stage 5.
+- Expected changes: composer menu checkbox `body_format=markdown` (label "Markdown"), with a hidden `body_format=plain` fallback so an unticked box sends plain; `PostFormatDetector` in a small script: heading, list, emphasis, link, fence, quote or table lines tick the box until the author changes it by hand; signed, unsigned and Outbox paths send the value; the "Plain text" wording is removed. API default unchanged.
+- Verification approach: Node tests for the detector (positive and negative drafts, manual override sticks); PHP tests that an unticked unsigned submission records `plain` and a ticked one `markdown`; existing JS field-shape tests; browser check of the menu.
+- Estimate details: driver: detector heuristics and keeping the manual override; uncertainty: low.
+- Risks or open questions:
+  - Impact: false positives tick the box on ordinary text.
+  - Early warning / validation: negative cases such as `2 * 3`, a lone `-`, hashtags and URLs.
+  - Mitigation: require clear Markdown shapes; the box is visible before posting.
+- Canonical components/API contracts touched: `composer.php`, `browser_signing.js`, `outbox_compose.js`, new detector script, `compose.css`.
+
+## Stage 8
+
+**Estimate: 0.25**
+
+- Goal: a post's format can change through a side record that the read model applies.
+- Dependencies: Stage 1.
+- Expected changes: `post_format_record_v1` spec (`Record-ID`, `Created-At`, `Post-ID`, `Body-Format`, `Author-Identity-ID`, optional `Actor-Identity-ID` for operators, detached signature); parser and repository path `records/post-formats/`; read model applies the latest record per post after posts load (rebuild and incremental), updating `posts.body_format` and the thread `body_preview`.
+- Verification approach: parser tests; rebuild versus incremental equality after several switches, including an old post with no header and a retracted post (ignored).
+- Estimate details: driver: ordering in both read-model paths and preview refresh; uncertainty: medium.
+- Risks or open questions:
+  - Impact: formats differ between rebuild and incremental.
+  - Early warning / validation: the equality test.
+  - Mitigation: one shared apply function used by both paths.
+- Canonical components/API contracts touched: new record spec and parser, `CanonicalRecordRepository`, `ReadModelBuilder`, `IncrementalReadModelUpdater`.
+
+## Stage 9
+
+**Estimate: 0.20**
+
+- Goal: authors and operators can sign a format change through the API.
+- Dependencies: Stage 8.
+- Expected changes: `LocalWriteService::preparePostFormat(array $input): array` and `createPreparedPostFormat(array $input): array`, reusing the retraction flow's prepared-token, signature and author-or-operator checks; routes `prepare_post_format` and `create_prepared_post_format`; `get_post` reflects the change; no change for retracted or authority posts.
+- Verification approach: signed tests for author, root-approved operator, other member, unsigned and forged signatures, retracted and identity/approval posts; replay of the same signed request is safe.
+- Estimate details: driver: authority checks and replay; uncertainty: medium.
+- Risks or open questions:
+  - Impact: a member switches someone else's post.
+  - Early warning / validation: the authority tests above.
+  - Mitigation: reuse the retraction authority rule rather than a new one.
+- Canonical components/API contracts touched: `LocalWriteService`, `WritePostAndIdentityApiController`, `ApiRouteCatalog`.
+
+## Stage 10
+
+**Estimate: 0.15**
+
+- Goal: the switch is a visible action and is documented.
+- Dependencies: Stages 7 and 9.
+- Expected changes: "Show as Markdown" / "Show as plain text" in the post's more-actions panel beside Retract, for the author or an operator, signing in the browser like retraction; llms.txt, `agent_api.md`, the syntax reference and the concept entry describe the switch.
+- Verification approach: template tests for who sees the control; a browser check of the panel; `LlmsTxtRendererTest`.
+- Estimate details: driver: browser signing reuse; uncertainty: low-medium.
+- Risks or open questions:
+  - Impact: the control appears for people who cannot use it.
+  - Early warning / validation: template tests per viewer.
+  - Mitigation: same visibility rule as Retract.
+- Canonical components/API contracts touched: `retract_post_control.php` (or a sibling partial), `browser_signing.js`, `LlmsTxtRenderer`, docs.
+
+## Stage 6 (revised)
+
+**Original estimate: 0.10**
+**Revised estimate: 0.15**
+
+- Goal unchanged, plus: a composer post with the detector ticking the box, one with it unticked, and switching an existing post (an old one) to Markdown and back, on zenmemes.com.
+- Dependencies: Stages 1–5 and 7–10 merged and deployed.
+
+*— Revised by Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+| Checkpoint | UTC | Score | Scope / reference / protocol | Rater and exposure | Reason |
+| --- | --- | --- | --- | --- | --- |
+| Step 3 revision | 2026-11-03T18:30Z | 1.20 | v3 / R1 / P2, original baseline `fd4d0e0227c18ed840c166e2ce4948233d148769` | Claude (claude-opus-5-5), single exposed rater; inspected retraction record, control and authority rule | Reaffirms the Step 2 revision; new stage-work estimates S7 0.10, S8 0.25, S9 0.20, S10 0.15, S6 revised 0.15, independent annotations, not summed |
 
 ## Concepts touched
 
