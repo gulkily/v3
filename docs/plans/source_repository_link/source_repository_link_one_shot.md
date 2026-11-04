@@ -26,7 +26,7 @@ Application change. An agent that knows only the instance URL finds the source r
 ## Approach and reuse decisions
 
 - **Setting:** register `FORUM_SOURCE_REPOSITORY_URL` in `PrivateConfigSchema` with `template: true`, following `FORUM_STATUS_URL`, so the private-config writer emits it with no separate key list (CONTRIBUTING, Private runtime configuration).
-- **Agent entry point:** extend `LlmsTxtRenderer` rather than adding a route; `/llms.txt` is already where `/api/` sends agents.
+- **Agent entry point:** extend `LlmsTxtRenderer` rather than adding a route; `/llms.txt` is already where `/api/` sends agents. The section's prose lives in `prompts/llms_txt_source_code.txt` with a `{{source_repository_url}}` placeholder, not in PHP (maintainer review, see history).
 - **API index:** extend the text built from `ApiRouteCatalog`, which already renders the `/api/` header.
 - **Contributor pointers:** link `AGENTS.md` and `docs/agents/` on the repository's default branch. Both exist on `main`; the thread-to-PR procedure on `docs/thread-to-pr` is listed from `docs/agents/` once merged, so no link depends on an unmerged file.
 - **Validation:** accept only an absolute `https://` URL without credentials; anything else renders nothing, so a mistyped value cannot inject text into agent instructions.
@@ -63,6 +63,9 @@ Starting revision and branch: `e83cb201ae45b900a8d260708081a02f920ccf32` on `mai
 - 2026-11-04, discovery: `/llms.txt` and `/api/` are rendered per request and allowed on members-only instances; neither is in static, offline or high-traffic artifacts, so deployment needs no rebuild.
 - 2026-11-04, correction: the record started without a feedback item. A post-implementation search found [PF-20261104-F27](../../feedback/items/PF-20261104-F27.txt), now `Workflow: blocked`, `Evidence: locally-verified`. Its mention of `gulkily/pollyanna`, About-page and meta-tag links remains open as follow-up; [PF-20261030-B18](../../feedback/items/PF-20261030-B18.txt) (revision labels) is separate.
 
+- 2026-11-04, correction from maintainer review: "we mixed prompt text into code, and it should be in a separate file." Moved the `/llms.txt` source code prose to `prompts/llms_txt_source_code.txt`, following the existing `prompts/` `{{name}}` placeholder convention; `LlmsTxtRenderer::SOURCE_CODE_PROMPT_PATH` names it and an unreadable file omits the section. The `/api/` line and More link stay in code as a label plus URL. Rendered output unchanged byte for byte; tests also assert the file keeps its placeholder and no placeholder reaches the output. Smoke set plus changed tests rerun: 442 passed.
+- 2026-11-04: completion commit confirmed as `c6a454d`; this correction is a separate follow-up commit on the same branch.
+
 ## Outcome
 
 Delivered: an agent given only an instance URL finds the code repository in the opening section of `/llms.txt` and on the second line of `/api/`, with where to start (`AGENTS.md`, `docs/agents/`). Operators change or remove it with `FORUM_SOURCE_REPOSITORY_URL`. Limitations: production output changes only after deployment; whether an agent can clone the repository depends on its visibility, which this change does not alter.
@@ -76,6 +79,6 @@ Delivered: an agent given only an instance URL finds the code repository in the 
 
 ## Commit, merge and publication status
 
-Completion commit on `feat/source-repository-link`: reference pending in this record (it cannot contain its own hash). Pushed to origin; not merged, not deployed.
+Completion commit `c6a454d` on `feat/source-repository-link`, then the prompt-file correction commit (reference pending in this record). Pushed to origin; not merged, not deployed.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

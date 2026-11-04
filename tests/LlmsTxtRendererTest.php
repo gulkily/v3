@@ -159,6 +159,11 @@ final class LlmsTxtRendererTest
         assertStringContains('are in docs/agents/.', $text);
         assertStringContains('- [Source code](https://code.example.test/forum)', $text);
         assertTrue(strpos($text, '## Source code') < strpos($text, '## Quickstart'), 'Source code should come before Quickstart.');
+        assertStringContains("docs/agents/.\n\n## Quickstart", $text);
+        assertStringNotContains('{{', $text);
+
+        $prompt = (string) file_get_contents(dirname(__DIR__) . '/' . LlmsTxtRenderer::SOURCE_CODE_PROMPT_PATH);
+        assertStringContains('{{source_repository_url}}', $prompt);
 
         assertStringNotContains('Source code', $this->render([]));
     }

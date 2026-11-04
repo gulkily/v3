@@ -16,6 +16,8 @@ final class LlmsTxtRenderer
 {
     public const REFERENCE_PATH = '/docs/reference/agent_api.md';
     public const REFERENCE_RAW_PATH = '/docs/_download/docs/reference/agent_api.md';
+    /** Agent-facing prose for the source code section; {{source_repository_url}} is filled in. */
+    public const SOURCE_CODE_PROMPT_PATH = 'prompts/llms_txt_source_code.txt';
 
     /** Routes an agent needs for the signed flow, listed under "Routes". */
     private const AGENT_ROUTES = [
@@ -127,15 +129,13 @@ final class LlmsTxtRenderer
         if ($this->sourceRepositoryUrl === null) {
             return [];
         }
+        $template = @file_get_contents(dirname(__DIR__, 3) . '/' . self::SOURCE_CODE_PROMPT_PATH);
+        if ($template === false) {
+            return [];
+        }
+        $text = str_replace('{{source_repository_url}}', $this->sourceRepositoryUrl, rtrim($template));
 
-        return [
-            '## Source code',
-            '',
-            'This site\'s code: ' . $this->sourceRepositoryUrl,
-            '',
-            'To change the site, clone it and read AGENTS.md at the repository root first. Agent procedures, including turning a feature-request thread into a pull request, are in docs/agents/.',
-            '',
-        ];
+        return [...explode("\n", $text), ''];
     }
 
     /**
