@@ -373,12 +373,15 @@ final class ReadModelBuilder
         }
         $records = [];
         $viewerTagRows = [];
+        $labelFiles = [];
 
         $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $paths = $this->findRelativePaths('records/thread-labels');
         foreach ($this->progressItems('parsing_thread_label_records', $paths) as $index => $relativePath) {
             try {
                 $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+                // Every parsed file, active or not: delete-record finds a thread's labels here.
+                $labelFiles[$relativePath] = $record->threadId;
                 // viewer_tags mirrors ViewerTagLookup::threadTags()'s file scan, which applies
                 // no inactive/publication exclusion: project every loaded record's labels.
                 if ($record->authorIdentityId !== null) {
@@ -393,6 +396,7 @@ final class ReadModelBuilder
             }
         }
         $this->writeViewerTags($pdo, $viewerTagRows);
+        \ForumRewrite\ReadModel\ThreadLabelFileIndex::write($pdo, $labelFiles);
 
         $this->measure('sort_thread_labels', function () use (&$records): void {
             usort($records, static function (ThreadLabelRecord $left, ThreadLabelRecord $right): int {

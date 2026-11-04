@@ -44,3 +44,27 @@ Process note: Step 1–3 documents were committed and pushed to `main` before St
 - Estimate details: original scope as in Step 3 plus `-q` (revision 1, unchanged estimate); retrospective unchanged; no measured labor.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Thread label file index
+
+**Original estimate: 0.18**
+
+**Retrospective: 0.15**
+
+- Changes:
+  - Read-model table `thread_label_files` (path → thread, every parseable label file, active or not) with a thread index; schema 47 → 48; spec section added.
+  - `ThreadLabelFileIndex` (new, `src/ForumRewrite/ReadModel/`): `write`, `replaceThread`, `forget`, and `paths()`, which answers only when the schema identity matches and `repository_head` equals the repository HEAD, else returns null.
+  - `ReadModelBuilder` fills it in its existing label pass; `IncrementalReadModelUpdater::applyThreadLabelWrite` replaces the thread's rows from the files it already scans, so web tagging keeps the index current at no extra cost.
+  - `LabelRemoval::inspect`/`prepare` take the database path and use the index, falling back to the scan (status line says `scanning all label files`); `--repair-labels` always scans.
+- Verification:
+  - `DeleteRecordCommandTest` 7/7: index-backed inspect equals a full scan; read model behind HEAD or missing falls back; incremental label write updates the index; a version 47 model falls back for inspect and normal application startup rebuilds it to 48 with the index (the `CONTRIBUTING.md` prior-version check).
+  - `ReadModelSchemaTest` updated for the new table and index; pass.
+  - Synthetic repository with 60,000 extra label files: `--inspect` 1.94s with the scan, 0.05s with the index (local workspace, not the host).
+  - `./v3 rebuild` on that repository: 12.4s, completes with the index populated.
+  - Full suite not run.
+- Notes:
+  - Enhancement disposition revised: web tagging is not made faster here. `applyThreadLabelWrite` still scans to find a newly written file; it only keeps the index current. The Step 3 note claiming a side-effect speedup is superseded.
+  - Stage 4 will need label lookups without the scan in its own path; `forget` is there for the removed files.
+- Estimate details: original scope unchanged; retrospective 0.15 because the existing scan in `applyThreadLabelWrite` gave index maintenance for free; no measured labor.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

@@ -48,7 +48,7 @@ if ($inspect || $repair || str_starts_with($target, 'records/posts/') || !str_co
 if ($source !== null) {
     try {
         if ($inspect) {
-            $result = \ForumRewrite\Canonical\LabelRemoval::inspect($repositoryRoot, $sourceId, $progress->reporter());
+            $result = \ForumRewrite\Canonical\LabelRemoval::inspect($repositoryRoot, $sourceId, $progress->reporter(), $databasePath);
             unset($result['post']);
         } else {
             \ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, "records/post-retractions/maintenance.txt");

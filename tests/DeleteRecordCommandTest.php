@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+use ForumRewrite\Application;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\LabelRemoval;
+use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
+use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelMetadata;
+use ForumRewrite\ReadModel\ThreadLabelFileIndex;
 use ForumRewrite\Support\LocalRepositoryBootstrap;
 
 /**
@@ -72,6 +79,88 @@ final class DeleteRecordCommandTest
         }
     }
 
+    public function testInspectReadsTheLabelIndexAndMatchesAFullScan(): void
+    {
+        [$project, $root, $database, $artifacts] = $this->environment();
+        try {
+            $this->commitLabel($root, 'label-owned', 'root-001', 'root-001');
+            $this->commitLabel($root, 'label-other', 'thread-zenmemes-rules', null);
+            $this->rebuild($root, $database);
+            assertSame(['records/thread-labels/label-owned.txt', 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt'],
+                ThreadLabelFileIndex::paths($database, $root, 'root-001'));
+
+            $indexed = LabelRemoval::inspect($root, 'root-001', null, $database);
+            $scanned = LabelRemoval::inspect($root, 'root-001');
+            unset($indexed['post'], $scanned['post']);
+            assertSame($scanned, $indexed);
+            assertSame(['records/thread-labels/label-owned.txt'], array_keys($indexed['proven']));
+
+            [$status, , $stderr] = $this->run([$root, $database, $artifacts, '--inspect'], 'root-001');
+            assertSame(0, $status);
+            assertStringContains('] Finding labels for thread root-001' . "\n", $stderr);
+        } finally {
+            $this->remove($project);
+        }
+    }
+
+    public function testInspectScansWhenTheReadModelIsBehindHeadOrMissing(): void
+    {
+        [$project, $root, $database, $artifacts] = $this->environment();
+        try {
+            $this->rebuild($root, $database);
+            $this->commitLabel($root, 'label-late', 'root-001', 'root-001');
+            assertSame(null, ThreadLabelFileIndex::paths($database, $root, 'root-001'));
+            assertSame(null, ThreadLabelFileIndex::paths($root . '/missing.sqlite3', $root, 'root-001'));
+
+            [$status, $stdout, $stderr] = $this->run([$root, $database, $artifacts, '--inspect'], 'root-001');
+            assertSame(0, $status);
+            assertStringContains('(scanning all label files)', $stderr);
+            assertStringContains('label-late.txt', $stdout);
+        } finally {
+            $this->remove($project);
+        }
+    }
+
+    public function testIncrementalLabelWriteKeepsTheIndexCurrent(): void
+    {
+        [$project, $root, $database] = $this->environment();
+        try {
+            $this->rebuild($root, $database);
+            $commit = $this->commitLabel($root, 'label-new', 'root-001', null);
+            (new IncrementalReadModelUpdater($database, $root))->applyThreadLabelWrite('root-001', $commit);
+            assertSame(['records/thread-labels/label-new.txt', 'records/thread-labels/thread-label-20260415153000-ab12cd34.txt'],
+                ThreadLabelFileIndex::paths($database, $root, 'root-001'));
+        } finally {
+            $this->remove($project);
+        }
+    }
+
+    public function testVersion47ModelFallsBackForInspectAndStartupAddsTheIndex(): void
+    {
+        [$project, $root, $database, $artifacts] = $this->environment();
+        try {
+            $this->rebuild($root, $database);
+            $pdo = new PDO('sqlite:' . $database);
+            $pdo->exec('DROP TABLE thread_label_files');
+            $pdo->exec("UPDATE metadata SET value = '47' WHERE key = 'schema_version'");
+            $pdo = null;
+            assertSame(null, ThreadLabelFileIndex::paths($database, $root, 'root-001'));
+            [$status, , $stderr] = $this->run([$root, $database, $artifacts, '--inspect'], 'root-001');
+            assertSame(0, $status);
+            assertStringContains('(scanning all label files)', $stderr);
+
+            $application = new Application(dirname(__DIR__), $root, $database);
+            ob_start();
+            $application->handle('GET', '/threads/root-001');
+            assertStringContains('Hello world', (string) ob_get_clean());
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+            assertSame(['records/thread-labels/thread-label-20260415153000-ab12cd34.txt'], ThreadLabelFileIndex::paths($database, $root, 'root-001'));
+        } finally {
+            $this->remove($project);
+        }
+    }
+
     /** @return array{int,string,string} */
     private function run(array $arguments, string $id): array
     {
@@ -93,6 +182,28 @@ final class DeleteRecordCommandTest
             assertTrue($position !== false, "Missing or out of order: {$fragment}\n{$output}");
             $offset = $position + strlen($fragment);
         }
+    }
+
+    private function rebuild(string $root, string $database): void
+    {
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+    }
+
+    /** Commits an unsigned label file; with a source post it carries that post's ownership binding. */
+    private function commitLabel(string $root, string $recordId, string $threadId, ?string $sourcePostId): string
+    {
+        $label = "Record-ID: {$recordId}\nCreated-At: 2026-04-10T12:00:00Z\nThread-ID: {$threadId}\nOperation: add\nLabels: pinned\n";
+        if ($sourcePostId !== null) {
+            $bytes = (string) file_get_contents($root . '/records/posts/' . $sourcePostId . '.txt');
+            $post = (new \ForumRewrite\Canonical\PostRecordParser())->parse($bytes);
+            if ($post->authorIdentityId !== null) $label .= "Author-Identity-ID: {$post->authorIdentityId}\n";
+            $label .= "Source-Post-ID: {$sourcePostId}\nSource-Post-SHA256: " . hash('sha256', $bytes) . "\n";
+        }
+        file_put_contents($root . '/records/thread-labels/' . $recordId . '.txt', $label . "\n");
+        LabelRemoval::git($root, ['add', 'records']);
+        LabelRemoval::git($root, ['commit', '-qm', 'Label fixture ' . $recordId]);
+
+        return trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
     }
 
     /** @return array{string,string,string,string} */

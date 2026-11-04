@@ -27,7 +27,7 @@ final class SourceLabelRemoval
                     if (($pending['format'] ?? null) !== 'removal-recovery-v1' || !is_array($pending['record'] ?? null) || ($pending['record']['source_id'] ?? null) !== $id) throw new RuntimeException('Unsupported pending removal journal; no changes made. Only new-format recovery is supported.');
                     self::accept($root, $pending['record']);
                 }
-                $record = LabelRemoval::prepare($root, $id, $repair && LabelOwnership::hasSource($root, $id) ? 'resolve' : 'delete', $labels, $progress);
+                $record = LabelRemoval::prepare($root, $id, $repair && LabelOwnership::hasSource($root, $id) ? 'resolve' : 'delete', $labels, $progress, $repair ? null : $database);
                 if (!$repair) $record['operation'] = 'delete';
                 $say('Committing removal (' . count($record['labels']) . ' label file(s))');
                 self::accept($root, $record);
@@ -44,7 +44,7 @@ final class SourceLabelRemoval
                     throw new RuntimeException('Removal accepted at ' . $commit . '; refresh incomplete. Retry the same command: ' . $error->getMessage(), 0, $error);
                 }
                 $say('Checking result');
-                $inspection = LabelRemoval::inspect($root, $id);
+                $inspection = LabelRemoval::inspect($root, $id, null, $database);
                 return ['status' => 'ok', 'source_id' => $id, 'commit' => $commit,
                     'label_cleanup_status' => $inspection['review_candidates'] === [] ? 'complete' : 'unresolved',
                     'removed_labels' => array_keys($record['labels']), 'unresolved_labels' => array_values(array_diff($inspection['unresolved'], array_keys($record['labels'])))];

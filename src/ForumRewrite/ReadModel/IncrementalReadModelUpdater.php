@@ -21,6 +21,9 @@ use RuntimeException;
 
 class IncrementalReadModelUpdater
 {
+    /** @var list<string> label files seen by the last loadThreadLabelRecords() call */
+    private array $lastThreadLabelFiles = [];
+
     private const HIDDEN_BOOTSTRAP_TAG = 'identity';
     private ?QdbVoteScoringPolicy $qdbVoteScoringPolicy = null;
     /** @var array<string,int> Counts, not durations; kept outside Server-Timing. */
@@ -191,6 +194,7 @@ class IncrementalReadModelUpdater
         try {
             $thread = $this->measure($timings, 'load_thread', fn (): array => $this->loadThread($pdo, $threadId));
             $records = $this->measure($timings, 'load_thread_label_records', fn (): array => $this->loadThreadLabelRecords($threadId));
+            ThreadLabelFileIndex::replaceThread($pdo, $threadId, $this->lastThreadLabelFiles);
             $approvedIdentityIds = $this->measure($timings, 'load_approved_identity_ids', fn (): array => $this->loadApprovedIdentityIds($pdo));
             $rootSeed = $this->measure($timings, 'load_root_seed', fn (): array => $this->loadRootImportedSeed($threadId));
             $labelState = $this->measure(
@@ -1529,17 +1533,21 @@ class IncrementalReadModelUpdater
         $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $records = [];
+        $this->lastThreadLabelFiles = [];
         foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
+            $relativePath = 'records/thread-labels/' . basename($path);
             try {
-                $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
+                $record = $repository->loadThreadLabel($relativePath);
             } catch (CanonicalRecordParseException) {
                 continue;
             }
 
-            if (isset($inactive[$record->recordId])) continue;
             if ($threadId !== null && $record->threadId !== $threadId) {
                 continue;
             }
+            // Active and inactive files alike, matching the rebuild's thread_label_files rows.
+            $this->lastThreadLabelFiles[] = $relativePath;
+            if (isset($inactive[$record->recordId])) continue;
 
             $records[] = $record;
         }

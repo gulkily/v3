@@ -91,8 +91,12 @@ final class LabelRemoval
         throw new RuntimeException('Source evidence unavailable; restore trusted history before repair.');
     }
 
-    /** @param \Closure(string):void|null $progress */
-    public static function inspect(string $root, string $id, ?\Closure $progress = null): array
+    /**
+     * @param \Closure(string):void|null $progress
+     * @param string|null $databasePath read model holding the thread label file index; without
+     *        a current one, every label file is scanned
+     */
+    public static function inspect(string $root, string $id, ?\Closure $progress = null, ?string $databasePath = null): array
     {
         $progress?->__invoke('Reading post ' . $id);
         [$sourcePath, $bytes] = self::source($root, $id);
@@ -106,9 +110,14 @@ final class LabelRemoval
         if ($post->postId !== $id || RetractedPosts::isAuthorityPost($post)) throw new RuntimeException('Protected or mismatched source post.');
         $proven = []; $unresolved = []; $candidates = [];
         $repository = new CanonicalRecordRepository($root);
-        $progress?->__invoke('Finding labels for thread ' . ($post->threadId ?? $post->postId));
-        foreach (glob($root . '/records/thread-labels/*.txt') ?: [] as $path) {
-            $relative = 'records/thread-labels/' . basename($path);
+        $threadId = $post->threadId ?? $post->postId;
+        $indexed = \ForumRewrite\ReadModel\ThreadLabelFileIndex::paths($databasePath, $root, $threadId);
+        $progress?->__invoke('Finding labels for thread ' . $threadId . ($indexed === null ? ' (scanning all label files)' : ''));
+        $labelPaths = $indexed === null
+            ? array_map(static fn (string $path): string => 'records/thread-labels/' . basename($path), glob($root . '/records/thread-labels/*.txt') ?: [])
+            : array_values(array_filter($indexed, static fn (string $path): bool => is_file($root . '/' . $path)));
+        foreach ($labelPaths as $relative) {
+            $path = $root . '/' . $relative;
             $label = $repository->loadThreadLabel($relative);
             if ($label->threadId !== ($post->threadId ?? $post->postId)) continue;
             if ($label->sourcePostId === $id && hash_equals($label->sourcePostSha256 ?? '', hash('sha256', $bytes))
@@ -127,12 +136,12 @@ final class LabelRemoval
     }
     /** Prepare bytes before mutation; caller commits only these paths under its write lock. */
     /** @param \Closure(string):void|null $progress */
-    public static function prepare(string $root, string $id, string $operation, array $explicitLabelIds = [], ?\Closure $progress = null): array
+    public static function prepare(string $root, string $id, string $operation, array $explicitLabelIds = [], ?\Closure $progress = null, ?string $databasePath = null): array
     {
         if (!in_array($operation, ['delete', 'resolve'], true)) throw new RuntimeException('Invalid cleanup operation.');
         $existing = self::read($root, $id);
         if ($existing !== null && $existing['operation'] === 'delete' && $explicitLabelIds === []) return $existing;
-        $inspection = self::inspect($root, $id, $progress);
+        $inspection = self::inspect($root, $id, $progress, $databasePath);
         if ($existing !== null && !hash_equals($existing['source_hash'], $inspection['source_hash'])) {
             throw new RuntimeException('Accepted source changed; inspect before retry.');
         }
