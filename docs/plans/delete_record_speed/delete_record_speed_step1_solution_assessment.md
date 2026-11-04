@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/delete_record_speed`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/delete_record_speed`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
 
 Extended estimates: enabled
 
@@ -49,9 +49,9 @@ Deleting one post reads every thread-label file in the repository several times 
 
 ## Concepts touched
 
-- Option A: [read model rebuild](../concepts/read_model_rebuild.md) (used unchanged as the fallback), [static publication](../concepts/static_publication.md) (changed: targeted invalidation), [post retraction](../concepts/post_retraction.md) (used unchanged); proposed: *incremental source removal*, *operator command progress*.
-- Option B: [read model rebuild](../concepts/read_model_rebuild.md) (changed: deferred via task queue); proposed: *operator command progress*.
-- Option C: [read model rebuild](../concepts/read_model_rebuild.md) (changed: faster full rebuild).
+- Option A: [read model rebuild](../../concepts/read_model_rebuild.md) (used unchanged as the fallback), [static publication](../../concepts/static_publication.md) (changed: targeted invalidation), [post retraction](../../concepts/post_retraction.md) (used unchanged); proposed: *incremental source removal*, *operator command progress*.
+- Option B: [read model rebuild](../../concepts/read_model_rebuild.md) (changed: deferred via task queue); proposed: *operator command progress*.
+- Option C: [read model rebuild](../../concepts/read_model_rebuild.md) (changed: faster full rebuild).
 
 ## Solution Options
 
@@ -97,7 +97,7 @@ Step 2 should start with a per-phase timing of both commands on the qdb host, so
 
 Maintainer follow-up: “None of these sound like instant deletion?”
 
-Options A–C all start from the current command and trim it. Deleting one post only has to touch that post, so the revision starts from that instead. This matches the [retraction handoff](./retraction_simplification_handoff.md): delete the content and commit immediately.
+Options A–C all start from the current command and trim it. Deleting one post only has to touch that post, so the revision starts from that instead. This matches the [retraction handoff](../retraction_simplification_handoff.md): delete the content and commit immediately.
 
 ### Option D: Instant delete — touch only what the post touched
 
