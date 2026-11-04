@@ -31,14 +31,15 @@ Status: Step 2 approved; Step 3 proposed; implementation unapproved.
 
 - Goal: both commands print live status lines now, and the host floor is measured.
 - Dependencies: none.
-- Expected changes: a small step reporter used by `scripts/delete_record.php`, `LabelRemoval::inspect` and `SourceLabelRemoval::run` (stderr lines `<step>… 0.04s`, lock waits named, final `Deleted <id> in Xs`); fallback rebuild wired to the existing `ReadModelBuilder` progress reporter. `--json` stdout unchanged.
-- Verification approach: CLI test asserting step lines appear on stderr in order and stdout JSON is unchanged; maintainer runs the timing commands from the Step 4 summary on the host and pastes the output.
+- Expected changes: a small step reporter used by `scripts/delete_record.php`, `LabelRemoval::inspect` and `SourceLabelRemoval::run` (stderr lines `<step>… 0.04s`, lock waits named, final `Deleted <id> in Xs`); fallback rebuild wired to the existing `ReadModelBuilder` progress reporter. New `-q`/`--quiet` hides step lines but keeps errors and the final `Deleted` line; `--json` prints no step lines and leaves stdout unchanged. Usage text lists `-q`.
+- Verification approach: CLI test asserting step lines appear on stderr in order, `-q` leaves only errors and the final line, and stdout JSON is unchanged; maintainer runs the timing commands from the Step 4 summary on the host and pastes the output.
 - Estimate details: driver: threading one reporter through three call sites; uncertainty: low.
 - Risks or open questions:
   - Impact: a slow floor would make the 1s target unreachable regardless of later stages.
   - Early warning / validation: host timings recorded in the summary before Stage 3 starts.
   - Mitigation: stop and restate the target with the maintainer if the floor is too high.
-- Canonical components/API contracts touched: `ReadModelBuilder` progress closure (reused); `delete-record` stderr output (extended).
+- Canonical components/API contracts touched: `ReadModelBuilder` progress closure (reused); `delete-record` stderr output and options (extended with `-q`/`--quiet`).
+- Revision 1 (2026-11-04): maintainer asked for `-q`/`--quiet`; added here. Stage estimate 0.10 reaffirmed.
 
 ## Stage 2
 
@@ -112,4 +113,8 @@ Status: Step 2 approved; Step 3 proposed; implementation unapproved.
 
 2026-11-04T17:55:00Z; scope v2/D, baseline `ea306fc03b3152a2e66b3d2a75b13d7d1c4064bc`, R1/P2; frozen hashes verified earlier this session, unchanged. User explicitly approved Step 2. Whole-cycle revised **0.60 → 0.65**: inspection found about a dozen `git` processes per delete, so the plumbing commit is its own stage. Stage-work originals S1 0.10, S2 0.18, S3 0.12, S4 0.20, S5 0.08; non-additive. Claude, single exposed rater. No implementation, measured labor or accepted outcome. Await Approved Step 3.
 
+2026-11-04T17:58:00Z revision: maintainer added a `-q`/`--quiet` option to Stage 1. Small addition within Stage 1; S1 0.10 and whole-cycle 0.65 reaffirmed. Same v2/D/baseline/R1/P2, single exposed Claude rater.
+
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+*— Revised by Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
