@@ -27,3 +27,16 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
   - Deviation from Step 2 wording: a post shared by two items is listed as `Review:` and does not fail the check. The October 30 summary splits combined posts into separate outcomes on purpose, so a shared source is often correct. Malformed files, bad values and missing duplicate targets still fail.
   - Duplicate IDs cannot occur among loadable files because the filename must equal the ID; the cross-file duplicate check is kept as a guard.
   - Retrospective stage-work assessment: 0.12, as estimated; the shared-source decision was the only surprise.
+
+## Stage 2 - Generated index
+
+**Original estimate: 0.06** (unchanged)
+
+- Changes:
+  - `src/ForumRewrite/Feedback/FeedbackIndex.php`: open items by kind (features, bugs, other), ordered in-progress, blocked, planned, ready, untriaged, then ID; closed items in one table with their outcome and duplicate or superseding target; table pipes escaped; atomic write via a temporary file and rename.
+  - `./v3 feedback index [--dir=]` writes `README.md` beside the items folder, refuses to write while `check` reports problems, and reports `Unchanged` when the output is identical.
+  - Generated [`docs/feedback/README.md`](../../feedback/README.md) (empty until Stage 3); concept entry updated.
+- Verification:
+  - `./v3 test --smoke FeedbackItemCheckTest`: 430 run, 430 passed (new index test: refusal on problems, grouping and order, escaping, closed outcome links, unchanged rerun). Full suite not run.
+- Notes:
+  - Retrospective stage-work assessment: 0.06, as estimated.
