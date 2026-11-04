@@ -536,6 +536,12 @@ Run the current parser, rebuild, and app smoke tests:
 ./v3 test
 ```
 
+The default run leaves out a few slow classes (listed at the end of its output). Run everything before merging or deploying:
+
+```bash
+./v3 test --all
+```
+
 Standalone local-server dependency regressions:
 
 ```bash

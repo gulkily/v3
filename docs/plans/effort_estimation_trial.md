@@ -4,6 +4,10 @@
 
 2026-11-04T12:30:00Z — standing P2 enrollment, one-shot; [record](./preexisting_test_failures/preexisting_test_failures_one_shot.md#study-history). Related `v3/fast_default_tests_outliers`. Scope v1: make the 15 tests failing on `main` pass without product changes. Baseline `8dac3f9cfda4a1e8833a3072ce47414b1ef21b73`; extended/debug enabled. Pristine intake missing because diagnosis preceded rating; execution-entry projection 0.30, single exposed Claude rater. No accepted-count change.
 
+## Cycle v3/fast_default_tests_outliers
+
+2026-11-04T04:50:00Z — standing P2 enrollment, one-shot; [record](./fast_default_tests_outliers/fast_default_tests_outliers_one_shot.md#study-history). Parent `v3/fast_default_tests` (parked Step 1, unchanged). Scope v1: remove waste from the three slowest test classes without reducing assertions. Baseline `8dac3f9cfda4a1e8833a3072ce47414b1ef21b73`; extended/debug enabled. Pristine intake missing because profiling preceded rating; execution-entry projection 0.30, single exposed Claude rater. No accepted-count change.
+
 ## Cycle v3/work_page
 
 2026-11-04T02:13:36Z — standing P2 enrollment; [canonical Step 1 checkpoint](./work_page_step1_solution_assessment.md#study-snapshots). Parent `v3/work_tracking`. Scope v1/B: dedicated `/work` page with status filters and search, thread status buttons for approved members, navigation entry and theme icons. Baseline `78d0261b1a729339dbeb8e042e7f463bf7c3ca78`; R1 hashes verified earlier the same session; extended/debug enabled. Pristine intake missing; Step 1 projection 0.55, alternatives A 0.30, C 0.20, single exposed Claude rater. Committed and pushed before approval so its work item can link to it; no approval, implementation or accepted-count change.

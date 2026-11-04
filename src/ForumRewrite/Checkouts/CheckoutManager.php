@@ -163,7 +163,14 @@ final class CheckoutManager
                 $status['exitcode'] = 124;
                 break;
             }
-            usleep(10000);
+            // Wake on output or exit (EOF) instead of a fixed sleep; most Git calls finish in a few ms.
+            $open = array_values(array_filter([$pipes[1], $pipes[2]], static fn ($pipe): bool => !feof($pipe)));
+            if ($open === []) {
+                usleep(1000);
+            } else {
+                $write = $except = null;
+                @stream_select($open, $write, $except, 0, 10000);
+            }
         } while (true);
         $out .= stream_get_contents($pipes[1]);
         $err .= stream_get_contents($pipes[2]);
