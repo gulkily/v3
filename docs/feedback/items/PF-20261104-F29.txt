@@ -1,0 +1,16 @@
+ID: PF-20261104-F29
+Title: Maybe identify removed characters
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Removed 2 unsupported characters from Body.” — should this tell me what the characters were? Maybe.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103042233-ee91bf0b
+
+Notes:
+UI removal feedback is separate from PF-20261030-F56’s API validation errors.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

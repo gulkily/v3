@@ -1,0 +1,26 @@
+ID: PF-20261021-F05
+Title: QR appearance
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 0.25
+Aliases: 2026-10-21/F05, 2026-10-30/F34
+
+Request:
+Make QR codes stand out slightly while matching the site theme; explore a background roughly 20% lighter than the page background (prefer lighter over darker).
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021180542-57b8fc3f
+
+Done when:
+QR stands out across themes and phone/desktop; quiet zone and scanning still work.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: Invitation QR currently draws black on white; first confirm the reported QR surface, then bound the visual change. Source (public/assets/invite_issuance.js).
+Next action: Confirm the reported QR surface, then scope visual and scan checks.
+Estimate 0.25 is inherited from October 21 feedback-only triage. Recommended workflow: One-shot.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f05
+October 30 summary row F34: Make QR codes stand out while matching the theme; explore about 20% lighter than the background, preferably not darker. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

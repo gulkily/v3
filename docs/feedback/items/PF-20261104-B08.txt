@@ -1,0 +1,16 @@
+ID: PF-20261104-B08
+Title: Cookie notice omits preference cookie
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Agent first-hand source check reports a one-year theme-hint cookie, contradicting the posted cookie notice’s claim that cookies only support sign-in. Correct that claim.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261102153713-f0b09d86
+
+Notes:
+Request concerns the notice post, not a request to add a banner or alter cookies. Older/current notice post is context.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

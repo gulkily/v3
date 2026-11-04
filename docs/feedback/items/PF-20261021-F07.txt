@@ -1,0 +1,26 @@
+ID: PF-20261021-F07
+Title: Default port fallback
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 0.2
+Aliases: 2026-10-21/F07, 2026-10-30/F35
+
+Request:
+Make local `./v3 start` try a few successive ports after 8000 before giving up by default.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021180905-9bf88f1f
+
+Done when:
+Occupied default ports advance within a fixed range; actual URL, exhaustion, and shutdown behave correctly.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: Startup selects one address; bounded retries can preserve explicit-address behavior. Source (v3).
+Next action: Confirm current default/explicit port behavior, then scope bounded fallback and exhaustion checks.
+Estimate 0.2 is inherited from October 21 feedback-only triage. Recommended workflow: One-shot.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f07
+October 30 summary row F35: Have local ./v3 start try successive ports after 8000 by default. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

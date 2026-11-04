@@ -1,0 +1,26 @@
+ID: PF-20261021-F08
+Title: View query coverage
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 0.6
+Aliases: 2026-10-21/F08, 2026-10-30/F36
+
+Request:
+Expand "View query" availability to more pages; assess coverage for every page that includes database data.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021181111-3d37d8d5
+
+Done when:
+Coverage and exclusions are documented; each added control opens the correct read-only query.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: Broad audit across database-backed pages; stage the inventory and bounded additions. Source (templates/partials/query_action.php).
+Next action: Inventory database-backed pages and explicit exclusions before choosing additions.
+Estimate 0.6 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f08
+October 30 summary row F36: Expand View query coverage to pages containing database data. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

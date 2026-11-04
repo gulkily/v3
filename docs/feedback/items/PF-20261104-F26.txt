@@ -1,0 +1,16 @@
+ID: PF-20261104-F26
+Title: Make pending approval apparent
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Make it more apparent that the active account is awaiting approval, probably on almost every page.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103040923-0455c948
+
+Notes:
+Keep “probably” as a qualifier; do not choose repeated UI copy during intake.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,17 @@
+ID: PF-20261104-F54
+Title: Shared Tools navigation on tool pages
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The shown menu should also be on System State and other Tools pages. Options: expandable at the top and/or full menu at the bottom after scrolling; bottom version would help demos.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103062812-321f286b
+- https://zenmemes.com/posts/reply-20261103062851-e2d0f8a2
+
+Notes:
+Attachment unavailable; identify canonical menu before later implementation. No navigation destination added now.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

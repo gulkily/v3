@@ -1,0 +1,17 @@
+ID: PF-20261104-O09
+Title: Add article images to gallery
+Kind: other
+Workflow: declined
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Cool images in this article, add to gallery?” Keep as a tentative content request.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103194342-9f4f90ba
+
+Notes:
+No article or image fetched; no gallery changes or rights assumptions made.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04 tidy (maintainer request): declined as a content chore, not software work tracked here. Reopen if it should be tracked.

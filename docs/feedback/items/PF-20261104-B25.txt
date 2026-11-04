@@ -1,0 +1,19 @@
+ID: PF-20261104-B25
+Title: Retweet clipping looks suboptimal
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Sub-optimal retweeting observed #bug,” with three screenshots. Investigate bookmarklet/clipped-tweet presentation.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103072204-28882cd4
+- https://zenmemes.com/posts/reply-20261103072218-e2bb4e72
+- https://zenmemes.com/posts/reply-20261103072230-5ce2cd75
+- https://zenmemes.com/posts/reply-20261103072243-d876c02a
+
+Notes:
+Screenshots unavailable; keep separate from profile clipping and image capture until visual evidence identifies the symptom.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

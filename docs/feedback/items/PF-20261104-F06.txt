@@ -1,0 +1,15 @@
+ID: PF-20261104-F06
+Title: Tweet bookmarklet captures images
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+It would be nice if the tweet bookmarklet also captured images.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031071433-f7999992
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261104-B10
+Title: Cannot collapse event section
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+When events are enabled, the composer’s events expando cannot be closed again.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103040413-a008e701
+- https://zenmemes.com/posts/thread-20261103082445-475cead1
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

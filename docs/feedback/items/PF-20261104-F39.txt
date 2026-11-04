@@ -1,0 +1,15 @@
+ID: PF-20261104-F39
+Title: Video demos
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Feature request: video demos.” Scope and intended audience are unspecified.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103051621-c7c0791b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

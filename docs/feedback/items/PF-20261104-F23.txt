@@ -1,0 +1,18 @@
+ID: PF-20261104-F23
+Title: Stash draft and start blank
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Allow stashing an in-progress message in drafts and writing another. New post should open blank while autosaving the previous draft.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103040413-a008e701
+- https://zenmemes.com/posts/thread-20261103082445-475cead1
+- https://zenmemes.com/posts/thread-20261103172707-8b163bb2
+
+Notes:
+Separate from PF-20261030-B03: no claim here that a successfully submitted draft remained in the composer.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

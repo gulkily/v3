@@ -1,0 +1,16 @@
+ID: PF-20261104-F30
+Title: Agent text generation provenance
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Whenever there is agentic text, show its provenance, particularly what led to generation: how it was requested and possibly how it was transmitted.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103042505-e8942bdf
+
+Notes:
+Separate from PF-20261030-F62’s AI-assistance declaration categories; link them but do not merge their different completion outcomes.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

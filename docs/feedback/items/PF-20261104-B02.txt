@@ -1,0 +1,16 @@
+ID: PF-20261104-B02
+Title: Phone Post button under tab bar
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Agent first-hand WebKit report: at 375×667, Sticker and Arena put Post partly under the bottom tab bar on initial load. Keep the primary action visible.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261031052311-1c6dbdc3
+
+Notes:
+Separate from Word97 status-bar overlap and the iPhone keyboard issue; a desktop WebKit report does not verify the actual phone.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261104-F42
+Title: Activity records become discussion items
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+A feature-flag change activity record should have an item page where users can comment, like and flag it.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103054152-e87aedb0
+
+Notes:
+Do not treat an example feature-flag record as a new payload specification.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

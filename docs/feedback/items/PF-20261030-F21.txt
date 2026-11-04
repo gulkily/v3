@@ -1,0 +1,17 @@
+ID: PF-20261030-F21
+Title: De-emphasize subject, tags and overflow
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F21
+
+Request:
+De-emphasize Subject and tags/general and the overflow control; improve placement relative to common composing actions.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261018032705-73378cea
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F21; that summary is a local snapshot review and its request wording is preserved here.

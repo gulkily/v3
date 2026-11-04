@@ -28,9 +28,11 @@ During a task, run only the smoke set plus the tests for what you changed: `./v3
 
 Do not modify `todo.txt` unless the user explicitly requests an edit to that file. Record task progress and follow-up work in the relevant planning or implementation documents instead.
 
-## Work items
+## Agent procedures
 
-Before starting any non-trivial fix or feature, run `./v3 work search <words>` (or read `/work.txt?q=<words>` on the site) and claim the matching item with `./v3 work claim <thread-id>`. If it is already `active`, do not start parallel work; tell the user who holds it. If nothing matches, create a `#work` thread and claim it. Add a `Work: <thread-id>` trailer to commits that complete an item. See [work tracking](docs/reference/work_tracking.md), including what to do when the site is unreachable.
+For recurring agent tasks such as triaging site feedback, follow the matching procedure in [`docs/agents/`](docs/agents/README.md). Feedback items live in [`docs/feedback/`](docs/feedback/README.md).
+
+Before starting a fix or feature, search `docs/feedback/items/` for a matching item and name its ID in the plan. When a commit addresses an item, add a `Feedback: PF-...` trailer (one per item) and update the item file in the same commit: `Workflow` (`done` only with its completion checks met; `blocked` while deployment or production acceptance is pending), `Evidence`, and a dated line in `Notes:`. Triage runs catch items that were missed. Triage commits themselves carry no `Feedback:` trailers; their proposals file is the record.
 
 ## Navigation icons
 

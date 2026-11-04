@@ -1,0 +1,17 @@
+ID: PF-20261030-F48
+Title: Title-only posts without empty body bar
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F48
+
+Request:
+Improve title-only posts in Midnight/Word97 so an empty body bar is not shown.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021200655-35e4aaac
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F48; that summary is a local snapshot review and its request wording is preserved here.

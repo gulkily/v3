@@ -17,7 +17,7 @@ Usage:
   ./v3 tui
   ./v3 checkouts [overview|refresh|preview|apply|add|list|remove] [...options]
   ./v3 deploy [--check|--status] [--timeout=SECONDS]
-  ./v3 work search|claim|status|flush ... (ZenMemes work items; ./v3 work --help)
+  ./v3 feedback check|index [--dir=PATH] (feedback items; docs/specs/feedback_item_record_v1.md)
   ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.5.0-beta.1]
   ./v3 fdp sync ... (deprecated alias)
   ./v3 rebuild [repository_root] [database_path]
@@ -190,6 +190,10 @@ case "${COMMAND}" in
     shift
     exec php "${ROOT}/scripts/deploy.php" "$@"
     ;;
+  feedback)
+    shift
+    exec php "${ROOT}/scripts/feedback.php" "$@"
+    ;;
   status)
     shift
     php "${ROOT}/scripts/status.php" "$@"
@@ -197,10 +201,6 @@ case "${COMMAND}" in
   tui)
     shift
     exec bash "${ROOT}/scripts/terminal_operator_ui.sh" "$@"
-    ;;
-  work)
-    shift
-    exec python3 "${ROOT}/scripts/work_cli.py" "$@"
     ;;
   railspike|fdp)
     if [[ "${COMMAND}" == fdp ]]; then

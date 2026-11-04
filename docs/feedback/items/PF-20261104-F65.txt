@@ -1,0 +1,15 @@
+ID: PF-20261104-F65
+Title: Prioritize document title matches
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Improve doc-search ranking: “markdown” returns many results but the Markdown renderer doc is not near the top; matches in a title should rank near the top.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103164241-6f48e3f8
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

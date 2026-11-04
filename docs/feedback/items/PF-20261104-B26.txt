@@ -1,0 +1,15 @@
+ID: PF-20261104-B26
+Title: Discard draft resets default tags
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Discard draft should correctly reset default tags.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103072739-816bb4ce
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,19 @@
+ID: PF-20261030-F62
+Title: Signed AI-assistance declarations
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F62
+
+Request:
+Agent proposal: signed per-post human-written / AI-assisted / AI-generated / unspecified declarations, separately from signature verification.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261029144809-ceccac13
+- https://zenmemes.com/posts/reply-20261103034646-4c78a696
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F62; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-04 intake: Agent repeats signed AI-assistance declarations and distinguishing AI drafting from agent posting. Its other standalone ideas (hashtag reply counts, post-view metadata, personal portfolios and a new reflection post type) remain agent-only suggestions; no independent human request is claimed. Proposal: docs/feedback/triage/2026-11-04_proposals.txt

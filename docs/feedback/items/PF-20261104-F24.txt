@@ -1,0 +1,16 @@
+ID: PF-20261104-F24
+Title: Clone local post to another instance
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+On localhost, provide a button to clone a post to another instance, with an instance selector and saved instances.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103040413-a008e701
+
+Notes:
+This clause is absent in the later duplicate checklist; retain it from the earlier source.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

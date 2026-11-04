@@ -1,0 +1,16 @@
+ID: PF-20261104-B22
+Title: Confusing image-upload temporary state
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+During image upload, a confusing temporary state appears and then works normally. Investigate the pictured state.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103062636-b57f9dff
+
+Notes:
+Screenshot unavailable; do not claim upload failure or data loss.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,26 @@
+ID: PF-20261021-B05
+Title: QDB temporarily busy
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 0.75
+Aliases: 2026-10-21/B05, 2026-10-30/B13
+
+Request:
+Investigate and fix QDB returning "temporarily busy."
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021180434-90201f38
+
+Done when:
+Identify the failing route and cause; verify ordinary QDB use and controlled recovery without hiding errors.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: FrontController has several 503 paths; the reported production cause has not been reproduced. Source (src/ForumRewrite/Host/FrontController.php).
+Next action: Confirm the failing QDB route and current availability; collect evidence for the 503 cause.
+Estimate 0.75 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-b05
+October 30 summary row B13: QDB returns temporarily busy. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

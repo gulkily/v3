@@ -1,0 +1,18 @@
+ID: PF-20261104-B15
+Title: Unexplained page screenshots
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Two posts ask what is going on on a page, each with a screenshot: “What is going on on this page? lol” and “What is going on on this page????”. Preserve as unresolved visual reports.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103043034-6506088f
+- https://zenmemes.com/posts/thread-20261103060951-d9a27f85
+
+Notes:
+Attachment unavailable; page, exact defect and reproduction need visual review. Do not invent diagnosis.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04 tidy (maintainer request): merged PF-20261104-B20 into this item. Split again if the screenshots turn out to show different problems.

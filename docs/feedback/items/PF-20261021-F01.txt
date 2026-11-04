@@ -1,0 +1,31 @@
+ID: PF-20261021-F01
+Title: Reply focus
+Kind: feature
+Workflow: blocked
+Created: 2026-10-21
+Evidence: locally-verified
+Estimate: 0.15
+Aliases: 2026-10-21/F01, 2026-10-30/F17
+
+Request:
+Keep the reply entry field focused after posting, ready for another reply.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021175726-73beca3d
+- https://zenmemes.com/posts/reply-20261018030847-f33a2e94
+- https://zenmemes.com/posts/reply-20261021100423-a53b99c4
+
+Done when:
+Desktop immediately displays the pending reply and retains usable writing focus; phone reveals it with one-tap re-entry. Independent failure/retry preserves captured content and the newer draft, with no duplicate posts.
+
+Notes:
+Blocked awaiting physical phone acceptance and deployment. Locally verified desktop and automated phone flow on 2026-10-23; production behavior unverified.
+Next action: complete the iPhone Safari/Firefox checklist in the reply continuation Step 4 summary, then deploy and verify consecutive sends and failure/retry in production. No source-comment reply is authorized.
+Estimate 0.15 is inherited from October 21 feedback-only triage, not a source-informed projection. Recommended workflow: Railspike.
+Implementation: docs/plans/reply_continuation/reply_continuation_step4_implementation_summary.md
+Related, does not complete this item: docs/plans/reply_composer_focus_layout/reply_composer_focus_layout_step4_implementation_summary.md (its approved boundary keeps existing navigation: docs/plans/reply_composer_focus_layout/reply_composer_focus_layout_step2_feature_description.md#delivery-scope-and-completion-boundary)
+Source: public/assets/browser_signing.js
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History and 2026-10-23 investigation: docs/plans/production_feedback_register.md#pf-20261021-f01
+October 30 summary row F17: Focus the reply field after posting, including after redirect, so a one-line post can be continued immediately. Status there: See PF-20261021-F01 (docs/plans/production_feedback_register.md#pf-20261021-f01); broader reports not freshly verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+Related: PF-20261104-F71 asks for optimistic UI across all posting; kept separate because this item's completion checks are about replies.

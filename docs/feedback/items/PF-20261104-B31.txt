@@ -1,0 +1,16 @@
+ID: PF-20261104-B31
+Title: Deduplicate like attribution by user
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Liked by ilyag, ilyag, ilyag” is probably an issue; merge the same way the user is merged.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104135020-349fbf6d
+
+Notes:
+Qualifier retained; no assumption about reaction counting versus attribution display.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -37,33 +37,6 @@ Most data-touching commands accept optional positional `repository_root` and
 See [Local Run](../../README.md#local-run) in the README for the defaults
 and the bootstrap flow.
 
-## Track work items
-
-```
-./v3 work [--site URL] search [words...] [--status open|active|done|dropped|stale]
-./v3 work [--site URL] claim <thread-id> [--note TEXT] [--force] [--frm-arg=ARG ...]
-./v3 work [--site URL] status <thread-id> open|active|done|dropped [--note TEXT] [--frm-arg=ARG ...]
-./v3 work flush
-./v3 work [--site URL] sweep [--since REV] [--apply] [--frm-arg=ARG ...]
-./v3 work [--site URL] postback [--range A..B] [--dry-run] [--frm-arg=ARG ...]
-./v3 work [--site URL] install-hook
-./v3 work [--site URL] export [--no-push]
-```
-
-Searches and updates ZenMemes work items (`#work` threads) through `/work.txt` and
-signed `status:` replies posted with `public/frm.py`. `claim` refuses an item that is
-already active unless `--force` is given. Writes re-read `/work.txt` and report when a
-line has no effect (for example, an unapproved identity, exit 4). When the site is
-unreachable, writes are queued in `state/work/pending.jsonl` (exit 3) and `flush` posts
-them later. `sweep` lists (or with `--apply` creates) work items for new `todo.txt`
-lines and `#request` threads, skipping sources that already have an item, and runs a
-batch post-back. `postback` marks items `done` for `Work: <thread-id>` commit trailers
-in a range; `install-hook` adds a `post-merge` hook that runs it after every pull or
-deploy (log: `state/work/postback.log`). `export` commits the site's `/work.md` to the `work-export` branch
-without touching the current checkout (no commit when unchanged). Pass frm.py options with `--frm-arg=...`, one per argument. Environment:
-`V3_WORK_SITE` (default `https://zenmemes.com`), `V3_WORK_STATE_DIR`,
-`V3_WORK_FRM_STATE_DIR`. See [work tracking](work_tracking.md).
-
 ## Synchronize Railspike workflow documentation
 
 ```bash

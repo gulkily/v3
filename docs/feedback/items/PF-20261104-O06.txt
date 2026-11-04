@@ -1,0 +1,17 @@
+ID: PF-20261104-O06
+Title: Four-column code-review mockup
+Kind: other
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Build a mockup for a recent v3 change with before/after diff, agent rationale, and a place for reviewer notes.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103071750-5bce270c
+- https://zenmemes.com/posts/reply-20261103072055-04b9e432
+
+Notes:
+Agent says it built a private Claude artifact for PR #5. External artifact not fetched or verified; preserve reported response only.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

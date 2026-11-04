@@ -1,0 +1,27 @@
+ID: PF-20261021-B03
+Title: Saved draft starts collapsed
+Kind: bug
+Workflow: blocked
+Created: 2026-10-21
+Evidence: locally-verified
+Estimate: 0.15
+Aliases: 2026-10-21/B03, 2026-10-30/B11
+
+Request:
+Keep the composer collapsed on page load, even when the textarea contains saved text.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021180138-eddd96a4
+
+Done when:
+Restored draft stays compact until focus, preserving text, selection, warnings, and retry.
+
+Notes:
+Blocked on deployment. Home-page fix implemented and locally verified; deployment and production acceptance pending. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Next action: verify deployment and saved-draft behavior in production; preserve home-page-only evidence.
+Estimate 0.15 is inherited from October 21 feedback-only triage. Recommended workflow: one-shot.
+Checks and limits: docs/plans/ui_copy_audit_checklist.md#saved-home-page-draft-stays-collapsed--october-21-2026
+Source: public/assets/inline_reply_form.js
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-b03
+October 30 summary row B11: Keep composer collapsed on initial load even with saved text. Status there: Existing home-page local verification; see PF-20261021-B03 (docs/plans/production_feedback_register.md#pf-20261021-b03), production unverified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

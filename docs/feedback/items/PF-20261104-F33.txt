@@ -1,0 +1,15 @@
+ID: PF-20261104-F33
+Title: Set username in text browsers
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+It should be possible to set a username in Links/Elinks/etc.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103044412-2ca697a3
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

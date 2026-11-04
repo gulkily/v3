@@ -1,0 +1,26 @@
+ID: PF-20261021-F09
+Title: Compact query buttons
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 0.15
+Aliases: 2026-10-21/F09, 2026-10-30/F37
+
+Request:
+Use the same small square "View query" button as `/tools/codebase`.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021181111-3d37d8d5
+
+Done when:
+Consistent square buttons retain accessible names and open the correct query across affected themes.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: Shared query partial already supports compact buttons; reuse it on agreed surfaces. Source (templates/partials/query_action.php).
+Next action: Agree surfaces using compact controls; coordinate with F08 without conflating outcomes.
+Estimate 0.15 is inherited from October 21 feedback-only triage. Recommended workflow: One-shot.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f09
+October 30 summary row F37: Use the small square View query button from /tools/codebase. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

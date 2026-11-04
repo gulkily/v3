@@ -1,0 +1,17 @@
+ID: PF-20261030-B21
+Title: CSS hex color becomes a label
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B21
+
+Request:
+CSS hex color becomes a thread label; agent reports ffffff in the iPhone theme thread, with parser cause still a hypothesis.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261028185156-b3380de6
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B21; that summary is a local snapshot review and its request wording is preserved here.

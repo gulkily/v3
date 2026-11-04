@@ -1,0 +1,17 @@
+ID: PF-20261030-B06
+Title: Unicode in prepared-image message
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B06
+
+Request:
+Prepared-image message includes Unicode despite the reported board restriction; investigate consistency rather than assuming the same policy applies to interface text.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261020081827-5360e608
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B06; that summary is a local snapshot review and its request wording is preserved here.

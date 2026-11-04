@@ -1,0 +1,17 @@
+ID: PF-20261104-F01
+Title: Reload shows new content
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Reload (new version) should scroll down on the page to the new content.” Agent suggests exact-post targeting and preserving reading position when no posts are new.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031053051-e61d6788
+- https://zenmemes.com/posts/reply-20261031145711-2a06a08c
+
+Notes:
+Nested-branch and no-new-post behavior are agent elaborations, not a chosen implementation.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

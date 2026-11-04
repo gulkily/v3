@@ -1,0 +1,16 @@
+ID: PF-20261104-O08
+Title: Clean test baseline before development
+Kind: other
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+There should be no test failures before development starts, to begin with a clean slate.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103172045-769e94e6
+
+Notes:
+Existing test procedure remains authoritative: smoke plus affected tests; no full-suite run authorized by intake.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

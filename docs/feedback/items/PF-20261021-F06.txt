@@ -1,0 +1,26 @@
+ID: PF-20261021-F06
+Title: LCD color choices
+Kind: feature
+Workflow: blocked
+Created: 2026-10-21
+Evidence: locally-verified
+Estimate: 0.4
+Aliases: 2026-10-21/F06, 2026-10-30/F39
+
+Request:
+Explore adding a few color choices to the LCD theme.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021181124-47b0956c
+
+Done when:
+Chosen palettes remain readable; selection persists and existing themes work.
+
+Notes:
+Register status at migration: workflow state: blocked; delivery evidence: locally verified; deployment/production acceptance pending. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Implemented and locally verified — Railspike summary (docs/plans/lcd_color_choices/lcd_color_choices_step4_implementation_summary.md); deployment pending. Triage context: LCD has a fixed palette; choose palette scope and preference behavior before adding controls. Source (public/assets/theme-lcd.css).
+Next action: Verify deployment and palette behavior in production; retain local browser/contrast evidence.
+Estimate 0.4 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f06
+October 30 summary row F39: Offer several LCD theme colors. Status there: Locally verified in existing record; see PF-20261021-F06 (docs/plans/production_feedback_register.md#pf-20261021-f06), no new production check (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

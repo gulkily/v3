@@ -1,0 +1,24 @@
+ID: PF-20261021-F04
+Title: Simple recent activity
+Kind: feature
+Workflow: blocked
+Created: 2026-10-21
+Evidence: locally-verified
+Estimate: 0.5
+Aliases: 2026-10-21/F04, 2026-10-30/F01
+
+Request:
+Provide a simple, nontechnical "most recent activity" page.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021180354-1a31022c
+- https://zenmemes.com/posts/thread-20261026193043-3617140a
+
+Notes:
+Delivered locally: Recent navigation, individual thread/reply previews, exact-post links and bounded native paging. Approved cycle and verification: docs/plans/recent_activity/recent_activity_step4_implementation_summary.md
+Register status at migration: workflow state: blocked; delivery evidence: locally verified, deployment and production acceptance pending. Updated 2026-10-30.
+Next action: Deploy the code, rebuild/republish the configured instance and verify ordinary navigation on the reported phone/environment. Local browser tests cover 13 themes at phone/desktop widths, keyboard/no-JavaScript and reconnect recovery. No production claim; the separate Activity latency issue remains separate.
+Estimate 0.5 is inherited from October 21 feedback-only triage.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f04
+October 30 summary row F01: Provide a simple, nontechnical recent activity page. Later agent-authored elaboration asks for one main-navigation link and newest-first individual threads/replies, including replies to old threads; author, time, thread title, preview, exact-post link, mobile usability, pagination, Updated at, and clearable filters. See focused review below. Status there: Untriaged — PF-20261021-F04 (docs/plans/production_feedback_register.md#pf-20261021-f04); expanded scope not estimated (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

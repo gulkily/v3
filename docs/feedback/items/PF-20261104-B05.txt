@@ -1,0 +1,16 @@
+ID: PF-20261104-B05
+Title: Offer stripping for clipped controls
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+On localhost after clipping the specified tweet, submission rejects unsupported Unicode control/format characters but no remove-unsupported-characters button appears. Keep blocking weird characters and offer to strip them.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031075126-df0af34b
+
+Notes:
+Reported with FORUM_EMOJI_AUTHORED_TEXT=true and FORUM_UNICODE_AUTHORED_TEXT=true. Not replayed.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

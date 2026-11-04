@@ -1,0 +1,17 @@
+ID: PF-20261030-B17
+Title: Code-heavy posts get HTML 500
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B17
+
+Request:
+Code-heavy posts produce HTML 500 during prepare_thread; source suspects a web firewall, without confirmed root cause.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261023162419-d51a811d
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B17; that summary is a local snapshot review and its request wording is preserved here.

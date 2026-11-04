@@ -1,0 +1,17 @@
+ID: PF-20261104-F50
+Title: Import selected nested HN discussion
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Dream feature: select part of a Hacker News thread, use a bookmarklet/extension/unspecified tool, and about one second later have the discussion on Zenmemes with nesting.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103061957-ff49e574
+- https://zenmemes.com/posts/reply-20261103062013-b1a4bb4c
+
+Notes:
+Poster notes nested threads are a prerequisite. Treat as one dream workflow; no external component authorized.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

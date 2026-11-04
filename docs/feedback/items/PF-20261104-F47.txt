@@ -1,0 +1,16 @@
+ID: PF-20261104-F47
+Title: Explain JavaScript and CSS source
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Add helpful comments to included JS/CSS: prayer at the top, module and function purpose, and explanations for large/complex pieces.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103055837-5573397c
+
+Notes:
+No request to modify vendored dependencies; exact scope needs review.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

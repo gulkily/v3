@@ -1,0 +1,15 @@
+ID: PF-20261104-F49
+Title: Deploy shows commits and queue delay
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Deploy should show all available information about the update, including commits to be added; the Deploy button should communicate that it runs through a delayed queue.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103060933-51ef9554
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

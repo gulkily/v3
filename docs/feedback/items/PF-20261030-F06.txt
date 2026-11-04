@@ -1,0 +1,17 @@
+ID: PF-20261030-F06
+Title: Visible log-analysis request status
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F06
+
+Request:
+Show queued, processing and completed log-analysis requests in a UI and in Activity; currently described as opaque.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261018030247-d68e5c13
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F06; that summary is a local snapshot review and its request wording is preserved here.

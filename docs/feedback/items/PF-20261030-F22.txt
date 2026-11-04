@@ -1,0 +1,18 @@
+ID: PF-20261030-F22
+Title: Clipboard image attachment
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F22
+
+Request:
+Make clipboard-image attachment discoverable; later source also reports inability to attach an image, with cause unspecified.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261018032705-73378cea
+- https://zenmemes.com/posts/thread-20261021185038-3920b538
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F22; that summary is a local snapshot review and its request wording is preserved here.

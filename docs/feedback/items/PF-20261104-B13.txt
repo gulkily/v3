@@ -1,0 +1,16 @@
+ID: PF-20261104-B13
+Title: Recent clock icon misaligned
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The clock icon on the Recent button looks oddly aligned.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103040851-19bcc2e4
+
+Notes:
+Later changelog claims a fix; not verified here.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

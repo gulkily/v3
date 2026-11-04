@@ -1,0 +1,15 @@
+ID: PF-20261104-F59
+Title: Easy selector for reused tags
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+If a tag has been used more than once, make it available through an easy selector.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103064801-241dbbe4
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

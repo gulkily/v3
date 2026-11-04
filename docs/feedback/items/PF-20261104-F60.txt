@@ -1,0 +1,18 @@
+ID: PF-20261104-F60
+Title: Board and Recent image thumbnails
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Board/home (for now liked-only) should have a small attached-image thumbnail spanning each item’s height. Recent also requests image thumbnails.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103065646-b1b83702
+- https://zenmemes.com/posts/thread-20261103185300-870542f7
+- https://zenmemes.com/posts/reply-20261103185716-b269f88f
+
+Notes:
+Retain explicit board versus Recent surfaces in completion checks; title-only reply confirms board intent.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

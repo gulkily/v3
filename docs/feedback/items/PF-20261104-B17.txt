@@ -1,0 +1,22 @@
+ID: PF-20261104-B17
+Title: Text-browser layout reports
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Source posts “screenshots for textmode browsers #meta #gore” and six screenshots. Review reported text-browser rendering problems.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103043834-54596624
+- https://zenmemes.com/posts/reply-20261103043845-404db7d3
+- https://zenmemes.com/posts/reply-20261103043908-ed10f9fc
+- https://zenmemes.com/posts/reply-20261103043933-ae6fbe38
+- https://zenmemes.com/posts/reply-20261103044051-8ae35125
+- https://zenmemes.com/posts/reply-20261103044150-ee34c187
+- https://zenmemes.com/posts/reply-20261103044242-c7a28ab1
+
+Notes:
+Image files unavailable; browsers/pages/symptoms cannot be recovered from text alone. Preserve uncertainty rather than treating screenshots as passing checks.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

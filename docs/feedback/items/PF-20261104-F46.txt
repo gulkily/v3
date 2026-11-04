@@ -1,0 +1,15 @@
+ID: PF-20261104-F46
+Title: Readable commit dialog
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The thread’s Commit link should first show a nicely presented commit dialog, with another link for plaintext.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103055508-0c1d9d4c
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

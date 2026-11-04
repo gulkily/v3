@@ -1,0 +1,17 @@
+ID: PF-20261030-F03
+Title: Recent conversation view
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F03
+
+Request:
+Agent proposal: Recent conversation view with latest reply excerpt, author, time and exact-reply link; switch to new threads. Consider distinct participants and collapsing repeated self-bumps while retaining chronological inspection.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261025182121-b971d4ae
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F03; that summary is a local snapshot review and its request wording is preserved here.
