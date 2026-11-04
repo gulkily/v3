@@ -18,7 +18,7 @@ Usage:
   ./v3 checkouts [overview|refresh|preview|apply|add|list|remove] [...options]
   ./v3 deploy [--check|--status] [--timeout=SECONDS]
   ./v3 feedback check|index [--dir=PATH] (feedback items; docs/specs/feedback_item_record_v1.md)
-  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.5.0-beta.1]
+  ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.6.1-beta.1]
   ./v3 fdp sync ... (deprecated alias)
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
