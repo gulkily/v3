@@ -93,3 +93,16 @@ Run only tests mapped to the files a change touches, falling back to the full su
 Status: Step 1 drafted for review; awaiting Approved Step 1. Committed and pushed at the maintainer's request.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Superseded — 2026-11-04
+
+Never approved; closed without implementation. On 2026-11-04 the maintainer chose a different route than this assessment's Option A plus B: Claude runs only a subset of tests per task, and the maintainer runs the full suite periodically. That was delivered by two one-shot cycles:
+
+- [`fast_default_tests_outliers`](fast_default_tests_outliers/fast_default_tests_outliers_one_shot.md) (PR #15, merged): removed waste from the three slowest classes; full run 880 s → 486 s.
+- [`smoke_tests`](smoke_tests/smoke_tests_one_shot.md): `./v3 test` runs the curated smoke set (about a minute), `--smoke Name` adds touched tests, `--all` is the maintainer's full run.
+
+The 15 pre-existing failures noted under Enhancement Requests were fixed in [`preexisting_test_failures`](preexisting_test_failures/preexisting_test_failures_one_shot.md) (PR #16, merged). A parallel runner (Option B) is no longer needed for per-task runs; it could still shorten the periodic full run if that becomes a goal.
+
+Status: superseded; no further steps. Effort-study outcome: superseded before approval, with no implementation outcome counted.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

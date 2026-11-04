@@ -18,6 +18,8 @@
 
 ## Cycle v3/fast_default_tests
 
+2026-11-04T12:50:00Z — superseded before Approved Step 1; [closing note](./fast_default_tests_step1_solution_assessment.md#superseded--2026-11-04). The maintainer chose per-task smoke runs plus a periodic full suite, delivered by one-shot cycles `v3/fast_default_tests_outliers`, `v3/smoke_tests` and `v3/preexisting_test_failures`. No implementation, accepted outcome or retrospective score for this cycle; Step 1 projection 0.75 retained.
+
 2026-11-04T02:07:00Z — standing P2 enrollment; [canonical Step 1 checkpoint](./fast_default_tests_step1_solution_assessment.md#study-snapshots). Scope v1/A+B: fast default tier with skip-not-fail for unavailable tools, plus a parallel runner; full suite stays mandatory before merge. Baseline `ed5cbc07ddcf8810bfe35d23c4bd3d82f062e9ae`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because timing inspection preceded rating; Step 1 projection 0.75, alternatives A 0.35, B 0.60, C 0.85, D 0.50, single exposed Claude rater. Maintainer authorized committing and pushing Step 1 before approval; no approval, implementation or accepted-count change.
 
 ## Cycle v3/work_tracking

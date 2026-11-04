@@ -6,7 +6,7 @@ Debug report: [log](smoke_tests_debug_log.md)
 
 **Cycle estimate: 0.35**
 
-Status: committed and pushed on `feat/smoke-tests` (based on `feat/fast-default-tests-outliers`); next permitted action: maintainer review; merge only on request.
+Status: rebased onto `main` after PRs #15 and #16 merged; next permitted action: maintainer review; merge only on request.
 
 ## Original request
 
@@ -55,10 +55,13 @@ None in the concept inventory.
 
 - `php tests/run.php TestRunnerBehaviorTest`: 7/7 passed, including the new smoke cases.
 - `php tests/run.php` (smoke set): 428 run, 424 passed, 4 failed, 46 s. The 4 failures are `LocalAppSmokeTest` (3) and `ReadModelBuilderTimingTest` (1), which fail on `main` and are fixed in PR #16; this branch does not contain that fix. With #16 merged, the smoke set should be green; that combination has not been run.
+- After rebasing onto `main` (with #16): `php tests/run.php` 427 run, 427 passed, 0 failed, 44 s. One fewer test than before because #16 removed a stale `LocalAppSmokeTest` test.
 - Full suite: not run (the maintainer runs it).
 
 ## Commit, merge and publication status
 
-Committed and pushed on `feat/smoke-tests`; PR opened against `feat/fast-default-tests-outliers`. Not merged or deployed.
+First opened as PR #17 against `feat/fast-default-tests-outliers`. GitHub closed it unmerged when that branch was deleted after #15 merged. Rebased onto `main` (after #15 and #16), with the ledger conflict resolved by keeping both entries, and reopened as a new PR against `main`. Not merged or deployed.
+
+2026-11-04 addition, authorized by the maintainer ("please go ahead"): the parked `fast_default_tests` Step 1 is marked superseded, with a closing note and a ledger line.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
