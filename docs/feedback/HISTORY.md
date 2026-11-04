@@ -7,6 +7,10 @@ Where items came from, and what has not been folded in yet. Items in [`items/`](
 - [Production feedback register](../plans/production_feedback_register.md): all 17 entries became items with the same IDs on 2026-11-04.
 - [October 30 summary](../plans/zenmemes_meta_feedback_2026-10-30_summary.md): 91 of 97 rows on 2026-11-04. 16 rows were repeats of register items and added their sources there; 75 became `PF-20261030-*` items, numbered by summary row. Each item carries the alias `2026-10-30/<row>`.
 
+## Triage runs
+
+Each run after an import leaves its proposals in [`triage/`](triage/), named by intake date, committed with the item changes it made.
+
 ## Skipped from the October 30 summary
 
 - Other 02: requests about other products (Gusto, OBS, Codex, Signal).

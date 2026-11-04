@@ -27,13 +27,16 @@ Item format: [feedback item record](../specs/feedback_item_record_v1.md). Identi
 
 ## 4. Propose
 
-Show the maintainer one list before writing anything:
+Write the proposals to `docs/feedback/triage/<intake date>_proposals.txt` in the repository (never `/tmp` or another scratch location), then point the maintainer at that file. It is the record of the run and is committed with the item changes.
 
+- Start with `Key: value` headers: `Title`, `Status` (`awaiting review`, then `applied` or `rejected`), `Intake-Date`, the UTC and local window, the import commit, posts screened, and the per-post classification counts (attach, create, skip) that add up to posts screened. Then outcome counts (new items by kind, existing items updated); say which counts are posts and which are outcomes.
 - **create**: proposed ID, kind, title (a few words), the request in the poster's own terms with qualifiers like "maybe" or "brainstorm" kept, and every source URL.
 - **attach**: the item ID and title, the new source URLs, and anything new the post adds.
 - **skip**: the post and a short reason (social, other product, already covered, agent-only idea, and so on). Every post in the window ends up in exactly one of create, attach or skip.
 
 Allocate IDs as `PF-<intake date>-<F|B|O><nn>`, using the next unused number for that date and kind. Do not invent implementation decisions, root causes or estimates; leave `Estimate` out unless someone gave one.
+
+When the maintainer asks for edits, change the proposals file itself, so the committed file matches what was applied.
 
 ## 5. Write
 
@@ -42,10 +45,11 @@ After the maintainer accepts (with any edits):
 - Create or update item files. New items start `Workflow: untriaged`, `Evidence: unknown`. Attach adds the source line and a short dated note.
 - Run `./v3 feedback check` and fix every problem. Read each `Review:` line: a shared source is fine for a split request; otherwise it is a missed attach.
 - Run `./v3 feedback index`.
-- Show the diff summary (created, updated, skipped counts) and leave the commit to the maintainer unless asked to commit.
+- Set the proposals file's `Status: applied`.
+- Show the diff summary (created, updated, skipped counts) and leave the commit to the maintainer unless asked to commit. The proposals file and the item changes go in the same commit.
 
 ## Recovery
 
-- Nothing is written before review, so a rejected proposal needs no cleanup.
+- No item is written before review. A rejected run keeps its proposals file with `Status: rejected` and a one-line reason, or the maintainer deletes it.
 - A wrong write is undone with Git before commit (`git checkout -- docs/feedback/` or `git clean` for new files, after checking `git status`).
 - If check or index fails partway, fix the named file and rerun; the index is written whole or not at all.

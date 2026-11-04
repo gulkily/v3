@@ -105,3 +105,16 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
 - Notes:
   - Not verified here: a full agent run on real imported posts. This workspace has only the three-post test fixture, not the zenmemes.com import.
   - Retrospective stage-work assessment: 0.08, as estimated.
+
+## Stage 7 - Acceptance on the maintainer's WSL checkout (in progress)
+
+**Original estimate: 0.05** (unchanged)
+
+- Evidence so far (2026-11-04, maintainer's WSL checkout, the maintainer's agent):
+  - After a fresh `./v3 import-instance`, the agent found the procedure, read 377 posts from the local import (window from 2026-10-30 local midnight), wrote nothing, and returned proposals: posts 17 attach, 147 create, 213 skip; outcomes 118 new items (77 features, 32 bugs, 9 other) and 5 existing items updated.
+  - The two 2026-11-03 "summary field" threads became one proposed item (`PF-20261104-F40`) with both sources.
+  - Already-sourced October 30 posts were skipped as covered, so the overlap with the seeded window produced no duplicates.
+- Pending: maintainer's edits to the proposals, apply, `check` and `index`, and a rerun of the same window proposing nothing.
+- Notes:
+  - Enhancement request (maintainer, during this stage): proposals must be kept in the repository, not `/tmp`. Implemented in the procedure: proposals go to `docs/feedback/triage/<intake date>_proposals.txt`, are edited in place during review, marked `applied` or `rejected`, and committed with the item changes; `HISTORY.md` and a `triage/README.md` point to them. Links checked.
+  - The run's chat summary mixed post and outcome counts; the procedure now asks for both, labeled.
