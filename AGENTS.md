@@ -20,6 +20,10 @@ Use the project's `Key: value` plain-text format for canonical records and human
 
 Favor removing UI text over rewriting or relocating it. Rely on an intuitive, explorable interface; avoid repeating controls or explaining internals. Keep contextual help or Explain only where users need information the interface cannot communicate. Keep essential warnings and recovery actions visible. Pages must look final on first paint: decide viewer-specific UI in the client before paint so server HTML stays static, and allow post-paint updates only for real state changes (see `CONTRIBUTING.md`). Follow the UI verification guidance in `CONTRIBUTING.md`. Track cleanup and verification in `docs/plans/ui_copy_audit_checklist.md`.
 
+## Tests
+
+During a task, run only the smoke set plus the tests for what you changed: `./v3 test --smoke FooTest Bar::testX` (bare `./v3 test` is the smoke set alone). Do not run or wait for the full suite (`./v3 test --all`); the maintainer runs it periodically. Report what you ran and say the full suite was not run. See [Tests in CONTRIBUTING.md](CONTRIBUTING.md#tests).
+
 ## Todo
 
 Do not modify `todo.txt` unless the user explicitly requests an edit to that file. Record task progress and follow-up work in the relevant planning or implementation documents instead.

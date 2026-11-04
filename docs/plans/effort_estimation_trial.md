@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/smoke_tests
+
+2026-11-04T12:40:00Z — standing P2 enrollment, one-shot; [record](./smoke_tests/smoke_tests_one_shot.md#study-history). Builds on `v3/fast_default_tests_outliers` (PR #15). Scope v1: curated smoke set as the default run, `--smoke` plus named tests per task, full suite as a periodic maintainer run, process in AGENTS/CONTRIBUTING. Baseline `9459c7479c54f28a6d38c060a4a5293d9d6fb48c`; extended/debug enabled. Pristine intake missing; execution-entry projection 0.35, closeout retrospective 0.35, single exposed Claude rater. No accepted-count change.
+
 ## Cycle v3/fast_default_tests_outliers
 
 2026-11-04T04:50:00Z — standing P2 enrollment, one-shot; [record](./fast_default_tests_outliers/fast_default_tests_outliers_one_shot.md#study-history). Parent `v3/fast_default_tests` (parked Step 1, unchanged). Scope v1: remove waste from the three slowest test classes without reducing assertions. Baseline `8dac3f9cfda4a1e8833a3072ce47414b1ef21b73`; extended/debug enabled. Pristine intake missing because profiling preceded rating; execution-entry projection 0.30, single exposed Claude rater. No accepted-count change.
