@@ -4429,6 +4429,7 @@ const state = {
   sessionStore: {},
   localRemoveCalls: [],
   submitHandler: null,
+  pageShowHandlers: [],
   fetchCalls: [],
   assignedUrl: '',
   resolveCreatePreparedPost: null,
@@ -4537,7 +4538,10 @@ const form = {
   submit() {
     state.formSubmitted += 1;
   },
-  reset() {}
+  reset() {
+    fields.find((field) => field.name === 'body').value = 'Prefilled body';
+    fields.find((field) => field.name === 'subject').value = 'Prefilled subject';
+  }
 };
 
 const statusNode = { dataset: {}, textContent: 'Ready.', hidden: false, querySelector() { return null; } };
@@ -4555,7 +4559,9 @@ root.querySelector = function(selector) {
 root.querySelectorAll = function() { return []; };
 
 global.window = {
-  addEventListener() {},
+  addEventListener(type, handler) {
+    if (type === 'pageshow') state.pageShowHandlers.push(handler);
+  },
   openpgp: {
     async readKey() { return { getFingerprint() { return 'DEF456'; } }; },
     async readPrivateKey() { return { key: 'private', getFingerprint() { return 'DEF456'; } }; },
@@ -4684,14 +4690,37 @@ vm.runInThisContext(source);
     draftExists: Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:thread'),
     recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || ''
   };
+  await state.submitHandler({ submitter: submitButton, preventDefault() {} });
+  const finalizeCallsAfterRepeatClick = state.fetchCalls.filter((call) => call.url === '/api/create_prepared_post').length;
   state.resolveCreatePreparedPost();
   await submitPromise;
+  state.pageShowHandlers.forEach((handler) => handler({ persisted: true }));
+  const restored = {
+    disabled: submitButton.disabled,
+    subject: fields.find((field) => field.name === 'subject').value,
+    body: fields.find((field) => field.name === 'body').value,
+    draftExists: Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:thread')
+  };
+  const completedMarks = state.marks.slice();
+  const completedRemoveCalls = state.localRemoveCalls.slice();
+  fields.find((field) => field.name === 'body').value = 'A new post after Back';
+  state.resolveCreatePreparedPost = null;
+  const secondSubmit = state.submitHandler({ submitter: submitButton, preventDefault() {} });
+  for (let index = 0; index < 100 && state.resolveCreatePreparedPost === null; index += 1) {
+    await Promise.resolve();
+  }
+  const newPostReachedFinalize = state.resolveCreatePreparedPost !== null;
+  if (newPostReachedFinalize) state.resolveCreatePreparedPost();
+  await secondSubmit;
   process.stdout.write(JSON.stringify({
     optimistic,
+    finalizeCallsAfterRepeatClick,
+    restored,
+    newPostReachedFinalize,
     assignedUrl: state.assignedUrl,
-    removeCalls: state.localRemoveCalls,
+    removeCalls: completedRemoveCalls,
     finalFormSubmitted: state.formSubmitted,
-    marks: state.marks,
+    marks: completedMarks,
     debugEvents: state.debugEvents
   }));
 })().catch((error) => {
@@ -4709,6 +4738,9 @@ NODE;
             '/api/create_prepared_post',
         ], $result['optimistic']['fetchUrls']);
         assertSame(true, $result['optimistic']['pendingExists']);
+        assertSame(1, $result['finalizeCallsAfterRepeatClick']);
+        assertSame(['disabled' => false, 'subject' => '', 'body' => '', 'draftExists' => false], $result['restored']);
+        assertSame(true, $result['newPostReachedFinalize']);
         assertSame(['intro', 'post-thread-001', 'compose-card'], $result['optimistic']['order']);
         assertSame('Thread subject', $result['optimistic']['pendingSubject']);
         assertSame('Board tags: general', $result['optimistic']['pendingTags']);
