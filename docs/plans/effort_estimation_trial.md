@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/fast_default_tests
+
+2026-11-04T02:07:00Z — standing P2 enrollment; [canonical Step 1 checkpoint](./fast_default_tests_step1_solution_assessment.md#study-snapshots). Scope v1/A+B: fast default tier with skip-not-fail for unavailable tools, plus a parallel runner; full suite stays mandatory before merge. Baseline `ed5cbc07ddcf8810bfe35d23c4bd3d82f062e9ae`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because timing inspection preceded rating; Step 1 projection 0.75, alternatives A 0.35, B 0.60, C 0.85, D 0.50, single exposed Claude rater. Maintainer authorized committing and pushing Step 1 before approval; no approval, implementation or accepted-count change.
+
 ## Cycle v3/work_tracking
 
 2026-11-04T00:55:14Z — v3/work_tracking Step 4 entry: Approved Step 3; branch feat/work-tracking, planning commit be2990e. [Summary](./work_tracking/work_tracking_step4_implementation_summary.md#study-entry) reaffirms whole-cycle 1.00 and eight stage-work originals, same v2/A/baseline/R1/P2, single exposed Claude rater. Implementation proceeds stage by stage; no accepted-count change.
