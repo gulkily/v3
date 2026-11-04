@@ -90,3 +90,18 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
 - Notes:
   - Deviation: Step 3 said the 10-18 and 10-21 summaries would be listed as unreconciled "in the index"; they are listed in `HISTORY.md`, which the index links, to keep the generated file free of hand-written text.
   - Retrospective stage-work assessment: 0.15, as estimated; the summary's own merges made matching straightforward.
+
+## Stage 6 - Triage procedure in docs/agents
+
+**Original estimate: 0.08** (revised in Step 3 from 0.07 for the `docs/agents/` location; unchanged since)
+
+- Changes:
+  - [`docs/agents/README.md`](../../agents/README.md): index of agent procedures, stating that runtime prompts stay in `prompts/`.
+  - [`docs/agents/feedback_triage.md`](../../agents/feedback_triage.md): window, discovery, matching, create/attach/skip proposals, write, check, index, recovery. Carries over the checklist's attribution, context and qualifier rules.
+  - `zenmemes_feedback_automation_checklist.md` marked superseded; `minimal_feedback_triage.md` and the concept entry point at the items and procedure; `AGENTS.md` gains an "Agent procedures" section pointing at `docs/agents/`.
+- Verification:
+  - Every relative link in the touched documents resolves (the two placeholders in the minimal triage template excepted); `git diff --check` clean.
+  - Rerun behavior on a covered window: the Stage 5 coverage check shows every catalogued October 30 source already listed in an item, so step 3's "already a source" rule proposes nothing for them. A live dry run needs the maintainer's import and is part of Stage 7.
+- Notes:
+  - Not verified here: a full agent run on real imported posts. This workspace has only the three-post test fixture, not the zenmemes.com import.
+  - Retrospective stage-work assessment: 0.08, as estimated.

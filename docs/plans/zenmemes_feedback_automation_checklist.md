@@ -1,5 +1,7 @@
 # Post-import feedback automation — implementation checklist
 
+> **Superseded 2026-11-04.** The procedure now lives in [feedback triage](../agents/feedback_triage.md) and writes [feedback items](../feedback/README.md) instead of a dated summary. This checklist is kept as history.
+
 Outline of the manual workflow used on October 21, 2026, for a future automation. This document records implementation work to do; it does not implement or approve the automation. Importing content is a prerequisite and is outside this checklist.
 
 Reference output: [October 21 feedback summary](zenmemes_meta_feedback_2026-10-21_summary.md). Format reference: [existing meta feedback summary](zenmemes_meta_feedback_2026-10-18_summary.md).

@@ -28,6 +28,10 @@ During a task, run only the smoke set plus the tests for what you changed: `./v3
 
 Do not modify `todo.txt` unless the user explicitly requests an edit to that file. Record task progress and follow-up work in the relevant planning or implementation documents instead.
 
+## Agent procedures
+
+For recurring agent tasks such as triaging site feedback, follow the matching procedure in [`docs/agents/`](docs/agents/README.md). Feedback items live in [`docs/feedback/`](docs/feedback/README.md).
+
 ## Navigation icons
 
 When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` for icon themes (currently Word97, Chicago, and Midnight). Cover both Tools launcher buttons and Tools subnavigation where applicable. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.
