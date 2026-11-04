@@ -11,7 +11,7 @@ Start in the [feedback index](../feedback/README.md). Each request is one [feedb
 
 ## Updates and closure
 
-Update current fields in the item only; append dated evidence or a concise correction reason when changing claims. Detailed evidence stays in linked triage/feature documents. Historical status tables are snapshots and must link to the items, rather than become a second current-status list.
+Update current fields in the item only, in the same commit as the work, with a `Feedback: PF-...` commit trailer per item (see `AGENTS.md`); each [triage run](../agents/feedback_triage.md) proposes status updates for items a commit named but left unchanged; append dated evidence or a concise correction reason when changing claims. Detailed evidence stays in linked triage/feature documents. Historical status tables are snapshots and must link to the items, rather than become a second current-status list.
 
 Workflow: **untriaged** needs scope/evidence review; **ready** has clear checks and a proposed next action; **planned** links an approved plan and its approval boundary; **in progress** has authorized active work; **blocked** names the unmet prerequisite and next recovery action; closed items use **done**, **declined**, **superseded** or **duplicate** and record the disposition and evidence. In item files these states are written lowercase with `in-progress` hyphenated. An inherited recommendation or a drafted plan alone is not approval. Local work awaiting deployment may remain blocked with deployment as its next action.
 

@@ -118,3 +118,8 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
 - Notes:
   - Enhancement request (maintainer, during this stage): proposals must be kept in the repository, not `/tmp`. Implemented in the procedure: proposals go to `docs/feedback/triage/<intake date>_proposals.txt`, are edited in place during review, marked `applied` or `rejected`, and committed with the item changes; `HISTORY.md` and a `triage/README.md` point to them. Links checked.
   - The run's chat summary mixed post and outcome counts; the procedure now asks for both, labeled.
+- Scope change (approved by the maintainer 2026-11-04, during this stage): completion tracking. Not in the Step 2 scope, which said only that status changes are file edits.
+  - `AGENTS.md`: search items before a fix, name the ID in the plan, add a `Feedback: PF-...` trailer per addressed item, update the item in the same commit (`done` only with completion checks met).
+  - Triage procedure gains step 2, "Catch up on completed work": scan `git log` since the previous applied run for trailers and PF IDs, propose **status** updates for items left unchanged, never infer completion from unnamed commits. Proposal headers count status updates.
+  - Management guide and concept entry describe the trailer and the catch-up.
+  - Verification: `git diff --check` clean; the procedure's section numbering and cross-references read in order. Not exercised on real history yet: no commit carries a `Feedback:` trailer.
