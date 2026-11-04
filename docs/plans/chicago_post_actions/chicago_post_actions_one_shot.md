@@ -7,7 +7,7 @@ Extended estimates: enabled (new-cycle default; no real alternatives or separate
 
 **Cycle estimate: 0.15**
 
-Status: implemented and the requested UI condition is locally verified on `fix/chicago-post-actions`; Linux signed-save acceptance, review and deployment remain pending. Next action: completion commit, push, draft PR and thread reply.
+Status: implemented and the requested UI condition is locally verified on `fix/chicago-post-actions`; [draft PR 24](https://github.com/gulkily/v3/pull/24) is open. Linux signed-save acceptance, review and deployment remain pending. Next action: thread reply and maintainer review.
 
 ## Request and authorization
 
@@ -87,6 +87,6 @@ Delivered scope v1: Chicago thread actions now carry the same UI typography repa
 
 ## Final review and commit/publication status
 
-Final diff review: the product change is confined to the canonical Chicago stylesheet; existing post-action contracts are reused; Like/Flag padding selectors exclude Agent, retraction, Handoff, QDB and compose controls; no component, navigation icon, data format, schema, API, dependency or deployment change exists. Test-harness corrections are limited to making the existing acceptance runnable and diagnosable on macOS. Planning commit `4d702bc9`; completion commit pending. Merge and deployment are not authorized.
+Final diff review: the product change is confined to the canonical Chicago stylesheet; existing post-action contracts are reused; Like/Flag padding selectors exclude Agent, retraction, Handoff, QDB and compose controls; no component, navigation icon, data format, schema, API, dependency or deployment change exists. Test-harness corrections are limited to making the existing acceptance runnable and diagnosable on macOS. Planning commit `4d702bc9`; completion commit `defa308f`. The branch was published from the contributor fork after upstream correctly denied direct write access, and [draft PR 24](https://github.com/gulkily/v3/pull/24) targets `gulkily/v3:main`. Merge and deployment are not authorized.
 
 *— Codex · 2026-11-04 UTC*
