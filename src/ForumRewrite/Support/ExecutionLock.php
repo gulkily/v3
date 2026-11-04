@@ -20,11 +20,12 @@ final class ExecutionLock
     /**
      * @template T
      * @param callable(): T $callback
+     * @param \Closure():void|null $onWait called once if the lock is busy at the first attempt
      * @return T
      */
-    public function withExclusiveLock(callable $callback): mixed
+    public function withExclusiveLock(callable $callback, ?\Closure $onWait = null): mixed
     {
-        $locked = $this->withExclusiveLockTimed($callback);
+        $locked = $this->withExclusiveLockTimed($callback, $onWait);
 
         return $locked['result'];
     }
@@ -32,9 +33,10 @@ final class ExecutionLock
     /**
      * @template T
      * @param callable(): T $callback
+     * @param \Closure():void|null $onWait called once if the lock is busy at the first attempt
      * @return array{result:T,timings:array{lock_wait:float,lock_hold:float}}
      */
-    public function withExclusiveLockTimed(callable $callback): array
+    public function withExclusiveLockTimed(callable $callback, ?\Closure $onWait = null): array
     {
         $directory = dirname($this->lockPath);
         if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
@@ -66,6 +68,10 @@ final class ExecutionLock
                     }
                 }
 
+                if ($onWait !== null) {
+                    $onWait();
+                    $onWait = null;
+                }
                 usleep(100000);
             } while (((hrtime(true) - $start) / 1000000000) < $this->timeoutSeconds);
         } finally {

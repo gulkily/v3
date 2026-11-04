@@ -143,6 +143,37 @@ final class StaticArtifactInvalidator
      * callers can report a partial result. Used when content must stop being served anywhere.
      * Imports exclude documentation even when a legacy library is incomplete.
      */
+    /**
+     * Pages that can show one removed post: its thread and post pages, the QDB quote alias,
+     * its tag pages, its author's profile, every top-level page and family index (listings,
+     * latest/top/leetness, recent, activity, users, tags), and the offline snapshot. Other
+     * threads' pages are kept. The high-traffic cache is withdrawn as for any removal.
+     *
+     * @param list<string> $tags board tags and thread labels shown with the thread
+     */
+    public function invalidateRemovedPost(string $threadId, string $postId, array $tags, ?string $profileSlug): void
+    {
+        foreach ($this->artifactRoots as $root) \ForumRewrite\Host\HighTrafficSafety::detach($root);
+        $paths = ['/offline/snapshot.sqlite3', '/offline/update.sqlite3', '/offline/manifest.json', '/offline/update.sqlite3.manifest.json'];
+        foreach (array_unique([$threadId, $postId]) as $id) {
+            array_push($paths, '/threads/' . $id . '.html', '/threads/' . $id . '/index.html', '/posts/' . $id . '.html', '/posts/' . $id . '/index.html');
+        }
+        $number = \ForumRewrite\Qdb\QdbQuoteNumbers::fromThreadId($threadId);
+        if ($number !== null) $paths[] = '/qdb/quotes/' . $number . '.html';
+        foreach ($tags as $tag) {
+            if (preg_match('/^[A-Za-z0-9._-]+$/', $tag) === 1) array_push($paths, '/tags/' . $tag . '.html', '/tags/' . $tag . '/index.html');
+        }
+        if ($profileSlug !== null && $profileSlug !== '') array_push($paths, '/profiles/' . $profileSlug . '.html', '/profiles/' . $profileSlug . '/index.html');
+        foreach ($this->artifactRoots as $root) {
+            foreach (array_merge(glob($root . '/*.html') ?: [], glob($root . '/*/index.html') ?: []) as $path) {
+                $relative = substr($path, strlen($root));
+                if (str_starts_with($relative, '/docs')) continue;
+                $paths[] = $relative;
+            }
+        }
+        $this->deletePaths(array_values(array_unique($paths)), true);
+    }
+
     public function invalidateAllGeneratedPresentation(bool $includeDocumentation = true): void
     {
         foreach ($this->artifactRoots as $root) \ForumRewrite\Host\HighTrafficSafety::detach($root);
