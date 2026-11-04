@@ -297,15 +297,21 @@ $testFiles = [
     __DIR__ . '/WriteApiSmokeTest.php',
 ];
 
-// Slow classes left out of the default run; `--all` or naming the class runs them.
-// Run `--all` before merging or deploying.
-const NOT_IN_DEFAULT_RUN = ['PlatformDocsStaticTest', 'WriteApiSmokeTest', 'CheckoutsCommandTest'];
-
+// Per-task runs use the curated smoke set (tests/smoke.txt) plus the tests for what changed:
+//   ./v3 test                        smoke set
+//   ./v3 test --smoke FooTest ...    smoke set plus the named tests
+//   ./v3 test FooTest Bar::testX     only the named tests
+//   ./v3 test --all                  full suite (the maintainer runs it periodically)
 $failures = [];
 $arguments = array_slice($argv, 1);
 $runAll = in_array('--all', $arguments, true);
-$filters = array_values(array_filter($arguments, static fn (string $argument): bool => $argument !== '--all'));
-$leftOut = [];
+$withSmoke = in_array('--smoke', $arguments, true);
+$filters = array_values(array_filter($arguments, static fn (string $argument): bool => !in_array($argument, ['--all', '--smoke'], true)));
+$smokeEntries = [];
+if (!$runAll && ($filters === [] || $withSmoke)) {
+    $smokeEntries = readSmokeList(smokeListPath());
+    $filters = array_values(array_unique(array_merge($smokeEntries, $filters)));
+}
 $runCount = 0;
 $testDurations = [];
 $testResults = [];
@@ -339,15 +345,18 @@ foreach ($testFiles as $testFile) {
 }
 
 $declared = get_declared_classes();
+foreach ($smokeEntries as $entry) {
+    [$entryClass, $entryMethod] = array_pad(explode('::', $entry, 2), 2, null);
+    if (!in_array($entryClass, $declared, true) || ($entryMethod !== null && !method_exists($entryClass, $entryMethod))) {
+        fwrite(STDERR, "Smoke list entry not found: {$entry} (" . smokeListPath() . ")\n");
+        exit(1);
+    }
+}
 foreach ($declared as $class) {
     if (!str_ends_with($class, 'Test')) {
         continue;
     }
 
-    if ($filters === [] && !$runAll && in_array($class, NOT_IN_DEFAULT_RUN, true)) {
-        $leftOut[] = $class;
-        continue;
-    }
     $testObject = new $class();
     if (!shouldRunClass($class, $filters)) {
         continue;
@@ -412,13 +421,13 @@ $testClassifications = $historyStore->recordResults($testResults, date('c'));
 
 $prunedCount = 0;
 // Only a complete run may forget tests that no longer exist.
-if ($filters === [] && ($runAll || $leftOut === [])) {
+if ($filters === []) {
     $prunedCount = $historyStore->pruneStaleEntries(array_keys($testResults));
 }
 
 printRunSummary($runCount, $failures, $testDurations, $testClassifications, $prunedCount, STDOUT);
-if ($leftOut !== []) {
-    fwrite(STDOUT, 'Not in the default run (use --all): ' . implode(', ', $leftOut) . "\n");
+if ($smokeEntries !== []) {
+    fwrite(STDOUT, "Smoke set from tests/smoke.txt; the full suite is ./v3 test --all.\n");
 }
 
 if ($failures !== []) {
@@ -523,6 +532,30 @@ function printRunSummary(
 /**
  * @param list<string> $filters
  */
+function smokeListPath(): string
+{
+    $path = getenv('FORUM_TEST_SMOKE_LIST');
+    return $path === false || trim($path) === '' ? __DIR__ . '/smoke.txt' : $path;
+}
+
+/** @return list<string> Class or Class::method names, one per line; # starts a comment. */
+function readSmokeList(string $path): array
+{
+    $lines = @file($path, FILE_IGNORE_NEW_LINES);
+    if ($lines === false) {
+        fwrite(STDERR, "Cannot read smoke list: {$path}\n");
+        exit(1);
+    }
+    $entries = [];
+    foreach ($lines as $line) {
+        $line = trim(explode('#', $line, 2)[0]);
+        if ($line !== '') {
+            $entries[] = $line;
+        }
+    }
+    return $entries;
+}
+
 function shouldRunClass(string $class, array $filters): bool
 {
     if ($filters === []) {

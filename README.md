@@ -530,17 +530,20 @@ audit, including findings, or 1 for an error.
 
 ## Tests
 
-Run the current parser, rebuild, and app smoke tests:
+Run the smoke set (`tests/smoke.txt`, about a minute), optionally with the tests for what you changed:
 
 ```bash
 ./v3 test
+./v3 test --smoke FooTest
 ```
 
-The default run leaves out a few slow classes (listed at the end of its output). Run everything before merging or deploying:
+Run the full suite:
 
 ```bash
 ./v3 test --all
 ```
+
+See [Tests in CONTRIBUTING.md](CONTRIBUTING.md#tests) for when to run which.
 
 Standalone local-server dependency regressions:
 
