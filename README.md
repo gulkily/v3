@@ -537,10 +537,10 @@ Run the smoke set (`tests/smoke.txt`, about a minute), optionally with the tests
 ./v3 test --smoke FooTest
 ```
 
-Run the full suite:
+Run the full suite on every core:
 
 ```bash
-./v3 test --all
+./v3 fulltest
 ```
 
 See [Tests in CONTRIBUTING.md](CONTRIBUTING.md#tests) for when to run which.
