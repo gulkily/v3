@@ -14,6 +14,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Source repository link one-shot](source_repository_link/source_repository_link_one_shot.md) — agents find the code repository from `/llms.txt` and the `/api/` index.
 
+[Chicago post actions one-shot](chicago_post_actions/chicago_post_actions_one_shot.md) — carry the Word97 post-action typography and Like/Flag bevel repairs into Chicago.
+
 [Human-readable format audit](human_readable_formats_checklist.md) — JSON conversion checklist and boundaries; [retraction text assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md).
 
 ## Production feedback
