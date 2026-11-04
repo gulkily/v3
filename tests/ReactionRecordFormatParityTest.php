@@ -145,6 +145,10 @@ NODE;
         $tables = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN);
         $dump = [];
         foreach ($tables as $table) {
+            // *_revision tables hold random mutation tokens (PrivateMessageHistoryRevision), new on every build.
+            if (str_ends_with($table, '_revision')) {
+                continue;
+            }
             $rows = $pdo->query('SELECT * FROM "' . $table . '"')->fetchAll(PDO::FETCH_NUM);
             if ($table === 'metadata') {
                 $rows = array_values(array_filter($rows, static fn (array $row): bool => !preg_match('/(_at|_ms|_seconds|commit|duration|elapsed|timing|version|build|fingerprint|repository_root)/', (string) $row[0])));

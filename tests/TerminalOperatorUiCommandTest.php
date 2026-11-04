@@ -15,7 +15,9 @@ final class TerminalOperatorUiCommandTest
 
     public function testNonInteractiveInputPrintsCliFallbackWithoutWork(): void
     {
-        [$exitCode, $stdout, $stderr] = $this->runCommand('./v3 tui');
+        // The whiptail check runs first; stand in a command that exists so this reaches the terminal check
+        // on machines without whiptail (the missing-whiptail case is covered below).
+        [$exitCode, $stdout, $stderr] = $this->runCommand('V3_TUI_WHIPTAIL=true ./v3 tui');
 
         assertSame(1, $exitCode);
         assertSame('', $stdout);

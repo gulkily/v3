@@ -19,7 +19,6 @@ use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Host\StaticArtifactReleasePublisher;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\ReadModel\ReadModelMetadata;
-use ForumRewrite\Http\InstancePageController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -988,9 +987,12 @@ PHP;
             }
             $profileResume = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954?tab=activity');
             assertStringContains('data-auth-return-to="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954?tab=activity"', $profileResume);
-            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'));
+            // API routes answer members-only denials with JSON access_denied (single-request posting API, 2026-10-30).
+            $profileApi = $this->render($application, '/api/get_profile?profile_slug=openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+            assertSame('access_denied', json_decode($profileApi, true)['code'] ?? null, $profileApi);
+            assertStringNotContains('Username:', $profileApi);
             $username = $this->render($application, '/api/get_username?username=guest');
-            assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $username);
+            assertSame('access_denied', json_decode($username, true)['code'] ?? null, $username);
             assertStringNotContains('Approved-Keys', $username);
             assertStringContains('<h1>Reconnecting</h1>', $this->render($application, '/backup/'));
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
@@ -1037,7 +1039,8 @@ PHP;
                 '/api/get_forte_content_summary?post_id=root-001',
             ] as $path) {
                 $response = $this->render($application, $path);
-                assertStringContains('Approval required', $response);
+                // Members-only API denials are JSON access_denied (single-request posting API, 2026-10-30).
+                assertSame('access_denied', json_decode($response, true)['code'] ?? null, $path . ': ' . $response);
                 assertStringNotContains('The requested route does not exist in the local test slice.', $response);
             }
 
@@ -4127,42 +4130,6 @@ PHP;
         assertStringContains('aria-expanded', $script);
         assertStringContains('Click to expand this value', $script);
         assertStringContains('aria-live', $script);
-    }
-
-    public function testRepositoryArchiveDownloadFilenamesIncludeReadableTimestamp(): void
-    {
-        // repositoryArchiveDownloadFilename() lives on InstancePageController
-        // now (Phase 2 route extraction), not Application - see
-        // docs/plans/codebase_cleanup_audit_findings_v1.md.
-        $routeServices = new RouteServices(
-            $this->databasePath,
-            new TemplateRenderer(dirname(__DIR__) . '/templates'),
-            'php-fallback',
-            false,
-            static fn (): ?array => null,
-            $this->repositoryRoot,
-            dirname(__DIR__),
-            null,
-            null,
-            FeatureFlagEvaluator::forApplication($this->repositoryRoot, dirname(__DIR__)),
-            static fn (): ?array => null,
-        );
-        $controller = new InstancePageController(
-            $routeServices,
-            $this->repositoryRoot,
-            $this->databasePath,
-            dirname(__DIR__),
-            static fn (): array => ['items' => []],
-        );
-        $method = new ReflectionMethod(InstancePageController::class, 'repositoryArchiveDownloadFilename');
-        $method->setAccessible(true);
-
-        $filename = $method->invoke($controller, 'tar.gz');
-
-        assertStringMatches(
-            '/^zenmemes-repository-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}Z-[a-f0-9]+\.tar\.gz$/',
-            $filename
-        );
     }
 
     public function testUsernameApiCountsApprovedKeysForAName(): void

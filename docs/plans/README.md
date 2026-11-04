@@ -30,6 +30,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Pre-existing test failures](preexisting_test_failures/preexisting_test_failures_one_shot.md) — one-shot: the 15 tests failing on `main` in cloud workspaces (GPG socket length, running as root, missing whiptail, four tests behind deliberate changes).
 - [Work tracking](work_tracking/work_tracking_step3_development_plan.md) — claims and status on ZenMemes `#work` threads via `status:` replies, `/work.txt` lookup, `./v3 work` CLI, Markdown export to a `work-export` branch, sweeps and post-back; in progress.
 
 - [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
