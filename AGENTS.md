@@ -24,6 +24,10 @@ Favor removing UI text over rewriting or relocating it. Rely on an intuitive, ex
 
 Do not modify `todo.txt` unless the user explicitly requests an edit to that file. Record task progress and follow-up work in the relevant planning or implementation documents instead.
 
+## Work items
+
+Before starting any non-trivial fix or feature, run `./v3 work search <words>` (or read `/work.txt?q=<words>` on the site) and claim the matching item with `./v3 work claim <thread-id>`. If it is already `active`, do not start parallel work; tell the user who holds it. If nothing matches, create a `#work` thread and claim it. Add a `Work: <thread-id>` trailer to commits that complete an item. See [work tracking](docs/reference/work_tracking.md), including what to do when the site is unreachable.
+
 ## Navigation icons
 
 When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` for icon themes (currently Word97, Chicago, and Midnight). Cover both Tools launcher buttons and Tools subnavigation where applicable. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.

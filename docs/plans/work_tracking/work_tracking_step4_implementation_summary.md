@@ -82,3 +82,23 @@ Status: Step 3 approved; implementation in progress on `feat/work-tracking`.
 - Estimate details: original scope as planned; no revision.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Agent rule and documentation
+
+**Original estimate: 0.06**
+**Retrospective stage-work assessment: 0.06**
+
+- Changes:
+  - `AGENTS.md`: new "Work items" section requiring search and claim before non-trivial work, no parallel work on an `active` item, and a `Work: <thread-id>` commit trailer.
+  - New `docs/reference/work_tracking.md`: status rules, claim flow, offline queue, identity approval, and how `todo.txt`, the production feedback register and Railspike plans relate.
+  - `docs/reference/v3_cli.md`: "Track work items" section.
+- Verification:
+  - `php tests/run.php LlmsTxtRendererTest MarkdownListStructureTest MarkdownPipeTableTest MarkdownTaskListTest PlatformDocsCatalogTest PlatformDocsPageTest PlatformDocsStaticTest WriteApiSmokeTest`: 271/271 passed.
+  - `git diff --check`: clean. Local links resolve.
+  - "A fresh session follows the rule unprompted" is a Stage 8 pilot check.
+- Notes:
+  - Found an existing source of current status: the [production feedback register](../production_feedback_register.md) owns migrated `PF-…` requests. The reference doc says it keeps that role until a follow-up reconciliation cycle; no change to the register here.
+  - Post-back and sweep wording is deferred to Stages 6–7 so the doc does not describe unbuilt behavior.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

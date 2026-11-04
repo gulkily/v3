@@ -37,6 +37,24 @@ Most data-touching commands accept optional positional `repository_root` and
 See [Local Run](../../README.md#local-run) in the README for the defaults
 and the bootstrap flow.
 
+## Track work items
+
+```
+./v3 work [--site URL] search [words...] [--status open|active|done|dropped|stale]
+./v3 work [--site URL] claim <thread-id> [--note TEXT] [--force] [--frm-arg=ARG ...]
+./v3 work [--site URL] status <thread-id> open|active|done|dropped [--note TEXT] [--frm-arg=ARG ...]
+./v3 work flush
+```
+
+Searches and updates ZenMemes work items (`#work` threads) through `/work.txt` and
+signed `status:` replies posted with `public/frm.py`. `claim` refuses an item that is
+already active unless `--force` is given. Writes re-read `/work.txt` and report when a
+line has no effect (for example, an unapproved identity, exit 4). When the site is
+unreachable, writes are queued in `state/work/pending.jsonl` (exit 3) and `flush` posts
+them later. Pass frm.py options with `--frm-arg=...`, one per argument. Environment:
+`V3_WORK_SITE` (default `https://zenmemes.com`), `V3_WORK_STATE_DIR`,
+`V3_WORK_FRM_STATE_DIR`. See [work tracking](work_tracking.md).
+
 ## Synchronize Railspike workflow documentation
 
 ```bash
