@@ -129,10 +129,37 @@ class LocalWriteService
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
 
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
+            $attempt = !$isQdbQuote && $authorIdentityId === null ? ($input['compose_attempt'] ?? null) : null;
+            if ($attempt !== null) {
+                if (!is_string($attempt) || !preg_match('/^(\d{14})-([a-f0-9]{32})$/D', $attempt, $parts)) {
+                    throw new RuntimeException('Invalid compose attempt.');
+                }
+                $date = \DateTimeImmutable::createFromFormat('!YmdHis', $parts[1], new \DateTimeZone('UTC'));
+                if ($date === false || $date->format('YmdHis') !== $parts[1] || $date->getTimestamp() > time() + 300) {
+                    throw new RuntimeException('Invalid compose attempt date.');
+                }
+                $createdAt = $date->format('Y-m-d\TH:i:s\Z');
+                $postId = 'thread-' . $attempt;
+            }
             $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input));
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            if ($attempt !== null && (\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete') {
+                throw new RuntimeException('Post was removed; replay cannot restore it.', 410);
+            }
+            if ($attempt !== null && $this->postTargetExists($postId)) {
+                $committed = $this->runGitCommand(['show', 'HEAD:' . $recordPath], 'Unable to verify existing compose submission');
+                if (rtrim($committed, "\n") !== rtrim($contents, "\n")) {
+                    throw new RuntimeException('This compose attempt already belongs to a different post.');
+                }
+                $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read publication head'));
+                if ($this->staleMarker()->exists()) {
+                    $this->refreshDerivedStateAfterCommit($head);
+                }
+                $this->invalidator()->invalidateBoardThread($postId);
+                return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $postId, 'commit_sha' => $head, 'fastmod_new_post' => false];
+            }
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);

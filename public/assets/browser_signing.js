@@ -431,6 +431,8 @@
     });
   }
 
+  const anonymousComposeAttempts = new WeakMap();
+
   function serializeComposeDraft(form) {
     const fields = {};
     composeDraftFields(form).forEach(function (field) {
@@ -440,6 +442,7 @@
     return {
       fields: fields,
       savedAt: Date.now(),
+      anonymousAttempt: anonymousComposeAttempts.get(form),
     };
   }
 
@@ -530,6 +533,7 @@
       return false;
     }
 
+    if (draft.anonymousAttempt) anonymousComposeAttempts.set(form, draft.anonymousAttempt);
     let restoredAny = false;
     composeDraftFields(form).forEach(function (field) {
       if (!Object.prototype.hasOwnProperty.call(draft.fields, field.name)) {
@@ -3520,6 +3524,7 @@
     }
 
     function resetPublishedComposeForm() {
+      anonymousComposeAttempts.delete(form);
       form.reset();
       // A prefilled form can have the published text as its default value.
       composeDraftFields(form).forEach(function (field) {
@@ -3530,6 +3535,7 @@
     }
 
     function clearComposeFields() {
+      anonymousComposeAttempts.delete(form);
       if (window.ForumImageUpload) window.ForumImageUpload.clear(form);
       const imageField = form.querySelector('[name="image"]');
       if (imageField) imageField.value = "";
@@ -3574,6 +3580,55 @@
         statusNode.dataset.kind = "";
       }
       renderTechnicalStatus(statusNode, "");
+    }
+
+    function anonymousThreadFields() {
+      const fields = collectThreadSubmitFields(form);
+      delete fields.author_identity_id;
+      return JSON.stringify(fields);
+    }
+
+    function attachAnonymousThreadAttempt() {
+      if (!isThreadComposeForm(form) || isQuoteComposeForm(form)
+          || !window.crypto || typeof window.crypto.getRandomValues !== "function") return;
+      const fields = anonymousThreadFields();
+      let attempt = anonymousComposeAttempts.get(form);
+      if (!attempt || attempt.fields !== fields) {
+        const bytes = window.crypto.getRandomValues(new Uint8Array(16));
+        const nonce = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+        attempt = { fields, id: new Date().toISOString().replace(/\D/g, "").slice(0, 14) + "-" + nonce };
+        anonymousComposeAttempts.set(form, attempt);
+      }
+      let input = form.querySelector('[name="compose_attempt"]');
+      if (!input) {
+        input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "compose_attempt";
+        form.appendChild(input);
+      }
+      input.value = attempt.id;
+      saveComposeDraft(form);
+    }
+
+    async function reconcileAnonymousThreadAttempt() {
+      const attempt = anonymousComposeAttempts.get(form);
+      if (!attempt || !/^\d{14}-[a-f0-9]{32}$/.test(attempt.id) || attempt.fields !== anonymousThreadFields()) return;
+      const fields = JSON.stringify(serializeComposeDraft(form).fields);
+      const postId = "thread-" + attempt.id;
+      try {
+        const response = await fetch("/api/get_post?post_id=" + encodeURIComponent(postId), { cache: "no-store" });
+        if (!response.ok || !(await response.text()).split("\n").includes("Post-ID: " + postId)) return;
+        if (submitInFlight || anonymousComposeAttempts.get(form) !== attempt
+            || attempt.fields !== anonymousThreadFields()
+            || JSON.stringify(serializeComposeDraft(form).fields) !== fields) return;
+        const saved = loadComposeDraft(form);
+        if (saved?.anonymousAttempt?.id !== attempt.id || JSON.stringify(saved.fields) !== fields) return;
+        clearComposeDraft(form);
+        resetPublishedComposeForm();
+        restoreComposeUiState({ persistDraft: false });
+      } catch (error) {
+        // A failed lookup leaves the draft available for a retry.
+      }
     }
 
     function isAnonymousComposeSubmitter(submitter) {
@@ -3978,6 +4033,7 @@
         }
         if (isAnonymousComposeSubmitter(submitter)) {
           clearComposeAuthorIdentity(form);
+          attachAnonymousThreadAttempt();
           setStatus(statusNode, "Sending anonymous post...", "ok");
           markFirstFeedback(timing);
           completeActionTiming(timing, "submit");
@@ -4073,8 +4129,10 @@
       }
 
       restoreComposeUiState();
+      void reconcileAnonymousThreadAttempt();
     });
 
+    void reconcileAnonymousThreadAttempt();
     return true;
   }
 
