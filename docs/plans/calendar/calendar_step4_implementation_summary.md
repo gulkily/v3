@@ -88,3 +88,33 @@ Enhancement requests: none.
 - Estimate details: original scope unchanged apart from the approved version number; no revision. Retrospective stage-work assessment: 0.12.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Event state from operator `event:` lines
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `src/ForumRewrite/Support/EventStatusDirective.php`: `extract()` returns `confirmed` or `declined` for a whole line `event: confirmed|declined` (any case, surrounding spaces). Quoted lines are skipped and the first match in a post wins, as `TitleDirective` scans.
+  - `src/ForumRewrite/Calendar/EventStatus.php`: `forThreads(PDO, repositoryRoot, threadIds)` and `forThread()`.
+    - Reads root and replies in creation order; the latest valid line wins.
+    - A line counts only when its post is unretracted and `attribution_verified = 1`, and its author's profile `is_approved = 1` and `RetractionAuthority::currentOperator()` holds (active, unretired, committed operator seed).
+    - The operator check is cached per author for each call.
+    - The repository root is taken as a parameter, as Step 3 expected.
+  - `src/ForumRewrite/Http/ThreadAndPostPageController.php`: passes `eventState` only for threads with an event date while event support is on.
+  - `templates/partials/thread_root_card.php`: `Event: confirmed|declined` line under the title. The same markup is served to every viewer.
+  - `tests/EventStatusTest.php`, registered in `tests/run.php` with `EventEndDateParserTest`. Covers:
+    - extraction rules;
+    - an operator root line;
+    - latest wins across replies;
+    - lines that are ignored: quoted, approved non-operator, retracted, unverified attribution, guest;
+    - thread page markup present for a settled event and absent for plain and non-event threads;
+    - an operator who is no longer approved stops counting.
+- Verification:
+  - Passed: `./v3 test --smoke EventEndDateParserTest EventStatusTest LocalWriteServiceTitleDirectiveTest` plus the four Stage 2–3 event tests in `WriteApiSmokeTest`: 446 run, 446 passed. Full suite not run, per `AGENTS.md`.
+  - Inapplicable this stage: grid and day pages (Stages 5–6), themes (Stage 8).
+- Notes:
+  - **Correction to Stage 1:** `tests/run.php` lists test files explicitly, and Stage 1 did not register `EventEndDateParserTest`. The Stage 1 run (423 passed) was the smoke set alone and did not include the parser tests. They are registered here and pass (9/9). Stage 1's commit stays as recorded; it is not amended.
+  - Retirement is covered through `ApprovalPolicy::isActiveOperator()` inside `currentOperator()`. The test exercises loss of approval, not a retirement record.
+- Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.12.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
