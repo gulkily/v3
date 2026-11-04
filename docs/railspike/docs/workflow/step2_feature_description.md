@@ -21,6 +21,9 @@ Capture the problem framing, desired outcomes, and shared-component consideratio
 - Filename: `{feature_name}_step2_feature_description.md`
 
 ## Structure
+
+Read the [shared implementation standards](implementation_standards.md) before defining the outcome, reuse decisions, risks, and verification below. These fields capture its evidence for staged planning; they do not create a separate implementation standard.
+
 - Include **Concepts touched** and proposed inventory additions/corrections within delivery scope; follow [concept guidance](../concepts.md#planning).
 - Standard Plan navigation bar (template in `RAILSPIKE.md`; omit skipped Step 1)
 - Problem: 1–2 sentences
@@ -32,18 +35,17 @@ Capture the problem framing, desired outcomes, and shared-component consideratio
 - Completion boundary: for application work, normal entry, end-to-end outcome, needed recovery, and release condition; for documentation-only work, document completion, intended audience outcome, correction/recovery path, and handoff condition
 - Known user or environment: when the request names a user, machine, or environment, state that user's ordinary entry point and recovery condition: the mismatch or failure to handle, the next action they can take unaided, how they verify success or retry, and the evidence that will show it. Evidence from a different supported platform does not satisfy this condition; omit the item when no user or environment is named
 - Risks (2–4): impact, earliest validation, mitigation before Step 3
-- Shared component inventory: enumerate every existing UI/API surface that already renders the data; specify whether the feature reuses/extends the canonical component or needs a new one (with rationale)
+- Shared component inventory: inspect and enumerate existing UI/API surfaces and canonical components/contracts under the shared standards; include relevant source paths, reuse/extension decisions, and rationale for any new equivalent. For documentation-only work, identify reusable instruction and evidence surfaces instead.
 - Simple user flow: numbered steps
 - Success criteria: measurable outcomes that confirm the feature solves the problem
 
 Apply [Enhancement Requests](../../RAILSPIKE.md#enhancement-requests) when revising scope; retain pending requests and approval status in this artifact.
 
 ## Guardrails
-- Avoid implementation details, code, database schema, UI mockups, or verbose descriptions
+- Avoid implementation details, code, database schema, or UI mockups; follow the [writing style](../../RAILSPIKE.md#writing-style)
 - Surface material risks; do not bury them in other sections
 - A feature is a normal-flow vertical slice, not a component, API, cache, migration, or hidden route; otherwise call it internal maintenance
 - Documentation-only scope is valid when the deliverable itself is the outcome. It must name the allowed file scope; do not use it to make application, CI, deployment, or generated-artifact changes without returning to Step 2 for approval.
-- Keep the doc lightweight enough to consume at a glance
 
 ## Next
 Before the completed-step handoff, restore mode state and, if enabled, save the full diagnostic report under [Railspike Debug Mode](../../RAILSPIKE.md#railspike-debug-mode) and include only one short debug line linking to the saved log in the handoff, before approval.
