@@ -6,6 +6,15 @@ $runStartedAt = hrtime(true);
 
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
+// Throwaway test repositories must not inherit the developer's global Git config:
+// commit signing there costs ~0.1 s per commit (and can prompt), and maintenance adds more.
+// Repository-level and `-c` settings still apply; tests that need no global config set their own.
+$testGitConfig = sys_get_temp_dir() . '/v3-test-gitconfig-' . getmypid();
+file_put_contents($testGitConfig, "[user]\n\tname = Forum Rewrite Tests\n\temail = tests@example.invalid\n"
+    . "[commit]\n\tgpgsign = false\n[tag]\n\tgpgsign = false\n[maintenance]\n\tauto = false\n[gc]\n\tauto = 0\n");
+putenv('GIT_CONFIG_GLOBAL=' . $testGitConfig);
+register_shutdown_function(static fn () => @unlink($testGitConfig));
+
 $testFiles = [
     __DIR__ . '/QdbPageTest.php',
     __DIR__ . '/QdbWelcomeSelectionTest.php',

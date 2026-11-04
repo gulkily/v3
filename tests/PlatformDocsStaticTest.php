@@ -44,13 +44,16 @@ final class PlatformDocsStaticTest
             $results = static fn (string $html): string => (string) preg_replace('/\s+/', ' ', explode('<nav class="docs-pages"', (string) strstr($html, '<p role="status"'), 2)[0]);
             $browseQueries = PlatformDocsCatalog::browseQueries(PlatformDocsCatalog::inventory(dirname(__DIR__)), PlatformDocsCatalog::PAGE_SIZE);
             assertTrue(count($browseQueries) > 300);
-            foreach ($browseQueries as $browseQuery) {
-                $file = $releaseRoot . PlatformDocsCatalog::browsePath($browseQuery);
-                assertTrue(is_file($file), $file);
-                ob_start();
-                $application->handle('GET', '/docs/?' . http_build_query($browseQuery));
-                assertSame($results((string) ob_get_clean()), $results((string) file_get_contents($file)), http_build_query($browseQuery));
-            }
+            // Docs do not change during the loop; one snapshot (as a build uses) avoids rereading every document per render.
+            PlatformDocsCatalog::withSnapshot(dirname(__DIR__), static function () use ($browseQueries, $releaseRoot, $application, $results): void {
+                foreach ($browseQueries as $browseQuery) {
+                    $file = $releaseRoot . PlatformDocsCatalog::browsePath($browseQuery);
+                    assertTrue(is_file($file), $file);
+                    ob_start();
+                    $application->handle('GET', '/docs/?' . http_build_query($browseQuery));
+                    assertSame($results((string) ob_get_clean()), $results((string) file_get_contents($file)), http_build_query($browseQuery));
+                }
+            });
             $workflowPage = $this->render($controller, '/docs/?q=&folder=&category=&group=Workflow&page=');
             assertStringContains('route-source: static-html', $workflowPage);
             assertStringContains('href="/docs/?group=Workflow" aria-current="page"', $workflowPage);
