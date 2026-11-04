@@ -102,3 +102,23 @@ Status: Step 3 approved; implementation in progress on `feat/work-tracking`.
 - Estimate details: original scope as planned; no revision.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Markdown export
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.12**
+
+- Changes:
+  - `WorkListText::markdown(items, origin)`: `# Work items` heading, a visible "generated; do not edit" line, then `- [status] [title](origin/threads/id) · by · note` per item in thread-ID order; Markdown-significant characters escaped.
+  - `GET /work.md` (`Cache-Control: no-store`), origin from the request host (validated), added to `isApplicationRoute`.
+  - `./v3 work export [--no-push]`: fetches `/work.md`, builds a commit on `work-export` with Git plumbing (no checkout or worktree changes), skips when unchanged, pushes `commit:refs/heads/work-export`. Falls back to a "v3 work export" Git identity when none is configured.
+  - Reference and CLI docs updated.
+- Verification:
+  - `php tests/run.php WorkItemsTest`: 6/6 passed (adds Markdown escaping, one line per item, empty list).
+  - Local server: first `export --no-push` created the branch; second reported "already up to date"; after `./v3 work status work-pilot-1 active`, a third export produced a one-line diff in `work.md`. Test branch deleted afterwards.
+  - Pushing to GitHub: not exercised yet; Stage 8.
+- Notes:
+  - The plan's "export from a cloud workspace" check is the Stage 8 production run.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

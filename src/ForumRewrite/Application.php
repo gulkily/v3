@@ -1125,6 +1125,14 @@ final class Application
             return;
         }
 
+        if ($path === '/work.md') {
+            $scheme = (($_SERVER['HTTPS'] ?? '') !== '' && ($_SERVER['HTTPS'] ?? '') !== 'off') ? 'https' : 'http';
+            $host = preg_match('/^[A-Za-z0-9.\-]+(:\d+)?$/', (string) ($_SERVER['HTTP_HOST'] ?? '')) === 1 ? (string) $_SERVER['HTTP_HOST'] : 'localhost';
+            $items = \ForumRewrite\Work\WorkItems::list($this->routeServices()->pdo());
+            $this->sendText(\ForumRewrite\Work\WorkListText::markdown($items, $scheme . '://' . $host), 200, ['Cache-Control: no-store']);
+            return;
+        }
+
         $qdbRoute = $this->qdbExperience()->dispatchUnmatched($path);
         if ($qdbRoute !== null) {
             $this->sendQdbExperienceResult($qdbRoute);
@@ -2209,7 +2217,7 @@ final class Application
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/link_identity', '/api/approve_user',
-            '/forte', '/forte/', '/llms.txt', '/work.txt',
+            '/forte', '/forte/', '/llms.txt', '/work.txt', '/work.md',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
             return true;

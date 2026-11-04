@@ -44,6 +44,10 @@ and set the status:
 
 Writes go through `public/frm.py`, which creates or reuses a signing key. A new key's `status:` lines do not count until an operator approves the identity once; the CLI says so when this happens. Set `V3_WORK_FRM_STATE_DIR` to choose where frm.py keeps keys (GPG needs a fairly short path for its sockets), `V3_WORK_SITE` for another instance, and `V3_WORK_STATE_DIR` for the queue.
 
+## Repository export
+
+`/work.md` is a generated Markdown list: a header, then one line per item in thread-ID order, so a status change is a one-line diff. `./v3 work export` fetches it and commits it as `work.md` on the `work-export` branch (creating the branch if needed) and pushes; it makes no commit when nothing changed, and never touches the current checkout. `--no-push` commits locally only. Grep it with `git show origin/work-export:work.md`. The file can lag behind the site, so always check claims with `./v3 work search`.
+
 ## Relationship to other lists
 
 - `todo.txt` stays a scratchpad and is never edited by tooling.

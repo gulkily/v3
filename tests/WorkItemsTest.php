@@ -126,6 +126,21 @@ final class WorkItemsTest
         assertSame("active (stale)\tt1\tTwo parts here\tclaude\tn\t/threads/t1", explode("\n", $text)[1]);
     }
 
+    public function testMarkdownExportEscapesAndKeepsOneLinePerItem(): void
+    {
+        $md = \ForumRewrite\Work\WorkListText::markdown([
+            ['status' => 'done', 'stale' => false, 'thread_id' => 't1', 'title' => 'Fix [nav] <b>', 'set_by' => 'alice', 'note' => "landed\nin abc"],
+            ['status' => 'open', 'stale' => false, 'thread_id' => 't2', 'title' => 'Plain', 'set_by' => '', 'note' => ''],
+        ], 'https://zenmemes.com/');
+        $lines = explode("\n", trim($md));
+        assertSame('# Work items', $lines[0]);
+        assertTrue(str_contains($lines[2], 'Do not edit'));
+        assertSame('- [done] [Fix \\[nav\\] &lt;b&gt;](https://zenmemes.com/threads/t1) · alice · landed in abc', $lines[4]);
+        assertSame('- [open] [Plain](https://zenmemes.com/threads/t2)', $lines[5]);
+        assertSame(6, count($lines));
+        assertTrue(str_contains(\ForumRewrite\Work\WorkListText::markdown([], 'https://x'), '_No work items yet._'));
+    }
+
     public function testStalenessListingAndFilters(): void
     {
         $pdo = $this->database();

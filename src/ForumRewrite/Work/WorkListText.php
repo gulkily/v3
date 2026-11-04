@@ -6,7 +6,8 @@ namespace ForumRewrite\Work;
 
 /**
  * Plain-text views of work items. `/work.txt` answers "is anyone on this?" with one
- * tab-separated line per item, in thread-ID order.
+ * tab-separated line per item; `/work.md` is the generated Markdown export that
+ * `./v3 work export` commits to the repository. Both keep thread-ID order.
  */
 final class WorkListText
 {
@@ -33,6 +34,33 @@ final class WorkListText
         return implode("\n", $lines) . "\n";
     }
 
+    /** @param list<array<string, mixed>> $items */
+    public static function markdown(array $items, string $origin): string
+    {
+        $origin = rtrim($origin, '/');
+        $lines = [
+            '# Work items',
+            '',
+            '_Generated from ' . $origin . '/work.md. Do not edit; change status on each item\'s thread._',
+            '',
+        ];
+        foreach ($items as $item) {
+            $line = '- [' . self::statusLabel($item) . '] [' . self::markdownText($item['title']) . '](' . $origin . '/threads/' . $item['thread_id'] . ')';
+            if ($item['set_by'] !== '') {
+                $line .= ' · ' . self::markdownText($item['set_by']);
+            }
+            if ($item['note'] !== '') {
+                $line .= ' · ' . self::markdownText($item['note']);
+            }
+            $lines[] = $line;
+        }
+        if ($items === []) {
+            $lines[] = '_No work items yet._';
+        }
+
+        return implode("\n", $lines) . "\n";
+    }
+
     private static function statusLabel(array $item): string
     {
         return $item['status'] . ($item['stale'] ? ' (stale)' : '');
@@ -41,5 +69,10 @@ final class WorkListText
     private static function cell(string $value): string
     {
         return trim(preg_replace('/[\t\r\n]+/', ' ', $value) ?? '');
+    }
+
+    private static function markdownText(string $value): string
+    {
+        return self::cell(str_replace(['\\', '[', ']', '<', '>'], ['\\\\', '\\[', '\\]', '&lt;', '&gt;'], $value));
     }
 }

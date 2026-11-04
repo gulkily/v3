@@ -193,6 +193,62 @@ def cmd_flush(args: argparse.Namespace) -> int:
     return 0 if not remaining else 3
 
 
+EXPORT_BRANCH = "work-export"
+EXPORT_FILE = "work.md"
+
+
+def git(*args: str, input_text: str | None = None, check: bool = True) -> subprocess.CompletedProcess:
+    env = dict(os.environ)
+    for setting, name_key, fallback in (("user.name", "NAME", "v3 work export"), ("user.email", "EMAIL", "work-export@localhost")):
+        configured = subprocess.run(["git", "-C", str(ROOT), "config", setting], capture_output=True, text=True).stdout.strip()
+        if not configured:
+            env.setdefault(f"GIT_AUTHOR_{name_key}", fallback)
+            env.setdefault(f"GIT_COMMITTER_{name_key}", fallback)
+    return subprocess.run(["git", "-C", str(ROOT), *args], input=input_text, capture_output=True, text=True, env=env, check=check)
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    site = site_url(args)
+    try:
+        with urllib.request.urlopen(site + "/work.md", timeout=30) as response:
+            content = response.read().decode("utf-8")
+    except (urllib.error.URLError, socket.timeout, OSError) as error:
+        print(f"Could not fetch {site}/work.md ({error}); nothing exported.", file=sys.stderr)
+        return 3
+    if not content.startswith("# Work items"):
+        print(f"{site}/work.md did not return a work items export; nothing exported.", file=sys.stderr)
+        return 3
+    if not args.no_push:
+        git("fetch", "--quiet", "origin", f"+refs/heads/{EXPORT_BRANCH}:refs/remotes/origin/{EXPORT_BRANCH}", check=False)
+    parent = ""
+    for ref in (f"refs/remotes/origin/{EXPORT_BRANCH}", f"refs/heads/{EXPORT_BRANCH}"):
+        result = git("rev-parse", "--verify", "--quiet", ref + "^{commit}", check=False)
+        if result.returncode == 0:
+            parent = result.stdout.strip()
+            break
+    if parent:
+        previous = git("show", f"{parent}:{EXPORT_FILE}", check=False)
+        if previous.returncode == 0 and previous.stdout == content:
+            print(f"{EXPORT_BRANCH} is already up to date.")
+            return 0
+    blob = git("hash-object", "-w", "--stdin", input_text=content).stdout.strip()
+    tree = git("mktree", input_text=f"100644 blob {blob}\t{EXPORT_FILE}\n").stdout.strip()
+    commit_args = ["commit-tree", tree, "-m", f"Update work items from {site}"]
+    if parent:
+        commit_args[2:2] = ["-p", parent]
+    commit = git(*commit_args).stdout.strip()
+    git("update-ref", f"refs/heads/{EXPORT_BRANCH}", commit)
+    if args.no_push:
+        print(f"Committed {commit[:10]} to local {EXPORT_BRANCH} (not pushed).")
+        return 0
+    push = git("push", "--quiet", "origin", f"{commit}:refs/heads/{EXPORT_BRANCH}", check=False)
+    if push.returncode != 0:
+        print(f"Committed {commit[:10]} to local {EXPORT_BRANCH}, but the push failed:\n{push.stderr.strip()}", file=sys.stderr)
+        return 6
+    print(f"Pushed {commit[:10]} to origin/{EXPORT_BRANCH}.")
+    return 0
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="./v3 work", description="Search, claim and update ZenMemes work items.")
     parser.add_argument("--site", help=f"site origin (default $V3_WORK_SITE or {DEFAULT_SITE})")
@@ -217,6 +273,10 @@ def main(argv: list[str]) -> int:
 
     flush = sub.add_parser("flush", help="post claims and status changes queued while offline")
     flush.set_defaults(func=cmd_flush)
+
+    export = sub.add_parser("export", help=f"commit the site's /work.md to the {EXPORT_BRANCH} branch")
+    export.add_argument("--no-push", action="store_true", help="commit locally only")
+    export.set_defaults(func=cmd_export)
 
     args = parser.parse_args(argv)
     return args.func(args)
