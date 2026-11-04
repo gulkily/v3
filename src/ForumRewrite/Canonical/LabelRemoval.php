@@ -91,8 +91,10 @@ final class LabelRemoval
         throw new RuntimeException('Source evidence unavailable; restore trusted history before repair.');
     }
 
-    public static function inspect(string $root, string $id): array
+    /** @param \Closure(string):void|null $progress */
+    public static function inspect(string $root, string $id, ?\Closure $progress = null): array
     {
+        $progress?->__invoke('Reading post ' . $id);
         [$sourcePath, $bytes] = self::source($root, $id);
         try { $post = (new PostRecordParser())->parse($bytes); }
         catch (CanonicalRecordParseException $error) {
@@ -104,6 +106,7 @@ final class LabelRemoval
         if ($post->postId !== $id || RetractedPosts::isAuthorityPost($post)) throw new RuntimeException('Protected or mismatched source post.');
         $proven = []; $unresolved = []; $candidates = [];
         $repository = new CanonicalRecordRepository($root);
+        $progress?->__invoke('Finding labels for thread ' . ($post->threadId ?? $post->postId));
         foreach (glob($root . '/records/thread-labels/*.txt') ?: [] as $path) {
             $relative = 'records/thread-labels/' . basename($path);
             $label = $repository->loadThreadLabel($relative);
@@ -123,12 +126,13 @@ final class LabelRemoval
         return ['source_path' => $sourcePath, 'source_hash' => hash('sha256', $bytes), 'post' => $post, 'proven' => $proven, 'unresolved' => $unresolved, 'review_candidates' => array_values(array_diff($candidates, array_keys($accepted['labels'] ?? [])))];
     }
     /** Prepare bytes before mutation; caller commits only these paths under its write lock. */
-    public static function prepare(string $root, string $id, string $operation, array $explicitLabelIds = []): array
+    /** @param \Closure(string):void|null $progress */
+    public static function prepare(string $root, string $id, string $operation, array $explicitLabelIds = [], ?\Closure $progress = null): array
     {
         if (!in_array($operation, ['delete', 'resolve'], true)) throw new RuntimeException('Invalid cleanup operation.');
         $existing = self::read($root, $id);
         if ($existing !== null && $existing['operation'] === 'delete' && $explicitLabelIds === []) return $existing;
-        $inspection = self::inspect($root, $id);
+        $inspection = self::inspect($root, $id, $progress);
         if ($existing !== null && !hash_equals($existing['source_hash'], $inspection['source_hash'])) {
             throw new RuntimeException('Accepted source changed; inspect before retry.');
         }

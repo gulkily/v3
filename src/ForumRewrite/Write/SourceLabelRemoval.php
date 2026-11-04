@@ -13,35 +13,43 @@ use RuntimeException;
 
 final class SourceLabelRemoval
 {
-    public static function run(string $root, string $database, string $id, bool $repair, array $labels, string $artifactRoot): array
+    /** @param \Closure(string):void|null $progress receives one status line per step */
+    public static function run(string $root, string $database, string $id, bool $repair, array $labels, string $artifactRoot, ?\Closure $progress = null): array
     {
+        $say = static function (string $message) use ($progress): void { if ($progress !== null) $progress($message); };
+        $say('Taking read-model lock');
         return (new ExecutionLock(dirname($database) . '/forum-rewrite.lock'))->withExclusiveLock(
-            static fn (): array => PublicationLock::withLock($root, static function () use ($root, $database, $id, $repair, $labels, $artifactRoot): array {
+            static fn (): array => PublicationLock::withLock($root, static function () use ($root, $database, $id, $repair, $labels, $artifactRoot, $progress, $say): array {
                 $journal = self::journal($root, $id);
                 if (is_file($journal)) {
+                    $say('Finishing an interrupted removal');
                     $pending = json_decode((string) file_get_contents($journal), true, 32, JSON_THROW_ON_ERROR);
                     if (($pending['format'] ?? null) !== 'removal-recovery-v1' || !is_array($pending['record'] ?? null) || ($pending['record']['source_id'] ?? null) !== $id) throw new RuntimeException('Unsupported pending removal journal; no changes made. Only new-format recovery is supported.');
                     self::accept($root, $pending['record']);
                 }
-                $record = LabelRemoval::prepare($root, $id, $repair && LabelOwnership::hasSource($root, $id) ? 'resolve' : 'delete', $labels);
+                $record = LabelRemoval::prepare($root, $id, $repair && LabelOwnership::hasSource($root, $id) ? 'resolve' : 'delete', $labels, $progress);
                 if (!$repair) $record['operation'] = 'delete';
+                $say('Committing removal (' . count($record['labels']) . ' label file(s))');
                 self::accept($root, $record);
                 $commit = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
                 LabelRemoval::read($root, $id);
                 try {
+                    $say('Clearing generated pages');
                     (new StaticArtifactInvalidator($artifactRoot))->invalidateAllGeneratedPresentation();
-                    (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+                    $say('Rebuilding read model');
+                    (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root), 'manual', $progress))->rebuild();
                     (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->clear();
                 } catch (\Throwable $error) {
                     (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->mark(['reason' => 'source_removal_refresh_failed', 'commit_sha' => $commit]);
                     throw new RuntimeException('Removal accepted at ' . $commit . '; refresh incomplete. Retry the same command: ' . $error->getMessage(), 0, $error);
                 }
+                $say('Checking result');
                 $inspection = LabelRemoval::inspect($root, $id);
                 return ['status' => 'ok', 'source_id' => $id, 'commit' => $commit,
                     'label_cleanup_status' => $inspection['review_candidates'] === [] ? 'complete' : 'unresolved',
                     'removed_labels' => array_keys($record['labels']), 'unresolved_labels' => array_values(array_diff($inspection['unresolved'], array_keys($record['labels'])))];
-            })
-        );
+            }, static fn () => $say('Waiting for publication lock (another write is running)'))
+        , static fn () => $say('Waiting for read-model lock (another command is running)'));
     }
     private static function journal(string $root, string $id): string
     {
