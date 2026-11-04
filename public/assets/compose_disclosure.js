@@ -11,7 +11,9 @@
     if (kind === 'tags') {
       parts = [value(form, 'board_tags')];
     } else if (kind === 'event') {
-      parts = [value(form, 'event_date'), value(form, 'event_time'), value(form, 'event_location')];
+      var date = value(form, 'event_date');
+      var endDate = value(form, 'event_end_date');
+      parts = [date !== '' && endDate !== '' ? date + ' \u2013 ' + endDate : date, value(form, 'event_time'), value(form, 'event_location')];
     }
     return parts.filter(function (part) { return part !== ''; }).join(' · ');
   }

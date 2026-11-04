@@ -38,3 +38,31 @@ Enhancement requests: none.
 - Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.08 (as planned; the compatibility question resolved with one check).
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Until field in the composer and both write paths
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `src/ForumRewrite/Write/LocalWriteService.php`:
+    - Plain and prepared thread flows read `event_end_date` through `normalizeEventEndDate()`, which reuses `normalizeEventDate()` (now named per field) and refuses an end without `event_date` or before it.
+    - An end equal to the start is dropped, so a one-day event is recorded the same way whether or not the Until field was filled.
+    - `buildThreadPostRecord()` emits `Event-End-Date` right after `Event-Date`, matching the spec order from Stage 1.
+    - `assertEventSupportAllowsInput()` gates `event_end_date` with the other event fields.
+  - `templates/partials/composer.php`: Until date input after Date; the disclosure summary shows `start – end` for a span.
+  - `public/assets/compose_disclosure.js`: same span text while typing.
+  - `public/assets/browser_signing.js`: `collectThreadSubmitFields()` sends `event_end_date`, so signed posts reach the prepared flow with it.
+  - `src/ForumRewrite/Http/ComposeAndAccountKeyController.php`: query prefill and error re-render carry `event_end_date`.
+  - `tests/WriteApiSmokeTest.php`: two tests (write order, same-day drop, three refusals with no file written, flag-off gate; compose prefill, `/api/prepare_thread` record, JavaScript-off error re-render keeping body and end date).
+  - `docs/feedback/items/PF-20261104-B10.txt`: dated replay note.
+- Verification:
+  - Passed: `./v3 test --smoke` plus the two new tests, `testEventFieldsRequireEventSupportBeforeWriting`, `testPrepareThreadWithEventFieldsRoundTripsThroughFinalizeAndReadModel`, `testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt` and `EventEndDateParserTest`: 428 run, 428 passed. Full suite not run, per `AGENTS.md`.
+  - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/compose_disclosure.mjs`.
+  - PF-20261104-B10 replayed, not reproduced: a scratch Playwright script against the signed-reaction browser fixture with event support on opened `/compose/thread` at 390px and 1280px, empty and prefilled (server-rendered open). The Event disclosure opened, closed and reopened on summary clicks on the original markup and again with the Until field. No page errors. Item left open; the reporter's device and browser are unknown. No `Feedback:` trailer, since nothing here addresses it.
+  - Inapplicable this stage: read model and display (Stage 3), themes and layout matrix (Stage 8).
+- Notes:
+  - Step 3 lists agent API field documentation here, but no document lists the event inputs yet; `docs/reference/agent_api.md` gains them in Stage 7, which already names it.
+  - The signed path needed no validator change: the browser posts the fields to `/api/prepare_thread`, the server builds the record, and the client signs those bytes.
+- Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.12.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

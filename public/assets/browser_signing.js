@@ -681,6 +681,7 @@
       subject: composeFormFieldValue(form, "subject"),
       body: composeFormFieldValue(form, "body"),
       event_date: composeFormFieldValue(form, "event_date"),
+      event_end_date: composeFormFieldValue(form, "event_end_date"),
       event_time: composeFormFieldValue(form, "event_time"),
       event_location: composeFormFieldValue(form, "event_location"),
       event_link: composeFormFieldValue(form, "event_link"),
