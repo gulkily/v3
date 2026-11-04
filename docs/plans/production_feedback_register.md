@@ -1,5 +1,7 @@
 # Production feedback register
 
+> **Superseded 2026-11-04 as the current authority.** Each entry now lives as a feedback item in [`docs/feedback/items/`](../feedback/items/), listed in the [feedback index](../feedback/README.md). This register and its investigations are kept as history; update the item, not this file.
+
 Current tracking authority for the migrated October 21 batch. [How to maintain it](../reference/production_feedback_management.md) · [Source inventory](zenmemes_meta_feedback_2026-10-21_summary.md) · [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 
 Coverage: 16 actionable entries (11 features, 5 bugs), from a partial import of one thread; not all production feedback. [Parent post](https://zenmemes.com/posts/thread-20261021175710-9fe2b724) · [Full thread](https://zenmemes.com/threads/thread-20261021175710-9fe2b724). Sources and estimates below are inherited; migration does not certify current code or production behavior. Each heading is a permanent ID and each dated F/B alias maps back to its original inventory row.
@@ -67,6 +69,8 @@ Recommended next scope: keep the standard inline composer ready after a confirme
 
 ## PF-20261021-F02 — Identity-ready notice
 
+**Current item:** [PF-20261021-F02](../feedback/items/PF-20261021-F02.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/F02` (Feature 02); **workflow state:** blocked; **delivery evidence:** locally verified; deployment/production acceptance pending. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Remove the “browser identity ready” message. **Reports:** [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145). **Inherited estimate:** 0.03 (October 21 feedback-only); separate [source-informed total 0.10](browser_identity_ready_triage_2026-10-21.md#railspike-estimation-snapshot) retained; **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** No ready notice or empty gap; pending/error and Account results remain useful. **Next action:** Verify deployment and the reported notice in production; source-comment reply remains pending and requires authorization.
@@ -75,6 +79,8 @@ Recommended next scope: keep the standard inline composer ready after a confirme
 <a id="pf-20261021-f03"></a>
 
 ## PF-20261021-F03 — Text-entry macros
+
+**Current item:** [PF-20261021-F03](../feedback/items/PF-20261021-F03.txt). The fields below are history from the migration.
 
 - **Alias:** `2026-10-21/F03` (Feature 03); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Brainstorm text-entry macros for prompts, the current date, the current commit, and similar insertions. **Reports:** [reply-20261021180225-ffc44b89](https://zenmemes.com/posts/reply-20261021180225-ffc44b89). **Inherited estimate:** 0.5 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
@@ -85,6 +91,8 @@ Recommended next scope: keep the standard inline composer ready after a confirme
 
 ## PF-20261021-F04 — Simple recent activity
 
+**Current item:** [PF-20261021-F04](../feedback/items/PF-20261021-F04.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/F04` (Feature 04); **workflow state:** blocked; **delivery evidence:** locally verified, deployment and production acceptance pending. Updated 2026-10-30.
 - **Request:** Provide a simple, nontechnical “most recent activity” page. **Reports:** [reply-20261021180354-1a31022c](https://zenmemes.com/posts/reply-20261021180354-1a31022c). **Inherited estimate:** 0.5 (October 21 feedback-only). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Delivered locally:** Recent navigation, individual thread/reply previews, exact-post links and bounded native paging. [Approved cycle and verification](recent_activity/recent_activity_step4_implementation_summary.md).
@@ -94,6 +102,8 @@ Recommended next scope: keep the standard inline composer ready after a confirme
 
 ## PF-20261021-F05 — QR appearance
 
+**Current item:** [PF-20261021-F05](../feedback/items/PF-20261021-F05.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/F05` (Feature 05); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Make QR codes stand out slightly while matching the site theme; explore a background roughly 20% lighter than the page background (prefer lighter over darker). **Reports:** [reply-20261021180542-57b8fc3f](https://zenmemes.com/posts/reply-20261021180542-57b8fc3f). **Inherited estimate:** 0.25 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** QR stands out across themes and phone/desktop; quiet zone and scanning still work. **Next action:** Confirm the reported QR surface, then scope visual and scan checks.
@@ -102,6 +112,8 @@ Recommended next scope: keep the standard inline composer ready after a confirme
 <a id="pf-20261021-f06"></a>
 
 ## PF-20261021-F06 — LCD color choices
+
+**Current item:** [PF-20261021-F06](../feedback/items/PF-20261021-F06.txt). The fields below are history from the migration.
 
 - **Alias:** `2026-10-21/F06` (Feature 06); **workflow state:** blocked; **delivery evidence:** locally verified; deployment/production acceptance pending. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Explore adding a few color choices to the LCD theme. **Reports:** [reply-20261021181124-47b0956c](https://zenmemes.com/posts/reply-20261021181124-47b0956c). **Inherited estimate:** 0.4 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
@@ -116,6 +128,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 
 ## PF-20261021-F07 — Default port fallback
 
+**Current item:** [PF-20261021-F07](../feedback/items/PF-20261021-F07.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/F07` (Feature 07); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Make local `./v3 start` try a few successive ports after 8000 before giving up by default. **Reports:** [reply-20261021180905-9bf88f1f](https://zenmemes.com/posts/reply-20261021180905-9bf88f1f). **Inherited estimate:** 0.2 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** Occupied default ports advance within a fixed range; actual URL, exhaustion, and shutdown behave correctly. **Next action:** Confirm current default/explicit port behavior, then scope bounded fallback and exhaustion checks.
@@ -124,6 +138,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 <a id="pf-20261021-f08"></a>
 
 ## PF-20261021-F08 — View query coverage
+
+**Current item:** [PF-20261021-F08](../feedback/items/PF-20261021-F08.txt). The fields below are history from the migration.
 
 - **Alias:** `2026-10-21/F08` (Feature 08); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Expand “View query” availability to more pages; assess coverage for every page that includes database data. **Reports:** [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5). **Inherited estimate:** 0.6 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
@@ -134,6 +150,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 
 ## PF-20261021-F09 — Compact query buttons
 
+**Current item:** [PF-20261021-F09](../feedback/items/PF-20261021-F09.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/F09` (Feature 09); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Use the same small square “View query” button as `/tools/codebase`. **Reports:** [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5). **Inherited estimate:** 0.15 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** Consistent square buttons retain accessible names and open the correct query across affected themes. **Next action:** Agree surfaces using compact controls; coordinate with F08 without conflating outcomes.
@@ -142,6 +160,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 <a id="pf-20261021-f10"></a>
 
 ## PF-20261021-F10 — Query-dialog improvements
+
+**Current item:** [PF-20261021-F10](../feedback/items/PF-20261021-F10.txt). The fields below are history from the migration.
 
 - **Alias:** `2026-10-21/F10` (Feature 10); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Improve the “View query” dialog; review its current problems before defining the changes. **Reports:** [reply-20261021181111-3d37d8d5](https://zenmemes.com/posts/reply-20261021181111-3d37d8d5). **Inherited estimate:** 0.75 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
@@ -152,6 +172,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 
 ## PF-20261021-F11 — Easy-op discovery
 
+**Current item:** [PF-20261021-F11](../feedback/items/PF-20261021-F11.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/F11` (Feature 11); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Make it easy to discover how to enable “easy-op” via its flag file, including the button that elevates the operator to approved. **Reports:** [reply-20261021181246-675f949e](https://zenmemes.com/posts/reply-20261021181246-675f949e). **Inherited estimate:** 0.25 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** Identify the intended flag; expose one useful discovery path while preserving approval restrictions. **Next action:** Identify the intended easy-op flag and authority model before proposing discovery changes.
@@ -161,6 +183,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 
 ## PF-20261021-B01 — Composer jumping
 
+**Current item:** [PF-20261021-B01](../feedback/items/PF-20261021-B01.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/B01` (Bug 01); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Investigate the multiple causes of the home-page post form intermittently jumping up and down; use a rubber-duck root-cause review. **Reports:** [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145). **Inherited estimate:** 0.75 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** Reproduce each jump and verify corrected geometry through loading, focus, drafts, and recovery. **Next action:** Reproduce each jump and distinguish focus, loading and expansion causes before scoping.
@@ -169,6 +193,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 <a id="pf-20261021-b02"></a>
 
 ## PF-20261021-B02 — Textarea edge alignment
+
+**Current item:** [PF-20261021-B02](../feedback/items/PF-20261021-B02.txt). The fields below are history from the migration.
 
 - **Alias:** `2026-10-21/B02` (Bug 02); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Keep the textarea’s top, left, and right edges fixed when the composer expands. **Reports:** [reply-20261021175826-902c5145](https://zenmemes.com/posts/reply-20261021175826-902c5145). **Inherited estimate:** 0.25 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
@@ -190,6 +216,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 
 ## PF-20261021-B04 — Slow reply feedback
 
+**Current item:** [PF-20261021-B04](../feedback/items/PF-20261021-B04.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/B04` (Bug 04); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Investigate and reduce the many-second delay before a posted reply produces a visible response on the live site. **Reports:** [reply-20261021175854-431cbb06](https://zenmemes.com/posts/reply-20261021175854-431cbb06). **Inherited estimate:** 1.5 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** Measure the delay, improve the identified stage, and verify prompt feedback plus one accepted reply and retry. **Next action:** Measure the live delay by stage and reconcile historical latency reports before choosing a slice.
@@ -198,6 +226,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 <a id="pf-20261021-b05"></a>
 
 ## PF-20261021-B05 — QDB temporarily busy
+
+**Current item:** [PF-20261021-B05](../feedback/items/PF-20261021-B05.txt). The fields below are history from the migration.
 
 - **Alias:** `2026-10-21/B05` (Bug 05); **workflow state:** untriaged; **delivery evidence:** unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Investigate and fix QDB returning “temporarily busy.” **Reports:** [reply-20261021180434-90201f38](https://zenmemes.com/posts/reply-20261021180434-90201f38). **Inherited estimate:** 0.75 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
@@ -211,6 +241,8 @@ B04 and F01 overlap earlier slow-reply/focus reports, including October 18 Featu
 <a id="pf-20261103-f01"></a>
 
 ## PF-20261103-F01 — Retitle thread by reply; visible likes and flags
+
+**Current item:** [PF-20261103-F01](../feedback/items/PF-20261103-F01.txt). The fields below are history from the migration.
 
 - **Alias:** none (direct intake 2026-11-03, outside the October 21 batch); **workflow state:** blocked — Steps 1–3 approved and all eight stages implemented on `feat/reply-title-directive` ([Step 4 summary](reply_title_directive/reply_title_directive_step4_implementation_summary.md)); awaiting merge, deployment and the production retry; **delivery evidence:** locally verified 2026-11-03 (PHP suites, Chromium replay of the maintainer's flow, 16-theme signals check), deployment and production acceptance pending.
 - **Request:** Comment `title: some text here` and, with authority, change the thread's title; roll it into the same visibility layer as likes and flags, which should be visible and currently are not really. **Reports:** [thread-20261103051304-2fa9fbd6](https://zenmemes.com/threads/thread-20261103051304-2fa9fbd6) (root post, no replies at intake). **Inherited estimate:** none; source-informed Step 1 projection 0.80 (recommended Option B), recorded in the [effort ledger](effort_estimation_trial.md#cycle-v3reply_title_directive). **Recommended workflow:** staged Railspike (not approval).

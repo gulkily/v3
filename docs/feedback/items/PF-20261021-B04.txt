@@ -1,0 +1,25 @@
+ID: PF-20261021-B04
+Title: Slow reply feedback
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 1.5
+Aliases: 2026-10-21/B04
+
+Request:
+Investigate and reduce the many-second delay before a posted reply produces a visible response on the live site.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021175854-431cbb06
+
+Done when:
+Measure the delay, improve the identified stage, and verify prompt feedback plus one accepted reply and retry.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: Reply preparation, signing, finalization, and navigation are separate stages; the live bottleneck is unknown. Source (public/assets/browser_signing.js).
+Next action: Measure the live delay by stage and reconcile historical latency reports before choosing a slice.
+Estimate 1.5 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-b04

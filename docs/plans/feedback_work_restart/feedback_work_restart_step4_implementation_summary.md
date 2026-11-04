@@ -56,3 +56,20 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
 - Notes:
   - Pilot outcome: the format holds; long investigations belong in linked history, not in the item. No change needed before Stage 4 beyond the path convention.
   - Retrospective stage-work assessment: 0.06, as estimated.
+
+## Stage 4 - Migrate the remaining register entries
+
+**Original estimate: 0.08** (unchanged)
+
+- Changes:
+  - 15 item files: `PF-20261021-F02` to `F11`, `B01`, `B02`, `B04`, `B05`, and `PF-20261103-F01`. Converted with a scratch script outside the repository, then checked and hand-corrected.
+  - Hand corrections: F02 keeps both its inherited 0.03 and the separate source-informed 0.10; F04 keeps its locally delivered scope and approved-cycle link and has no `Done when:` (the register gave none, so none was invented); `PF-20261103-F01` records the 0.80 Step 1 projection as its estimate with provenance and drops the October 21 triage link it never had; F01 regains the related cycle's boundary link.
+  - Every item's `Notes:` starts with the register status line at migration (review date, evidence limits) and ends with a link to its register section.
+  - Register: superseded banner pointing at the items and index; every entry starts with a `Current item:` link. Its investigations and the related-reports note stay in place.
+  - [`production_feedback_management.md`](../../reference/production_feedback_management.md) now starts from the feedback index and items; ID, workflow, evidence, closure and correction rules kept, with the `O` kind and the item-file spellings of states added.
+- Verification:
+  - Script comparison of register and items: 17 IDs, 17 items, none missing; every zenmemes.com report link in each entry appears in its item; every document link appears, except the new `Current item:` links themselves.
+  - `./v3 feedback check`: 17 items, 0 problems, 2 to review. Both are recorded splits: F08, F09 and F10 share one reply; F02, B01 and B02 share another.
+  - `./v3 feedback index` regenerated: 17 open, 0 closed.
+- Notes:
+  - Retrospective stage-work assessment: 0.10. Higher than 0.08 because the three irregular entries and the lost status lines needed a second pass.

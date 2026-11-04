@@ -1,0 +1,25 @@
+ID: PF-20261021-F11
+Title: Easy-op discovery
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 0.25
+Aliases: 2026-10-21/F11
+
+Request:
+Make it easy to discover how to enable "easy-op" via its flag file, including the button that elevates the operator to approved.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021181246-675f949e
+
+Done when:
+Identify the intended flag; expose one useful discovery path while preserving approval restrictions.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: An Account approval button and `.test-self-approval` exist, but their equivalence to "easy-op" is unconfirmed. Source (src/ForumRewrite/Support/TestingSelfApproval.php).
+Next action: Identify the intended easy-op flag and authority model before proposing discovery changes.
+Estimate 0.25 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f11
