@@ -118,3 +118,42 @@ Process note: Step 1–3 documents were committed and pushed to `main` before St
 - Estimate details: revision recorded before dependent work in the conversation and here; retrospective equals the revision; no measured labor.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Documentation and host acceptance
+
+**Original estimate: 0.08**
+
+**Retrospective: pending** (host acceptance not yet run)
+
+- Changes:
+  - New concept entries: [incremental source removal](../../concepts/incremental_source_removal.md) and [operator command progress](../../concepts/operator_command_progress.md); [static publication](../../concepts/static_publication.md) gains the removal-clearing note.
+  - `docs/reference/v3_cli.md` describes the targeted path, its fallback, status lines, `-q` and the separate history purge.
+  - Ledger closeout entry and the cycle checkpoint below.
+- Verification:
+  - `git diff --check` clean; concept source links resolve to existing files.
+  - Host acceptance on qdb.us: **pending**. It needs the maintainer to deploy the branch and run the commands below; local timings do not satisfy the Step 2 environment condition.
+- Notes:
+  - Host acceptance steps (operator `qdb@pdx1-shared-a2-13`, `~/v3`):
+    1. Deploy `feat/delete-record-speed`. The first page load (or `./v3 rebuild`) migrates the read model to schema 48; until then `--inspect` prints `scanning all label files` and the delete uses the full rebuild.
+    2. `time ./v3 delete-record <spam-thread-id> --inspect` and paste the output.
+    3. `time ./v3 delete-record <spam-thread-id>` and paste the output; expect `Updating read model for thread …` and no `Rebuilding read model`.
+    4. Load the thread URL and the front page; the quote should be gone.
+    5. `./v3 purge-history preview` should list the post.
+  - If a step is slow on the host, its status line names it. The startup floor (`time ./v3 delete-record -h`) decides whether under 1s is reachable.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Closeout and Study Outcome
+
+- Contract: normal CLI entry, live status, `-q`, targeted update, page clearing, fallback and rerun recovery are implemented and covered by tests. Host timing under 1s and the deleted post disappearing on qdb.us are **pending** host acceptance.
+- Commits on `feat/delete-record-speed`: planning `0429d64`; Stage 1 `6012c25`; Stage 2 `8651cbc`; Stage 3 `bd06733`; Stage 4 `6ac5b5a`; Stage 5 is the commit containing this section. Six commits for five stages, meeting the `1 + stages` minimum.
+- Checks: smoke set plus touched tests pass (469/469 in the last combined run, plus 23/23 retraction and viewer-tag classes). Full suite not run. No baseline failures reproduced in the classes run.
+- Dependencies: none added. `git fast-import` is part of Git and already used by history rewrite.
+- Migration: schema 48; normal startup rebuilds older models; the CLI falls back safely before that.
+- Not done: host acceptance; web retraction still runs a full rebuild (out of scope); web tagging still scans every label file once per write (out of scope; noted in Stage 2).
+
+**Cycle estimate: 0.80** (revised at Stage 4 from 0.65; original Step 3 projection 0.65 retained)
+
+**Retrospective scope assessment: 0.85** — Stage 4 needed a full incremental removal path that did not exist and a rebuild ordering fix; host acceptance still outstanding. Single exposed Claude rater; independently judged, not a sum of stage values. Maintainer comfortable-fit judgment: pending. No measured labor; accepted count unchanged.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
