@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/delete_record_speed`; [host ledger](./eff
 
 Extended estimates: enabled
 
-Cycle estimate: 0.75
+Cycle estimate: 0.55 (revised; original 0.75)
 
 ## Original Query
 
@@ -93,6 +93,35 @@ Step 2 should start with a per-phase timing of both commands on the qdb host, so
 
 **Vertical-slice viability:** on a copy of the qdb repository, deleting one tagged post takes under 1s, prints each phase as it runs, and leaves a read model identical to one produced by a full rebuild after the same deletion.
 
+## Revision 1 — 2026-11-04: instant deletion
+
+Maintainer follow-up: “None of these sound like instant deletion?”
+
+Options A–C all start from the current command and trim it. Deleting one post only has to touch that post, so the revision starts from that instead. This matches the [retraction handoff](./retraction_simplification_handoff.md): delete the content and commit immediately.
+
+### Option D: Instant delete — touch only what the post touched
+
+**Estimate: 0.55**
+
+1. Read the post file at its known path. Use Git history only when the file is already gone (the repair path).
+2. Find the thread's label files through a small read-model index of label paths by thread, kept up to date by rebuild and by label writes. No directory scan.
+3. Remove the post and its proven labels and write the removal receipt as one commit, using plumbing so Git does not stat every file in a repository of about 311k files.
+4. In one SQLite transaction, delete the post's rows and labels and update that thread's summary and counts, or drop the thread if the post was its root.
+5. Delete only that thread's generated pages and mark the front page, Recent and its tag pages stale.
+6. Print one line per step with elapsed time, ending with `Deleted <id> in 0.2s`.
+
+Inspect is steps 1–2 alone. Full rebuild and the resume journal stay as recovery when any step fails, and `--repair-labels` keeps its current thorough path.
+
+- Pros: work is proportional to one post, not to the site; inspect and delete both become a few file reads, one commit and one transaction; the post is gone when the command returns.
+- Cons: needs a new label-path index (a read-model schema change); the direct row deletion must match what a rebuild would produce, which needs a check against rebuild output.
+- Driver: plumbing commit and the thread-summary update. Uncertainty: PHP startup and one Git commit on the shared host are the floor; if that floor is near 1s, the target needs the host itself to be faster.
+
+## Revised Recommendation
+
+**Option D.** It replaces Option A as the recommendation. A becomes the fallback idea if a direct row deletion turns out not to match rebuild output. Step 2 still starts with timing PHP startup and a bare Git commit on the qdb host, because those set the floor under any option.
+
+**Vertical-slice viability:** on a copy of the qdb repository, `delete-record <id>` for one tagged thread prints each step, finishes in under 1s, the thread's page and front-page entry are gone, and a later full rebuild produces the same read model.
+
 ## Enhancement Requests
 
 - Other commands that call a full rebuild for small changes (`AgentIdentityService`, approval receipt maintenance) may benefit from the same approach. Disposition: noted; not in this scope.
@@ -104,6 +133,10 @@ Step 2 should start with a per-phase timing of both commands on the qdb host, so
 - Intake after inspection: **0.75** projected total for Option A, including the timing pass, progress lines and equivalence check.
 - Step 1 handoff: **0.75**, Option A. Alternatives B 0.40 and C 0.90, non-additive. Not hours or measured labor; no implementation, accepted outcome or approval to advance.
 
-Status: Step 1 proposed. Committed and pushed before approval at the session stop hook's request; this is not approval.
+2026-11-04T17:40:00Z revision: maintainer asked for instant deletion. Scope v2/D replaces the trimmed-command approach with proportional deletion: path-indexed label lookup, plumbing commit, single-transaction read-model update, targeted page invalidation, per-step status. Projection **0.55**; v1/A 0.75 preserved as an alternative; B 0.40 and C 0.90 reaffirmed. Same baseline/R1/P2, single exposed Claude rater. Direction refinement only; not Approved Step 1.
+
+Status: Step 1 revised (Option D recommended). Committed and pushed before approval at the session stop hook's request; this is not approval.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+*— Revised by Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

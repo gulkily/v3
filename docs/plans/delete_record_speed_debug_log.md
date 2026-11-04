@@ -19,3 +19,17 @@
 **Uncertain assessments**
 
 - `step1_solution_assessment.md`, "≤1 page": the added "Where the time goes" section pushes past one page but carries the evidence the options rest on. Unclear whether that section belongs in Step 1 or Step 2.
+
+## 2026-11-04T17:40:00Z — Step 1 revision 1
+
+**Necessary/useful instructions**
+
+- `step1_solution_assessment.md`, Review and revision ("revise the current assessment … record the revised direction separately"): kept Options A–C and the original recommendation intact while adding Option D. Retain.
+
+**Redundant/unnecessary instructions**
+
+- No supported findings.
+
+**Uncertain assessments**
+
+- Step 1's option framing nudged toward trimming the existing command rather than asking what the minimal operation is. Unclear whether an explicit "start from the smallest correct operation" prompt for performance cycles would help or just add text.
