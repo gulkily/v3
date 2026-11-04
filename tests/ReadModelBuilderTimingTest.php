@@ -27,7 +27,7 @@ final class ReadModelBuilderTimingTest
             assertSame(true, $parsing !== false && $resolution > $parsing && $deriving > $resolution && $writing > $deriving);
             $counts = array_values(array_filter($messages, static fn (string $message): bool => preg_match('/parsing thread label records \(\d+\/252\)\./', $message) === 1));
             assertSame(4, count($counts)); // Start, 100, 200, final.
-            foreach (['sort_posts', 'writing_thread_summaries', 'deriving_thread_label_records', 'writing_thread_labels', 'checking_approval_posts', 'replaying_invitation_posts', 'counting_profile_posts', 'linking_author_profiles', 'writing_post_activity', 'read_commit_history', 'processing_commit_history_lines'] as $key) {
+            foreach (['sort_posts', 'writing_thread_summaries', 'deriving_thread_label_records', 'writing_thread_labels', 'checking_approval_posts', 'checking_invitation_candidates', 'counting_profile_posts', 'linking_author_profiles', 'writing_post_activity', 'read_commit_history', 'processing_commit_history_lines'] as $key) {
                 assertSame(true, isset($builder->timings()[$key]));
             }
             assertSame(true, str_contains($output, 'parsing post reaction records (0/0).'));

@@ -350,7 +350,14 @@ final class ApprovalSeedCommandTest
     {
         $this->withFixture(function (string $root, string $db, string $public, string $static): void {
             file_put_contents($public . '/index.html', 'STALE');
-            chmod($public, 0555);
+            // Root ignores directory permissions, so as root make the file immutable instead.
+            $asRoot = function_exists('posix_geteuid') && posix_geteuid() === 0;
+            if ($asRoot) {
+                exec('chattr +i ' . escapeshellarg($public . '/index.html') . ' 2>&1', $chattrOutput, $chattrCode);
+                assertSame(0, $chattrCode, 'As root this test needs chattr +i to block deletion: ' . implode("\n", $chattrOutput));
+            } else {
+                chmod($public, 0555);
+            }
             try {
                 [$code, $out, $err] = $this->runSeed($root, $db, $public, $static);
                 assertSame(1, $code);
@@ -359,7 +366,7 @@ final class ApprovalSeedCommandTest
                 assertStringContains('persisted and committed', $err);
                 assertTrue(is_file($public . '/index.html'));
             } finally {
-                chmod($public, 0755);
+                $asRoot ? exec('chattr -i ' . escapeshellarg($public . '/index.html')) : chmod($public, 0755);
             }
             $this->repair($root, $db);
             [$code] = $this->runSeed($root, $db, $public, $static);

@@ -2,6 +2,25 @@
 require_once __DIR__.'/AgentPostingApiTest.php';
 final class FrmClientTest
 {
+    /**
+     * frm.py keeps its keyring at <state-dir>/<64-hex site hash>/keyring. Under a long test root the
+     * gpg-agent socket paths (the longest is S.gpg-agent.browser) pass the ~107-byte Unix socket limit and the agent cannot start unless
+     * /run/user/<uid> exists (it does on desktop Linux, not in containers). With a 64-character site
+     * hash and /keyring, the state dir itself must stay within 13 characters (/tmp/f + 6 hex).
+     */
+    private static function stateDir(string $root, string $name): string
+    {
+        $dir=sys_get_temp_dir().'/f'.substr(hash('sha256',$root.'/'.$name),0,6);
+        static $registered=[];
+        if (!isset($registered[$dir])) {
+            $registered[$dir]=true;
+            register_shutdown_function(static function () use ($dir): void {
+                foreach (glob($dir.'/*/keyring') ?: [] as $home) { \ForumRewrite\Security\GpgHomeCleaner::dispose($home); }
+                @exec('rm -rf '.escapeshellarg($dir));
+            });
+        }
+        return $dir;
+    }
     public static function run(string $script, array $args): array
     {
         $cmd='python3 '.escapeshellarg($script).' '.implode(' ',array_map('escapeshellarg',$args));
@@ -20,10 +39,10 @@ final class FrmClientTest
                 file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
                 $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
                 file_put_contents($root.'/body.txt',"Recovery body.\n");
-                $base=['--site',$server->url,'--state-dir',$root.'/client','--retries','0'];
+                $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client'),'--retries','0'];
                 $write=['thread','--subject','Recovery','--body-file',$root.'/body.txt'];
                 [$code,$out]=self::run($script,array_merge($base,$write)); assertSame(2,$code,$out); assertStringContains('Resume:',$out);
-                $operation=glob($root.'/client/*/operation-*')[0];
+                $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0];
                 $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$head=$tx->git(['rev-parse','HEAD']);
                 [$code,$out]=self::run($script,array_merge($base,$write));assertSame(2,$code,$out);assertStringContains('Unresolved operation',$out);
                 [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);
@@ -42,10 +61,10 @@ final class FrmClientTest
             $router=$server->directory.'/public/router.php';file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
             $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
             file_put_contents($root.'/body.txt',"Busy body.\n");
-            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Busy','--body-file',$root.'/body.txt']));
             assertSame(2,$code,$out);assertSame('3',file_get_contents($counter));
-            $operation=glob($root.'/client/*/operation-*')[0];
+            $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0];
             [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);
             assertSame(1,count(array_unique(file($hashes,FILE_IGNORE_NEW_LINES))));
             \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
@@ -58,10 +77,10 @@ final class FrmClientTest
         try {
             $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
             $body="  Cafe\u{0301}\r\nx→\n";file_put_contents($root.'/body.txt',$body);
-            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             $write=['thread','--subject','Correction','--body-file',$root.'/body.txt'];
             [$code,$out]=self::run($script,array_merge($base,$write)); assertSame(2,$code,$out);assertStringContains('U+2192 at body index 10',$out);
-            $operation=glob($root.'/client/*/operation-*')[0];assertSame($body,file_get_contents($operation.'/original-body.txt'));
+            $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0];assertSame($body,file_get_contents($operation.'/original-body.txt'));
             file_put_contents($root.'/body.txt',"Café accepted.\n");
             [$code,$out]=self::run($script,array_merge($base,$write));assertSame(0,$code,$out);
             \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
@@ -78,10 +97,10 @@ final class FrmClientTest
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
             $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
             file_put_contents($root.'/body.txt',"Registered then resumed.\n");
-            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             $before=count(glob($repo.'/records/identity/*'));
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Recovery','--body-file',$root.'/body.txt'])); assertSame(2,$code,$out);
-            $operation=glob($root.'/client/*/operation-*')[0]; assertStringContains('registration-sending',file_get_contents($operation.'/operation.txt'));
+            $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0]; assertStringContains('registration-sending',file_get_contents($operation.'/operation.txt'));
             [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);
             assertSame($before+1,count(glob($repo.'/records/identity/*')));
             \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
@@ -98,9 +117,9 @@ final class FrmClientTest
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
             $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
             file_put_contents($root.'/body.txt',"Uncertain.\n");
-            $base=['--site',$server->url,'--state-dir',$root.'/client','--retries','0'];
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client'),'--retries','0'];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Recovery','--body-file',$root.'/body.txt']));assertSame(2,$code,$out);
-            $operation=glob($root.'/client/*/operation-*')[0];
+            $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0];
             $head=(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']);
             [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(2,$code,$out);assertStringContains('outcome is unresolved',$out);
             // Simulate saved ready state after interruption before its first finalization, with an expired token.
@@ -117,11 +136,11 @@ final class FrmClientTest
         try {
             $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
             $body="Retained draft.\n";file_put_contents($root.'/body.txt',$body);
-            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             $before=(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']);
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Denied','--body-file',$root.'/body.txt']));
             assertSame(2,$code,$out);assertStringContains('HTTP 403',$out);
-            $operation=glob($root.'/client/*/operation-*')[0];assertSame($body,file_get_contents($operation.'/original-body.txt'));
+            $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0];assertSame($body,file_get_contents($operation.'/original-body.txt'));
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','No key','--body-file',$root.'/body.txt','--signing-key','NO-SUCH-KEY','--gpg-home',dirname($operation).'/keyring']));
             assertSame(2,$code,$out);assertStringContains('GPG failed',$out);
             assertSame($before,(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']));
@@ -139,10 +158,10 @@ final class FrmClientTest
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
             $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));file_put_contents($root.'/body.txt',"Redirect draft.\n");
             $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$before=$tx->git(['rev-parse','HEAD']);
-            $base=['--site',$server->url,'--state-dir',$root.'/client'];
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Redirect','--body-file',$root.'/body.txt']));assertSame(2,$code,$out);
             assertSame($before,$tx->git(['rev-parse','HEAD']));
-            $operation=glob($root.'/client/*/operation-*')[0];unlink($marker);
+            $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0];unlink($marker);
             [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);assertStringContains('Refresh: pending',$out);
             $head=$tx->git(['rev-parse','HEAD']);
             [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));assertSame(0,$code,$out);assertSame($head,$tx->git(['rev-parse','HEAD']));
@@ -164,11 +183,11 @@ final class FrmClientTest
                 }
                 $script=$root.'/frm.py'; file_put_contents($script,file_get_contents($server->url.'/frm.py'));
                 file_put_contents($root.'/body.txt', "Café — 5 µg, “quoted”, Привет\n");
-                $base=['--site',$server->url,'--state-dir',$root.'/client'];
+                $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
                 [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Example','--body-file',$root.'/body.txt']));
                 assertSame(0,$code,$out);
                 preg_match('/Post-ID: (\S+)/',$out,$match); $id=$match[1];
-                $state=glob($root.'/client/*')[0]; $key=file_get_contents($state.'/identity.txt');
+                $state=glob(self::stateDir($root,'client').'/*')[0]; $key=file_get_contents($state.'/identity.txt');
                 $operation=glob($state.'/operation-*/operation.txt')[0];
                 assertStringContains('Protocol: '.($legacy?'prepared':'signed'),file_get_contents($operation));
                 foreach ([[],['--parent',$id]] as $parent) {
@@ -176,7 +195,7 @@ final class FrmClientTest
                     assertSame(0,$code,$out);
                 }
                 preg_match('/Fingerprint: (\S+)/',$key,$fingerprint);
-                [$code,$out]=self::run($script,['--site',$server->url,'--state-dir',$root.'/selected','reply','--thread',$id,'--body-file',$root.'/body.txt','--signing-key',$fingerprint[1],'--gpg-home',$state.'/keyring']);
+                [$code,$out]=self::run($script,['--site',$server->url,'--state-dir',self::stateDir($root,'selected'),'reply','--thread',$id,'--body-file',$root.'/body.txt','--signing-key',$fingerprint[1],'--gpg-home',$state.'/keyring']);
                 assertSame(0,$code,$out);
                 assertSame($key,file_get_contents($state.'/identity.txt'));
                 assertSame($identitiesBefore+1,count(glob($repo.'/records/identity/*')));
