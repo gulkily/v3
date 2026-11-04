@@ -1,5 +1,17 @@
 # Effort estimation trial ledger
 
+## Cycle v3/work_tracking
+
+2026-11-04T00:55:14Z — v3/work_tracking Step 4 entry: Approved Step 3; branch feat/work-tracking, planning commit be2990e. [Summary](./work_tracking/work_tracking_step4_implementation_summary.md#study-entry) reaffirms whole-cycle 1.00 and eight stage-work originals, same v2/A/baseline/R1/P2, single exposed Claude rater. Implementation proceeds stage by stage; no accepted-count change.
+
+2026-11-04T00:49:31Z — v3/work_tracking Step 3 handoff: user explicitly approved Step 2. [Plan/checkpoint](./work_tracking_step3_development_plan.md#study-checkpoint) revises whole-cycle 0.95 → 1.00 (status as reply directive because agent labels are add-only; application-update post-back hook); scope v2/A unchanged. Eight stage-work originals 0.15/0.12/0.15/0.06/0.12/0.15/0.12/0.10, non-additive. Same baseline/R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.
+
+2026-11-04T00:46:46Z — v3/work_tracking Step 2 handoff: user explicitly approved Step 1 Option A with Revision 1 (export). [Step 2 checkpoint](./work_tracking_step2_feature_description.md#study-checkpoint) defines one status per item thread, claim with staleness and local fallback, plain-text lookup, generated Markdown export, sweep and post-back, ten-item pilot. Whole-cycle 0.95 reaffirmed; same v2/A/baseline/R1/P2, single exposed Claude rater. Await Approved Step 2; no implementation or accepted-count change.
+
+2026-11-04T00:41:32Z — v3/work_tracking Step 1 revision: maintainer requested a scheduled site-to-repo export and prior-art review (Lobsters, Tildes). [Revised assessment](./work_tracking_step1_solution_assessment.md#study-snapshots) scope v2/A adds the export file and claim staleness; projection 0.95, v1 0.85 preserved, B 0.70/C 0.45 reaffirmed, non-additive. Same baseline/R1/P2, single exposed Claude rater. Not Approved Step 1; no implementation or accepted-count change.
+
+2026-11-03T23:03:34Z — standing P2 enrollment; [canonical Step 1 checkpoint](./work_tracking_step1_solution_assessment.md#study-snapshots). Scope v1/A: claim and status home in ZenMemes item threads with local fallback, claim-before-start agent rule, inbox sweeps, automatic and batch post-back, ten-item pilot; reconciliation of existing sources excluded as a follow-up cycle. Baseline `561f7dd1113c3021ba0d7d1b28361865c40de2e2`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because inspection preceded rating; Step 1 projection 0.85, alternatives B 0.70 and C 0.45, single exposed Claude rater. No parent/replacement, implementation, measured labor or accepted-count increment; await Approved Step 1. Planning uncommitted.
+
 ## Cycle v3/fastmod_ownership
 
 2026-11-03T17:24:49Z — Step 1 Option A explicitly approved; [Step 2 checkpoint](./fastmod_ownership/fastmod_ownership_step2_feature_description.md#study-checkpoint) defines opt-in selection, claim probability, supported name/unknown, shared scoring/post/transfer behavior and exact local URL acceptance plus retry. Whole-cycle 0.65 reaffirmed, same v1/A/baseline/R1/P2 and exposed single Codex rater; three frozen hashes reverified. Prior intake remains missing and Step 1 estimate retained. No runtime work, measured labor or accepted-count increment; await Approved Step 2. User authorized merging the current tree on 2026-11-03; publication does not approve Step 2 or implementation.
