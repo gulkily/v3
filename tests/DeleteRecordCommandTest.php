@@ -17,6 +17,8 @@ use ForumRewrite\Support\LocalRepositoryBootstrap;
  */
 final class DeleteRecordCommandTest
 {
+    private const AUTHOR = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
     public function testInspectAndDeletePrintStepsInOrderOnStderr(): void
     {
         [$project, $root, $database, $artifacts] = $this->environment();
@@ -210,6 +212,107 @@ final class DeleteRecordCommandTest
         }
     }
 
+    public function testTargetedRemovalMatchesAFullRebuild(): void
+    {
+        $scenarios = [
+            'root with a reply and an owned label' => ['root-001', fn (string $root) => $this->commitLabel($root, 'label-owned', 'root-001', 'root-001')],
+            'reply' => ['reply-001', null],
+            'root without replies' => ['thread-zenmemes-rules', null],
+            'reply with an owned label on its thread' => ['reply-001', fn (string $root) => $this->commitLabel($root, 'label-reply', 'root-001', 'reply-001')],
+            'later of two replies' => ['reply-002', fn (string $root) => $this->commitReply($root, 'reply-002', 'root-001', "Later reply.\n")],
+            'reply with a reply under it' => ['reply-001', fn (string $root) => $this->commitReply($root, 'reply-002', 'reply-001', "Nested reply.\n")],
+            'reply with a reaction on it' => ['reply-001', function (string $root): void {
+                @mkdir($root . '/records/post-reactions', 0777, true);
+                file_put_contents($root . '/records/post-reactions/post-reaction-20260415153000-ab12cd34.txt',
+                    "Record-ID: post-reaction-20260415153000-ab12cd34\nCreated-At: 2026-04-15T15:30:00Z\nPost-ID: reply-001\nOperation: add\nTags: like\nAuthor-Identity-ID: " . self::AUTHOR . "\n\n");
+                LabelRemoval::git($root, ['add', 'records']);
+                LabelRemoval::git($root, ['commit', '-qm', 'Reaction fixture']);
+            }],
+            'reply that retitled the thread' => ['reply-title', function (string $root): void {
+                $this->commitReply($root, 'reply-title', 'root-001', "title: Renamed\n", self::AUTHOR);
+                $source = hash_file('sha256', $root . '/records/posts/reply-title.txt');
+                file_put_contents($root . '/records/thread-subjects/thread-subject-20260601000003-aa000001.txt',
+                    "Record-ID: thread-subject-20260601000003-aa000001\nCreated-At: 2026-06-01T00:00:03Z\nThread-ID: root-001\nOperation: set\nSubject: Renamed\nAuthor-Identity-ID: " . self::AUTHOR . "\nSource-Post-ID: reply-title\nSource-Post-SHA256: {$source}\nReason: Title directive in reply\n\n");
+                LabelRemoval::git($root, ['add', 'records']);
+                LabelRemoval::git($root, ['commit', '-qm', 'Retitle fixture']);
+            }],
+        ];
+        $qdbQuote = 'thread-20261101215816-qdb-311681';
+        $scenarios['QDB quote with an imported score and votes'] = [$qdbQuote, function (string $root) use ($qdbQuote): void {
+            file_put_contents($root . '/records/posts/' . $qdbQuote . '.txt', "Post-ID: {$qdbQuote}\nCreated-At: 2026-11-01T21:58:16Z\nBoard-Tags: general\nImported-Score-Seed: 12\nImported-Vote-Count-Seed: 3\n\n<Geekthras> ekcd is awesome\n");
+            foreach (['upvote', 'downvote'] as $n => $vote) {
+                file_put_contents($root . "/records/thread-labels/thread-label-2026110200000{$n}-vote{$n}.txt", "Record-ID: thread-label-2026110200000{$n}-vote{$n}\nCreated-At: 2026-11-02T00:00:0{$n}Z\nThread-ID: {$qdbQuote}\nOperation: add\nLabels: {$vote}\nAuthor-Identity-ID: " . self::AUTHOR . "\n\n");
+            }
+            LabelRemoval::git($root, ['add', 'records']);
+            LabelRemoval::git($root, ['commit', '-qm', 'QDB quote fixture']);
+        }, 'qdb'];
+        foreach ($scenarios as $name => [$id, $setup]) {
+            $site = $scenarios[$name][2] ?? null;
+            $priorSite = getenv('FORUM_SITE_ID');
+            if ($site !== null) putenv('FORUM_SITE_ID=' . $site);
+            [$project, $root, $database, $artifacts] = $this->environment();
+            try {
+                if ($setup !== null) $setup($root);
+                $this->rebuild($root, $database);
+                $lines = [];
+                $result = \ForumRewrite\Write\SourceLabelRemoval::run($root, $database, $id, false, [], $artifacts, static function (string $line) use (&$lines): void { $lines[] = $line; });
+                assertSame('ok', $result['status']);
+                $thread = str_starts_with($id, 'reply-') ? 'root-001' : $id;
+                assertSame([$name, true, false], [$name, in_array('Updating read model for thread ' . $thread, $lines, true), in_array('Rebuilding read model', $lines, true)], implode(' | ', $lines));
+                $targeted = $this->snapshot($database);
+                $this->rebuild($root, $database);
+                $rebuilt = $this->snapshot($database);
+                $differences = [];
+                foreach (array_unique(array_merge(array_keys($rebuilt), array_keys($targeted))) as $table) {
+                    foreach (array_diff($rebuilt[$table] ?? [], $targeted[$table] ?? []) as $row) $differences[] = "{$table} rebuild: {$row}";
+                    foreach (array_diff($targeted[$table] ?? [], $rebuilt[$table] ?? []) as $row) $differences[] = "{$table} targeted: {$row}";
+                }
+                assertSame([], $differences, $name);
+            } finally {
+                $this->remove($project);
+                if ($site !== null) putenv($priorSite === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $priorSite);
+            }
+        }
+    }
+
+    public function testTargetedRemovalClearsOnlyPagesThatShowThePost(): void
+    {
+        [$project, $root, $database, $artifacts] = $this->environment();
+        try {
+            $this->rebuild($root, $database);
+            $pages = ['/index.html', '/recent/index.html', '/latest.html', '/tags/bug.html', '/tags/general/index.html', '/tags/pinned.html',
+                '/threads/root-001.html', '/threads/reply-001.html', '/posts/reply-001.html', '/threads/thread-zenmemes-rules.html', '/docs.html',
+                '/profiles/someone-else.html'];
+            foreach ($pages as $page) {
+                @mkdir(dirname($artifacts . $page), 0777, true);
+                file_put_contents($artifacts . $page, 'cached');
+            }
+            [$status, , $stderr] = $this->run([$root, $database, $artifacts], 'reply-001');
+            assertSame(0, $status, $stderr);
+            assertStringContains('] Clearing pages for thread root-001', $stderr);
+            $kept = array_values(array_filter($pages, static fn (string $page): bool => is_file($artifacts . $page)));
+            assertSame(['/tags/pinned.html', '/threads/thread-zenmemes-rules.html', '/docs.html', '/profiles/someone-else.html'], $kept);
+        } finally {
+            $this->remove($project);
+        }
+    }
+
+    public function testTargetedUpdateFailureFallsBackToARebuild(): void
+    {
+        [$project, $root, $database, $artifacts] = $this->environment();
+        try {
+            $this->rebuild($root, $database);
+            // A read model missing the thread row cannot take the targeted update.
+            (new PDO('sqlite:' . $database))->exec("DELETE FROM threads WHERE root_post_id = 'root-001'");
+            [$status, , $stderr] = $this->run([$root, $database, $artifacts], 'reply-001');
+            assertSame(0, $status, $stderr);
+            $this->assertLinesInOrder($stderr, ['] Updating read model for thread root-001', '] Targeted update failed (Incremental thread-label update could not resolve target thread.)', '] Rebuilding read model']);
+            assertSame('', (string) (new PDO('sqlite:' . $database))->query("SELECT body FROM posts WHERE post_id = 'reply-001'")->fetchColumn());
+        } finally {
+            $this->remove($project);
+        }
+    }
+
     /** @return array{int,string,string} */
     private function run(array $arguments, string $id): array
     {
@@ -238,6 +341,14 @@ final class DeleteRecordCommandTest
         (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
     }
 
+    private function commitReply(string $root, string $postId, string $parentId, string $body, ?string $author = null): void
+    {
+        file_put_contents($root . '/records/posts/' . $postId . '.txt', "Post-ID: {$postId}\nCreated-At: 2026-06-01T00:00:02Z\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: {$parentId}\n"
+            . ($author !== null ? "Author-Identity-ID: {$author}\n" : '') . "\n{$body}");
+        LabelRemoval::git($root, ['add', 'records']);
+        LabelRemoval::git($root, ['commit', '-qm', 'Reply fixture ' . $postId]);
+    }
+
     /** Commits an unsigned label file; with a source post it carries that post's ownership binding. */
     private function commitLabel(string $root, string $recordId, string $threadId, ?string $sourcePostId): string
     {
@@ -253,6 +364,38 @@ final class DeleteRecordCommandTest
         LabelRemoval::git($root, ['commit', '-qm', 'Label fixture ' . $recordId]);
 
         return trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+    }
+
+    /**
+     * Read-model rows a rebuild and a targeted update must agree on. Left out: per-build
+     * values (metadata, random revisions, autoincrement IDs, global sequence numbers) and
+     * the commits table and its count, which incremental writes never maintain.
+     *
+     * @return array<string, list<string>>
+     */
+    private function snapshot(string $database): array
+    {
+        $pdo = new PDO('sqlite:' . $database);
+        $skipTables = ['metadata', 'commits', 'history_keys_revision', 'activity_local_state'];
+        $skipColumns = ['posts' => ['sequence_number'], 'activity' => ['id']];
+        $snapshot = [];
+        foreach ($pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN) as $table) {
+            if (in_array($table, $skipTables, true)) continue;
+            $rows = [];
+            foreach ($pdo->query('SELECT * FROM "' . $table . '"')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                if ($table === 'activity_counts' && $row['view'] === 'commits') continue;
+                foreach ($skipColumns[$table] ?? [] as $column) unset($row[$column]);
+                $rows[] = json_encode($row);
+            }
+            sort($rows);
+            $snapshot[$table] = $rows;
+        }
+        // Sequence numbers are global and differ between builds; the order inside a thread must not.
+        $order = [];
+        foreach ($pdo->query('SELECT thread_id, post_id FROM posts ORDER BY thread_id, sequence_number')->fetchAll(PDO::FETCH_NUM) as [$thread, $post]) $order[$thread][] = $post;
+        $snapshot['thread order'] = array_map(static fn (string $thread, array $posts): string => $thread . ': ' . implode(' ', $posts), array_keys($order), $order);
+
+        return $snapshot;
     }
 
     /** @return array{string,string,string,string} */

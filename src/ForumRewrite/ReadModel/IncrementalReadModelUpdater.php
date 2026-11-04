@@ -183,6 +183,130 @@ class IncrementalReadModelUpdater
     }
 
     /**
+     * Applies an accepted operator removal (`delete-record`) without a rebuild: the post
+     * becomes the same placeholder a rebuild writes, its thread's labels are re-derived
+     * from the remaining label files (read through `thread_label_files`, no directory
+     * scan), and rows that came from removed label files go away. Callers fall back to a
+     * full rebuild when this throws.
+     *
+     * @param array<string, mixed> $removal LabelRemoval::read() record with operation `delete`
+     * @param list<string> $removedLabelPaths label files the removal deleted
+     * @return array<string, float>
+     */
+    public function applyPostRemoval(array $removal, string $receiptPath, array $removedLabelPaths, string $commitSha): array
+    {
+        $timings = [];
+        $postId = (string) $removal['source_id'];
+        $meta = $removal['post'];
+        $threadId = (string) $meta['thread_id'];
+        $isRoot = $postId === $threadId;
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+
+        try {
+            $row = $pdo->prepare('SELECT board_tags_json, is_hidden FROM posts WHERE post_id = :id');
+            $row->execute(['id' => $postId]);
+            $existing = $row->fetch();
+            $row->closeCursor();
+            if (!is_array($existing)) throw new RuntimeException('Removed post is not in the read model.');
+            $tags = json_decode((string) $existing['board_tags_json'], true);
+            if ((int) $existing['is_hidden'] !== 0 || (is_array($tags) && in_array('identity', $tags, true))) {
+                throw new RuntimeException('Identity and hidden posts need a full rebuild.');
+            }
+            $retraction = [
+                'at' => (string) $removal['accepted_at'],
+                'class' => (string) ($removal['classification'] ?? 'operator'),
+                'attribution' => (string) ($removal['attribution'] ?? 'operator'),
+            ];
+
+            $this->measure($timings, 'write_placeholder_post', function () use ($pdo, $postId, $meta, $retraction): void {
+                $pdo->prepare('UPDATE posts SET subject = NULL, body = \'\', board_tags_json = \'[]\', thread_type = :thread_type,
+                        agent_response_json = NULL, body_format = NULL, retracted_at = :at, retraction_class = :class,
+                        retraction_attribution = :attribution WHERE post_id = :id')
+                    ->execute(['thread_type' => $meta['thread_type'] ?? null, 'id' => $postId] + $retraction);
+            });
+            $this->measure($timings, 'write_placeholder_activity', function () use ($pdo, $postId, $isRoot, $receiptPath): void {
+                $pdo->prepare('UPDATE activity SET kind = :kind, record_family = \'post\', action_key = :receipt, label = \'Deleted post\',
+                        board_tags_json = \'[]\', source_path = :receipt, source_commit_sha = NULL
+                     WHERE post_id = :id AND record_family = \'post\' AND kind IN (\'thread\', \'reply\')')
+                    ->execute(['kind' => $isRoot ? 'thread' : 'reply', 'receipt' => $receiptPath, 'id' => $postId]);
+                $pdo->prepare('UPDATE activity SET board_tags_json = \'[]\' WHERE post_id = :id AND kind = \'post_reaction_add\'')
+                    ->execute(['id' => $postId]);
+            });
+            if ($isRoot) {
+                $this->measure($timings, 'write_placeholder_thread', function () use ($pdo, $threadId, $retraction): void {
+                    $pdo->prepare('UPDATE threads SET subject = NULL, subject_author_identity_id = NULL, body_preview = \'\', board_tags_json = \'[]\',
+                            event_date = NULL, event_location = NULL, event_link = NULL, event_time = NULL,
+                            retracted_at = :at, retraction_class = :class, retraction_attribution = :attribution
+                         WHERE root_post_id = :thread')
+                        ->execute(['thread' => $threadId] + $retraction);
+                });
+            }
+
+            $removed = array_flip($removedLabelPaths);
+            $paths = $this->measure($timings, 'load_thread_label_paths', function () use ($pdo, $threadId, $removed): array {
+                $select = $pdo->prepare('SELECT record_path FROM thread_label_files WHERE thread_id = :thread ORDER BY record_path');
+                $select->execute(['thread' => $threadId]);
+                return array_values(array_filter(array_map('strval', $select->fetchAll(PDO::FETCH_COLUMN)),
+                    fn (string $path): bool => !isset($removed[$path]) && is_file($this->repositoryRoot . '/' . $path)));
+            });
+            $knownCommits = $this->measure($timings, 'load_label_activity_commits', function () use ($pdo, $threadId): array {
+                $select = $pdo->prepare('SELECT action_key, source_commit_sha FROM activity WHERE kind = \'thread_label_add\' AND thread_id = :thread');
+                $select->execute(['thread' => $threadId]);
+                return $select->fetchAll(PDO::FETCH_KEY_PAIR);
+            });
+            $this->refreshThreadLabelState($pdo, $threadId, $paths, $knownCommits, $timings);
+            $this->measure($timings, 'forget_removed_labels', function () use ($pdo, $removedLabelPaths): void {
+                ThreadLabelFileIndex::forget($pdo, $removedLabelPaths);
+                $delete = $pdo->prepare('DELETE FROM reaction_signatures WHERE source_path = :path');
+                foreach ($removedLabelPaths as $path) $delete->execute(['path' => $path]);
+            });
+            $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
+            $pdo->commit();
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $throwable;
+        }
+        $pdo = null;
+
+        if (!$isRoot) {
+            // A deleted reply may have been the source of the thread's current title.
+            $timings += $this->applyThreadSubjectWrite($threadId, $commitSha);
+        }
+
+        return $timings;
+    }
+
+    /**
+     * Re-derives one thread's label state from the given label files: labels and scores,
+     * viewer tags, eligibility and label activity. Shared by label writes and removals.
+     *
+     * @param list<string> $paths
+     * @param array<string, ?string> $knownCommits
+     * @param array<string, float> $timings
+     */
+    private function refreshThreadLabelState(PDO $pdo, string $threadId, array $paths, array $knownCommits, array &$timings): void
+    {
+        $thread = $this->measure($timings, 'load_thread', fn (): array => $this->loadThread($pdo, $threadId));
+        $records = $this->measure($timings, 'load_thread_label_records', fn (): array => $this->loadThreadLabelRecords($threadId, $paths));
+        $approvedIdentityIds = $this->measure($timings, 'load_approved_identity_ids', fn (): array => $this->loadApprovedIdentityIds($pdo));
+        $rootSeed = $this->measure($timings, 'load_root_seed', fn (): array => $this->loadRootImportedSeed($threadId));
+        $labelState = $this->measure(
+            $timings,
+            'derive_thread_label_state',
+            fn (): array => $this->deriveThreadLabelState($threadId, $records, $approvedIdentityIds, $rootSeed['score'], $rootSeed['vote_count'], VerifiedAttribution::storedCutoff($pdo))
+        );
+        $this->measure($timings, 'update_thread_labels', fn (): mixed => $this->updateThreadLabels($pdo, $threadId, $labelState['labels'], $labelState['score_total'], $labelState['verified_score_total'], $labelState['vote_count']));
+        $this->measure($timings, 'refresh_thread_label_viewer_tags', fn (): mixed => $this->refreshViewerTagsForTarget($pdo, 'thread-labels', $threadId, $paths));
+        $this->measure($timings, 'write_thread_label_eligibility', fn (): mixed => SignalEligibility::apply($pdo, 'thread-labels', [$threadId => $labelState['eligible']]));
+        $this->measure($timings, 'refresh_thread_label_activity', fn (): mixed => $this->refreshThreadLabelActivity($pdo, $thread, $labelState['activity_events'], $knownCommits));
+        $this->measure($timings, 'mark_activity_attribution', fn (): mixed => $this->markActivityAttribution($pdo, $threadId));
+    }
+
+    /**
      * @return array<string, float>
      */
     public function applyThreadLabelWrite(string $threadId, string $commitSha): array
@@ -1482,7 +1606,8 @@ class IncrementalReadModelUpdater
      * lookups stay byte-identical to the former file scan after an incremental
      * write. Author identity stored verbatim (no openpgp-/openpgp: normalization).
      */
-    private function refreshViewerTagsForTarget(PDO $pdo, string $recordFamily, string $targetId): void
+    /** @param list<string>|null $paths thread label files to read instead of scanning the directory */
+    private function refreshViewerTagsForTarget(PDO $pdo, string $recordFamily, string $targetId, ?array $paths = null): void
     {
         $delete = $pdo->prepare(
             'DELETE FROM viewer_tags WHERE record_family = :family AND target_id = :target'
@@ -1495,7 +1620,10 @@ class IncrementalReadModelUpdater
         );
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $directory = $recordFamily === 'thread-labels' ? 'thread-labels' : 'post-reactions';
-        foreach (glob($this->repositoryRoot . '/records/' . $directory . '/*.txt') ?: [] as $path) {
+        $files = $paths === null
+            ? (glob($this->repositoryRoot . '/records/' . $directory . '/*.txt') ?: [])
+            : array_map(fn (string $path): string => $this->repositoryRoot . '/' . $path, $paths);
+        foreach ($files as $path) {
             try {
                 if ($recordFamily === 'thread-labels') {
                     $record = $repository->loadThreadLabel('records/thread-labels/' . basename($path));
@@ -1528,13 +1656,17 @@ class IncrementalReadModelUpdater
     /**
      * @return list<ThreadLabelRecord>
      */
-    private function loadThreadLabelRecords(?string $threadId): array
+    /** @param list<string>|null $paths label files to read instead of scanning the directory */
+    private function loadThreadLabelRecords(?string $threadId, ?array $paths = null): array
     {
-        $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
+        $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot, $paths);
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
         $records = [];
         $this->lastThreadLabelFiles = [];
-        foreach (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [] as $path) {
+        $files = $paths === null
+            ? (glob($this->repositoryRoot . '/records/thread-labels/*.txt') ?: [])
+            : array_map(fn (string $path): string => $this->repositoryRoot . '/' . $path, $paths);
+        foreach ($files as $path) {
             $relativePath = 'records/thread-labels/' . basename($path);
             try {
                 $record = $repository->loadThreadLabel($relativePath);
@@ -1866,6 +1998,10 @@ class IncrementalReadModelUpdater
     private function loadRootImportedSeed(string $threadId): array
     {
         $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        if ((\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $threadId)['operation'] ?? null) === 'delete') {
+            // A deleted root's placeholder carries no imported seed, as in a rebuild.
+            return ['score' => 0, 'vote_count' => 0];
+        }
         $post = $repository->loadPost(CanonicalPathResolver::post($threadId));
 
         return [
@@ -1993,7 +2129,8 @@ class IncrementalReadModelUpdater
      * @param array{root_post_id:string,board_tags_json:string} $thread
      * @param list<array{created_at:string,author_identity_id:?string,labels_added:list<string>,source_path:string}> $activityEvents
      */
-    private function refreshThreadLabelActivity(PDO $pdo, array $thread, array $activityEvents): void
+    /** @param array<string, ?string> $knownCommits source path => commit SHA already recorded, to skip `git log` */
+    private function refreshThreadLabelActivity(PDO $pdo, array $thread, array $activityEvents, array $knownCommits = []): void
     {
         $delete = $pdo->prepare('DELETE FROM activity WHERE kind = :kind AND thread_id = :thread_id');
         $delete->execute([
@@ -2015,7 +2152,7 @@ class IncrementalReadModelUpdater
 
         foreach ($activityEvents as $event) {
             $author = $this->resolveActivityAuthor($pdo, $event['author_identity_id']);
-            $sourceCommit = $this->sourceCommitShaForPath($event['source_path']);
+            $sourceCommit = array_key_exists($event['source_path'], $knownCommits) ? $knownCommits[$event['source_path']] : $this->sourceCommitShaForPath($event['source_path']);
             $insert->execute([
                 'created_at' => $event['created_at'],
                 'kind' => 'thread_label_add',

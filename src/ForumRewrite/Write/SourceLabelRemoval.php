@@ -27,6 +27,8 @@ final class SourceLabelRemoval
                     if (($pending['format'] ?? null) !== 'removal-recovery-v1' || !is_array($pending['record'] ?? null) || ($pending['record']['source_id'] ?? null) !== $id) throw new RuntimeException('Unsupported pending removal journal; no changes made. Only new-format recovery is supported.');
                     self::accept($root, $pending['record']);
                 }
+                // Decided before the commit: the targeted update needs a read model current at this HEAD.
+                $context = $repair ? null : self::incrementalContext($root, $database, $id);
                 $record = LabelRemoval::prepare($root, $id, $repair && LabelOwnership::hasSource($root, $id) ? 'resolve' : 'delete', $labels, $progress, $repair ? null : $database);
                 if (!$repair) $record['operation'] = 'delete';
                 $say('Committing removal (' . count($record['labels']) . ' label file(s))');
@@ -34,10 +36,25 @@ final class SourceLabelRemoval
                 $commit = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
                 LabelRemoval::read($root, $id);
                 try {
-                    $say('Clearing generated pages');
-                    (new StaticArtifactInvalidator($artifactRoot))->invalidateAllGeneratedPresentation();
-                    $say('Rebuilding read model');
-                    (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root), 'manual', $progress))->rebuild();
+                    $updated = false;
+                    if ($context !== null && $record['operation'] === 'delete') {
+                        try {
+                            $say('Updating read model for thread ' . $context['thread_id']);
+                            (new \ForumRewrite\ReadModel\IncrementalReadModelUpdater($database, $root))
+                                ->applyPostRemoval(LabelRemoval::read($root, $id), LabelRemoval::path($id), array_keys($record['labels']), $commit);
+                            $say('Clearing pages for thread ' . $context['thread_id']);
+                            (new StaticArtifactInvalidator($artifactRoot))->invalidateRemovedPost($context['thread_id'], $id, $context['tags'], $context['profile_slug']);
+                            $updated = true;
+                        } catch (\Throwable $error) {
+                            $say('Targeted update failed (' . $error->getMessage() . '); falling back to a full rebuild');
+                        }
+                    }
+                    if (!$updated) {
+                        $say('Clearing generated pages');
+                        (new StaticArtifactInvalidator($artifactRoot))->invalidateAllGeneratedPresentation();
+                        $say('Rebuilding read model');
+                        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root), 'manual', $progress))->rebuild();
+                    }
                     (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->clear();
                 } catch (\Throwable $error) {
                     (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->mark(['reason' => 'source_removal_refresh_failed', 'commit_sha' => $commit]);
@@ -97,6 +114,37 @@ final class SourceLabelRemoval
         self::commitPaths($root, $paths, $inHead, 'Accept source label cleanup ' . $id);
         LabelRemoval::read($root, $id);
         if (!unlink($journal)) throw new RuntimeException('Removal accepted; cannot retire journal. Retry the same command.');
+    }
+
+    /**
+     * What the targeted update needs, or null when only a rebuild is safe: no read model, a
+     * stale marker, another schema, or a model built for a different HEAD than the current one.
+     *
+     * @return array{thread_id:string,tags:list<string>,profile_slug:?string}|null
+     */
+    private static function incrementalContext(string $root, string $database, string $id): ?array
+    {
+        if (!is_file($database) || (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->exists()) return null;
+        try {
+            $pdo = new \PDO('sqlite:' . $database, null, null, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
+            $metadata = $pdo->query('SELECT key, value FROM metadata')->fetchAll(\PDO::FETCH_KEY_PAIR);
+            if (!\ForumRewrite\ReadModel\ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
+                || ($metadata['repository_head'] ?? null) !== \ForumRewrite\ReadModel\ReadModelMetadata::repositoryHead($root)) return null;
+            $post = $pdo->prepare('SELECT thread_id, author_profile_slug FROM posts WHERE post_id = ?');
+            $post->execute([$id]);
+            $row = $post->fetch(\PDO::FETCH_ASSOC);
+            if (!is_array($row)) return null;
+            $thread = $pdo->prepare('SELECT board_tags_json, thread_labels_json FROM threads WHERE root_post_id = ?');
+            $thread->execute([$row['thread_id']]);
+            $tags = [];
+            foreach ((array) $thread->fetch(\PDO::FETCH_ASSOC) as $json) {
+                $decoded = json_decode((string) $json, true);
+                if (is_array($decoded)) $tags = array_merge($tags, array_filter($decoded, 'is_string'));
+            }
+            return ['thread_id' => (string) $row['thread_id'], 'tags' => array_values(array_unique($tags)), 'profile_slug' => $row['author_profile_slug'] !== null ? (string) $row['author_profile_slug'] : null];
+        } catch (\PDOException) {
+            return null;
+        }
     }
 
     /** @return array<string, string> path => blob ID, for the given paths present in HEAD */

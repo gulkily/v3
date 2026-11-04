@@ -239,6 +239,11 @@ final class ReadModelBuilder
         foreach ($removals as $id => $removal) {
             if ($removal['operation'] !== 'delete') continue;
             $meta = $removal['post'];
+            // Keep the placeholder where its file sorted, so deleting a reply does not move it
+            // in its thread (and matches the targeted update in IncrementalReadModelUpdater).
+            $originalPath = \ForumRewrite\Canonical\CanonicalPathResolver::postCandidates($id)[0];
+            $low = 0; $high = count($paths);
+            while ($low < $high) { $mid = intdiv($low + $high, 2); if (strcmp($paths[$mid], $originalPath) < 0) $low = $mid + 1; else $high = $mid; }
             $parsedPosts[] = [
                 'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
                 'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
@@ -246,7 +251,7 @@ final class ReadModelBuilder
                 'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null, 'body_format' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
                 'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null,
-                'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
+                'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => $low + 0.5,
             ];
         }
 
