@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/work_tracking`; [host ledger](../effort_e
 
 Extended estimates: enabled
 
-Status: Step 3 approved; implementation in progress on `feat/work-tracking`.
+Status: Stages 1–7 implemented on `feat/work-tracking`; Stage 8 (production pilot) waiting on deploy.
 
 **Cycle estimate: 1.00** (Step 4 entry, reaffirmed)
 
@@ -166,5 +166,21 @@ Status: Step 3 approved; implementation in progress on `feat/work-tracking`.
 - Notes:
   - Plan said the server would post; implemented as a hook on any checkout instead, which covers both SSH pulls and site deploys without new server code. The server checkout's frm.py identity needs approval once.
 - Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Production pilot (in progress)
+
+**Original estimate: 0.10**
+**Retrospective stage-work assessment: pending**
+
+- Changes so far:
+  - New concept entry [work item status](../../concepts/work_item_status.md).
+- Verification so far:
+  - Full suite on the branch: `php tests/run.php` 1919 run, 1904 passed, 15 failed in 880 s. All 15 also fail on baseline `561f7dd` in this sandbox: 8 `FrmClientTest` (GPG agent cannot start), `ApprovalSeedCommandTest::testUnreadableArtifactDeletionCannotReportSuccess`, 3 `LocalAppSmokeTest`, `ReactionRecordFormatParityTest`, `ReadModelBuilderTimingTest`, `TerminalOperatorUiCommandTest`. No new failures.
+- Blocked on the maintainer:
+  - Merge and deploy to zenmemes.com; approve the agent and server frm.py identities; run `./v3 work install-hook` on the server checkout.
+  - Pilot: ten `#work` items including the issue fixed twice on 2026-11-03; two-session claim test; outage replay with `flush`; first `export` push; a fresh session following the `AGENTS.md` rule unprompted.
+  - Phone and desktop look of the status line.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
