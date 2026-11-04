@@ -35,3 +35,21 @@ Status: Step 3 approved; implementation in progress on `feat/work-tracking`.
 - Estimate details: original scope as planned; no revision; retrospective lower because no schema or write-path change was needed.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - `/work.txt` lookup
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.08**
+
+- Changes:
+  - New `src/ForumRewrite/Work/WorkListText.php`: `text(items)` renders a header line, then one tab-separated line per item (`status`, thread ID, title, set by, note, `/threads/<id>`); stale items read `active (stale)`; tabs and newlines in cells collapse to spaces.
+  - `Application::handle`: `GET /work.txt?q=<words>&status=<open|active|done|dropped|stale>`, `Cache-Control: no-store`; route added to `isApplicationRoute`. Members-only instances gate it like other content (not added to the onboarding allowlist).
+- Verification:
+  - `php tests/run.php WorkItemsTest`: 5/5 passed, including in-process `GET /work.txt` with word and status filters, the empty result, and one-line cells.
+  - Timing: 20,000 threads (200 work items) and 100,000 posts in memory, `WorkItems::list` 9.4 ms.
+  - Unicode titles: covered by existing multibyte-safe functions; no separate test.
+- Notes:
+  - Deviation: the plan said to reuse the `/search` path. Work items are a small tagged set, so a direct filter over them is simpler and avoids search ranking issues; same contract.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

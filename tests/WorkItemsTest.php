@@ -27,7 +27,7 @@ if (!function_exists('assertTrue')) {
 
 final class WorkItemsTest
 {
-    public function testThreadPageShowsStatusOnlyForWorkItems(): void
+    public function testThreadPageAndWorkTxt(): void
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-work-repo-' . bin2hex(random_bytes(6));
         mkdir($root, 0777, true);
@@ -48,6 +48,13 @@ final class WorkItemsTest
         $plain = (string) ob_get_clean();
         assertTrue(str_contains($work, 'data-work-status="open"'), 'work thread shows its status');
         assertTrue(!str_contains($plain, 'data-work-status'), 'other threads show nothing');
+        ob_start();
+        $app->handle('GET', '/work.txt?q=nav&status=open');
+        $text = (string) ob_get_clean();
+        assertSame(\ForumRewrite\Work\WorkListText::TEXT_HEADER . "\nopen\twork-item-1\tFix duplicate nav\t\t\t/threads/work-item-1\n", $text);
+        ob_start();
+        $app->handle('GET', '/work.txt?status=done');
+        assertSame(\ForumRewrite\Work\WorkListText::TEXT_HEADER . "\n# no matching work items\n", (string) ob_get_clean());
     }
 
     private PDO $pdo;
@@ -111,6 +118,12 @@ final class WorkItemsTest
         $this->post('r6', 'item-1', 'id-approved', "Fixed in abc123.\nstatus: done", '2026-11-02T00:00:00Z');
         assertSame('done', WorkItems::item($pdo, 'item-1', $now)['status']);
         assertSame(null, WorkItems::item($pdo, 'plain', $now), 'untagged threads are not items');
+    }
+
+    public function testTextCellsStayOnOneLine(): void
+    {
+        $text = \ForumRewrite\Work\WorkListText::text([['status' => 'active', 'stale' => true, 'thread_id' => 't1', 'title' => "Two\tparts\nhere", 'set_by' => 'claude', 'note' => 'n']]);
+        assertSame("active (stale)\tt1\tTwo parts here\tclaude\tn\t/threads/t1", explode("\n", $text)[1]);
     }
 
     public function testStalenessListingAndFilters(): void
