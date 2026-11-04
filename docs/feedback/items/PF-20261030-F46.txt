@@ -1,0 +1,17 @@
+ID: PF-20261030-F46
+Title: Rounder corners in modern themes
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F46
+
+Request:
+Use more rounded corners in modern themes.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261021184553-d6f24c63
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F46; that summary is a local snapshot review and its request wording is preserved here.

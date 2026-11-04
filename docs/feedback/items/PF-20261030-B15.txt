@@ -1,0 +1,18 @@
+ID: PF-20261030-B15
+Title: Long bookmarklet clips fail
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B15
+
+Request:
+Long clips, especially Russian text, fail in bookmarklet with Request-URI Too Long and secondary 400. Agent suggests POST intake and recoverable draft; implementation not settled.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261022234543-278c32e1
+- https://zenmemes.com/posts/reply-20261023000440-c3640985
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B15; that summary is a local snapshot review and its request wording is preserved here.

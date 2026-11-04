@@ -1,0 +1,17 @@
+ID: PF-20261030-B19
+Title: Busy homepage from absent retraction targets
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B19
+
+Request:
+Homepage repeatedly returns Meme Oven Is Busy when retained retractions target absent posts and high-traffic cache validation fails. Source also reports missing refresh automation. Historical diagnosis; current simplification handoff governs subsequent design.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261024044151-755007ca
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B19; that summary is a local snapshot review and its request wording is preserved here.

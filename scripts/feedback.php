@@ -42,7 +42,7 @@ if ($command === 'index') {
         exit(1);
     }
     $indexPath = dirname(rtrim($directory, '/')) . '/README.md';
-    $contents = FeedbackIndex::render($check->items);
+    $contents = FeedbackIndex::render($check->items, is_file(dirname($indexPath) . '/HISTORY.md'));
     $unchanged = is_file($indexPath) && file_get_contents($indexPath) === $contents;
     if (!$unchanged) {
         FeedbackIndex::write($indexPath, $contents);

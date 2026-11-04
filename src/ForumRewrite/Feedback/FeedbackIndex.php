@@ -15,7 +15,7 @@ final class FeedbackIndex
     /**
      * @param list<FeedbackItem> $items
      */
-    public static function render(array $items): string
+    public static function render(array $items, bool $withHistory = false): string
     {
         $open = array_values(array_filter($items, static fn (FeedbackItem $item): bool => !$item->isClosed()));
         $closed = array_values(array_filter($items, static fn (FeedbackItem $item): bool => $item->isClosed()));
@@ -27,6 +27,10 @@ final class FeedbackIndex
             '',
             sprintf('%d open, %d closed.', count($open), count($closed)),
         ];
+        if ($withHistory) {
+            $lines[] = '';
+            $lines[] = 'Where items came from and what is not yet folded in: [history](HISTORY.md).';
+        }
 
         foreach (self::KIND_HEADINGS as $kind => $heading) {
             $kindItems = array_values(array_filter($open, static fn (FeedbackItem $item): bool => $item->header('Kind') === $kind));

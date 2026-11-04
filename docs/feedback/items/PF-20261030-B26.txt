@@ -1,0 +1,17 @@
+ID: PF-20261030-B26
+Title: llms.txt character rules mismatch
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B26
+
+Request:
+llms.txt says Unicode except emoji, but arrow and degree-sign prepare requests are rejected; align documentation with accepted characters and identify failing symbols.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261030174136-491336b7
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B26; that summary is a local snapshot review and its request wording is preserved here.

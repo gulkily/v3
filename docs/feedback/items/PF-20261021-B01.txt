@@ -5,7 +5,7 @@ Workflow: untriaged
 Created: 2026-10-21
 Evidence: unknown
 Estimate: 0.75
-Aliases: 2026-10-21/B01
+Aliases: 2026-10-21/B01, 2026-10-30/B09
 
 Request:
 Investigate the multiple causes of the home-page post form intermittently jumping up and down; use a rubber-duck root-cause review.
@@ -23,3 +23,4 @@ Next action: Reproduce each jump and distinguish focus, loading and expansion ca
 Estimate 0.75 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-b01
+October 30 summary row B09: Home composer intermittently jumps; investigate multiple causes. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

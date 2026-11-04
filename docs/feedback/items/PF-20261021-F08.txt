@@ -5,7 +5,7 @@ Workflow: untriaged
 Created: 2026-10-21
 Evidence: unknown
 Estimate: 0.6
-Aliases: 2026-10-21/F08
+Aliases: 2026-10-21/F08, 2026-10-30/F36
 
 Request:
 Expand "View query" availability to more pages; assess coverage for every page that includes database data.
@@ -23,3 +23,4 @@ Next action: Inventory database-backed pages and explicit exclusions before choo
 Estimate 0.6 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-f08
+October 30 summary row F36: Expand View query coverage to pages containing database data. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

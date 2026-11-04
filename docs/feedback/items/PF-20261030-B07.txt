@@ -1,0 +1,18 @@
+ID: PF-20261030-B07
+Title: Backup download missing Created-At
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B07
+
+Request:
+Backup downloads fail with Missing required post header: Created-At, including with revision parameter.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261020153200-d68a52e9
+- https://zenmemes.com/posts/reply-20261020222132-2ba9acd0
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B07; that summary is a local snapshot review and its request wording is preserved here.

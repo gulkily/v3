@@ -5,7 +5,7 @@ Workflow: untriaged
 Created: 2026-10-21
 Evidence: unknown
 Estimate: 0.15
-Aliases: 2026-10-21/F09
+Aliases: 2026-10-21/F09, 2026-10-30/F37
 
 Request:
 Use the same small square "View query" button as `/tools/codebase`.
@@ -23,3 +23,4 @@ Next action: Agree surfaces using compact controls; coordinate with F08 without 
 Estimate 0.15 is inherited from October 21 feedback-only triage. Recommended workflow: One-shot.
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-f09
+October 30 summary row F37: Use the small square View query button from /tools/codebase. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

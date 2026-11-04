@@ -1,0 +1,18 @@
+ID: PF-20261030-B18
+Title: Content hash labeled as app version
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B18
+
+Request:
+System State and api/version label the content repository hash as application version; expose code/build and content revisions separately. Agent follow-up also requests cached-page source revisions.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261024035918-b68e8716
+- https://zenmemes.com/posts/reply-20261024144223-82d09213
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B18; that summary is a local snapshot review and its request wording is preserved here.

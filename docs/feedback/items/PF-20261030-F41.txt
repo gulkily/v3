@@ -1,0 +1,17 @@
+ID: PF-20261030-F41
+Title: Common tasks in AGENTS.md
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F41
+
+Request:
+Document common tasks in AGENTS.md and facilitate agent-side status checks and flag changes.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021181417-b449d85d
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F41; that summary is a local snapshot review and its request wording is preserved here.

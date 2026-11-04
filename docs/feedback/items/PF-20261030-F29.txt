@@ -1,0 +1,18 @@
+ID: PF-20261030-F29
+Title: Restore query buttons on System State
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F29
+
+Request:
+Restore small query-viewer buttons on System State.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261020154147-f5207f7a
+- https://zenmemes.com/posts/thread-20261020215028-372bd4cb
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F29; that summary is a local snapshot review and its request wording is preserved here.

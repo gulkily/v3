@@ -1,0 +1,17 @@
+ID: PF-20261030-F47
+Title: Offer secure mode on HTTP
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F47
+
+Request:
+On HTTP, discreetly offer secure or compatible mode at the bottom of the page, once per session.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261021184825-496ae4be
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F47; that summary is a local snapshot review and its request wording is preserved here.

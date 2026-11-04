@@ -5,7 +5,7 @@ Workflow: blocked
 Created: 2026-10-21
 Evidence: locally-verified
 Estimate: 0.15
-Aliases: 2026-10-21/B03
+Aliases: 2026-10-21/B03, 2026-10-30/B11
 
 Request:
 Keep the composer collapsed on page load, even when the textarea contains saved text.
@@ -24,3 +24,4 @@ Checks and limits: docs/plans/ui_copy_audit_checklist.md#saved-home-page-draft-s
 Source: public/assets/inline_reply_form.js
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-b03
+October 30 summary row B11: Keep composer collapsed on initial load even with saved text. Status there: Existing home-page local verification; see PF-20261021-B03 (docs/plans/production_feedback_register.md#pf-20261021-b03), production unverified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

@@ -73,3 +73,20 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
   - `./v3 feedback index` regenerated: 17 open, 0 closed.
 - Notes:
   - Retrospective stage-work assessment: 0.10. Higher than 0.08 because the three irregular entries and the lost status lines needed a second pass.
+
+## Stage 5 - Seed from the October 30 summary
+
+**Original estimate: 0.15** (unchanged)
+
+- Changes:
+  - Proposal list (16 attach, 74 create, 3 for the maintainer, 4 skip) shown before writing; the maintainer approved it 2026-11-04. Other 01 created; Other 06 and 07 skipped by the stated default.
+  - 16 attaches: each matched exactly one register item by source and outcome. Missing sources added, alias `2026-10-30/<row>` added, and the summary's row text and status appended to `Notes:`.
+  - 75 new items `PF-20261030-*`, numbered by summary row (53 features, 21 bugs, 1 other), workflow `untriaged`, estimate only where the summary gave one, titles written for the proposal, request wording preserved.
+  - [`docs/feedback/HISTORY.md`](../../feedback/HISTORY.md): what was folded in, the six skipped rows with reasons, and the inventories not yet reconciled (October 18 and 21 summaries, imported feature requests). The index links it when present.
+- Verification:
+  - Script coverage check: every source in the 91 non-skipped rows appears in an item; every one of those rows has its alias.
+  - `./v3 feedback check`: 92 items, 0 problems, 12 to review. All 12 are splits the summary made deliberately (for example one long agent report produced ten API items).
+  - `./v3 test --smoke FeedbackItemCheckTest`: 430 run, 430 passed (index test now also covers the history link). Full suite not run.
+- Notes:
+  - Deviation: Step 3 said the 10-18 and 10-21 summaries would be listed as unreconciled "in the index"; they are listed in `HISTORY.md`, which the index links, to keep the generated file free of hand-written text.
+  - Retrospective stage-work assessment: 0.15, as estimated; the summary's own merges made matching straightforward.

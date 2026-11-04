@@ -1,0 +1,18 @@
+ID: PF-20261030-B20
+Title: Activity loads slowly
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/B20
+
+Request:
+Activity loads slowly. Agent measured about 12.1 seconds to headers / 12.2 seconds total for about 245 KB, with variable browser results.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261027143026-aa638837
+- https://zenmemes.com/posts/reply-20261027145216-2fd61181
+
+Notes:
+Status in the October 30 summary: Local performance implementation documented in Activity load summary (docs/plans/activity_load_performance/activity_load_performance_step4_implementation_summary.md); original production condition not replayed in this review
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B20; that summary is a local snapshot review and its request wording is preserved here.

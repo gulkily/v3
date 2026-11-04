@@ -121,11 +121,16 @@ final class FeedbackItemCheckTest
             assertSame(true, str_contains($index, 'Pipe \\| title'));
             assertSame(true, str_contains($index, '| 0.15 | 2 |'));
             assertSame(true, str_contains($index, 'duplicate → [PF-20261103-F01](items/PF-20261103-F01.txt)'));
+            assertSame(false, str_contains($index, 'HISTORY.md'));
 
             $output = [];
             exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && ./v3 feedback index --dir=' . escapeshellarg($directory . '/items') . ' 2>&1', $output, $exitCode);
             assertContainsLine('Unchanged: ', $output);
             assertSame($index, file_get_contents($directory . '/README.md'));
+
+            file_put_contents($directory . '/HISTORY.md', "# History\n");
+            exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && ./v3 feedback index --dir=' . escapeshellarg($directory . '/items') . ' 2>&1');
+            assertSame(true, str_contains(file_get_contents($directory . '/README.md'), '[history](HISTORY.md)'));
         } finally {
             $this->remove($directory);
         }

@@ -1,0 +1,18 @@
+ID: PF-20261030-F54
+Title: Small posting helper
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F54
+
+Request:
+Provide a small posting helper and link it from llms.txt or serve it for download.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261020212954-a3fe3602
+- https://zenmemes.com/posts/reply-20261030174136-491336b7
+
+Notes:
+Status in the October 30 summary: Reported partial: Python/PHP/Perl helpers exist; October 30 reports llms.txt link absent and site script URL 404
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F54; that summary is a local snapshot review and its request wording is preserved here.

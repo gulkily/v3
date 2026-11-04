@@ -5,7 +5,7 @@ Workflow: untriaged
 Created: 2026-10-21
 Evidence: unknown
 Estimate: 0.25
-Aliases: 2026-10-21/F11
+Aliases: 2026-10-21/F11, 2026-10-30/F40
 
 Request:
 Make it easy to discover how to enable "easy-op" via its flag file, including the button that elevates the operator to approved.
@@ -23,3 +23,4 @@ Next action: Identify the intended easy-op flag and authority model before propo
 Estimate 0.25 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-f11
+October 30 summary row F40: Make easy-op and its flag-file setup discoverable, including the button to elevate to approved. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

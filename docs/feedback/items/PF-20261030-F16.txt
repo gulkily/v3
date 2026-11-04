@@ -1,0 +1,18 @@
+ID: PF-20261030-F16
+Title: One toggle for hover reveal
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F16
+
+Request:
+Explore one toggle for hover reveal/hide behavior and make disabling collapse discoverable. Exact controls affected remain unspecified.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261018030502-fe2a4698
+- https://zenmemes.com/posts/reply-20261021191841-81acc8d7
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F16; that summary is a local snapshot review and its request wording is preserved here.
