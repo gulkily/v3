@@ -1,0 +1,28 @@
+Task: Inline hashtag links
+Date: 2026-11-04
+Workflow: Direct
+Feedback: PF-20261104-F78
+Source: https://zenmemes.com/threads/thread-20261104182608-cc730e8b
+Status: Local implementation complete; merge and deployment pending
+
+Scope:
+Render canonical lowercase hashtags as ordinary /tags/{tag} links in post bodies and replies, including offline snapshots. Preserve authored bytes, line breaks, code examples, existing links and URL fragments. No schema, dependency, styling or tag-assignment changes.
+
+Reuse:
+src/ForumRewrite/View/TemplateRenderer.php already routes full post bodies through MediaEmbedRenderer; extend that path for plain text. PublicMarkdownRenderer::inline already protects generated links and code with tokens; add hashtag linking only in post mode. Share the PHP link rule in View/PostHashtags.php, with a matching rule in the existing offline reader. Keep titles and list excerpts as plain text. LocalWriteService::extractThreadLabelsFromBody defines the lowercase ASCII letters/digits and single internal hyphen tag syntax; do not change ingestion semantics.
+
+Completion:
+Open a thread or post with #meta and follow its body link to /tags/meta, including replies, Markdown disabled and JavaScript disabled. Check Markdown code/links and media remain intact. Offline thread bodies use the same links and existing offline tag navigation. Check phone/desktop and theme rendering. Run smoke plus affected renderer, docs, offline and route checks; do not run the full suite. Submit a PR; deployment and production acceptance remain pending.
+
+Checks:
+PHP 8.3 and the existing pinned playwright-core 1.58.1 were installed locally for verification. No project dependencies, manifests or lockfiles changed. TMPDIR=/private/tmp avoids macOS symlink paths rejected by ImageStore.
+
+Passed: ./v3 test MediaEmbedRendererTest PostMarkdownRendererTest PlatformDocsPageTest OfflineSnapshotThreadPresentationTest OfflineSnapshotPresentationTest WriteApiSmokeTest::testThreadPagesRenderMarkdownOnlyForMarkdownPostsAndRespectTheFlag (57/57).
+Passed: ForteBoardReaderTest (4/4) and LocalAppSmokeTest::testForteThreadDetailApiRendersOneRequestedThread (1/1).
+Passed: tests/browser/inline_hashtags.mjs in Brave: plain/Markdown roots and replies; links to actual tag routes; JavaScript enabled/disabled; 390px/1280px; light, dark, Word97, Chicago and Midnight. Offline snapshot tag navigation also passed at both widths. Browser test uses an isolated fixture, no authenticated user profile or production writes.
+Passed: ./v3 feedback check; node --check public/assets/offline_reader.js; git diff --check.
+
+Smoke limitation: ./v3 test --smoke MediaEmbedRendererTest PostMarkdownRendererTest PlatformDocsPageTest OfflineSnapshotThreadPresentationTest OfflineSnapshotPresentationTest WriteApiSmokeTest::testThreadPagesRenderMarkdownOnlyForMarkdownPostsAndRespectTheFlag ran 470 tests: 424 passed, 46 failed. macOS lacks /usr/bin/setsid, required by BoundedProcess for signing/transaction tests; the first failure emits a PHP warning and causes subsequent header/output assertions to fail. A separate tag case-variant test also assumes a case-sensitive filesystem. SingleRequestHttpTest::testHttpSubmissionAndRecovery, SignedPostTransactionTest::testFailureRollbackAndAcceptedCommit and LocalAppSmokeTest::testTagBrowsingCombinesCaseVariantsWithoutDuplicateThreads reproduce their failures on unchanged base 937dde4. Affected rendering tests pass in isolation. Full suite not run, per AGENTS.md. A Linux smoke run remains for the maintainer/CI.
+
+Deployment:
+No migration or post rewrite. Existing rendered/static pages must be regenerated with the new application release, using the normal publication flow. Offline readers need the updated hashed reader asset; the snapshot schema is unchanged. Production acceptance is pending; no production messages were posted.

@@ -216,7 +216,7 @@ final class MediaEmbedRenderer
 
     private function escapeAndBreak(string $value): string
     {
-        return nl2br($this->escape($value));
+        return nl2br(PostHashtags::linkEscapedText($this->escape($value)));
     }
 
     private function escape(string $value): string

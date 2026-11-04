@@ -4,6 +4,51 @@ declare(strict_types=1);
 
 final class OfflineSnapshotThreadPresentationTest
 {
+    public function testOfflineBodyHashtagsMatchTheServerAndKeepLiteralContent(): void
+    {
+        $bodies = [
+            "#meta (#needs-review), #v3!\n#reply #reply",
+            "<script>#bug</script> 'quoted' & &#123; &#xabc;",
+            '`#inline` [#label](https://example.test/#fragment) https://example.test/#url www.example.test/#web',
+            "```\n#code\n```\n#after\n```\n#unclosed",
+            'word#inside /#anchor ##heading #Upper #mixedCase #bad--tag #trailing- #snake_case #café é#word',
+            '#meta,#bug;#todo #0 #0123 #a-b-c',
+        ];
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+function element(type) {
+  return { type, children: [], dataset: {}, style: {}, innerHTML: '',
+    appendChild(child) { this.children.push(child); return child; },
+    get firstChild() { return this.children[0] || null; }, setAttribute() {}, addEventListener() {} };
+}
+global.window = {};
+global.document = { addEventListener() {}, createElement: element };
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+const rows = JSON.parse(process.argv[2]).map((body, i) => [String(i), i ? '0' : '', 'Topic', body, 'guest', '2026-11-04T00:00:00Z']);
+const database = { exec(sql) {
+  if (sql.includes('FROM threads')) return [{ values: [['2026-11-04T00:00:00Z', rows.length - 1]] }];
+  if (sql.includes('PRAGMA')) return [];
+  return [{ values: rows }];
+} };
+const content = element('div');
+window.forumOfflineSnapshot.renderThreadDetail({ content, database, threadId: '0', setStatus() {} });
+process.stdout.write(JSON.stringify(content.children.map(card => card.children.find(child => child.className === 'body').innerHTML)));
+NODE;
+        exec('node -e ' . escapeshellarg($script) . ' ' . escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js') . ' ' . escapeshellarg(json_encode($bodies, JSON_THROW_ON_ERROR)) . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+        $html = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+        $renderer = new \ForumRewrite\View\MediaEmbedRenderer();
+        foreach ($bodies as $index => $body) {
+            assertSame(str_replace('<br />', '<br>', $renderer->render($body, false)), $html[$index]);
+        }
+        assertStringContains('<a href="/tags/meta">#meta</a>', $html[0]);
+        assertStringContains('<a href="/tags/bug">#bug</a>', $html[1]);
+        assertStringNotContains('href=', $html[2]);
+        assertSame(1, substr_count($html[3], 'href='));
+        assertStringNotContains('href=', $html[4]);
+    }
+
     public function testSnapshotThreadCardsFollowOnlineRootAndCommentPresentationOrder(): void
     {
         $script = <<<'NODE'
