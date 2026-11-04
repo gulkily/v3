@@ -1,0 +1,54 @@
+# Smoke set: what `./v3 test` runs. One class or Class::method per line; # starts a comment.
+# Keep the whole set near one minute on a 2-core workspace. Each entry should be fast and cover a main path;
+# area-specific tests run with `./v3 test --smoke FooTest`, and the full suite is `./v3 test --all`.
+
+# Canonical records and parsing
+CanonicalRecordParsersTest
+CanonicalTextBoundsTest
+PostFormatRecordTest
+
+# Read model rebuild
+ReadModelSchemaTest
+ReadModelCandidateBuilderTest
+ReadModelBuilderTimingTest
+ReadModelThreadLabelsTest
+
+# Routing and pages
+WebServerRoutingTest
+ApiRouteCatalogTest
+AuthNavigationTest
+AppNavigationPlacementTest
+BoardListTest
+BoardSearchTest
+PlatformDocsCatalogTest
+ThemeRegistryTest
+LocalAppSmokeTest
+
+# Rendering
+PostMarkdownRendererTest
+MarkdownListStructureTest
+
+# Signed writes
+SignedPostBundleValidatorTest
+SignedPostIdentityTest
+SignedPostTransactionTest
+LocalWriteServiceThreadSubjectTest
+SingleRequestHttpTest
+AgentPostingApiTest
+
+# Approval, sign-in and access
+ApprovalPolicyTest
+PrivateSiteAuthTest
+UserAccessTest
+ViewerSessionStoreTest
+FeatureFlagEvaluatorTest
+
+# Activity, messages and offline
+ActivityProjectionTest
+PrivateMessageStoreTest
+OfflineSnapshotPublisherTest
+
+# CLI and the test runner itself
+StatusCommandTest
+WorkItemsTest
+TestRunnerBehaviorTest

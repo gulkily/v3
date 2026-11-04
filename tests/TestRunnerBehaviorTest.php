@@ -29,6 +29,38 @@ final class TestRunnerBehaviorTest
         assertStringNotContains('] PASS ', $stderr);
     }
 
+    public function testNoArgumentsRunsSmokeListAndSmokeFlagAddsNamedTests(): void
+    {
+        $list = sys_get_temp_dir() . '/forum-runner-smoke-' . bin2hex(random_bytes(6)) . '.txt';
+        file_put_contents($list, "# comment\nRunnerTimingFixtureTest::testFast # inline comment\n\n");
+        $fixture = $this->phpCommand() . ' tests/fixtures/test_runner_timing.php';
+        $env = 'FORUM_TEST_SMOKE_LIST=' . escapeshellarg($list) . ' ';
+        try {
+            [$exitCode, $stdout] = $this->runCommand(dirname(__DIR__), $env . $fixture);
+            assertSame(0, $exitCode, $stdout);
+            assertStringContains('Summary: 1 run, 1 passed, 0 failed', $stdout);
+            assertStringContains('PASS RunnerTimingFixtureTest::testFast', $stdout);
+            assertStringContains('Smoke set from tests/smoke.txt; the full suite is ./v3 test --all.', $stdout);
+
+            [$exitCode, $stdout] = $this->runCommand(dirname(__DIR__), $env . $fixture . ' --smoke RunnerTimingFixtureTest::testPass');
+            assertSame(0, $exitCode, $stdout);
+            assertStringContains('Summary: 2 run, 2 passed, 0 failed', $stdout);
+
+            // Naming tests without --smoke runs only those tests.
+            [$exitCode, $stdout] = $this->runCommand(dirname(__DIR__), $env . $fixture . ' RunnerTimingFixtureTest::testPass');
+            assertStringContains('Summary: 1 run, 1 passed, 0 failed', $stdout);
+            assertStringNotContains('Smoke set', $stdout);
+
+            file_put_contents($list, "RunnerTimingFixtureTest::testRenamedAway\n");
+            [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), $env . $fixture);
+            assertSame(1, $exitCode);
+            assertStringContains('Smoke list entry not found: RunnerTimingFixtureTest::testRenamedAway', $stderr);
+            assertStringNotContains('Summary:', $stdout);
+        } finally {
+            @unlink($list);
+        }
+    }
+
     public function testFilteredFastResultHasTimingWithoutSlowReport(): void
     {
         [$exitCode, $stdout, $stderr] = $this->runCommand(

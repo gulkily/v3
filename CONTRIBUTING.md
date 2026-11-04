@@ -58,6 +58,19 @@ Before marking a UI change complete:
   implementation document for other UI work. Distinguish completed cleanup
   from unresolved layout or behavior issues.
 
+## Tests
+
+| Command | Runs | When |
+| --- | --- | --- |
+| `./v3 test` | the smoke set in `tests/smoke.txt` (about a minute) | quick check |
+| `./v3 test --smoke FooTest Bar::testX` | smoke set plus the named classes or methods | during every task |
+| `./v3 test FooTest` | only the named tests | iterating on one area |
+| `./v3 test --all` | the full suite (several minutes) | periodically, by the maintainer |
+
+During a task, run the smoke set plus the tests covering what you changed (the classes for the code you touched and any area runner such as `./v3 agent-reply test-local`). Do not run or wait for `--all`; the maintainer runs it periodically and follows up on failures. Records, commits and PRs list what ran and state that the full suite was not run.
+
+The smoke set is curated, not derived from timings: each entry is a fast class (or method) covering a main path. Keep the whole set near one minute on a 2-core workspace. When you add a main path, add one fast test for it; when a smoke test gets slow, replace it with a faster one rather than growing the set. The runner fails if an entry no longer exists. Only a full `--all` run prunes test history.
+
 ## Feature flag presentation order
 
 `FeatureFlagRegistry::PRESENTATION_ORDER` is the canonical UI order: Access and
