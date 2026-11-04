@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""./v3 work: search, claim and update ZenMemes work items.
+
+Work items are #work threads; their status comes from `status:` reply lines
+(see src/ForumRewrite/Work). Reads use /work.txt; writes post signed replies
+through public/frm.py (set V3_WORK_FRM_STATE_DIR to choose its key/recovery
+directory; GPG needs a short path for its sockets). When the site is unreachable, claims and status changes
+are queued in state/work/pending.jsonl and posted later by `./v3 work flush`.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+FRM = ROOT / "public" / "frm.py"
+DEFAULT_SITE = "https://zenmemes.com"
+STATUSES = ("open", "active", "done", "dropped")
+
+
+def site_url(args: argparse.Namespace) -> str:
+    return (args.site or os.environ.get("V3_WORK_SITE") or DEFAULT_SITE).rstrip("/")
+
+
+def pending_path() -> Path:
+    return Path(os.environ.get("V3_WORK_STATE_DIR", str(ROOT / "state" / "work"))) / "pending.jsonl"
+
+
+class Unreachable(Exception):
+    pass
+
+
+def fetch_work(site: str, words: list[str], status: str | None, timeout: float = 15) -> str:
+    query = {}
+    if words:
+        query["q"] = " ".join(words)
+    if status:
+        query["status"] = status
+    url = site + "/work.txt" + ("?" + urllib.parse.urlencode(query) if query else "")
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as response:
+            return response.read().decode("utf-8")
+    except urllib.error.HTTPError as error:
+        if error.code >= 500:
+            raise Unreachable(f"{url} returned HTTP {error.code}") from error
+        raise SystemExit(f"{url} returned HTTP {error.code}; is /work.txt deployed on this site?")
+    except (urllib.error.URLError, socket.timeout, ConnectionError, OSError) as error:
+        raise Unreachable(f"{url}: {error}") from error
+
+
+def parse_items(text: str) -> list[dict[str, str]]:
+    items = []
+    for line in text.splitlines():
+        if not line or line.startswith("#"):
+            continue
+        cells = line.split("\t")
+        if len(cells) >= 6:
+            items.append(dict(zip(("status", "thread", "title", "by", "note", "path"), cells)))
+    return items
+
+
+def default_note() -> str:
+    try:
+        branch = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--abbrev-ref", "HEAD"],
+                                capture_output=True, text=True, timeout=10).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        branch = ""
+    host = socket.gethostname().split(".")[0]
+    return " on ".join(part for part in (host, branch) if part)
+
+
+def post_status(site: str, thread: str, status: str, note: str, frm_args: list[str]) -> int:
+    body = f"status: {status}" + (f" - {note}" if note else "") + "\n"
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as handle:
+        handle.write(body)
+        body_file = handle.name
+    try:
+        state_dir = os.environ.get("V3_WORK_FRM_STATE_DIR")
+        global_args = ["--state-dir", state_dir] if state_dir else []
+        command = [sys.executable, str(FRM), "--site", site, *global_args, "reply", "--thread", thread, "--body-file", body_file, *frm_args]
+        return subprocess.run(command).returncode
+    finally:
+        os.unlink(body_file)
+
+
+def queue(entry: dict[str, str]) -> None:
+    path = pending_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(entry) + "\n")
+
+
+def write_status(args: argparse.Namespace, status: str) -> int:
+    site = site_url(args)
+    note = args.note if args.note is not None else (default_note() if status == "active" else "")
+    try:
+        fetch_work(site, [], None)
+    except Unreachable as error:
+        queue({"site": site, "thread": args.thread, "status": status, "note": note,
+               "frm_args": args.frm_arg, "queued_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        print(f"Site unreachable ({error}).")
+        print(f"Saved {status} for {args.thread} locally in {pending_path()}; run ./v3 work flush when the site is back.")
+        return 3
+    code = post_status(site, args.thread, status, note, args.frm_arg)
+    if code != 0:
+        print("The reply was not confirmed. Follow frm.py's recovery instructions above before retrying.", file=sys.stderr)
+        return code
+    return confirm(site, args.thread, status)
+
+
+def confirm(site: str, thread: str, status: str) -> int:
+    try:
+        items = {item["thread"]: item for item in parse_items(fetch_work(site, [], None))}
+    except Unreachable:
+        print("Posted; could not re-read /work.txt to confirm the status.")
+        return 0
+    item = items.get(thread)
+    if item is None:
+        print(f"Posted, but {thread} is not a #work thread, so it has no status.")
+        return 4
+    current = item["status"].split(" ")[0]
+    if current != status:
+        print(f"Posted, but {thread} still shows '{item['status']}'. Status lines only count from verified,")
+        print("approved members; ask an operator to approve this signing identity, then the line takes effect.")
+        return 4
+    print(f"{thread}: {item['status']}" + (f" · {item['by']}" if item["by"] else "") + f" · {site}{item['path']}")
+    return 0
+
+
+def cmd_search(args: argparse.Namespace) -> int:
+    site = site_url(args)
+    try:
+        text = fetch_work(site, args.words, args.status)
+    except Unreachable as error:
+        print(f"Site unreachable ({error}). Check again before starting work; queued local claims:", file=sys.stderr)
+        path = pending_path()
+        print(path.read_text(encoding="utf-8") if path.exists() else "(none)", end="")
+        return 3
+    sys.stdout.write(text)
+    return 0
+
+
+def cmd_claim(args: argparse.Namespace) -> int:
+    site = site_url(args)
+    try:
+        items = {item["thread"]: item for item in parse_items(fetch_work(site, [], None))}
+        item = items.get(args.thread)
+        if item is not None and item["status"] == "active" and not args.force:
+            print(f"{args.thread} is already active" + (f" ({item['by']}: {item['note']})" if item["by"] else "") + ".")
+            print("Pick other work, or pass --force if that claim is yours or abandoned.")
+            return 5
+    except Unreachable:
+        pass
+    return write_status(args, "active")
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    return write_status(args, args.status)
+
+
+def cmd_flush(args: argparse.Namespace) -> int:
+    path = pending_path()
+    if not path.exists() or not path.read_text(encoding="utf-8").strip():
+        print("Nothing queued.")
+        return 0
+    entries = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    remaining = []
+    for index, entry in enumerate(entries):
+        try:
+            fetch_work(entry["site"], [], None)
+        except Unreachable as error:
+            print(f"Still unreachable ({error}); keeping {len(entries) - index} queued.")
+            remaining = entries[index:]
+            break
+        code = post_status(entry["site"], entry["thread"], entry["status"], entry.get("note", ""), entry.get("frm_args", []))
+        if code != 0:
+            print(f"Posting {entry['status']} for {entry['thread']} was not confirmed; keeping it and the rest queued.")
+            remaining = entries[index:]
+            break
+        confirm(entry["site"], entry["thread"], entry["status"])
+    path.write_text("".join(json.dumps(entry) + "\n" for entry in remaining), encoding="utf-8")
+    return 0 if not remaining else 3
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="./v3 work", description="Search, claim and update ZenMemes work items.")
+    parser.add_argument("--site", help=f"site origin (default $V3_WORK_SITE or {DEFAULT_SITE})")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    search = sub.add_parser("search", help="list work items matching all words")
+    search.add_argument("words", nargs="*")
+    search.add_argument("--status", choices=(*STATUSES, "stale"))
+    search.set_defaults(func=cmd_search)
+
+    for name, func, help_text in (("claim", cmd_claim, "mark an item active for this session"),
+                                  ("status", cmd_status, "set an item's status")):
+        command = sub.add_parser(name, help=help_text)
+        command.add_argument("thread")
+        if name == "status":
+            command.add_argument("status", choices=STATUSES)
+        else:
+            command.add_argument("--force", action="store_true", help="claim even if already active")
+        command.add_argument("--note", help="short note shown with the status (claim default: host on branch)")
+        command.add_argument("--frm-arg", action="append", default=[], help="extra argument passed to frm.py, repeatable")
+        command.set_defaults(func=func)
+
+    flush = sub.add_parser("flush", help="post claims and status changes queued while offline")
+    flush.set_defaults(func=cmd_flush)
+
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

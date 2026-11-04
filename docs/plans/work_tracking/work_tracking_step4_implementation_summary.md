@@ -53,3 +53,32 @@ Status: Step 3 approved; implementation in progress on `feat/work-tracking`.
 - Estimate details: original scope as planned; no revision.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - `./v3 work` CLI with offline claims
+
+**Original estimate: 0.15**
+**Retrospective stage-work assessment: 0.15**
+
+- Changes:
+  - New `scripts/work_cli.py` (Python 3 standard library only) and `./v3 work` dispatch:
+    - `search [words] [--status S]` prints `/work.txt`.
+    - `claim THREAD [--note] [--force]` refuses an item already `active` unless forced; default note is host and branch.
+    - `status THREAD open|active|done|dropped [--note]`.
+    - `flush` posts queued entries in order and keeps the rest on the first failure.
+  - Writes post a `status:` reply through `public/frm.py` (one signed request, its own resume/retry), then re-read `/work.txt` to confirm the status took effect.
+  - Site unreachable (connection error or 5xx): the entry is queued in `state/work/pending.jsonl` (already git-ignored), exit 3. A failed frm.py write after the site answered is not queued, to avoid double posting; frm.py's recovery instructions apply.
+  - `V3_WORK_SITE`, `V3_WORK_STATE_DIR` and `V3_WORK_FRM_STATE_DIR` override the site, queue location and frm.py key directory.
+- Verification (local `./v3 start 127.0.0.1:8123` against a temporary copy of `tests/fixtures/parity_minimal_v1` plus one `#work` thread):
+  - Claim with the server down: queued, exit 3.
+  - Server up, `flush`: reply accepted in 1.1 s; queue emptied; CLI reported that the line does not count because the new identity is unapproved.
+  - After `./v3 approval seed <identity>`: `/work.txt` showed `active · frm-agent · test session`.
+  - Second-session `claim`: refused with the existing claimant, exit 5.
+  - `status ... done --note "fixed in abc123"`: 0.84 s; `/work.txt?status=done` and the thread page both showed `done`.
+  - Second `flush`: "Nothing queued."
+  - No automated test for the Python CLI; covered by the recorded manual run.
+- Notes:
+  - **Open question for the maintainer:** `status:` lines only count from approved members (Stage 1), so each new agent signing key needs approval once before its claims count. The CLI says so when it happens.
+  - In this sandbox, GPG failed with frm.py's default state path because the agent socket path was too long; `V3_WORK_FRM_STATE_DIR` with a short path fixed it. Environment-specific, not changed in frm.py.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
