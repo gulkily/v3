@@ -26,6 +26,20 @@ final class LabelRemoval
         return $out;
     }
 
+    /** Runs Git with $input on stdin; returns stdout. */
+    public static function gitWithInput(string $root, array $args, string $input): string
+    {
+        $pipes = [];
+        $process = proc_open(array_merge(['git', '-C', $root], $args), [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        if (!is_resource($process)) throw new RuntimeException('Cannot run Git.');
+        fwrite($pipes[0], $input);
+        fclose($pipes[0]);
+        $out = stream_get_contents($pipes[1]); $err = stream_get_contents($pipes[2]);
+        fclose($pipes[1]); fclose($pipes[2]);
+        if (proc_close($process) !== 0) throw new RuntimeException('Git failed: ' . trim($err));
+        return $out;
+    }
+
     public static function read(string $root, string $sourceId): ?array
     {
         $path = self::path($sourceId);

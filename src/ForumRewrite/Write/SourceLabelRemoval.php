@@ -79,28 +79,89 @@ final class SourceLabelRemoval
                 $remove[] = $path;
             }
             foreach ($remove as $path) {
-                // A rejected commit may already have staged deletion. The path is then
-                // absent from both disk and index, but still belongs to this HEAD commit.
-                foreach ([$path, $path . '.asc', $path . '.sig'] as $candidate) {
-                    if (is_file($root . '/' . $candidate)
-                        || trim(LabelRemoval::git($root, ['ls-files', '--', $candidate])) !== ''
-                        || trim(LabelRemoval::git($root, ['ls-tree', '--name-only', 'HEAD', '--', $candidate])) !== '') $paths[] = $candidate;
-                }
+                foreach ([$path, $path . '.asc', $path . '.sig'] as $candidate) $paths[] = $candidate;
             }
         }
+        // One lookup each in the index and HEAD instead of per-path Git processes. A rejected
+        // commit may already have staged a deletion: the path is then absent from disk and
+        // index but still belongs to the HEAD commit.
+        $inIndex = array_flip(array_filter(explode("\0", LabelRemoval::git($root, array_merge(['ls-files', '-z', '--'], $paths)))));
+        $inHead = self::headEntries($root, $paths);
+        $paths = array_values(array_filter($paths, static fn (string $path): bool => $path === $relative
+            || is_file($root . '/' . $path) || isset($inIndex[$path]) || isset($inHead[$path])));
         $journal = self::journal($root, $id);
         $temporary = tempnam(dirname($journal), '.label-removal-');
         if ($temporary === false || file_put_contents($temporary, json_encode(['format'=>'removal-recovery-v1','record'=>$record], JSON_THROW_ON_ERROR)) === false || !rename($temporary, $journal)) throw new RuntimeException('Cannot persist removal recovery journal.');
         LabelRemoval::store($root, $record);
         foreach ($paths as $path) if ($path !== $relative && is_file($root . '/' . $path) && !unlink($root . '/' . $path)) throw new RuntimeException('Cannot remove ' . $path);
-        $stagePaths = array_values(array_filter($paths, static fn (string $path): bool => is_file($root . '/' . $path)
-            || trim(LabelRemoval::git($root, ['ls-files', '--', $path])) !== ''));
-        LabelRemoval::git($root, array_merge(['add', '-A', '--'], $stagePaths));
-        if (trim(LabelRemoval::git($root, array_merge(['diff', '--cached', '--name-only', '--'], $paths))) !== '') {
-            LabelRemoval::git($root, array_merge(['commit', '-m', 'Accept source label cleanup ' . $id, '--'], $paths));
-        }
+        self::commitPaths($root, $paths, $inHead, 'Accept source label cleanup ' . $id);
         LabelRemoval::read($root, $id);
         if (!unlink($journal)) throw new RuntimeException('Removal accepted; cannot retire journal. Retry the same command.');
     }
 
+    /** @return array<string, string> path => blob ID, for the given paths present in HEAD */
+    private static function headEntries(string $root, array $paths): array
+    {
+        $entries = [];
+        foreach (array_filter(explode("\0", LabelRemoval::git($root, array_merge(['ls-tree', '-z', 'HEAD', '--'], $paths)))) as $line) {
+            [$meta, $path] = explode("\t", $line, 2);
+            $entries[$path] = (string) (explode(' ', $meta)[2] ?? '');
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Commits exactly these paths as they now are on disk (present: added, absent: deleted)
+     * on top of HEAD, then stages the same paths. `git commit -- <paths>` would refresh the
+     * whole index first, which costs seconds in a repository of several hundred thousand
+     * files; fast-import reads only the trees it changes. Other staged changes are left
+     * staged and uncommitted, as before. The pre-commit hook still runs.
+     *
+     * @param list<string> $paths
+     * @param array<string, string> $inHead
+     */
+    private static function commitPaths(string $root, array $paths, array $inHead, string $message): void
+    {
+        $changes = '';
+        foreach ($paths as $path) {
+            $absolute = $root . '/' . $path;
+            if (is_file($absolute)) {
+                $bytes = (string) file_get_contents($absolute);
+                if (isset($inHead[$path]) && hash_equals($inHead[$path], trim(LabelRemoval::gitWithInput($root, ['hash-object', '--stdin'], $bytes)))) continue;
+                $changes .= 'M 100644 inline ' . $path . "\ndata " . strlen($bytes) . "\n" . $bytes . "\n";
+            } elseif (isset($inHead[$path])) {
+                $changes .= 'D ' . $path . "\n";
+            }
+        }
+        if ($changes !== '') {
+            $hook = $root . '/.git/hooks/pre-commit';
+            if (is_file($hook) && is_executable($hook)) {
+                LabelRemoval::git($root, array_merge(['update-index', '--add', '--remove', '--'], $paths));
+                exec('cd ' . escapeshellarg($root) . ' && ' . escapeshellarg($hook) . ' 2>&1', $hookOutput, $hookStatus);
+                if ($hookStatus !== 0) throw new RuntimeException('Git failed: pre-commit hook rejected the removal commit. ' . trim(implode("\n", $hookOutput)));
+            }
+            $head = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+            $branch = trim((string) shell_exec('git -C ' . escapeshellarg($root) . ' symbolic-ref -q HEAD'));
+            $target = $branch !== '' ? $branch : 'refs/v3/pending-removal';
+            [$name, $email, $time, $zone] = self::identity($root);
+            $who = "{$name} <{$email}> {$time} {$zone}";
+            LabelRemoval::gitWithInput($root, ['fast-import', '--quiet'],
+                "commit {$target}\nauthor {$who}\ncommitter {$who}\ndata " . strlen($message) . "\n{$message}\nfrom {$head}\n{$changes}\n");
+            if ($branch === '') {
+                LabelRemoval::git($root, ['update-ref', '--no-deref', 'HEAD', $target]);
+                LabelRemoval::git($root, ['update-ref', '-d', $target]);
+            }
+        }
+        LabelRemoval::gitWithInput($root, ['update-index', '-z', '--add', '--remove', '--stdin'], implode("\0", $paths) . "\0");
+    }
+
+    /** @return array{string,string,string,string} committer name, email, epoch seconds, zone */
+    private static function identity(string $root): array
+    {
+        $ident = trim(LabelRemoval::git($root, ['var', 'GIT_COMMITTER_IDENT']));
+        if (preg_match('/^(.*) <([^>]*)> (\d+) ([+-]\d{4})$/', $ident, $match) !== 1) throw new RuntimeException('Cannot determine Git committer identity.');
+
+        return [$match[1], $match[2], $match[3], $match[4]];
+    }
 }

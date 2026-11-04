@@ -68,3 +68,26 @@ Process note: Step 1–3 documents were committed and pushed to `main` before St
 - Estimate details: original scope unchanged; retrospective 0.15 because the existing scan in `applyThreadLabelWrite` gave index maintenance for free; no measured labor.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Removal commit with one index read
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.14**
+
+- Changes:
+  - `SourceLabelRemoval::accept` looks up all candidate paths with one `git ls-files` and one `git ls-tree HEAD` call instead of up to three Git processes per candidate path.
+  - New `commitPaths`: builds the commit with `git fast-import` (already used by history rewrite) from HEAD, writing only the changed trees, then stages the same paths with one `git update-index --stdin`. Skips the commit when HEAD already matches (rerun). Other staged changes stay staged and uncommitted, as before. Detached HEAD is handled through a temporary ref.
+  - The pre-commit hook still runs, so an installed hook can still reject the removal; author and committer come from `git var GIT_COMMITTER_IDENT`.
+  - `LabelRemoval::gitWithInput` (new helper) for Git commands that read stdin.
+- Verification:
+  - `DeleteRecordCommandTest` 9/9, adding: the removal commit changes exactly the receipt, the post and its owned label with the usual message, leaving a clean tree; a kill after the commit but before the index update is finished by a rerun with no second commit.
+  - Existing removal tests pass unchanged (28/28 in the targeted run), including unrelated staged changes staying staged after a hook-rejected commit and resume.
+  - Timing, local workspace, repository with 310,011 tracked files: the commit step takes 0.29s. For comparison on a 320k-file repository, `git update-index --refresh` alone took 0.73s and `git status` 0.88s, both of which `git commit -- <paths>` pays; a fast-import commit took 0.04s and the index update 0.18s.
+  - Full suite not run.
+- Notes:
+  - Host Git timings are still pending from the maintainer; this stage went ahead because the approach reduces Git work whatever the host numbers are. The plan's stop condition (startup floor above about 0.5s) is checked at Stage 5.
+  - The index update rewrites the whole index file (about 36 MB at 320k entries). If that dominates on the host, `git config core.splitIndex true` in the content repository is a host-side option; not changed here.
+- Estimate details: original scope unchanged; retrospective 0.14 for the hook and rerun handling; no measured labor.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

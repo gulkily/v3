@@ -161,6 +161,55 @@ final class DeleteRecordCommandTest
         }
     }
 
+    public function testRemovalCommitTouchesOnlyItsPathsAndLeavesACleanTree(): void
+    {
+        [$project, $root, $database, $artifacts] = $this->environment();
+        try {
+            $this->commitLabel($root, 'label-owned', 'root-001', 'root-001');
+            $this->rebuild($root, $database);
+            $before = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+            [$status, , $stderr] = $this->run([$root, $database, $artifacts], 'root-001');
+            assertSame(0, $status, $stderr);
+
+            assertSame($before, trim(LabelRemoval::git($root, ['rev-parse', 'HEAD~1'])));
+            $changed = explode("\n", trim(LabelRemoval::git($root, ['diff', '--name-status', 'HEAD~1', 'HEAD'])));
+            sort($changed);
+            assertSame([
+                "A\trecords/post-removals/root-001.txt",
+                "D\trecords/posts/root-001.txt",
+                "D\trecords/thread-labels/label-owned.txt",
+            ], $changed);
+            assertSame('Accept source label cleanup root-001', trim(LabelRemoval::git($root, ['log', '-1', '--format=%s'])));
+            assertSame('', trim(LabelRemoval::git($root, ['status', '--porcelain'])));
+        } finally {
+            $this->remove($project);
+        }
+    }
+
+    public function testRerunAfterCommitButBeforeIndexUpdateFinishesWithoutASecondCommit(): void
+    {
+        [$project, $root, $database, $artifacts] = $this->environment();
+        try {
+            [$status, , $stderr] = $this->run([$root, $database, $artifacts], 'root-001');
+            assertSame(0, $status, $stderr);
+            $head = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
+            // Model a kill after fast-import: the commit exists, but the index still lists the post.
+            $blob = trim(LabelRemoval::git($root, ['rev-parse', 'HEAD~1:records/posts/root-001.txt']));
+            LabelRemoval::git($root, ['update-index', '--add', '--cacheinfo', '100644,' . $blob . ',records/posts/root-001.txt']);
+            $journal = trim(LabelRemoval::git($root, ['rev-parse', '--absolute-git-dir'])) . '/source-label-removal-root-001.json';
+            file_put_contents($journal, json_encode(['format' => 'removal-recovery-v1', 'record' => LabelRemoval::read($root, 'root-001')]));
+
+            [$status, , $stderr] = $this->run([$root, $database, $artifacts], 'root-001');
+            assertSame(0, $status, $stderr);
+            assertStringContains('] Finishing an interrupted removal', $stderr);
+            assertSame($head, trim(LabelRemoval::git($root, ['rev-parse', 'HEAD'])));
+            assertSame('', trim(LabelRemoval::git($root, ['status', '--porcelain'])));
+            assertSame(false, is_file($journal));
+        } finally {
+            $this->remove($project);
+        }
+    }
+
     /** @return array{int,string,string} */
     private function run(array $arguments, string $id): array
     {
