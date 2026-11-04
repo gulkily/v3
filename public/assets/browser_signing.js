@@ -3508,15 +3508,25 @@
       }
     }
 
-    function restoreComposeUiState() {
+    function restoreComposeUiState({ persistDraft = true } = {}) {
       submitInFlight = false;
       setSubmitButtonsDisabled(false);
-      normalizeComposeFields({ removeUnsupported: false });
+      normalizeComposeFields({ removeUnsupported: false, persistDraft });
     }
 
     function resetComposeFormToServerState() {
       form.reset();
       clearComposeDraft(form);
+    }
+
+    function resetPublishedComposeForm() {
+      form.reset();
+      // A prefilled form can have the published text as its default value.
+      composeDraftFields(form).forEach(function (field) {
+        if (field.name === "subject" || field.name === "body") field.value = "";
+      });
+      if (window.ForumImageUpload) window.ForumImageUpload.clear(form);
+      delete form.__pendingImagePost;
     }
 
     function clearComposeFields() {
@@ -3612,6 +3622,7 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
+        publishedInThisForm = true;
         navigateToCanonicalReply(result);
         return true;
       } catch (error) {
@@ -3666,6 +3677,7 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
+        publishedInThisForm = true;
         navigateToCanonicalThread(result, composeFormFieldValue(form, "return_to"));
         return true;
       } catch (error) {
@@ -3693,6 +3705,7 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
+        publishedInThisForm = true;
         navigateToCanonicalReply(result, composeFormFieldValue(form, "return_to"));
         return true;
       } catch (error) {
@@ -3749,7 +3762,8 @@
       resetComposeFormToServerState();
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     } else if (shouldHonorRecentlyClearedDraft()) {
-      resetComposeFormToServerState();
+      resetPublishedComposeForm();
+      restoreComposeDraft(form);
       clearRecentlyClearedComposeDraftKey();
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     } else if (hasExplicitComposePrefill(textFields)) {
@@ -3939,6 +3953,7 @@
         }
       }) : null;
     let submitInFlight = false;
+    let publishedInThisForm = false;
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
       if (submitInFlight) {
@@ -3995,6 +4010,7 @@
           if (!result.ok) throw new Error(result.error);
           clearComposeDraftForPendingSubmit(form);
           completeActionTiming(timing, "ok");
+          publishedInThisForm = true;
           if (isReplyComposeForm(form)) navigateToCanonicalReply(result, composeFormFieldValue(form, "return_to"));
           else navigateToCanonicalThread(result, composeFormFieldValue(form, "return_to"));
           return;
@@ -4046,11 +4062,13 @@
       clearTransientComposeStatus();
       refreshComposeIdentityFromStorage();
 
-      if (shouldHonorRecentlyClearedDraft()) {
-        resetComposeFormToServerState();
+      if (publishedInThisForm || shouldHonorRecentlyClearedDraft()) {
+        publishedInThisForm = false;
+        resetPublishedComposeForm();
         refreshComposeIdentityFromStorage();
-        clearRecentlyClearedComposeDraftKey();
-        normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
+        if (shouldHonorRecentlyClearedDraft()) clearRecentlyClearedComposeDraftKey();
+        restoreComposeDraft(form);
+        restoreComposeUiState({ persistDraft: false });
         return;
       }
 
