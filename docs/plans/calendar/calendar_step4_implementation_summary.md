@@ -66,3 +66,25 @@ Enhancement requests: none.
 - Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.12.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Read model and event block span
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `src/ForumRewrite/ReadModel/ReadModelSchema.php`: nullable `threads.event_end_date`.
+  - `src/ForumRewrite/ReadModel/ReadModelMetadata.php`: `SCHEMA_VERSION` 48 → 49 (corrected from the plan's 47 → 48 at approval).
+  - `src/ForumRewrite/ReadModel/ReadModelBuilder.php` and `IncrementalReadModelUpdater.php`: filled on full rebuild and incremental insert; cleared with the other event columns for retracted roots, deleted-record placeholders and incremental retraction.
+  - `src/ForumRewrite/ReadModel/ThreadRepository.php` (both selects), `src/ForumRewrite/Application.php` (`fetchThread`), `src/ForumRewrite/ReadModel/PublicationPostFilter.php`: carry the column alongside `event_time`.
+  - `templates/partials/event_block.php`: `📅 start – end` when an end date is present, unchanged otherwise. Used by thread root cards, thread cards and board rows.
+  - `docs/specs/read_model_schema_v1.md`: rows for all five event columns (none were listed) and a Version 49 section.
+  - `tests/WriteApiSmokeTest.php`: `testEventEndDateIsIndexedShownAndRebuiltFromVersion48`. Incremental write and full rebuild agree for span and one-day threads; the thread page shows the span; a one-day event's block is the exact pre-change markup; a model seeded at version 48 without the column is rebuilt by normal startup before the thread page reads it.
+- Verification:
+  - Passed: `./v3 test --smoke` plus the new test, the Stage 1–2 tests, `testPrepareThreadWithEventFieldsRoundTripsThroughFinalizeAndReadModel`, `testEventFieldsRequireEventSupportBeforeWriting`, `DeleteRecordCommandTest::testVersion47ModelFallsBackForInspectAndStartupAddsTheIndex` and `EventEndDateParserTest`: 429 run, 429 passed. Full suite not run, per `AGENTS.md`.
+  - Passed: `./v3 rebuild <scratch repo> <scratch db>` on a copy of `tests/fixtures/parity_minimal_v1` plus one span record: 4 posts, 3 threads, `couch-span` stored `2026-11-10`/`2026-11-12`, metadata schema version 49.
+  - Pending (Stage 8): `./v3 rebuild` from version 48 on a copy of real data.
+- Notes:
+  - Every `event_time` site in `src/` now has a matching `event_end_date`; a grep for event columns without the end date returns only the parser, writer and composer, which Stages 1–2 already cover.
+- Estimate details: original scope unchanged apart from the approved version number; no revision. Retrospective stage-work assessment: 0.12.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

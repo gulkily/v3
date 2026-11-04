@@ -1305,6 +1305,51 @@ CODE;
         assertStringContains('name="event_end_date" value="2026-11-09"', $rerender);
     }
 
+    public function testEventEndDateIsIndexedShownAndRebuiltFromVersion48(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $service = new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            featureFlags: new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => true]),
+        );
+        $span = $service->createThread(['board_tags' => 'couches', 'subject' => 'Span', 'body' => 'Three nights', 'event_date' => '2026-11-10', 'event_end_date' => '2026-11-12', 'event_time' => '19:00']);
+        $single = $service->createThread(['board_tags' => 'couches', 'subject' => 'Single', 'body' => 'One night', 'event_date' => '2026-11-10', 'event_time' => '19:00']);
+
+        $columns = function () use ($databasePath): array {
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $rows = $pdo->query("SELECT root_post_id, event_date, event_end_date FROM threads WHERE event_date IS NOT NULL ORDER BY root_post_id")->fetchAll(PDO::FETCH_ASSOC);
+            return array_column($rows, null, 'root_post_id');
+        };
+        $incremental = $columns();
+        assertSame('2026-11-12', $incremental[$span['thread_id']]['event_end_date']);
+        assertSame(null, $incremental[$single['thread_id']]['event_end_date']);
+
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+        assertSame($incremental, $columns());
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        assertStringContains('📅 2026-11-10 – 2026-11-12 at 19:00</span>', $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($span['thread_id'])));
+        // A one-day event renders exactly as it did before the end date existed.
+        assertStringContains('<span class="event-block__date">📅 2026-11-10 at 19:00</span>', $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($single['thread_id'])));
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->exec('ALTER TABLE threads DROP COLUMN event_end_date');
+        $pdo->exec("UPDATE metadata SET value = '48' WHERE key = 'schema_version'");
+        $pdo = null;
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        assertStringContains('📅 2026-11-10 – 2026-11-12 at 19:00</span>', $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($span['thread_id'])));
+        $pdo = new PDO('sqlite:' . $databasePath);
+        assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+        assertSame($incremental, $columns());
+    }
+
     public function testTitlelessThreadDisplaysBodyExcerptTitle(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
