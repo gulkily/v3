@@ -11,9 +11,11 @@ are queued in state/work/pending.jsonl and posted later by `./v3 work flush`.
 from __future__ import annotations
 
 import argparse
+import datetime
 import hashlib
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -67,7 +69,7 @@ def parse_items(text: str) -> list[dict[str, str]]:
             continue
         cells = line.split("\t")
         if len(cells) >= 6:
-            items.append(dict(zip(("status", "thread", "title", "by", "note", "path", "source"), cells)))
+            items.append(dict(zip(("status", "thread", "title", "by", "note", "path", "source", "set_at"), cells)))
     return items
 
 
@@ -303,6 +305,10 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         if candidate["source"] not in known:
             known.add(candidate["source"])
             new.append(candidate)
+    if args.apply:
+        postback(site, f"{args.since or todo_baseline()}..HEAD", args.frm_arg, False)
+    else:
+        postback(site, f"{args.since or todo_baseline()}..HEAD", args.frm_arg, True)
     if not new:
         print("No new inbox entries.")
         return 0
@@ -321,6 +327,95 @@ def cmd_sweep(args: argparse.Namespace) -> int:
             return code
         created += 1
     print(f"Created {created} item(s).")
+    return 0
+
+
+HOOK_MARKER = "# Installed by ./v3 work install-hook"
+
+
+def landed_trailers(revision_range: str) -> list[dict[str, str]]:
+    """Commits in a range carrying `Work: <thread-id>` trailers, oldest first."""
+    log = subprocess.run(["git", "-C", str(ROOT), "log", "--reverse", "--format=%H%x1f%cI%x1f%B%x1e", revision_range],
+                         capture_output=True, text=True)
+    if log.returncode != 0:
+        raise SystemExit(f"git log {revision_range} failed: {log.stderr.strip()}")
+    landed = []
+    for record in log.stdout.split("\x1e"):
+        if not record.strip():
+            continue
+        commit, committed_at, message = record.strip("\n").split("\x1f", 2)
+        for line in message.splitlines():
+            match = re.match(r"^Work:\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*$", line.strip())
+            if match:
+                landed.append({"commit": commit, "committed_at": committed_at, "thread": match.group(1)})
+    return landed
+
+
+def iso_to_epoch(value: str) -> float:
+    try:
+        return datetime.datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return 0.0
+
+
+def postback(site: str, revision_range: str, frm_args: list[str], dry_run: bool) -> int:
+    landed = landed_trailers(revision_range)
+    if not landed:
+        print(f"No Work: trailers in {revision_range}.")
+        return 0
+    try:
+        items = {item["thread"]: item for item in parse_items(fetch_work(site, [], None))}
+    except Unreachable as error:
+        print(f"Site unreachable ({error}); post-back skipped. The next sweep will retry.", file=sys.stderr)
+        return 3
+    failures = 0
+    for entry in landed:
+        item = items.get(entry["thread"])
+        if item is None:
+            print(f"{entry['commit'][:10]}: {entry['thread']} is not a work item; skipped.")
+            continue
+        status = item["status"].split(" ")[0]
+        if status in ("done", "dropped"):
+            continue
+        if item.get("set_at") and iso_to_epoch(item["set_at"]) > iso_to_epoch(entry["committed_at"]):
+            print(f"{entry['commit'][:10]}: {entry['thread']} changed status after this commit; left as {status}.")
+            continue
+        if dry_run:
+            print(f"Would mark {entry['thread']} done (landed in {entry['commit'][:10]}).")
+            continue
+        if post_status(site, entry["thread"], "done", f"landed in {entry['commit'][:12]}", frm_args) != 0:
+            failures += 1
+            print(f"Posting done for {entry['thread']} was not confirmed; follow frm.py's recovery steps.", file=sys.stderr)
+            continue
+        item["status"] = "done"
+        print(f"Marked {entry['thread']} done (landed in {entry['commit'][:10]}).")
+    return 1 if failures else 0
+
+
+def cmd_postback(args: argparse.Namespace) -> int:
+    revision_range = args.range or f"{todo_baseline()}..HEAD"
+    return postback(site_url(args), revision_range, args.frm_arg, args.dry_run)
+
+
+def cmd_install_hook(args: argparse.Namespace) -> int:
+    hooks = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--git-path", "hooks"], capture_output=True, text=True).stdout.strip()
+    path = (ROOT / hooks / "post-merge") if hooks and not os.path.isabs(hooks) else Path(hooks) / "post-merge"
+    if path.exists() and HOOK_MARKER not in path.read_text(encoding="utf-8", errors="replace"):
+        print(f"{path} already exists and was not installed by this command; add this line to it instead:")
+        print(f'  "{ROOT}/v3" work postback --range ORIG_HEAD..HEAD >> "{ROOT}/state/work/postback.log" 2>&1 &')
+        return 1
+    site = site_url(args)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"""#!/bin/sh
+{HOOK_MARKER}: after a pull or deploy, post `status: done`
+# for work items whose `Work:` commit trailers just landed. Runs in the background
+# and never fails the merge. Remove this file to stop.
+mkdir -p "{ROOT}/state/work"
+V3_WORK_SITE="{site}" nohup "{ROOT}/v3" work postback --range ORIG_HEAD..HEAD >> "{ROOT}/state/work/postback.log" 2>&1 &
+exit 0
+""", encoding="utf-8")
+    path.chmod(0o755)
+    print(f"Installed {path} (site {site}). Its log is state/work/postback.log.")
     return 0
 
 
@@ -405,11 +500,20 @@ def main(argv: list[str]) -> int:
     flush = sub.add_parser("flush", help="post claims and status changes queued while offline")
     flush.set_defaults(func=cmd_flush)
 
-    sweep = sub.add_parser("sweep", help="turn new todo.txt lines and #request threads into work items")
+    sweep = sub.add_parser("sweep", help="turn new todo.txt lines and #request threads into work items, and catch up post-back")
     sweep.add_argument("--since", help=f"revision to diff {TODO_FILE} against (default: when work tracking was added)")
     sweep.add_argument("--apply", action="store_true", help="create the items (default: only list them)")
     sweep.add_argument("--frm-arg", action="append", default=[], help="extra argument passed to frm.py, repeatable")
     sweep.set_defaults(func=cmd_sweep)
+
+    back = sub.add_parser("postback", help="mark items done for Work: commit trailers in a range")
+    back.add_argument("--range", help="revision range (default: since work tracking was added, ..HEAD)")
+    back.add_argument("--dry-run", action="store_true")
+    back.add_argument("--frm-arg", action="append", default=[], help="extra argument passed to frm.py, repeatable")
+    back.set_defaults(func=cmd_postback)
+
+    hook = sub.add_parser("install-hook", help="run postback automatically after each pull or deploy")
+    hook.set_defaults(func=cmd_install_hook)
 
     export = sub.add_parser("export", help=f"commit the site's /work.md to the {EXPORT_BRANCH} branch")
     export.add_argument("--no-push", action="store_true", help="commit locally only")

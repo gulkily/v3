@@ -52,7 +52,7 @@ final class WorkItemsTest
         ob_start();
         $app->handle('GET', '/work.txt?q=nav&status=open');
         $text = (string) ob_get_clean();
-        assertSame(\ForumRewrite\Work\WorkListText::TEXT_HEADER . "\nopen\twork-item-1\tFix duplicate nav\t\t\t/threads/work-item-1\ttodo.txt#abc\n", $text);
+        assertSame(\ForumRewrite\Work\WorkListText::TEXT_HEADER . "\nopen\twork-item-1\tFix duplicate nav\t\t\t/threads/work-item-1\ttodo.txt#abc\t\n", $text);
         ob_start();
         $app->handle('GET', '/work.txt?kind=requests');
         assertSame("# request\tthread\ttitle\tpath\nrequest\trequest-1\tPlease add dark mode\t/threads/request-1\n", (string) ob_get_clean());
@@ -126,8 +126,8 @@ final class WorkItemsTest
 
     public function testTextCellsStayOnOneLine(): void
     {
-        $text = \ForumRewrite\Work\WorkListText::text([['status' => 'active', 'stale' => true, 'thread_id' => 't1', 'title' => "Two\tparts\nhere", 'set_by' => 'claude', 'note' => 'n', 'source' => 'thread:x']]);
-        assertSame("active (stale)\tt1\tTwo parts here\tclaude\tn\t/threads/t1\tthread:x", explode("\n", $text)[1]);
+        $text = \ForumRewrite\Work\WorkListText::text([['status' => 'active', 'stale' => true, 'thread_id' => 't1', 'title' => "Two\tparts\nhere", 'set_by' => 'claude', 'note' => 'n', 'source' => 'thread:x', 'set_at' => '2026-11-01T00:00:00Z']]);
+        assertSame("active (stale)\tt1\tTwo parts here\tclaude\tn\t/threads/t1\tthread:x\t2026-11-01T00:00:00Z", explode("\n", $text)[1]);
     }
 
     public function testMarkdownExportEscapesAndKeepsOneLinePerItem(): void

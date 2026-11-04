@@ -147,3 +147,24 @@ Status: Step 3 approved; implementation in progress on `feat/work-tracking`.
 - Estimate details: revised before dependent work once the frm.py tag limitation surfaced; scope unchanged.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Post-back
+
+**Original estimate: 0.12**
+**Retrospective stage-work assessment: 0.12**
+
+- Changes:
+  - `./v3 work postback [--range A..B] [--dry-run]`: reads `Work: <thread-id>` trailers from `git log`, oldest first, and posts `status: done - landed in <sha12>`. Skips items already `done`/`dropped`, items whose current status was set after the commit (so reopened items stay open), and IDs that are not work items. Site unreachable: exit 3 and leave it to the next sweep.
+  - `./v3 work install-hook`: writes a marked `post-merge` hook that runs postback for `ORIG_HEAD..HEAD` in the background with the install-time site, logging to `state/work/postback.log`; refuses to overwrite a hook it did not write and prints the line to add instead.
+  - `./v3 work sweep` runs a batch postback over commits since work tracking was added (listing in dry runs, posting with `--apply`).
+  - `/work.txt` gains a trailing `set_at` column used for the reopened-item check.
+  - Docs: post-back section in `work_tracking.md`, CLI reference, and a note in the [application update](../../concepts/application_update.md) concept.
+- Verification:
+  - Simulated deploy: local clone with the hook installed, upstream commit with `Work: work-pilot-1`, `git pull --ff-only` exited 0 and the background hook marked the item `done (landed in 1a9db4817451)` on the local server.
+  - Rerun over the same range: no post. After reopening the item, postback and its dry run both left it `active` with the reason printed.
+  - `php tests/run.php WorkItemsTest`: 6/6; `php tests/run.php AppUpdateTest DeployPageTest`: 25/25. The deploy routine fast-forwards with `git merge --ff-only` and does not disable hooks.
+- Notes:
+  - Plan said the server would post; implemented as a hook on any checkout instead, which covers both SSH pulls and site deploys without new server code. The server checkout's frm.py identity needs approval once.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

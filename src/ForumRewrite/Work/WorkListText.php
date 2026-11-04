@@ -11,7 +11,7 @@ namespace ForumRewrite\Work;
  */
 final class WorkListText
 {
-    public const TEXT_HEADER = "# status\tthread\ttitle\tby\tnote\tpath\tsource";
+    public const TEXT_HEADER = "# status\tthread\ttitle\tby\tnote\tpath\tsource\tset_at";
 
     /** @param list<array<string, mixed>> $items */
     public static function text(array $items): string
@@ -26,6 +26,7 @@ final class WorkListText
                 self::cell($item['note']),
                 '/threads/' . $item['thread_id'],
                 self::cell((string) ($item['source'] ?? '')),
+                self::cell((string) ($item['set_at'] ?? '')),
             ]);
         }
         if ($items === []) {

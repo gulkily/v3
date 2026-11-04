@@ -5,3 +5,5 @@ Scenario: The maintainer, on a phone, opens Tools → Deploy. The page shows the
 Sources: [routine](../../src/ForumRewrite/Deploy/AppUpdate.php), [page and actions](../../src/ForumRewrite/Http/DeployController.php), [template](../../templates/pages/deploy.php), [page script](../../public/assets/deploy_control.js), [CLI](../../scripts/deploy.php), [operator guide](../runbooks/production_deploy.md#deploy-from-the-site), [tests](../../tests/AppUpdateTest.php), [page tests](../../tests/DeployPageTest.php).
 
 Boundaries: pull only (no docs publish or static build); only session-authenticated root-approved operators and same-origin requests; opening the page reads local Git state and never fetches.
+
+Work post-back: a checkout with `./v3 work install-hook` runs `./v3 work postback --range ORIG_HEAD..HEAD` in the background after each fast-forward (deploy or `git pull`), marking work items `done` for landed `Work:` trailers. It never affects the update's success. See [work tracking](../reference/work_tracking.md#post-back).

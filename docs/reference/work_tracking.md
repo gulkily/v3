@@ -29,7 +29,7 @@ When you finish, reference the item in the commit message with a trailer:
 Work: <thread-id>
 ```
 
-and set the status:
+The post-back then marks the item `done` (see below). You can also set the status yourself:
 
 ```sh
 ./v3 work status <thread-id> done --note "landed in <commit>"
@@ -57,6 +57,13 @@ The sweep reads two inboxes:
 - threads tagged `#request` on the site (`/work.txt?kind=requests`).
 
 Each created item is a `#work` thread whose root post starts with a `Source:` line (`todo.txt#<hash>` or `thread:<id>`). The sweep skips sources that already have an item, so rerunning it creates nothing new; editing a `todo.txt` line changes its hash and yields a new item. `todo.txt` itself is never edited. Lines that existed before work tracking are left for the reconciliation follow-up.
+
+## Post-back
+
+`./v3 work postback --range A..B` posts `status: done - landed in <commit>` for every `Work: <thread-id>` trailer in the range, skipping items already `done` or `dropped`, items whose status changed after the commit (a reopened item stays open), and IDs that are not work items. It runs:
+
+- automatically after each pull or deploy on a checkout where `./v3 work install-hook` was run once (a `post-merge` hook; it covers SSH `git pull` and the site's Deploy, which fast-forwards with `git merge`). It runs in the background, never fails the merge, and logs to `state/work/postback.log`. The checkout's frm.py identity must be approved once.
+- in batches during `./v3 work sweep` (listing only) and `./v3 work sweep --apply` (posting), over all commits since work tracking was added, to catch anything a hook missed.
 
 ## Repository export
 

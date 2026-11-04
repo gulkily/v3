@@ -45,6 +45,8 @@ and the bootstrap flow.
 ./v3 work [--site URL] status <thread-id> open|active|done|dropped [--note TEXT] [--frm-arg=ARG ...]
 ./v3 work flush
 ./v3 work [--site URL] sweep [--since REV] [--apply] [--frm-arg=ARG ...]
+./v3 work [--site URL] postback [--range A..B] [--dry-run] [--frm-arg=ARG ...]
+./v3 work [--site URL] install-hook
 ./v3 work [--site URL] export [--no-push]
 ```
 
@@ -54,7 +56,10 @@ already active unless `--force` is given. Writes re-read `/work.txt` and report 
 line has no effect (for example, an unapproved identity, exit 4). When the site is
 unreachable, writes are queued in `state/work/pending.jsonl` (exit 3) and `flush` posts
 them later. `sweep` lists (or with `--apply` creates) work items for new `todo.txt`
-lines and `#request` threads, skipping sources that already have an item. `export` commits the site's `/work.md` to the `work-export` branch
+lines and `#request` threads, skipping sources that already have an item, and runs a
+batch post-back. `postback` marks items `done` for `Work: <thread-id>` commit trailers
+in a range; `install-hook` adds a `post-merge` hook that runs it after every pull or
+deploy (log: `state/work/postback.log`). `export` commits the site's `/work.md` to the `work-export` branch
 without touching the current checkout (no commit when unchanged). Pass frm.py options with `--frm-arg=...`, one per argument. Environment:
 `V3_WORK_SITE` (default `https://zenmemes.com`), `V3_WORK_STATE_DIR`,
 `V3_WORK_FRM_STATE_DIR`. See [work tracking](work_tracking.md).
