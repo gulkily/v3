@@ -106,7 +106,7 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
   - Not verified here: a full agent run on real imported posts. This workspace has only the three-post test fixture, not the zenmemes.com import.
   - Retrospective stage-work assessment: 0.08, as estimated.
 
-## Stage 7 - Acceptance on the maintainer's WSL checkout (in progress)
+## Stage 7 - Acceptance on the maintainer's WSL checkout
 
 **Original estimate: 0.05** (unchanged)
 
@@ -114,7 +114,9 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
   - After a fresh `./v3 import-instance`, the agent found the procedure, read 377 posts from the local import (window from 2026-10-30 local midnight), wrote nothing, and returned proposals: posts 17 attach, 147 create, 213 skip; outcomes 118 new items (77 features, 32 bugs, 9 other) and 5 existing items updated.
   - The two 2026-11-03 "summary field" threads became one proposed item (`PF-20261104-F40`) with both sources.
   - Already-sourced October 30 posts were skipped as covered, so the overlap with the seeded window produced no duplicates.
-- Pending: maintainer's edits to the proposals, apply, `check` and `index`, and a rerun of the same window proposing nothing.
+- Applied by the maintainer in `1dd5f66` (2026-11-04): 118 new items, 5 attaches, 1 status update; proposals kept as `docs/feedback/triage/2026-11-04_proposals.txt` with `Status: applied`. The maintainer applied the proposals as written, without the suggested merges and skips.
+- Catch-up step exercised on real history: found no trailers, reviewed PF IDs in 445 changed plans, and proposed one status update (`PF-20261103-F01`: merge recorded, deployment still pending), which was applied.
+- Verification on the pushed branch: `./v3 feedback check` 210 items, 0 problems, 21 to review (shared sources from split posts); `./v3 feedback index` reports unchanged. Script check: all 164 posts classified create or attach are listed in an item, so a rerun of the window skips them. The rerun itself was not performed as a separate agent run.
 - Notes:
   - Enhancement request (maintainer, during this stage): proposals must be kept in the repository, not `/tmp`. Implemented in the procedure: proposals go to `docs/feedback/triage/<intake date>_proposals.txt`, are edited in place during review, marked `applied` or `rejected`, and committed with the item changes; `HISTORY.md` and a `triage/README.md` point to them. Links checked.
   - The run's chat summary mixed post and outcome counts; the procedure now asks for both, labeled.
@@ -122,4 +124,13 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
   - `AGENTS.md`: search items before a fix, name the ID in the plan, add a `Feedback: PF-...` trailer per addressed item, update the item in the same commit (`done` only with completion checks met).
   - Triage procedure gains step 2, "Catch up on completed work": scan `git log` since the previous applied run for trailers and PF IDs, propose **status** updates for items left unchanged, never infer completion from unnamed commits. Proposal headers count status updates.
   - Management guide and concept entry describe the trailer and the catch-up.
-  - Verification: `git diff --check` clean; the procedure's section numbering and cross-references read in order. Not exercised on real history yet: no commit carries a `Feedback:` trailer.
+  - Verification: `git diff --check` clean; the procedure's section numbering and cross-references read in order.
+  - Correction after the run: the triage commit carried `Feedback:` trailers for the items it edited. Trailers now mark work on an item only; `AGENTS.md` and the procedure say triage commits carry none, and the catch-up scan ignores commits that only add a proposals file.
+- Retrospective stage-work assessment: 0.10, against 0.05. Higher because of the two in-stage additions (proposals in the repository, completion tracking).
+
+## Cycle outcome
+
+- Completion contract met on the maintainer's checkout: import, agent triage with review before writing, apply, check, index, and rerun coverage. The work-tracking removal (`81837cf`) is included in this branch.
+- Release condition not yet met: the branch is not merged to `main`.
+- Retrospective cycle assessment: 0.65 against the 0.60 projection; the overrun is the two scope additions in Stage 7.
+- Follow-ups: move existing development prompts into `docs/agents/`; reconcile the October 18 and 21 summaries and the imported feature requests (`docs/feedback/HISTORY.md`); the parked work page, if wanted, as a view over items.

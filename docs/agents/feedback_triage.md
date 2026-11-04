@@ -14,7 +14,7 @@ Item format: [feedback item record](../specs/feedback_item_record_v1.md). Identi
 
 Find work that landed since the previous run without its item being updated. The previous run is the newest `*_proposals.txt` in `docs/feedback/triage/` with `Status: applied`; use the commit that added it as the starting point (with no earlier run, use the window start).
 
-- Scan `git log <start>..HEAD` for `Feedback: PF-...` trailers, and for PF IDs mentioned in commit messages or in plans changed in that range.
+- Scan `git log <start>..HEAD` for `Feedback: PF-...` trailers (ignoring commits that only add a triage proposals file), and for PF IDs mentioned in commit messages or in plans changed in that range.
 - For each item named, compare what landed with the item's `Workflow`, `Evidence` and `Done when:`. Propose a **status** update only when the item file was not already changed to match.
 - Propose `done` only when its completion checks are met by recorded evidence; a landed commit alone usually means `Evidence: locally-verified` and `Workflow: blocked` awaiting deployment or production acceptance. Name the commit in the proposal.
 - Do not infer completion from a commit that merely touches related code without naming the item; mention it as a possible match instead.
@@ -56,7 +56,7 @@ After the maintainer accepts (with any edits):
 - Run `./v3 feedback check` and fix every problem. Read each `Review:` line: a shared source is fine for a split request; otherwise it is a missed attach.
 - Run `./v3 feedback index`.
 - Set the proposals file's `Status: applied`.
-- Show the diff summary (created, updated, skipped counts) and leave the commit to the maintainer unless asked to commit. The proposals file and the item changes go in the same commit.
+- Show the diff summary (created, updated, skipped counts) and leave the commit to the maintainer unless asked to commit. The proposals file and the item changes go in the same commit, without `Feedback:` trailers (those mark work on an item, which this is not).
 
 ## Recovery
 

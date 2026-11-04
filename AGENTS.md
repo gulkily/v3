@@ -32,7 +32,7 @@ Do not modify `todo.txt` unless the user explicitly requests an edit to that fil
 
 For recurring agent tasks such as triaging site feedback, follow the matching procedure in [`docs/agents/`](docs/agents/README.md). Feedback items live in [`docs/feedback/`](docs/feedback/README.md).
 
-Before starting a fix or feature, search `docs/feedback/items/` for a matching item and name its ID in the plan. When a commit addresses an item, add a `Feedback: PF-...` trailer (one per item) and update the item file in the same commit: `Workflow` (`done` only with its completion checks met; `blocked` while deployment or production acceptance is pending), `Evidence`, and a dated line in `Notes:`. Triage runs catch items that were missed.
+Before starting a fix or feature, search `docs/feedback/items/` for a matching item and name its ID in the plan. When a commit addresses an item, add a `Feedback: PF-...` trailer (one per item) and update the item file in the same commit: `Workflow` (`done` only with its completion checks met; `blocked` while deployment or production acceptance is pending), `Evidence`, and a dated line in `Notes:`. Triage runs catch items that were missed. Triage commits themselves carry no `Feedback:` trailers; their proposals file is the record.
 
 ## Navigation icons
 
