@@ -256,3 +256,25 @@ shell syntax, actual sync help and whitespace checks passed. Actual dependency
 delta matches the inventory above; no added packages or runtime components.
 Full application/UI/deployment checks are inapplicable to this instruction update.
 Log: /tmp/railspike-beta-upgrade-tests.log.
+
+
+## Upgrade — 2026-11-04
+
+Request: please upgrade railspike to 0.6.1-beta.1
+Authorization: This request explicitly approves the existing Railspike dependency upgrade to v0.6.1-beta.1.
+Workflow: Direct maintenance; no new Railspike cycle or effort-study enrollment.
+Feedback: Searched docs/feedback/items/; no matching upgrade item found.
+Source: https://github.com/rlspk/railspike.git
+Target: v0.6.1-beta.1; commit 5d54e065fa5f9f6e2555977034b5073456dd104c.
+Inventory: Existing MIT-licensed instruction dependency through the docs/railspike Git subtree; 20 upstream files, 181681 bytes. Fifteen files change, including one new shared-standards guide; 115 insertions and 46 deletions. Zero added packages, transitive dependencies, manifests, locks or runtime components.
+Alternative: Keep v0.5.0-beta.1 and omit the requested upgrade.
+Maintenance: Continue deliberate tag review, subtree sync and provenance checks.
+Reuse: Use scripts/railspike_sync.sh through ./v3 railspike sync. Extend the existing source record, CLI pin/help, docs/reference/v3_cli.md and tests/RailspikeSyncCommandTest.php. Keep this existing upgrade log as the implementation record.
+Scope: Vendored instructions, installation provenance, CLI default/help, affected test expectation and host references. Existing cycle records and host policies remain unchanged.
+Completion: Sync the reviewed tag through the ordinary CLI; compare every installed product file to upstream; update the default pin; verify repeat sync is a no-op.
+Risks: Wrong source or lost local patches would change workflow behavior. Verified ancestry from installed 583e69da and reviewed upstream changes before sync; compare the installed tree before and after.
+Verification plan: Run ./v3 test --smoke RailspikeSyncCommandTest RailspikeWorkflowTest, shell syntax, CLI help, local instruction links and git diff --check. Full suite will not be run. UI, deployment and migration checks are inapplicable because this upgrade changes instructions and CLI constants only.
+Recovery: Fetch failures leave working files intact and can be retried. For a merge conflict, inspect and resolve deliberately or use git merge --abort. The subtree merge first parent preserves the previous installation.
+Status: Reviewed; implementation and verification pending on maintenance/railspike-v0.6.1-beta.1. No push or deployment authorized.
+
+*— Codex · 2026-11-04 UTC*
