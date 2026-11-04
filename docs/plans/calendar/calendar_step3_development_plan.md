@@ -2,15 +2,15 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/calendar`; [host ledger](./effort_estimation_trial.md#cycle-v3calendar). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/calendar`; [host ledger](../effort_estimation_trial.md#cycle-v3calendar). Standing P2 enrollment.
 
 Extended estimates: enabled
 
-Status: Step 2 v3 approved; Step 3 proposed; implementation unapproved. Repository update after the merge of `main` on 2026-11-04: work tracking was removed upstream; Stage 4 now follows the title directive precedent, Stage 2 replays feedback item PF-20261104-B10, and no `Work:` trailer applies. Stage scopes and estimates are unchanged. Steps 1–3, the debug log and the ledger were committed to `main` on 2026-11-04 at the maintainer's explicit request, before Step 3 approval; the mockup file stays uncommitted. This does not approve Step 3 or implementation.
+Status: Step 3 approved 2026-11-04 with the schema version correction below; Step 4 on `feat/calendar`. Step 2 v3 approved. Repository update after the merge of `main` on 2026-11-04: work tracking was removed upstream; Stage 4 now follows the title directive precedent, Stage 2 replays feedback item PF-20261104-B10, and no `Work:` trailer applies. `main` reached read-model schema 48 earlier the same day (`8651cbcb`, delete-record label indexing), so Stage 3 bumps 48 → 49 and seeds its rebuild test at 48; the maintainer approved Step 3 with that correction. Stage scopes and estimates are otherwise unchanged. Steps 1–3, the debug log and the ledger were first committed to `main` on 2026-11-04 at the maintainer's explicit request; the mockup file stays uncommitted.
 
 **Cycle estimate: 0.90**
 
-Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event time cycle](./event_time/event_time_step4_implementation_summary.md) added one event header end to end; Stages 1–3 follow its shape.
+Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event time cycle](../event_time/event_time_step4_implementation_summary.md) added one event header end to end; Stages 1–3 follow its shape.
 
 ## Completion Contract
 
@@ -58,7 +58,7 @@ Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event 
 
 - Goal: the read model stores the span and the event block shows it.
 - Dependencies: Stage 1.
-- Expected changes: `threads.event_end_date` nullable column; `ReadModelMetadata::SCHEMA_VERSION` 47 → 48; builder, incremental updater, `ThreadRepository` and `Application::fetchThread` select lists; `docs/specs/read_model_schema_v1.md`; `event_block.php` renders "date to end date" when present; a regression test seeded at version 47 proving startup rebuilds before the new column is read.
+- Expected changes: `threads.event_end_date` nullable column; `ReadModelMetadata::SCHEMA_VERSION` 48 → 49; builder, incremental updater, `ThreadRepository` and `Application::fetchThread` select lists; `docs/specs/read_model_schema_v1.md`; `event_block.php` renders "date to end date" when present; a regression test seeded at version 48 proving startup rebuilds before the new column is read.
 - Verification approach: incremental and full rebuild agree for span and single-day threads; old fixture thread renders byte-identical; `./v3 rebuild`.
 - Estimate details: driver: contributing-rule obligations for a column; uncertainty: low.
 - Risks or open questions: see Key Risks (schema).
@@ -126,10 +126,12 @@ Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event 
 
 ## Concepts Touched
 
-[Shared composer](../concepts/shared_composer.md) used unchanged (Stage 6 placement); [thread title](../concepts/thread_title.md) directive pattern reused (Stage 4); [tag browsing](../concepts/tag_browsing.md) membership query reused (Stage 5); [read model rebuild](../concepts/read_model_rebuild.md) changed (Stage 3); [viewer session](../concepts/viewer_session.md) and [invitation lifecycle](../concepts/invitation_lifecycle.md) used unchanged (Stage 8 replay). Created in Stage 7: *calendar* and *post event metadata*.
+[Shared composer](../../concepts/shared_composer.md) used unchanged (Stage 6 placement); [thread title](../../concepts/thread_title.md) directive pattern reused (Stage 4); [tag browsing](../../concepts/tag_browsing.md) membership query reused (Stage 5); [read model rebuild](../../concepts/read_model_rebuild.md) changed (Stage 3); [viewer session](../../concepts/viewer_session.md) and [invitation lifecycle](../../concepts/invitation_lifecycle.md) used unchanged (Stage 8 replay). Created in Stage 7: *calendar* and *post event metadata*.
 
 ## Study Checkpoint
 
 2026-11-04T18:00:00Z; scope v3/A, original baseline `f41f656936e740809242a5d8e1c646068afddc28`, R1/P2, hashes verified earlier this session. User explicitly approved Step 2 v3. Whole-cycle **0.90 reaffirmed** after inspecting the event-time precedent, both thread write flows, `TagPage` membership, `WorkItems`, the compose controller and the rebuild test pattern. Eight stage-work originals 0.08/0.12/0.12/0.12/0.20/0.14/0.08/0.12, non-additive; shared planning and ledger bookkeeping owned by the cycle, not charged to stages. Claude, single exposed rater. No implementation, measured labor or accepted outcome. Await Approved Step 3; planning uncommitted.
 
 *— Claude · 2026-11-04 UTC · Model: claude-fable-5-1*
+
+*— Revised by Claude · 2026-11-04 UTC · Model: claude-opus-5-5 (status and Stage 3 schema version only)*
