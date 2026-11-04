@@ -6,7 +6,7 @@ Extended estimates: enabled (no alternatives or stages exist, so only the cycle 
 **Cycle estimate: 0.30**
 
 Debug report: [log](fast_default_tests_outliers_debug_log.md)
-Status: technically complete and committed locally on `feat/fast-default-tests-outliers`; next permitted action: maintainer review, then push/merge only on request.
+Status: scope v2 complete and pushed on `feat/fast-default-tests-outliers`; next permitted action: maintainer review; merge only on request.
 
 ## Original request
 
@@ -79,6 +79,26 @@ Recovery: each of the three changes is a separate hunk and can be reverted on it
 
 ## Commit, merge and publication status
 
-Committed on `feat/fast-default-tests-outliers` (hash pending in this record; see the final report). Not pushed, merged or deployed. Work item claim posted; its status line awaits operator approval of this workspace's signing identity.
+v1 committed as `c08f2b7` on `feat/fast-default-tests-outliers` and pushed at the session's request; v2 in the following commit on the same branch. Not merged or deployed. Work item claim posted; its status line awaits operator approval of this workspace's signing identity.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Scope revision v2 — 2026-11-04
+
+Authorization: after v1 was committed (`c08f2b7`) and pushed, the maintainer wrote "Remove these tests from default run", read as the three outlier classes above. This renews one-shot authority for a narrow tier; it does not approve the parked Step 1's broader Option A (history-based boundary, skip-not-fail for missing tools) or Option B. v1 scope and its record above are retained unchanged.
+
+Changes:
+- `tests/run.php`: `NOT_IN_DEFAULT_RUN` lists `PlatformDocsStaticTest`, `WriteApiSmokeTest`, `CheckoutsCommandTest`. A run with no arguments skips them and names them after the summary; `--all` runs everything; naming a class or method still runs it. History pruning of vanished tests now happens only on a complete run, so a default run cannot forget the left-out tests' history.
+- `./v3` help, `README.md` and `docs/reference/v3_cli.md`: document `--all` and that it runs before merge or deploy.
+- Correction found during verification: `test_independent_fetches_overlap_and_foreground_stays_fast` failed about 1 run in 5 because the shell's `>` creates its marker file empty before `date` writes the stamp, and the test parsed the file as soon as it existed. v1's faster Git wait likely made the race show up more often. The test now waits for a written stamp; assertions unchanged.
+
+Study: execution-entry projection for v2 revised 0.30 → 0.40 (original retained), same rater and baseline. Closeout retrospective for v1+v2: 0.40.
+
+Verification (v2):
+- Default `php tests/run.php`: 1,707 run, 1,692 passed, 15 failed (the same pre-existing failures as v1), **241 s wall**, ending with the left-out list.
+- `php tests/run.php CheckoutsCommandTest` runs the named class; the race test passed 10/10 isolated and the whole checkouts suite passed twice after the fix.
+- Not rerun after v2: `--all` end to end. The logic only adds classes back, and the three classes passed individually above; the v1 full run (486 s) is the closest evidence.
+
+The default run is still about 2× the 2-minute goal on this workspace; the remaining time is spread across ~1,700 tests, so parallelism (parked Option B) is the next lever.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

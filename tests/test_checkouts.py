@@ -632,9 +632,11 @@ class CheckoutsTest(unittest.TestCase):
             markers.append(self.slow_fetch(path, delay=1))
         self.cli(code=2, auto_refresh=True)
         deadline = time.monotonic() + 5
-        while not all(p.exists() for p in markers) and time.monotonic() < deadline:
+        # The shell creates each marker before `date` writes it; wait for the stamp, not the file.
+        written = lambda p: p.exists() and p.read_text().strip() != ''
+        while not all(written(p) for p in markers) and time.monotonic() < deadline:
             time.sleep(0.02)
-        self.assertTrue(all(p.exists() for p in markers))
+        self.assertTrue(all(written(p) for p in markers))
         stamps = [int(p.read_text()) for p in markers]
         self.assertLess((max(stamps) - min(stamps)) / 1e9, 0.4)
         start = time.monotonic()

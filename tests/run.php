@@ -297,8 +297,15 @@ $testFiles = [
     __DIR__ . '/WriteApiSmokeTest.php',
 ];
 
+// Slow classes left out of the default run; `--all` or naming the class runs them.
+// Run `--all` before merging or deploying.
+const NOT_IN_DEFAULT_RUN = ['PlatformDocsStaticTest', 'WriteApiSmokeTest', 'CheckoutsCommandTest'];
+
 $failures = [];
-$filters = array_slice($argv, 1);
+$arguments = array_slice($argv, 1);
+$runAll = in_array('--all', $arguments, true);
+$filters = array_values(array_filter($arguments, static fn (string $argument): bool => $argument !== '--all'));
+$leftOut = [];
 $runCount = 0;
 $testDurations = [];
 $testResults = [];
@@ -337,6 +344,10 @@ foreach ($declared as $class) {
         continue;
     }
 
+    if ($filters === [] && !$runAll && in_array($class, NOT_IN_DEFAULT_RUN, true)) {
+        $leftOut[] = $class;
+        continue;
+    }
     $testObject = new $class();
     if (!shouldRunClass($class, $filters)) {
         continue;
@@ -400,11 +411,15 @@ $historyStore->ensureSchema();
 $testClassifications = $historyStore->recordResults($testResults, date('c'));
 
 $prunedCount = 0;
-if ($filters === []) {
+// Only a complete run may forget tests that no longer exist.
+if ($filters === [] && ($runAll || $leftOut === [])) {
     $prunedCount = $historyStore->pruneStaleEntries(array_keys($testResults));
 }
 
 printRunSummary($runCount, $failures, $testDurations, $testClassifications, $prunedCount, STDOUT);
+if ($leftOut !== []) {
+    fwrite(STDOUT, 'Not in the default run (use --all): ' . implode(', ', $leftOut) . "\n");
+}
 
 if ($failures !== []) {
     exit(1);
