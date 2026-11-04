@@ -29,9 +29,23 @@ final class PostMarkdownRendererTest
         assertStringNotContains(' id="', PublicMarkdownRenderer::renderPost("## A\n\n## A"));
     }
 
-    public function testHashtagLinesStayText(): void
+    public function testHashtagLinesLinkToTagPagesWithoutBecomingHeadings(): void
     {
-        assertSame('<p>#v3 #changelog #meta</p>', PublicMarkdownRenderer::renderPost('#v3 #changelog #meta'));
+        assertSame('<p><a href="/tags/v3">#v3</a> <a href="/tags/changelog">#changelog</a> <a href="/tags/meta">#meta</a></p>', PublicMarkdownRenderer::renderPost('#v3 #changelog #meta'));
+    }
+
+    public function testHashtagsPreserveMarkdownCodeLinksAndDocs(): void
+    {
+        $source = "**#meta** and (#needs-review).\n\n`#inline`\n\n```\n#fenced\n```\n\n[#label](https://example.test/#fragment) https://example.test/#bare\n\n![#alt](https://example.test/image.png)";
+        $html = PublicMarkdownRenderer::renderPost($source);
+        assertStringContains('<strong><a href="/tags/meta">#meta</a></strong>', $html);
+        assertStringContains('(<a href="/tags/needs-review">#needs-review</a>).', $html);
+        assertStringContains('<code>#inline</code>', $html);
+        assertStringContains('#fenced', $html);
+        assertStringContains('<a href="https://example.test/#fragment" rel="nofollow ugc noopener">#label</a>', $html);
+        assertStringContains('<a href="https://example.test/#bare" rel="nofollow ugc noopener">https://example.test/#bare</a>', $html);
+        assertSame(2, substr_count($html, 'href="/tags/'));
+        assertStringNotContains('href="/tags/', PublicMarkdownRenderer::render($source));
     }
 
     public function testSingleNewlinesStayLineBreaks(): void

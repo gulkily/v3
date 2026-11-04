@@ -435,6 +435,7 @@ final class PublicMarkdownRenderer
                 $url = self::postUrl(html_entity_decode($parts[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
                 return $url === null ? $m[0] : $store(self::postLink($url, $parts[1])) . $parts[2];
             }, $escaped) ?? $escaped;
+            $escaped = \ForumRewrite\View\PostHashtags::linkEscapedText($escaped);
             // Emphasis needs text against both markers, so "2 * 3 * 4" stays arithmetic.
             $escaped = preg_replace('/\*\*(?=\S)([^*]+?)(?<=\S)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
             $escaped = preg_replace('/(?<![*\w])\*(?=\S)([^*]+?)(?<=\S)\*(?![*\w])/', '<em>$1</em>', $escaped) ?? $escaped;

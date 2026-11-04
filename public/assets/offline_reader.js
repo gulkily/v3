@@ -19,24 +19,17 @@
       try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : ""); }
       catch (error) { return "Image unavailable offline (reference preserved in the snapshot)."; }
     });
-    return escapeHtml(text).replace(/(\r\n|\r|\n)/g, "<br>$1");
+    return linkEscapedHashtags(escapeHtml(text)).replace(/(\r\n|\r|\n)/g, "<br>$1");
   }
 
-  function escapeHtml(value) {
-    return String(value == null ? "" : value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function nl2br(value) {
-    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: (\S+))?$/gm, function (line, description) {
-      try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : ""); }
-      catch (error) { return "Image unavailable offline (reference preserved in the snapshot)."; }
-    });
-    return escapeHtml(text).replace(/(\r\n|\r|\n)/g, "<br>$1");
+  // Mirrors View/PostHashtags.php; only escaped post text is passed here.
+  function linkEscapedHashtags(text) {
+    return text.split(/(```[\s\S]*?(?:```|$)|`[^`\r\n]*`|\[[^\]\r\n]*\]\([^\r\n)]*\)|&(?:amp;)?#(?:[0-9]+|x[0-9a-f]+);|(?:[a-z][a-z0-9+.-]*:\/\/|www\.)[^\s<>]+)/i).map(function (part, index) {
+      if (index % 2) return part;
+      return part.replace(/(^|[^\p{L}\p{N}\p{M}_/#&-])#([a-z0-9]+(?:-[a-z0-9]+)*)(?![\p{L}\p{N}\p{M}_-])/gu, function (match, prefix, tag) {
+        return prefix + '<a href="/tags/' + tag + '">#' + tag + '</a>';
+      });
+    }).join("");
   }
 
   var snapshotPresentation = {

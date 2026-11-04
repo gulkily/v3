@@ -9,6 +9,39 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MediaEmbedRendererTest
 {
+    public function testPlainHashtagsLinkWithoutChangingCodeUrlsOrEscaping(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        $body = "#meta (#needs-review), #v3!\n<script>#bug</script> 'quoted' & &#123;\n"
+            . "`#inline` [#label](https://example.test/#fragment) https://example.test/#url www.example.test/#web\n"
+            . "```\n#code\n```\n#after\n"
+            . "word#inside /#anchor ##heading #Upper #mixedCase #bad--tag #trailing- #snake_case #café é#word\n"
+            . "```\n#unclosed";
+        foreach ([false, true] as $embeds) {
+            $html = $renderer->render($body, $embeds);
+            foreach (['meta', 'needs-review', 'v3', 'bug', 'after'] as $tag) {
+                assertStringContains('<a href="/tags/' . $tag . '">#' . $tag . '</a>', $html);
+            }
+            assertSame(5, substr_count($html, 'href="/tags/'));
+            assertStringContains('&lt;script&gt;<a href="/tags/bug">#bug</a>&lt;/script&gt;', $html);
+            assertStringContains('&#039;quoted&#039; &amp; &amp;#123;', $html);
+            assertStringContains('https://example.test/#url', $html);
+            assertStringContains('`#inline`', $html);
+            assertStringContains('<br />', $html);
+        }
+    }
+
+    public function testHashtagsAroundMediaKeepTheExistingEmbed(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        foreach ([false, true] as $markdown) {
+            $html = $renderer->render("#meta\n\nhttps://youtu.be/dQw4w9WgXcQ\n\n#after", true, false, false, $markdown);
+            assertSame(1, substr_count($html, 'data-media-embed-card'));
+            assertStringContains('<a href="/tags/meta">#meta</a>', $html);
+            assertStringContains('<a href="/tags/after">#after</a>', $html);
+        }
+    }
+
     public function testTikTokHasDelayedPortraitPlaybackAndFlagOffFallback(): void
     {
         $renderer = new MediaEmbedRenderer();
