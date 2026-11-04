@@ -302,11 +302,25 @@ $testFiles = [
 //   ./v3 test --smoke FooTest ...    smoke set plus the named tests
 //   ./v3 test FooTest Bar::testX     only the named tests
 //   ./v3 test --all                  full suite (the maintainer runs it periodically)
+//   --jobs=N                         run any selection in N worker processes (./v3 fulltest uses every core)
+// Set only for parallel workers; removed so runners started by tests are not mistaken for workers.
+$workerResultsPath = (string) getenv('FORUM_TEST_WORKER_RESULTS');
+putenv('FORUM_TEST_WORKER_RESULTS');
 $failures = [];
 $arguments = array_slice($argv, 1);
 $runAll = in_array('--all', $arguments, true);
 $withSmoke = in_array('--smoke', $arguments, true);
-$filters = array_values(array_filter($arguments, static fn (string $argument): bool => !in_array($argument, ['--all', '--smoke'], true)));
+$jobs = 1;
+foreach ($arguments as $argument) {
+    if (str_starts_with($argument, '--jobs=')) {
+        $jobs = (int) substr($argument, 7);
+        if ($jobs < 1) {
+            fwrite(STDERR, "--jobs needs a positive number.\n");
+            exit(1);
+        }
+    }
+}
+$filters = array_values(array_filter($arguments, static fn (string $argument): bool => !in_array($argument, ['--all', '--smoke'], true) && !str_starts_with($argument, '--jobs=')));
 $smokeEntries = [];
 if (!$runAll && ($filters === [] || $withSmoke)) {
     $smokeEntries = readSmokeList(smokeListPath());
@@ -334,6 +348,9 @@ if (function_exists('pcntl_async_signals') && function_exists('pcntl_signal')) {
     foreach ([SIGINT, SIGTERM] as $signal) {
         pcntl_signal($signal, static function (int $receivedSignal) use (&$testDurations, &$currentTest, &$currentTestStartedAt, &$timingReportPrinted): void {
             fwrite(STDERR, "\nInterrupted by signal {$receivedSignal}.\n");
+            foreach ($GLOBALS['testWorkers'] ?? [] as $worker) {
+                proc_terminate($worker['process']);
+            }
             printSlowTestsOverThreshold($testDurations, $currentTest, $currentTestStartedAt, true, STDERR);
             exit(128 + $receivedSignal);
         });
@@ -351,6 +368,11 @@ foreach ($smokeEntries as $entry) {
         fwrite(STDERR, "Smoke list entry not found: {$entry} (" . smokeListPath() . ")\n");
         exit(1);
     }
+}
+if ($jobs > 1) {
+    $workerUnits = planParallelUnits($declared, $filters, openTestHistoryStore()->durations());
+    [$runCount, $testResults, $testDurations, $failures] = runParallelUnits($workerUnits, $jobs);
+    $declared = [];
 }
 foreach ($declared as $class) {
     if (!str_ends_with($class, 'Test')) {
@@ -410,14 +432,25 @@ if ($filters !== [] && $runCount === 0) {
     exit(1);
 }
 
-$historyDbPath = getenv('FORUM_TEST_HISTORY_DB_PATH');
-if ($historyDbPath === false || trim($historyDbPath) === '') {
-    $historyDbPath = __DIR__ . '/../state/test_run_history.sqlite';
+// A parallel worker hands its results to the coordinator, which records history once.
+if ($workerResultsPath !== '') {
+    $lines = '';
+    foreach ($testResults as $testName => $passed) {
+        $message = '';
+        foreach ($failures as $failure) {
+            if (str_starts_with($failure, $testName . ' - ')) {
+                $message = substr($failure, strlen($testName) + 3);
+            }
+        }
+        $lines .= ($passed ? 'pass' : 'fail') . "\t{$testName}\t" . sprintf('%.6F', $testDurations[$testName]) . "\t" . base64_encode($message) . "\n";
+    }
+    file_put_contents($workerResultsPath, $lines);
+    $timingReportPrinted = true;
+    exit($failures === [] ? 0 : 1);
 }
 
-$historyStore = new TestRunHistoryStore($historyDbPath, recoveryHighlightWindowRuns());
-$historyStore->ensureSchema();
-$testClassifications = $historyStore->recordResults($testResults, date('c'));
+$historyStore = openTestHistoryStore();
+$testClassifications = $historyStore->recordResults($testResults, date('c'), $testDurations);
 
 $prunedCount = 0;
 // Only a complete run may forget tests that no longer exist.
@@ -427,7 +460,7 @@ if ($filters === []) {
 
 printRunSummary($runCount, $failures, $testDurations, $testClassifications, $prunedCount, STDOUT);
 if ($smokeEntries !== []) {
-    fwrite(STDOUT, "Smoke set from tests/smoke.txt; the full suite is ./v3 test --all.\n");
+    fwrite(STDOUT, "Smoke set from tests/smoke.txt; the full suite is ./v3 fulltest.\n");
 }
 
 if ($failures !== []) {
@@ -532,6 +565,144 @@ function printRunSummary(
 /**
  * @param list<string> $filters
  */
+function openTestHistoryStore(): TestRunHistoryStore
+{
+    $path = getenv('FORUM_TEST_HISTORY_DB_PATH');
+    if ($path === false || trim($path) === '') {
+        $path = __DIR__ . '/../state/test_run_history.sqlite';
+    }
+    $store = new TestRunHistoryStore($path, recoveryHighlightWindowRuns());
+    $store->ensureSchema();
+    return $store;
+}
+
+/**
+ * Splits the selected tests into worker units, slowest first. A class is one unit unless its recorded
+ * time is long; then its methods are grouped into chunks so one class does not set the run's floor.
+ *
+ * @param array<string, float> $durations
+ * @return list<array{label: string, args: list<string>, estimate: float}>
+ */
+function planParallelUnits(array $declared, array $filters, array $durations): array
+{
+    $chunkSeconds = 20.0;
+    $unknownSeconds = 0.2;
+    $units = [];
+    foreach ($declared as $class) {
+        if (!str_ends_with($class, 'Test') || !shouldRunClass($class, $filters)) {
+            continue;
+        }
+        $names = [];
+        foreach (get_class_methods($class) as $method) {
+            if (str_starts_with($method, 'test') && shouldRunMethod($class, $method, $filters)) {
+                $names[] = "{$class}::{$method}";
+            }
+        }
+        if ($names === []) {
+            continue;
+        }
+        $total = array_sum(array_map(static fn (string $name): float => $durations[$name] ?? $unknownSeconds, $names));
+        $wholeClass = $filters === [] || in_array($class, $filters, true);
+        if ($total <= $chunkSeconds * 1.5 || count($names) === 1) {
+            $units[] = ['label' => $class, 'args' => $wholeClass ? [$class] : $names, 'estimate' => $total];
+            continue;
+        }
+        $chunk = [];
+        $chunkTotal = 0.0;
+        $part = 0;
+        foreach ($names as $name) {
+            $chunk[] = $name;
+            $chunkTotal += $durations[$name] ?? $unknownSeconds;
+            if ($chunkTotal >= $chunkSeconds) {
+                $units[] = ['label' => $class . ' part ' . ++$part, 'args' => $chunk, 'estimate' => $chunkTotal];
+                $chunk = [];
+                $chunkTotal = 0.0;
+            }
+        }
+        if ($chunk !== []) {
+            $units[] = ['label' => $class . ' part ' . ++$part, 'args' => $chunk, 'estimate' => $chunkTotal];
+        }
+    }
+    usort($units, static fn (array $a, array $b): int => $b['estimate'] <=> $a['estimate']);
+    return $units;
+}
+
+/**
+ * Runs units in up to $jobs worker processes. Each finished unit's output is printed whole, so lines
+ * from different workers never interleave.
+ *
+ * @param list<array{label: string, args: list<string>, estimate: float}> $units
+ * @return array{int, array<string, bool>, array<string, float>, list<string>}
+ */
+function runParallelUnits(array $units, int $jobs): array
+{
+    $runCount = 0;
+    $results = [];
+    $durations = [];
+    $failures = [];
+    $scratch = sys_get_temp_dir() . '/v3-test-workers-' . getmypid();
+    @mkdir($scratch, 0700, true);
+    $GLOBALS['testWorkers'] = [];
+    $queue = $units;
+    $index = 0;
+    // Re-run the script that started this run (run.php, or a fixture that includes it).
+    $script = realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) ?: __FILE__;
+    fwrite(STDOUT, sprintf("Running %d units in up to %d workers.\n", count($units), $jobs));
+    while ($queue !== [] || $GLOBALS['testWorkers'] !== []) {
+        while ($queue !== [] && count($GLOBALS['testWorkers']) < $jobs) {
+            $unit = array_shift($queue);
+            $id = ++$index;
+            $files = ['out' => "{$scratch}/{$id}.out", 'err' => "{$scratch}/{$id}.err", 'results' => "{$scratch}/{$id}.results"];
+            $environment = getenv() + [];
+            $environment['FORUM_TEST_WORKER_RESULTS'] = $files['results'];
+            $process = proc_open(
+                [PHP_BINARY, $script, ...$unit['args']],
+                [0 => ['file', '/dev/null', 'r'], 1 => ['file', $files['out'], 'w'], 2 => ['file', $files['err'], 'w']],
+                $pipes,
+                dirname(__DIR__),
+                $environment,
+            );
+            if (!is_resource($process)) {
+                $failures[] = "{$unit['label']} - could not start a test worker";
+                continue;
+            }
+            $GLOBALS['testWorkers'][$id] = ['process' => $process, 'unit' => $unit, 'files' => $files];
+        }
+        foreach ($GLOBALS['testWorkers'] as $id => $worker) {
+            $status = proc_get_status($worker['process']);
+            if ($status['running']) {
+                continue;
+            }
+            proc_close($worker['process']);
+            unset($GLOBALS['testWorkers'][$id]);
+            fwrite(STDOUT, (string) @file_get_contents($worker['files']['out']));
+            fwrite(STDERR, (string) @file_get_contents($worker['files']['err']));
+            $lines = @file($worker['files']['results'], FILE_IGNORE_NEW_LINES) ?: [];
+            foreach ($lines as $line) {
+                [$state, $name, $seconds, $message] = explode("\t", $line, 4);
+                $runCount++;
+                $results[$name] = $state === 'pass';
+                $durations[$name] = (float) $seconds;
+                if ($state !== 'pass') {
+                    $failures[] = "{$name} - " . base64_decode($message);
+                }
+            }
+            // A worker that died before reporting (fatal error, exit) loses its unit; say so.
+            if ($lines === [] || !in_array($status['exitcode'], [0, 1], true)) {
+                $failures[] = "{$worker['unit']['label']} - test worker exited with code {$status['exitcode']}" . ($lines === [] ? ' before reporting results' : '');
+            }
+            foreach ($worker['files'] as $file) {
+                @unlink($file);
+            }
+        }
+        if ($GLOBALS['testWorkers'] !== []) {
+            usleep(20000);
+        }
+    }
+    @rmdir($scratch);
+    return [$runCount, $results, $durations, $failures];
+}
+
 function smokeListPath(): string
 {
     $path = getenv('FORUM_TEST_SMOKE_LIST');

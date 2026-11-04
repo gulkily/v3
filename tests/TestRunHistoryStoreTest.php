@@ -91,6 +91,26 @@ final class TestRunHistoryStoreTest
         assertSame('recovered', $recoveredAgain['ExampleTest::testFoo']['classification']);
     }
 
+    public function testDurationsAreRecordedAndOlderDatabasesGainTheColumn(): void
+    {
+        $path = sys_get_temp_dir() . '/forum-test-history-durations-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        // A database from before durations existed.
+        (new PDO('sqlite:' . $path))->exec('CREATE TABLE test_run_results (test_name TEXT PRIMARY KEY, last_status TEXT NOT NULL,
+            consecutive_fail_count INTEGER NOT NULL DEFAULT 0, first_failed_at TEXT, last_changed_at TEXT NOT NULL, last_run_at TEXT NOT NULL)');
+        try {
+            $store = new TestRunHistoryStore($path, 5);
+            $store->ensureSchema();
+            $store->recordResults(['ExampleTest::testFoo' => true, 'ExampleTest::testBar' => false], '2026-01-01T00:00:00+00:00', ['ExampleTest::testFoo' => 1.5]);
+            assertSame(['ExampleTest::testFoo' => 1.5], $store->durations());
+
+            // A later run without a duration keeps the last known one.
+            $store->recordResults(['ExampleTest::testFoo' => true], '2026-01-02T00:00:00+00:00');
+            assertSame(['ExampleTest::testFoo' => 1.5], $store->durations());
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testPruneStaleEntriesRemovesRowsForTestsNoLongerInTheSuite(): void
     {
         $store = $this->makeStore();

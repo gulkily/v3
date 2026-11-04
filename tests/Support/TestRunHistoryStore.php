@@ -42,16 +42,23 @@ final class TestRunHistoryStore
         if (!in_array('recovered_at', $existingColumns, true)) {
             $pdo->exec('ALTER TABLE test_run_results ADD COLUMN recovered_at TEXT');
         }
+
+        // Last recorded duration, used to schedule the slowest work first in parallel runs.
+        if (!in_array('last_duration_seconds', $existingColumns, true)) {
+            $pdo->exec('ALTER TABLE test_run_results ADD COLUMN last_duration_seconds REAL');
+        }
     }
 
     /**
      * @param array<string, bool> $results test name => passed
+     * @param array<string, float> $durations test name => seconds, stored for scheduling
      * @return array<string, array{classification: string, consecutiveFailCount: int, firstFailedAt: ?string, consecutivePassCount: int, recoveredAt: ?string}>
      */
-    public function recordResults(array $results, string $runAt): array
+    public function recordResults(array $results, string $runAt, array $durations = []): array
     {
         $pdo = $this->open();
         $classifications = [];
+        $recordDuration = $pdo->prepare('UPDATE test_run_results SET last_duration_seconds = :seconds WHERE test_name = :test_name');
 
         $select = $pdo->prepare(
             'SELECT last_status, consecutive_fail_count, first_failed_at, consecutive_pass_count, recovered_at
@@ -93,6 +100,9 @@ final class TestRunHistoryStore
                 'last_changed_at' => $changed ? $runAt : ($previous['last_changed_at'] ?? $runAt),
                 'last_run_at' => $runAt,
             ]);
+            if (isset($durations[$testName])) {
+                $recordDuration->execute(['seconds' => $durations[$testName], 'test_name' => $testName]);
+            }
 
             $classifications[$testName] = [
                 'classification' => $classification,
@@ -104,6 +114,17 @@ final class TestRunHistoryStore
         }
 
         return $classifications;
+    }
+
+    /** @return array<string, float> test name => last recorded duration in seconds */
+    public function durations(): array
+    {
+        $rows = $this->open()->query('SELECT test_name, last_duration_seconds FROM test_run_results WHERE last_duration_seconds IS NOT NULL');
+        $durations = [];
+        foreach ($rows as $row) {
+            $durations[(string) $row['test_name']] = (float) $row['last_duration_seconds'];
+        }
+        return $durations;
     }
 
     /**

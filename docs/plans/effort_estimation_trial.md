@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/parallel_tests
+
+2026-11-04T13:30:00Z — standing P2 enrollment, one-shot; [record](./parallel_tests/parallel_tests_one_shot.md#study-history). Follows `v3/smoke_tests`; revisits Option B of superseded `v3/fast_default_tests`. Scope v1: `--jobs=N` parallel runner with duration-ordered scheduling, `./v3 fulltest`, docs. Baseline `e291a20b`; extended/debug enabled. Pristine intake missing; execution-entry projection 0.45, closeout retrospective 0.45, single exposed Claude rater. Full parallel run pending with the maintainer. No accepted-count change.
+
 ## Cycle v3/smoke_tests
 
 2026-11-04T12:40:00Z — standing P2 enrollment, one-shot; [record](./smoke_tests/smoke_tests_one_shot.md#study-history). Builds on `v3/fast_default_tests_outliers` (PR #15). Scope v1: curated smoke set as the default run, `--smoke` plus named tests per task, full suite as a periodic maintainer run, process in AGENTS/CONTRIBUTING. Baseline `9459c7479c54f28a6d38c060a4a5293d9d6fb48c`; extended/debug enabled. Pristine intake missing; execution-entry projection 0.35, closeout retrospective 0.35, single exposed Claude rater. No accepted-count change.

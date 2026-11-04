@@ -40,7 +40,7 @@ final class TestRunnerBehaviorTest
             assertSame(0, $exitCode, $stdout);
             assertStringContains('Summary: 1 run, 1 passed, 0 failed', $stdout);
             assertStringContains('PASS RunnerTimingFixtureTest::testFast', $stdout);
-            assertStringContains('Smoke set from tests/smoke.txt; the full suite is ./v3 test --all.', $stdout);
+            assertStringContains('Smoke set from tests/smoke.txt; the full suite is ./v3 fulltest.', $stdout);
 
             [$exitCode, $stdout] = $this->runCommand(dirname(__DIR__), $env . $fixture . ' --smoke RunnerTimingFixtureTest::testPass');
             assertSame(0, $exitCode, $stdout);
@@ -59,6 +59,23 @@ final class TestRunnerBehaviorTest
         } finally {
             @unlink($list);
         }
+    }
+
+    public function testParallelRunMatchesSerialResultsAndExitCode(): void
+    {
+        $fixture = $this->phpCommand() . ' tests/fixtures/test_runner_timing.php';
+        [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), $fixture . ' --jobs=3 RunnerTimingFixtureTest');
+
+        assertSame(1, $exitCode, $stdout . $stderr);
+        assertStringContains('Running 1 units in up to 3 workers.', $stdout);
+        assertSame(2, preg_match_all('/^\[\d+\.\d{2}s\] PASS RunnerTimingFixtureTest::(testPass|testFast) \[\d+\.\d{2}s\]$/m', $stdout));
+        assertSame(1, preg_match('/^\[\d+\.\d{2}s\] FAIL RunnerTimingFixtureTest::testFailure - First failure line \[\d+\.\d{2}s\]\nDiagnostic detail$/m', $stderr));
+        assertStringContains('Summary: 3 run, 2 passed, 1 failed', $stdout);
+        assertStringContains('RunnerTimingFixtureTest::testFailure - First failure line (+2 more lines, see FAIL output above)', $stdout);
+
+        [$exitCode, $stdout] = $this->runCommand(dirname(__DIR__), $fixture . ' --jobs=2 RunnerTimingFixtureTest::testFast RunnerTimingFixtureTest::testPass');
+        assertSame(0, $exitCode, $stdout);
+        assertStringContains('Summary: 2 run, 2 passed, 0 failed', $stdout);
     }
 
     public function testFilteredFastResultHasTimingWithoutSlowReport(): void

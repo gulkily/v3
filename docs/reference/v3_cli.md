@@ -182,7 +182,8 @@ and [external launcher prerequisites](../../README.md#launcher-and-optional-supp
 ## Run the test suite
 
 ```
-./v3 test [--smoke] [--all] [Class[::method] ...]
+./v3 test [--smoke] [--all] [--jobs=N] [Class[::method] ...]
+./v3 fulltest [--jobs=N]
 ```
 
 Runs the custom test runner (`tests/run.php`).
@@ -191,6 +192,9 @@ Runs the custom test runner (`tests/run.php`).
 - `--smoke` with names — the smoke set plus those tests (the usual per-task run)
 - class or `Class::method` names alone — just those tests
 - `--all` — the full suite, run periodically by the maintainer
+- `--jobs=N` — run the selection in N worker processes, slowest work first; output is printed per finished unit and the summary covers everything
+
+`./v3 fulltest` is `./v3 test --all --jobs=<number of cores>`; a `--jobs=N` after it overrides the count.
 
 See [Tests in CONTRIBUTING.md](../../CONTRIBUTING.md#tests).
 

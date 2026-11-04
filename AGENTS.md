@@ -22,7 +22,7 @@ Favor removing UI text over rewriting or relocating it. Rely on an intuitive, ex
 
 ## Tests
 
-During a task, run only the smoke set plus the tests for what you changed: `./v3 test --smoke FooTest Bar::testX` (bare `./v3 test` is the smoke set alone). Do not run or wait for the full suite (`./v3 test --all`); the maintainer runs it periodically. Report what you ran and say the full suite was not run. See [Tests in CONTRIBUTING.md](CONTRIBUTING.md#tests).
+During a task, run only the smoke set plus the tests for what you changed: `./v3 test --smoke FooTest Bar::testX` (bare `./v3 test` is the smoke set alone). Do not run or wait for the full suite (`./v3 fulltest` or `./v3 test --all`); the maintainer runs it periodically. Report what you ran and say the full suite was not run. See [Tests in CONTRIBUTING.md](CONTRIBUTING.md#tests).
 
 ## Todo
 

@@ -397,7 +397,10 @@ final class LocalAppSmokeTest
 
     public function testRebuildDiagnosisAndRecoveryArchiveSQLiteSidecarsBeforeRebuilding(): void
     {
-        $databasePath = sys_get_temp_dir() . '/forum-rewrite-rebuild-recovery-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        // Own directory: the rebuild lock sits beside the database, and this test asserts it is free.
+        $databaseDirectory = sys_get_temp_dir() . '/forum-rewrite-rebuild-recovery-' . bin2hex(random_bytes(6));
+        mkdir($databaseDirectory);
+        $databasePath = $databaseDirectory . '/read-model.sqlite3';
         $recoveryDirectory = null;
         try {
             (new ReadModelBuilder($this->repositoryRoot, $databasePath, new CanonicalRecordRepository($this->repositoryRoot)))->rebuild();
@@ -440,11 +443,10 @@ final class LocalAppSmokeTest
             assertTrue(is_file($databasePath));
             assertTrue(!is_file($databasePath . '-journal'));
         } finally {
-            @unlink($databasePath);
-            @unlink($databasePath . '-journal');
             if ($recoveryDirectory !== null) {
                 $this->deleteTree($recoveryDirectory);
             }
+            $this->deleteTree($databaseDirectory);
         }
     }
 
