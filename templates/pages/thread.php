@@ -57,9 +57,6 @@ foreach ($replyContinuationFlags as $flagIndex => $flag) {
 }
 $rootMetaVisible = $rootRunTailIndex === -1;
 ?>
-<?php if (($workItem ?? null) !== null): ?>
-  <p class="meta work-status" data-work-status="<?= $e($workItem['status']) ?>">Status: <strong><?= $e($workItem['status']) ?></strong><?php if ($workItem['stale']): ?> (stale)<?php endif; ?><?php if ($workItem['set_by'] !== ''): ?> · <?= $e($workItem['set_by']) ?><?php endif; ?><?php if ($workItem['note'] !== ''): ?> · <?= $e($workItem['note']) ?><?php endif; ?></p>
-<?php endif; ?>
 <?php if ($rootPost !== null): ?>
 <?= $indent($partial('partials/thread_root_card.php', ['post' => $rootPost, 'trueReplyCount' => $trueReplyCount, 'metaVisible' => $rootMetaVisible, 'voteCaptionPair' => $voteCaptionPair ?? null]), 1) ?>
 <?php else: ?>

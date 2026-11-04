@@ -50,5 +50,4 @@ OfflineSnapshotPublisherTest
 
 # CLI and the test runner itself
 StatusCommandTest
-WorkItemsTest
 TestRunnerBehaviorTest

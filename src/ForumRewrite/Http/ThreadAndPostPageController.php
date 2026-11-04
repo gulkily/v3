@@ -145,9 +145,6 @@ final class ThreadAndPostPageController
                 ),
                 'thread' => $threadRow,
                 'railspikeThread' => $threadRow,
-                'workItem' => \ForumRewrite\Work\WorkItems::isWorkThread($threadRow)
-                    ? \ForumRewrite\Work\WorkItems::item($this->routeServices->pdo(), $threadId)
-                    : null,
                 'railspikeOperators' => $this->railspikeOperators(),
                 'posts' => $posts,
                 'title' => $title,
