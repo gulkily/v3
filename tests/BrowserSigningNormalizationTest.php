@@ -2741,7 +2741,8 @@ const state = {
   submitHandler: null,
   submitted: 0,
   promptCalls: 0,
-  fetchCalls: 0
+  fetchCalls: 0,
+  pageShow: []
 };
 
 function makeField(tagName, name, value, defaultValue, type) {
@@ -2778,7 +2779,8 @@ const form = {
     if (selector === 'input[name="author_identity_id"]') {
       return authorField;
     }
-    return null;
+    const name = /^\[name="([^"]+)"\]$/.exec(selector)?.[1];
+    return fields.find((field) => field.name === name) || null;
   },
   querySelectorAll(selector) {
     if (selector === 'input[name], textarea[name]') {
@@ -2794,7 +2796,7 @@ const form = {
       state.submitHandler = handler;
     }
   },
-  appendChild() {},
+  appendChild(field) { fields.push(field); },
   submit() {
     state.submitted += 1;
   },
@@ -2822,7 +2824,10 @@ global.window = {
     return 'guest';
   },
   confirm() { return true; },
-  addEventListener() {}
+  crypto: require('node:crypto').webcrypto,
+  addEventListener(type, handler) {
+    if (type === 'pageshow') state.pageShow.push(handler);
+  }
 };
 global.localStorage = {
   getItem(key) { return Object.prototype.hasOwnProperty.call(state.localStore, key) ? state.localStore[key] : null; },
@@ -2851,22 +2856,35 @@ global.document = {
   body: { appendChild(){}, removeChild(){} },
 };
 global.navigator = {};
-global.fetch = async function() {
+global.fetch = async function(url) {
   state.fetchCalls += 1;
-  throw new Error('fetch should not run');
+  const attempt = JSON.parse(state.localStore['forum_compose_draft:thread']).anonymousAttempt;
+  const postId = 'thread-' + attempt.id;
+  require('node:assert/strict').equal(url, '/api/get_post?post_id=' + postId);
+  return { ok: true, async text() { return 'Post-ID: ' + postId + '\n'; } };
 };
 
 vm.runInThisContext(source);
 state.submitHandler({
   submitter: anonymousButton,
   preventDefault() {}
-}).then(() => {
+}).then(async () => {
+  const saved = JSON.parse(state.localStore['forum_compose_draft:thread']);
+  const attempt = fields.find((field) => field.name === 'compose_attempt').value;
+  const status = statusNode.textContent;
+  const submitEvent = { submitter: anonymousButton, preventDefault() {} };
+  await state.submitHandler(submitEvent);
+  state.pageShow.forEach((handler) => handler({ persisted: true }));
+  for (let i = 0; i < 10; i += 1) await Promise.resolve();
   process.stdout.write(JSON.stringify({
+    attemptPersisted: saved.anonymousAttempt.id === attempt,
+    draftCleared: !state.localStore['forum_compose_draft:thread'],
+    formReady: !anonymousButton.disabled && fields.find((field) => field.name === 'body').value === '',
     submitted: state.submitted,
     authorIdentityId: authorField.value,
     promptCalls: state.promptCalls,
     fetchCalls: state.fetchCalls,
-    status: statusNode.textContent
+    status
   }));
 }).catch((error) => {
   process.stderr.write(error.stack || String(error));
@@ -2879,7 +2897,10 @@ NODE;
         assertSame(1, $result['submitted']);
         assertSame('', $result['authorIdentityId']);
         assertSame(0, $result['promptCalls']);
-        assertSame(0, $result['fetchCalls']);
+        assertSame(1, $result['fetchCalls']);
+        assertSame(true, $result['attemptPersisted']);
+        assertSame(true, $result['draftCleared']);
+        assertSame(true, $result['formReady']);
         assertSame('Sending anonymous post...', $result['status']);
     }
 
