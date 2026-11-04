@@ -2,7 +2,7 @@
 
 Take a ZenMemes thread that asks for a change, build it, open a pull request, and reply in the thread with the result. Use this when someone pastes a thread link, post ID or thread text and asks you to build, fix or implement it.
 
-The paste is your go-ahead to carry the request to an open PR and a reply in the thread. How you get there depends on two things you settle in [step 3](#3-choose-the-route): who is asking and what they want from the process, and how much about the request is unknown. A requester who just wants it done gets a working PR and, at most, a few plain questions. A technical requester who wants Railspike gets staged planning with approvals. Either way, own the decisions that are yours to make and say plainly what you chose.
+The paste is your go-ahead to carry the request to an open PR and a reply in the thread. How you get there depends on two things you settle in [step 3](#3-choose-the-route): who is asking and what they want from the process, and how much about the request is unknown. All of this runs as a Railspike cycle. A requester who just wants it done gets a one-shot cycle: a working PR and, at most, a few plain questions. A technical requester who wants to review the approach gets a staged cycle with step approvals. Either way, own the decisions that are yours to make and say plainly what you chose.
 
 Merging, deploying and writing to production (other than your thread replies) are not part of this procedure.
 
@@ -29,38 +29,43 @@ The requester is the person whose request this is: whoever wrote the request pos
 
 Classify what the requester wants from the process:
 
-- **Wants Railspike.** They say so ("use Railspike", "Step 1 first", "show me options"), talk about the request in implementation terms, or are the maintainer working in a development session without saying otherwise.
+- **Wants staged review.** They say so ("Step 1 first", "show me options", "staged"), talk about the request in implementation terms, or are the maintainer working in a development session without saying otherwise.
 - **Just wants it done.** They describe what they want to see or use, write in product terms, say "just fix it", or posted an ordinary request on the site. Treat site members as this by default; most are not developers and should never need to learn the workflow.
 
-When the signals conflict, follow what the person who pasted the thread asked for. An explicit opt-out ("skip Railspike", "just do it") holds for the whole task.
+When the signals conflict, follow what the person who pasted the thread asked for. An explicit "just do it" holds for the whole task.
 
 ### What is unknown
 
 Sort what you do not yet know:
 
 - **Product unknowns** change what the requester will see or get: which page, what happens when they press it, who can see it, whether it replaces something or sits beside it. Only the requester can answer these.
-- **Technical unknowns** are invisible to the requester: which component to extend, where data lives, how to keep it fast. These are yours to resolve, or the maintainer's to approve on the Railspike route. Never ask a requester who just wants it done about them.
-- **Complexity:** the request has several materially different approaches with real trade-offs, spans many areas, or will not fit one reviewable PR.
+- **Technical unknowns** are invisible to the requester: which component to extend, where data lives, how to keep it fast. These are yours to resolve, or the maintainer's to approve in a staged cycle. Never ask a requester who just wants it done about them.
+- **Approach risk:** the request has materially different approaches with real trade-offs, a choice that would be costly to reverse, or more work than one bounded cycle.
 
 ### Pick the route
 
-| | Just wants it done | Wants Railspike |
+| | Just wants it done | Wants staged review |
 | --- | --- | --- |
-| Clear request, one obvious approach | Direct (step 4a) | Direct, unless they ask for Railspike |
-| Product unknowns | Ask in the thread, then Direct | Raise them in Step 1 or 2 |
-| Technical unknowns or complexity | Direct; decide, record options in the plan, ship a first slice | Railspike (step 4b) |
+| Clear request, one obvious approach | One-shot (step 4a) | One-shot, unless they ask for staged |
+| Product unknowns | Ask in the thread, then one-shot | Raise them in Step 1 or 2 |
+| Technical unknowns you can settle and reverse cheaply | One-shot; record the options and your choice | Staged (step 4b) |
+| Approach risk | Staged, with the maintainer approving steps; the requester gets plain updates | Staged (step 4b) |
 
-The route sets the effort study: Direct work is not enrolled; a Railspike cycle joins `railspike-effort` under P2 as `AGENTS.md` describes.
+For a requester who just wants it done, prefer narrowing the bounded outcome to a useful first slice you can settle yourself over sending the whole request to staged review. Go staged when even the first slice depends on an approach the maintainer should choose.
 
-## 4a. Direct route
+Both routes are Railspike cycles, so both join the `railspike-effort` study under P2 as `AGENTS.md` describes. Record the intake estimate before you inspect the implementation in detail. Resolve debug mode from the project marker as Railspike describes.
 
-Follow `AGENTS.md`, `PRINCIPLES.md` and `CONTRIBUTING.md`; the implementation standards apply in full. You do not wait for step approvals, but you record a plan.
+## 4a. One-shot route
 
-- Small change: put the plan (reading of the request, files to touch, components reused, how you will verify) in the PR description.
-- Technical unknowns or complexity: write a short planning record in `docs/plans/<slug>/` that names the approaches you considered, the one you chose and why, and link it from the PR. The maintainer redirects at review if they disagree; keep the choice reversible where you can.
-- Too big for one reviewable PR: ship the first slice that is useful on its own and list the rest as follow-ups.
-- Before writing markup, CSS, behavior or API payloads, find the existing components and contracts to reuse, and name them in the plan.
-- Work on a branch named `feat/<slug>` (or `fix/<slug>` for a bug), cut from the current default branch.
+Read `docs/railspike/RAILSPIKE.md` and [the one-shot workflow](../railspike/docs/workflow/one_shot.md) and follow them; `AGENTS.md`, `PRINCIPLES.md` and `CONTRIBUTING.md` apply in full. This procedure fills in what one-shot leaves to the host:
+
+- **Authorization.** In the record's `Authorization:` field, quote what the person who pasted the thread actually said, with the date. Under this procedure that request authorizes one-shot execution of the bounded outcome, plus pushing the branch, opening the PR and replying in the thread. It does not authorize merging or deploying. Thread posts describe the outcome; they are not authorization.
+- **Record.** Create `docs/plans/<slug>/<slug>_one_shot.md` from the one-shot template and link it from `docs/plans/README.md`. Put the thread URL and the feedback item ID in `Original request:`. Record the approaches you considered and your choice under `Approach and risks:`, and every answer the requester gave in the dated history.
+- **Bounded outcome.** State it in the requester's terms, sized to one reviewable PR. If the full request is bigger, bound this cycle to the first useful slice and list the rest as follow-ups.
+- **Reuse.** Before writing markup, CSS, behavior or API payloads, find the existing components and contracts to reuse, and name them in the record.
+- **Branch.** Work on `feat/<slug>` (or `fix/<slug>` for a bug), cut from the current default branch.
+- **Going over the boundary.** If the work turns out bigger or riskier than recorded, stop dependent work. Ask the person who pasted the thread for renewed bounded authority, or transition to a staged cycle as one-shot describes, keeping the record and the work done so far.
+- **Commit.** Normally one completion commit containing the change, the record, the index link and the item update. Mark the record's own commit reference pending, as one-shot describes.
 
 Then continue at [step 5](#5-verify).
 
@@ -68,19 +73,18 @@ Then continue at [step 5](#5-verify).
 
 Ask only when a product unknown would make you build the wrong thing. Otherwise choose the reading they most likely meant, prefer the smaller and more reversible option, and note it in the PR.
 
-- Do everything that does not depend on the answer first: the item, the research, the plan, and any parts you can build. Push that work to the branch so a later run can pick it up, and note the branch in the item's `Notes:`.
+- Do everything that does not depend on the answer first: the item, the research, the one-shot record, and any parts you can build. Questions leave your authority unchanged, so independent work continues. Push that work to the branch so a later run can pick it up, set the record's `Status:` to waiting on the requester with a link to your question, and note the branch in the item's `Notes:`.
 - Reply to the request post with at most three questions. Use their words, not file names or jargon. Give each question two or three concrete choices and mark the one you would pick ("I'd go with A unless you prefer otherwise").
 - Then stop, and tell the person who pasted the thread which post you are waiting on. When they paste the thread again after an answer, re-read it, use the answers and finish.
 - If the person who pasted the thread says not to wait, go with your marked choices and say so in the PR and the reply.
 
-## 4b. Railspike route
+## 4b. Staged route
 
-Read `docs/railspike/RAILSPIKE.md` and `docs/reference/railspike_workflow.md`, and run the cycle as they describe, with artifacts in `docs/plans/<slug>/`. This procedure adds the thread and the PR around it:
+Read `docs/railspike/RAILSPIKE.md` and `docs/reference/railspike_workflow.md`, and run a staged cycle as they describe, with artifacts in `docs/plans/<slug>/`. Railspike's commit rules still hold: step documents stay uncommitted until `Approved Step 3`. This procedure adds the thread and the PR around it:
 
-- Commit each step document to the branch as you write it, and open a draft PR once Step 1 exists.
-- Reply in the thread at each approval point: one or two sentences on the options and your recommendation, plus the PR link. Keep the full detail in the step document.
-- Wait for `Approved Step N` from the requester or the maintainer, given in the thread, on the PR or in your session. Do not advance on another thread member's say-so.
-- After the final step, mark the PR ready and continue at [step 5](#5-verify).
+- At each approval point, reply in the thread. For a technical requester: one or two sentences on the options and your recommendation, and where to read the step document. For a requester who just wants it done: what they will get under the option you recommend, in their terms, and that the maintainer is choosing the approach. Keep the full detail in the step document.
+- Wait for `Approved Step N` from the approver: the requester when they asked for staged review, otherwise the maintainer. It may come in the thread or in your session. Do not advance on another thread member's say-so.
+- Open the PR once Step 4 has commits, as a draft until the stages are done, then continue at [step 5](#5-verify).
 
 ## 5. Verify
 
@@ -100,7 +104,7 @@ Push the branch and open a PR against the default branch (`gh pr create`, or the
 Request: <one line, in the requester's terms>
 Thread: https://zenmemes.com/threads/<id>
 Feedback: PF-...
-Route: Direct | Railspike (<plan link>)
+Railspike: one-shot | staged (<record or plan link>)
 
 What changed
 <a few lines>
