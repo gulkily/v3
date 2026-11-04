@@ -44,6 +44,8 @@ Coordinate F01/B01/B02/B04 with existing reply work before scoping. F08/F09/F10 
 
 ## PF-20261021-F01 — Reply focus
 
+**Current item:** [PF-20261021-F01](../feedback/items/PF-20261021-F01.txt). The fields below are history from the migration.
+
 - **Alias:** `2026-10-21/F01` (Feature 01); **workflow state:** blocked awaiting physical phone acceptance and deployment; **delivery evidence:** locally verified desktop/automated phone flow, 2026-10-23. Production behavior remains unverified. [Implementation evidence and limits](reply_continuation/reply_continuation_step4_implementation_summary.md).
 - **Request:** Keep the reply entry field focused after posting, ready for another reply. **Reports:** [reply-20261021175726-73beca3d](https://zenmemes.com/posts/reply-20261021175726-73beca3d). **Inherited estimate:** 0.15 (October 21 feedback-only); **recommended workflow:** Railspike (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).
 - **Done when:** Desktop immediately displays the pending reply and retains usable writing focus; phone reveals it with one-tap re-entry. Independent failure/retry preserves captured content and the newer draft, with no duplicate posts. **Next action:** Complete the linked iPhone Safari/Firefox checklist, then separately deploy and verify consecutive sends and failure/retry in production. No source-comment reply is authorized.
@@ -176,6 +178,8 @@ Reviewed 2026-10-23: the historical mini-triage describes LCD palette selection 
 <a id="pf-20261021-b03"></a>
 
 ## PF-20261021-B03 — Saved draft starts collapsed
+
+**Current item:** [PF-20261021-B03](../feedback/items/PF-20261021-B03.txt). The fields below are history from the migration.
 
 - **Alias:** `2026-10-21/B03` (Bug 03); **workflow state:** blocked; **delivery evidence:** locally verified; deployment/production acceptance pending. Reviewed 2026-10-23 from existing documents, no runtime audit.
 - **Request:** Keep the composer collapsed on page load, even when the textarea contains saved text. **Reports:** [reply-20261021180138-eddd96a4](https://zenmemes.com/posts/reply-20261021180138-eddd96a4). **Inherited estimate:** 0.15 (October 21 feedback-only); **recommended workflow:** One-shot (not approval). [Historical triage](zenmemes_meta_feedback_2026-10-21_mini_triage.md).

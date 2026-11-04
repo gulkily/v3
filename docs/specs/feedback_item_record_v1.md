@@ -44,6 +44,8 @@ blank line, in this order:
   because headers cannot repeat.
 - `Done when:` (optional): observable completion checks.
 - `Notes:` (optional): current evidence, next action and links to history.
+  Write file references as repository-relative paths (`docs/plans/...#anchor`),
+  so they read the same from any folder.
 
 ## Checks
 
@@ -58,10 +60,10 @@ expected when one post asked for two independent outcomes and they were split;
 otherwise it points at a missed duplicate. Items with `Workflow: duplicate` or
 `superseded` keep their sources and are left out of this listing.
 
-## Example
+## Example (illustrative ID)
 
 ```
-ID: PF-20261103-F01
+ID: PF-20260101-F01
 Title: Summary field on threads
 Kind: feature
 Workflow: untriaged

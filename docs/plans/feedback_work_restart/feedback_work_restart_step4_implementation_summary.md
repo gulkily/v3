@@ -40,3 +40,19 @@ Branch: `feedback_work_restart`, based on `remove-work-tracking` (`81837cf`). Pl
   - `./v3 test --smoke FeedbackItemCheckTest`: 430 run, 430 passed (new index test: refusal on problems, grouping and order, escaping, closed outcome links, unchanged rerun). Full suite not run.
 - Notes:
   - Retrospective stage-work assessment: 0.06, as estimated.
+
+## Stage 3 - Pilot migration of two register entries
+
+**Original estimate: 0.06** (unchanged)
+
+- Changes:
+  - [`PF-20261021-F01`](../../feedback/items/PF-20261021-F01.txt) (reply focus, the entry with the longest history) and [`PF-20261021-B03`](../../feedback/items/PF-20261021-B03.txt) (saved draft starts collapsed).
+  - Register sections for both now start with a `Current item:` link; their fields stay as migration history.
+  - Spec: file references in `Notes:` are repository-relative paths.
+  - Spec and concept examples now use the illustrative ID `PF-20260101-F01`; the earlier example collided with the register's real `PF-20261103-F01`.
+- Verification:
+  - Side-by-side review against the register, field by field: alias, workflow state, delivery evidence and date, request, report link, inherited estimate, recommended workflow, done-when, next action, implementation and checklist links, source-code pointer, historical triage link. All carried over; the F01 2026-10-23 investigation stays in the register and is linked by anchor.
+  - All linked paths and the checklist anchor exist; `./v3 feedback check`: 2 items, 0 problems; index regenerated.
+- Notes:
+  - Pilot outcome: the format holds; long investigations belong in linked history, not in the item. No change needed before Stage 4 beyond the path convention.
+  - Retrospective stage-work assessment: 0.06, as estimated.
