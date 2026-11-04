@@ -10,7 +10,7 @@ Status: Step 2 v3 approved; Step 3 proposed; implementation unapproved. Reposito
 
 **Cycle estimate: 0.90**
 
-Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event time cycle](./event_time/event_time_step4_implementation_summary.md) added one event header end to end; Stages 1–3 follow its shape.
+Mockup: [calendar_mockups.html](./calendar_mockups.html). Conversation notes for the implementer: [addendum](./calendar_addendum_conversation_notes.md). Precedent: the [event time cycle](./event_time/event_time_step4_implementation_summary.md) added one event header end to end; Stages 1–3 follow its shape.
 
 ## Completion Contract
 
