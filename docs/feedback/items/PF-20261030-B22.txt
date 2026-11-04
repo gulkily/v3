@@ -12,7 +12,13 @@ New-post flow remains cluttered and Post hard to find on iPhone. October 30 repl
 Sources:
 - https://zenmemes.com/posts/thread-20261029214815-1dd436c4
 - https://zenmemes.com/posts/reply-20261030145539-48d9a98c
+- https://zenmemes.com/posts/thread-20261031051903-0e8e7df4
+- https://zenmemes.com/posts/reply-20261031055720-3f71bafb
+- https://zenmemes.com/posts/reply-20261031055757-d9c87784
+- https://zenmemes.com/posts/reply-20261031060257-3e498fdf
+- https://zenmemes.com/posts/reply-20261031060809-113139f7
 
 Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B22; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-04 intake: iPhone SE 3 Firefox, dedicated /compose/thread: keyboard hides Post; homepage form works. Agent clarification requests shrinking the writing area and moving tags below Post. Plan posts are context, not new approval or production acceptance. Preserve source estimate only in linked existing plan, not a new estimate here. Proposal: docs/feedback/triage/2026-11-04_proposals.txt

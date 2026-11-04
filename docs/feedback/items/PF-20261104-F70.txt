@@ -1,0 +1,16 @@
+ID: PF-20261104-F70
+Title: Promote items from Recent
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Add a button on Recent to promote an item — “like” or “interesting” or similar.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103185300-870542f7
+
+Notes:
+Existing visible-signals item does not establish action controls on Recent; keep distinct pending review.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261104-F62
+Title: Claimable clipped-author identities
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+From a clipped tweet, form an identity for the cited author that can be claimed.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103070000-30317f68
+
+Notes:
+Older parent tweet is context. Distinct from PF-20261030-F09’s names becoming claimable usernames; reconcile identity semantics before considering a merge.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

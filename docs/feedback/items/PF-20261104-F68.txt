@@ -1,0 +1,15 @@
+ID: PF-20261104-F68
+Title: Ctrl+Enter submits from tags
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+When the tags field has focus, Ctrl+Enter should submit as it does from the other fields.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103171610-aba919bf
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

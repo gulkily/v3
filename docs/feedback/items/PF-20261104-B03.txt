@@ -1,0 +1,15 @@
+ID: PF-20261104-B03
+Title: Invite redemption appears unresponsive
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+There is a delay after clicking redeem invite, with a moment when the page does not react at all.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031053241-34895183
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

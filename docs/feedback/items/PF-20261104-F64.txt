@@ -1,0 +1,16 @@
+ID: PF-20261104-F64
+Title: Actionable network-error message
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Network error attempting to fetch resource” is not helpful to an end user. Improve the failure feedback and next action.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103072715-6266884a
+
+Notes:
+Source does not identify the operation; do not invent a cause.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261104-F34
+Title: Use native confirmations for admin actions
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Explore using confirm() for “admin mode” confirmations.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103044615-54b644f1
+
+Notes:
+Which actions and consequences are unspecified; this is not approval to add confirmations everywhere.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

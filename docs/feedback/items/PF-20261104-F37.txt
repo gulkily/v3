@@ -1,0 +1,15 @@
+ID: PF-20261104-F37
+Title: Response sizes in local HTTP log
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The log from ./v3 start should show response sizes.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103051045-0ab6b18b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

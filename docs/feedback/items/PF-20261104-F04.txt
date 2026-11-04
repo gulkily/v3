@@ -1,0 +1,15 @@
+ID: PF-20261104-F04
+Title: Show feature-flag edit permission
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The feature-flag page should tell me whether I can change things or not.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031055207-c64b99fc
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

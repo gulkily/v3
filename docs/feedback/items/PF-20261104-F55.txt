@@ -1,0 +1,15 @@
+ID: PF-20261104-F55
+Title: Expandable System State sizes
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+System State should display sizes for everything that has a size; maybe hidden by default and expandable.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103063011-37a33e13
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,17 @@
+ID: PF-20261104-B16
+Title: Fastmod absent or provider error
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Fastmod sometimes does not appear or reports provider error on the thread page. Investigate the reported server condition.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103043134-ab3522c0
+- https://zenmemes.com/posts/thread-20261103043513-5d24b56f
+
+Notes:
+Separate from the runbook deliverable and the invalid-response report. Log excerpt is evidence, not proof of provider root cause.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

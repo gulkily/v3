@@ -1,0 +1,16 @@
+ID: PF-20261104-F28
+Title: Assess Pollyanna float mode
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Examine Pollyanna “float” mode and make a checklist to implement/integrate it.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103041951-8104e46b
+
+Notes:
+Assessment/checklist request, not implementation approval. Agent source identifies the related repo as gulkily/pollyanna.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

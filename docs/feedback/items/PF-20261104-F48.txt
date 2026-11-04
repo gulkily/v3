@@ -1,0 +1,18 @@
+ID: PF-20261104-F48
+Title: Word97 Like and Flag bevel spacing
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Add padding, especially left/right, and remove the black edge while keeping the 3D appearance — only Like and Flag; Post reply and other buttons look fine.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103060820-6327c25c
+- https://zenmemes.com/posts/reply-20261103060839-f82bd37d
+- https://zenmemes.com/posts/reply-20261103061632-5c2e7974
+
+Notes:
+Agent reports PR #9 and a swapped-stylesheet headless check. Do not infer deployment or production acceptance.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

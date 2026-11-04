@@ -1,0 +1,16 @@
+ID: PF-20261104-B27
+Title: Doc search pending feedback and speed
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+While document search is running, show that it is searching instead of an empty result set; make it faster than the reported roughly five seconds.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103164241-6f48e3f8
+
+Notes:
+Keep pending feedback and the associated latency report together as one search-in-progress outcome; no timing verified here.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

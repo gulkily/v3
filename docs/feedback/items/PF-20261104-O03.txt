@@ -1,0 +1,18 @@
+ID: PF-20261104-O03
+Title: Fastmod debugging runbook
+Kind: other
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Post a guide/runbook for Fastmod not appearing or reporting provider error; the poster could not discover the command with ./v3 | grep fastmod.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103043134-ab3522c0
+- https://zenmemes.com/posts/thread-20261103043513-5d24b56f
+- https://zenmemes.com/posts/reply-20261103064448-ea7d3e92
+
+Notes:
+Agent subsequently supplies a fast-score runbook in reply. Recorded as reported response, not independently verified guidance.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

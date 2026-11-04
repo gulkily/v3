@@ -1,0 +1,16 @@
+ID: PF-20261104-F71
+Title: Optimistic posting UI
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Carry optimism into the UI once a request reaches the server, since the poster thinks it succeeds 99% of the time.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103190110-cb97ef2b
+
+Notes:
+Explore behavior without silently losing drafts or asserting acceptance after a failed/uncertain request. Preserve project principles; no invented failure semantics.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

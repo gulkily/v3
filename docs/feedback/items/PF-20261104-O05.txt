@@ -1,0 +1,16 @@
+ID: PF-20261104-O05
+Title: Polish discussion images
+Kind: other
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Replace the discussion’s images with nicer versions, including transparency; if impossible on the site, identify missing features/functionality.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103065039-55c99587
+
+Notes:
+Direct content-edit request preserved for later work, not authorization in this triage to alter images or add dependencies.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

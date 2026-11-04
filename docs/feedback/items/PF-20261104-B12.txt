@@ -1,0 +1,19 @@
+ID: PF-20261104-B12
+Title: Word97 action fonts and underlines
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Like and Flag in Word97 should be sans-serif and not underlined; agent follow-up includes Reply and other post actions.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103040837-3ce785cb
+- https://zenmemes.com/posts/thread-20261103051708-e3faef3f
+- https://zenmemes.com/posts/reply-20261103054351-e9adc574
+- https://zenmemes.com/posts/reply-20261103055503-c3989580
+
+Notes:
+Agent reports PR #8 and headless computed-style checks. Merge/deployment/phone acceptance not established here.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

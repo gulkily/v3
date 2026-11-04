@@ -1,0 +1,17 @@
+ID: PF-20261104-F02
+Title: Hide posts with expandable placeholders
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The flag button should really be a hide button, with a Hacker News-like hidden/greyed presentation that can be expanded. Agent follow-up distinguishes hiding for oneself from suggesting shared hiding.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031053954-e5f7c286
+- https://zenmemes.com/posts/reply-20261031145631-d87b9552
+
+Notes:
+Personal versus shared scope is unresolved; do not choose one during intake.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

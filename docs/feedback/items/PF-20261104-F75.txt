@@ -1,0 +1,16 @@
+ID: PF-20261104-F75
+Title: Hide maintenance tasks from ordinary readers
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+A user not maintaining the site/codebase should not see maintenance tasks unless they directly affect them and are understandable, such as site news.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104131442-946b83f2
+
+Notes:
+Different from PF-20261030-F15’s removal of operator-only UI copy: this filters maintenance content. Keep separate.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

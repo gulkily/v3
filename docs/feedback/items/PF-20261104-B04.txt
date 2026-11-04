@@ -1,0 +1,16 @@
+ID: PF-20261104-B04
+Title: Word97 title bar looks wrong
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“The titlebar looks weird in word 97 theme.” Screenshot cited by source, but not available in this import.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031065338-4325690d
+
+Notes:
+Do not assume this is the same defect as the phone status-bar overlap; keep separate pending visual comparison.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

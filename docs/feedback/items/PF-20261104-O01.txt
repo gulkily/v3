@@ -1,0 +1,15 @@
+ID: PF-20261104-O01
+Title: Explain identity record and PGP material
+Kind: other
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Explain why the linked identity source file contains content and PGP material together. This is a question, not authorization to change the signed format.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031053640-97fcbe3c
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

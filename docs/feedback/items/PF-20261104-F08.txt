@@ -1,0 +1,18 @@
+ID: PF-20261104-F08
+Title: Optional key-backup passphrase
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Saving a key should not require a backup passphrase; keep the passphrase field collapsed until expanded. Later account checklist asks to save without passphrase with a warning; remove the quoted unnecessary copy or hide it in help.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031073139-038c4b4e
+- https://zenmemes.com/posts/thread-20261103040413-a008e701
+- https://zenmemes.com/posts/thread-20261103082445-475cead1
+
+Notes:
+Preserve material consequences during later UI scoping; this intake does not design a warning or change crypto.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

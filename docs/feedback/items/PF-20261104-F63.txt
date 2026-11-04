@@ -1,0 +1,16 @@
+ID: PF-20261104-F63
+Title: Global full-text search flag
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Port the QDB theme’s global full-text search into a global feature flag.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103070857-5edb84b9
+
+Notes:
+Existing board-search changelog is not proof of this requested flag/scope.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

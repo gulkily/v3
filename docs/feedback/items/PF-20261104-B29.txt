@@ -1,0 +1,17 @@
+ID: PF-20261104-B29
+Title: Temporary unavailability after deploy
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+After a deploy, the site briefly showed Temporarily Unavailable; the next reload fixed it, but it should not happen. Also investigate the unexplained Focus stream/average/footer material on that error page.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103172346-8529983d
+- https://zenmemes.com/posts/reply-20261103172359-f49c08cd
+
+Notes:
+No reproduction or root cause established.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

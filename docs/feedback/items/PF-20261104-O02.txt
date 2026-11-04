@@ -1,0 +1,16 @@
+ID: PF-20261104-O02
+Title: Response to a posted private key
+Kind: other
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“What should we do if a private key is posted? This is not an obvious answer.”
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031073243-abe74aee
+
+Notes:
+Question for investigation. No key deletion, revocation, history purge, or new retraction subsystem authorized. Current handoff governs any later implementation.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,18 @@
+ID: PF-20261104-F56
+Title: Commits since schema change metric
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Show a “commits since last schema change” metric. Poster is joking but not joking and requests an implementation-difficulty estimate.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103063030-15e331e0
+- https://zenmemes.com/posts/reply-20261103165219-1ff7478b
+- https://zenmemes.com/posts/reply-20261103170032-06a4f3e2
+
+Notes:
+Agent reply offers hour ranges for different definitions; preserve as attributed discussion, not a canonical Railspike estimate. “Schema change” is undefined.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
