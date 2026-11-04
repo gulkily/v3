@@ -182,13 +182,15 @@ and [external launcher prerequisites](../../README.md#launcher-and-optional-supp
 ## Run the test suite
 
 ```
-./v3 test
+./v3 test [--all] [Class[::method] ...]
 ```
 
 Runs the custom test runner (`tests/run.php`) covering parser, rebuild, and
 app smoke tests.
 
-- any arguments — passed straight through to the test runner, e.g. a specific test class name
+- no arguments — the default run, which leaves out the slow classes in `NOT_IN_DEFAULT_RUN` and lists them at the end
+- `--all` — every test; run it before merging or deploying
+- class or `Class::method` names — just those tests, including left-out classes
 
 ## Check the live OpenPGP asset contract
 

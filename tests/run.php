@@ -6,6 +6,15 @@ $runStartedAt = hrtime(true);
 
 require_once __DIR__ . '/Support/TestRunHistoryStore.php';
 
+// Throwaway test repositories must not inherit the developer's global Git config:
+// commit signing there costs ~0.1 s per commit (and can prompt), and maintenance adds more.
+// Repository-level and `-c` settings still apply; tests that need no global config set their own.
+$testGitConfig = sys_get_temp_dir() . '/v3-test-gitconfig-' . getmypid();
+file_put_contents($testGitConfig, "[user]\n\tname = Forum Rewrite Tests\n\temail = tests@example.invalid\n"
+    . "[commit]\n\tgpgsign = false\n[tag]\n\tgpgsign = false\n[maintenance]\n\tauto = false\n[gc]\n\tauto = 0\n");
+putenv('GIT_CONFIG_GLOBAL=' . $testGitConfig);
+register_shutdown_function(static fn () => @unlink($testGitConfig));
+
 $testFiles = [
     __DIR__ . '/QdbPageTest.php',
     __DIR__ . '/QdbWelcomeSelectionTest.php',
@@ -288,8 +297,15 @@ $testFiles = [
     __DIR__ . '/WriteApiSmokeTest.php',
 ];
 
+// Slow classes left out of the default run; `--all` or naming the class runs them.
+// Run `--all` before merging or deploying.
+const NOT_IN_DEFAULT_RUN = ['PlatformDocsStaticTest', 'WriteApiSmokeTest', 'CheckoutsCommandTest'];
+
 $failures = [];
-$filters = array_slice($argv, 1);
+$arguments = array_slice($argv, 1);
+$runAll = in_array('--all', $arguments, true);
+$filters = array_values(array_filter($arguments, static fn (string $argument): bool => $argument !== '--all'));
+$leftOut = [];
 $runCount = 0;
 $testDurations = [];
 $testResults = [];
@@ -328,6 +344,10 @@ foreach ($declared as $class) {
         continue;
     }
 
+    if ($filters === [] && !$runAll && in_array($class, NOT_IN_DEFAULT_RUN, true)) {
+        $leftOut[] = $class;
+        continue;
+    }
     $testObject = new $class();
     if (!shouldRunClass($class, $filters)) {
         continue;
@@ -391,11 +411,15 @@ $historyStore->ensureSchema();
 $testClassifications = $historyStore->recordResults($testResults, date('c'));
 
 $prunedCount = 0;
-if ($filters === []) {
+// Only a complete run may forget tests that no longer exist.
+if ($filters === [] && ($runAll || $leftOut === [])) {
     $prunedCount = $historyStore->pruneStaleEntries(array_keys($testResults));
 }
 
 printRunSummary($runCount, $failures, $testDurations, $testClassifications, $prunedCount, STDOUT);
+if ($leftOut !== []) {
+    fwrite(STDOUT, 'Not in the default run (use --all): ' . implode(', ', $leftOut) . "\n");
+}
 
 if ($failures !== []) {
     exit(1);
