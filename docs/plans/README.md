@@ -30,6 +30,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Work tracking](work_tracking/work_tracking_step3_development_plan.md) — claims and status on ZenMemes `#work` threads via `status:` replies, `/work.txt` lookup, `./v3 work` CLI, Markdown export to a `work-export` branch, sweeps and post-back; in progress.
+
 - [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
