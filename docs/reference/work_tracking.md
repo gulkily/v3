@@ -21,7 +21,7 @@ The thread page shows the status under the title. `/tags/work` lists all items.
 ./v3 work claim <thread-id>       # refuses an item that is already active
 ```
 
-Starting work without searching first is how the same fix gets made twice. If nothing matches, create a `#work` thread for the item, then claim it.
+Starting work without searching first is how the same fix gets made twice. If nothing matches, create a `#work` thread for the item (`python3 public/frm.py --site … thread --tags work …`, or jot it in `todo.txt` and sweep), then claim it.
 
 When you finish, reference the item in the commit message with a trailer:
 
@@ -43,6 +43,20 @@ and set the status:
 ## Identity
 
 Writes go through `public/frm.py`, which creates or reuses a signing key. A new key's `status:` lines do not count until an operator approves the identity once; the CLI says so when this happens. Set `V3_WORK_FRM_STATE_DIR` to choose where frm.py keeps keys (GPG needs a fairly short path for its sockets), `V3_WORK_SITE` for another instance, and `V3_WORK_STATE_DIR` for the queue.
+
+## Sweeping the inbox
+
+```sh
+./v3 work sweep            # list what would be created
+./v3 work sweep --apply    # create the items
+```
+
+The sweep reads two inboxes:
+
+- lines added to `todo.txt` since work tracking was introduced (`--since REV` to change), including uncommitted edits. A line starts an item; deeper-indented lines right after it become its details. Section headings with `---` underlines and `x`-marked done lines are skipped.
+- threads tagged `#request` on the site (`/work.txt?kind=requests`).
+
+Each created item is a `#work` thread whose root post starts with a `Source:` line (`todo.txt#<hash>` or `thread:<id>`). The sweep skips sources that already have an item, so rerunning it creates nothing new; editing a `todo.txt` line changes its hash and yields a new item. `todo.txt` itself is never edited. Lines that existed before work tracking are left for the reconciliation follow-up.
 
 ## Repository export
 

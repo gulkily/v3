@@ -11,6 +11,7 @@ are queued in state/work/pending.jsonl and posted later by `./v3 work flush`.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import socket
@@ -66,7 +67,7 @@ def parse_items(text: str) -> list[dict[str, str]]:
             continue
         cells = line.split("\t")
         if len(cells) >= 6:
-            items.append(dict(zip(("status", "thread", "title", "by", "note", "path"), cells)))
+            items.append(dict(zip(("status", "thread", "title", "by", "note", "path", "source"), cells)))
     return items
 
 
@@ -80,18 +81,22 @@ def default_note() -> str:
     return " on ".join(part for part in (host, branch) if part)
 
 
-def post_status(site: str, thread: str, status: str, note: str, frm_args: list[str]) -> int:
-    body = f"status: {status}" + (f" - {note}" if note else "") + "\n"
+def run_frm(site: str, frm_command: list[str], body: str, frm_args: list[str]) -> int:
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as handle:
         handle.write(body)
         body_file = handle.name
     try:
         state_dir = os.environ.get("V3_WORK_FRM_STATE_DIR")
         global_args = ["--state-dir", state_dir] if state_dir else []
-        command = [sys.executable, str(FRM), "--site", site, *global_args, "reply", "--thread", thread, "--body-file", body_file, *frm_args]
+        command = [sys.executable, str(FRM), "--site", site, *global_args, *frm_command, "--body-file", body_file, *frm_args]
         return subprocess.run(command).returncode
     finally:
         os.unlink(body_file)
+
+
+def post_status(site: str, thread: str, status: str, note: str, frm_args: list[str]) -> int:
+    body = f"status: {status}" + (f" - {note}" if note else "") + "\n"
+    return run_frm(site, ["reply", "--thread", thread], body, frm_args)
 
 
 def queue(entry: dict[str, str]) -> None:
@@ -193,6 +198,132 @@ def cmd_flush(args: argparse.Namespace) -> int:
     return 0 if not remaining else 3
 
 
+TODO_FILE = "todo.txt"
+TODO_BASELINE_FILE = "docs/reference/work_tracking.md"
+
+
+def indent_of(line: str) -> int:
+    expanded = line.replace("    ", "\t")
+    return len(expanded) - len(expanded.lstrip("\t"))
+
+
+def todo_fingerprint(text: str) -> str:
+    normalized = " ".join(text.split()).lower()
+    return "todo.txt#" + hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:12]
+
+
+def todo_candidates(since: str) -> list[dict[str, str]]:
+    """Group lines added to todo.txt since a revision (working tree included).
+
+    An added line starts an item unless it is indented deeper than the line that
+    starts the current item and directly follows it, in which case it is a detail.
+    Underlines (---), the headings they underline, and `x`-marked done lines (with
+    their details) are skipped; the `x` stands in for one leading tab, as in todo.txt.
+    """
+    diff = subprocess.run(["git", "-C", str(ROOT), "diff", "--unified=0", "--no-color", since, "--", TODO_FILE],
+                          capture_output=True, text=True)
+    if diff.returncode != 0:
+        raise SystemExit(f"git diff {since} -- {TODO_FILE} failed: {diff.stderr.strip()}")
+    runs: list[list[str]] = []
+    for line in diff.stdout.splitlines():
+        if line.startswith("@@"):
+            runs.append([])
+        elif line.startswith("+") and not line.startswith("+++") and runs:
+            runs[-1].append(line[1:])
+    items: list[dict[str, str]] = []
+    for run in runs:
+        current: dict | None = None
+        skipping_level: int | None = None
+        for index, line in enumerate(run):
+            stripped = line.strip()
+            if not stripped or set(stripped) <= {"-", "="}:
+                current = None
+                continue
+            following = run[index + 1].strip() if index + 1 < len(run) else ""
+            if following and set(following) <= {"-", "="}:
+                current = None
+                continue
+            done = line == "x" or line.startswith(("x\t", "x "))
+            level = indent_of(line[1:]) if done else indent_of(line)
+            if skipping_level is not None:
+                if level > skipping_level:
+                    continue
+                skipping_level = None
+            if done:
+                skipping_level = level
+                current = None
+                continue
+            if current is not None and level > current["level"]:
+                current["details"].append(stripped)
+                continue
+            current = {"level": level, "title": stripped, "details": []}
+            items.append(current)
+    return [{"source": todo_fingerprint(item["title"]), "title": item["title"],
+             "body": "\n".join(f"- {detail}" for detail in item["details"])} for item in items]
+
+
+def todo_baseline() -> str:
+    result = subprocess.run(["git", "-C", str(ROOT), "log", "--diff-filter=A", "--format=%H", "-1", "--", TODO_BASELINE_FILE],
+                            capture_output=True, text=True)
+    revision = result.stdout.strip()
+    if not revision:
+        raise SystemExit(f"Could not find when {TODO_BASELINE_FILE} was added (shallow clone?); pass --since REV.")
+    return revision
+
+
+def request_candidates(site: str) -> list[dict[str, str]]:
+    url = site + "/work.txt?kind=requests"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            text = response.read().decode("utf-8")
+    except (urllib.error.URLError, socket.timeout, OSError) as error:
+        raise Unreachable(f"{url}: {error}") from error
+    candidates = []
+    for line in text.splitlines():
+        cells = line.split("\t")
+        if line.startswith("#") or len(cells) < 4:
+            continue
+        candidates.append({"source": "thread:" + cells[1], "title": cells[2],
+                           "body": f"Requested in {site}/threads/{cells[1]}"})
+    return candidates
+
+
+def cmd_sweep(args: argparse.Namespace) -> int:
+    site = site_url(args)
+    try:
+        items = parse_items(fetch_work(site, [], None))
+        candidates = request_candidates(site)
+    except Unreachable as error:
+        print(f"Site unreachable ({error}); nothing swept.", file=sys.stderr)
+        return 3
+    candidates = todo_candidates(args.since or todo_baseline()) + candidates
+    known = {item.get("source", "") for item in items} - {""}
+    new = []
+    for candidate in candidates:
+        if candidate["source"] not in known:
+            known.add(candidate["source"])
+            new.append(candidate)
+    if not new:
+        print("No new inbox entries.")
+        return 0
+    for candidate in new:
+        print(("Creating" if args.apply else "Would create") + f": {candidate['title'][:120]}  [{candidate['source']}]")
+    if not args.apply:
+        print(f"{len(new)} new item(s). Review, then rerun with --apply to create them.")
+        return 0
+    created = 0
+    for candidate in new:
+        body = f"Source: {candidate['source']}\n\n{candidate['title']}\n" + (f"\n{candidate['body']}\n" if candidate["body"] else "")
+        code = run_frm(site, ["thread", "--tags", "work", "--subject", candidate["title"][:120]], body, args.frm_arg)
+        if code != 0:
+            print(f"Stopped: creating '{candidate['title'][:60]}' was not confirmed. Follow frm.py's recovery steps; "
+                  "rerunning the sweep afterwards skips items that were created.", file=sys.stderr)
+            return code
+        created += 1
+    print(f"Created {created} item(s).")
+    return 0
+
+
 EXPORT_BRANCH = "work-export"
 EXPORT_FILE = "work.md"
 
@@ -273,6 +404,12 @@ def main(argv: list[str]) -> int:
 
     flush = sub.add_parser("flush", help="post claims and status changes queued while offline")
     flush.set_defaults(func=cmd_flush)
+
+    sweep = sub.add_parser("sweep", help="turn new todo.txt lines and #request threads into work items")
+    sweep.add_argument("--since", help=f"revision to diff {TODO_FILE} against (default: when work tracking was added)")
+    sweep.add_argument("--apply", action="store_true", help="create the items (default: only list them)")
+    sweep.add_argument("--frm-arg", action="append", default=[], help="extra argument passed to frm.py, repeatable")
+    sweep.set_defaults(func=cmd_sweep)
 
     export = sub.add_parser("export", help=f"commit the site's /work.md to the {EXPORT_BRANCH} branch")
     export.add_argument("--no-push", action="store_true", help="commit locally only")

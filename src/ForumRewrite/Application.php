@@ -1118,6 +1118,10 @@ final class Application
         }
 
         if ($path === '/work.txt') {
+            if (($query['kind'] ?? '') === 'requests') {
+                $this->sendText(\ForumRewrite\Work\WorkListText::requests(\ForumRewrite\Work\WorkItems::requests($this->routeServices()->pdo())), 200, ['Cache-Control: no-store']);
+                return;
+            }
             $words = preg_split('/\s+/', trim((string) ($query['q'] ?? ''))) ?: [];
             $status = trim((string) ($query['status'] ?? ''));
             $items = \ForumRewrite\Work\WorkItems::list($this->routeServices()->pdo(), $words, $status === '' ? null : $status);

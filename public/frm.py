@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Portable forum client. Python 3 standard library, curl and GPG; no packages."""
-FRM_VERSION = "2026-10-30"
+FRM_VERSION = "2026-11-04"
 
 import argparse
 import datetime
@@ -288,7 +288,7 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
                 if title:
                     lines += ['Subject: ' + title]
                 return '\n'.join(lines) + '\n\n' + content
-            canonical = record(post_id, 'general', body, subject, args.thread or '', args.parent or args.thread or '')
+            canonical = record(post_id, args.tags, body, subject, args.thread or '', args.parent or args.thread or '')
             bootstrap = record('bootstrap-' + prefix + '-' + secrets.token_hex(16), 'identity internal',
                                'Automatic account bootstrap anchor.\n', 'account bootstrap')
             payload = {'canonical_record': canonical, 'public_key': public, 'bootstrap_record': bootstrap}
@@ -311,6 +311,13 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
         raise error
 
 
+def board_tags(value):
+    value = ' '.join(value.split())
+    if not re.fullmatch(r'[a-z0-9-]+(?: [a-z0-9-]+)*', value) or 'identity' in value.split():
+        raise argparse.ArgumentTypeError('tags must be lowercase words (a-z, 0-9, -) separated by spaces, not identity')
+    return value
+
+
 def prepared_post(operation, meta, args, key, public, body):
     site = meta['Site']; author = meta['Identity-ID']
     status, text, _ = request(site, '/api/get_profile?' + urlencode({'profile_slug': author.replace(':', '-')}), timeout=args.timeout)
@@ -330,6 +337,7 @@ def prepared_post(operation, meta, args, key, public, body):
     fields = {'author_identity_id': author, 'body': body}
     if args.command == 'thread':
         fields['subject'] = args.subject
+        fields['board_tags'] = args.tags
     else:
         fields.update(thread_id=args.thread, parent_id=args.parent or args.thread)
     prepared = api(site, '/api/prepare_' + args.command, fields, args, operation)
@@ -476,6 +484,7 @@ def parser():
         q.add_argument('--subject', default='')
         q.add_argument('--thread')
         q.add_argument('--parent')
+        q.add_argument('--tags', default='general', type=board_tags, help='Space-separated lowercase board tags (default: general)')
         q.add_argument('--name', default='frm-agent', help='User ID for generated unencrypted local key (default: frm-agent)')
         q.add_argument('--signing-key', help='Reuse one existing primary secret key; GPG/pinentry handles its passphrase')
         q.add_argument('--gpg-home', help='Keyring for --signing-key; otherwise GNUPGHOME/default GPG home')

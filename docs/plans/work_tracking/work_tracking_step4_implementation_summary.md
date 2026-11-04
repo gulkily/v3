@@ -122,3 +122,28 @@ Status: Step 3 approved; implementation in progress on `feat/work-tracking`.
 - Estimate details: original scope as planned; no revision.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Inbox sweep
+
+**Original estimate: 0.15**
+**Revised estimate: 0.20** (2026-11-04, new understanding: frm.py could not tag threads)
+**Retrospective stage-work assessment: 0.20**
+
+- Changes:
+  - `./v3 work sweep [--since REV] [--apply]`: lists by default, creates with `--apply`. Inboxes:
+    - lines added to `todo.txt` since the commit that added `docs/reference/work_tracking.md` (or `--since`), working tree included; grouping by indentation, skipping `---` headings and `x`-marked done lines with their details;
+    - `#request` threads from new `GET /work.txt?kind=requests`.
+  - Created items are `#work` threads whose root starts with `Source: todo.txt#<sha256-12>` or `Source: thread:<id>`. `WorkItems` exposes each item's source; `/work.txt` gains a trailing `source` column. The sweep skips known sources, so no local imported-record file exists and `todo.txt` is never edited.
+  - `public/frm.py`: new `--tags` option for `thread`/`reply` (default `general`, validated as lowercase words, `identity` refused), sent as `Board-Tags` on the single-request API and `board_tags` on the prepared API; `FRM_VERSION` 2026-11-04. Needed because frm.py hard-coded `general`.
+  - Docs: sweep section in `work_tracking.md`, CLI reference, `--tags` in `agent_api.md`.
+- Verification:
+  - `php tests/run.php WorkItemsTest`: 6/6 passed (source column; `?kind=requests`).
+  - Grouping exercised on sample additions: nested details kept, heading/underline skipped, `x\t` done line and its `x\t\t` detail skipped, sibling open line under a section kept.
+  - Local server: `frm.py thread --tags work` created a `#work` thread; `--tags "Bad Tag"` rejected client-side. Sweep dry run listed one `todo.txt` item and one `#request` thread; `--apply` created both; rerun reported "No new inbox entries."
+  - `php tests/run.php FrmClientTest`: 1/9 passed both before and after the change (identical results); all 8 failures are GPG agent start failures in this sandbox, a baseline environment problem.
+- Notes:
+  - Editing a `todo.txt` line produces a new item (new hash); the old item remains for manual `dropped`.
+  - Pre-existing `todo.txt` lines are deliberately out of scope until the reconciliation cycle.
+- Estimate details: revised before dependent work once the frm.py tag limitation surfaced; scope unchanged.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

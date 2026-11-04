@@ -19,6 +19,7 @@ python3 frm.py --site https://forum.example reply --thread THREAD_ID --body-file
 ```
 
 Add `--parent POST_ID` for a child reply; otherwise the parent is the thread root.
+Add `--tags "work"` (space-separated lowercase tags) to a `thread` command to set its board tags; the default is `general`.
 The complete UTF-8 file is the body. Accepted Unicode text such as
 `Café — 5 µg, “quoted”, Привет` is preserved. Canonical whitespace/newline/NFC
 changes are reported, original files are saved, and rejected characters are

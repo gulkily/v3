@@ -36,7 +36,8 @@ final class WorkItemsTest
             $target = $root . '/' . $source->getSubPathName();
             $item->isDir() ? (is_dir($target) || mkdir($target, 0777, true)) : copy($item->getPathname(), $target);
         }
-        file_put_contents($root . '/records/posts/work-item-1.txt', "Post-ID: work-item-1\nCreated-At: 2026-11-03T00:00:00Z\nBoard-Tags: work\nSubject: Fix duplicate nav\n\nNav fix.\n");
+        file_put_contents($root . '/records/posts/work-item-1.txt', "Post-ID: work-item-1\nCreated-At: 2026-11-03T00:00:00Z\nBoard-Tags: work\nSubject: Fix duplicate nav\n\nSource: todo.txt#abc\n\nNav fix.\n");
+        file_put_contents($root . '/records/posts/request-1.txt', "Post-ID: request-1\nCreated-At: 2026-11-03T00:00:00Z\nBoard-Tags: request\nSubject: Please add dark mode\n\nDark mode?\n");
         file_put_contents($root . '/records/posts/plain-1.txt', "Post-ID: plain-1\nCreated-At: 2026-11-03T00:00:00Z\nBoard-Tags: general\nSubject: Plain\n\nPlain.\n");
         exec('cd ' . escapeshellarg($root) . ' && git init -q && git -c user.name=t -c user.email=t@example.invalid add . && git -c user.name=t -c user.email=t@example.invalid commit -qm init 2>&1');
         $app = new \ForumRewrite\Application(dirname(__DIR__), $root, sys_get_temp_dir() . '/forum-rewrite-work-db-' . bin2hex(random_bytes(6)) . '.sqlite3');
@@ -51,7 +52,10 @@ final class WorkItemsTest
         ob_start();
         $app->handle('GET', '/work.txt?q=nav&status=open');
         $text = (string) ob_get_clean();
-        assertSame(\ForumRewrite\Work\WorkListText::TEXT_HEADER . "\nopen\twork-item-1\tFix duplicate nav\t\t\t/threads/work-item-1\n", $text);
+        assertSame(\ForumRewrite\Work\WorkListText::TEXT_HEADER . "\nopen\twork-item-1\tFix duplicate nav\t\t\t/threads/work-item-1\ttodo.txt#abc\n", $text);
+        ob_start();
+        $app->handle('GET', '/work.txt?kind=requests');
+        assertSame("# request\tthread\ttitle\tpath\nrequest\trequest-1\tPlease add dark mode\t/threads/request-1\n", (string) ob_get_clean());
         ob_start();
         $app->handle('GET', '/work.txt?status=done');
         assertSame(\ForumRewrite\Work\WorkListText::TEXT_HEADER . "\n# no matching work items\n", (string) ob_get_clean());
@@ -122,8 +126,8 @@ final class WorkItemsTest
 
     public function testTextCellsStayOnOneLine(): void
     {
-        $text = \ForumRewrite\Work\WorkListText::text([['status' => 'active', 'stale' => true, 'thread_id' => 't1', 'title' => "Two\tparts\nhere", 'set_by' => 'claude', 'note' => 'n']]);
-        assertSame("active (stale)\tt1\tTwo parts here\tclaude\tn\t/threads/t1", explode("\n", $text)[1]);
+        $text = \ForumRewrite\Work\WorkListText::text([['status' => 'active', 'stale' => true, 'thread_id' => 't1', 'title' => "Two\tparts\nhere", 'set_by' => 'claude', 'note' => 'n', 'source' => 'thread:x']]);
+        assertSame("active (stale)\tt1\tTwo parts here\tclaude\tn\t/threads/t1\tthread:x", explode("\n", $text)[1]);
     }
 
     public function testMarkdownExportEscapesAndKeepsOneLinePerItem(): void

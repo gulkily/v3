@@ -44,6 +44,7 @@ and the bootstrap flow.
 ./v3 work [--site URL] claim <thread-id> [--note TEXT] [--force] [--frm-arg=ARG ...]
 ./v3 work [--site URL] status <thread-id> open|active|done|dropped [--note TEXT] [--frm-arg=ARG ...]
 ./v3 work flush
+./v3 work [--site URL] sweep [--since REV] [--apply] [--frm-arg=ARG ...]
 ./v3 work [--site URL] export [--no-push]
 ```
 
@@ -52,7 +53,8 @@ signed `status:` replies posted with `public/frm.py`. `claim` refuses an item th
 already active unless `--force` is given. Writes re-read `/work.txt` and report when a
 line has no effect (for example, an unapproved identity, exit 4). When the site is
 unreachable, writes are queued in `state/work/pending.jsonl` (exit 3) and `flush` posts
-them later. `export` commits the site's `/work.md` to the `work-export` branch
+them later. `sweep` lists (or with `--apply` creates) work items for new `todo.txt`
+lines and `#request` threads, skipping sources that already have an item. `export` commits the site's `/work.md` to the `work-export` branch
 without touching the current checkout (no commit when unchanged). Pass frm.py options with `--frm-arg=...`, one per argument. Environment:
 `V3_WORK_SITE` (default `https://zenmemes.com`), `V3_WORK_STATE_DIR`,
 `V3_WORK_FRM_STATE_DIR`. See [work tracking](work_tracking.md).

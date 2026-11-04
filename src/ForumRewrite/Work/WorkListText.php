@@ -11,7 +11,7 @@ namespace ForumRewrite\Work;
  */
 final class WorkListText
 {
-    public const TEXT_HEADER = "# status\tthread\ttitle\tby\tnote\tpath";
+    public const TEXT_HEADER = "# status\tthread\ttitle\tby\tnote\tpath\tsource";
 
     /** @param list<array<string, mixed>> $items */
     public static function text(array $items): string
@@ -25,6 +25,7 @@ final class WorkListText
                 self::cell($item['set_by']),
                 self::cell($item['note']),
                 '/threads/' . $item['thread_id'],
+                self::cell((string) ($item['source'] ?? '')),
             ]);
         }
         if ($items === []) {
@@ -56,6 +57,17 @@ final class WorkListText
         }
         if ($items === []) {
             $lines[] = '_No work items yet._';
+        }
+
+        return implode("\n", $lines) . "\n";
+    }
+
+    /** @param list<array{thread_id: string, title: string}> $requests */
+    public static function requests(array $requests): string
+    {
+        $lines = ["# request\tthread\ttitle\tpath"];
+        foreach ($requests as $request) {
+            $lines[] = implode("\t", ['request', $request['thread_id'], self::cell($request['title']), '/threads/' . $request['thread_id']]);
         }
 
         return implode("\n", $lines) . "\n";
