@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/smoke_tests
+
+2026-11-04T12:40:00Z — standing P2 enrollment, one-shot; [record](./smoke_tests/smoke_tests_one_shot.md#study-history). Builds on `v3/fast_default_tests_outliers` (PR #15). Scope v1: curated smoke set as the default run, `--smoke` plus named tests per task, full suite as a periodic maintainer run, process in AGENTS/CONTRIBUTING. Baseline `9459c7479c54f28a6d38c060a4a5293d9d6fb48c`; extended/debug enabled. Pristine intake missing; execution-entry projection 0.35, closeout retrospective 0.35, single exposed Claude rater. No accepted-count change.
+
 ## Cycle v3/preexisting_test_failures
 
 2026-11-04T12:30:00Z — standing P2 enrollment, one-shot; [record](./preexisting_test_failures/preexisting_test_failures_one_shot.md#study-history). Related `v3/fast_default_tests_outliers`. Scope v1: make the 15 tests failing on `main` pass without product changes. Baseline `8dac3f9cfda4a1e8833a3072ce47414b1ef21b73`; extended/debug enabled. Pristine intake missing because diagnosis preceded rating; execution-entry projection 0.30, single exposed Claude rater. No accepted-count change.
@@ -13,6 +17,8 @@
 2026-11-04T02:13:36Z — standing P2 enrollment; [canonical Step 1 checkpoint](./work_page_step1_solution_assessment.md#study-snapshots). Parent `v3/work_tracking`. Scope v1/B: dedicated `/work` page with status filters and search, thread status buttons for approved members, navigation entry and theme icons. Baseline `78d0261b1a729339dbeb8e042e7f463bf7c3ca78`; R1 hashes verified earlier the same session; extended/debug enabled. Pristine intake missing; Step 1 projection 0.55, alternatives A 0.30, C 0.20, single exposed Claude rater. Committed and pushed before approval so its work item can link to it; no approval, implementation or accepted-count change.
 
 ## Cycle v3/fast_default_tests
+
+2026-11-04T12:50:00Z — superseded before Approved Step 1; [closing note](./fast_default_tests_step1_solution_assessment.md#superseded--2026-11-04). The maintainer chose per-task smoke runs plus a periodic full suite, delivered by one-shot cycles `v3/fast_default_tests_outliers`, `v3/smoke_tests` and `v3/preexisting_test_failures`. No implementation, accepted outcome or retrospective score for this cycle; Step 1 projection 0.75 retained.
 
 2026-11-04T02:07:00Z — standing P2 enrollment; [canonical Step 1 checkpoint](./fast_default_tests_step1_solution_assessment.md#study-snapshots). Scope v1/A+B: fast default tier with skip-not-fail for unavailable tools, plus a parallel runner; full suite stays mandatory before merge. Baseline `ed5cbc07ddcf8810bfe35d23c4bd3d82f062e9ae`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because timing inspection preceded rating; Step 1 projection 0.75, alternatives A 0.35, B 0.60, C 0.85, D 0.50, single exposed Claude rater. Maintainer authorized committing and pushing Step 1 before approval; no approval, implementation or accepted-count change.
 
