@@ -1,9 +1,9 @@
 ID: PF-20261104-F27
 Title: Discover code repository URLs
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 An agent needs to know the code repository URL. Agent follow-ups identify gulkily/v3 and gulkily/pollyanna and suggest source/version/About links.
@@ -16,3 +16,4 @@ Sources:
 Notes:
 Repo fields, meta tags, related-project list and repo task labels are suggestions, not accepted API contracts. Separate from PF-20261030-B18’s incorrect revision semantics.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04: `/llms.txt` (new "Source code" section and More link) and the `/api/` index (second line) name the code repository from FORUM_SOURCE_REPOSITORY_URL, default https://github.com/gulkily/v3, on branch feat/source-repository-link; plan docs/plans/source_repository_link/source_repository_link_one_shot.md. Awaiting review and deployment. Not covered: the related gulkily/pollyanna repository, About-page or meta-tag links, and PF-20261030-B18 revision labels.

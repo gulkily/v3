@@ -1514,7 +1514,10 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return (new \ForumRewrite\Http\LlmsTxtRenderer($this->featureFlags()))->render();
+        return (new \ForumRewrite\Http\LlmsTxtRenderer(
+            $this->featureFlags(),
+            \ForumRewrite\Support\SourceRepository::fromProjectRoot($this->projectRoot),
+        ))->render();
     }
 
     /**
@@ -2368,6 +2371,7 @@ final class Application
             $this->fetchPost(...),
             $this->fetchProfileBySlug(...),
             $this->displayThreadTitle(...),
+            \ForumRewrite\Support\SourceRepository::fromProjectRoot($this->projectRoot),
         );
     }
 

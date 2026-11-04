@@ -874,7 +874,7 @@ fallbacks, but new writes use `LLM_*` names.
 - `view` / `--view` — print a redacted summary and update reminders without writing the file
 - `edit` / `--edit` — open an existing config in `$VISUAL`, `$EDITOR`, or `vi`; it does not print secrets or create a missing file
 - `update-llm` — accept the existing machine request on stdin, with a `values` object; blank API key means unchanged. The TUI also sends an internal `expected_revision` token so stale reviews fail without saving. Secrets never belong in command arguments.
-- `refresh-template` — rewrite the file with current comments/examples and every schema template setting, including `FORUM_STATUS_URL`, while preserving existing values
+- `refresh-template` — rewrite the file with current comments/examples and every schema template setting, including `FORUM_STATUS_URL` and `FORUM_SOURCE_REPOSITORY_URL` (the repository `/llms.txt` and `/api/` name for agents; empty omits it), while preserving existing values
 - `--force` — overwrite without the usual confirmation/skip behavior
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`
 - `--path=...` — write to a specific file instead of the default (`FORUM_SECRETS_PATH`, else `../forum-private/<checkout folder>/secrets.php` when it exists, else `../forum-private/secrets.php`, relative to this checkout)

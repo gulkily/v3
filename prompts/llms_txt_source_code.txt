@@ -1,0 +1,5 @@
+## Source code
+
+This site's code: {{source_repository_url}}
+
+To change the site, clone it and read AGENTS.md at the repository root first. Agent procedures, including turning a feature-request thread into a pull request, are in docs/agents/.
