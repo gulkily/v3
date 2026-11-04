@@ -110,7 +110,7 @@ Options A–C all start from the current command and trim it. Deleting one post 
 5. Delete only that thread's generated pages and mark the front page, Recent and its tag pages stale.
 6. Print one line per step with elapsed time, ending with `Deleted <id> in 0.2s`.
 
-Inspect is steps 1–2 alone. Full rebuild and the resume journal stay as recovery when any step fails, and `--repair-labels` keeps its current thorough path.
+Removing the post from Git history stays a separate, later `./v3 purge-history` run, out of scope here; step 3 keeps writing the same delete receipt that command reads. Inspect is steps 1–2 alone. Full rebuild and the resume journal stay as recovery when any step fails, and `--repair-labels` keeps its current thorough path.
 
 - Pros: work is proportional to one post, not to the site; inspect and delete both become a few file reads, one commit and one transaction; the post is gone when the command returns.
 - Cons: needs a new label-path index (a read-model schema change); the direct row deletion must match what a rebuild would produce, which needs a check against rebuild output.
