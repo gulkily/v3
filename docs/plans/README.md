@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
 
+[Source repository link one-shot](source_repository_link/source_repository_link_one_shot.md) — agents find the code repository from `/llms.txt` and the `/api/` index.
+
 [Human-readable format audit](human_readable_formats_checklist.md) — JSON conversion checklist and boundaries; [retraction text assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md).
 
 ## Production feedback

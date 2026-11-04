@@ -336,6 +336,12 @@ function renderPrivateConfigFile(array $config, array $existing, bool $includeCo
     $contents .= $renderLine('FORUM_STATUS_URL', $config['FORUM_STATUS_URL']);
 
     if ($includeComments) {
+        $contents .= "\n    // Source code repository named in /llms.txt and the /api/ index so agents can find it.\n"
+            . "    // Use an https:// URL; leave empty to omit it.\n";
+    }
+    $contents .= $renderLine('FORUM_SOURCE_REPOSITORY_URL', $config['FORUM_SOURCE_REPOSITORY_URL']);
+
+    if ($includeComments) {
         $contents .= "    // LLM provider used for post analysis and agent reply drafting.\n"
             . "    // Required, no default. Supported values: openai, openrouter, anthropic, stub, or a custom OpenAI-compatible gateway name.\n";
     }

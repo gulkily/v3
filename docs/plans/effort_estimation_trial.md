@@ -1,5 +1,11 @@
 # Effort estimation trial ledger
 
+## Cycle v3/source_repository_link
+
+2026-11-04T19:55:00Z — v3/source_repository_link closeout: [record](./source_repository_link/source_repository_link_one_shot.md#study-history). Delivered scope v1 in full on `feat/source-repository-link`; projection 0.12 reaffirmed at entry and closeout; retrospective scope assessment 0.12, single exposed Claude rater, not independent. Smoke set plus changed tests 442/442; full suite not run. Feedback item PF-20261104-F27 found after implementation and updated. Maintainer comfortable-fit and acceptance pending; no accepted-count change.
+
+2026-11-04T19:41:02Z — standing P2 enrollment, one-shot; [canonical record](./source_repository_link/source_repository_link_one_shot.md#study-history). Scope v1: `FORUM_SOURCE_REPOSITORY_URL` (default https://github.com/gulkily/v3) shown in `/llms.txt` and the `/api/` index so agents can find the code without crawling. Baseline `e83cb201ae45b900a8d260708081a02f920ccf32`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because source inspection preceded rating; intake projection 0.12, single exposed Claude rater. No accepted-count change.
+
 ## Cycle v3/delete_record_speed
 
 2026-11-04T17:55:00Z — v3/delete_record_speed Step 3 handoff: user explicitly approved Step 2. [Plan/checkpoint](./delete_record_speed_step3_development_plan.md#study-checkpoint) five stages: status lines and host timing, label-path index (schema 47→48), single-index-read commit, incremental removal with targeted invalidation, host acceptance. Whole-cycle 0.60 → 0.65 (about a dozen git processes per delete). Stage-work originals 0.10/0.18/0.12/0.20/0.08, non-additive. Same v2/D/baseline/R1/P2, single exposed Claude rater. Await Approved Step 3.

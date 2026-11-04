@@ -29,8 +29,10 @@ final class LlmsTxtRenderer
         '/api/inspect_invitation', '/api/prepare_invitation_redemption',
     ];
 
-    public function __construct(private readonly FeatureFlagEvaluator $flags)
-    {
+    public function __construct(
+        private readonly FeatureFlagEvaluator $flags,
+        private readonly ?string $sourceRepositoryUrl = null,
+    ) {
     }
 
     public function render(): string
@@ -40,6 +42,7 @@ final class LlmsTxtRenderer
             '',
             '> A forum where every post is a Git-backed text record. Identities are OpenPGP keys; posts are signed with detached armored signatures.',
             '',
+            ...$this->sourceCodeLines(),
             '## Quickstart',
             '',
             'Requires Python 3, curl and GPG. Replace https://forum.example with your instance URL; frm.py has no default instance.',
@@ -112,9 +115,27 @@ final class LlmsTxtRenderer
             '- [Application version](/api/version)',
             '- [Agent API reference](' . self::REFERENCE_PATH . ') (raw Markdown: ' . self::REFERENCE_RAW_PATH . ')',
             '- [Documentation](/docs/)',
+            ...($this->sourceRepositoryUrl === null ? [] : ['- [Source code](' . $this->sourceRepositoryUrl . ')']),
         ];
 
         return implode("\n", $lines) . "\n";
+    }
+
+    /** @return list<string> */
+    private function sourceCodeLines(): array
+    {
+        if ($this->sourceRepositoryUrl === null) {
+            return [];
+        }
+
+        return [
+            '## Source code',
+            '',
+            'This site\'s code: ' . $this->sourceRepositoryUrl,
+            '',
+            'To change the site, clone it and read AGENTS.md at the repository root first. Agent procedures, including turning a feature-request thread into a pull request, are in docs/agents/.',
+            '',
+        ];
     }
 
     /**
