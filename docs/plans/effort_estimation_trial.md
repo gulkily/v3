@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/work_page
+
+2026-11-04T02:13:36Z — standing P2 enrollment; [canonical Step 1 checkpoint](./work_page_step1_solution_assessment.md#study-snapshots). Parent `v3/work_tracking`. Scope v1/B: dedicated `/work` page with status filters and search, thread status buttons for approved members, navigation entry and theme icons. Baseline `78d0261b1a729339dbeb8e042e7f463bf7c3ca78`; R1 hashes verified earlier the same session; extended/debug enabled. Pristine intake missing; Step 1 projection 0.55, alternatives A 0.30, C 0.20, single exposed Claude rater. Committed and pushed before approval so its work item can link to it; no approval, implementation or accepted-count change.
+
 ## Cycle v3/fast_default_tests
 
 2026-11-04T02:07:00Z — standing P2 enrollment; [canonical Step 1 checkpoint](./fast_default_tests_step1_solution_assessment.md#study-snapshots). Scope v1/A+B: fast default tier with skip-not-fail for unavailable tools, plus a parallel runner; full suite stays mandatory before merge. Baseline `ed5cbc07ddcf8810bfe35d23c4bd3d82f062e9ae`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because timing inspection preceded rating; Step 1 projection 0.75, alternatives A 0.35, B 0.60, C 0.85, D 0.50, single exposed Claude rater. Maintainer authorized committing and pushing Step 1 before approval; no approval, implementation or accepted-count change.
