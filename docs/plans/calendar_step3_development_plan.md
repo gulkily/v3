@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/calendar`; [host ledger](./effort_estimat
 
 Extended estimates: enabled
 
-Status: Step 2 v3 approved; Step 3 proposed; implementation unapproved. Steps 1–3, the debug log and the ledger were committed to `main` on 2026-11-04 at the maintainer's explicit request, before Step 3 approval; the mockup file stays uncommitted. This does not approve Step 3 or implementation.
+Status: Step 2 v3 approved; Step 3 proposed; implementation unapproved. Repository update after the merge of `main` on 2026-11-04: work tracking was removed upstream; Stage 4 now follows the title directive precedent, Stage 2 replays feedback item PF-20261104-B10, and no `Work:` trailer applies. Stage scopes and estimates are unchanged. Steps 1–3, the debug log and the ledger were committed to `main` on 2026-11-04 at the maintainer's explicit request, before Step 3 approval; the mockup file stays uncommitted. This does not approve Step 3 or implementation.
 
 **Cycle estimate: 0.90**
 
@@ -23,7 +23,7 @@ Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event 
 ## Key Risks
 
 - **High risk:** format and schema change. Impact: a wrong header breaks parsing of every post; a missed read site shows no span. Early validation: Stage 1 confirms how the current parser treats an unknown root header (older releases must keep reading new records as single-day events) and Stage 3 greps every `event_time` site to mirror it. Mitigation: optional header, additive column, prior-version rebuild test, byte-identical rendering of old records asserted.
-- **High risk:** directive authority. Impact: a member confirming their own offer corrupts the grid. Early validation: Stage 4 test that a non-operator's and a quoted line change nothing, before any page uses the state. Mitigation: operator check from `ApprovalPolicy::isActiveOperator` plus approved, unretired and verified attribution, as work items check.
+- **High risk:** directive authority. Impact: a member confirming their own offer corrupts the grid. Early validation: Stage 4 test that a non-operator's and a quoted line change nothing, before any page uses the state. Mitigation: operator check as `TitleDirectiveAuthority` makes it (`RetractionAuthority::currentOperator`) plus approved, unretired and verified attribution of the line's author.
 - Day-state correctness across spans and month boundaries. Impact: wrong empty/open/confirmed marks. Early validation: Stage 5 fixtures with overlapping spans, a span crossing a month edge, and a confirmed plus declined pair. Mitigation: one derivation function with table-driven tests.
 - Grid density and overflow. Impact: unreadable cells on phones. Early validation: Stage 8 layout checks with a five-event day. Mitigation: cap entries per cell with a link to the day page; table scrolls in its container.
 - Composer placed outside `/compose/thread`. Impact: signing, drafts or Outbox scripts assume the compose page. Early validation: Stage 6 posts from a day page with JavaScript on and off. Mitigation: render the day page with the same scripts and hidden fields the compose page uses.
@@ -47,7 +47,7 @@ Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event 
 - Goal: the composer and both write paths accept an optional last day.
 - Dependencies: Stage 1.
 - Expected changes: `LocalWriteService` reads, normalizes and gates `event_end_date` in the plain and prepared thread flows, refuses end before start, and emits the header after `Event-Date`; the composer's Event disclosure gains an Until date field and the disclosure summary includes it; `browser_signing.js` sends the field; `ComposeAndAccountKeyController` prefills it from the query and on error re-render; agent API field documentation.
-- Verification approach: write tests for span, single day, end before start, flag off; fetch `/compose/thread?event_date=…&event_end_date=…` and confirm both inputs are prefilled; signed prepare path carries the field.
+- Verification approach: write tests for span, single day, end before start, flag off; fetch `/compose/thread?event_date=…&event_end_date=…` and confirm both inputs are prefilled; signed prepare path carries the field; replay feedback item PF-20261104-B10 (the Event disclosure cannot be closed again) in the browser before and after adding the field, and record the result in the item; fix it only if the cause is in the lines this stage changes, otherwise leave the item as replayed.
 - Estimate details: driver: four touch points per field, as event time needed; uncertainty: low.
 - Risks or open questions: none beyond Stage 1.
 - Canonical components/API contracts touched: `/compose/thread`, `/api/prepare_thread`, `/api/create_thread` input fields, shared composer partial.
@@ -70,11 +70,11 @@ Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event 
 
 - Goal: an event thread has one derived state set by operator `event:` lines, shown on the thread page.
 - Dependencies: none (Stage 3 for the span, not for the state).
-- Expected changes: `EventStatusDirective::extract(string $body): ?array` for `event: confirmed|declined` with the quoted-line rule; `EventStatus::forThreads(PDO, list<string>): array` reading root and replies, latest valid line from an active operator with verified attribution, approved and unretired; `ThreadAndPostPageController` passes the state for threads with an event date; `thread.php` shows an `Event:` line beside the work status pattern.
+- Expected changes: `EventStatusDirective::extract(string $body): ?array` for `event: confirmed|declined` with the quoted-line rule; `EventStatus::forThreads(PDO, list<string>): array` reading root and replies, latest valid line from an active operator with verified attribution, approved and unretired; `ThreadAndPostPageController` passes the state for threads with an event date; `thread.php` shows an `Event:` line under the title.
 - Verification approach: tests for latest wins, root line, non-operator ignored, quoted ignored, retracted post ignored, thread page markup.
-- Estimate details: driver: sibling of `WorkItems` with a stricter author check; uncertainty: operator check needs the repository root alongside the PDO.
+- Estimate details: driver: sibling of `TitleDirective` with read-time derivation and a stricter author check; uncertainty: operator check needs the repository root alongside the PDO.
 - Risks or open questions: see Key Risks (authority).
-- Canonical components/API contracts touched: thread page template, `ApprovalPolicy::isActiveOperator`.
+- Canonical components/API contracts touched: thread page template, `TitleDirective` scanning rules, `RetractionAuthority::currentOperator`.
 
 ## Stage 5
 
@@ -118,7 +118,7 @@ Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event 
 
 - Goal: release verification and production replay.
 - Dependencies: Stages 1–7.
-- Expected changes: no product changes expected; browser layout checks for the grid and day page at phone and desktop sizes across text and icon themes, with a five-event day; JavaScript-off pass; `./v3 rebuild` from the prior schema version on a copy of real data; deploy to the maintainer's instance; replay the invite-link entry with an unapproved then approved host; record results in the Step 4 summary and the UI verification notes; commit with the `Work:` trailer.
+- Expected changes: no product changes expected; browser layout checks for the grid and day page at phone and desktop sizes across text and icon themes, with a five-event day; JavaScript-off pass; `./v3 rebuild` from the prior schema version on a copy of real data; deploy to the maintainer's instance; replay the invite-link entry with an unapproved then approved host; record results in the Step 4 summary and the UI verification notes; no feedback item matches the calendar itself, so commits carry a `Feedback:` trailer only for PF-20261104-B10 if Stage 2 fixed it.
 - Verification approach: Step 2 success criteria checked one by one; smoke set plus the tests added in Stages 1–6; the full suite is not run by the agent.
 - Estimate details: driver: theme and device matrix; uncertainty: production timing.
 - Risks or open questions: see Key Risks (density).
@@ -126,7 +126,7 @@ Mockup: [calendar_mockups.html](./calendar_mockups.html). Precedent: the [event 
 
 ## Concepts Touched
 
-[Shared composer](../concepts/shared_composer.md) used unchanged (Stage 6 placement); [work item status](../concepts/work_item_status.md) pattern reused (Stage 4); [tag browsing](../concepts/tag_browsing.md) membership query reused (Stage 5); [read model rebuild](../concepts/read_model_rebuild.md) changed (Stage 3); [viewer session](../concepts/viewer_session.md) and [invitation lifecycle](../concepts/invitation_lifecycle.md) used unchanged (Stage 8 replay). Created in Stage 7: *calendar* and *post event metadata*.
+[Shared composer](../concepts/shared_composer.md) used unchanged (Stage 6 placement); [thread title](../concepts/thread_title.md) directive pattern reused (Stage 4); [tag browsing](../concepts/tag_browsing.md) membership query reused (Stage 5); [read model rebuild](../concepts/read_model_rebuild.md) changed (Stage 3); [viewer session](../concepts/viewer_session.md) and [invitation lifecycle](../concepts/invitation_lifecycle.md) used unchanged (Stage 8 replay). Created in Stage 7: *calendar* and *post event metadata*.
 
 ## Study Checkpoint
 

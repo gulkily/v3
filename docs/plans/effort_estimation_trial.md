@@ -2,6 +2,8 @@
 
 ## Cycle v3/calendar
 
+2026-11-04T20:30:00Z — v3/calendar: after merging `main` (work tracking removed upstream), references in Steps 1–3 repaired to the thread title directive precedent; Stage 2 adds a replay of feedback item PF-20261104-B10. Scope v3/A and 0.90 unchanged; no approval or implementation.
+
 2026-11-04T18:20:00Z — v3/calendar: maintainer explicitly requested merging Steps 1–3, the debug log and this ledger into `main` before Step 3 approval; mockup excluded. No approval, implementation or accepted-count change; 0.90 unchanged.
 
 2026-11-04T18:00:00Z — v3/calendar Step 3 handoff: Step 2 v3 approved. [Plan/checkpoint](./calendar_step3_development_plan.md#study-checkpoint) reaffirms whole-cycle **0.90**, same v3/A/original baseline/R1/P2, single exposed Claude rater. Eight stage-work originals 0.08/0.12/0.12/0.12/0.20/0.14/0.08/0.12, non-additive: end-date header, write path and composer, read model and event block, event state directive, grid pages, day page, docs and concepts, release verification with production replay. Await Approved Step 3; planning uncommitted.
@@ -17,6 +19,7 @@
 2026-11-04T14:30:00Z — v3/calendar Step 2 handoff: user explicitly approved Step 1 Option A. [Description/checkpoint](./calendar_step2_feature_description.md#study-checkpoint) defines claims as `calendar` event threads through the shared composer, operator-only `claim:` reply directive, derived day state over a 60-day window, approved-viewer gating of both pages, event-support flag dependency. Whole-cycle 0.65 reaffirmed; same v1/A/original baseline/R1/P2, single exposed Claude rater. Navigation entry, notifications and write-time exclusivity out of scope. Await Approved Step 2; no implementation or accepted-count change; planning uncommitted.
 
 2026-11-04T14:10:00Z — standing P2 enrollment; [canonical Step 1 checkpoint](./calendar_step1_solution_assessment.md#study-snapshots). No parent. Scope v1/A: `/calendar` month grid for the next 60 days, per-day claim page posting an event thread through the shared composer, host approval by reply directive, approved-member access, theme/phone verification and docs. Baseline `f41f656936e740809242a5d8e1c646068afddc28`; R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because source inspection preceded rating; Step 1 projection 0.65, alternatives B 0.45, C 1.00, single exposed Claude rater. Work item thread-20261104140509-96d1a44620809fe0e869364bdb42ca53 created and claim posted (pending identity approval). No approval, implementation or accepted-count change; planning uncommitted.
+
 ## Cycle v3/source_repository_link
 
 2026-11-04T19:55:00Z — v3/source_repository_link closeout: [record](./source_repository_link/source_repository_link_one_shot.md#study-history). Delivered scope v1 in full on `feat/source-repository-link`; projection 0.12 reaffirmed at entry and closeout; retrospective scope assessment 0.12, single exposed Claude rater, not independent. Smoke set plus changed tests 442/442; full suite not run. Feedback item PF-20261104-F27 found after implementation and updated. Maintainer comfortable-fit and acceptance pending; no accepted-count change.
