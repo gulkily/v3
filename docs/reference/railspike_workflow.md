@@ -275,6 +275,12 @@ Completion: Sync the reviewed tag through the ordinary CLI; compare every instal
 Risks: Wrong source or lost local patches would change workflow behavior. Verified ancestry from installed 583e69da and reviewed upstream changes before sync; compare the installed tree before and after.
 Verification plan: Run ./v3 test --smoke RailspikeSyncCommandTest RailspikeWorkflowTest, shell syntax, CLI help, local instruction links and git diff --check. Full suite will not be run. UI, deployment and migration checks are inapplicable because this upgrade changes instructions and CLI constants only.
 Recovery: Fetch failures leave working files intact and can be retried. For a merge conflict, inspect and resolve deliberately or use git merge --abort. The subtree merge first parent preserves the previous installation.
-Status: Reviewed; implementation and verification pending on maintenance/railspike-v0.6.1-beta.1. No push or deployment authorized.
+Changes: Shared implementation standards now apply across staged and one-shot work. One-shot work requires a planning commit before implementation. The release also adds writing guidance and a conditional Step 1 context-reset reminder. Existing cycle approvals, study history and host policies were preserved.
+Outcome: Installed the reviewed tag through ./v3 railspike sync --ref=v0.6.1-beta.1 with a clean merge. Updated source provenance, CLI default/help, reference and affected assertion. Actual dependency changes match the reviewed inventory.
+Verification: Passed ./v3 test --smoke RailspikeSyncCommandTest RailspikeWorkflowTest: 443 tests passed, zero failed. Full suite was not run. Log: /tmp/railspike-0.6.1-beta.1-tests.log.
+Integrity: All 20 upstream files match the tag byte-for-byte; only the host installation record is extra. All 119 local link paths in changed upstream documents resolve; anchors and remote links were not checked.
+CLI checks: Passed bash -n v3 scripts/railspike_sync.sh, actual sync help, tests/missing_php_startup_test.sh and git diff --check. Plain ./v3 railspike sync confirmed the installed pin and created no commit. Focused checks cover fetch failure, conflict recovery, source rejection and ordinary-clone availability.
+Final review: Inspected upstream and host diffs; changes remain within the recorded scope without duplicated components or extra dependencies. UI, deployment and migration checks remain inapplicable. No reported environment failure required replay.
+Status: Complete locally on maintenance/railspike-v0.6.1-beta.1. Subtree merge: 25fba7f7; source record: 773ba117; host pin: e99f60f2. This verification record is committed separately. No merge to main, push or deployment performed.
 
 *— Codex · 2026-11-04 UTC*
