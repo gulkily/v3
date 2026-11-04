@@ -1,5 +1,7 @@
 > **Feature plan:** [Step 1](./work_page_step1_solution_assessment.md) · [Step 2](./work_page_step2_feature_description.md) · [Step 3](./work_page_step3_development_plan.md) · [Step 4](./work_page_step4_implementation_summary.md)
 
+> **Superseded 2026-11-04.** The maintainer parked this page and removed all work-tracking code, routes, the `./v3 work` CLI, tests and reference docs to restart from the ZenMemes feedback data. Restart: [feedback work restart](feedback_work_restart/feedback_work_restart_step1_solution_assessment.md). This record is kept as history.
+
 Debug mode: enabled
 
 Effort study: `railspike-effort` / `v3/work_page`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment. Parent: `v3/work_tracking`.

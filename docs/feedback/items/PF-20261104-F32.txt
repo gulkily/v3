@@ -1,0 +1,17 @@
+ID: PF-20261104-F32
+Title: Recent options and details match Activity
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Recent should show the same options as Activity and expand into the same data. Forte is a reported workaround.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103042857-61d5cc3c
+- https://zenmemes.com/posts/reply-20261103042906-fbf5eff5
+
+Notes:
+Distinct from creating the simple recent page in PF-20261021-F04; reconcile any overlap during scope review.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -10,6 +10,8 @@ You can change your mind later: a post's ··· menu (beside Retract) offers **S
 
 The signed record keeps your original text either way. Only the page display changes, and an operator can switch Markdown display off for the whole site.
 
+In both formats, hashtags such as `#meta` and `#needs-review` link to their tag pages. Tags use lowercase letters, numbers and single internal hyphens. Code examples, existing links and URL fragments stay intact.
+
 ## What renders
 
 | You type | You get |

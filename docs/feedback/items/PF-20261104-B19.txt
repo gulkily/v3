@@ -1,0 +1,17 @@
+ID: PF-20261104-B19
+Title: Fast scoring dependency label confusing
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Automatic fast scoring — inactive - requires Fast scoring” reads like it requires itself. Make the dependency understandable.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103055359-7f811650
+- https://zenmemes.com/posts/reply-20261103064525-66ac171d
+
+Notes:
+Agent explains two separate flags; rename/link options are suggestions, not chosen fixes.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

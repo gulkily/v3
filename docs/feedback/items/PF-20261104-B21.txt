@@ -1,0 +1,16 @@
+ID: PF-20261104-B21
+Title: Empty space below textarea
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Why is there so much empty space under the textarea? Screenshot supplied in source.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103062457-9db1df7a
+
+Notes:
+Screenshot unavailable; affected page/theme not established.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

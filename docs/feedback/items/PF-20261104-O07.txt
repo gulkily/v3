@@ -1,0 +1,17 @@
+ID: PF-20261104-O07
+Title: Polish supplied image
+Kind: other
+Workflow: declined
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Can an agent please polish this image and make it extra nice” with attached image.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103085726-d32332e1
+
+Notes:
+Content task distinct from a site feature. Attachment unavailable, no image edits performed.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04 tidy (maintainer request): declined as a content chore, not software work tracked here. Reopen if it should be tracked.

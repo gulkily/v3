@@ -1,0 +1,16 @@
+ID: PF-20261104-B32
+Title: Expanded desktop reply stays offscreen
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+On a desktop thread taller than the viewport, scroll to the reply form and click the textarea: most expanded controls remain below the viewport. Scroll enough to show the form, Post button and controls.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104142545-c6eb8255
+
+Notes:
+Distinct from PF-20261021-B02’s fixed textarea edges and PF-20261030-B22’s phone keyboard issue. Reported flow not replayed.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -7,7 +7,7 @@ README. Plans belong in this project's `docs/plans/`, outside the vendored tree.
 
 ## Provenance
 
-- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.5.0-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
+- Source: [rlspk/railspike](https://github.com/rlspk/railspike), release tags, pinned at `v0.6.1-beta.1` (migrated from gulkily/railspike `master`; see docs/railspike/RAILSPIKE_SOURCE.md).
 - Initial reviewed revision: `95c435b82bf66c25bde834cbedfed8c54c361863`.
 - The full upstream tree and license are retained. The historical local effort-estimation patch described below is now included upstream; only the host installation record differs from the release.
 - Subtree squash commits record later upstream revisions in `git-subtree-split`.
@@ -44,7 +44,7 @@ Before a future subtree update, inspect and preserve this patch in branch histor
 ## Update commands
 
 ```bash
-./v3 railspike sync                      # pinned v0.5.0-beta.1: no-op when installed
+./v3 railspike sync                      # pinned v0.6.1-beta.1: no-op when installed
 ./v3 railspike sync --ref=<newer-tag>    # deliberate upgrade
 ./v3 railspike sync --repository-root=/path/to/another/migrated/repository
 ```
@@ -256,3 +256,31 @@ shell syntax, actual sync help and whitespace checks passed. Actual dependency
 delta matches the inventory above; no added packages or runtime components.
 Full application/UI/deployment checks are inapplicable to this instruction update.
 Log: /tmp/railspike-beta-upgrade-tests.log.
+
+
+## Upgrade — 2026-11-04
+
+Request: please upgrade railspike to 0.6.1-beta.1
+Authorization: This request explicitly approves the existing Railspike dependency upgrade to v0.6.1-beta.1.
+Workflow: Direct maintenance; no new Railspike cycle or effort-study enrollment.
+Feedback: Searched docs/feedback/items/; no matching upgrade item found.
+Source: https://github.com/rlspk/railspike.git
+Target: v0.6.1-beta.1; commit 5d54e065fa5f9f6e2555977034b5073456dd104c.
+Inventory: Existing MIT-licensed instruction dependency through the docs/railspike Git subtree; 20 upstream files, 181681 bytes. Fifteen files change, including one new shared-standards guide; 115 insertions and 46 deletions. Zero added packages, transitive dependencies, manifests, locks or runtime components.
+Alternative: Keep v0.5.0-beta.1 and omit the requested upgrade.
+Maintenance: Continue deliberate tag review, subtree sync and provenance checks.
+Reuse: Use scripts/railspike_sync.sh through ./v3 railspike sync. Extend the existing source record, CLI pin/help, docs/reference/v3_cli.md and tests/RailspikeSyncCommandTest.php. Keep this existing upgrade log as the implementation record.
+Scope: Vendored instructions, installation provenance, CLI default/help, affected test expectation and host references. Existing cycle records and host policies remain unchanged.
+Completion: Sync the reviewed tag through the ordinary CLI; compare every installed product file to upstream; update the default pin; verify repeat sync is a no-op.
+Risks: Wrong source or lost local patches would change workflow behavior. Verified ancestry from installed 583e69da and reviewed upstream changes before sync; compare the installed tree before and after.
+Verification plan: Run ./v3 test --smoke RailspikeSyncCommandTest RailspikeWorkflowTest, shell syntax, CLI help, local instruction links and git diff --check. Full suite will not be run. UI, deployment and migration checks are inapplicable because this upgrade changes instructions and CLI constants only.
+Recovery: Fetch failures leave working files intact and can be retried. For a merge conflict, inspect and resolve deliberately or use git merge --abort. The subtree merge first parent preserves the previous installation.
+Changes: Shared implementation standards now apply across staged and one-shot work. One-shot work requires a planning commit before implementation. The release also adds writing guidance and a conditional Step 1 context-reset reminder. Existing cycle approvals, study history and host policies were preserved.
+Outcome: Installed the reviewed tag through ./v3 railspike sync --ref=v0.6.1-beta.1 with a clean merge. Updated source provenance, CLI default/help, reference and affected assertion. Actual dependency changes match the reviewed inventory.
+Verification: Passed ./v3 test --smoke RailspikeSyncCommandTest RailspikeWorkflowTest: 443 tests passed, zero failed. Full suite was not run. Log: /tmp/railspike-0.6.1-beta.1-tests.log.
+Integrity: All 20 upstream files match the tag byte-for-byte; only the host installation record is extra. All 119 local link paths in changed upstream documents resolve; anchors and remote links were not checked.
+CLI checks: Passed bash -n v3 scripts/railspike_sync.sh, actual sync help, tests/missing_php_startup_test.sh and git diff --check. Plain ./v3 railspike sync confirmed the installed pin and created no commit. Focused checks cover fetch failure, conflict recovery, source rejection and ordinary-clone availability.
+Final review: Inspected upstream and host diffs; changes remain within the recorded scope without duplicated components or extra dependencies. UI, deployment and migration checks remain inapplicable. No reported environment failure required replay.
+Status: Complete locally on maintenance/railspike-v0.6.1-beta.1. Subtree merge: 25fba7f7; source record: 773ba117; host pin: e99f60f2. This verification record is committed separately. No merge to main, push or deployment performed.
+
+*— Codex · 2026-11-04 UTC*

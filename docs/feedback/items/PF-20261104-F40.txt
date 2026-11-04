@@ -1,0 +1,17 @@
+ID: PF-20261104-F40
+Title: Thread summary field brainstorm
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+In addition to title, there should be a summary field. #brainstorm
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103051750-7f138dfb
+- https://zenmemes.com/posts/thread-20261103051823-6a0ec599
+
+Notes:
+Two duplicate posts, one outcome; no record-format design implied.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

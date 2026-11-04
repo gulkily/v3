@@ -1,0 +1,17 @@
+ID: PF-20261104-F17
+Title: Expand and copy fingerprints
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Keep shortened fingerprints by default, with a way to expand to the full value and immediately copy it; facilitate copying wherever fingerprints appear, including Storage and privacy.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103040413-a008e701
+- https://zenmemes.com/posts/thread-20261103082445-475cead1
+
+Notes:
+Different outcome from PF-20261030-F08, which only trims first-level display; PF-20261030-B01’s iPhone Copy failure is not re-reported here.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

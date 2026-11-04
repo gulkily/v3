@@ -2,7 +2,7 @@
 
 Use this format to select an actionable feedback item with high user benefit and low total effort. Keep the triage short enough to review at a glance; link supporting investigation rather than reproducing it.
 
-For migrated requests, start with the [production feedback register](../plans/production_feedback_register.md) and [management guide](production_feedback_management.md). Keep current workflow state, delivery evidence and next actions there; separate triage documents retain investigation/estimate provenance. A triage recommendation is not approval. All future Railspike cycles follow the project’s standing P2 study enrollment; ordinary one-shot triage does not itself create a cycle.
+Start with the [feedback index](../feedback/README.md) and [management guide](production_feedback_management.md); new feedback reaches the items through [feedback triage](../agents/feedback_triage.md). Keep current workflow state, delivery evidence and next action in the item; use this format only for choosing what to work on next.
 
 ## Process
 

@@ -1,0 +1,16 @@
+ID: PF-20261104-F43
+Title: Accurate root-approval reason
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Seed-Reason: initial approved user” is no longer accurate for root approval; improve it.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103054630-5031c5c8
+
+Notes:
+No replacement record semantics chosen.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

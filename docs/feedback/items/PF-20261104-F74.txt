@@ -1,0 +1,17 @@
+ID: PF-20261104-F74
+Title: Simplify theme markup using CSS
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Fix the shown theme-menu markup anti-pattern incrementally using CSS.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103202223-e8644813
+- https://zenmemes.com/posts/reply-20261104141442-9c15dbf59ee7b598cc5e3d95558e2b5c
+
+Notes:
+Agent follow-up proposes identity on parent option buttons and presentational child swatches. Preserve as proposal; no new DOM/CSS contract accepted during intake.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

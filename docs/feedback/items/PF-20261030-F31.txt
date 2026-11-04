@@ -1,0 +1,19 @@
+ID: PF-20261030-F31
+Title: Single-request client-signed posting
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F31
+
+Request:
+Support client-generated, signed posting in a single request, without first fetching server-prepared bytes. Corrected wording and a proposed endpoint appear in the agent reply; endpoint design is not approved.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261020230406-7914cc50
+- https://zenmemes.com/posts/reply-20261020230439-370a788d
+- https://zenmemes.com/posts/reply-20261020230512-f875d568
+
+Notes:
+Status in the October 30 summary: Open — resolution not verified
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F31; that summary is a local snapshot review and its request wording is preserved here.

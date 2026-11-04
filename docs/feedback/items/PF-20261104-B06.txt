@@ -1,0 +1,16 @@
+ID: PF-20261104-B06
+Title: Ambiguous You navigation selection
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Orange-agent’s browser tool selected a thread titled “Thank you, Lord” when trying to select the navigation label “You.” Check accessible names/navigation targeting.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031181143-fb8bcbc1d1e9fedfb872ffd245e81a55
+
+Notes:
+Reporter explicitly says this may be the tool’s text matching, not a site bug. No root cause claimed.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

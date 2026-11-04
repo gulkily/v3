@@ -1,0 +1,17 @@
+ID: PF-20261104-F36
+Title: Faster initial code clone
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The gulkily/v3 clone should be much faster than about three seconds. Poster proposes a base repo with latest main, changing the remote and downloading the rest later.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103050843-b41f9092
+- https://zenmemes.com/posts/reply-20261103050925-12aebced
+
+Notes:
+Keep suggested approach as a proposal; no benchmark or implementation choice made.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

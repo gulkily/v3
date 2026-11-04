@@ -1,0 +1,86 @@
+# delete_record_speed — Railspike debug log
+
+## 2026-11-04T17:30:18Z — Step 1
+
+**Necessary/useful instructions**
+
+- `docs/workflow/step1_solution_assessment.md`, "Original Query first … do not summarize or omit anything": kept the maintainer's two follow-up messages (status lines, <1s) together with the pasted terminal output, which carries the measured 17s that frames the problem. Retain.
+- `RAILSPIKE.md`, Experimental Effort Estimation, frozen-source verification: hashing the three R1 files took one command and confirmed the yardstick. Retain.
+- `step1_solution_assessment.md`, "Recommendation, including vertical-slice viability": forced a concrete acceptance shape (under 1s plus read model identical to a full rebuild). Retain.
+
+**Redundant/unnecessary instructions**
+
+- `RAILSPIKE.md`, Checkpoints, "Intake … before detailed implementation inspection": in a cycle that starts from a live debugging conversation, inspection always precedes rating, so the intake checkpoint repeatedly records "missing". Suggest: allow intake and Step 1 handoff to be one snapshot when inspection preceded enrollment. Clarify.
+
+**Inapplicable instructions**
+
+- One-shot checkpoint rules: staged cycle.
+
+**Uncertain assessments**
+
+- `step1_solution_assessment.md`, "≤1 page": the added "Where the time goes" section pushes past one page but carries the evidence the options rest on. Unclear whether that section belongs in Step 1 or Step 2.
+
+## 2026-11-04T17:40:00Z — Step 1 revision 1
+
+**Necessary/useful instructions**
+
+- `step1_solution_assessment.md`, Review and revision ("revise the current assessment … record the revised direction separately"): kept Options A–C and the original recommendation intact while adding Option D. Retain.
+
+**Redundant/unnecessary instructions**
+
+- No supported findings.
+
+**Uncertain assessments**
+
+- Step 1's option framing nudged toward trimming the existing command rather than asking what the minimal operation is. Unclear whether an explicit "start from the smallest correct operation" prompt for performance cycles would help or just add text.
+
+## 2026-11-04T17:45:00Z — Step 2
+
+**Necessary/useful instructions**
+
+- `step2_feature_description.md`, Known user or environment ("evidence from a different supported platform does not satisfy this condition"): made the release condition the qdb shared host, which matters because the slowness is small-file I/O on that filesystem. Retain.
+- `step2_feature_description.md`, Shared component inventory: surfaced `StaticArtifactInvalidator::invalidateBoardThread` and the rebuild progress reporter, both reusable, which shrank the planned new work. Retain.
+
+**Redundant/unnecessary instructions**
+
+- `step2_feature_description.md`, "User stories" for an operator-only CLI change: four stories restate the core requirements with one actor. Suggest allowing a single story when there is one role. Clarify.
+
+**Uncertain assessments**
+
+- The "Avoid … database schema" guardrail versus naming a needed index as a risk: kept to "needs a schema change" without design. Unclear whether that is the intended level.
+
+## 2026-11-04T17:55:00Z — Step 3
+
+**Necessary/useful instructions**
+
+- `step3_development_plan_do.md`, "include a stage that replays each reported failure as acceptance evidence": made Stage 5 the host run with pasted `time` output, not a local pass. Retain.
+- `step3_development_plan_do.md`, "Resolve each material risk before dependent work begins": put host timing in Stage 1 ahead of the commit rewrite, so an unreachable target is caught before most of the work. Retain.
+
+**Redundant/unnecessary instructions**
+
+- `step3_development_plan_after.md` item 6 and `step3_development_plan_before.md` ("keep Step 1–3 planning docs uncommitted"): conflicts with this host's stop hook, which requires committing and pushing at every turn end. Suggest: let host policy override the uncommitted rule, with a status note. Clarify.
+
+**Uncertain assessments**
+
+- "≤1 page" for Step 3 with five fully specified stages in extended mode: not achievable at this stage count. Unclear whether the limit should scale with stages.
+
+## 2026-11-04 — Step 4
+
+**Necessary/useful instructions**
+
+- `step4_implementation_do.md`, Stage Boundary Protocol (verify, update summary, commit per stage): kept five reviewable commits and made the Stage 4 estimate revision visible before the work it covered. Retain.
+- `RAILSPIKE.md`, extended estimates, "append a material revision before dependent work": prompted telling the maintainer about the Stage 4 size change mid-implementation instead of only at closeout. Retain.
+- `AGENTS.md` / `CONTRIBUTING.md` schema-change rules: the prior-version startup test caught that the CLI path needed its own fallback, since CLI commands do not go through application startup. Retain.
+
+**Redundant/unnecessary instructions**
+
+- `step4_implementation_do.md`, "Stages should be about <=1 hour": Stage 4 was larger than that from the start, and the rule surfaced only after the revision. Suggest checking stage size again at Step 4 entry against what inspection has since shown. Clarify.
+
+**Inapplicable instructions**
+
+- Documentation-only checks: application change.
+
+**Uncertain assessments**
+
+- The plan said Stage 3 waits for host timings. It went ahead because the change reduces Git work whatever the numbers are, with the stop condition moved to host acceptance. Unclear whether that counts as a deviation that needed approval.
+- Host acceptance cannot be done from the workspace; Stage 5's retrospective stays pending, which the instructions allow but leave the stage formally open.

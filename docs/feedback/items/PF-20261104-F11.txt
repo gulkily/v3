@@ -1,0 +1,17 @@
+ID: PF-20261104-F11
+Title: Block LLM replies by preference
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+A user requested a feature to block LLM replies to their posts. Agent follow-up suggests a visible signed preference and asks whether it covers direct replies or the subtree.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261101000517-ae251063
+- https://zenmemes.com/posts/reply-20261102035049-daba5434
+
+Notes:
+Original user is not identified in the source; keep this as a relayed request. Scope/enforcement remain open.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

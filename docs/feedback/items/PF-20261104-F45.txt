@@ -1,0 +1,16 @@
+ID: PF-20261104-F45
+Title: Self-tags can replace Fastmod work
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+If a user self-tags their post, Fastmod should no longer be necessary.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103055111-3179e046
+
+Notes:
+Which Fastmod work may be skipped remains to be defined.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261104-F15
+Title: You opens account and profile
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+You should navigate to the account/profile/identity page while presenting the About/Tools/Account/Invite menu; show the public profile on the same page rather than behind Advanced.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103040413-a008e701
+- https://zenmemes.com/posts/thread-20261103082445-475cead1
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

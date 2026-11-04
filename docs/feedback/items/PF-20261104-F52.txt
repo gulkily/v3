@@ -1,0 +1,16 @@
+ID: PF-20261104-F52
+Title: Support features with encrypted API keys
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“Support this feature” payment would be an API key encrypted to the server/instance public key.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261103062223-cece053b
+
+Notes:
+Exploratory funding mechanism; no custody or billing implementation authorized.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

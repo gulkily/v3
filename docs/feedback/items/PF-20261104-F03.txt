@@ -1,0 +1,15 @@
+ID: PF-20261104-F03
+Title: Explain System State READY
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The READY message on System State is missing an explanation of how it is calculated.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031054833-3fc349dd
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

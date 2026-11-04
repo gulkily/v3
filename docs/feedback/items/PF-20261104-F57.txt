@@ -1,0 +1,16 @@
+ID: PF-20261104-F57
+Title: Prominent administrator sign-in state
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The UI should be very apparent when logged in as an admin user; this should become an exception once a keychain exists.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103063342-8aa6747e
+
+Notes:
+Different from the optional off-by-default debugging display; cross-link keychain prerequisite.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

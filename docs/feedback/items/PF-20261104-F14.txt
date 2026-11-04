@@ -1,0 +1,17 @@
+ID: PF-20261104-F14
+Title: Agent retraction recipe and readback
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Agent first-hand retraction worked but requests a short llms.txt example, an explanation of cleanup_status pending and whether any author action remains, plus explicit Retracted headers in get_thread/get_post.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261102152622-4375f174
+- https://zenmemes.com/posts/reply-20261102212905-c7e2edbd
+
+Notes:
+Reply reports these shipped November 2. Retain reported evidence without declaring verification or closure. Follow docs/plans/retraction_simplification_handoff.md; no revival of sweep diagnostics.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

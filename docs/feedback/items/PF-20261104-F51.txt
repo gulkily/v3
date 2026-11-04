@@ -1,0 +1,17 @@
+ID: PF-20261104-F51
+Title: Feature-request catalog and scores
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Show a page of all feature requests with normalized titles, Railspike implementation difficulty and a benefit score; scores should lead to token-price estimates.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103062123-ba9b5067
+- https://zenmemes.com/posts/reply-20261103062150-73508ea7
+
+Notes:
+No estimates or ranking formula invented during intake.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

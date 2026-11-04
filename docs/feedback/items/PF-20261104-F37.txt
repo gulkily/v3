@@ -1,0 +1,19 @@
+ID: PF-20261104-F37
+Title: Local HTTP log readability
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The log from ./v3 start should show response sizes. It also needs to be shorter; the pasted duplicate requests and long query strings are “ugly.”
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103051045-0ab6b18b
+- https://zenmemes.com/posts/thread-20261103051137-3dfda177
+- https://zenmemes.com/posts/reply-20261103051153-40f00be0
+
+Notes:
+Shorter log: does not establish that each request is unnecessary; choose log presentation versus request reduction during scoping.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04 tidy (maintainer request): merged PF-20261104-F38 (shorter log) into this item.

@@ -1,0 +1,17 @@
+ID: PF-20261104-F13
+Title: Modern theme with icons
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“It would be nice to have a modern theme with icons.” Account wishlist later asks for Whitehot’s looks with Word97’s icons and usability/accessibility features.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261102043613-8f3a85f1
+- https://zenmemes.com/posts/thread-20261103040413-a008e701
+- https://zenmemes.com/posts/thread-20261103082445-475cead1
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

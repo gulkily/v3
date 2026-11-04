@@ -39,13 +39,14 @@ final class ApiTextController
         private readonly \Closure $fetchPost,
         private readonly \Closure $fetchProfileBySlug,
         private readonly \Closure $displayThreadTitle,
+        private readonly ?string $sourceRepositoryUrl = null,
     ) {
     }
 
     public function index(): void
     {
         $this->routeServices->sendText(
-            ApiRouteCatalog::renderIndex()
+            ApiRouteCatalog::renderIndex($this->sourceRepositoryUrl)
             . "\nPrivate conversation lists require an approved authenticated identity; responses are no-store.\n"
             . "Success: {status: ok, conversations: [...], page_cursor: ..., next_cursor: ...}. Each row contains counterpart and latest message metadata plus encrypted_envelope; decrypt and verify locally.\n"
             . "Pages contain at most 25 counterparts ordered by latest activity (insertion order breaks timestamp ties). Pass next_cursor unchanged to continue; null means complete. page_cursor replays the current page.\n"

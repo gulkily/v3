@@ -1,0 +1,16 @@
+ID: PF-20261104-B30
+Title: GPG helper previously working now fails
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+frm.py now fails starting gpg-agent and generating a key, though it used to work. Investigate the supplied error and recovery.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104044955-74de71bb
+
+Notes:
+Source also shows “exit 0” after an unconfirmed reply; exact wrapper context is unclear. Do not infer server failure. Not replayed in reported environment.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,17 @@
+ID: PF-20261104-B23
+Title: Sticker navigation wraps and selector clips
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Sticker theme: navigation bar wraps and the theme-selector circle is cut off on the right.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103063709-ed510d7f
+- https://zenmemes.com/posts/reply-20261103063813-b3001ea4
+
+Notes:
+Reply identifies Sticker. Screenshot unavailable but explicit symptoms retained.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

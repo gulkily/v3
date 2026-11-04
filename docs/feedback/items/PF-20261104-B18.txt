@@ -1,0 +1,16 @@
+ID: PF-20261104-B18
+Title: Draft-empty message font
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“No local drafts or queued actions on this device.” should also be sans-serif.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103051927-6a0a94e5
+
+Notes:
+Adjacent Word97 context suggests theme scope, but source itself does not name it; confirm before implementation.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

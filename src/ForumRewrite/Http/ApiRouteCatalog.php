@@ -146,9 +146,13 @@ final class ApiRouteCatalog
         )));
     }
 
-    public static function renderIndex(): string
+    public static function renderIndex(?string $sourceRepositoryUrl = null): string
     {
-        $lines = ['Plain-text API. Agents start at /llms.txt.', 'Access:'];
+        $lines = ['Plain-text API. Agents start at /llms.txt.'];
+        if ($sourceRepositoryUrl !== null) {
+            $lines[] = 'Source code: ' . $sourceRepositoryUrl;
+        }
+        $lines[] = 'Access:';
         foreach (self::ACCESS_LEGEND as $access => $meaning) {
             $lines[] = '  ' . $access . ': ' . $meaning;
         }

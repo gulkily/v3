@@ -1,0 +1,16 @@
+ID: PF-20261104-F67
+Title: Readable retraction placeholders
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+The “Deleted post / This post was retracted by its author / Local cleanup queued” message is not easily interpreted by end users.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103171555-df9abb66
+
+Notes:
+Simplify within the current retraction handoff; no new diagnostics subsystem requested.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

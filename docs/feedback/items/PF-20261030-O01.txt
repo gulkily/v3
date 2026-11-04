@@ -1,0 +1,20 @@
+ID: PF-20261030-O01
+Title: Developer and workflow research questions
+Kind: other
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/O01
+
+Request:
+Developer/workflow questions: assess developer harness readiness; non-destructive Railspike user studies; how to improve verification and avoid poor agent UI decisions. These are research/process requests without defined product changes.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261017011535-2dd9cbf7
+- https://zenmemes.com/posts/thread-20261019020054-2e8dc483
+- https://zenmemes.com/posts/reply-20261030041339-e5e039f4
+- https://zenmemes.com/posts/reply-20261030041424-130ee4a2
+
+Notes:
+Status in the October 30 summary: Not estimated
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row O01; that summary is a local snapshot review and its request wording is preserved here.

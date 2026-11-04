@@ -30,8 +30,8 @@ Resolve uncertainty when there are multiple viable approaches, complex trade-off
 - Sign beneath each authored/revised contribution using [agent attribution](../../RAILSPIKE.md#agent-attribution); include model/settings only when verified and preserve prior signatures.
 
 ## Guardrails
-- Keep content at a high level; no implementation details, code, or verbose prose
-- Favor bullets over paragraphs for fast comparisons
+- Keep content at a high level; no implementation details or code
+- Follow the [writing style](../../RAILSPIKE.md#writing-style) for every paragraph and bullet
 
 Record incidental requests and their disposition under [Enhancement Requests](../../RAILSPIKE.md#enhancement-requests) in this artifact; revisions do not approve advancement.
 
@@ -41,4 +41,8 @@ Treat the options as material for discussion. The user may choose one, combine c
 ## Next
 Before the completed-step handoff, restore mode state and, if enabled, save the full diagnostic report under [Railspike Debug Mode](../../RAILSPIKE.md#railspike-debug-mode) and include only one short debug line linking to the saved log in the handoff, before approval.
 
-Share the document for review and stop. Do not create Step 2 until the user explicitly responds with “Approved Step 1.” When approval arrives, continue with `docs/workflow/step2_feature_description.md`.
+After writing Step 1, only if the conversation already contained discussion before the current Step 1 task began, share the Step 1 link and include this exact reminder once per cycle, before requesting approval. Otherwise omit both the link and reminder. Discussion needed to draft the current Step 1 does not itself trigger them:
+
+> Reminder: Now is a good opportunity to /new or /clear.
+
+The reminder is advisory; do not require a reset or repeat it on revisions or resumption. Request “Approved Step 1” and stop. Do not create Step 2 until the user explicitly responds with “Approved Step 1.” When approval arrives, continue with `docs/workflow/step2_feature_description.md`.

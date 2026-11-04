@@ -1,0 +1,16 @@
+ID: PF-20261104-F35
+Title: Clone from instance root URL
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+git clone https://zenmemes.com/ . should work; currently it reports repository not found.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103050806-d82bac75
+
+Notes:
+Which repository that URL should expose needs definition; do not assume code versus content.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

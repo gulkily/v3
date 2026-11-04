@@ -1,0 +1,19 @@
+ID: PF-20261104-F78
+Title: Clickable hashtags in post bodies
+Kind: feature
+Workflow: blocked
+Created: 2026-11-04
+Evidence: locally-verified
+
+Request:
+Make tags written inside a post link to the page for that tag.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261104182608-cc730e8b
+
+Done when:
+Hashtags in plain-text and Markdown post bodies and replies open their tag pages. Code and existing links remain intact. Offline reading uses the same tag destinations. Verify production after deployment.
+
+Notes:
+2026-11-04: Implementation and GitHub PR authorized by the user. No matching existing feedback item found. Plan and verification: docs/plans/inline_hashtag_links.txt.
+2026-11-04: Implemented and locally verified with focused PHP/Node tests and Brave navigation checks. Awaiting PR merge, deployment and production acceptance. The macOS smoke run has Linux-process and case-sensitive-filesystem limitations; representative failures reproduced on unchanged base 937dde4. See the implementation record for commands and results.

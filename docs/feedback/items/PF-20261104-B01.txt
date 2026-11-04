@@ -1,0 +1,15 @@
+ID: PF-20261104-B01
+Title: Fastmod invalid response
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Fastmod reports “invalid response” for thread-20261031051903-0e8e7df4. Investigate the reported failure; no cause established.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031052150-3517f1ef
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,15 @@
+ID: PF-20261104-F76
+Title: Ignore leading hashtag-only title line
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+If a post’s first line is only hashtags, ignore it for title generation and use the next line only if one is available.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104135046-e0e15307
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

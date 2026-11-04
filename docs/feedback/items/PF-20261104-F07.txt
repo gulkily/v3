@@ -1,0 +1,16 @@
+ID: PF-20261104-F07
+Title: Lockdown and unapproved-user messaging
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Unless an instance is in lockdown mode, a new account should be able to message someone. Design lockdown mode and add a feature flag allowing unapproved users to message.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031072924-a9c17eea
+
+Notes:
+Treat these as one access-policy outcome; exact lockdown scope remains undefined.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,32 @@
+ID: PF-20261021-B04
+Title: Slow reply feedback
+Kind: bug
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Aliases: 2026-10-21/B04, 2026-10-30/B12
+
+Request:
+Investigate and reduce the delay before a new thread or reply produces a visible result on the live site; new-post navigation should feel instant and replies are reported to take about two seconds, sometimes longer.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021175854-431cbb06
+- https://zenmemes.com/posts/thread-20261104140839-bfb524b2
+- https://zenmemes.com/posts/reply-20261104140852-cd06ce9d
+- https://zenmemes.com/posts/reply-20261104140859-5a17daae
+- https://zenmemes.com/posts/reply-20261104140920-a644f710
+- https://zenmemes.com/posts/reply-20261104140927-cdaa78af
+- https://zenmemes.com/posts/reply-20261104141320-575317de
+
+Done when:
+Measure the delay, improve the identified stage, and verify prompt feedback plus one accepted reply and retry.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: Reply preparation, signing, finalization, and navigation are separate stages; the live bottleneck is unknown. Source (public/assets/browser_signing.js).
+Next action: Measure the live delay by stage and reconcile historical latency reports before choosing a slice.
+Historical estimate 1.5 came from October 21 feedback-only triage for reply-only scope; cleared from the current header on 2026-11-04 because accepted scope now includes new threads. Recommended workflow: Railspike.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-b04
+October 30 summary row B12: Live reply submission takes many seconds before a visible response. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+2026-11-04 intake: Fresh contrary latency report: new-post navigation should feel instant and replies take about two seconds, sometimes longer. Precomputed IDs are the poster’s suggested approach, not an accepted diagnosis. Accepted scope now includes new threads as well as replies; the inherited current Estimate was cleared, with its original value retained above. Proposal: docs/feedback/triage/2026-11-04_proposals.txt

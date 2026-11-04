@@ -1,0 +1,16 @@
+ID: PF-20261104-F77
+Title: Align and copy pictured values
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Make the pictured values a very light table for alignment and easy triple-click selection, or make them select and auto-copy.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104140758-1a6f3fbd
+
+Notes:
+Attachment unavailable: target values/page unknown. Do not invent a field or redesign scope.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

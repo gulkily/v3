@@ -1,0 +1,19 @@
+ID: PF-20261030-F57
+Title: Author and signature in get_thread
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-30
+Evidence: unknown
+Aliases: 2026-10-30/F57
+
+Request:
+Show author and signature information in get_thread.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261020202947-173cc1bc
+- https://zenmemes.com/posts/thread-20261020212954-a3fe3602
+- https://zenmemes.com/posts/reply-20261030174136-491336b7
+
+Notes:
+Status in the October 30 summary: October 30 source reports author still absent; not independently reproduced
+Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F57; that summary is a local snapshot review and its request wording is preserved here.

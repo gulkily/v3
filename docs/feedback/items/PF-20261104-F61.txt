@@ -1,0 +1,16 @@
+ID: PF-20261104-F61
+Title: Tags in title field workflow
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+“I keep wanting to type tags into the title field.” Explore making that composing habit work sensibly.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103065817-424818e0
+
+Notes:
+No automatic parsing, tag policy or retitling behavior chosen.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

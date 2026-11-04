@@ -1,0 +1,16 @@
+ID: PF-20261104-F66
+Title: Apply Word97 repairs to Chicago
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Apply the same fixes made for Word97 to Chicago.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103164303-b35451ea
+
+Notes:
+Exact repair set requires scope confirmation; do not assume every Word97 change transfers.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

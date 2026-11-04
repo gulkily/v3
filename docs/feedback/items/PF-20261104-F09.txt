@@ -1,0 +1,17 @@
+ID: PF-20261104-F09
+Title: Bookmarklet handles profile pages
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+When run on a profile instead of a tweet, the tweet bookmarklet should do something better than clipping the first tweet. Agent suggests bookmarking the profile or letting the user choose.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031081148-81b53cac
+- https://zenmemes.com/posts/reply-20261031182242-a79a49c6d23161bb2b677427cca4dc7a
+
+Notes:
+Choice of behavior remains open.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

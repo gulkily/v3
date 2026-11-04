@@ -1,0 +1,17 @@
+ID: PF-20261104-F05
+Title: Console color selector
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Make the LCD-style color selector available on Console, with appropriate colors.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261031071035-3160f440
+- https://zenmemes.com/posts/reply-20261031074208-32c64b1d
+
+Notes:
+Reply reports “done in 8b72318a”; retain as reported implementation only. No local or production verification here; new item still untriaged/unknown.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

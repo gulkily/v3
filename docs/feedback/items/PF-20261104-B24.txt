@@ -1,0 +1,15 @@
+ID: PF-20261104-B24
+Title: Posting preview indentation differs
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+New post → paste indented paragraphs → Post: temporary local preview shows indentation that disappears in the final page. Preview should render exactly as the finished post.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103072027-6294a35b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

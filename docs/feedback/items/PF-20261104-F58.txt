@@ -1,0 +1,16 @@
+ID: PF-20261104-F58
+Title: Dismiss pending submission recovery
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Allow closing the shown recovery state without retrying, especially when a submission is already accepted; detect that accepted state automatically too.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103064041-ed9c32bd
+
+Notes:
+Screenshot unavailable; exact control is not identified. Preserve recovery intent without inventing an Outbox-specific diagnosis.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

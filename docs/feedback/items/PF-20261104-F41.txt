@@ -1,0 +1,16 @@
+ID: PF-20261104-F41
+Title: Understandable deployment decisions
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Make /tools/deploy accessible enough for a nontechnical user to make reasonable choices.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103051910-7773ed5a
+
+Notes:
+Exploratory “impossible task” wording; specific information design remains open.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

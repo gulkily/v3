@@ -16,6 +16,8 @@ final class LlmsTxtRenderer
 {
     public const REFERENCE_PATH = '/docs/reference/agent_api.md';
     public const REFERENCE_RAW_PATH = '/docs/_download/docs/reference/agent_api.md';
+    /** Agent-facing prose for the source code section; {{source_repository_url}} is filled in. */
+    public const SOURCE_CODE_PROMPT_PATH = 'prompts/llms_txt_source_code.txt';
 
     /** Routes an agent needs for the signed flow, listed under "Routes". */
     private const AGENT_ROUTES = [
@@ -29,8 +31,10 @@ final class LlmsTxtRenderer
         '/api/inspect_invitation', '/api/prepare_invitation_redemption',
     ];
 
-    public function __construct(private readonly FeatureFlagEvaluator $flags)
-    {
+    public function __construct(
+        private readonly FeatureFlagEvaluator $flags,
+        private readonly ?string $sourceRepositoryUrl = null,
+    ) {
     }
 
     public function render(): string
@@ -40,6 +44,7 @@ final class LlmsTxtRenderer
             '',
             '> A forum where every post is a Git-backed text record. Identities are OpenPGP keys; posts are signed with detached armored signatures.',
             '',
+            ...$this->sourceCodeLines(),
             '## Quickstart',
             '',
             'Requires Python 3, curl and GPG. Replace https://forum.example with your instance URL; frm.py has no default instance.',
@@ -112,9 +117,25 @@ final class LlmsTxtRenderer
             '- [Application version](/api/version)',
             '- [Agent API reference](' . self::REFERENCE_PATH . ') (raw Markdown: ' . self::REFERENCE_RAW_PATH . ')',
             '- [Documentation](/docs/)',
+            ...($this->sourceRepositoryUrl === null ? [] : ['- [Source code](' . $this->sourceRepositoryUrl . ')']),
         ];
 
         return implode("\n", $lines) . "\n";
+    }
+
+    /** @return list<string> */
+    private function sourceCodeLines(): array
+    {
+        if ($this->sourceRepositoryUrl === null) {
+            return [];
+        }
+        $template = @file_get_contents(dirname(__DIR__, 3) . '/' . self::SOURCE_CODE_PROMPT_PATH);
+        if ($template === false) {
+            return [];
+        }
+        $text = str_replace('{{source_repository_url}}', $this->sourceRepositoryUrl, rtrim($template));
+
+        return [...explode("\n", $text), ''];
     }
 
     /**

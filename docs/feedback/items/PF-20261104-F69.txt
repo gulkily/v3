@@ -1,0 +1,16 @@
+ID: PF-20261104-F69
+Title: Scannable Recent summaries
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Make Recent more scannable by putting the first one or two paragraphs in the summary.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103185300-870542f7
+
+Notes:
+Existing PF-20261021-F04 requests the simple recent page, not this specific excerpt behavior; PF-20261030-F03 concerns a different agent conversation-view proposal.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

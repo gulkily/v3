@@ -1,0 +1,19 @@
+ID: PF-20261104-B11
+Title: Composer keystrokes trigger profile requests
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-04
+Evidence: unknown
+
+Request:
+Every composer keystroke results in /api/get_profile requests, creating an unintended tracking signal.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261103040424-820e5db7
+- https://zenmemes.com/posts/reply-20261103064512-656b8010
+- https://zenmemes.com/posts/reply-20261103082601-2aa69105
+- https://zenmemes.com/posts/reply-20261103083727-56c877e6
+
+Notes:
+Agent follow-up traces it to other tabs’ storage listeners; PR #10, a deployment report and an agent browser replay report zero per-keystroke requests after deployment. Same follow-up reports remaining focus/visibility profile lookups. These are reported evidence only; do not mark verified here or silently add throttling as a requirement.
+Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.

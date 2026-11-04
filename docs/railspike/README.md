@@ -6,7 +6,7 @@
 
 Railspike is a set of Markdown instructions your agent follows. In staged mode, the agent writes requirements and a plan into your repo, then stops until you approve each one. After that it works on a branch, one stage at a time, verifying and committing each stage with a record of what changed.
 
-For a bounded fix you explicitly authorize upfront, [one-shot mode](#one-shot-work-with-a-development-record) keeps comparable evidence in one evolving record without intermediate planning approvals.
+For a bounded fix you explicitly authorize upfront, [one-shot mode](#one-shot-work-with-a-development-record) keeps comparable evidence in one evolving record without intermediate planning approvals. Both modes follow the same [implementation standards](docs/workflow/implementation_standards.md), including existing-component reuse, recovery, and verification.
 
 Use it with Claude Code, Codex, GitHub Copilot, or another agent that can read your project files. Railspike has no CLI or runtime dependencies. Installation copies reviewed files into your project by default; Git submodules are available on explicit request.
 
@@ -44,7 +44,7 @@ One-shot cycles use the same enrollment policy with [one-shot checkpoints](docs/
 
 For new enrolled effort-study cycles, extended estimates are enabled by default: each Step 1 option has a whole-cycle estimate, and each planned stage has a separate work estimate retained through Step 4 revisions and retrospective assessment. Enrollment remains optional. Ask “Disable extended effort estimates for this cycle,” or set a host policy disabling them for future cycles, to opt out. Existing cycle settings survive upgrades; older cycles without a recorded setting retain their prior opt-in behavior. Ask “Enable extended effort estimates for this cycle” to activate one prospectively, preserving missing historical estimates. Stage estimates are relative judgments, not hours or values to sum into a cycle total. See the [effort guide](docs/effort-estimation.md#extended-estimates) for precedence, recovery, uncertainty and history; the capability remains provisional.
 
-Estimates appear on their own bold lines beneath option/stage headings, with a distinct cycle estimate near the top of the plan. Details and uncertainty stay separate; no approximation sign is needed. Agents also [sign their plan contributions](RAILSPIKE.md#agent-attribution) with their name and date, adding model and settings when verified and preserving earlier authorship on revisions.
+Estimates appear on their own bold lines beneath option/stage headings, with a distinct cycle estimate near the top of the plan. Details and uncertainty stay separate; no approximation sign is needed. Plans follow a short [writing style](RAILSPIKE.md#writing-style): one idea per sentence, real file names, no invented abstractions. Agents also [sign their plan contributions](RAILSPIKE.md#agent-attribution) with their name and date, adding model and settings when verified and preserving earlier authorship on revisions.
 
 ## Quick start
 
@@ -93,12 +93,12 @@ For a bounded task with a clear outcome and proportionate verification, explicit
 ```text
 Use docs/railspike/RAILSPIKE.md to implement the typo correction in the
 settings help text as a one-shot. Change only that text and the cycle records.
-Verify the rendered wording. Leave changes uncommitted for review.
+Verify the rendered wording.
 ```
 
 The agent records your request, actual authorization, scope, approach and checks before implementation in `docs/plans/{feature}/{feature}_one_shot.md`. It then appends decisions, changes, verification and outcome. A question or plan reference does not grant execution permission. If the scope grows, the agent seeks renewed authorization or switches to staged planning with linked history. After interruption, it restores the record's authority and next permitted action; unresolved authority blocks dependent work.
 
-One-shot mode uses a feature branch and normally one completion commit containing the changes and record, with additional meaningful commits allowed. There is no separate planning commit, and an explicit no-commit request takes precedence. Technical completion, commit status and publication are separate. Existing host study/debug policies apply; one-shot selection does not automatically enable a study or debug mode. See the [complete one-shot workflow and template](docs/workflow/one_shot.md).
+One-shot mode creates a feature branch, writes and commits the plan before implementation, then implements and verifies the work and commits it together with the updated plan. The plan and record are the same file. Normally this is two commits, with additional meaningful commits allowed; there are no intermediate planning approvals. An explicit no-commit request takes precedence, but the branch and written plan still come first. Technical completion, commit status and publication are separate. Existing host study/debug policies apply; one-shot selection does not automatically enable a study or debug mode. See the [complete one-shot workflow and template](docs/workflow/one_shot.md).
 
 Small ordinary tasks can still proceed outside Railspike. An existing staged cycle remains staged unless you explicitly authorize a mode/scope change. Neither task size nor an implementation question switches modes.
 
@@ -279,6 +279,8 @@ Before adopting the installed instructions, check that the submodule revision eq
 ### Installation handoff
 
 After the chosen installation passes verification, read and follow [WELCOME.md](./WELCOME.md) from the installed directory. Resolve that path relative to Railspike, not the host project. Uncommitted installation changes alone do not block welcome. An unresolved inspection concern or failed prerequisite does.
+
+Keep enduring engineering rules in the host project's `AGENTS.md` or `CONTRIBUTING.md` so they apply even when a task opts out of Railspike. The welcome offers reviewable host guidance covering reuse, scope, risks, recovery, and verification alongside the workflow default; accepting it does not authorize implementation or enroll Direct work in an effort study. Preserve existing host rules and request consent before edits. Declining leaves the host unchanged; updating Railspike alone does not install host rules.
 
 ## Reusing across projects
 

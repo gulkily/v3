@@ -1,0 +1,26 @@
+ID: PF-20261021-F02
+Title: Identity-ready notice
+Kind: feature
+Workflow: blocked
+Created: 2026-10-21
+Evidence: locally-verified
+Estimate: 0.03
+Aliases: 2026-10-21/F02, 2026-10-30/F32
+
+Request:
+Remove the "browser identity ready" message.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021175826-902c5145
+
+Done when:
+No ready notice or empty gap; pending/error and Account results remain useful.
+
+Notes:
+Register status at migration: workflow state: blocked; delivery evidence: locally verified; deployment/production acceptance pending. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Implemented and locally verified — checks and limitations (docs/plans/browser_identity_ready_triage_2026-10-21.md#implementation-closeout--october-21-2026); deployment and source-comment reply pending. Triage context: Completed shared status cleanup; no new interface needed. Source (public/assets/browser_signing.js).
+Next action: Verify deployment and the reported notice in production; source-comment reply remains pending and requires authorization.
+Estimate 0.03 is inherited from October 21 feedback-only triage; a separate source-informed total of 0.10 is retained in docs/plans/browser_identity_ready_triage_2026-10-21.md#railspike-estimation-snapshot. Recommended workflow: One-shot.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f02
+October 30 summary row F32: Remove browser identity ready. Status there: Locally verified in existing record; see PF-20261021-F02 (docs/plans/production_feedback_register.md#pf-20261021-f02), no new production check (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

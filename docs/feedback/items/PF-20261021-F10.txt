@@ -1,0 +1,26 @@
+ID: PF-20261021-F10
+Title: Query-dialog improvements
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 0.75
+Aliases: 2026-10-21/F10, 2026-10-30/F38
+
+Request:
+Improve the "View query" dialog; review its current problems before defining the changes.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021181111-3d37d8d5
+
+Done when:
+Record reproduced problems and verify their fixes, including keyboard, phone layout, and recovery.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: The report does not identify specific dialog failures; reproduce before choosing changes. Source (public/assets/sqlite_dialog.js).
+Next action: Collect specific dialog failures before selecting changes; coordinate with F08/F09.
+Estimate 0.75 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f10
+October 30 summary row F38: Improve the View query dialog; problems require investigation before defining changes. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)

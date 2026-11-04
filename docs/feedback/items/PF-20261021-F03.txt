@@ -1,0 +1,26 @@
+ID: PF-20261021-F03
+Title: Text-entry macros
+Kind: feature
+Workflow: untriaged
+Created: 2026-10-21
+Evidence: unknown
+Estimate: 0.5
+Aliases: 2026-10-21/F03, 2026-10-30/F33
+
+Request:
+Brainstorm text-entry macros for prompts, the current date, the current commit, and similar insertions.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261021180225-ffc44b89
+
+Done when:
+Agree a small macro set; insertion preserves surrounding text, selection, and undo.
+
+Notes:
+Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
+Open — resolution not verified. Triage context: Insertion rules, selection handling, and intended entry points are undefined. Source (templates/partials/thread_compose_form.php).
+Next action: Agree the smallest macro set and entry points before planning insertion/undo behavior.
+Estimate 0.5 is inherited from October 21 feedback-only triage. Recommended workflow: Railspike.
+Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
+History: docs/plans/production_feedback_register.md#pf-20261021-f03
+October 30 summary row F33: Brainstorm text-entry macros for prompts, current date, commit and similar inserts. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
