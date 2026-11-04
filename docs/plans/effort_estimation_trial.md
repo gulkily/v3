@@ -2,6 +2,8 @@
 
 ## Cycle v3/delete_record_speed
 
+2026-11-04T17:55:00Z — v3/delete_record_speed Step 3 handoff: user explicitly approved Step 2. [Plan/checkpoint](./delete_record_speed_step3_development_plan.md#study-checkpoint) five stages: status lines and host timing, label-path index (schema 47→48), single-index-read commit, incremental removal with targeted invalidation, host acceptance. Whole-cycle 0.60 → 0.65 (about a dozen git processes per delete). Stage-work originals 0.10/0.18/0.12/0.20/0.08, non-additive. Same v2/D/baseline/R1/P2, single exposed Claude rater. Await Approved Step 3.
+
 2026-11-04T17:45:00Z — v3/delete_record_speed Step 2 handoff: user explicitly approved Step 1 Option D. [Step 2 checkpoint](./delete_record_speed_step2_feature_description.md#study-checkpoint) defines proportional inspect/delete under 1s on the qdb host including startup, live per-step status, rebuild-equivalent result, unchanged delete receipt, rerun recovery. Whole-cycle 0.55 → 0.60 (schema regression test, old-schema fallback, host timing stage). Same v2/D/baseline/R1/P2, single exposed Claude rater. Await Approved Step 2; no implementation or accepted-count change.
 
 2026-11-04T17:40:00Z — v3/delete_record_speed Step 1 revision: maintainer asked for instant deletion. [Revised assessment](./delete_record_speed_step1_solution_assessment.md#study-snapshots) scope v2/D: proportional delete (path-indexed labels, plumbing commit, one-transaction read-model update, targeted invalidation, per-step status). Projection 0.55; v1/A 0.75 preserved; B 0.40/C 0.90 reaffirmed, non-additive. Same baseline/R1/P2, single exposed Claude rater. Not Approved Step 1.

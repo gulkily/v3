@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/delete_record_speed`; [host ledger](./eff
 
 Extended estimates: enabled
 
-Status: Step 1 Option D approved; Step 2 proposed; implementation unapproved.
+Status: Step 2 approved on 2026-11-04; Step 3 drafted; implementation unapproved.
 
 **Cycle estimate: 0.60** (revised; Step 1 0.55)
 

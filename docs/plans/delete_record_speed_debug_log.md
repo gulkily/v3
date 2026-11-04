@@ -48,3 +48,18 @@
 **Uncertain assessments**
 
 - The "Avoid … database schema" guardrail versus naming a needed index as a risk: kept to "needs a schema change" without design. Unclear whether that is the intended level.
+
+## 2026-11-04T17:55:00Z — Step 3
+
+**Necessary/useful instructions**
+
+- `step3_development_plan_do.md`, "include a stage that replays each reported failure as acceptance evidence": made Stage 5 the host run with pasted `time` output, not a local pass. Retain.
+- `step3_development_plan_do.md`, "Resolve each material risk before dependent work begins": put host timing in Stage 1 ahead of the commit rewrite, so an unreachable target is caught before most of the work. Retain.
+
+**Redundant/unnecessary instructions**
+
+- `step3_development_plan_after.md` item 6 and `step3_development_plan_before.md` ("keep Step 1–3 planning docs uncommitted"): conflicts with this host's stop hook, which requires committing and pushing at every turn end. Suggest: let host policy override the uncommitted rule, with a status note. Clarify.
+
+**Uncertain assessments**
+
+- "≤1 page" for Step 3 with five fully specified stages in extended mode: not achievable at this stage count. Unclear whether the limit should scale with stages.
