@@ -135,7 +135,7 @@ Removing the post from Git history stays a separate, later `./v3 purge-history` 
 
 2026-11-04T17:40:00Z revision: maintainer asked for instant deletion. Scope v2/D replaces the trimmed-command approach with proportional deletion: path-indexed label lookup, plumbing commit, single-transaction read-model update, targeted page invalidation, per-step status. Projection **0.55**; v1/A 0.75 preserved as an alternative; B 0.40 and C 0.90 reaffirmed. Same baseline/R1/P2, single exposed Claude rater. Direction refinement only; not Approved Step 1.
 
-Status: Step 1 revised (Option D recommended). Committed and pushed before approval at the session stop hook's request; this is not approval.
+Status: Step 1 approved (Option D) on 2026-11-04; Step 2 drafted. Committed and pushed before approval at the session stop hook's request; this is not approval.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
 

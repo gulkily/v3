@@ -33,3 +33,18 @@
 **Uncertain assessments**
 
 - Step 1's option framing nudged toward trimming the existing command rather than asking what the minimal operation is. Unclear whether an explicit "start from the smallest correct operation" prompt for performance cycles would help or just add text.
+
+## 2026-11-04T17:45:00Z — Step 2
+
+**Necessary/useful instructions**
+
+- `step2_feature_description.md`, Known user or environment ("evidence from a different supported platform does not satisfy this condition"): made the release condition the qdb shared host, which matters because the slowness is small-file I/O on that filesystem. Retain.
+- `step2_feature_description.md`, Shared component inventory: surfaced `StaticArtifactInvalidator::invalidateBoardThread` and the rebuild progress reporter, both reusable, which shrank the planned new work. Retain.
+
+**Redundant/unnecessary instructions**
+
+- `step2_feature_description.md`, "User stories" for an operator-only CLI change: four stories restate the core requirements with one actor. Suggest allowing a single story when there is one role. Clarify.
+
+**Uncertain assessments**
+
+- The "Avoid … database schema" guardrail versus naming a needed index as a risk: kept to "needs a schema change" without design. Unclear whether that is the intended level.
