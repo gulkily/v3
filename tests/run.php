@@ -265,6 +265,7 @@ $testFiles = [
     __DIR__ . '/SiteProfileRegistryTest.php',
     __DIR__ . '/ThemeRegistryTest.php',
     __DIR__ . '/Word97ThemeCoverageTest.php',
+    __DIR__ . '/PostActionThemeTest.php',
     __DIR__ . '/TestRunnerBehaviorTest.php',
     __DIR__ . '/TagScoreTest.php',
     __DIR__ . '/TerminalOperatorUiCommandTest.php',
