@@ -25,6 +25,7 @@ final class TestRunnerBehaviorTest
         assertStringContains("fixture output\n[", $stdout);
         assertStringContains('Summary: 3 run, 2 passed, 1 failed', $stdout);
         assertStringContains('RunnerTimingFixtureTest::testFailure - First failure line (+2 more lines, see FAIL output above)', $stdout);
+        assertSame(1, preg_match('/\nWall time: \d+\.\d{2}s\n$/', $stdout), $stdout);
         assertStringNotContains('] FAIL ', $stdout);
         assertStringNotContains('] PASS ', $stderr);
     }
@@ -72,6 +73,7 @@ final class TestRunnerBehaviorTest
         assertSame(1, preg_match('/^\[\d+\.\d{2}s\] FAIL RunnerTimingFixtureTest::testFailure - First failure line \[\d+\.\d{2}s\]\nDiagnostic detail$/m', $stderr));
         assertStringContains('Summary: 3 run, 2 passed, 1 failed', $stdout);
         assertStringContains('RunnerTimingFixtureTest::testFailure - First failure line (+2 more lines, see FAIL output above)', $stdout);
+        assertSame(1, preg_match('/\nWall time: \d+\.\d{2}s\n$/', $stdout), $stdout);
 
         [$exitCode, $stdout] = $this->runCommand(dirname(__DIR__), $fixture . ' --jobs=2 RunnerTimingFixtureTest::testFast RunnerTimingFixtureTest::testPass');
         assertSame(0, $exitCode, $stdout);

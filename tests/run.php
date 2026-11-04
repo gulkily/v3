@@ -462,6 +462,7 @@ printRunSummary($runCount, $failures, $testDurations, $testClassifications, $pru
 if ($smokeEntries !== []) {
     fwrite(STDOUT, "Smoke set from tests/smoke.txt; the full suite is ./v3 fulltest.\n");
 }
+fwrite(STDOUT, sprintf("Wall time: %.2fs\n", (hrtime(true) - $runStartedAt) / 1_000_000_000));
 
 if ($failures !== []) {
     exit(1);
