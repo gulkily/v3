@@ -28,3 +28,4 @@ Source: public/assets/browser_signing.js
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History and 2026-10-23 investigation: docs/plans/production_feedback_register.md#pf-20261021-f01
 October 30 summary row F17: Focus the reply field after posting, including after redirect, so a one-line post can be continued immediately. Status there: See PF-20261021-F01 (docs/plans/production_feedback_register.md#pf-20261021-f01); broader reports not freshly verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+Related: PF-20261104-F71 asks for optimistic UI across all posting; kept separate because this item's completion checks are about replies.

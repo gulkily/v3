@@ -1,7 +1,7 @@
 ID: PF-20261104-O07
 Title: Polish supplied image
 Kind: other
-Workflow: untriaged
+Workflow: declined
 Created: 2026-11-04
 Evidence: unknown
 
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Content task distinct from a site feature. Attachment unavailable, no image edits performed.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04 tidy (maintainer request): declined as a content chore, not software work tracked here. Reopen if it should be tracked.

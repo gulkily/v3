@@ -14,3 +14,4 @@ Sources:
 Notes:
 Explore behavior without silently losing drafts or asserting acceptance after a failed/uncertain request. Preserve project principles; no invented failure semantics.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+Related: PF-20261021-F01 (reply focus); its reply continuation work already posts replies optimistically. This item is the broader request for all posting.

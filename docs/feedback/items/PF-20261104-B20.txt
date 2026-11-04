@@ -1,7 +1,8 @@
 ID: PF-20261104-B20
 Title: Second confusing page screenshot
 Kind: bug
-Workflow: untriaged
+Workflow: duplicate
+Duplicate-Of: PF-20261104-B15
 Created: 2026-11-04
 Evidence: unknown
 
@@ -14,3 +15,4 @@ Sources:
 Notes:
 Attachment unavailable; cannot responsibly merge with the other screenshot or identify a defect.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04 tidy (maintainer request): merged into PF-20261104-B15 pending visual review of both screenshots.

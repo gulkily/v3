@@ -1,7 +1,8 @@
 ID: PF-20261104-F38
 Title: Shorter local HTTP log
 Kind: feature
-Workflow: untriaged
+Workflow: duplicate
+Duplicate-Of: PF-20261104-F37
 Created: 2026-11-04
 Evidence: unknown
 
@@ -15,3 +16,4 @@ Sources:
 Notes:
 Does not establish that each request is unnecessary; choose log presentation versus request reduction during scoping.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04 tidy (maintainer request): merged into PF-20261104-F37 (local HTTP log readability).
