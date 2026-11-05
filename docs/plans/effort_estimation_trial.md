@@ -1,5 +1,15 @@
 # Effort estimation trial ledger
 
+## Cycle v3/site_purpose
+
+2026-11-05T16:25:00Z — v3/site_purpose Step 3 approved; planning commit `1517b499` on `feat/site-purpose`. [Step 4 entry](./site_purpose/site_purpose_step4_implementation_summary.md#step-4-entry): **0.45 reaffirmed**, same v1/B/baseline/R1/P2, single exposed Claude rater. No accepted-count change.
+
+2026-11-05T16:15:00Z — v3/site_purpose Step 2 approved; [Step 3 checkpoint](./site_purpose/site_purpose_step3_development_plan.md#study-checkpoint). Five stages; **0.45 projected total reaffirmed**, same v1/B/baseline/R1/P2, single exposed Claude rater. Stage work originals S1 0.10, S2 0.06, S3 0.12, S4 0.08, S5 0.10, not summed. Await Approved Step 3; planning uncommitted.
+
+2026-11-05T16:05:00Z — v3/site_purpose Step 1 approved (Option B, provisional word "garage"); [Step 2 checkpoint](./site_purpose/site_purpose_step2_feature_description.md#study-checkpoint). Scope v1/B unchanged; **0.45 projected total reaffirmed**, same baseline/R1/P2, single exposed Claude rater. No implementation or accepted-count change; await Approved Step 2; planning uncommitted.
+
+2026-11-05T15:42:21Z — standing P2 enrollment; [canonical Step 1 checkpoint](./site_purpose/site_purpose_step1_solution_assessment.md#study-snapshots). No parent. Scope v1/B: one shared site description leading the About page and `/llms.txt`, plus a first-visit home intro for visitors with no identity, decided before paint; theme and phone checks. Baseline `822d6134692883e145728db96b1a9aa62f1ca496`; R1 hashes not re-verified; extended/debug enabled. Pristine intake missing because page and plan inspection preceded rating; Step 1 projection 0.45, alternatives A 0.25, C 0.90, D 0.10, single exposed Claude rater. No approval, implementation or accepted-count change; planning uncommitted.
+
 ## Cycle v3/deploy_pending_commits
 
 2026-11-05T15:05:00Z — v3/deploy_pending_commits closeout: [record](./deploy_pending_commits/deploy_pending_commits_one_shot.md#study-history). Delivered scope v1 in full on `feat/deploy-pending-commits`; projection 0.20 reaffirmed at entry and closeout; retrospective scope assessment 0.20, single exposed Claude rater, not independent. Smoke set plus changed tests 457/457; five themes at phone and desktop rendered; full suite not run. Feedback item PF-20261104-F49 updated. Maintainer comfortable-fit and acceptance pending; no accepted-count change.

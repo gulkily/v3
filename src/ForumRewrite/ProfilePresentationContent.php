@@ -25,6 +25,12 @@ final class ProfilePresentationContent
             ],
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',
+            'siteDescription' => '%s is a garage where people and agents build this site together, starting from threads.',
+            'buildExample' => [
+                'text' => 'For example, a member asked in a thread for the Deploy page to show what an update would add. An agent built it, replied with the pull request, and the change was merged.',
+                'threadHref' => '/threads/thread-20261103060933-51ef9554',
+                'changeHref' => 'https://github.com/gulkily/v3/pull/26',
+            ],
             'busyTitle' => 'Meme Oven Is Busy',
             'busyHeading' => 'Meme Oven Is Busy',
             'busyMessage' => 'The next batch of zenmemes is still baking. Try again in a moment.',
@@ -141,7 +147,7 @@ final class ProfilePresentationContent
 
     /**
      * @param array<string, mixed> $profile
-     * @return array{title:string, introduction:string, communityHeading:string, communityParagraphs:list<string>, showHackableSection:bool, socialLinks:list<array{label:string, url:string}>, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}
+     * @return array{title:string, description:string, buildExample:?array{text:string, threadHref:string, changeHref:string}, introduction:string, communityHeading:string, communityParagraphs:list<string>, showHackableSection:bool, socialLinks:list<array{label:string, url:string}>, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}
      */
     public static function about(array $profile): array
     {
@@ -150,6 +156,8 @@ final class ProfilePresentationContent
 
         return [
             'title' => 'About ' . $displayName,
+            'description' => self::siteDescription($profile),
+            'buildExample' => $editorial['buildExample'] ?? null,
             'introduction' => sprintf($editorial['introText'], $displayName),
             'communityHeading' => $editorial['communityHeading'],
             'communityParagraphs' => $editorial['communityParagraphs'],
@@ -162,6 +170,18 @@ final class ProfilePresentationContent
             'portableHeading' => $editorial['portableHeading'],
             'portableParagraphs' => $editorial['portableParagraphs'],
         ];
+    }
+
+    /**
+     * One sentence saying what the site is, shared by About, the first-visit
+     * home intro and /llms.txt. Empty when the profile has none.
+     *
+     * @param array<string, mixed> $profile
+     */
+    public static function siteDescription(array $profile): string
+    {
+        $template = self::editorial($profile)['siteDescription'] ?? '';
+        return $template === '' ? '' : sprintf($template, (string) $profile['displayName']);
     }
 
     /**

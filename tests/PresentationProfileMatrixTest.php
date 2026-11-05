@@ -34,6 +34,28 @@ final class PresentationProfileMatrixTest
         }
     }
 
+    public function testOnlyZenmemesAboutLeadsWithSiteDescriptionAndBuildExample(): void
+    {
+        $application = $this->application();
+        foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+            putenv('FORUM_SITE_ID=' . $profileId);
+            try {
+                $about = $this->render($application, '/about/');
+                $isZenmemes = $profileId === 'zenmemes';
+                assertSame($isZenmemes, str_contains($about, 'data-site-description'));
+                assertSame($isZenmemes, str_contains($about, 'data-build-example'));
+                if ($isZenmemes) {
+                    assertStringContains('zenmemes is a garage where people and agents build this site together, starting from threads.', $about);
+                    assertStringContains('href="/threads/thread-20261103060933-51ef9554"', $about);
+                    assertStringContains('href="https://github.com/gulkily/v3/pull/26"', $about);
+                    assertTrue(strpos($about, 'data-site-description') < strpos($about, 'data-build-example'));
+                }
+            } finally {
+                putenv('FORUM_SITE_ID');
+            }
+        }
+    }
+
     public function testFourthProfileFixtureUsesTheSamePresentationMatrix(): void
     {
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());
