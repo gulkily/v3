@@ -235,9 +235,11 @@ code before invoking `./v3 build-static`.
 
 A root-approved operator can update the application checkout from **Tools → Deploy** (`/tools/deploy/`) instead of running `git pull` over SSH. The same routine runs as `./v3 deploy` from the application directory.
 
-- **Deploy** queues the update for the [internal task queue](#internal-task-queue). Queued deploys run before any other queued task, so it normally starts at the next cron minute.
+- **Queue deploy** hands the update to the [internal task queue](#internal-task-queue). Queued deploys run before any other queued task, so it normally starts at the next cron minute; while it waits, the page says how long it has been queued.
 - **Deploy now** runs it in the web request. Use it for small releases, or when the page says the task worker has not run recently.
 - **Check for updates** fetches from GitHub and shows how far behind `origin/main` the checkout is. Opening the page never contacts GitHub; it shows the result of the last fetch and when it happened.
+
+After a check finds new commits, the **Incoming** row shows what a deploy would bring in: the size of the change (files, lines added and removed), and the commits themselves, newest first, up to 20, with merge commits left out. Commits link to the source repository when `FORUM_SOURCE_REPOSITORY_URL` is a GitHub address. When the update also changes a file the server keeps a local edit to, the row names it, because that is when a deploy can stop with `local_changes_conflict`. `./v3 deploy --status` prints the same as `Incoming-*` lines.
 
 A deploy is pull only: it fetches `origin/main` and fast-forwards. It does not run `./v3 docs publish`, `./v3 build-static` or any other step; run those yourself when the release needs them (see the Safe Deployment Procedure above). With PHP OPcache configured not to check file timestamps, reload PHP after a deploy.
 

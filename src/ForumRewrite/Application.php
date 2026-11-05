@@ -1255,6 +1255,7 @@ final class Application
             $this->routeServices(),
             \ForumRewrite\Deploy\AppUpdate::forProject($this->projectRoot),
             TaskQueueDatabaseConfig::path($this->projectRoot),
+            \ForumRewrite\Support\SourceRepository::fromProjectRoot($this->projectRoot),
         );
     }
 

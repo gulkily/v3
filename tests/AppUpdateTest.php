@@ -70,6 +70,73 @@ final class AppUpdateTest
         assertSame($head, $this->head($app));
     }
 
+    public function testInspectListsIncomingCommitsAndSizeAfterACheck(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $first = $this->pushCommit($seed, 'one');
+        $second = $this->pushCommit($seed, 'two');
+
+        $before = (new AppUpdate($app))->inspect();
+        assertSame([], $before['incoming_commits'], 'Nothing is incoming before a fetch.');
+        assertSame(null, $before['incoming_stat']);
+
+        (new AppUpdate($app))->check();
+        $state = (new AppUpdate($app))->inspect();
+
+        assertSame([$second, $first], array_column($state['incoming_commits'], 'commit'));
+        assertSame(['two', 'one'], array_column($state['incoming_commits'], 'subject'));
+        assertSame('Test', $state['incoming_commits'][0]['author']);
+        assertTrue(preg_match('/^\d{4}-\d{2}-\d{2}$/', $state['incoming_commits'][0]['date']) === 1, 'Expected a YYYY-MM-DD date.');
+        assertSame(0, $state['incoming_more']);
+        assertSame(['files' => 2, 'insertions' => 2, 'deletions' => 0], $state['incoming_stat']);
+        assertSame([], $state['incoming_local_overlap']);
+    }
+
+    public function testIncomingCommitsStopAtTheLimitAndCountTheRest(): void
+    {
+        [$app, $seed] = $this->fixture();
+        for ($i = 1; $i <= AppUpdate::INCOMING_LIMIT + 3; $i++) {
+            $this->pushCommit($seed, 'c' . $i);
+        }
+
+        $state = (new AppUpdate($app))->check()['state'];
+
+        assertSame(AppUpdate::INCOMING_LIMIT, count($state['incoming_commits']));
+        assertSame('c' . (AppUpdate::INCOMING_LIMIT + 3), $state['incoming_commits'][0]['subject']);
+        assertSame(3, $state['incoming_more']);
+    }
+
+    public function testIncomingLeavesOutMergeCommits(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $this->git($seed, ['checkout', '-q', '-b', 'topic']);
+        $this->pushCommit($seed, 'on-topic');
+        $this->git($seed, ['checkout', '-q', 'main']);
+        $this->git($seed, ['merge', '-q', '--no-ff', '-m', 'Merge branch topic', 'topic']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
+
+        $state = (new AppUpdate($app))->check()['state'];
+
+        assertSame(2, $state['behind']);
+        assertSame(['on-topic'], array_column($state['incoming_commits'], 'subject'));
+        assertSame(0, $state['incoming_more']);
+    }
+
+    public function testIncomingNamesLocallyEditedFilesTheUpdateAlsoChanges(): void
+    {
+        [$app, $seed] = $this->fixture();
+        file_put_contents($seed . '/README.md', "app\nremote line\n");
+        $this->git($seed, ['commit', '-q', '-am', 'readme']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
+        $this->pushCommit($seed, 'other');
+        file_put_contents($app . '/README.md', "app on the server\n");
+        file_put_contents($app . '/.gitignore', "state/\nlocal\n");
+
+        $state = (new AppUpdate($app))->check()['state'];
+
+        assertSame(['README.md'], $state['incoming_local_overlap']);
+    }
+
     public function testKeepsLocalChangesToFilesTheUpdateDoesNotTouch(): void
     {
         [$app, $seed] = $this->fixture();

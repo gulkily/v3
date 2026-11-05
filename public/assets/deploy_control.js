@@ -20,6 +20,15 @@
     return response.ok ? data : { status: 'error', error: data.error || `Request failed (${response.status}).` };
   };
 
+  // How long a queued deploy has waited, so the delay is visible rather than
+  // looking stuck. Starts from the task's request time when the page knows it.
+  let queuedAt = root && root.dataset.deployQueuedAt ? Date.parse(root.dataset.deployQueuedAt) : NaN;
+  const waited = () => {
+    if (Number.isNaN(queuedAt)) return '';
+    const seconds = Math.max(0, Math.round((Date.now() - queuedAt) / 1000));
+    return ` ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  };
+
   let polling = false;
   // A queued deploy waits for cron; check every few seconds and reload when
   // it finishes. Buttons stay usable so Deploy now remains available.
@@ -34,7 +43,7 @@
       if (data.status !== 'ok') { say(data.error); break; }
       const task = data.state.task_status;
       if (task !== 'queued' && task !== 'running' && !data.state.busy) { window.location.reload(); return; }
-      say(task === 'running' || data.state.busy ? 'Deploying…' : 'Queued; waiting for the task worker…');
+      say(task === 'running' || data.state.busy ? 'Deploying…' : `Queued; waiting for the task worker…${waited()}`);
     }
     polling = false;
   };
@@ -55,7 +64,12 @@
     setBusy(false);
     if (data.status !== 'ok') { say(data.error || 'Request refused.'); return; }
     const result = data.result;
-    if (result.outcome === 'queued') { say(result.message); poll(); return; }
+    if (result.outcome === 'queued') {
+      if (Number.isNaN(queuedAt)) queuedAt = Date.now();
+      say(`${result.message} It usually starts within a minute.`);
+      poll();
+      return;
+    }
     if (result.outcome === 'refused' || result.outcome === 'failed') { say(result.message); return; }
     window.location.reload();
   });

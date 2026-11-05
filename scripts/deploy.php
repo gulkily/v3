@@ -44,6 +44,19 @@ $printState = static function (array $state): void {
     echo 'Local-Changes: ' . ($state['local_changes'] ?? 'unavailable') . "\n";
     echo 'Behind: ' . ($state['behind'] ?? 'unknown') . "\n";
     echo 'Ahead: ' . ($state['ahead'] ?? 'unknown') . "\n";
+    $stat = $state['incoming_stat'] ?? null;
+    if ($stat !== null) {
+        echo 'Incoming-Size: ' . $stat['files'] . ' files changed, +' . $stat['insertions'] . ' -' . $stat['deletions'] . "\n";
+    }
+    foreach ($state['incoming_commits'] ?? [] as $commit) {
+        echo 'Incoming-Commit: ' . substr($commit['commit'], 0, 12) . ' ' . $commit['date'] . ' ' . $commit['subject'] . "\n";
+    }
+    if (($state['incoming_more'] ?? 0) > 0) {
+        echo 'Incoming-More: ' . $state['incoming_more'] . "\n";
+    }
+    foreach ($state['incoming_local_overlap'] ?? [] as $file) {
+        echo 'Incoming-Changes-Local-Edit: ' . $file . "\n";
+    }
     echo 'Last-Checked-At: ' . ($state['last_checked_at'] ?? 'never') . "\n";
     echo 'Busy: ' . ($state['busy'] ? 'yes' : 'no') . "\n";
 };

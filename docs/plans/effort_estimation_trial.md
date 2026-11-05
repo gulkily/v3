@@ -1,5 +1,11 @@
 # Effort estimation trial ledger
 
+## Cycle v3/deploy_pending_commits
+
+2026-11-05T15:05:00Z — v3/deploy_pending_commits closeout: [record](./deploy_pending_commits/deploy_pending_commits_one_shot.md#study-history). Delivered scope v1 in full on `feat/deploy-pending-commits`; projection 0.20 reaffirmed at entry and closeout; retrospective scope assessment 0.20, single exposed Claude rater, not independent. Smoke set plus changed tests 457/457; five themes at phone and desktop rendered; full suite not run. Feedback item PF-20261104-F49 updated. Maintainer comfortable-fit and acceptance pending; no accepted-count change.
+
+2026-11-05T14:45:00Z — standing P2 enrollment, one-shot; [canonical record](./deploy_pending_commits/deploy_pending_commits_one_shot.md#study-history). Scope v1: the Deploy page lists incoming commits, change size and local-edit overlap after a check, and the queued button says it is queued and how long it has waited. Baseline `058b2c6b069e023802871aa141f570a6407217a5`; R1 hashes not re-verified; extended/debug enabled. Pristine intake missing because source inspection preceded rating; intake projection 0.20, single exposed Claude rater. No accepted-count change.
+
 ## Cycle v3/adaptive_nav
 
 2026-11-05T07:40:00Z — v3/adaptive_nav Step 4 closeout (Stage 8 pending): Stage 3 approved; planning `8fe60a2a`, stage commits through `5e670104` plus the Stage 8 commit on `feat/adaptive-nav`, unmerged. [Closeout](./adaptive_nav/adaptive_nav_step4_implementation_summary.md#closeout). Entry 0.85 preserved; separate retrospective scope assessment **0.90** (single exposed Claude rater). Seven of eight stages complete; headless release matrix passed; iPhone replay, deployment and full suite pending. Maintainer comfortable-fit judgment and acceptance pending; no accepted-count change.
