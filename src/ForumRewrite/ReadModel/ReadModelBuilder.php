@@ -191,8 +191,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, retracted_at, retraction_class, retraction_attribution)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :retracted_at, :retraction_class, :retraction_attribution)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, event_end_date, retracted_at, retraction_class, retraction_attribution)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :event_end_date, :retracted_at, :retraction_class, :retraction_attribution)'
         );
 
         $removals = \ForumRewrite\Canonical\AcceptedRemoval::all($this->repositoryRoot);
@@ -230,6 +230,7 @@ final class ReadModelBuilder
                 'event_location' => $isRetracted ? null : $record->eventLocation,
                 'event_link' => $isRetracted ? null : $record->eventLink,
                 'event_time' => $isRetracted ? null : $record->eventTime,
+                'event_end_date' => $isRetracted ? null : $record->eventEndDate,
                 'source_path' => $relativePath,
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
@@ -239,14 +240,19 @@ final class ReadModelBuilder
         foreach ($removals as $id => $removal) {
             if ($removal['operation'] !== 'delete') continue;
             $meta = $removal['post'];
+            // Keep the placeholder where its file sorted, so deleting a reply does not move it
+            // in its thread (and matches the targeted update in IncrementalReadModelUpdater).
+            $originalPath = \ForumRewrite\Canonical\CanonicalPathResolver::postCandidates($id)[0];
+            $low = 0; $high = count($paths);
+            while ($low < $high) { $mid = intdiv($low + $high, 2); if (strcmp($paths[$mid], $originalPath) < 0) $low = $mid + 1; else $high = $mid; }
             $parsedPosts[] = [
                 'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
                 'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
                 'retracted_at' => $removal['accepted_at'], 'retraction_class' => $removal['classification'] ?? 'operator', 'retraction_attribution' => $removal['attribution'] ?? 'operator',
                 'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null, 'body_format' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
-                'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null,
-                'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => 0,
+                'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null, 'event_end_date' => null,
+                'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => $low + 0.5,
             ];
         }
 
@@ -311,6 +317,7 @@ final class ReadModelBuilder
                     'event_location' => $post['event_location'],
                     'event_link' => $post['event_link'],
                     'event_time' => $post['event_time'],
+                    'event_end_date' => $post['event_end_date'],
                     'retracted_at' => $post['retracted_at'],
                     'retraction_class' => $post['retraction_class'],
                     'retraction_attribution' => $post['retraction_attribution'],
@@ -373,12 +380,15 @@ final class ReadModelBuilder
         }
         $records = [];
         $viewerTagRows = [];
+        $labelFiles = [];
 
         $inactive = \ForumRewrite\Canonical\LabelOwnership::inactive($this->repositoryRoot);
         $paths = $this->findRelativePaths('records/thread-labels');
         foreach ($this->progressItems('parsing_thread_label_records', $paths) as $index => $relativePath) {
             try {
                 $record = $this->canonicalRepository->loadThreadLabel($relativePath);
+                // Every parsed file, active or not: delete-record finds a thread's labels here.
+                $labelFiles[$relativePath] = $record->threadId;
                 // viewer_tags mirrors ViewerTagLookup::threadTags()'s file scan, which applies
                 // no inactive/publication exclusion: project every loaded record's labels.
                 if ($record->authorIdentityId !== null) {
@@ -393,6 +403,7 @@ final class ReadModelBuilder
             }
         }
         $this->writeViewerTags($pdo, $viewerTagRows);
+        \ForumRewrite\ReadModel\ThreadLabelFileIndex::write($pdo, $labelFiles);
 
         $this->measure('sort_thread_labels', function () use (&$records): void {
             usort($records, static function (ThreadLabelRecord $left, ThreadLabelRecord $right): int {

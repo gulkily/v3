@@ -50,6 +50,23 @@ The first supported typed root is `Thread-Type: task`. Task roots add:
 - `Task-Depends-On`: optional space-separated root post IDs for task dependencies
 - `Task-Sources`: optional semicolon-separated provenance references
 
+## Event Headers
+
+A thread root may describe an event. All five headers are optional, root-only, and
+written only while event support is on; replies must not include them.
+
+- `Event-Date`: the event's first day, `YYYY-MM-DD`
+- `Event-End-Date`: the inclusive last day of a multi-day event, `YYYY-MM-DD`; requires
+  `Event-Date` and must not be before it. Absent means the event is one day.
+- `Event-Time`: start time, 24-hour `HH:MM`
+- `Event-Location`: one line of free text naming the place
+- `Event-Link`: one line, usually a URL
+
+Writers emit them after `Subject` in this order: `Event-Date`, `Event-End-Date`,
+`Event-Time`, `Event-Location`, `Event-Link`. Parsers ignore root headers they do not
+know, so a release that predates `Event-End-Date` reads a span as a one-day event on
+`Event-Date`.
+
 ## Body Rules
 
 - The body is plain ASCII text.

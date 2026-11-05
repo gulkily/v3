@@ -397,7 +397,11 @@
       return `${storageKeys.composeDraftPrefix}:${kind}:${threadId}:${parentId}`;
     }
 
-    return `${storageKeys.composeDraftPrefix}:${kind}`;
+    // A placement with its own fixed fields (a calendar day) keeps its own draft.
+    const scope = form.dataset.composeDraftScope || "";
+    return scope !== ""
+      ? `${storageKeys.composeDraftPrefix}:${kind}:${scope}`
+      : `${storageKeys.composeDraftPrefix}:${kind}`;
   }
 
   function composeDraftFields(form) {
@@ -681,6 +685,7 @@
       subject: composeFormFieldValue(form, "subject"),
       body: composeFormFieldValue(form, "body"),
       event_date: composeFormFieldValue(form, "event_date"),
+      event_end_date: composeFormFieldValue(form, "event_end_date"),
       event_time: composeFormFieldValue(form, "event_time"),
       event_location: composeFormFieldValue(form, "event_location"),
       event_link: composeFormFieldValue(form, "event_link"),

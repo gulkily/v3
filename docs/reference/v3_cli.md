@@ -724,12 +724,25 @@ the site instead; see [Author post retraction](author_post_retraction.md).
 Deleting a post also removes its proven generated thread-label records and their
 signatures, retains content-free root/parent placeholders for surviving replies,
 and invalidates generated presentation. Independent label actions remain active.
+
+When the read model is current (same schema, built for the repository's HEAD, no
+stale marker), deletion updates only the post's thread in the read model and clears
+only the pages that can show it: the thread and post pages, its tag pages, the
+author's profile, top-level listing pages and the offline snapshot. Otherwise, or
+if that update fails, it falls back to a full rebuild and clears all generated
+pages. `--inspect` finds a thread's labels through the read model's label index
+under the same condition and scans every label file otherwise.
+
+Each step prints a timestamped line to stderr as it runs (lock waits included),
+ending with `Deleted <id> in 0.21s`. `-q`/`--quiet` keeps only errors and that final
+line; `--json` prints no step lines. Removing the post from Git history is a
+separate, later `./v3 purge-history` run.
 Source-owned labels also stop applying after signed browser retraction. When a
 prebuilt static release is required, run `./v3 build-static` with the deployment's
 normal repository/database/artifact settings after deletion.
 
 Source-post operations accept `--inspect`, `--repair-labels`, repeatable
-`--resolve-label=<label-id>`, and `--json`. Inspection is read-only; JSON reports
+`--resolve-label=<label-id>`, `--json` and `-q`/`--quiet`. Inspection is read-only; JSON reports
 acceptance separately from `label_cleanup_status` and unresolved legacy records.
 Repair does not delete a live source. An already deleted source is represented
 by retained structural removal evidence. Example:

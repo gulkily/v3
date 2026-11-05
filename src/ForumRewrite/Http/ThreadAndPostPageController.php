@@ -144,6 +144,10 @@ final class ThreadAndPostPageController
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
                 ),
                 'thread' => $threadRow,
+                'eventState' => ((string) ($threadRow['event_date'] ?? '')) !== ''
+                    && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)
+                    ? \ForumRewrite\Calendar\EventStatus::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId)
+                    : null,
                 'railspikeThread' => $threadRow,
                 'railspikeOperators' => $this->railspikeOperators(),
                 'posts' => $posts,

@@ -40,6 +40,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Parallel tests](parallel_tests/parallel_tests_one_shot.md) — one-shot: `--jobs=N` runs any test selection in worker processes, slowest work first; `./v3 fulltest` runs the full suite on every core.
 - [Work tracking](work_tracking/work_tracking_step3_development_plan.md) — superseded 2026-11-04; code removed, restarting from feedback data as [feedback work restart](feedback_work_restart/feedback_work_restart_step1_solution_assessment.md).
 - [Feedback work restart](feedback_work_restart/feedback_work_restart_step3_development_plan.md) — feedback items as `Key: value` files in `docs/feedback/items/`, `./v3 feedback check|index`, triage procedure in `docs/agents/`; Step 4 in progress.
+- [Delete record speed](delete_record_speed/delete_record_speed_step3_development_plan.md) — `./v3 delete-record` inspect and delete under 1s on the qdb host with live status lines and `-q`; label-file index, one-index-read commit, incremental removal instead of a full rebuild; Step 4 in progress.
 
 - [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
 
@@ -195,6 +196,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Anonymous reaction scoring](anonymous_reaction_scoring/) — recorded steps: 1.
 - [Automatic guest identity](automatic_guest_identity/)
 - [Browser private key restore](browser_private_key_restore/) — recorded steps: 1.
+- [Calendar](calendar/)
 - [Case insensitive tags](case_insensitive_tags/)
 - [Chouse production readiness](chouse_production_readiness/) — recorded steps: 1.
 - [Codebase page source details](codebase_page_source_details/) — recorded steps: 3.

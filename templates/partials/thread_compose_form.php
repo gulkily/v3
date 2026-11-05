@@ -12,7 +12,8 @@ $composerAuthoringOperation = (string) ($authoringOperation ?? 'thread');
 $composerMenuExtra = $composerAuthoringOperation === 'quote'
     ? '        <button type="button" class="compose-clear-button" data-action="clean-quote-text" title="Remove timestamps and tidy nick formatting in the pasted chat">Remove timestamps</button>' . "\n"
     : '';
-$composerFormAttributes = ' data-authoring-operation="' . $e($composerAuthoringOperation) . '"';
+$composerFormAttributes = ' data-authoring-operation="' . $e($composerAuthoringOperation) . '"'
+    . (($composeDraftScope ?? '') !== '' ? ' data-compose-draft-scope="' . $e($composeDraftScope) . '"' : '');
 $composerHiddenFields = '  <input type="hidden" name="author_identity_id" value="">' . "\n"
     . '  <input type="hidden" name="return_to" value="' . $e($returnTo ?? '') . '">' . "\n"
     . ($composerCompact

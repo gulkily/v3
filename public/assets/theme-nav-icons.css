@@ -192,6 +192,7 @@
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href^="/profiles/"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href^="/messages"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/tags/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/calendar"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/latest"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/top"]::before,
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/leetness"]::before,
@@ -221,6 +222,10 @@
 
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/tags/"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='4' width='11' height='8' fill='%23000000'/><rect x='2' y='6' width='1' height='4' fill='%23000000'/><rect x='1' y='7' width='1' height='2' fill='%23000000'/><rect x='4' y='5' width='9' height='6' fill='%23f0d000'/><rect x='3' y='6' width='1' height='4' fill='%23f0d000'/><rect x='2' y='7' width='1' height='2' fill='%23f0d000'/><rect x='11' y='7' width='2' height='2' fill='%23ffffff'/></svg>");
+}
+
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/calendar"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='1' y='2' width='14' height='13' fill='%23000000'/><rect x='2' y='3' width='12' height='11' fill='%23ffffff'/><rect x='2' y='3' width='12' height='3' fill='%23cc0000'/><rect x='4' y='1' width='2' height='3' fill='%23404040'/><rect x='10' y='1' width='2' height='3' fill='%23404040'/><rect x='3' y='7' width='2' height='2' fill='%23808080'/><rect x='7' y='7' width='2' height='2' fill='%23808080'/><rect x='11' y='7' width='2' height='2' fill='%23808080'/><rect x='3' y='10' width='2' height='2' fill='%23808080'/><rect x='7' y='10' width='2' height='2' fill='%23000080'/><rect x='11' y='10' width='2' height='2' fill='%23808080'/></svg>");
 }
 
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/latest"]::before {

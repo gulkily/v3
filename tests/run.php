@@ -16,6 +16,10 @@ putenv('GIT_CONFIG_GLOBAL=' . $testGitConfig);
 register_shutdown_function(static fn () => @unlink($testGitConfig));
 
 $testFiles = [
+    __DIR__ . '/DeleteRecordCommandTest.php',
+    __DIR__ . '/EventEndDateParserTest.php',
+    __DIR__ . '/EventStatusTest.php',
+    __DIR__ . '/CalendarPageTest.php',
     __DIR__ . '/QdbPageTest.php',
     __DIR__ . '/QdbWelcomeSelectionTest.php',
     __DIR__ . '/CommitEvidenceLookupTest.php',

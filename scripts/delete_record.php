@@ -15,11 +15,14 @@ $projectRoot = dirname(__DIR__);
 $json = in_array('--json', $argv, true);
 $inspect = in_array('--inspect', $argv, true);
 $repair = in_array('--repair-labels', $argv, true);
+$quiet = in_array('-q', $argv, true) || in_array('--quiet', $argv, true);
 $resolvedLabels = [];
 $argv = array_values(array_filter($argv, static function (string $argument) use (&$resolvedLabels): bool {
     if (str_starts_with($argument, '--resolve-label=')) { $resolvedLabels[] = substr($argument, 16); return false; }
-    return !in_array($argument, ['--json', '--inspect', '--repair-labels'], true);
+    return !in_array($argument, ['--json', '--inspect', '--repair-labels', '-q', '--quiet'], true);
 }));
+// Step lines go to stderr; --json keeps stderr for errors only, -q keeps errors and the final line.
+$progress = new \ForumRewrite\Support\CommandProgress(!$quiet && !$json);
 $target = (string) ($argv[1] ?? '');
 
 if ($target === '' || in_array($target, ['-h', '--help'], true)) {
@@ -45,13 +48,13 @@ if ($inspect || $repair || str_starts_with($target, 'records/posts/') || !str_co
 if ($source !== null) {
     try {
         if ($inspect) {
-            $result = \ForumRewrite\Canonical\LabelRemoval::inspect($repositoryRoot, $sourceId);
+            $result = \ForumRewrite\Canonical\LabelRemoval::inspect($repositoryRoot, $sourceId, $progress->reporter(), $databasePath);
             unset($result['post']);
         } else {
             \ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, "records/post-retractions/maintenance.txt");
             $defaultStatic = \ForumRewrite\PresentationPathResolver::staticHtmlRoot($projectRoot, \ForumRewrite\SiteProfileRegistry::active());
             $presentation = (string) (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: $defaultStatic);
-            $result = \ForumRewrite\Write\SourceLabelRemoval::run($repositoryRoot, $databasePath, $sourceId, $repair, $resolvedLabels, $artifactRoot ?? $presentation);
+            $result = \ForumRewrite\Write\SourceLabelRemoval::run($repositoryRoot, $databasePath, $sourceId, $repair, $resolvedLabels, $artifactRoot ?? $presentation, $progress->reporter());
         }
         if ($json) fwrite(STDOUT, json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT) . "\n");
         else {
@@ -59,6 +62,7 @@ if ($source !== null) {
             foreach ($result as $key => $value) fwrite(STDOUT, $key . ': ' . (is_array($value) ? json_encode($value) : (string) $value) . "\n");
             if (($result['unresolved_labels'] ?? $result['unresolved'] ?? []) !== []) fwrite(STDOUT, "Legacy labels remain unresolved; inspect ownership and use --repair-labels --resolve-label=<label-id> only for a verified source relationship.\n");
         }
+        if (!$json) $progress->finish(($inspect ? 'Inspected ' : ($repair ? 'Repaired ' : 'Deleted ')) . $sourceId);
         exit(0);
     } catch (Throwable $error) { fwrite(STDERR, $error->getMessage() . "\n"); exit(1); }
 }
@@ -333,7 +337,7 @@ function usage(): string
     return <<<TEXT
 Usage:
   ./v3 delete-record <record_path_or_id> [repository_root] [database_path] [artifact_root]
-  ./v3 delete-record <source-post-id> [repository_root] [database_path] [artifact_root] [--inspect] [--repair-labels --resolve-label=<label-id>] [--json]
+  ./v3 delete-record <source-post-id> [repository_root] [database_path] [artifact_root] [--inspect] [--repair-labels --resolve-label=<label-id>] [--json] [-q]
 
 Deletes and commits a canonical record, then refreshes derived state.
 Post deletion also removes proven source-owned labels, preserves replies under
@@ -346,6 +350,7 @@ Source-post options:
   --repair-labels            Repair label effects without deleting a live source.
   --resolve-label=<label-id> Explicit operator ownership resolution (repeatable).
   --json                    Structured source-post output.
+  -q, --quiet               Hide step lines; keep errors and the final line.
 
 Legacy candidates are not proof. Inspect the original post/history before
 resolving ownership. Missing sources are recovered from trusted Git history.

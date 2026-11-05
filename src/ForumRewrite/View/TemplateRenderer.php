@@ -52,6 +52,8 @@ final class TemplateRenderer
         'platform_docs_index.php' => ['/assets/platform_docs.css'],
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
+        'calendar.php' => ['/assets/calendar.css'],
+        'calendar_day.php' => ['/assets/compose.css', '/assets/calendar.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
         'fastmod.php' => ['/assets/tools.css'],
@@ -417,6 +419,13 @@ final class TemplateRenderer
         // Board search sits in the app account menu; the phone tab bar is already full.
         if (PresentationSlotRegistry::resolve($activeProfile, 'navigation') === 'app') {
             array_splice($items, 2, 0, [['href' => '/search', 'label' => 'Search', 'section' => 'search']]);
+        }
+
+        // Calendar follows Recent while event support is on. In the app slot it
+        // lands in the account menu, since only $mainSections reach the tab bar.
+        if (!$isQdbNavigation && $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)) {
+            $recentIndex = array_search('recent', array_column($items, 'section'), true);
+            array_splice($items, $recentIndex === false ? 1 : $recentIndex + 1, 0, [['href' => '/calendar', 'label' => 'Calendar', 'section' => 'calendar']]);
         }
 
         // Tools stays reachable by direct URL even when hidden from the nav,

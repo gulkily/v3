@@ -157,6 +157,11 @@ One row per thread (keyed by its root post).
 | `claimed_score_total` | INTEGER | default 0; every scored label naming an approved member (schema 31) |
 | `verified_score_total` | INTEGER | default 0; unsigned labels count only before the attribution cutoff (schema 31) |
 | `vote_count` | INTEGER | default 0; distinct upvote/downvote events |
+| `event_date` | TEXT NULL | root `Event-Date`, `YYYY-MM-DD`; null when the thread is not an event or the root is retracted |
+| `event_end_date` | TEXT NULL | root `Event-End-Date`, the inclusive last day; null for a one-day event (schema 49) |
+| `event_time` | TEXT NULL | root `Event-Time`, `HH:MM` |
+| `event_location` | TEXT NULL | root `Event-Location` |
+| `event_link` | TEXT NULL | root `Event-Link` |
 | `retracted_at` | TEXT NULL | root retraction timestamp |
 | `retraction_class` | TEXT NULL | root author/operator authorization classification |
 | `retraction_attribution` | TEXT NULL | root accepted display attribution |
@@ -681,3 +686,26 @@ descending order, page boundaries and 25-root hydration are shared with tag
 pages through `ThreadKeysetPage`. The match still scans every listed root, as
 QDB search does. Tables and indexes are unchanged; normal startup rebuilds
 version 46 and older models before the new query runs.
+
+## Version 48 — Thread label file index
+
+Adds `thread_label_files (record_path TEXT PRIMARY KEY, thread_id TEXT NOT NULL)`
+with `thread_label_files_thread_idx (thread_id)`. Each row names one parseable
+`records/thread-labels/` file and the thread it targets, active or not.
+`ReadModelBuilder` fills it during its label pass, and
+`IncrementalReadModelUpdater::applyThreadLabelWrite` replaces the thread's rows
+from the files it already scans. `ThreadLabelFileIndex::paths` answers only when
+the read model has the expected schema identity and its `repository_head` matches
+the repository HEAD; otherwise callers scan the directory as before.
+`delete-record` inspection uses it so finding one thread's labels does not parse
+every label file; `--repair-labels` keeps the scan. Normal startup rebuilds
+version 47 and older models; the CLI falls back to the scan until then.
+
+## Version 49 — Event end date
+
+Adds nullable `threads.event_end_date` from the root's `Event-End-Date` header
+(see [canonical post record](canonical_post_record_v1.md#event-headers)). The
+full rebuild and the incremental thread insert both fill it, retracted and
+deleted roots clear it with the other event columns, and the thread page, board
+listing queries and `Application::fetchThread` select it. Normal startup
+rebuilds version 48 and older models before the column is read.

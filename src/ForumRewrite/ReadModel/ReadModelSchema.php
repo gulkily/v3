@@ -72,6 +72,7 @@ final class ReadModelSchema
                 event_location TEXT NULL,
                 event_link TEXT NULL,
                 event_time TEXT NULL,
+                event_end_date TEXT NULL,
                 retracted_at TEXT NULL,
                 retraction_class TEXT NULL,
                 retraction_attribution TEXT NULL
@@ -170,6 +171,11 @@ final class ReadModelSchema
                 PRIMARY KEY (record_family, target_id, author_identity_id, tag)
             )',
             'CREATE INDEX viewer_tags_identity_idx ON viewer_tags (author_identity_id, record_family, tag, target_id)',
+            'CREATE TABLE thread_label_files (
+                record_path TEXT PRIMARY KEY,
+                thread_id TEXT NOT NULL
+            )',
+            'CREATE INDEX thread_label_files_thread_idx ON thread_label_files (thread_id)',
             ...ActivityCounterSchema::statements(),
         ];
     }

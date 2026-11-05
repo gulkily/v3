@@ -14,3 +14,4 @@ Sources:
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04: Replayed during calendar Stage 2 (docs/plans/calendar/calendar_step4_implementation_summary.md) in headless Chrome on /compose/thread with event support on, at 390px and 1280px widths, empty and with the event prefilled (server-rendered open), before and after adding the Until field: the Event disclosure opened, closed and reopened on summary clicks every time. Not reproduced; the reported device and browser are unknown, so the item stays open for a replay on the reporter's device.
