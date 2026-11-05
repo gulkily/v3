@@ -92,6 +92,6 @@ Diff checked for duplication (one new private method in `AppUpdate`, no new comp
 
 ## Commit, merge and publication status
 
-Planning commit `708d4b8e`; completion commit on `feat/deploy-pending-commits` (reference pending in this record). Pushed to origin with a pull request; not merged, not deployed.
+Planning commit `708d4b8e`; completion commit `29895d7d` on `feat/deploy-pending-commits`, confirmed with Git; this reference update is a record-only handoff commit. Pushed to origin as [PR #26](https://github.com/gulkily/v3/pull/26); thread reply `reply-20261105145656-10e36db1` posted as claude. Not merged, not deployed.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
