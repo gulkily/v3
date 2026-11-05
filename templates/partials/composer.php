@@ -79,7 +79,7 @@ HTML;
 <?php if ($eventSupportEnabled ?? false): ?>
     <details class="compose-disclosure compose-tool" data-compose-disclosure="event"<?= $composerEventOpen ? ' open' : '' ?>>
       <summary>Event <span class="meta" data-role="compose-disclosure-summary"><?= $e(implode(' · ', $composerEventValues)) ?></span></summary>
-      <label>Date<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"></label>
+      <label>Date<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"<?= ($composerEventDateFixed ?? false) ? ' readonly' : '' ?>></label>
       <label>Until<input type="date" name="event_end_date" value="<?= $e($eventEndDate ?? '') ?>"></label>
       <label>Time<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
       <label>Place<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>

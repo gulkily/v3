@@ -41,7 +41,7 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 <?php else: ?>
 <?php $shown = array_slice($cell['entries'], 0, $calendarEntriesPerCell); $more = count($cell['entries']) - count($shown); ?>
             <td class="calendar-day calendar-day--<?= $e($cell['mark']) ?>" data-calendar-day="<?= $e($cell['date']) ?>" data-calendar-mark="<?= $e($cell['mark']) ?>">
-              <a class="calendar-day__number" href="<?= $e($calendarBase . '/' . $cell['date']) ?>" aria-label="<?= $e($cell['date'] . ($cell['mark'] === 'empty' ? '' : ', ' . $cell['mark'])) ?>"><?= (int) $cell['day'] ?></a>
+              <a class="calendar-day__number" href="<?= $e($calendarBase . '/' . $cell['date']) ?>" aria-label="<?= $e($cell['date'] . ($cell['mark'] === 'empty' ? '' : ', ' . $cell['mark'] . ', ' . count($cell['entries']) . (count($cell['entries']) === 1 ? ' event' : ' events'))) ?>"><?= (int) $cell['day'] ?><?php if ($cell['entries'] !== []): ?><span class="calendar-day__count" aria-hidden="true"><?= count($cell['entries']) ?></span><?php endif; ?></a>
 <?php if ($shown !== []): ?>
               <ul class="calendar-day__entries">
 <?php foreach ($shown as $entry): ?>

@@ -123,6 +123,74 @@ final class CalendarPageTest
         calendarAssertNotContains('rel="next"', $html);
     }
 
+    public function testDayPageListsTheDayAndPostsThroughTheSharedComposer(): void
+    {
+        [$root, $service, $application] = $this->environment();
+        $span = $this->event($service, 'couches', 'Spare room', 'Couch', '2026-11-29', '2026-12-02');
+        $service->createReply(['thread_id' => $span, 'parent_id' => $span, 'body' => 'event: confirmed', 'author_identity_id' => self::OPERATOR]);
+        $other = $this->event($service, 'general', 'Board game night', 'Bring snacks', '2026-11-30');
+        $declined = $this->event($service, 'couches', 'Declined couch', 'No', '2026-11-30');
+        $service->createReply(['thread_id' => $declined, 'parent_id' => $declined, 'body' => 'event: declined', 'author_identity_id' => self::OPERATOR]);
+
+        $day = $this->render($application, '/calendar/couches/2026-11-30');
+        calendarAssertSame(200, http_response_code());
+        calendarAssertContains('<h1>2026-11-30 #couches</h1>', $day);
+        calendarAssertContains('href="/calendar/couches?month=2026-11">← Calendar</a>', $day);
+        calendarAssertContains('href="/threads/' . $span . '">Spare room</a>', $day);
+        calendarAssertContains(' · 2026-11-29 – 2026-12-02 · Confirmed</span>', $day);
+        calendarAssertNotContains('📅', $day);
+        calendarAssertNotContains('Board game night', $day);
+        calendarAssertNotContains('Declined couch', $day);
+        calendarAssertContains('name="event_date" value="2026-11-30" readonly', $day);
+        calendarAssertContains('name="event_end_date" value=""', $day);
+        calendarAssertContains('name="board_tags" autocapitalize="none" value="couches"', $day);
+        calendarAssertContains('data-compose-draft-scope="calendar:couches:2026-11-30"', $day);
+        calendarAssertContains('action="/compose/thread"', $day);
+        calendarAssertContains('data-compose-root', $day);
+        calendarAssertContains('/assets/browser_signing', $day);
+
+        $all = $this->render($application, '/calendar/2026-11-30');
+        calendarAssertContains('Board game night', $all);
+        calendarAssertContains('Spare room', $all);
+        calendarAssertContains('name="board_tags" autocapitalize="none" value="general"', $all);
+        calendarAssertContains('href="/calendar?month=2026-11">← Calendar</a>', $all);
+
+        $this->render($application, '/calendar/2026-02-30');
+        calendarAssertSame(404, http_response_code());
+
+        // The form as a browser without JavaScript sends it.
+        $_POST = ['body' => 'Futon, two nights', 'board_tags' => 'couches', 'subject' => 'Futon', 'event_date' => '2026-11-30',
+            'event_end_date' => '2026-12-01', 'event_location' => 'Somerville', 'author_identity_id' => '', 'return_to' => '', 'body_format' => 'plain'];
+        try {
+            ob_start();
+            $application->handle('POST', '/compose/thread');
+            ob_end_clean();
+        } finally {
+            $_POST = [];
+        }
+        $latest = trim((string) shell_exec('cd ' . escapeshellarg($root) . ' && git log -1 --name-only --format='));
+        $record = (string) file_get_contents($root . '/' . strtok($latest, "\n"));
+        calendarAssertContains("Board-Tags: couches\n", $record);
+        calendarAssertContains("Event-Date: 2026-11-30\nEvent-End-Date: 2026-12-01\n", $record);
+        calendarAssertContains("Event-Location: Somerville\n", $record);
+        calendarAssertContains('Futon</a>', $this->render($application, '/calendar/couches/2026-12-01'));
+        calendarAssertSame(['2026-11-29' => 'confirmed', '2026-11-30' => 'confirmed', '2026-12-01' => 'confirmed', '2026-12-02' => 'confirmed'],
+            $this->marks($this->render($application, '/calendar/couches', ['month' => '2026-11'])));
+
+        // A refused post keeps the draft and the day, as the composer already does.
+        $_POST = ['body' => 'Keep me', 'board_tags' => 'couches', 'event_date' => '2026-11-30', 'event_end_date' => '2026-11-01'];
+        try {
+            ob_start();
+            $application->handle('POST', '/compose/thread');
+            $refused = (string) ob_get_clean();
+        } finally {
+            $_POST = [];
+        }
+        calendarAssertContains('event_end_date must not be before event_date.', $refused);
+        calendarAssertContains('Keep me', $refused);
+        calendarAssertContains('name="event_date" value="2026-11-30"', $refused);
+    }
+
     public function testMembersOnlySiteKeepsTheCalendarFromUnapprovedVisitors(): void
     {
         [, $service, $application] = $this->environment();
@@ -130,7 +198,7 @@ final class CalendarPageTest
         try {
             putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
             TestViewerSession::signedOut();
-            foreach (['/calendar', '/calendar/couches'] as $path) {
+            foreach (['/calendar', '/calendar/couches', '/calendar/couches/2026-11-29'] as $path) {
                 $html = $this->render($application, $path, ['month' => '2026-11']);
                 calendarAssertSame(true, http_response_code() !== 200);
                 calendarAssertNotContains('Private couch', $html);

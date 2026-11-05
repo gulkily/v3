@@ -1073,8 +1073,18 @@ final class Application
             return;
         }
 
-        if (preg_match('#^/calendar/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1
-            && preg_match('#^\d{4}-\d{2}-\d{2}$#', $matches[1]) !== 1) {
+        if (preg_match('#^/calendar/(?:([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/)?(\d{4}-\d{2}-\d{2})/?$#', $path, $matches) === 1) {
+            $html = $this->calendarPageController()->day($matches[1] !== '' ? $matches[1] : null, $matches[2]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
+        if (preg_match('#^/calendar/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
             $this->sendHtml($this->calendarPageController()->grid($matches[1], $query['month'] ?? null), 200);
             return;
         }

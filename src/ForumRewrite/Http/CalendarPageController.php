@@ -63,6 +63,42 @@ final class CalendarPageController
         ], $tag);
     }
 
+    /** /calendar/<date> and /calendar/<tag>/<date>; null for a date that does not exist. */
+    public function day(?string $tag, string $date): ?string
+    {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $match) !== 1 || !checkdate((int) $match[2], (int) $match[3], (int) $match[1])) {
+            return null;
+        }
+        $tag = $tag === null ? null : strtolower($tag);
+        $base = self::basePath($tag);
+        $data = ['calendarTag' => $tag, 'calendarBase' => $base, 'calendarDate' => $date];
+        if (!$this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)) {
+            return $this->renderDay($data + ['calendarEnabled' => false], $tag, $date);
+        }
+
+        $pdo = $this->routeServices->pdo();
+        $events = CalendarQuery::eventsBetween($pdo, $date, $date, $tag);
+        $states = EventStatus::forThreads($pdo, $this->repositoryRoot, array_map('strval', array_column($events, 'root_post_id')));
+        $day = CalendarDays::derive($events, $states, $date, $date)[$date];
+
+        return $this->renderDay($data + [
+            'calendarEnabled' => true,
+            'calendarMonthLink' => $base . '?month=' . substr($date, 0, 7),
+            'calendarDay' => $day,
+            // The shared composer, as /compose/thread renders it, with the day fixed and the tag preset.
+            'boardTags' => $tag ?? 'general',
+            'subject' => '',
+            'body' => '',
+            'notice' => null,
+            'error' => null,
+            'eventDate' => $date,
+            'eventEndDate' => '',
+            'eventTime' => '',
+            'eventLocation' => '',
+            'eventLink' => '',
+        ], $tag, $date);
+    }
+
     public static function basePath(?string $tag): string
     {
         return $tag === null ? '/calendar' : '/calendar/' . $tag;
@@ -100,6 +136,18 @@ final class CalendarPageController
         }
 
         return ['label' => $first->format('F Y'), 'weeks' => array_chunk($cells, 7)];
+    }
+
+    /** @param array<string, mixed> $data */
+    private function renderDay(array $data, ?string $tag, string $date): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'calendar_day.php',
+            $data,
+            $date . ($tag === null ? '' : ' #' . $tag) . ' - Calendar',
+            'board',
+            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js'],
+        );
     }
 
     /** @param array<string, mixed> $data */

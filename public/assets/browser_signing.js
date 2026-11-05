@@ -397,7 +397,11 @@
       return `${storageKeys.composeDraftPrefix}:${kind}:${threadId}:${parentId}`;
     }
 
-    return `${storageKeys.composeDraftPrefix}:${kind}`;
+    // A placement with its own fixed fields (a calendar day) keeps its own draft.
+    const scope = form.dataset.composeDraftScope || "";
+    return scope !== ""
+      ? `${storageKeys.composeDraftPrefix}:${kind}:${scope}`
+      : `${storageKeys.composeDraftPrefix}:${kind}`;
   }
 
   function composeDraftFields(form) {

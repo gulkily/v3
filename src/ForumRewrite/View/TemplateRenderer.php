@@ -53,6 +53,7 @@ final class TemplateRenderer
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
         'calendar.php' => ['/assets/calendar.css'],
+        'calendar_day.php' => ['/assets/compose.css', '/assets/calendar.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
         'fastmod.php' => ['/assets/tools.css'],

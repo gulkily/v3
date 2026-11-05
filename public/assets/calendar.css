@@ -47,6 +47,9 @@
   font-family: var(--ui-font);
   font-size: 0.8rem;
 }
+.calendar-day__count {
+  display: none;
+}
 .calendar-day__entries {
   list-style: none;
   margin: 0.15rem 0 0;
@@ -65,6 +68,45 @@
   display: block;
   font-size: 0.7rem;
 }
+.calendar-entry__author * {
+  font-size: inherit;
+  font-family: inherit;
+}
 .calendar-day__more {
   font-size: 0.7rem;
+}
+
+.calendar-day-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.calendar-day-entries li {
+  margin: 0 0 0.5rem;
+}
+
+/* A phone shows the month: each day links to its page, with the number of events. */
+@media (max-width: 40rem) {
+  .calendar-grid {
+    min-width: 0;
+  }
+  .calendar-day {
+    height: 3rem;
+    padding: 0.2rem;
+  }
+  .calendar-day__number {
+    display: block;
+    min-height: 2.4rem;
+    text-decoration: none;
+  }
+  .calendar-day__count {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+  }
+  .calendar-day__entries,
+  .calendar-day__more {
+    display: none;
+  }
 }

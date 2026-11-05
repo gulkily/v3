@@ -165,3 +165,52 @@ Enhancement requests: none.
 - Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.20.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Day page with the shared composer
+
+**Original estimate: 0.14**
+
+- Changes:
+  - `src/ForumRewrite/Http/CalendarPageController.php`: `day(?tag, date)` at `/calendar/<date>` and `/calendar/<tag>/<date>`.
+    - Not Found for a date that does not exist.
+    - Lists that day's events through the same query and derivation as the grid, so declined events stay off.
+    - Renders the composer with the page data `/compose/thread` uses: the date fixed, Until empty, tags preset to the calendar's tag or `general`.
+    - Loads the compose page's script set.
+  - `templates/pages/calendar_day.php`:
+    - Each event is one line: title, author, then only what the page date doesn't already say (the span when multi-day, time, place, state).
+    - Below that, `partials/thread_compose_form.php` inside the same `data-compose-root` section the compose page uses.
+    - The form posts to `/compose/thread` (plain) or through the signed path (JavaScript), and lands on the new thread.
+  - `templates/partials/composer.php`: optional `composerEventDateFixed` marks the Date input `readonly`.
+  - `templates/partials/thread_compose_form.php` and `public/assets/browser_signing.js`: optional `data-compose-draft-scope`, so a placement keeps its own draft.
+    - Without it, the one shared thread-draft key let a draft from `/compose/thread` overwrite a day page's date and tag on restore.
+    - Unscoped composers keep their existing key.
+  - `public/assets/calendar.css`:
+    - Day-list styles.
+    - A phone layout: under 40rem the grid fits seven columns and each day shows its event count, linking to the day page; titles show from tablet width up. The Stage 5 grid scrolled sideways on a phone and hid Thursday–Saturday.
+    - The author helper's "(unapproved)" suffix now inherits the cell's small type.
+  - `src/ForumRewrite/Application.php`: day route ahead of the tag route; a date segment is always a day.
+  - `src/ForumRewrite/View/TemplateRenderer.php`: `compose.css` and `calendar.css` for the day page.
+  - `tests/CalendarPageTest.php`:
+    - day listing, tag preset, readonly date, draft scope, compose action;
+    - all-events day; impossible date gives 404;
+    - JavaScript-off form post writes `Board-Tags: couches`, `Event-Date`/`Event-End-Date`/`Event-Location`, and the new event shows on the next day page and the grid;
+    - a refused post re-renders through the existing compose error path with body and date kept;
+    - members-only refusal on a day page.
+  - `tests/browser/calendar.mjs` (manual run, like `composers.mjs`):
+    - a compose-page draft does not touch a day page's fields;
+    - a signed post from `/calendar/couches/2026-11-30` with Until, place and title is written with the browser key's `Author-Identity-ID` and shows on the grid;
+    - a JavaScript-off post from a day page;
+    - a five-event day at 390px and 1280px: three titles and `+2 more` on desktop, count `5` and Saturday on screen on a phone; no horizontal page scroll; no page errors.
+  - `tests/BrowserSigningNormalizationTest.php`: the two thread-submit helper expectations now include `event_end_date`.
+- Verification:
+  - Passed: `./v3 test --smoke CalendarPageTest EventStatusTest EventEndDateParserTest BrowserSigningNormalizationTest WriteApiSmokeTest::testComposeThreadCarriesEventEndDateThroughPrefillPrepareAndErrorRerender`, then `./v3 test BrowserSigningNormalizationTest` after its fix: 83 run, 83 passed. Full suite not run, per `AGENTS.md`.
+  - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/calendar.mjs`, `node tests/browser/compose_disclosure.mjs`, `node tests/browser/composers.mjs`.
+  - Screenshots of the grid and day page at 390px and 1280px reviewed locally (text theme only).
+  - Pending (Stage 8): icon themes, dark theme, the real-data rebuild, production.
+- Notes:
+  - **Stage 2 gap found here:** Stage 2 added `event_end_date` to `collectThreadSubmitFields()` without running `BrowserSigningNormalizationTest`. Two of its helper tests failed until this stage updated them. The behavior was right; the expectations were stale.
+  - The draft scope is a small change to the shared composer that Step 3 said would be used unchanged. It is needed for the day page's fixed date to stay fixed, and it does not change unscoped composers.
+  - The compose script list is repeated from `ComposeAndAccountKeyController::identityScripts()`, which is private there.
+- Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.16 (the draft collision and the phone layout were not anticipated).
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

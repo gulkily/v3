@@ -3242,6 +3242,7 @@ NODE;
                 'subject' => 'Thread subject',
                 'body' => 'Thread body',
                 'event_date' => '',
+                'event_end_date' => '',
                 'event_time' => '',
                 'event_location' => '',
                 'event_link' => '',
@@ -3274,6 +3275,7 @@ const fields = [
   field('subject', 'Cypher Night'),
   field('body', 'Doors open sharp.'),
   field('event_date', '2026-11-14'),
+  field('event_end_date', '2026-11-15'),
   field('event_time', '19:30'),
   field('event_location', 'MIT Media Lab, E14'),
   field('event_link', 'https://example.test/cypher-night')
@@ -3318,6 +3320,7 @@ NODE;
                 'subject' => 'Cypher Night',
                 'body' => 'Doors open sharp.',
                 'event_date' => '2026-11-14',
+                'event_end_date' => '2026-11-15',
                 'event_time' => '19:30',
                 'event_location' => 'MIT Media Lab, E14',
                 'event_link' => 'https://example.test/cypher-night',
