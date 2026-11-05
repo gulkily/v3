@@ -8,11 +8,21 @@
   }
   function sameIdentity() { return originalIdentity === identity(); }
   function rows() { return Array.from(document.querySelectorAll('[data-conversation-row]')); }
+  // Phones hide the bar's Messages link; the More tab and the panel's Messages
+  // link carry the same count so an unread conversation still shows.
+  function mirror() {
+    document.querySelectorAll('[data-private-message-unread-mirror]').forEach(function (element) {
+      if (nav && nav.dataset.unreadCount !== undefined) element.dataset.unreadCount = nav.dataset.unreadCount;
+      else delete element.dataset.unreadCount;
+      if (nav && nav.title) element.title = nav.title; else element.removeAttribute('title');
+    });
+  }
   function unavailable(message) {
     nav.querySelector('#private-message-unread-status').textContent = message;
     nav.title = message;
     nav.dataset.unreadState = 'unavailable';
     delete nav.dataset.unreadCount;
+    mirror();
     rows().forEach(function (row) {
       const marker = row.querySelector('[data-role="unread-indicator"]');
       marker.textContent = '?'; marker.title = message;
@@ -68,6 +78,7 @@
       nav.title = description;
       nav.dataset.unreadState = 'ready';
       nav.dataset.unreadCount = String(combined.unread_count);
+      mirror();
       rows().forEach(function (row) {
         const unread = states[row.dataset.counterpart];
         const marker = row.querySelector('[data-role="unread-indicator"]');
@@ -92,6 +103,7 @@
     clearTimeout(scheduled);
     nav = null;
     historyEligibility = null;
+    mirror();
   }
   function start(navElement) {
     if (nav === navElement && nav && nav.isConnected) return;

@@ -112,6 +112,9 @@ final class AppNavigationPlacementTest
                 assertStringContains('href="' . $href . '"', $menu[0]);
             }
             assertStringContains('account-menu__label--more">More<', $menu[0]);
+            // The More tab and the panel's Messages link mirror the unread count on phones.
+            assertStringContains('aria-label="Menu" data-private-message-unread-mirror', $menu[0]);
+            assertStringContains('href="/messages" data-member-only data-private-message-unread-mirror', $menu[0]);
             assertStringContains('data-invite-navigation', $menu[0]);
             assertStringContains('data-role="theme-menu"', $menu[0]);
             assertStringContains('class="new-post-button" href="/compose/thread"', $html);

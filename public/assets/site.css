@@ -703,6 +703,12 @@ pre {
     color: var(--active-ink);
   }
 
+  /* Unread Messages shows on the More tab the same way it shows on the link. */
+  [data-shell="app"] .account-menu__trigger[data-unread-count]:not([data-unread-count="0"]) {
+    outline: 2px solid var(--active-line);
+    outline-offset: -2px;
+  }
+
   /* The LCD palette's centering transform would make its fixed popover
      position against the palette instead of the screen. */
   [data-shell="app"] .account-menu .lcd-palette {

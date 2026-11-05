@@ -170,6 +170,12 @@ try {
           await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready', null, { timeout: 10000 });
           const after = await messages.evaluate(node => { const r = node.getBoundingClientRect(); return JSON.stringify([Math.round(r.x), Math.round(r.width)]); });
           assert.equal(after, box, `${label}: unread did not move Messages`);
+          // Phones hide the bar link, so the More tab and the panel link mirror its count.
+          if (width < 640) {
+            const counts = await page.evaluate(() => [document.querySelector('nav.nav [data-private-message-unread]').dataset.unreadCount, ...Array.from(document.querySelectorAll('[data-private-message-unread-mirror]')).map(node => node.dataset.unreadCount)]);
+            assert.equal(counts.length, 3, `${label}: two unread mirrors (${counts})`);
+            assert.ok(counts.every(count => count === counts[0] && count !== undefined), `${label}: More mirrors the unread count (${counts})`);
+          }
           // The More-panel link sits in a closed disclosure, so innerText is empty there; fall back to textContent.
           assert.equal((await messages.evaluate(node => node.innerText || node.textContent)).trim(), 'Messages', `${label}: caption unchanged`);
           if (shots && (path === '/' || path === '/users/')) await page.screenshot({ path: `${shots}/member-${theme}-${width}${path === '/' ? '' : '-users'}.png` });

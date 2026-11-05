@@ -66,3 +66,23 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 - Estimate details: original scope unchanged; uncertainty low. Retrospective 0.16 (above 0.12): the browser-check updates for the duplicated Messages destination took most of the extra work. No revision was appended before completion.
 
 *— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
+
+## Stage 3 - Unread indicator on More
+
+**Original estimate: 0.08**
+**Retrospective stage work: 0.06**
+
+- Changes:
+  - `private_message_unread.js`: a `mirror()` step copies the bar link's `data-unread-count` and title onto every `[data-private-message-unread-mirror]` element when the status becomes ready or unavailable, and clears them on stop.
+  - `app_header.php`: the More trigger and the panel's Messages link carry the mirror attribute. The trigger keeps `aria-label="Menu"`; only the bar link has `aria-describedby`, so screen readers hear the count once.
+  - `site.css`: on phones a non-zero count outlines the More tab (inset, inside the fixed bar). The panel link already uses the shared `.nav-link[data-unread-count]` outline.
+  - Tests: `viewer_nav_prepaint.mjs` asserts both mirrors equal the bar count at 390px; placement test asserts the mirror markup.
+- Verification:
+  - Passed: `viewer_nav_prepaint.mjs` (light, word97), `private_message_live_navigation.mjs`, `nav_unread_outline.mjs`.
+  - Passed: `./v3 test --smoke AppNavigationPlacementTest`.
+  - Passed: `git diff --check`.
+  - Passed: screenshot at 375px with count 3: More tab outlined; Word97 panel shows Messages outlined.
+- Notes: nothing moved or re-captioned; the outline is the same device the bar link uses.
+- Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective 0.06, slightly under.
+
+*— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
