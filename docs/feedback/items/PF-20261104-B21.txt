@@ -1,9 +1,9 @@
 ID: PF-20261104-B21
 Title: Empty space below textarea
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 Why is there so much empty space under the textarea? Screenshot supplied in source.
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Screenshot unavailable; affected page/theme not established.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-04: maintainer reported the same gap on /compose/thread and /compose/reply with a screenshot. Removed the reserved image-area space on the compose pages; verified locally in 13 themes. Deployment and live acceptance remain pending. See docs/plans/ui_copy_audit_checklist.md.

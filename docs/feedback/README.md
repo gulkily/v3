@@ -158,6 +158,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | Item | Title | Workflow | Evidence | Estimate | Sources |
 | --- | --- | --- | --- | --- | --- |
 | [PF-20261021-B03](items/PF-20261021-B03.txt) | Saved draft starts collapsed | blocked | locally-verified | 0.15 | 1 |
+| [PF-20261104-B21](items/PF-20261104-B21.txt) | Empty space below textarea | blocked | locally-verified | — | 1 |
 | [PF-20261021-B01](items/PF-20261021-B01.txt) | Composer jumping | untriaged | unknown | 0.75 | 1 |
 | [PF-20261021-B02](items/PF-20261021-B02.txt) | Textarea edge alignment | untriaged | unknown | 0.25 | 1 |
 | [PF-20261021-B04](items/PF-20261021-B04.txt) | Slow reply feedback | untriaged | unknown | — | 7 |
@@ -202,7 +203,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-B17](items/PF-20261104-B17.txt) | Text-browser layout reports | untriaged | unknown | — | 7 |
 | [PF-20261104-B18](items/PF-20261104-B18.txt) | Draft-empty message font | untriaged | unknown | — | 1 |
 | [PF-20261104-B19](items/PF-20261104-B19.txt) | Fast scoring dependency label confusing | untriaged | unknown | — | 2 |
-| [PF-20261104-B21](items/PF-20261104-B21.txt) | Empty space below textarea | untriaged | unknown | — | 1 |
 | [PF-20261104-B22](items/PF-20261104-B22.txt) | Confusing image-upload temporary state | untriaged | unknown | — | 1 |
 | [PF-20261104-B23](items/PF-20261104-B23.txt) | Sticker navigation wraps and selector clips | untriaged | unknown | — | 2 |
 | [PF-20261104-B24](items/PF-20261104-B24.txt) | Posting preview indentation differs | untriaged | unknown | — | 1 |

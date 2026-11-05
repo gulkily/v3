@@ -132,7 +132,8 @@ try {
  }
  // Phones: the full composer keeps the body and Post together above the keyboard in every
  // permitted theme (375 x 300 is roughly what an iPhone SE leaves above its keyboard), and
- // wider screens keep the tall body and the reserved picker footprint.
+ // wider screens keep the tall body. At every size an empty image area takes no space, so
+ // Post sits one form gap below the body on both compose pages.
  for (const [width,height] of (process.argv.includes('--shared-only') ? [] : [[375,667],[375,300],[1280,1000]])) {
    await page.setViewportSize({width,height});
    for (const theme of ['light','dark','console','lcd','chicago','vapor','forge','sticker','arena','thermal','whitehot','word97','midnight']) {
@@ -158,7 +159,6 @@ try {
      assert.equal(fit.titleBelowPost,true,`${label}: Title sits below Post`);
      if (width < 640) {
        assert.ok(fit.span <= 300,`${label}: body top to Post bottom ${fit.span}px fits above a keyboard`);
-       assert.equal(fit.pickerReserved,false,`${label}: nothing reserved between body and Post`);
        // What a phone does on focus: scroll the field into view. Post must then be on screen.
        const focused = await page.evaluate(() => {
          const form=document.querySelector('.compose-page [data-compose-kind="thread"]');
@@ -171,8 +171,24 @@ try {
        assert.ok(focused.postBottom <= focused.limit + 0.5,`${label}: Post bottom ${Math.round(focused.postBottom)}px is on screen after focusing the body (limit ${Math.round(focused.limit)}px)`);
      } else {
        assert.ok(fit.bodyHeight > 150,`${label}: desktop keeps the tall body (${fit.bodyHeight}px)`);
-       assert.equal(fit.pickerReserved,true,`${label}: desktop keeps the reserved picker footprint`);
      }
+     assert.equal(fit.pickerReserved,false,`${label}: nothing reserved between body and Post`);
+     for (const path of ['/compose/thread','/compose/reply']) {
+       await page.goto(base+path);
+       await page.locator('.compose-form-actions').waitFor();
+       await page.waitForLoadState('networkidle');
+       const spacing = await page.evaluate(() => {
+         const form=document.querySelector('.compose-page [data-compose-form]');
+         const actions=form.querySelector('.compose-form-actions');
+         const body=form.querySelector('textarea[name="body"]').getBoundingClientRect();
+         const post=actions.querySelector(':scope > button[type="submit"]').getBoundingClientRect();
+         return {gap:post.top-body.bottom, formGap:parseFloat(getComputedStyle(actions).marginTop)};
+       });
+       assert.ok(spacing.gap <= spacing.formGap + 12,`${label} ${path}: body to Post is ${spacing.gap}px, form gap ${spacing.formGap}px`);
+       console.log(`PASS spacing ${label} ${path} gap=${Math.round(spacing.gap)}px`);
+     }
+     await page.goto(base+'/compose/thread');
+     await page.locator('.compose-form-actions').waitFor();
      if(process.env.PHONE_FIT_SCREENSHOT_DIR) await page.screenshot({path:join(process.env.PHONE_FIT_SCREENSHOT_DIR,`compose-${theme}-${width}x${height}.png`)});
      console.log(`PASS phone fit ${label} span=${Math.round(fit.span)}px`);
    }
