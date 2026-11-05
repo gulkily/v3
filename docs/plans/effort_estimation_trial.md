@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/board_thumbnails
+
+2026-11-05T17:45:00Z — standing P2 enrollment, one-shot; [canonical record](./board_thumbnails/board_thumbnails_one_shot.md#study-history). Scope v1: thumbnails for image posts on board list rows and Recent rows (PF-20261104-F60). Baseline `822d6134692883e145728db96b1a9aa62f1ca496`; R1 hashes not re-verified; extended/debug enabled. Intake 0.50 recorded before attachment and listing code were inspected (board templates seen earlier the same day). Closeout retrospective scope assessment 0.40, single exposed Claude rater. Smoke plus changed tests passed; 13 themes at phone and desktop checked locally; full suite and live check pending. Maintainer comfortable-fit and acceptance pending; no accepted-count change.
+
 ## Cycle v3/deploy_pending_commits
 
 2026-11-05T15:05:00Z — v3/deploy_pending_commits closeout: [record](./deploy_pending_commits/deploy_pending_commits_one_shot.md#study-history). Delivered scope v1 in full on `feat/deploy-pending-commits`; projection 0.20 reaffirmed at entry and closeout; retrospective scope assessment 0.20, single exposed Claude rater, not independent. Smoke set plus changed tests 457/457; five themes at phone and desktop rendered; full suite not run. Feedback item PF-20261104-F49 updated. Maintainer comfortable-fit and acceptance pending; no accepted-count change.

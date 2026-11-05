@@ -17,6 +17,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261103-F01](items/PF-20261103-F01.txt) | Retitle thread by reply; visible likes and flags | blocked | locally-verified | 0.80 | 1 |
 | [PF-20261104-F27](items/PF-20261104-F27.txt) | Discover code repository URLs | blocked | locally-verified | — | 3 |
 | [PF-20261104-F49](items/PF-20261104-F49.txt) | Deploy shows commits and queue delay | blocked | locally-verified | — | 1 |
+| [PF-20261104-F60](items/PF-20261104-F60.txt) | Board and Recent image thumbnails | blocked | locally-verified | — | 3 |
 | [PF-20261104-F66](items/PF-20261104-F66.txt) | Apply Word97 repairs to Chicago | blocked | locally-verified | — | 1 |
 | [PF-20261104-F78](items/PF-20261104-F78.txt) | Clickable hashtags in post bodies | blocked | locally-verified | — | 1 |
 | [PF-20261021-F03](items/PF-20261021-F03.txt) | Text-entry macros | untriaged | unknown | 0.5 | 1 |
@@ -135,7 +136,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-F57](items/PF-20261104-F57.txt) | Prominent administrator sign-in state | untriaged | unknown | — | 1 |
 | [PF-20261104-F58](items/PF-20261104-F58.txt) | Dismiss pending submission recovery | untriaged | unknown | — | 1 |
 | [PF-20261104-F59](items/PF-20261104-F59.txt) | Easy selector for reused tags | untriaged | unknown | — | 1 |
-| [PF-20261104-F60](items/PF-20261104-F60.txt) | Board and Recent image thumbnails | untriaged | unknown | — | 3 |
 | [PF-20261104-F61](items/PF-20261104-F61.txt) | Tags in title field workflow | untriaged | unknown | — | 1 |
 | [PF-20261104-F62](items/PF-20261104-F62.txt) | Claimable clipped-author identities | untriaged | unknown | — | 1 |
 | [PF-20261104-F63](items/PF-20261104-F63.txt) | Global full-text search flag | untriaged | unknown | — | 1 |

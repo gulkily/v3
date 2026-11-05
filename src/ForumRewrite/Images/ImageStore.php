@@ -90,6 +90,17 @@ final class ImageStore
         return $path;
     }
 
+    /**
+     * Cheap presence check for list thumbnails: the stored file exists with the
+     * referenced size. Serving the image (ImageController) still verifies the
+     * checksum, so this never hashes files on list pages.
+     */
+    public function isPresent(array $reference): bool
+    {
+        $path = $this->root . '/' . ImageReference::filename($reference);
+        return !is_link($path) && is_file($path) && filesize($path) === ImageReference::validate($reference)['bytes'];
+    }
+
     public function inventory(): array
     {
         if (!is_dir($this->root)) { return []; }
