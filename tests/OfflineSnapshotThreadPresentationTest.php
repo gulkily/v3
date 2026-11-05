@@ -23,7 +23,7 @@ function element(type) {
     get firstChild() { return this.children[0] || null; }, setAttribute() {}, addEventListener() {} };
 }
 global.window = {};
-global.document = { addEventListener() {}, createElement: element };
+global.document = { addEventListener() {}, createElement: element, querySelector() { return { getAttribute() { return process.argv[3]; } }; } };
 vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
 const rows = JSON.parse(process.argv[2]).map((body, i) => [String(i), i ? '0' : '', 'Topic', body, 'guest', '2026-11-04T00:00:00Z']);
 const database = { exec(sql) {
@@ -47,6 +47,14 @@ NODE;
         assertStringNotContains('href=', $html[2]);
         assertSame(1, substr_count($html[3], 'href='));
         assertStringNotContains('href=', $html[4]);
+        $disabledOutput = [];
+        exec('node -e ' . escapeshellarg($script) . ' ' . escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js') . ' ' . escapeshellarg(json_encode($bodies, JSON_THROW_ON_ERROR)) . ' 0 2>&1', $disabledOutput, $code);
+        assertSame(0, $code, implode("\n", $disabledOutput));
+        $disabled = json_decode(implode("\n", $disabledOutput), true, 512, JSON_THROW_ON_ERROR);
+        foreach ($bodies as $index => $body) {
+            assertSame(str_replace('<br />', '<br>', $renderer->render($body, false, tagLinks: false)), $disabled[$index]);
+        }
+
     }
 
     public function testSnapshotThreadCardsFollowOnlineRootAndCommentPresentationOrder(): void

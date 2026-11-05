@@ -28,7 +28,7 @@ final class MediaEmbedRenderer
      * With $markdown, text between image and embed cards renders through the post-safe Markdown
      * renderer, and only embed URLs alone on their line become cards (others are ordinary links).
      */
-    public function render(string $body, bool $enabled, bool $inlinePlayerEnabled = false, bool $imagesEnabled = false, bool $markdown = false): string
+    public function render(string $body, bool $enabled, bool $inlinePlayerEnabled = false, bool $imagesEnabled = false, bool $markdown = false, bool $tagLinks = true): string
     {
         try { $image = \ForumRewrite\Images\ImageReference::fromBody($body); }
         catch (\RuntimeException) { $image = null; }
@@ -45,15 +45,15 @@ final class MediaEmbedRenderer
                 $html .= '<img src="/images/' . \ForumRewrite\Images\ImageReference::filename($image) . '" alt="' . $description . '" width="' . $image['width'] . '" height="' . $image['height'] . '" loading="lazy" style="max-width:100%;height:auto">';
             }
             $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable' . ($description === '' ? '' : ' — ')) . $description . '</span></span>';
-            return $this->render($before, $enabled, $inlinePlayerEnabled, false, $markdown) . $html . $this->render($after, $enabled, $inlinePlayerEnabled, false, $markdown);
+            return $this->render($before, $enabled, $inlinePlayerEnabled, false, $markdown, $tagLinks) . $html . $this->render($after, $enabled, $inlinePlayerEnabled, false, $markdown, $tagLinks);
         }
         $matches = $enabled ? $this->detector->detect($body) : [];
         if ($markdown) {
             $matches = array_values(array_filter($matches, static fn (array $match): bool => self::standsAlone($body, $match)));
         }
         $text = $markdown
-            ? static fn (string $segment): string => trim($segment) === '' ? '' : \ForumRewrite\Docs\PublicMarkdownRenderer::renderPost(trim($segment, "\r\n"))
-            : fn (string $segment): string => $this->escapeAndBreak($segment);
+            ? static fn (string $segment): string => trim($segment) === '' ? '' : \ForumRewrite\Docs\PublicMarkdownRenderer::renderPost(trim($segment, "\r\n"), $tagLinks)
+            : fn (string $segment): string => $this->escapeAndBreak($segment, $tagLinks);
 
         if ($matches === []) {
             return $text($body);
@@ -214,9 +214,9 @@ final class MediaEmbedRenderer
         return '<img class="media-embed-card__warm-beacon" data-media-embed-warm-beacon src="' . $this->escape($warmUrl) . '" alt="" width="0" height="0" style="display:none" loading="eager">';
     }
 
-    private function escapeAndBreak(string $value): string
+    private function escapeAndBreak(string $value, bool $tagLinks): string
     {
-        return nl2br(PostHashtags::linkEscapedText($this->escape($value)));
+        return nl2br($tagLinks ? PostHashtags::linkEscapedText($this->escape($value)) : $this->escape($value));
     }
 
     private function escape(string $value): string

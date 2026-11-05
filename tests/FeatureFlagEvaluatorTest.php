@@ -60,6 +60,17 @@ final class FeatureFlagEvaluatorTest
         }
     }
 
+    public function testTagLinksDefaultSiteSettingAndEnvironmentOverride(): void
+    {
+        $this->withEnvironment([], function (): void {
+            assertSame(true, (new FeatureFlagEvaluator())->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED));
+            $root = $this->repositoryWithFeatureFlags("Schema: site-feature-flags-v1\n\nFORUM_TAG_LINKS_ENABLED: false\n");
+            assertSame(false, FeatureFlagEvaluator::forRepository($root)->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED));
+            putenv('FORUM_TAG_LINKS_ENABLED=true');
+            assertSame(true, FeatureFlagEvaluator::forRepository($root)->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED));
+        });
+    }
+
     public function testDefaultsMatchExistingSiteFlags(): void
     {
         $this->withEnvironment([], function (): void {
@@ -197,6 +208,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
             FeatureFlagRegistry::POST_MARKDOWN_ENABLED,
+            FeatureFlagRegistry::TAG_LINKS_ENABLED,
             FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,
@@ -508,6 +520,7 @@ PHP);
             FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED,
             FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
             FeatureFlagRegistry::POST_MARKDOWN_ENABLED,
+            FeatureFlagRegistry::TAG_LINKS_ENABLED,
             FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED,
             FeatureFlagRegistry::STATIC_DETAIL_PAGES_ENABLED,
             FeatureFlagRegistry::DEDALUS_AGENT_REPLIES_ENABLED,

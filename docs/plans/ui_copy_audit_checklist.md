@@ -800,6 +800,13 @@ Publication verification: 2026-10-30 UTC — user authorized commit and push. In
 Change: Recent reuses the board's thread rows: thread title linking to the thread anchored at the reply (own page only when the thread is unavailable), one-line excerpt, compact "guest · Oct 30 · Reply" meta; shared Previous/Next controls and the board's empty block. Removed the page heading, the long byline, the separate thread link and the page's own stylesheet. Essential empty/invalid-position recovery retained; no technical event details or feed explanation.
 Verification: 13 themes at 390/1280px, six themes visually reviewed at both widths plus invalid-position recovery, long-content overflow, keyboard/no-JavaScript paging, anchored reply, thread open/Back/reload and offline reconnect passed. PHP checks cover empty, invalid, unavailable context and escaping. [Evidence and limits](recent_activity/recent_activity_step4_implementation_summary.md#design-revision--2026-10-30-direct-work). Physical phone and production acceptance pending; screenshots outside repository.
 
+## Tag link follow-up — November 4, 2026
+
+- Added the operator-facing “Hashtag links in posts” flag, scoped to body hashtags, and always linked existing post metadata labels without adding explanatory post copy. Existing label text and comma separators remain.
+- Verified on/off behavior in Chromium with JS on/off, light/dark/Word97/Chicago/Midnight and 390px/1280px layouts, including labels moved to a continuation footer and actual tag-page navigation. No horizontal overflow. Phone/desktop screenshots inspected. Smoke and affected tests: 497 passed; extra checks: 10 passed. Full suite not run; deployment, production acceptance and physical-device checks pending.
+- Clarification verified: Header/footer labels always link; the flag gates body hashtags only. Updated smoke plus affected tests passed 455/455, and browser on/off checks passed the same five themes, phone/desktop and JS states, including footer navigation while disabled. Full suite not run; still local and undeployed.
+- Implementation record: [inline hashtag links](inline_hashtag_links.txt). No new cleanup candidates.
+
 ## Next phase — new candidates
 
 Current queue, expanded October 30, 2026. These observations need rendered review before deciding what to remove. Keep this section at the end of the file. A decision to retain useful copy can close a review; source matches alone cannot.

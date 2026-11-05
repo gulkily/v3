@@ -2081,7 +2081,7 @@ PHP;
         assertStringContains('Score: 0', $post);
         assertStringNotContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
-        assertStringContains('Labels: bug, needs-review', $thread);
+        assertStringContains('Labels: <a href="/tags/bug">bug</a>, <a href="/tags/needs-review">needs-review</a>', $thread);
         assertFingerprintedAsset($forte, 'lazy_compose_signing.js');
         assertFingerprintedAsset($forte, 'thread_reactions.js');
         assertStringContains(

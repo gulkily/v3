@@ -12,6 +12,8 @@ final class PrivateConfigSchemaTest
     public function testTemplateDefaultsRetainTheExistingGeneratedConfigSurface(): void
     {
         $defaults = PrivateConfigSchema::templateDefaults();
+        assertSame(false, array_key_exists('FORUM_TAG_LINKS_ENABLED', $defaults));
+        assertSame(true, in_array('FORUM_TAG_LINKS_ENABLED', PrivateConfigSchema::environmentKeys(), true));
         assertSame(false, array_key_exists('FORUM_STATIC_PROFILE_PAGES_ENABLED', $defaults));
         assertSame(true, in_array('FORUM_STATIC_PROFILE_PAGES_ENABLED', PrivateConfigSchema::environmentKeys(), true));
 

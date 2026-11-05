@@ -1386,6 +1386,40 @@ CODE;
         }
     }
 
+    public function testTagLinksCanBeDisabledAndRestoredWithoutChangingLabels(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $previous = getenv('FORUM_TAG_LINKS_ENABLED');
+        try {
+            putenv('FORUM_TAG_LINKS_ENABLED');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            foreach (['plain', 'markdown'] as $format) {
+                $thread = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?subject=Tags&body_format=' . $format . '&body=' . rawurlencode('**hello** #thoughts')), 'thread_id');
+                $reply = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_reply?thread_id=' . $thread . '&parent_id=' . $thread . '&body_format=' . $format . '&body=' . rawurlencode('Reply #thoughts')), 'post_id');
+                foreach (['false', 'true'] as $value) {
+                    // Exercise the canonical site setting and restoration, not only an environment override.
+                    file_put_contents($repositoryRoot . '/records/instance/feature-flags.txt', "Schema: site-feature-flags-v1\n\nFORUM_TAG_LINKS_ENABLED: {$value}\n");
+                    $current = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+                    foreach (['/threads/' . $thread, '/posts/' . $thread, '/posts/' . $reply] as $path) {
+                        $page = $this->renderMethod($current, 'GET', $path);
+                        if ($value === 'false') {
+                            assertStringNotContains('<a href="/tags/thoughts">#thoughts</a>', $page);
+                            assertStringContains('#thoughts', $page);
+                        } else {
+                            assertStringContains('<a href="/tags/thoughts">#thoughts</a>', $page);
+                        }
+                    }
+                    $page = $this->renderMethod($current, 'GET', '/threads/' . $thread);
+                    assertStringContains('Labels: <a href="/tags/thoughts">thoughts</a>', $page);
+                    assertStringContains('data-tag-links="' . ($value === 'true' ? '1' : '0') . '"', $this->renderMethod($current, 'GET', '/offline/reader/'));
+                    assertStringContains('/threads/' . $thread, $this->renderMethod($current, 'GET', '/tags/thoughts'));
+                }
+            }
+        } finally {
+            $previous === false ? putenv('FORUM_TAG_LINKS_ENABLED') : putenv('FORUM_TAG_LINKS_ENABLED=' . $previous);
+        }
+    }
+
     public function testPreviewsShowMarkdownPostsAsPlainWords(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2293,7 +2327,7 @@ PHP);
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($rootPostId));
             $created = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($rootPostId)), true);
 
-            assertStringContains('Labels: railspike', $threadPage);
+            assertStringContains('Labels: <a href="/tags/railspike">railspike</a>', $threadPage);
             assertStringContains('data-action="request-codex-handoff"', $threadPage);
             assertSame('ok', $created['status']);
             assertSame('draft_ready', $created['handoff_status']);
@@ -2333,7 +2367,7 @@ PHP);
             $replyHandoff = json_decode($this->renderMethod($application, 'POST', '/api/codex_handoff?post_id=' . rawurlencode($replyId)), true);
             assertSame('error', $replyHandoff['status']);
             assertStringContains('requires a development tag or thread label', $replyHandoff['error']);
-            assertStringContains('Labels: railspike', $threadPage);
+            assertStringContains('Labels: <a href="/tags/railspike">railspike</a>', $threadPage);
             assertSame(1, substr_count($threadPage, 'data-action="request-codex-handoff"'));
             assertSame('ok', $created['status']);
             assertSame('draft_ready', $created['handoff_status']);
@@ -6352,7 +6386,7 @@ NODE;
         $records = glob($repositoryRoot . '/records/thread-labels/*.txt');
 
         assertStringContains('status=ok', $response);
-        assertStringContains('Labels: bug, needs-review', $threadPage);
+        assertStringContains('Labels: <a href="/tags/bug">bug</a>, <a href="/tags/needs-review">needs-review</a>', $threadPage);
         assertSame(1, count(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), "Target-Kind: thread\nTarget-ID: " . $threadId))));
 
         $recordPath = array_values(array_filter($records, static fn (string $path): bool => str_contains((string) file_get_contents($path), "Target-Kind: thread\nTarget-ID: " . $threadId)))[0];
@@ -6382,7 +6416,7 @@ NODE;
         ));
 
         assertStringContains('status=ok', $response);
-        assertStringContains('Labels: answered, bug, needs-review', $threadPage);
+        assertStringContains('Labels: <a href="/tags/answered">answered</a>, <a href="/tags/bug">bug</a>, <a href="/tags/needs-review">needs-review</a>', $threadPage);
         assertSame(1, count($matchingRecords));
         $label = (new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse((string) file_get_contents($matchingRecords[0]));
         assertSame($this->extractValue($response, 'post_id'), $label->sourcePostId);
@@ -7170,7 +7204,7 @@ NODE;
         assertSame(true, isset($result['timings']['read_model_incremental_fallback']));
         assertSame(true, isset($result['timings']['read_model_rebuild_fallback']));
         assertStringContains('Fallback labeled reply', $threadPage);
-        assertStringContains('Labels: answered, bug, needs-review', $threadPage);
+        assertStringContains('Labels: <a href="/tags/answered">answered</a>, <a href="/tags/bug">bug</a>, <a href="/tags/needs-review">needs-review</a>', $threadPage);
         assertStringContains('thread_label_add', $activity);
         assertStringContains('Labels added: answered', $activity);
         $this->assertReadModelHealthy($databasePath);

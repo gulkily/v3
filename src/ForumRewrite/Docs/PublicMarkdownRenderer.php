@@ -9,13 +9,17 @@ final class PublicMarkdownRenderer
     /** True while rendering an untrusted post body rather than a project document. */
     private static bool $postMode = false;
 
+    private static bool $tagLinks = true;
+
     /**
      * Renders an untrusted post body: no front matter, hidden comments or raw image lines,
      * http(s) links only (marked user content), bare URLs linked, headings nested inside the
      * post, and single newlines kept as line breaks. Falls back to escaped plain text.
      */
-    public static function renderPost(string $markdown): string
+    public static function renderPost(string $markdown, bool $tagLinks = true): string
     {
+        $previousTagLinks = self::$tagLinks;
+        self::$tagLinks = $tagLinks;
         $previous = self::$postMode;
         self::$postMode = true;
         try {
@@ -24,6 +28,7 @@ final class PublicMarkdownRenderer
             return nl2br(self::escape($markdown));
         } finally {
             self::$postMode = $previous;
+            self::$tagLinks = $previousTagLinks;
         }
     }
 
@@ -435,7 +440,9 @@ final class PublicMarkdownRenderer
                 $url = self::postUrl(html_entity_decode($parts[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
                 return $url === null ? $m[0] : $store(self::postLink($url, $parts[1])) . $parts[2];
             }, $escaped) ?? $escaped;
-            $escaped = \ForumRewrite\View\PostHashtags::linkEscapedText($escaped);
+            if (self::$tagLinks) {
+                $escaped = \ForumRewrite\View\PostHashtags::linkEscapedText($escaped);
+            }
             // Emphasis needs text against both markers, so "2 * 3 * 4" stays arithmetic.
             $escaped = preg_replace('/\*\*(?=\S)([^*]+?)(?<=\S)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
             $escaped = preg_replace('/(?<![*\w])\*(?=\S)([^*]+?)(?<=\S)\*(?![*\w])/', '<em>$1</em>', $escaped) ?? $escaped;

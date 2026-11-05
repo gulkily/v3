@@ -8,6 +8,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
+const tagLinks = process.env.FORUM_TAG_LINKS_ENABLED !== 'false';
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const root = await mkdtemp(join(tmpdir(), 'inline-hashtags-'));
 const repository = join(root, 'repository');
@@ -63,16 +64,25 @@ try {
     for (const { thread, reply } of threads) {
       await page.goto(base + '/threads/' + thread);
       const rootBody = page.locator('.thread-root-card .body');
-      assert.equal(await rootBody.locator('a[href^="/tags/"]').count(), 2);
-      assert.equal(await page.locator(`[data-post-id="${reply}"] .body a[href="/tags/meta"]`).count(), 1);
+      assert.equal(await rootBody.locator('a[href^="/tags/"]').count(), tagLinks ? 2 : 0);
+      assert.equal(await page.locator(`[data-post-id="${reply}"] .body a[href="/tags/meta"]`).count(), tagLinks ? 1 : 0);
       assert.equal(await page.locator('a a, code a').count(), 0);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-      await rootBody.locator('a[href="/tags/meta"]').click();
+      const labels = page.locator('[data-post-byline]').filter({ hasText: 'Labels:' });
+      assert.ok((await labels.innerText()).includes('Labels:'));
+      assert.equal(await labels.locator('a[href="/tags/meta"]').count(), 1);
+      if (!tagLinks) {
+        assert.ok((await rootBody.innerText()).includes('#meta'));
+      }
+      await labels.locator('a[href="/tags/meta"]').click();
       await page.waitForURL(base + '/tags/meta');
       assert.ok(await page.locator(`a[href="/threads/${thread}"]`).count());
       await page.goto(base + '/posts/' + reply);
-      await page.locator('.body a[href="/tags/meta"]').click();
-      await page.waitForURL(base + '/tags/meta');
+      assert.equal(await page.locator('.body a[href="/tags/meta"]').count(), tagLinks ? 1 : 0);
+      if (tagLinks) {
+        await page.locator('.body a[href="/tags/meta"]').click();
+        await page.waitForURL(base + '/tags/meta');
+      }
     }
     if (theme === 'light' && javaScriptEnabled) {
       await page.goto(base + '/threads/' + threads[1].thread);
@@ -101,6 +111,13 @@ try {
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(base + '/threads/' + threads[0].thread);
     const link = page.locator('.thread-root-card .body a[href="/tags/meta"]');
+    if (!tagLinks) {
+      await page.locator('.thread-root-card .body').waitFor();
+      assert.ok((await page.locator('.thread-root-card .body').innerText()).includes('#meta'));
+      assert.equal(await page.locator('.body a[href^="/tags/"]').count(), 0);
+      await context.close();
+      continue;
+    }
     await link.waitFor({ timeout: 10000 }).catch(async error => {
       console.error(await page.locator('main').innerText());
       console.error(await page.locator('.thread-root-card .body').allInnerTexts());
@@ -116,7 +133,7 @@ try {
     assert.deepEqual(errors, []);
     await context.close();
   }
-  console.log(`PASS: ${process.env.HASHTAG_OFFLINE_ONLY ? "offline navigation" : "plain/Markdown roots and replies; JS on/off; five themes; offline navigation"}; phone/desktop. Screenshots: ${root}`);
+  console.log(`PASS: tag links ${tagLinks ? "enabled" : "disabled"}; ${process.env.HASHTAG_OFFLINE_ONLY ? "offline navigation" : "plain/Markdown roots and replies; JS on/off; five themes; offline navigation"}; phone/desktop. Screenshots: ${root}`);
 } catch (error) {
   console.error(log.slice(-5000));
   throw error;

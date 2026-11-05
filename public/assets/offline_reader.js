@@ -19,7 +19,9 @@
       try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : ""); }
       catch (error) { return "Image unavailable offline (reference preserved in the snapshot)."; }
     });
-    return linkEscapedHashtags(escapeHtml(text)).replace(/(\r\n|\r|\n)/g, "<br>$1");
+    var reader = document.querySelector && document.querySelector("[data-offline-reader]");
+    var tagLinks = !reader || reader.getAttribute("data-tag-links") !== "0";
+    return (tagLinks ? linkEscapedHashtags(escapeHtml(text)) : escapeHtml(text)).replace(/(\r\n|\r|\n)/g, "<br>$1");
   }
 
   // Mirrors View/PostHashtags.php; only escaped post text is passed here.

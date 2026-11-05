@@ -29,6 +29,16 @@ final class PostMarkdownRendererTest
         assertStringNotContains(' id="', PublicMarkdownRenderer::renderPost("## A\n\n## A"));
     }
 
+    public function testDisablingTagLinksKeepsAuthoredLinksAndDoesNotLeakToNextRender(): void
+    {
+        $body = '**#meta** [tag](https://example.test/tags/meta)';
+        $off = \ForumRewrite\Docs\PublicMarkdownRenderer::renderPost($body, false);
+        assertStringNotContains('href="/tags/', $off);
+        assertStringContains('<strong>#meta</strong>', $off);
+        assertStringContains('href="https://example.test/tags/meta"', $off);
+        assertStringContains('href="/tags/meta"', \ForumRewrite\Docs\PublicMarkdownRenderer::renderPost($body));
+    }
+
     public function testHashtagLinesLinkToTagPagesWithoutBecomingHeadings(): void
     {
         assertSame('<p><a href="/tags/v3">#v3</a> <a href="/tags/changelog">#changelog</a> <a href="/tags/meta">#meta</a></p>', PublicMarkdownRenderer::renderPost('#v3 #changelog #meta'));

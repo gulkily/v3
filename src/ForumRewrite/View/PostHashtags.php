@@ -7,6 +7,15 @@ namespace ForumRewrite\View;
 /** Post presentation only; never changes the signed body or assigns thread labels. */
 final class PostHashtags
 {
+    /** @param list<string> $labels */
+    public static function renderLabels(array $labels): string
+    {
+        return implode(', ', array_map(static function (string $label): string {
+            $text = htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return '<a href="/tags/' . rawurlencode(strtolower($label)) . '">' . $text . '</a>';
+        }, $labels));
+    }
+
     /**
      * Accept escaped text, not arbitrary HTML. Markdown calls this while its code and
      * links are still protected by tokens. Plain text keeps literal code/links/URLs.

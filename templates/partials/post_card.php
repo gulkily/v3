@@ -75,7 +75,7 @@ if ($isRunTail) {
     $metaLine = '<p class="meta" data-post-byline>' . $contentMeta($post, 'created_at', '');
     if ($showRootMetaExtras) {
         if ($thread['thread_labels'] !== []) {
-            $metaLine .= ' · Labels: ' . $e(implode(', ', $thread['thread_labels']));
+            $metaLine .= ' · Labels: ' . $renderLabels($thread['thread_labels']);
         }
         $trueReplyCount = (int) ($trueReplyCount ?? 0);
         if ($trueReplyCount > 0) {

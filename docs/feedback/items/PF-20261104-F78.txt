@@ -17,3 +17,9 @@ Hashtags in plain-text and Markdown post bodies and replies open their tag pages
 Notes:
 2026-11-04: Implementation and GitHub PR authorized by the user. No matching existing feedback item found. Plan and verification: docs/plans/inline_hashtag_links.txt.
 2026-11-04: Implemented and locally verified with focused PHP/Node tests and Brave navigation checks. Awaiting PR merge, deployment and production acceptance. The macOS smoke run has Linux-process and case-sensitive-filesystem limitations; representative failures reproduced on unchanged base 937dde4. See the implementation record for commands and results.
+
+2026-11-04: User requested an off switch and links in post header/footer label lists. Implemented FORUM_TAG_LINKS_ENABLED (default on, site mutable), shared metadata links and offline body gating. Linux smoke plus affected checks passed 497/497; extra configuration/shared-view checks passed 10/10. Chromium on/off checks passed across five themes, JS on/off and phone/desktop. Full suite not run. Follow-up is uncommitted and deployment/production acceptance remain pending; Workflow stays blocked. Evidence and reuse decisions: docs/plans/inline_hashtag_links.txt.
+
+2026-11-04: User clarified that header/footer labels should always link and only body hashtags should depend on the flag. Removed metadata gating and renamed the control Hashtag links in posts, keeping FORUM_TAG_LINKS_ENABLED. Updated smoke and affected tests passed 455/455; Chromium on/off checks passed five themes, phone/desktop, JS on/off and metadata navigation with the flag disabled. Full suite not run; uncommitted, undeployed and production acceptance pending. See docs/plans/inline_hashtag_links.txt.
+
+2026-11-05: User authorized merging into main and pushing. Preparing integration with the current origin/main; deployment and production acceptance remain pending, so Workflow remains blocked. Prior local verification is recorded in docs/plans/inline_hashtag_links.txt.

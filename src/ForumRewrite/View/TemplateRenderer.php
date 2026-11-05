@@ -549,13 +549,16 @@ final class TemplateRenderer
             'eventSupportEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED),
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
+            'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $mediaEmbedsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED);
         $mediaEmbedsInlinePlayerEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED);
-        $br = fn (mixed $value): string => $this->mediaEmbedRenderer->render((string) $value, $mediaEmbedsEnabled, $mediaEmbedsInlinePlayerEnabled, $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED));
+        $tagLinksEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED);
+        $renderLabels = static fn (array $labels): string => PostHashtags::renderLabels($labels);
+        $br = fn (mixed $value): string => $this->mediaEmbedRenderer->render((string) $value, $mediaEmbedsEnabled, $mediaEmbedsInlinePlayerEnabled, $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED), tagLinks: $tagLinksEnabled);
         $hasMediaEmbed = fn (mixed $value): bool => $mediaEmbedsEnabled && $this->mediaEmbedRenderer->hasEmbeds((string) $value);
         $postMarkdownEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::POST_MARKDOWN_ENABLED);
         // A post renders as Markdown only when its record says so and the site has not switched it off.
@@ -569,6 +572,7 @@ final class TemplateRenderer
             $mediaEmbedsInlinePlayerEnabled,
             $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
             $isMarkdownPost($record, $formatKey),
+            $tagLinksEnabled,
         );
         $friendlyTimestamp = fn (?string $timestamp): string => $this->formatFriendlyTimestamp($timestamp);
         $timestamp = fn (?string $timestamp): string => $this->renderTimestampHtml($timestamp, $e);

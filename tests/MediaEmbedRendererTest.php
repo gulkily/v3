@@ -9,6 +9,21 @@ use ForumRewrite\View\MediaEmbedRenderer;
 
 final class MediaEmbedRendererTest
 {
+    public function testTagLinksFlagSurvivesMediaAndImageSplitting(): void
+    {
+        $renderer = new \ForumRewrite\View\MediaEmbedRenderer();
+        foreach ([false, true] as $markdown) {
+            $body = "#before\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n#after\nImage-v1: " . str_repeat('a', 64) . " png 1 1 1\n#last";
+            $off = $renderer->render($body, true, markdown: $markdown, tagLinks: false);
+            assertStringNotContains('href="/tags/', $off);
+            assertStringContains('#before', $off);
+            assertStringContains('#last', $off);
+            assertStringContains('media-embed-card', $off);
+            assertStringContains('post-image', $off);
+            assertSame(3, substr_count($renderer->render($body, true, markdown: $markdown), 'href="/tags/'));
+        }
+    }
+
     public function testPlainHashtagsLinkWithoutChangingCodeUrlsOrEscaping(): void
     {
         $renderer = new MediaEmbedRenderer();

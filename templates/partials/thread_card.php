@@ -25,7 +25,7 @@ if (($mediaEmbedsEnabled ?? false) && $subject === 'Untitled') {
   <p class="meta"><?= $contentMeta($thread, 'root_post_created_at', '') ?></p>
 <?= $partial('partials/event_block.php') ?>
 <?php if ($showLabels && ($thread['thread_labels'] ?? []) !== []): ?>
-  <p class="meta">Labels: <?= $e(implode(', ', $thread['thread_labels'])) ?></p>
+  <p class="meta">Labels: <?= $renderLabels($thread['thread_labels']) ?></p>
 <?php endif; ?>
 <?php if (!$previewDuplicatesTitle && ($thread['retracted_at'] ?? null) === null): ?>
   <p class="thread-card__preview"><?= $br($plainText($thread, (string) $thread['body_preview'])) ?></p>
