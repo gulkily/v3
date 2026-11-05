@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/calendar`; [host ledger](../effort_estima
 
 Extended estimates: enabled (inherited)
 
-Status: Step 3 approved 2026-11-04 with the schema bump corrected to 48 → 49. Branch `feat/calendar`; planning commit `7af83949`. The maintainer's addendum (`f729d1b8`) was merged in `dacb71b8` and filed beside the plans; it confirms the approved decisions and changes no stage scope.
+Status: Step 4 closed 2026-11-04 at the maintainer's request and merged to `main`. Technically complete locally. The production checks were **not done** before merge; see Stage 8 and Closeout. Step 3 was approved with the schema bump corrected to 48 → 49. Branch `feat/calendar`; planning commit `7af83949`. The maintainer's addendum (`f729d1b8`) was merged in `dacb71b8` and filed beside the plans; it confirmed the approved decisions.
 
 **Cycle estimate: 0.90**
 
@@ -242,7 +242,7 @@ Enhancement requests (all from the maintainer on 2026-11-04 after reviewing the 
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
 
-## Stage 8 - Release verification (in progress)
+## Stage 8 - Release verification
 
 **Original estimate: 0.12**
 
@@ -261,18 +261,54 @@ Enhancement requests (all from the maintainer on 2026-11-04 after reviewing the 
   - Passed: screenshots reviewed locally for light, dark, Word97, Chicago and Midnight.
   - Passed: `./v3 test --smoke CalendarPageTest EventStatusTest EventEndDateParserTest`: 441 run, 441 passed. Full suite not run, per `AGENTS.md`.
   - Inapplicable: theme navigation icons. The calendar has no navigation entry this cycle, so `theme-nav-icons.css` has nothing to map.
-  - **Pending, maintainer:** `./v3 rebuild` from schema 48 on a copy of real data. Only the fixture and scratch rebuilds (Stage 3) were run; this workspace has no copy of the instance's records.
-  - **Pending, maintainer:** deploy to the maintainer's instance and replay the invite-link path with an unapproved, then approved, host. This workspace has no access to the server.
+  - **Not done before merge:** `./v3 rebuild` from schema 48 on a copy of real data. Only the fixture and scratch rebuilds (Stage 3) were run; this workspace has no copy of the instance's records. The maintainer has the branch deployed for testing; the startup rebuild there is the first real-data run.
+  - **Not done before merge:** the invite-link replay with an unapproved, then approved, host. This workspace has no access to the server. The maintainer chose to merge and run it on the deployed build.
   - Not done: Step 2 success criteria checked one by one on production. Everything else in them is covered locally by the tests above.
 - Notes:
   - No feedback item matches the calendar. PF-20261104-B10 was replayed and not reproduced (Stage 2), so no `Feedback:` trailer applies.
-  - Retrospective assessment, ledger closeout and the Step 4 debug report wait until the production checks are recorded.
-- Estimate details: original scope unchanged; no revision. Retrospective assessment pending.
+- Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.16. The 13-theme contrast pass, the Word97 fix and three maintainer refinements went beyond the planned checks; the production replay did not happen.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
 - Enhancements (maintainer requests above):
   - `public/assets/calendar.css`, `templates/pages/calendar.php`, `tests/browser/calendar.mjs`.
   - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/calendar.mjs`, including the 13-theme pass and the new border and click checks. `./v3 test --smoke CalendarPageTest`: passed. Full suite not run.
   - Screenshot reviewed: dark theme at 1280px.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+Final verification checklist (`step4_implementation_after.md`):
+
+1. Passed: all eight stages completed with recorded verification. Stage 8's production items are recorded as not done, not as passed.
+2. Passed: each stage has its own commit containing its summary update.
+   - Stage 1 `b4682206`, Stage 2 `24af2241`, Stage 3 `0727aae1`, Stage 4 `ca93d040`, Stage 5 `03342664`, Stage 6 `d61600fb`, Stage 7 `334d1332`.
+   - Stage 8: `36722027` and `70d8c91d`, plus this closeout.
+3. Passed: the first Step 4 commit is `7af83949`. It holds the approved plans with organization moves only; the summary first appears in `b4682206`. The cycle has 12 commits from the planning commit, against a minimum of 9.
+4. Partly met: the Step 3 Completion Contract.
+   - Met locally: normal entry, end-to-end outcome, required recovery (refused post keeps its draft; flag off; prior-version rebuild; old records unchanged).
+   - Release condition: met locally with JavaScript on and off, at phone and desktop widths, in 13 themes.
+   - **Not done:** the deployment/external verification (production replay).
+5. Passed: dependency and environment checks are recorded per stage. No new dependencies; `playwright-core` was already a dev dependency and was only installed locally. The final diff was reviewed for duplication and scope.
+   - One known duplication: the compose script list (Stage 6 note).
+   - One small shared-composer change: the draft scope (Stage 6 note).
+6. Passed: reference, concepts and the agent API docs were updated in Stage 7; this summary is final. Estimate labels keep the originals and show retrospectives separately; contributions are signed with the verified model only.
+7. Check status:
+   - Passed: smoke set plus changed tests at each stage, and the browser tests listed per stage.
+   - Not run: the full suite, per `AGENTS.md`.
+   - **Not done:** production rebuild from schema 48 on real data, and the invite-link replay.
+   - Known user recovery condition: an unapproved host who opens `/calendar` should be sent to the Lobby and see the grid after approval. Verified locally only in `CalendarPageTest` (members-only refusal, approved access), not on the maintainer's instance.
+
+Deviations from the approved documents:
+- Flag-off notice shown to every viewer (Stage 5).
+- Phone grid shows counts instead of titles (Stage 6).
+- Per-placement draft scope in the shared composer (Stage 6).
+- Whole-square day links on every day (Stage 8 requests).
+
+**Cycle retrospective assessment (not a projection, not measured effort): 1.00**, Claude, 2026-11-04 UTC, exposed to all prior estimates.
+- Original Step 3 projection 0.90 retained.
+- Drivers above plan: the draft collision and phone layout (Stage 6), the theme contrast pass (Stage 8), and correcting two test-registration and coverage misses (Stages 1–2).
+- Retrospective stage work: 0.08 · 0.12 · 0.12 · 0.12 · 0.20 · 0.16 · 0.08 · 0.16.
+- Maintainer comfortable-fit judgment: **pending**. Study acceptance: **pending**.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

@@ -2,6 +2,8 @@
 
 ## Cycle v3/calendar
 
+2026-11-04T01:30:00Z — v3/calendar Step 4 closeout: eight stages delivered on `feat/calendar` and merged to `main` at the maintainer's request; production rebuild and invite-link replay not done before merge. [Closeout](./calendar/calendar_step4_implementation_summary.md#closeout). Projection 0.90 retained; cycle retrospective assessment **1.00** (single exposed Claude rater); maintainer comfortable-fit judgment and study acceptance pending.
+
 2026-11-04T20:30:00Z — v3/calendar: after merging `main` (work tracking removed upstream), references in Steps 1–3 repaired to the thread title directive precedent; Stage 2 adds a replay of feedback item PF-20261104-B10. Scope v3/A and 0.90 unchanged; no approval or implementation.
 
 2026-11-04T18:20:00Z — v3/calendar: maintainer explicitly requested merging Steps 1–3, the debug log and this ledger into `main` before Step 3 approval; mockup excluded. No approval, implementation or accepted-count change; 0.90 unchanged.
