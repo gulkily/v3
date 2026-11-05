@@ -20,6 +20,11 @@ final class ImageController
             $this->services->sendText("Method not allowed\n", 405, $headers);
             return;
         }
+        if ($this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)
+            && preg_match('/^thumbs\/([a-f0-9]{64})-([12])x\.(png|jpg)$/D', $name, $thumb)) {
+            $this->serveThumbnail($method, $headers, $thumb[1] . '.' . $thumb[3], (int) $thumb[2]);
+            return;
+        }
         if (!$this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED) || !preg_match('/^[a-f0-9]{64}\.(png|jpg)$/D', $name)) {
             $this->services->sendText("Image unavailable\n", 404, $headers);
             return;
@@ -41,5 +46,45 @@ final class ImageController
             header('Content-Disposition: inline; filename="' . $name . '"');
         }
         if ($method === 'GET') { readfile($path); }
+    }
+
+    /**
+     * A list-row thumbnail: the cached small copy, generated from the verified
+     * original on first request. Served only while the original is present;
+     * if resizing is unavailable or fails, the original is served instead.
+     */
+    private function serveThumbnail(string $method, array $headers, string $original, int $scale): void
+    {
+        try {
+            $store = new ImageStore($this->repositoryRoot);
+            $originalPath = $store->root . '/' . $original;
+            if (is_link($originalPath) || !is_file($originalPath)) {
+                throw new RuntimeException('Image unavailable.');
+            }
+            $thumbnails = new \ForumRewrite\Images\ThumbnailStore($store);
+            $cached = $thumbnails->root . '/' . substr($original, 0, 64) . '-' . $scale . 'x.' . substr($original, 65);
+            if (!is_file($cached) || is_link($cached)) {
+                $ref = ImageStore::inspect($originalPath, 'Image');
+                if (\ForumRewrite\Images\ImageReference::filename($ref) !== $original) { throw new RuntimeException('Image checksum mismatch.'); }
+                try {
+                    $cached = $thumbnails->path($ref, $scale);
+                } catch (RuntimeException) {
+                    $this->serve($method, $original);
+                    return;
+                }
+            }
+        } catch (RuntimeException) {
+            $this->services->sendText("Image unavailable; restore a verified image backup.\n", 404, $headers);
+            return;
+        }
+        clearstatcache(true, $cached);
+        if (!headers_sent()) {
+            http_response_code(200);
+            foreach ($headers as $header) { header($header); }
+            header('Content-Type: image/' . (str_ends_with($cached, '.jpg') ? 'jpeg' : 'png'));
+            header('Content-Length: ' . filesize($cached));
+            header('Content-Disposition: inline; filename="' . basename($cached) . '"');
+        }
+        if ($method === 'GET') { readfile($cached); }
     }
 }

@@ -15,7 +15,7 @@ final class ListThumbnails
 {
     /**
      * @param list<string> $postIds
-     * @return array<string, array{src:string, width:int, height:int}>
+     * @return array<string, array{src:string, srcset:?string, width:int, height:int}>
      */
     public static function forPosts(PDO $pdo, ImageStore $store, array $postIds): array
     {
@@ -37,13 +37,32 @@ final class ListThumbnails
             } catch (\RuntimeException) {
                 continue;
             }
-            $thumbnails[(string) $row['post_id']] = [
-                'src' => '/images/' . ImageReference::filename($reference),
+            $thumbnails[(string) $row['post_id']] = self::sources($reference) + [
                 'width' => $reference['width'],
                 'height' => $reference['height'],
             ];
         }
         return $thumbnails;
+    }
+
+    /**
+     * Small cached copies (1x and 2x) when the host can resize images; the
+     * original when it cannot, or when the original is already that small.
+     *
+     * @return array{src:string, srcset:?string}
+     */
+    public static function sources(array $reference): array
+    {
+        $original = '/images/' . ImageReference::filename($reference);
+        if (!ThumbnailStore::available()) {
+            return ['src' => $original, 'srcset' => null];
+        }
+        $url = static fn (int $scale): string => ThumbnailStore::originalFits($reference, $scale)
+            ? $original
+            : '/images/thumbs/' . ThumbnailStore::filename($reference, $scale);
+        $src = $url(1);
+        $retina = $url(2);
+        return ['src' => $src, 'srcset' => $retina === $src ? null : $src . ' 1x, ' . $retina . ' 2x'];
     }
 
     /**
