@@ -100,3 +100,28 @@ Branch: `feat/site-purpose`. Planning commit: `1517b499`.
 - Estimate details: original scope as Step 3 Stage 4; no revision.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Release checks and concepts
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `docs/concepts/site_description.md` and `docs/concepts/visitor_intro.md` (new), with source links checked.
+- Verification:
+  - Theme matrix, headless Chrome against a local zenmemes server: all 13 themes (light, dark, console, lcd, chicago, vapor, forge, sticker, arena, thermal, whitehot, word97, midnight) at 390 and 1280 px. The intro rendered in every case with no horizontal overflow, and the text and Hide were readable. Contact sheets were reviewed by eye.
+  - Other profiles: `PresentationProfileMatrixTest` renders the board and About for every registered profile, including the fourth-profile fixture. Only zenmemes shows the description, example and intro.
+  - Final diff review of `1517b499..HEAD`: 14 files, all within the approved scope, with no debug leftovers.
+  - Deployment to zenmemes.com: **pending**. It needs the branch merged and deployed by the maintainer, then a check in a fresh phone browser and a member browser.
+  - Full suite not run, per `AGENTS.md`.
+- Notes: none.
+- Estimate details: original scope as Step 3 Stage 5, minus the live deploy check, which is pending, not done.
+
+*— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
+
+## Study Closeout
+
+2026-11-05T17:00:00Z. Delivered scope v1/B on `feat/site-purpose`: planning commit `1517b499` plus five stage commits. Entry projection 0.45 preserved. **Retrospective scope assessment 0.42**, by a single exposed Claude rater; it is not an independent rating or measured labor. Corrections inside scope: the zenmemes board template, the `/llms.txt` summary line and the phone layout of Hide. No new requests. Pending: live deployment check, maintainer comfortable-fit judgment and acceptance. No accepted-count change.
+
+Status: Step 4 stages complete; deployment and maintainer review pending.
