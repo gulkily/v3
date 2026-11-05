@@ -34,9 +34,14 @@
   }
   // layout.php's head script publishes the free slot count and the sections
   // that may fill one; both are the same for every viewer of a site.
+  // After a feature-flag refresh the bar may have gained or lost Messages, so
+  // the live nav wins over the published list when it is there.
   const config = () => window.__forumNavSlots || {};
   function count() { return Number(config().count) || 0; }
-  function sections() { return list(config().sections); }
+  function sections() {
+    const live = Array.from(document.querySelectorAll('.site-header--app nav.nav > .nav-link[data-phone="more"]')).map(link => link.dataset.tab);
+    return live.length ? list(live) : list(config().sections);
+  }
   function approved() { return root.getAttribute('data-member') === 'approved'; }
   function usable(name) { return sections().includes(name) && (name !== 'messages' || approved()); }
   function today() { return new Date().toISOString().slice(0, 10); }

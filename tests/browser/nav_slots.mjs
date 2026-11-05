@@ -88,7 +88,31 @@ try {
   assert.equal(await slots(), null, 'guest: Messages is never a slot');
   assert.equal(await page.locator('[data-nav-pin="messages"]').isVisible(), false, 'guest: no Messages pin');
 
+  // A feature-flag refresh swaps the Messages link in or out and announces itself;
+  // slots re-place against the live nav (replayed here with the same event and markup).
+  await page.evaluate(() => {
+    ['forum_pki_fingerprint', 'forum_pki_approved_fingerprint'].forEach(key => localStorage.setItem(key, 'a'.repeat(40)));
+    ['forum_pki_public_key', 'forum_pki_private_key'].forEach(key => localStorage.setItem(key, 'k'));
+    localStorage.setItem('forum_nav_slots', JSON.stringify({ slots: ['messages'], pins: ['messages'] }));
+  });
+  await page.goto(base + '/');
+  assert.equal(await slots(), 'messages', 'member: pinned Messages is the slot');
+  await page.evaluate(() => {
+    const nav = document.querySelector('nav.nav');
+    const old = nav.querySelector('[data-private-message-unread]');
+    const fresh = old.cloneNode(true);
+    old.remove();
+    nav.insertBefore(fresh, nav.querySelector('[data-tab="search"]'));
+    document.dispatchEvent(new CustomEvent('forum:nav-refreshed'));
+  });
+  assert.equal(await slots(), 'messages', 'refresh: Messages keeps its slot');
+  assert.equal(await page.locator('nav.nav > [data-tab="messages"]').isVisible(), true, 'refresh: Messages tab visible');
+  await page.evaluate(() => { document.querySelector('nav.nav [data-tab="messages"]').remove(); document.dispatchEvent(new CustomEvent('forum:nav-refreshed')); });
+  assert.equal(await slots(), null, 'messaging off: the slot is released');
+  await page.evaluate(() => ['forum_pki_fingerprint', 'forum_pki_approved_fingerprint', 'forum_pki_public_key', 'forum_pki_private_key'].forEach(key => localStorage.removeItem(key)));
+
   // Storage holds a flat JSON object a person can read in a local-storage editor.
+  await page.goto(base + '/');
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('forum_nav_slots')));
   assert.deepEqual(Object.keys(state).sort(), ['pins', 'slots']);
   assert.deepEqual(errors, [], 'no page errors');

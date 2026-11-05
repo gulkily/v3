@@ -136,3 +136,21 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 - Estimate details: original scope unchanged; uncertainty medium; no revisions. Retrospective matches the original.
 
 *— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
+
+## Stage 6 - Slots survive nav refresh
+
+**Original estimate: 0.08**
+**Retrospective stage work: 0.05**
+
+- Changes:
+  - `feature_flags.js`: after it removes or inserts the Messages link it dispatches `forum:nav-refreshed`, before messaging starts.
+  - `nav_slots.js`: `sections()` reads the live bar (`data-phone="more"` links) when present, so a Messages link that arrived with the refresh can hold a slot and one that left releases it; the published list is the fallback before the nav exists.
+  - `nav_slots.mjs`: replays the refresh with the same event and markup for a member with Messages pinned: the slot survives a swap and is released when the link leaves.
+- Verification:
+  - Passed: `nav_slots.mjs`; `private_message_live_navigation.mjs` and `railspike_auth_navigation.mjs` (the real refresh path).
+  - Passed: `./v3 test --smoke`; `git diff --check`.
+  - Inapplicable: a real flag toggle with a filled slot in a browser. The refresh path is covered by the two existing checks and the mechanism by the replay; combining them needs the operator fixture, which the replay stands in for.
+- Notes: the refresh never touches `<html>` attributes or the other links, so non-Messages slots were already safe; the change closes the Messages case only.
+- Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective 0.05, under the original.
+
+*— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
