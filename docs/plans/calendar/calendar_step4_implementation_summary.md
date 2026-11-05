@@ -309,6 +309,6 @@ Deviations from the approved documents:
 - Original Step 3 projection 0.90 retained.
 - Drivers above plan: the draft collision and phone layout (Stage 6), the theme contrast pass (Stage 8), and correcting two test-registration and coverage misses (Stages 1–2).
 - Retrospective stage work: 0.08 · 0.12 · 0.12 · 0.12 · 0.20 · 0.16 · 0.08 · 0.16.
-- Maintainer comfortable-fit judgment: **pending**. Study acceptance: **pending**.
+- Maintainer comfortable-fit judgment: **comfortable** (maintainer, 2026-11-05 UTC, after merge). Study acceptance: **pending** until the production rebuild and invite-link replay are recorded; no accepted-count change.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
