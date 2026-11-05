@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
 
+[Board thumbnails one-shot](board_thumbnails/board_thumbnails_one_shot.md) — image posts show a small thumbnail on the board and on Recent.
+
 [Deploy pending commits one-shot](deploy_pending_commits/deploy_pending_commits_one_shot.md) — the Deploy page lists the commits an update will add, its size and local-edit overlap, and says that Queue deploy waits for the task worker.
 
 [Source repository link one-shot](source_repository_link/source_repository_link_one_shot.md) — agents find the code repository from `/llms.txt` and the `/api/` index.
