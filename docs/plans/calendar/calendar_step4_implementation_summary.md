@@ -214,3 +214,24 @@ Enhancement requests: none.
 - Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.16 (the draft collision and the phone layout were not anticipated).
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Documentation and concepts
+
+**Original estimate: 0.08**
+
+- Changes:
+  - `docs/reference/calendar.md`: pages, tag calendars, phone and wide layouts, adding an event from a day, the `event:` line and who it counts for, access, and the record and schema links.
+  - `docs/concepts/calendar.md` and `docs/concepts/post_event_metadata.md`: new inventory entries, as Step 3 planned.
+  - `docs/concepts/shared_composer.md`: touched entry updated for fixed fields and the per-placement draft scope added in Stage 6.
+  - `docs/reference/agent_api.md`: new Events section with the five inputs, the end-date rules, the flag refusal, and the fact that client-built signed records cannot carry event headers.
+  - `README.md`: Reference index entry.
+  - `/llms.txt` and the API index list no pages, so nothing was added there.
+- Verification:
+  - Passed: every relative link and anchor in the five touched documents resolves (scripted check); `git diff --check` clean.
+  - Passed against the code: the access description, rewritten after reading the gate. Step 2's wording, "sent to the Lobby", holds only for a signed-in unapproved member; a signed-out visitor gets the sign-in or Lobby page.
+  - Passed against the code: the flag-off behavior. The event block hides event details while the flag is off; the first draft wrongly said records keep rendering.
+  - Passed: `./v3 test --smoke PlatformDocsCatalogTest PlatformDocsPageTest DocsPublicationTest DocsPublicationFlowTest`: 455 run, 455 passed. Full suite not run, per `AGENTS.md`.
+- Notes: the read-model rebuild concept describes the mechanism generally and needed no change; the version-49 section in the schema spec carries the specifics.
+- Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.08.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
