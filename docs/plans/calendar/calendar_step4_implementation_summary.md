@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/calendar`; [host ledger](../effort_estima
 
 Extended estimates: enabled (inherited)
 
-Status: Step 4 closed 2026-11-04 at the maintainer's request and merged to `main`. Technically complete locally. The production checks were **not done** before merge; see Stage 8 and Closeout. Step 3 was approved with the schema bump corrected to 48 → 49. Branch `feat/calendar`; planning commit `7af83949`. The maintainer's addendum (`f729d1b8`) was merged in `dacb71b8` and filed beside the plans; it confirmed the approved decisions.
+Status: Step 4 closed 2026-11-05 UTC at the maintainer's request and merged to `main`. Technically complete locally. The production checks were **not done** before merge; see Stage 8 and Closeout. Step 3 was approved with the schema bump corrected to 48 → 49. Branch `feat/calendar`; planning commit `7af83949`. The maintainer's addendum (`f729d1b8`) was merged in `dacb71b8` and filed beside the plans; it confirmed the approved decisions.
 
 **Cycle estimate: 0.90**
 
@@ -305,10 +305,10 @@ Deviations from the approved documents:
 - Per-placement draft scope in the shared composer (Stage 6).
 - Whole-square day links on every day (Stage 8 requests).
 
-**Cycle retrospective assessment (not a projection, not measured effort): 1.00**, Claude, 2026-11-04 UTC, exposed to all prior estimates.
+**Cycle retrospective assessment (not a projection, not measured effort): 1.00**, Claude, 2026-11-05 UTC, exposed to all prior estimates.
 - Original Step 3 projection 0.90 retained.
 - Drivers above plan: the draft collision and phone layout (Stage 6), the theme contrast pass (Stage 8), and correcting two test-registration and coverage misses (Stages 1–2).
 - Retrospective stage work: 0.08 · 0.12 · 0.12 · 0.12 · 0.20 · 0.16 · 0.08 · 0.16.
 - Maintainer comfortable-fit judgment: **pending**. Study acceptance: **pending**.
 
-*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+*— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
