@@ -873,3 +873,8 @@ Key retirement final integration — 2026-11-02: Ordinary message readers verifi
 - [x] After an accepted retitling reply, the thread page's root heading, tab title and `Title set by` line update in place from the same server-rendered document the reply render pass already fetches. No new copy; this is a post-paint update for a real state change the viewer just caused, per `CONTRIBUTING.md`.
 - [x] Verified in Chromium (`tests/browser/title_directive_replay.mjs`): author and approved-member retitles update before any reload; inline reply, signed reaction and signals browser tests still pass.
 - [ ] Forte pane composer is outside this path; Firefox/WebKit and a physical phone unchecked.
+
+## 2026-11-05 — Adaptive navigation
+
+Change: Desktop bar shows every main destination (Board, Recent, Calendar, Users, Messages, Search, About, Tools); You keeps Profile, Account, Invite and theme controls. Phones show Board, Calendar, New post, one or two personal slots and More, a full-screen panel. New copy is limited to the More label, the Pin toggle ("Pin", pressed state via `aria-pressed`, label "Pin <name> to the tab bar") and the menu trigger's `aria-label="Menu"`; no explanatory text. Slots fill from use and pins lock them; see [navigation slots](../concepts/navigation_slots.md).
+Verification: placement and calendar PHP tests; pre-paint, high-traffic, tab bar, board search, unread and slot browser checks at 390/1280px (light; icon themes in Stage 7 of [the cycle](adaptive_nav/adaptive_nav_step4_implementation_summary.md)). Physical iPhone acceptance pending (Stage 8).

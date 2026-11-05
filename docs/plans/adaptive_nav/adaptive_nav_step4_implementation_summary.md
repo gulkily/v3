@@ -154,3 +154,24 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 - Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective 0.05, under the original.
 
 *— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
+
+## Stage 7 - Icons, concepts and docs
+
+**Original estimate: 0.08**
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `theme-nav-icons.css`: on phones the account menu's person glyph becomes a three-line list for More; Pin toggles show a pushpin that fills red when pressed. More-panel links already take glyphs from the `href` rules.
+  - `docs/concepts/navigation_slots.md` (new): purpose, scenario, sources and boundary, including the keyboard-order note and the JSON state decision.
+  - `docs/concepts/theme_navigation_icons.md`: Calendar, More and Pin glyphs described. `docs/concepts/calendar.md`: boundary corrected; Calendar has been a navigation destination since `a24e16df`, which did not update the entry.
+  - `docs/plans/ui_copy_audit_checklist.md`: dated entry for the new copy (More, Pin, Menu label) and its verification.
+  - `viewer_nav_prepaint.mjs`: asserts a More glyph and a Pin glyph at 390px in icon themes.
+- Verification:
+  - Passed: `viewer_nav_prepaint.mjs` for word97, chicago, midnight (one run showed a desktop Word97 shift of a few pixels after paint; two reruns and the Stage 6 commit passed, so it is a timing flake in the icon-theme font load, not a change from this stage).
+  - Passed: `nav_active_theme_styles.mjs` (16 themes), `tools_launcher.mjs`, `./v3 test --smoke` (424), `git diff --check`.
+  - Passed: screenshots at 375px in the three icon themes: More glyph in the bar, pushpins in the panel.
+  - Concept entries: paths in the three touched entries resolve (checked by hand against the tree).
+- Notes: none.
+- Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective matches the original.
+
+*— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
