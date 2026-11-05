@@ -52,6 +52,7 @@ final class TemplateRenderer
         'platform_docs_index.php' => ['/assets/platform_docs.css'],
         'tags.php' => ['/assets/tags.css'],
         'tag.php' => ['/assets/thread-list.css'],
+        'calendar.php' => ['/assets/calendar.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
         'fastmod.php' => ['/assets/tools.css'],

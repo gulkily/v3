@@ -1,0 +1,70 @@
+.calendar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.calendar-scroll {
+  overflow-x: auto;
+}
+.calendar-grid {
+  width: 100%;
+  min-width: 36rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.calendar-grid caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+}
+.calendar-grid th {
+  font-family: var(--ui-font);
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: var(--ink-soft);
+  text-align: left;
+  padding: 0 0.3rem 0.25rem;
+}
+.calendar-day {
+  vertical-align: top;
+  height: 5.5rem;
+  padding: 0.25rem 0.3rem;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.calendar-day--outside {
+  border-color: transparent;
+}
+.calendar-day--open {
+  background: var(--input-bg);
+}
+.calendar-day--confirmed {
+  background: var(--active-bg);
+  border-color: var(--active-line);
+}
+.calendar-day__number {
+  display: inline-block;
+  font-family: var(--ui-font);
+  font-size: 0.8rem;
+}
+.calendar-day__entries {
+  list-style: none;
+  margin: 0.15rem 0 0;
+  padding: 0;
+}
+.calendar-entry {
+  font-size: 0.75rem;
+  line-height: 1.25;
+  margin: 0 0 0.2rem;
+  overflow-wrap: anywhere;
+}
+.calendar-entry__state {
+  color: var(--status-ok);
+}
+.calendar-entry__author {
+  display: block;
+  font-size: 0.7rem;
+}
+.calendar-day__more {
+  font-size: 0.7rem;
+}

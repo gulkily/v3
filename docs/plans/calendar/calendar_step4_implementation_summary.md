@@ -118,3 +118,50 @@ Enhancement requests: none.
 - Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.12.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - `/calendar` and `/calendar/<tag>` month grids
+
+**Original estimate: 0.20**
+
+- Changes:
+  - `src/ForumRewrite/Calendar/CalendarQuery.php`: `eventsBetween(PDO, from, to, ?tag)`.
+    - Listed roots from `ThreadKeysetPage::listedRootsSql()`, so retracted and identity roots are excluded, as on the board.
+    - Selects events whose span touches the range.
+    - The tag filter is the `TagPage` membership rule: board tag or label, case-insensitive.
+    - Rows carry the board-row fields that `$threadTitle` and `$author` read; profile fields come from correlated subqueries, so the shared listing SQL is reused untouched.
+  - `src/ForumRewrite/Calendar/CalendarDays.php`: `derive(events, states, from, to)` lists an event on every day of its span clipped to the range, drops declined events, and marks days `confirmed`, `open` or `empty`. `dates()` walks UTC days.
+  - `src/ForumRewrite/Http/CalendarPageController.php`: `grid(?tag, month)`.
+    - Shows two months from `?month=YYYY-MM`, or the current UTC month when absent or invalid.
+    - Sunday-first weeks.
+    - Previous and next links move one month.
+    - Three entries per cell, then `+N more` linking to the day.
+    - The tag view links to all events.
+  - `templates/pages/calendar.php` and `public/assets/calendar.css`:
+    - One table per month inside a horizontally scrolling container.
+    - Day numbers link to the Stage 6 day pages.
+    - Confirmed entries carry a `✓` with an accessible label, so the mark is not shown by colour alone.
+    - Colours come from theme variables only.
+  - `src/ForumRewrite/View/TemplateRenderer.php`: page stylesheet registration.
+  - `src/ForumRewrite/Application.php`:
+    - `/calendar` and `/calendar/<tag>` dispatch; a segment that is a date is left for Stage 6.
+    - Both added to the application route list, so the members-only gate covers them like other pages.
+    - No navigation entry, as scoped.
+  - `tests/CalendarPageTest.php`, registered in `tests/run.php`:
+    - day states: single day, span, span across the month edge, confirmed and declined overlap;
+    - grid marks, captions and navigation;
+    - board-tag and label filtering, case-insensitive;
+    - confirmed glyph, declined hidden, entry cap with `+2 more`;
+    - invalid month falls back to the current month; an empty tag renders an empty grid;
+    - identical calendar markup for a signed-out viewer and the operator;
+    - flag off;
+    - members-only refusal for a signed-out visitor, with the operator allowed in.
+- Verification:
+  - Passed: `./v3 test --smoke CalendarPageTest EventStatusTest EventEndDateParserTest AppNavigationPlacementTest BoardSearchTest WebServerRoutingTest ApiRouteCatalogTest`: 440 run, 440 passed. Full suite not run, per `AGENTS.md`.
+  - Passed: a scratch render of `/calendar?month=2026-11` and `/calendar/couches` against a fixture copy showed the expected marks across the November–December edge.
+  - Pending (Stage 8): layout at phone and desktop widths, text and icon themes, a five-event day in a browser.
+- Notes:
+  - **Deviation:** with event support off, Step 2 says operators see the flag link. Deciding that on the server would make the markup viewer-specific, which the addendum and `AGENTS.md` rule out. Every viewer therefore gets one line, "Events are off on this site," plus the Feature Flags link, as `/tools/fastmod/` already does; the flags page decides who may change it.
+  - Until Stage 6, day links (`/calendar/<date>`) return Not Found.
+- Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.20.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
