@@ -40,9 +40,11 @@ final class AppNavigationPlacementTest
                     assertSame('main', $placements['/'], $name);
                     assertSame('main', $placements['/recent/'], $name);
                     assertSame('main', $placements['/users/'], $name);
-                    foreach (['/search', '/about/', '/tools/', '/account/key/'] as $href) {
-                        assertSame('menu', $placements[$href], $name . ' ' . $href);
+                    // Desktop bar holds every destination that is not about the viewer.
+                    foreach (['/search', '/about/', '/tools/'] as $href) {
+                        assertSame('main', $placements[$href], $name . ' ' . $href);
                     }
+                    assertSame('menu', $placements['/account/key/'], $name);
                     // Member-only links are rendered for every viewer and shown before paint by the client.
                     assertSame($messages ? 'main' : null, $placements['/messages'] ?? null, $name);
                     assertSame('menu', $placements['/invites/'] ?? null, $name);
@@ -84,10 +86,13 @@ final class AppNavigationPlacementTest
                 ->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
             preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $bar);
             preg_match('/<details class="account-menu".*?<\/details>/s', $html, $menu);
-            foreach (['/', '/recent/', '/users/', '/messages'] as $href) {
+            foreach (['/', '/recent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
                 assertStringContains('href="' . $href . '"', $bar[0]);
             }
-            foreach (['/about/', '/tools/', '/account/key/', '/invites/'] as $href) {
+            // Bar order follows the Step 2 layout: Users before Messages before Search.
+            assertSame(true, strpos($bar[0], 'href="/users/"') < strpos($bar[0], 'href="/messages"'));
+            assertSame(true, strpos($bar[0], 'href="/messages"') < strpos($bar[0], 'href="/search"'));
+            foreach (['/account/key/', '/invites/'] as $href) {
                 assertSame(false, str_contains($bar[0], 'href="' . $href . '"'), $href);
                 assertStringContains('href="' . $href . '"', $menu[0]);
             }

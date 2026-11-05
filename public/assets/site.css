@@ -451,6 +451,34 @@ pre {
   flex: 0 1 auto;
 }
 
+/* Desktop: the bar holds every main destination, which is wider than the
+   760px content column. The header spans up to 1100px, centred on the column,
+   and the links sit a little tighter; below that the nav wraps. */
+@media (min-width: 640px) {
+  [data-shell="app"] .site-header--app {
+    --app-header-width: min(100vw - 3rem, 1100px);
+    width: var(--app-header-width);
+    margin-inline: calc((100% - var(--app-header-width)) / 2);
+    align-items: flex-start;
+  }
+
+  [data-shell="app"] .site-header--app .site-header-actions {
+    align-items: flex-start;
+  }
+
+  [data-shell="app"] .site-header--app .eyebrow {
+    margin-top: 0.55rem;
+  }
+
+  [data-shell="app"] .site-header--app .nav {
+    gap: 0.35rem;
+  }
+
+  [data-shell="app"] .site-header--app .nav > .nav-link {
+    padding: 0.4rem 0.6rem;
+  }
+}
+
 /* `:root` outranks themes' general link colors so the button keeps its own ink. */
 :root [data-shell="app"] .new-post-button {
   display: inline-flex;

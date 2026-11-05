@@ -365,11 +365,19 @@ final class TemplateRenderer
             return $items;
         }
 
-        $mainSections = ['board', 'recent', 'profiles', 'messages', 'lobby'];
+        // Desktop bar order. The account menu keeps only the viewer's own items:
+        // Profile, Account and Invite. Everything else is a main destination.
+        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'profiles', 'messages', 'search', 'about', 'tools'];
+        $menuSections = ['account', 'invite'];
         foreach ($items as $index => $item) {
             // Users is main; a personal profile link (members-only mode) belongs in the account menu.
             $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
-            $items[$index]['placement'] = in_array($item['section'], $mainSections, true) && $isUsers ? 'main' : 'menu';
+            $items[$index]['placement'] = !in_array($item['section'], $menuSections, true) && $isUsers ? 'main' : 'menu';
+            $items[$index]['_order'] = array_search($item['section'], $barOrder, true);
+        }
+        usort($items, static fn (array $a, array $b): int => ($a['_order'] === false ? PHP_INT_MAX : $a['_order']) <=> ($b['_order'] === false ? PHP_INT_MAX : $b['_order']));
+        foreach ($items as $index => $item) {
+            unset($items[$index]['_order']);
         }
 
         return $items;
