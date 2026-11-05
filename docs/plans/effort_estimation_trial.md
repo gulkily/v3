@@ -1,5 +1,11 @@
 # Effort estimation trial ledger
 
+## Cycle v3/chicago_post_actions
+
+2026-11-04T20:26:52Z — closeout checkpoint: [one-shot record](./chicago_post_actions/chicago_post_actions_one_shot.md#study-history). Scope v1 implemented on `fix/chicago-post-actions`; requested actual-thread Chicago/Word97 style matrix passed at phone/desktop widths, including pressed bevels, and focused tests passed 2/2. Projection 0.15 reaffirmed; retrospective cycle scope 0.15, single exposed Codex rater, not independent. Smoke branch 325/425 versus unchanged-main 323/423 with the identical 100 environment failures. Linux signed-save acceptance, review, merge, deployment and maintainer acceptance remain pending; no accepted-count change.
+
+2026-11-04T20:15:47Z — standing P2 enrollment, one-shot; [canonical record](./chicago_post_actions/chicago_post_actions_one_shot.md#study-history). Scope v1: carry the two referenced Word97 post-action repairs into Chicago, with UI typography/no underline and Like/Flag-only padding plus soft raised/pressed bevel. Baseline `8bc40af67d14c3b76f8ec057edac1bc084a151be`; exact R1 three frozen hashes verified; extended/debug enabled. Pristine intake missing because request-thread, commit, stylesheet and markup inspection preceded rating; intake and execution-entry projection 0.15, single exposed Codex rater. Parent/request item PF-20261104-F66; no accepted-count change.
+
 ## Cycle v3/calendar
 
 2026-11-05T01:40:00Z — v3/calendar: maintainer judged the delivered cycle a **comfortable** fit for one cycle (retrospective 1.00, projection 0.90). Study acceptance stays pending until the production rebuild and invite-link replay are recorded; no accepted-count change.

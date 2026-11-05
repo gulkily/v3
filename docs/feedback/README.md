@@ -16,6 +16,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261021-F06](items/PF-20261021-F06.txt) | LCD color choices | blocked | locally-verified | 0.4 | 1 |
 | [PF-20261103-F01](items/PF-20261103-F01.txt) | Retitle thread by reply; visible likes and flags | blocked | locally-verified | 0.80 | 1 |
 | [PF-20261104-F27](items/PF-20261104-F27.txt) | Discover code repository URLs | blocked | locally-verified | — | 3 |
+| [PF-20261104-F66](items/PF-20261104-F66.txt) | Apply Word97 repairs to Chicago | blocked | locally-verified | — | 1 |
 | [PF-20261104-F78](items/PF-20261104-F78.txt) | Clickable hashtags in post bodies | blocked | locally-verified | — | 1 |
 | [PF-20261021-F03](items/PF-20261021-F03.txt) | Text-entry macros | untriaged | unknown | 0.5 | 1 |
 | [PF-20261021-F05](items/PF-20261021-F05.txt) | QR appearance | untriaged | unknown | 0.25 | 1 |
@@ -140,7 +141,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-F63](items/PF-20261104-F63.txt) | Global full-text search flag | untriaged | unknown | — | 1 |
 | [PF-20261104-F64](items/PF-20261104-F64.txt) | Actionable network-error message | untriaged | unknown | — | 1 |
 | [PF-20261104-F65](items/PF-20261104-F65.txt) | Prioritize document title matches | untriaged | unknown | — | 1 |
-| [PF-20261104-F66](items/PF-20261104-F66.txt) | Apply Word97 repairs to Chicago | untriaged | unknown | — | 1 |
 | [PF-20261104-F67](items/PF-20261104-F67.txt) | Readable retraction placeholders | untriaged | unknown | — | 1 |
 | [PF-20261104-F68](items/PF-20261104-F68.txt) | Ctrl+Enter submits from tags | untriaged | unknown | — | 1 |
 | [PF-20261104-F69](items/PF-20261104-F69.txt) | Scannable Recent summaries | untriaged | unknown | — | 1 |
