@@ -208,3 +208,23 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 ## Study closeout
 
 2026-11-05T07:40:00Z, `railspike-effort` / `v3/adaptive_nav`. Entry projection **0.85** preserved. Separately labelled **retrospective scope assessment: 0.90**, single exposed Claude rater: the delivered slice matched the plan; the extra work was in browser-check updates for the duplicated Messages destination and the theme-swap readiness race, not in features. Stage retrospectives S1 0.08 / S2 0.16 / S3 0.06 / S4 0.14 / S5 0.14 / S6 0.05 / S7 0.08 / S8 0.10 (headless part), non-additive. Omissions: iPhone replay, deployment, full suite. Maintainer comfortable-fit judgment and study acceptance: pending. No measured labor, independent rating or accepted-count change.
+
+## Tweaks after iPhone replay
+
+Direct work on this branch; maintainer requests.
+
+### 2026-11-05
+
+- Reuse: extended the existing More panel, `nav_slots.js` and browser checks; no new components.
+- More panel items now sit at the bottom, by the tab bar (`site.css`). An auto margin on a flex column keeps the top reachable when the list overflows a short screen.
+- Removed the Pin toggle and pin logic (`app_header.php`, `site.css`, `theme-nav-icons.css`, `nav_slots.js`): confusing and cluttered. Slots still fill from use. A slot saved through an old pin stays in `slots` and can now be overtaken; an old `pins` key is ignored and dropped at the next save.
+- Removed the More tab's current-page highlight and its `data-active` attribute. It lit up for destinations inside More, and for slotted tabs too, because the exception's `:root html[...]` selector could never match.
+- Desktop header: on themes that do not frame it, a rule now spans the page and, from 1240px, the links start at the content's left edge with the name in the margin (`site.css`). Maintainer's choice from the mockups. Word97, Midnight, Chicago and LCD keep their frames unchanged. Below 1240px the header keeps its one-row width with the rule.
+- New post no longer uses the selected colors, which made it read as the current page. It keeps its weight and takes neutral colors everywhere except the compose page, where it is the current destination.
+- Follow-up: the maintainer may want a left sidebar as a desktop navigation option, as a separate cycle. Not part of this one.
+- Verification:
+  - Passed: `./v3 test --smoke AppNavigationPlacementTest CalendarPageTest` (431), `git diff --check`, `node --check nav_slots.js`.
+  - Passed: headless Chrome renders of the real templates and CSS at 390px: panel bottom-aligned (light, dark, Midnight); overflow at 420px high scrolls; on About and on a slotted Users page More is not highlighted and the slotted tab is.
+  - Passed: headless Chrome measurements as a member, all 16 themes at 1239, 1240, 1280 and 1920px: links on one row, no sideways scrolling; links line up with the content from 1240px on the themes without a frame. 800px was measured but its results were not reviewed.
+  - Observed, not changed: at 390px in the dark theme with a slot, "New post" wraps onto two lines. The fonts in this environment may differ from an iPhone's.
+  - Not run: browser scripts, including the edited `nav_slots.mjs` and `viewer_nav_prepaint.mjs` (`playwright-core` is not installed here); iPhone replay; full suite.

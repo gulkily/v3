@@ -11,7 +11,6 @@ $menuItems = array_values(array_filter($navItems, static fn (array $item): bool 
 // Phones: bar destinations that do not fit the tab bar are listed in the same
 // panel, which is labelled More there. Desktop hides this list; the links are in the bar.
 $moreItems = array_values(array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? 'main') === 'main' && ($item['phone'] ?? 'bar') === 'more'));
-$moreActive = array_filter($moreItems, static fn (array $item): bool => $item['section'] === $activeSection) !== [];
 $canPost = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'board') !== [];
 ?>
 <header class="site-header site-header--app">
@@ -21,17 +20,14 @@ $canPost = array_filter($navItems, static fn (array $item): bool => $item['secti
 <?php if ($canPost): ?>
     <a class="new-post-button<?= $activeSection === 'compose' ? ' is-active' : '' ?>" href="/compose/thread" data-tab="compose"><span class="new-post-button__icon" aria-hidden="true">+</span><span class="new-post-button__label">New post</span></a>
 <?php endif; ?>
-    <details class="account-menu" data-role="account-menu" data-tab="account"<?= $moreActive ? ' data-active="' . $e($activeSection) . '"' : '' ?>>
+    <details class="account-menu" data-role="account-menu" data-tab="account">
       <summary class="account-menu__trigger" aria-label="Menu" data-private-message-unread-mirror><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span></summary>
       <div class="account-menu__panel">
 <?php if ($moreItems !== []): ?>
         <nav class="account-menu__links account-menu__more" aria-label="More destinations">
 <?php foreach ($moreItems as $item): ?>
 <?php $class = $item['section'] === $activeSection ? 'nav-link is-active' : 'nav-link'; ?>
-          <div class="account-menu__row">
-            <a data-more="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= $item['section'] === 'messages' ? ' data-private-message-unread-mirror' : '' ?>><?= $e($item['label']) ?></a>
-            <button type="button" class="nav-pin" data-nav-pin="<?= $e($item['section']) ?>" aria-pressed="false" aria-label="Pin <?= $e($item['label']) ?> to the tab bar"><span class="nav-pin__mark" aria-hidden="true"></span><span class="nav-pin__label">Pin</span></button>
-          </div>
+          <a data-more="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= $item['section'] === 'messages' ? ' data-private-message-unread-mirror' : '' ?>><?= $e($item['label']) ?></a>
 <?php endforeach; ?>
         </nav>
 <?php endif; ?>

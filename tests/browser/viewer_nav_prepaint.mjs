@@ -118,8 +118,6 @@ async function messagesIcon(page, label, theme) {
   if (await page.locator('.account-menu__icon').count() && await page.evaluate(() => innerWidth < 640)) {
     const more = await page.locator('.account-menu__icon').evaluate(node => getComputedStyle(node).backgroundImage);
     assert.ok(more && more !== 'none', `${label}: More icon in ${theme}`);
-    const pin = await page.locator('.nav-pin__mark').first().evaluate(node => getComputedStyle(node).backgroundImage);
-    assert.ok(pin && pin !== 'none', `${label}: Pin icon in ${theme}`);
   }
   const image = await page.locator('.nav [data-member-only][href="/messages"]:visible, .account-menu__more [href="/messages"]').first().evaluate(node => getComputedStyle(node, '::before').backgroundImage);
   assert.ok(image && image !== 'none', `${label}: Messages icon in ${theme}`);

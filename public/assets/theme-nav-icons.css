@@ -367,17 +367,4 @@
   :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .account-menu__icon {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='2' y='3' width='2' height='2' fill='%23000080'/><rect x='5' y='3' width='9' height='2' fill='%23808080'/><rect x='2' y='7' width='2' height='2' fill='%23000080'/><rect x='5' y='7' width='9' height='2' fill='%23808080'/><rect x='2' y='11' width='2' height='2' fill='%23000080'/><rect x='5' y='11' width='9' height='2' fill='%23808080'/></svg>");
   }
-
-  /* Pin toggles in More: a pushpin, filled in when pressed. */
-  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .nav-pin__mark {
-    width: 16px;
-    height: 16px;
-    border: 0;
-    border-radius: 0;
-    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='5' y='1' width='6' height='1' fill='%23000080'/><rect x='6' y='2' width='4' height='5' fill='%23ffffff'/><rect x='5' y='2' width='1' height='5' fill='%23000080'/><rect x='10' y='2' width='1' height='5' fill='%23000080'/><rect x='3' y='7' width='10' height='2' fill='%23000080'/><rect x='7' y='9' width='2' height='5' fill='%23808080'/><rect x='7' y='14' width='1' height='1' fill='%23808080'/></svg>") no-repeat;
-  }
-
-  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .nav-pin[aria-pressed="true"] .nav-pin__mark {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='5' y='1' width='6' height='1' fill='%23000080'/><rect x='5' y='2' width='6' height='5' fill='%23cc0000'/><rect x='3' y='7' width='10' height='2' fill='%23000080'/><rect x='7' y='9' width='2' height='5' fill='%23808080'/><rect x='7' y='14' width='1' height='1' fill='%23808080'/></svg>");
-  }
 }

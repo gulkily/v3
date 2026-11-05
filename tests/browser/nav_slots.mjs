@@ -1,7 +1,7 @@
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/nav_slots.mjs
 // Personal phone tabs (adaptive_nav): a More destination earns a slot after three
 // uses, keeps it against lighter use, yields to a clear leader used on two days,
-// and a pin always wins. Pages are rendered by TemplateRenderer and served from memory.
+//  Pages are rendered by TemplateRenderer and served from memory.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 import { readFile } from 'node:fs/promises';
@@ -40,14 +40,6 @@ async function useMore(section) {
   await page.locator(`.account-menu__more a[data-more="${section}"]`).click();
   await page.waitForLoadState('load');
 }
-async function pin(section, on = true) {
-  await page.locator('.account-menu__trigger').click();
-  const button = page.locator(`[data-nav-pin="${section}"]`);
-  assert.equal(await button.getAttribute('aria-pressed'), on ? 'false' : 'true', `${section}: pin state before`);
-  await button.click();
-  assert.equal(await button.getAttribute('aria-pressed'), on ? 'true' : 'false', `${section}: pin state after`);
-  await page.locator('.account-menu__trigger').click();
-}
 
 try {
   await page.goto(base + '/');
@@ -72,31 +64,20 @@ try {
   await page.goto(base + '/');
   assert.equal(await slots(), 'profiles', 'leader on a second day: Users takes the slot');
 
-  // A pin wins over everything and survives reloads; unpinning hands the slot back to the leader.
-  await pin('recent');
-  assert.equal(await slots(), 'recent', 'pin: Recent is the slot at once');
-  await page.goto(base + '/tools/');
-  assert.equal(await slots(), 'recent', 'pin: still Recent after reload');
-  await useMore('profiles'); await useMore('profiles');
-  assert.equal(await slots(), 'recent', 'pin: more Users visits change nothing');
-  await pin('recent', false);
-  assert.equal(await slots(), 'profiles', 'unpin: the leader returns');
-
   // Messages never fills a slot for a browser that is not remembered as approved.
-  await page.evaluate(() => localStorage.setItem('forum_nav_slots', JSON.stringify({ slots: ['messages'], pins: ['messages'] })));
+  await page.evaluate(() => localStorage.setItem('forum_nav_slots', JSON.stringify({ slots: ['messages'] })));
   await page.goto(base + '/');
   assert.equal(await slots(), null, 'guest: Messages is never a slot');
-  assert.equal(await page.locator('[data-nav-pin="messages"]').isVisible(), false, 'guest: no Messages pin');
 
   // A feature-flag refresh swaps the Messages link in or out and announces itself;
   // slots re-place against the live nav (replayed here with the same event and markup).
   await page.evaluate(() => {
     ['forum_pki_fingerprint', 'forum_pki_approved_fingerprint'].forEach(key => localStorage.setItem(key, 'a'.repeat(40)));
     ['forum_pki_public_key', 'forum_pki_private_key'].forEach(key => localStorage.setItem(key, 'k'));
-    localStorage.setItem('forum_nav_slots', JSON.stringify({ slots: ['messages'], pins: ['messages'] }));
+    localStorage.setItem('forum_nav_slots', JSON.stringify({ slots: ['messages'] }));
   });
   await page.goto(base + '/');
-  assert.equal(await slots(), 'messages', 'member: pinned Messages is the slot');
+  assert.equal(await slots(), 'messages', 'member: saved Messages is the slot');
   await page.evaluate(() => {
     const nav = document.querySelector('nav.nav');
     const old = nav.querySelector('[data-private-message-unread]');
@@ -114,9 +95,9 @@ try {
   // Storage holds a flat JSON object a person can read in a local-storage editor.
   await page.goto(base + '/');
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('forum_nav_slots')));
-  assert.deepEqual(Object.keys(state).sort(), ['pins', 'slots']);
+  assert.deepEqual(Object.keys(state).sort(), ['slots']);
   assert.deepEqual(errors, [], 'no page errors');
-  console.log('Phone slots: fill after three uses, hold against lighter use, yield to a two-day leader, pin wins.');
+  console.log('Phone slots: fill after three uses, hold against lighter use, yield to a two-day leader.');
 } finally {
   await browser.close();
 }
