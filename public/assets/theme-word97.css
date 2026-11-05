@@ -789,6 +789,19 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
     box-shadow: 0 -1px 0 0 #404040;
   }
 
+  /* The More tab on a page listed in its panel: the same pressed look as a current tab. */
+  :root[data-theme="word97"] [data-shell="app"] .account-menu__label--current {
+    color: #000000;
+  }
+
+  :root[data-theme="word97"] [data-shell="app"] .account-menu__label--current::before {
+    border-color: #404040;
+    background: #dfdfdf;
+    box-shadow:
+      inset -1px -1px 0 0 #ffffff,
+      inset 1px 1px 0 0 #808080;
+  }
+
   :root[data-theme="word97"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
   :root[data-theme="word97"] [data-shell="app"] .account-menu[open] > .account-menu__trigger {
     color: #000000;

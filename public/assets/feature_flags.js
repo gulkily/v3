@@ -232,8 +232,10 @@
         var following = link.nextElementSibling;
         var anchor = following && Array.from(nav.children).find(function (item) { return item.getAttribute('href') === following.getAttribute('href'); });
         nav.insertBefore(link, anchor || null);
-        return startMessaging(state, link, current, savedIdentity);
       }
+      // Phone slots re-place themselves against the refreshed nav (nav_slots.js).
+      document.dispatchEvent(new CustomEvent('forum:nav-refreshed'));
+      if (link) return startMessaging(state, link, current, savedIdentity);
     }).catch(function () {
       if (current !== navigationGeneration || !status) return;
       if (messagingChange && savedIdentity !== identity()) stopMessaging();

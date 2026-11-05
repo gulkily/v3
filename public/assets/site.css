@@ -451,6 +451,60 @@ pre {
   flex: 0 1 auto;
 }
 
+/* Desktop: the bar holds every main destination, which is wider than the
+   760px content column. The header spans up to 1180px, centred on the column,
+   and the links sit a little tighter; below that the nav wraps. */
+@media (min-width: 640px) {
+  [data-shell="app"] .site-header--app {
+    --app-header-width: min(100vw - 3rem, 1180px);
+    width: var(--app-header-width);
+    margin-inline: calc((100% - var(--app-header-width)) / 2);
+    align-items: flex-start;
+  }
+
+  [data-shell="app"] .site-header--app .site-header-actions {
+    align-items: flex-start;
+  }
+
+  [data-shell="app"] .site-header--app .eyebrow {
+    margin-top: 0.55rem;
+  }
+
+  [data-shell="app"] .site-header--app .nav {
+    gap: 0.35rem;
+  }
+
+  [data-shell="app"] .site-header--app .nav > .nav-link {
+    padding: 0.4rem 0.6rem;
+  }
+
+  /* Word97, Midnight, Chicago and LCD frame the header. Other themes have nothing
+     marking its edges, so a rule across the page makes it a bar. A border-image outset, unlike a wide
+     pseudo-element, cannot cause sideways scrolling. */
+  :root:not([data-theme="word97"], [data-theme="midnight"], [data-theme="chicago"], [data-theme="lcd"]) [data-shell="app"] .site-header--app {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--line);
+    border-image: linear-gradient(var(--line), var(--line)) 1 / 0 0 1px / 0 100vw;
+  }
+}
+
+/* With room in the margins, the links start at the content's left edge and the
+   name sits outside it. Percentages here resolve against the content column.
+   Sticker's wide links set the width: below it they would wrap. */
+@media (min-width: 1240px) {
+  :root:not([data-theme="word97"], [data-theme="midnight"], [data-theme="chicago"], [data-theme="lcd"]) [data-shell="app"] .site-header--app {
+    position: relative;
+    padding-left: calc((var(--app-header-width) - 100%) / 2);
+  }
+
+  :root:not([data-theme="word97"], [data-theme="midnight"], [data-theme="chicago"], [data-theme="lcd"]) [data-shell="app"] .site-header--app .eyebrow {
+    position: absolute;
+    top: 0.5rem;
+    left: 0;
+  }
+}
+
 /* `:root` outranks themes' general link colors so the button keeps its own ink. */
 :root [data-shell="app"] .new-post-button {
   display: inline-flex;
@@ -458,13 +512,20 @@ pre {
   gap: 0.35rem;
   margin-left: auto;
   padding: 0.45rem 0.8rem;
-  border: 1px solid var(--active-line);
-  background: var(--active-bg);
-  color: var(--active-ink);
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  color: var(--ink);
   font-family: var(--ui-font);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+}
+
+/* Only the compose page, where it is the current destination, gets the selected colors. */
+:root [data-shell="app"] .new-post-button:where(.is-active) {
+  border-color: var(--active-line);
+  background: var(--active-bg);
+  color: var(--active-ink);
 }
 
 .new-post-button__icon {
@@ -506,6 +567,15 @@ pre {
 
 .account-menu[open] > .account-menu__trigger {
   background: var(--panel);
+}
+
+/* The trigger reads "You" on desktop and "More" on phones; the More list of
+   bar destinations exists only for phones. Both are decided in CSS so the
+   server HTML is the same at every width. */
+.account-menu__label--more,
+.account-menu__label--current,
+.account-menu__links.account-menu__more {
+  display: none;
 }
 
 .account-menu__panel {
@@ -587,9 +657,14 @@ pre {
     display: contents;
   }
 
+  /* The disclosure itself takes no space, so its trigger is a tab like the
+     links, with the same padding and border and therefore the same width. */
+  [data-shell="app"] .site-header--app .account-menu {
+    display: contents;
+  }
+
   [data-shell="app"] .site-header--app .nav > .nav-link,
   [data-shell="app"] .site-header--app .new-post-button,
-  [data-shell="app"] .site-header--app .account-menu,
   [data-shell="app"] .site-header--app .account-menu__trigger {
     flex: 1 1 0;
     display: flex;
@@ -622,13 +697,136 @@ pre {
     line-height: 1.1;
   }
 
+  /* More: the panel fills the screen above the tab bar; the More tab stays
+     visible and highlighted, and tapping it again closes the panel. Items sit
+     at the bottom, by the tab bar. The auto margin drops to zero when they
+     overflow, so a short screen can still scroll to the first one. */
   [data-shell="app"] .account-menu__panel {
-    top: auto;
-    bottom: calc(100% + 0.3rem);
+    position: fixed;
+    top: 0;
+    left: 0;
     right: 0;
-    width: min(18rem, calc(100vw - 0.6rem));
-    max-height: calc(100vh - var(--app-tabbar-height) - 1rem);
+    bottom: var(--app-tabbar-height);
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    max-height: none;
+    padding: 1rem 1rem 1.5rem;
     overflow-y: auto;
+  }
+
+  [data-shell="app"] .account-menu__panel > :first-child {
+    margin-top: auto;
+  }
+
+  [data-shell="app"] .site-header--app .nav > .nav-link[data-phone="more"],
+  [data-shell="app"] .account-menu__label--you {
+    display: none;
+  }
+
+  /* Personal slots: <html data-nav-slots="recent users"> (set before paint by
+     the head script from the browser's saved choice) shows those More
+     destinations as tabs, after the fixed ones and before New post and More. */
+  html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
+  html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
+  html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
+  html[data-nav-slots~="search"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="search"],
+  html[data-nav-slots~="about"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="about"],
+  html[data-nav-slots~="tools"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="tools"] {
+    display: flex;
+    order: 1;
+  }
+
+  [data-shell="app"] .site-header--app .new-post-button {
+    order: 2;
+  }
+
+  [data-shell="app"] .site-header--app .account-menu__trigger {
+    order: 3;
+  }
+
+  [data-shell="app"] .account-menu__links.account-menu__more {
+    display: grid;
+  }
+
+  /* On a page listed in the panel, the More tab shows that page's name and the
+     selected look, unless the page holds a slot and is highlighted there. Only the
+     name carries the look, so that one per-section list decides all of it. */
+  [data-shell="app"] .account-menu[data-current] {
+    --more-tab-word: none;
+    --more-tab-name: inline;
+    --more-tab-icon: none;
+  }
+
+  html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
+  html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
+  html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
+  html[data-nav-slots~="search"] [data-shell="app"] .account-menu[data-current="search"],
+  html[data-nav-slots~="about"] [data-shell="app"] .account-menu[data-current="about"],
+  html[data-nav-slots~="tools"] [data-shell="app"] .account-menu[data-current="tools"] {
+    --more-tab-word: initial;
+    --more-tab-name: initial;
+    --more-tab-icon: initial;
+  }
+
+  [data-shell="app"] .account-menu__label--more {
+    display: var(--more-tab-word, inline);
+  }
+
+  [data-shell="app"] .account-menu__label--current {
+    display: var(--more-tab-name, none);
+    color: var(--active-ink);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  [data-shell="app"] .account-menu__label--current::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -1px;
+    border: 1px solid var(--line);
+    background: var(--active-bg);
+  }
+
+  [data-shell="app"] .site-header--app .account-menu__trigger {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Themes without their own More glyph: three bars, drawn in the tab's ink. On a
+     renamed tab an arrow replaces them, leaving room for the name. */
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .account-menu__icon {
+    display: var(--more-tab-icon, inline-block);
+    border: 0;
+    border-radius: 0;
+    background:
+      linear-gradient(currentColor, currentColor) 0 15% / 100% 2px no-repeat,
+      linear-gradient(currentColor, currentColor) 0 50% / 100% 2px no-repeat,
+      linear-gradient(currentColor, currentColor) 0 85% / 100% 2px no-repeat;
+  }
+
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .account-menu__label--current::after {
+    content: "\25B4";
+    position: absolute;
+    top: -0.05rem;
+    left: 0;
+    right: 0;
+    font-size: 1.1rem;
+    line-height: 1;
+    text-align: center;
+  }
+
+  [data-shell="app"] .account-menu__more .nav-link,
+  [data-shell="app"] .account-menu__links .nav-link {
+    padding: 0.7rem 0.8rem;
+    font-size: 1rem;
+  }
+
+  /* Unread Messages shows on the More tab the same way it shows on the link. */
+  [data-shell="app"] .account-menu__trigger[data-unread-count]:not([data-unread-count="0"]) {
+    outline: 2px solid var(--active-line);
+    outline-offset: -2px;
   }
 
   /* The LCD palette's centering transform would make its fixed popover

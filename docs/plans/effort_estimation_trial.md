@@ -1,5 +1,15 @@
 # Effort estimation trial ledger
 
+## Cycle v3/adaptive_nav
+
+2026-11-05T07:40:00Z — v3/adaptive_nav Step 4 closeout (Stage 8 pending): Stage 3 approved; planning `8fe60a2a`, stage commits through `5e670104` plus the Stage 8 commit on `feat/adaptive-nav`, unmerged. [Closeout](./adaptive_nav/adaptive_nav_step4_implementation_summary.md#closeout). Entry 0.85 preserved; separate retrospective scope assessment **0.90** (single exposed Claude rater). Seven of eight stages complete; headless release matrix passed; iPhone replay, deployment and full suite pending. Maintainer comfortable-fit judgment and acceptance pending; no accepted-count change.
+
+2026-11-05T05:05:00Z — v3/adaptive_nav Step 3 handoff: Step 2 v2 approved. [Plan/checkpoint](./adaptive_nav/adaptive_nav_step3_development_plan.md#study-checkpoint) reaffirms whole-cycle **0.85**, same v2/baseline `a24e16df`/R1/P2, single exposed Claude rater. Eight stage-work originals 0.08/0.12/0.08/0.14/0.14/0.08/0.08/0.13, non-additive: desktop split, phone bar and More, unread on More, slot markup and pre-paint, filling and pinning, refresh survival, icons and concepts, release check with iPhone replay. Await Approved Step 3; planning uncommitted.
+
+2026-11-05T04:50:00Z — v3/adaptive_nav Step 2 handoff: Step 1 approved (Option B). [Description/checkpoint](./adaptive_nav/adaptive_nav_step2_feature_description.md#study-checkpoint). Scope v2 (Messages indicator on More, slot repair after flag refresh, iPhone acceptance). Same baseline `a24e16df`/R1/P2, single exposed Claude rater. Projected total 0.80 → **0.85**, reason new code understanding. Await Approved Step 2; planning uncommitted.
+
+2026-11-05T04:40:00Z — v3/adaptive_nav Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./adaptive_nav/adaptive_nav_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option B (wider desktop bar, fixed phone bar with a More page, self-filling sticky phone slots). Starting revision `a24e16df`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater. Intake and projected total **0.80**; option estimates 0.45/0.80/0.60, non-additive. Await Approved Step 1; planning uncommitted.
+
 ## Cycle v3/chicago_post_actions
 
 2026-11-04T20:26:52Z — closeout checkpoint: [one-shot record](./chicago_post_actions/chicago_post_actions_one_shot.md#study-history). Scope v1 implemented on `fix/chicago-post-actions`; requested actual-thread Chicago/Word97 style matrix passed at phone/desktop widths, including pressed bevels, and focused tests passed 2/2. Projection 0.15 reaffirmed; retrospective cycle scope 0.15, single exposed Codex rater, not independent. Smoke branch 325/425 versus unchanged-main 323/423 with the identical 100 environment failures. Linux signed-save acceptance, review, merge, deployment and maintainer acceptance remain pending; no accepted-count change.

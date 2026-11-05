@@ -8,6 +8,11 @@
  * @var list<array<string, mixed>> $navItems
  */
 $menuItems = array_values(array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? 'main') === 'menu'));
+// Phones: bar destinations that do not fit the tab bar are listed in the same
+// panel, which is labelled More there. Desktop hides this list; the links are in the bar.
+$moreItems = array_values(array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? 'main') === 'main' && ($item['phone'] ?? 'bar') === 'more'));
+// Phones: on a page listed in the panel, the More tab takes that page's name.
+$hiddenCurrent = array_values(array_filter([...$moreItems, ...$menuItems], static fn (array $item): bool => $item['section'] === $activeSection))[0] ?? null;
 $canPost = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'board') !== [];
 ?>
 <header class="site-header site-header--app">
@@ -17,10 +22,18 @@ $canPost = array_filter($navItems, static fn (array $item): bool => $item['secti
 <?php if ($canPost): ?>
     <a class="new-post-button<?= $activeSection === 'compose' ? ' is-active' : '' ?>" href="/compose/thread" data-tab="compose"><span class="new-post-button__icon" aria-hidden="true">+</span><span class="new-post-button__label">New post</span></a>
 <?php endif; ?>
-    <details class="account-menu" data-role="account-menu" data-tab="account">
-      <summary class="account-menu__trigger" aria-label="You, account menu"><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label">You</span></summary>
+    <details class="account-menu" data-role="account-menu" data-tab="account"<?= $hiddenCurrent !== null ? ' data-current="' . $e($hiddenCurrent['section']) . '"' : '' ?>>
+      <summary class="account-menu__trigger" aria-label="Menu" data-private-message-unread-mirror><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span><?php if ($hiddenCurrent !== null): ?><span class="account-menu__label account-menu__label--current"><?= $e($hiddenCurrent['label']) ?></span><?php endif; ?></summary>
       <div class="account-menu__panel">
-        <nav class="account-menu__links" aria-label="Account and more">
+<?php if ($moreItems !== []): ?>
+        <nav class="account-menu__links account-menu__more" aria-label="More destinations">
+<?php foreach ($moreItems as $item): ?>
+<?php $class = $item['section'] === $activeSection ? 'nav-link is-active' : 'nav-link'; ?>
+          <a data-more="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= $item['section'] === 'messages' ? ' data-private-message-unread-mirror' : '' ?>><?= $e($item['label']) ?></a>
+<?php endforeach; ?>
+        </nav>
+<?php endif; ?>
+        <nav class="account-menu__links" aria-label="Account">
 <?php foreach ($menuItems as $item): ?>
 <?php $class = $item['section'] === $activeSection ? 'nav-link is-active' : 'nav-link'; ?>
           <a data-tab="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= !empty($item['invite_action']) ? ' data-invite-navigation' : '' ?>><?= $e($item['label']) ?></a>

@@ -43,7 +43,11 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const routes = ['/', '/about/', '/threads/traffic-visible/'];
 
 function observe() {
-  const links = () => Array.from(document.querySelectorAll('[data-member-only]'));
+  // Each destination once: the bar link on desktop, the More-panel copy on phones
+  // (bar links placed in More are hidden there for every viewer unless slotted).
+  const slotted = link => (document.documentElement.getAttribute('data-nav-slots') || '').split(' ').includes(link.dataset.tab);
+  const links = () => Array.from(document.querySelectorAll('[data-member-only]'))
+    .filter(link => innerWidth < 640 ? !(link.matches('nav.nav > [data-phone="more"]') && !slotted(link)) : !link.matches('.account-menu__more a'));
   const snapshot = boxes => JSON.stringify(links().map(link => {
     const box = link.getBoundingClientRect();
     return boxes ? [link.getAttribute('href'), getComputedStyle(link).display !== 'none', Math.round(box.x), Math.round(box.width)] : [link.getAttribute('href'), getComputedStyle(link).display !== 'none'];
@@ -74,7 +78,7 @@ async function visit(context, path, label) {
   assert.deepEqual(errors, [], `${label}: page errors`);
   return { page, response, ...result };
 }
-const shown = state => state.filter(([, visible]) => visible).map(([href]) => href).sort();
+const shown = state => [...new Set(state.filter(([, visible]) => visible).map(([href]) => href))].sort();
 
 try {
   for (let i = 0; i < 100; i++) { try { await fetch(base + '/api/version'); break; } catch { await new Promise(r => setTimeout(r, 50)); } }
@@ -109,7 +113,8 @@ try {
         assert.deepEqual(shown(seen.painted[0]), ['/invites/', '/messages'], `member ${label}: shown`);
         assert.ok(seen.parsed.every(state => shown(state).length === state.length), `member ${label}: shown while parsing`);
         await seen.page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready', null, { timeout: 10000 });
-        assert.equal(await seen.page.locator('.nav [href="/messages"]').innerText(), 'Messages', `member ${label}: caption`);
+        // The bar link is hidden on phones; its caption is the same element either way.
+        assert.equal((await seen.page.locator('nav.nav [href="/messages"]').evaluate(node => node.innerText || node.textContent)).replace(/Unread status.*|\d+ unread.*/s, '').trim(), 'Messages', `member ${label}: caption`);
         await seen.page.close();
         checked += 2;
       }

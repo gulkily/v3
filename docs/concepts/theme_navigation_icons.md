@@ -6,4 +6,4 @@ Sources: [icon stylesheet](../../public/assets/theme-nav-icons.css) (the `:root:
 
 Group heading glyphs: a monitor (device), an open book (reading), the Users glyph (community) and a gear drawn mid-grey with a white ring so it reads on light and dark panels (operator). Account's Tools bar rule remains in the stylesheet although Account is no longer a tool; its main navigation rule still applies.
 
-Tool glyphs added later keep the same 16px grid; Deploy (an arrow rising out of a tray) follows Operations in the operator group.
+Tool glyphs added later keep the same 16px grid; Deploy (an arrow rising out of a tray) follows Operations in the operator group. Calendar is a page-a-day block with a red header. On phones the account menu is More, so its person glyph becomes a three-line list (see [navigation slots](navigation_slots.md)); the More panel's destination links take their glyphs from the same `href` rules as the bar.
