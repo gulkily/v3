@@ -36,6 +36,13 @@ final class RecentPageController
             }
         }
         unset($item);
+        $page['items'] = \ForumRewrite\Images\ListThumbnails::attach(
+            $this->routeServices->pdo(),
+            $this->routeServices->repositoryRoot(),
+            $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
+            $page['items'],
+            'post_id',
+        );
         $pagination = PageNavigation::links('/recent/', [], $context, $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
         return $this->routeServices->renderPageTemplate('recent.php', ['items'=>$page['items'], 'pagination'=>$pagination, 'paginationError'=>$error], 'Recent', 'recent');
     }

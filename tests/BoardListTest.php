@@ -117,6 +117,49 @@ final class BoardListTest
         assertStringNotContains('Image-v1:', $board);
     }
 
+    public function testImagePostsShowAThumbnailOnTheBoardAndRecent(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $imageRoot = $repositoryRoot . '-images';
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $old = getenv($flag);
+        try {
+            $source = $repositoryRoot . '-pixel.png';
+            file_put_contents($source, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC'));
+            $reference = \ForumRewrite\Images\ImageStore::inspect($source, '');
+            (new \ForumRewrite\Images\ImageStore($repositoryRoot))->put($source, $reference);
+            $missing = ['sha256' => str_repeat('b', 64), 'type' => 'png', 'bytes' => 10, 'width' => 20, 'height' => 30, 'description' => ''];
+            foreach ([
+                'thumb-present' => \ForumRewrite\Images\ImageReference::line($reference),
+                'thumb-missing' => \ForumRewrite\Images\ImageReference::line($missing),
+                'thumb-none' => 'Just words.',
+            ] as $postId => $body) {
+                file_put_contents($repositoryRoot . '/records/posts/' . $postId . '.txt', "Post-ID: {$postId}\nCreated-At: 2026-07-01T00:00:00Z\nBoard-Tags: general\nSubject: {$postId}\n\nWords first.\n{$body}\n");
+            }
+            $this->runCommand($repositoryRoot, 'git add .');
+            $this->runCommand($repositoryRoot, 'git commit -m "Add image posts"');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $thumb = '<a class="thread-row__thumb" href="/threads/thread-present" tabindex="-1" aria-hidden="true"><img src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '" alt="" width="1" height="1" loading="lazy" decoding="async"></a>';
+
+            putenv($flag . '=true');
+            $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+            assertStringContains(str_replace('thread-present', 'thumb-present', $thumb), $board);
+            assertSame(1, substr_count($board, 'class="thread-row__thumb"'), 'Only the post with a stored image gets a thumbnail.');
+            assertSame(1, substr_count($board, 'thread-row--thumb'));
+
+            $recent = $this->markup($this->render($application, '/recent/'));
+            assertStringContains(str_replace('thread-present', 'thumb-present', $thumb), $recent);
+            assertSame(1, substr_count($recent, 'class="thread-row__thumb"'));
+
+            putenv($flag . '=false');
+            assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/threads/?view=all&sort=newest')));
+            assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/recent/')));
+        } finally {
+            putenv($old === false ? $flag : $flag . '=' . $old);
+            exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($repositoryRoot . '-pixel.png'));
+        }
+    }
+
     public function testRowMetaShowsAPendingChipAndTheFullTimestampAsTooltip(): void
     {
         $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');

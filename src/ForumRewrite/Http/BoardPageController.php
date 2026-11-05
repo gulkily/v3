@@ -130,6 +130,10 @@ final class BoardPageController
             $page = ['items' => [], 'previous' => null, 'next' => null];
         }
         $pagination = \ForumRewrite\Pagination\PageNavigation::links('/threads/', ['view' => $view, 'sort' => $sort], $context, $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
+        $pinned = $position === null ? $pinned : [];
+        $imagesEnabled = $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
+        $pinned = \ForumRewrite\Images\ListThumbnails::attach($this->routeServices->pdo(), $this->repositoryRoot, $imagesEnabled, $pinned, 'root_post_id');
+        $page['items'] = \ForumRewrite\Images\ListThumbnails::attach($this->routeServices->pdo(), $this->repositoryRoot, $imagesEnabled, $page['items'], 'root_post_id');
 
         return $this->routeServices->renderPageTemplate(
             'board_list.php',
@@ -140,7 +144,7 @@ final class BoardPageController
                 'viewOptions' => $viewOptions,
                 'sortOptions' => $sortOptions,
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
-                'pinnedThreads' => $position === null ? $pinned : [],
+                'pinnedThreads' => $pinned,
                 'threads' => $page['items'],
                 'pagination' => $pagination,
                 'paginationError' => $error,

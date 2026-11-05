@@ -1009,6 +1009,42 @@ pre {
   font-size: 0.85rem;
 }
 
+/* A row with an attached image: the thumbnail fills a narrow first column as
+   tall as the row; the image never adds height of its own. */
+.thread-row--thumb {
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+}
+
+.thread-row--thumb > .thread-row__title,
+.thread-row--thumb > .thread-row__excerpt,
+.thread-row--thumb > .thread-row__meta,
+.thread-row--thumb > .event-block {
+  grid-column: 2;
+}
+
+.thread-row--thumb > .thread-row__count {
+  grid-column: 3;
+}
+
+.thread-row__thumb {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  position: relative;
+  display: block;
+  min-height: 2.75rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.thread-row__thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .chip {
   display: inline-block;
   padding: 0 0.4rem;

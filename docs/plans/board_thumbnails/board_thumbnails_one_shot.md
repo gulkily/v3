@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.50**
 
-Status: planning committed; implementation next.
+Status: implemented and locally verified; PR and thread reply next. Merge and deploy belong to the maintainer.
 
 ## Original request
 
@@ -40,7 +40,11 @@ To settle on inspection, before dependent work:
 
 ## Reuse decisions
 
-To be filled from inspection: the board list card in `templates/pages/board_list.php`, the Recent template, and existing image attachment rendering and URLs.
+- Image data: `ImageReference::fromBody()` and `filename()`, the same parser post pages use; images are served by the existing `/images/<sha256>.<type>` route (`ImageController`), which still verifies the checksum.
+- Presence: new `ImageStore::isPresent()` checks the file exists at the referenced size. `resolve()` hashes the whole file, which is fine for one post page but too slow for 50 rows.
+- Lookup: new `ForumRewrite\Images\ListThumbnails`, one `posts` query per page by primary key, filtered to non-retracted bodies containing `Image-v1:`. No schema change: `threads.body_preview` holds only the first line and Recent truncates bodies at 1024 characters, so neither can carry the reference.
+- Rows: both lists already share the `thread-row` grid (`partials/thread_row.php`, `partials/recent_entry.php`); a new `partials/row_thumbnail.php` serves both, and `.thread-row--thumb` adds the first column in `public/assets/site.css`.
+- Flag: `FORUM_IMAGE_CONTENT_ENABLED`, as for post images.
 
 ## Completion conditions
 
@@ -51,7 +55,7 @@ To be filled from inspection: the board list card in `templates/pages/board_list
 
 ## Concepts touched
 
-[Post presentation](../../concepts/post_presentation.md) and [recent conversation](../../concepts/recent_conversation.md): likely changed. Proposed: none.
+[Post presentation](../../concepts/post_presentation.md): changed (adds list thumbnails). [Recent conversation](../../concepts/recent_conversation.md): used unchanged. Proposed: none.
 
 ## Verification and recovery plan
 
@@ -61,14 +65,38 @@ Smoke set plus changed tests; a test fixture with an image post on both lists. E
 
 Branch `feat/board-thumbnails` from `822d6134692883e145728db96b1a9aa62f1ca496`.
 
-Planning commit: pending.
+Planning commit: `42e93369`.
 
 ## Dated execution history
 
 - 2026-11-05T16:44:35Z: record written before detailed inspection.
+- Planning commit `42e93369` confirmed before implementation.
+- Choice: each row shows the image of its own post. For the board that is the thread root; for Recent it is the contribution itself, so an image reply shows its image. The thumbnail repeats the title link and is hidden from the tab order and screen readers.
+- Discovery: the board row and Recent row cannot carry the image reference from existing columns (see Reuse decisions), so a per-page lookup was added instead of a read-model change.
+- Correction during work: the first CSS placed the thumbnail rules before the base row rules, which would have kept the excerpt in column 1; moved after them before any check.
+- Not changed: board search and profile pages also use `thread_row.php`; they show no thumbnails because they do not run the lookup. Follow-up if wanted.
 
 ## Study history
 
 2026-11-05T16:44:35Z intake: **0.50 projected total** for both lists. Single exposed Claude rater; board templates were seen earlier today in `v3/site_purpose`, but the attachment and listing code was not inspected. R1 hashes not re-verified. Extended estimates enabled.
+
+2026-11-05T17:45:00Z closeout: delivered scope v1 in full. Projection 0.50 preserved; **retrospective scope assessment 0.40**, single exposed Claude rater, not independent. Maintainer comfortable-fit and acceptance pending.
+
+## Outcome
+
+On zenmemes, board list rows and Recent rows for posts with a stored image show a small thumbnail, as tall as the row, linking where the title does. Other rows, other profiles and other pages are unchanged. Live deployment and the About example swap in `v3/site_purpose` remain.
+
+## Verification
+
+- `./v3 test --smoke BoardListTest RecentPostTest ImageContentTest`: 439 run, 439 passed. New test `BoardListTest::testImagePostsShowAThumbnailOnTheBoardAndRecent` covers a stored image (thumbnail), a reference with no file (none), a text post (none), and images turned off (none), on both lists. Full suite not run, per `AGENTS.md`.
+- Headless Chrome against a local zenmemes server seeded with three image posts, one text post and an image thread with a reply: board and Recent in all 13 themes at 390 and 1280 px. Every thumbnail loaded, filled the row's content height (73 to 122 px tall, 56 px wide), and the reply count stayed in its own column. Contact sheets reviewed by eye.
+- `./v3 feedback check`: 0 problems; `./v3 feedback index` regenerated.
+- Not verified: `tests/browser/recent.mjs`, statically generated first pages on a real deployment, and the live site.
+
+## Final review
+
+Diff covers 12 files within the outcome: controllers, one helper, one partial, row templates, CSS, test, concept, item and index. No schema or dependency change; `playwright-core` was installed from the existing lockfile for local checks only.
+
+Commit/merge/publication status: completion commit pending at writing; branch to be pushed and PR opened under the thread-to-PR procedure; not merged or deployed.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
