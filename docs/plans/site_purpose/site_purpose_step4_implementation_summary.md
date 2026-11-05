@@ -78,3 +78,25 @@ Branch: `feat/site-purpose`. Planning commit: `1517b499`.
 - Estimate details: original scope as Step 3 Stage 3; no revision.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Hide control
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `templates/partials/visitor_intro.php`: a Hide button. A small inline script sets `data-visitor="known"` at once and stores `forum_visitor_intro_hidden=1`, inside try/catch.
+  - `public/assets/site.css`: the card lays out the sentence and the button side by side. The button keeps its own width, because some theme button styles stretch to full width.
+  - `tests/PresentationProfileMatrixTest.php`: the zenmemes board carries the button and the storage write.
+- Verification:
+  - `./v3 test --smoke PresentationProfileMatrixTest`: 432 run, 432 passed. Full suite not run.
+  - Headless Chrome at 390 px: Hide removes the card; it stays hidden after reload.
+  - With `localStorage` throwing: the card shows, Hide removes it for the page, it returns after reload, and the composer still renders. The one `SecurityError` on load also occurs at the planning baseline (`1517b499`); it does not come from the intro.
+  - Saving an identity writes `forum_pki_*`, which the Stage 3 check already treats as known (verified there with seeded keys).
+  - The first layout attempt squeezed the sentence into one column at phone width; fixed before commit and rechecked by screenshot.
+  - `git diff --check` clean.
+- Notes: none.
+- Estimate details: original scope as Step 3 Stage 4; no revision.
+
+*— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*

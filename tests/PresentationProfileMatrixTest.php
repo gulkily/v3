@@ -69,6 +69,8 @@ final class PresentationProfileMatrixTest
                 if ($isZenmemes) {
                     assertTrue(strpos($board, 'class="card visitor-intro"') < strpos($board, 'data-compose-root'));
                     assertStringContains('<a href="/about/">About</a>', $board);
+                    assertStringContains('data-visitor-intro-hide', $board);
+                    assertStringContains("localStorage.setItem('forum_visitor_intro_hidden', '1')", $board);
                 }
             } finally {
                 putenv('FORUM_SITE_ID');
