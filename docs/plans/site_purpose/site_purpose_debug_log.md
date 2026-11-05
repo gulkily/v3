@@ -58,3 +58,24 @@ No supported findings.
 ### Uncertain assessments
 
 No supported findings.
+
+## 2026-11-05T17:05:00Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate. Kept the planning commit clean; the ledger stayed out of it as instructed. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol. One commit per stage made each correction (board template, `/llms.txt` line, phone layout) land with its own verification. Retain.
+- `implementation_standards.md`, "Inspect existing implementations". Revealed that zenmemes renders `board_list.php`, not the `board.php` named in Step 3. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only verification rules: application change.
+- Follow-up cycles before merge: none started.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md` requires the final stage to finish deployment checks, but deployment here belongs to the maintainer. The instructions allow "pending"; it is unclear whether Step 4 counts as complete with a pending live check. Suggest clarifying.
