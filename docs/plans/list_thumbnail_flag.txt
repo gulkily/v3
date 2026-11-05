@@ -1,0 +1,16 @@
+Title: Independent list thumbnail feature flag
+Date: 2026-11-05
+Workflow: Direct
+Feedback: PF-20261104-F60
+Status: Implemented; runtime verification and deployment pending
+
+Behavior:
+FORUM_LIST_THUMBNAILS_ENABLED is site-mutable, defaults true to preserve the existing rollout, and requires FORUM_IMAGE_CONTENT_ENABLED. Operators can disable Board and Recent thumbnails without disabling post attachments. Environment overrides use the existing feature-flag evaluator. Re-enabling restores thumbnails through the same list routes.
+
+Reuse:
+FeatureFlagRegistry provides the operator control and dependency evaluation; PrivateConfigSchema registers the optional override without adding a private-config template default. BoardPageController and RecentPageController gate the existing ListThumbnails lookup using the new effective flag. StaticArtifactInvalidator already invalidates Board and Recent on flag changes. No new markup, CSS, schema or dependencies.
+
+Verification:
+Extended BoardListTest for both switches on Board and Recent; added evaluator coverage for defaults, dependency, independent disabling, site mutability and environment locking. Existing FeatureFlagsBehaviorTest covers presentation completeness and dependency adjacency.
+Attempted ./v3 test --smoke BoardListTest FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest PrivateConfigSchemaTest PrivateConfigCommandTest; blocked before execution because php is missing. System package installation also failed due to restricted process permissions. Full suite not run. Browser/theme checks not replayed; existing rendering is unchanged when enabled and existing no-thumbnail path is reused when disabled.
+Dependency delta: zero.

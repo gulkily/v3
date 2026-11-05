@@ -131,7 +131,7 @@ final class BoardPageController
         }
         $pagination = \ForumRewrite\Pagination\PageNavigation::links('/threads/', ['view' => $view, 'sort' => $sort], $context, $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
         $pinned = $position === null ? $pinned : [];
-        $imagesEnabled = $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
+        $imagesEnabled = $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED);
         $pinned = \ForumRewrite\Images\ListThumbnails::attach($this->routeServices->pdo(), $this->repositoryRoot, $imagesEnabled, $pinned, 'root_post_id');
         $page['items'] = \ForumRewrite\Images\ListThumbnails::attach($this->routeServices->pdo(), $this->repositoryRoot, $imagesEnabled, $page['items'], 'root_post_id');
 
