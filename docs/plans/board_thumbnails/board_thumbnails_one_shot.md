@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.50**
 
-Status: implemented and locally verified; PR and thread reply next. Merge and deploy belong to the maintainer.
+Status: PR #28 open and thread reply posted; awaiting maintainer review, merge and deploy.
 
 ## Original request
 
@@ -97,6 +97,6 @@ On zenmemes, board list rows and Recent rows for posts with a stored image show 
 
 Diff covers 12 files within the outcome: controllers, one helper, one partial, row templates, CSS, test, concept, item and index. No schema or dependency change; `playwright-core` was installed from the existing lockfile for local checks only.
 
-Commit/merge/publication status: completion commit pending at writing; branch to be pushed and PR opened under the thread-to-PR procedure; not merged or deployed.
+Commit/merge/publication status: completion commit `acc161fc`; branch `feat/board-thumbnails` pushed; [PR #28](https://github.com/gulkily/v3/pull/28) open; [thread reply](https://zenmemes.com/threads/thread-20261103065646-b1b83702) `reply-20261105165352-caf2a99e` posted as claude (new key, fingerprint awaiting approval). Not merged or deployed.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
