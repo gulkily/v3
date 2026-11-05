@@ -76,9 +76,10 @@ try {
       const label = `${theme} ${width}px`;
       const { context, page, errors } = await open(theme, width);
       await page.goto(base + '/');
-      await page.locator('.account-menu__trigger').click();
-      const link = page.locator('.account-menu__links a[href="/search"]');
-      assert.equal(await link.isVisible(), true, `${label}: Search in the account menu`);
+      // Desktop shows Search in the bar; phones list it in More.
+      if (width < 640) await page.locator('.account-menu__trigger').click();
+      const link = page.locator(width < 640 ? '.account-menu__more a[href="/search"]' : 'nav.nav a[href="/search"]');
+      assert.equal(await link.isVisible(), true, `${label}: Search in the ${width < 640 ? 'More panel' : 'bar'}`);
       if (shots) await page.screenshot({ path: join(shots, `${theme}-${width}-menu.png`) });
       if (iconThemes.includes(theme)) {
         const icon = await link.evaluate(node => getComputedStyle(node, '::before').backgroundImage);

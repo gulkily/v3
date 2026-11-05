@@ -127,8 +127,8 @@ final class CalendarPageTest
     public function testNavLinksToTheCalendarWhileEventSupportIsOn(): void
     {
         [, , $application] = $this->environment();
-        calendarAssertContains('data-tab="calendar" class="nav-link" href="/calendar"', $this->render($application, '/'));
-        calendarAssertContains('data-tab="calendar" class="nav-link is-active" href="/calendar"', $this->render($application, '/calendar'));
+        calendarAssertContains('data-tab="calendar" data-phone="bar" class="nav-link" href="/calendar"', $this->render($application, '/'));
+        calendarAssertContains('data-tab="calendar" data-phone="bar" class="nav-link is-active" href="/calendar"', $this->render($application, '/calendar'));
     }
 
     public function testDayPageListsTheDayAndPostsThroughTheSharedComposer(): void

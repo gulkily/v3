@@ -45,6 +45,12 @@ final class AppNavigationPlacementTest
                         assertSame('main', $placements[$href], $name . ' ' . $href);
                     }
                     assertSame('menu', $placements['/account/key/'], $name);
+                    // Phones keep Board and Calendar in the bar; everything else opens from More.
+                    $phones = array_column($items, 'phone', 'href');
+                    assertSame('bar', $phones['/'], $name);
+                    foreach (['/recent/', '/users/', '/search', '/about/', '/tools/', '/account/key/'] as $href) {
+                        assertSame('more', $phones[$href], $name . ' ' . $href);
+                    }
                     // Member-only links are rendered for every viewer and shown before paint by the client.
                     assertSame($messages ? 'main' : null, $placements['/messages'] ?? null, $name);
                     assertSame('menu', $placements['/invites/'] ?? null, $name);
@@ -62,6 +68,7 @@ final class AppNavigationPlacementTest
             $renderer = $this->renderer([FeatureFlagRegistry::APPROVED_MEMBERS_ONLY => true]);
             $placements = array_column($renderer->navigationItems(self::VIEWERS['unapproved']), 'placement', 'href');
             assertSame(['/lobby/' => 'main', '/profiles/mouse' => 'menu', '/account/key/' => 'menu'], $placements);
+            assertSame('bar', array_column($renderer->navigationItems(self::VIEWERS['unapproved']), 'phone', 'href')['/lobby/']);
         });
     }
 
@@ -97,6 +104,14 @@ final class AppNavigationPlacementTest
                 assertStringContains('href="' . $href . '"', $menu[0]);
             }
             assertStringContains('data-tab="board"', $bar[0]);
+            assertStringContains('data-tab="board" data-phone="bar"', $bar[0]);
+            assertStringContains('data-tab="recent" data-phone="more"', $bar[0]);
+            // The same panel lists the phone-only More destinations once more, for every viewer.
+            assertStringContains('class="account-menu__links account-menu__more"', $menu[0]);
+            foreach (['/recent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
+                assertStringContains('href="' . $href . '"', $menu[0]);
+            }
+            assertStringContains('account-menu__label--more">More<', $menu[0]);
             assertStringContains('data-invite-navigation', $menu[0]);
             assertStringContains('data-role="theme-menu"', $menu[0]);
             assertStringContains('class="new-post-button" href="/compose/thread"', $html);

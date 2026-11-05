@@ -352,11 +352,12 @@ final class TemplateRenderer
 
     /**
      * Navigation items for the viewer. With the `app` navigation slot each
-     * item also carries its placement: `main` (top bar / phone tab bar) or
-     * `menu` (account menu). Other slots return items without placement.
+     * item also carries its desktop placement, `main` (top bar) or `menu`
+     * (account menu), and its phone placement, `bar` (tab bar) or `more` (the
+     * More panel). Other slots return items without placements.
      *
      * @param array<string, mixed>|null $viewerProfile
-     * @return list<array{href:string,label:string,section:string,invite_action?:bool,member_only?:bool,placement?:string}>
+     * @return list<array{href:string,label:string,section:string,invite_action?:bool,member_only?:bool,placement?:string,phone?:string}>
      */
     public function navigationItems(?array $viewerProfile): array
     {
@@ -369,10 +370,14 @@ final class TemplateRenderer
         // Profile, Account and Invite. Everything else is a main destination.
         $barOrder = ['board', 'lobby', 'recent', 'calendar', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
+        // Phone tab bar: Board (or Lobby) and Calendar stay; the rest sit in More,
+        // which is the same disclosure as the desktop account menu.
+        $phoneBarSections = ['board', 'lobby', 'calendar'];
         foreach ($items as $index => $item) {
             // Users is main; a personal profile link (members-only mode) belongs in the account menu.
             $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
             $items[$index]['placement'] = !in_array($item['section'], $menuSections, true) && $isUsers ? 'main' : 'menu';
+            $items[$index]['phone'] = in_array($item['section'], $phoneBarSections, true) ? 'bar' : 'more';
             $items[$index]['_order'] = array_search($item['section'], $barOrder, true);
         }
         usort($items, static fn (array $a, array $b): int => ($a['_order'] === false ? PHP_INT_MAX : $a['_order']) <=> ($b['_order'] === false ? PHP_INT_MAX : $b['_order']));

@@ -46,7 +46,10 @@ let checked = 0;
 // Records member-link visibility and boxes from the moment each link is parsed,
 // then every frame until told to stop. Installed before any page script runs.
 function observe() {
-  const links = () => Array.from(document.querySelectorAll('[data-member-only]'));
+  // Each destination is observed once: the bar link on desktop, the More-panel
+  // copy on phones (where bar links placed in More are hidden for every viewer).
+  const links = () => Array.from(document.querySelectorAll('[data-member-only]'))
+    .filter(link => innerWidth < 640 ? !link.matches('nav.nav > [data-phone="more"]') : !link.matches('.account-menu__more a'));
   // While parsing, only visibility is meaningful: positions depend on header
   // markup not parsed yet. Painted frames also compare positions.
   const snapshot = withBoxes => JSON.stringify(links().map(link => {
@@ -98,18 +101,19 @@ async function tabBar(page, label) {
   const tabs = await page.evaluate(() => {
     const bar = document.querySelector('.site-header--app .site-header-actions');
     if (!bar || getComputedStyle(bar).position !== 'fixed') return null;
-    return Array.from(bar.querySelectorAll(':scope > .nav > .nav-link, :scope > .new-post-button, :scope > .account-menu'))
+    return Array.from(bar.querySelectorAll(':scope > .nav > .nav-link, :scope > .new-post-button, :scope > .account-menu > .account-menu__trigger'))
       .filter(node => getComputedStyle(node).display !== 'none')
       .map(node => Math.round(node.getBoundingClientRect().width));
   });
   if (tabs === null) return;
   assert.ok(tabs.length >= 3, `${label}: tab bar has tabs`);
+  assert.ok(tabs.length <= 5, `${label}: at most five tabs (${tabs.length})`);
   assert.ok(Math.max(...tabs) - Math.min(...tabs) <= 2, `${label}: tabs share the bar evenly (${tabs})`);
 }
 
 async function messagesIcon(page, label, theme) {
   if (!iconThemes.has(theme)) return;
-  const image = await page.locator('.nav [data-member-only][href="/messages"]').evaluate(node => getComputedStyle(node, '::before').backgroundImage);
+  const image = await page.locator('.nav [data-member-only][href="/messages"]:visible, .account-menu__more [href="/messages"]').first().evaluate(node => getComputedStyle(node, '::before').backgroundImage);
   assert.ok(image && image !== 'none', `${label}: Messages icon in ${theme}`);
 }
 
@@ -161,12 +165,13 @@ try {
           if (!messagingEnabled) { await page.close(); checked++; continue; }
           await messagesIcon(page, label, theme);
           // Unread works on a page with no server viewer, without moving or re-captioning Messages.
-          const messages = page.locator('.nav [href="/messages"]');
+          const messages = page.locator(width < 640 ? '.account-menu__more [href="/messages"]' : 'nav.nav [href="/messages"]');
           const box = JSON.stringify(states[0].find(([href]) => href === '/messages').slice(2));
           await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready', null, { timeout: 10000 });
           const after = await messages.evaluate(node => { const r = node.getBoundingClientRect(); return JSON.stringify([Math.round(r.x), Math.round(r.width)]); });
           assert.equal(after, box, `${label}: unread did not move Messages`);
-          assert.equal(await messages.innerText(), 'Messages', `${label}: caption unchanged`);
+          // The More-panel link sits in a closed disclosure, so innerText is empty there; fall back to textContent.
+          assert.equal((await messages.evaluate(node => node.innerText || node.textContent)).trim(), 'Messages', `${label}: caption unchanged`);
           if (shots && (path === '/' || path === '/users/')) await page.screenshot({ path: `${shots}/member-${theme}-${width}${path === '/' ? '' : '-users'}.png` });
           await page.close(); checked++;
         }
@@ -205,9 +210,14 @@ try {
     const first = await visit(context, '/threads/root-001', 'first sign-in');
     await first.page.waitForFunction(() => document.documentElement.getAttribute('data-member') === 'approved');
     assert.deepEqual(visible(first.states[0]), [], 'not shown before the client knows');
-    const shownLink = messagingEnabled ? '.nav [href="/messages"]' : '[data-member-only]';
+    // On phones Messages lives in the More panel, so open it to see the link appear in place.
+    const shownLink = messagingEnabled ? '.account-menu__more [href="/messages"]' : '[data-member-only]';
     if (messagingEnabled || site !== 'qdb') await first.page.waitForFunction(() => document.documentElement.getAttribute('data-member') === 'approved');
-    if (messagingEnabled) assert.equal(await first.page.locator(shownLink).isVisible(), true, 'shown in place after sign-in');
+    if (messagingEnabled && await first.page.locator('.account-menu').count()) {
+      await first.page.locator('.account-menu__trigger').click();
+      assert.equal(await first.page.locator(shownLink).isVisible(), true, 'shown in place after sign-in');
+      await first.page.locator('.account-menu__trigger').click();
+    }
     await first.page.evaluate(() => {
       ['forum_pki_public_key', 'forum_pki_private_key', 'forum_pki_fingerprint'].forEach(key => localStorage.removeItem(key));
       window.dispatchEvent(new Event('forum:identity-changed'));

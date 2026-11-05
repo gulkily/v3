@@ -536,6 +536,14 @@ pre {
   background: var(--panel);
 }
 
+/* The trigger reads "You" on desktop and "More" on phones; the More list of
+   bar destinations exists only for phones. Both are decided in CSS so the
+   server HTML is the same at every width. */
+.account-menu__label--more,
+.account-menu__links.account-menu__more {
+  display: none;
+}
+
 .account-menu__panel {
   position: absolute;
   right: 0;
@@ -615,9 +623,14 @@ pre {
     display: contents;
   }
 
+  /* The disclosure itself takes no space, so its trigger is a tab like the
+     links, with the same padding and border and therefore the same width. */
+  [data-shell="app"] .site-header--app .account-menu {
+    display: contents;
+  }
+
   [data-shell="app"] .site-header--app .nav > .nav-link,
   [data-shell="app"] .site-header--app .new-post-button,
-  [data-shell="app"] .site-header--app .account-menu,
   [data-shell="app"] .site-header--app .account-menu__trigger {
     flex: 1 1 0;
     display: flex;
@@ -650,13 +663,44 @@ pre {
     line-height: 1.1;
   }
 
+  /* More: the panel fills the screen above the tab bar; the More tab stays
+     visible and highlighted, and tapping it again closes the panel. */
   [data-shell="app"] .account-menu__panel {
-    top: auto;
-    bottom: calc(100% + 0.3rem);
+    position: fixed;
+    top: 0;
+    left: 0;
     right: 0;
-    width: min(18rem, calc(100vw - 0.6rem));
-    max-height: calc(100vh - var(--app-tabbar-height) - 1rem);
+    bottom: var(--app-tabbar-height);
+    width: auto;
+    max-height: none;
+    padding: 1rem 1rem 1.5rem;
     overflow-y: auto;
+    align-content: start;
+  }
+
+  [data-shell="app"] .site-header--app .nav > .nav-link[data-phone="more"],
+  [data-shell="app"] .account-menu__label--you {
+    display: none;
+  }
+
+  [data-shell="app"] .account-menu__links.account-menu__more {
+    display: grid;
+  }
+
+  [data-shell="app"] .account-menu__label--more {
+    display: inline;
+  }
+
+  [data-shell="app"] .account-menu__more .nav-link,
+  [data-shell="app"] .account-menu__links .nav-link {
+    padding: 0.7rem 0.8rem;
+    font-size: 1rem;
+  }
+
+  :root [data-shell="app"] .account-menu.is-active > .account-menu__trigger {
+    border-color: var(--line);
+    background: var(--active-bg);
+    color: var(--active-ink);
   }
 
   /* The LCD palette's centering transform would make its fixed popover

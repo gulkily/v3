@@ -40,3 +40,29 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 - Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective matches the original.
 
 *— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
+
+## Stage 2 - Fixed phone bar and More
+
+**Original estimate: 0.12**
+**Retrospective stage work: 0.16**
+
+- Changes:
+  - `TemplateRenderer::navigationItems()`: each app item also carries `phone`: `bar` for Board, Lobby and Calendar, `more` for the rest.
+  - `nav.php`: bar links carry `data-phone`; phones hide the `more` ones.
+  - `app_header.php`: the panel starts with a phone-only list of the bar destinations placed in More (`account-menu__more`), followed by the account links. The trigger reads You on desktop and More on phones; the disclosure gets `is-active` when the current section is listed in More.
+  - `site.css` (critical section): the panel fills the screen above the tab bar on phones; the disclosure is `display: contents` there so its trigger is a tab with the same width rules as the links; More list hidden on desktop by a two-class selector.
+  - Tests: placement test covers `phone` and the More markup; `viewer_nav_prepaint.mjs` observes each member destination once per width (bar on desktop, More copy on phones), caps tabs at five, and opens More for the phone sign-in check; `board_search.mjs` expects Search in the bar on desktop and in More on phones; `LocalAppSmokeTest` counts Tools in the bar only; `CalendarPageTest` includes `data-phone`.
+- Verification:
+  - Passed: `./v3 test --smoke AppNavigationPlacementTest CalendarPageTest` (430 run, 430 passed).
+  - Passed: `viewer_nav_prepaint.mjs`, `tab_bar_scroll.mjs`, `board_search.mjs`, `nav_unread_outline.mjs`.
+  - Passed on rerun (2 of 2) after one timing failure in its expired-invite step: `invite_zero_click.mjs`.
+  - Failed, reproduced baseline: `lcd_palettes.mjs` fails identically on `main` `a24e16df` before this cycle (summary outside the viewport after the reply textarea takes focus at 390px). Not caused here; left for separate work.
+  - Passed: `git diff --check`.
+  - Passed: screenshots at 375px light and 390px Word97: four tabs of equal width; More opens full-screen with the current section highlighted; desktop You menu shows only Account and Invite.
+- Notes:
+  - The open More panel leaves the tab bar visible with More highlighted; tapping More again closes it. This stands in for the planned Close row.
+  - `tabs share the bar evenly` failed by 3px in icon themes because `flex-basis: 0` with `border-box` keeps each tab's own padding and border; making the trigger the flex item (`display: contents` on the disclosure) removed the difference.
+  - Stage 1 omission caught here: `board_search.mjs` still expected Search in the desktop menu after Stage 1; fixed in this stage.
+- Estimate details: original scope unchanged; uncertainty low. Retrospective 0.16 (above 0.12): the browser-check updates for the duplicated Messages destination took most of the extra work. No revision was appended before completion.
+
+*— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
