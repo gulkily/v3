@@ -119,6 +119,9 @@ final class AppNavigationPlacementTest
             assertStringContains('var navSlotSections = ["recent","profiles","messages","search","about","tools"];', $html);
             assertStringContains('/assets/nav_slots.', $html);
             assertSame(false, str_contains($menu[0], 'nav-pin'));
+            // Board is in the bar, so the More tab keeps its own name.
+            assertSame(false, str_contains($menu[0], 'data-current'));
+            assertSame(false, str_contains($menu[0], 'account-menu__label--current'));
             assertStringContains('href="/messages" data-member-only data-private-message-unread-mirror', $menu[0]);
             assertStringContains('data-invite-navigation', $menu[0]);
             assertStringContains('data-role="theme-menu"', $menu[0]);
@@ -126,6 +129,18 @@ final class AppNavigationPlacementTest
             assertStringContains('<div class="shell-sky" aria-hidden="true"></div>', $html);
             assertStringContains('/assets/account_menu.', $html);
             assertStringContains('/assets/tab_bar_scroll.', $html);
+        });
+    }
+
+    public function testMoreTabTakesTheNameOfAPageListedInThePanel(): void
+    {
+        $this->withSite('zenmemes', function (): void {
+            $renderer = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true]);
+            foreach ([['about', 'About'], ['profiles', 'Users'], ['messages', 'Messages'], ['account', 'Account']] as [$section, $label]) {
+                $html = $renderer->renderLayout($label, '', $section, viewerProfile: self::VIEWERS['approved']);
+                assertStringContains('data-tab="account" data-current="' . $section . '">', $html);
+                assertStringContains('account-menu__label--more">More</span><span class="account-menu__label account-menu__label--current">' . $label . '</span></summary>', $html);
+            }
         });
     }
 

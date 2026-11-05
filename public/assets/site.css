@@ -573,6 +573,7 @@ pre {
    bar destinations exists only for phones. Both are decided in CSS so the
    server HTML is the same at every width. */
 .account-menu__label--more,
+.account-menu__label--current,
 .account-menu__links.account-menu__more {
   display: none;
 }
@@ -748,8 +749,72 @@ pre {
     display: grid;
   }
 
+  /* On a page listed in the panel, the More tab shows that page's name and the
+     selected look, unless the page holds a slot and is highlighted there. Only the
+     name carries the look, so that one per-section list decides all of it. */
+  [data-shell="app"] .account-menu[data-current] {
+    --more-tab-word: none;
+    --more-tab-name: inline;
+    --more-tab-icon: none;
+  }
+
+  html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
+  html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
+  html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
+  html[data-nav-slots~="search"] [data-shell="app"] .account-menu[data-current="search"],
+  html[data-nav-slots~="about"] [data-shell="app"] .account-menu[data-current="about"],
+  html[data-nav-slots~="tools"] [data-shell="app"] .account-menu[data-current="tools"] {
+    --more-tab-word: initial;
+    --more-tab-name: initial;
+    --more-tab-icon: initial;
+  }
+
   [data-shell="app"] .account-menu__label--more {
-    display: inline;
+    display: var(--more-tab-word, inline);
+  }
+
+  [data-shell="app"] .account-menu__label--current {
+    display: var(--more-tab-name, none);
+    color: var(--active-ink);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  [data-shell="app"] .account-menu__label--current::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -1px;
+    border: 1px solid var(--line);
+    background: var(--active-bg);
+  }
+
+  [data-shell="app"] .site-header--app .account-menu__trigger {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Themes without their own More glyph: three bars, drawn in the tab's ink. On a
+     renamed tab an arrow replaces them, leaving room for the name. */
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .account-menu__icon {
+    display: var(--more-tab-icon, inline-block);
+    border: 0;
+    border-radius: 0;
+    background:
+      linear-gradient(currentColor, currentColor) 0 15% / 100% 2px no-repeat,
+      linear-gradient(currentColor, currentColor) 0 50% / 100% 2px no-repeat,
+      linear-gradient(currentColor, currentColor) 0 85% / 100% 2px no-repeat;
+  }
+
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .account-menu__label--current::after {
+    content: "\25B4";
+    position: absolute;
+    top: -0.05rem;
+    left: 0;
+    right: 0;
+    font-size: 1.1rem;
+    line-height: 1;
+    text-align: center;
   }
 
   [data-shell="app"] .account-menu__more .nav-link,

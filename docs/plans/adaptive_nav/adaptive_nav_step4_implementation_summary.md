@@ -221,10 +221,13 @@ Direct work on this branch; maintainer requests.
 - Removed the More tab's current-page highlight and its `data-active` attribute. It lit up for destinations inside More, and for slotted tabs too, because the exception's `:root html[...]` selector could never match.
 - Desktop header: on themes that do not frame it, a rule now spans the page and, from 1240px, the links start at the content's left edge with the name in the margin (`site.css`). Maintainer's choice from the mockups. Word97, Midnight, Chicago and LCD keep their frames unchanged. Below 1240px the header keeps its one-row width with the rule.
 - New post no longer uses the selected colors, which made it read as the current page. It keeps its weight and takes neutral colors everywhere except the compose page, where it is the current destination.
+- More tab: on a page listed in the panel, it shows that page's name and the selected look, unless the page holds a slot. Maintainer's choice over bumping a slot, which would move tabs and displace an earned one.
+- More tab icon: three bars instead of the circle on phones, in themes without their own glyph. Desktop's You keeps the circle.
 - Follow-up: the maintainer may want a left sidebar as a desktop navigation option, as a separate cycle. Not part of this one.
 - Verification:
   - Passed: `./v3 test --smoke AppNavigationPlacementTest CalendarPageTest` (431), `git diff --check`, `node --check nav_slots.js`.
   - Passed: headless Chrome renders of the real templates and CSS at 390px: panel bottom-aligned (light, dark, Midnight); overflow at 420px high scrolls; on About and on a slotted Users page More is not highlighted and the slotted tab is.
   - Passed: headless Chrome measurements as a member, all 16 themes at 1239, 1240, 1280 and 1920px: links on one row, no sideways scrolling; links line up with the content from 1240px on the themes without a frame. 800px was measured but its results were not reviewed.
-  - Observed, not changed: at 390px in the dark theme with a slot, "New post" wraps onto two lines. The fonts in this environment may differ from an iPhone's.
+  - Passed: renamed More tab, `AppNavigationPlacementTest` (new test) and screenshots: all 16 themes on Messages at 375px, plus About, Account and slotted or unslotted Users at 390px in the themes shown. A page holding a slot keeps More; another slot leaves the rename in place.
+  - Observed, not changed: "New post" wraps onto two lines at 375-390px in the wider-font themes, and in the dark theme when a slot is showing. The fonts in this environment may differ from an iPhone's.
   - Not run: browser scripts, including the edited `nav_slots.mjs` and `viewer_nav_prepaint.mjs` (`playwright-core` is not installed here); iPhone replay; full suite.
