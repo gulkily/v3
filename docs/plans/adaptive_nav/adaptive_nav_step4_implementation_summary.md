@@ -102,7 +102,8 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
   - Tests: placement test asserts the published config, the script include and `navSlotCount()` for three layouts and another site; `viewer_nav_prepaint.mjs` seeds slots and asserts a guest gets Recent but never Messages, and a member gets a Messages tab from first paint with no change after.
 - Verification:
   - Passed: `./v3 test --smoke AppNavigationPlacementTest CalendarPageTest` (431 run, 431 passed).
-  - Passed: `viewer_nav_prepaint.mjs` (light), `tab_bar_scroll.mjs`, `viewer_nav_high_traffic.mjs`.
+  - Passed: `viewer_nav_prepaint.mjs` (light), `tab_bar_scroll.mjs`.
+  - Failed then passed: `viewer_nav_high_traffic.mjs` kept the pre-Stage-2 assumption that every member-only link is displayed at 390px, and read the hidden bar link's caption with `innerText`. Its observer now uses the same per-width rule as the pre-paint check. Fixed in a second Stage 4 commit; it should have been caught in Stage 2, which did not run this check.
   - Passed: `git diff --check`.
   - Passed: screenshots at 375px: Tools slotted and current for a guest on /tools/; Recent slotted and current; More unhighlighted in both.
 - Notes:
