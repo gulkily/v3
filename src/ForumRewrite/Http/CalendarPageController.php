@@ -145,7 +145,7 @@ final class CalendarPageController
             'calendar_day.php',
             $data,
             $date . ($tag === null ? '' : ' #' . $tag) . ' - Calendar',
-            'board',
+            'calendar',
             ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js'],
         );
     }
@@ -153,6 +153,6 @@ final class CalendarPageController
     /** @param array<string, mixed> $data */
     private function render(array $data, ?string $tag): string
     {
-        return $this->routeServices->renderPageTemplate('calendar.php', $data, $tag === null ? 'Calendar' : '#' . $tag . ' - Calendar', 'board');
+        return $this->routeServices->renderPageTemplate('calendar.php', $data, $tag === null ? 'Calendar' : '#' . $tag . ' - Calendar', 'calendar');
     }
 }

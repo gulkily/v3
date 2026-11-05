@@ -121,6 +121,14 @@ final class CalendarPageTest
         calendarAssertContains('href="/tools/feature-flags/#flag-FORUM_EVENT_SUPPORT_ENABLED"', $html);
         calendarAssertNotContains('calendar-grid', $html);
         calendarAssertNotContains('rel="next"', $html);
+        calendarAssertNotContains('data-tab="calendar"', $this->render($application, '/'));
+    }
+
+    public function testNavLinksToTheCalendarWhileEventSupportIsOn(): void
+    {
+        [, , $application] = $this->environment();
+        calendarAssertContains('data-tab="calendar" class="nav-link" href="/calendar"', $this->render($application, '/'));
+        calendarAssertContains('data-tab="calendar" class="nav-link is-active" href="/calendar"', $this->render($application, '/calendar'));
     }
 
     public function testDayPageListsTheDayAndPostsThroughTheSharedComposer(): void

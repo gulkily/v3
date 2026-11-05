@@ -421,6 +421,13 @@ final class TemplateRenderer
             array_splice($items, 2, 0, [['href' => '/search', 'label' => 'Search', 'section' => 'search']]);
         }
 
+        // Calendar follows Recent while event support is on. In the app slot it
+        // lands in the account menu, since only $mainSections reach the tab bar.
+        if (!$isQdbNavigation && $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)) {
+            $recentIndex = array_search('recent', array_column($items, 'section'), true);
+            array_splice($items, $recentIndex === false ? 1 : $recentIndex + 1, 0, [['href' => '/calendar', 'label' => 'Calendar', 'section' => 'calendar']]);
+        }
+
         // Tools stays reachable by direct URL even when hidden from the nav,
         // same precedent qdb already sets for Account/Invite below.
         if (!$isQdbNavigation && $hideToolsNav) {
