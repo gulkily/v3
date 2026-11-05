@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.55**
 
-Status: planning; next permitted action: planning commit, then implementation.
+Status: implementation committed and verified locally; next permitted action: push, open the PR and reply in the thread. Not merged or deployed.
 
 ## Original request
 
@@ -63,14 +63,46 @@ Smoke set plus a new `GalleryPageTest` (tiles, replies, missing file, flag off, 
 
 Branch `feat/image_gallery` from `db178602eb142a4e172a2a20b8e9ea973a5aada1`.
 
-Planning commit: pending.
+Planning commit: `2784b051`, confirmed before implementation.
 
 ## Dated execution history
 
 - 2026-11-05T23:25:00Z: record written. Earlier the same session, before this cycle, I read `ListThumbnails`, `ImageReference`, `ImageController` and `ImageStore` and posted an analysis reply in the thread (`reply-20261105232136-421dd665`) proposing previews and the images-only query.
 
+- 2026-11-05T23:26:00Z: planning commit `2784b051` confirmed with Git before any implementation edit.
+- Discovery: `/images/` already serves image files, so the page is `/gallery/` and previews use `/images/preview/`, which the file route's name pattern never matched before.
+- Discovery: `ImageStore::inventory()` rejects unexpected files in the store, so previews live in a sibling `<image root>-previews` folder; a test checks the inventory still validates.
+- Choice: reply counts come from a separate lookup on `threads` by root ID, leaving the Recent query's columns and joins as they were (no read-model schema change).
+- Choice: tiles carry the thread title for both roots and replies; a reply tile adds "Reply" to the meta line and opens the reply's anchor, as Recent does.
+- Choice: alt text is the image's own description when the author gave one; the caption is the link text otherwise.
+- Correction during verification: on a 390 px phone, greedy wrapping left single tiles stretched to full width (a square rendered 358 px tall). Added a growth cap (1.6 times the row's natural width) and a 7rem phone row; rechecked all themes.
+- Correction during verification: personal phone slots are listed per section in CSS, but the slot chooser offers any More destination, so pinning Gallery would have shown no tab. Added `gallery` to both slot lists and checked the pinned tab in light and Midnight.
+- Reuse: page navigation, `board-empty`, `ListThumbnails::forPosts()` (now also returning the preview URL and description), Calendar's flag-gated nav insertion and `$barOrder` placement, List thumbnails' flag pattern including the evaluator environment-cleanup list.
+- Follow-ups recorded below; no new requests arrived during the cycle.
+
 ## Study history
 
 2026-11-05T23:25:00Z intake: **0.55 projected total**. Single exposed Claude rater; the image code listed above and the Recent controller were inspected before this projection, so it is not a pristine intake. R1 hashes not re-verified. Extended estimates enabled; no separate work units.
+
+2026-11-05T23:35:00Z closeout: delivered scope v1 in full. Projection 0.55 preserved; **retrospective scope assessment 0.45**, single exposed Claude rater, not independent. Maintainer comfortable-fit and acceptance pending.
+
+## Outcome
+
+With image attachments on, Gallery appears in the main navigation after Recent (and Calendar) and in the phone More panel, where it can be pinned as a tab. `/gallery/` shows posts with a stored image as tiles, 48 per page, newest first, roots and replies together, each with a preview, the thread title and the thread's reply count. Turning off Image gallery or image attachments removes the nav item and makes the page a 404. Other pages are unchanged apart from `ListThumbnails` returning two extra keys.
+
+Follow-ups: filters and other orderings (likes, a tag); using previews for Board and Recent row thumbnails, which still load originals; a read-model index of image posts if the `instr` scan becomes slow; static first-page artifacts if Gallery gets heavy traffic.
+
+## Verification
+
+- `./v3 test --smoke GalleryPageTest FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest PrivateConfigCommandTest CalendarPageTest RecentPostTest ImageContentTest AppNavigationPlacementTest`: 463 run, 463 passed. New `GalleryPageTest` covers tiles for a thread and a reply, ordering, ratio clamping, captions and reply counts, missing files and text posts left out, the empty state, both flags off (404 and no nav item), and the preview route (480 px resize, cache file, small originals sent as is, cache rebuilt after deletion, 404 once the original is gone, bad names). Full suite not run, per `AGENTS.md`.
+- Local server on a seeded repository (ten JPEG posts from 0.33 to 3.4 aspect, one image reply, three text replies), driven by headless Chrome through `playwright-core` 1.58.1 installed in a scratch folder outside the repository: all 13 themes at 390 and 1280 px. Every preview loaded, no page overflow, rendered image ratios matched the clamped values, no console errors, and the Gallery icon showed in Word97, Chicago and Midnight. Screenshots of light, dark, Word97 and Midnight reviewed by eye. Pinned phone tab checked in light and Midnight.
+- `./v3 feedback check`: 0 problems; `./v3 feedback index` regenerated.
+- Not verified: the live site, Apache, static artifact builds, very large real photos (GD memory is bounded by the 2048 px upload limit but not measured), old and text-only browsers (tiles fall back to stacked images without flexbox).
+
+## Final review
+
+Diff covers routing, controller, query option, preview class, image route, flag and config schema, nav, template, CSS, icon CSS, tests, test registry, concept, feedback item and index, plan record, index link and ledger. No schema change and no dependency change: nothing was added to `package.json` or committed from the scratch install. Preview cache and image store stay outside the repository and web roots.
+
+Commit/merge/publication status: completion commit pending at the time of writing; branch, PR and thread reply pending.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*

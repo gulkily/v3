@@ -30,6 +30,20 @@ final class FeatureFlagEvaluatorTest
         });
     }
 
+    public function testImageGalleryDependsOnImagesAndCanBeDisabledIndependently(): void
+    {
+        $key = FeatureFlagRegistry::IMAGE_GALLERY_ENABLED;
+        $images = FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $this->withEnvironment([], function () use ($key, $images): void {
+            assertTrue((new FeatureFlagRegistry())->get($key)->defaultValue);
+            assertFalse((new FeatureFlagEvaluator())->isEnabled($key));
+            assertTrue((new FeatureFlagEvaluator(siteValues: [$images => true]))->isEnabled($key));
+            $disabled = new FeatureFlagEvaluator(siteValues: [$images => true, $key => false]);
+            assertFalse($disabled->isEnabled($key));
+            assertTrue($disabled->isEnabled($images));
+        });
+    }
+
     public function testSameAuthorCollapseDefaultsAndOverrides(): void
     {
         $key = FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED;
@@ -214,6 +228,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
             FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
             FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED,
+            FeatureFlagRegistry::IMAGE_GALLERY_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
@@ -531,6 +546,7 @@ PHP);
             FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
             FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
             FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED,
+            FeatureFlagRegistry::IMAGE_GALLERY_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,

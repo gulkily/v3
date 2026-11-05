@@ -11,6 +11,7 @@ final class FeatureFlagRegistry
     public const IMAGE_BACKUP_ENABLED = 'FORUM_IMAGE_BACKUP_ENABLED';
     public const TEXT_BACKUP_ENABLED = 'FORUM_TEXT_BACKUP_ENABLED';
     public const LIST_THUMBNAILS_ENABLED = 'FORUM_LIST_THUMBNAILS_ENABLED';
+    public const IMAGE_GALLERY_ENABLED = 'FORUM_IMAGE_GALLERY_ENABLED';
     public const IMAGE_CONTENT_ENABLED = 'FORUM_IMAGE_CONTENT_ENABLED';
     public const PRIVATE_MESSAGES_ENABLED = 'FORUM_PRIVATE_MESSAGES_ENABLED';
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
@@ -45,7 +46,7 @@ final class FeatureFlagRegistry
         'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
             self::VERIFIED_ATTRIBUTION],
-        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::UNICODE_AUTHORED_TEXT,
+        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS],
@@ -140,6 +141,16 @@ final class FeatureFlagRegistry
                 'Show attached-image thumbnails on Board and Recent.',
                 true,
                 self::LIST_THUMBNAILS_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
+                group: 'AUTHORING',
+            ),
+            new FeatureFlagDefinition(
+                self::IMAGE_GALLERY_ENABLED,
+                'Image gallery',
+                'Show a Gallery page of attached images in the navigation.',
+                true,
+                self::IMAGE_GALLERY_ENABLED,
                 siteMutable: true,
                 requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
                 group: 'AUTHORING',

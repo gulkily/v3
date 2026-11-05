@@ -13,9 +13,15 @@ final class RecentPostRepository
         AND COALESCE(json_extract(posts.agent_response_json, '$.type'), '') <> 'scripture_expansion'
         AND NOT EXISTS (SELECT 1 FROM json_each(posts.board_tags_json) WHERE value = 'identity')";
 
-    /** @return array{items:array,previous:?array,next:?array} */
-    public static function page(PDO $pdo, ?array $cursor = null, int $limit = 50): array
+    /**
+     * Gallery uses the same posts limited to bodies carrying an image reference;
+     * ListThumbnails then keeps only well-formed references with a stored file.
+     *
+     * @return array{items:array,previous:?array,next:?array}
+     */
+    public static function page(PDO $pdo, ?array $cursor = null, int $limit = 50, bool $imagesOnly = false): array
     {
+        $eligible = self::ELIGIBLE . ($imagesOnly ? " AND instr(posts.body, '" . \ForumRewrite\Images\ImageReference::PREFIX . "') > 0" : '');
         $direction = $cursor['direction'] ?? 'next';
         $boundary = $cursor['boundary'] ?? null;
         if ($cursor !== null && (!in_array($direction, ['next','previous'], true) || !is_array($boundary)
@@ -24,7 +30,7 @@ final class RecentPostRepository
             || $boundary['post_id'] === '' || strlen($boundary['post_id']) > 4096)) {
             throw new InvalidArgumentException('This page position is invalid.');
         }
-        $where = self::ELIGIBLE;
+        $where = $eligible;
         $comparison = static fn (string $operator): string => " AND (posts.created_at, posts.post_id) $operator (:created_at, :post_id)";
         if ($boundary !== null) $where .= $comparison($direction === 'previous' ? '>' : '<');
         $limit = max(1, min(50, $limit));
@@ -44,9 +50,9 @@ final class RecentPostRepository
         $key = static fn (array $row): array => ['created_at' => $row['created_at'], 'post_id' => $row['post_id']];
         $first = $items === [] ? $boundary : $key($items[0]);
         $last = $items === [] ? $boundary : $key($items[count($items)-1]);
-        $exists = static function (?array $edge, string $operator) use ($pdo, $comparison): bool {
+        $exists = static function (?array $edge, string $operator) use ($pdo, $comparison, $eligible): bool {
             if ($edge === null) return false;
-            $query = $pdo->prepare('SELECT 1 FROM posts WHERE ' . self::ELIGIBLE . $comparison($operator) . ' LIMIT 1');
+            $query = $pdo->prepare('SELECT 1 FROM posts WHERE ' . $eligible . $comparison($operator) . ' LIMIT 1');
             $query->execute($edge);
             return $query->fetchColumn() !== false;
         };

@@ -782,6 +782,15 @@ final class Application
             return;
         }
 
+        if ($path === '/gallery/' || $path === '/gallery') {
+            if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['position'] ?? null), 200);
+            return;
+        }
+
         if ($path === '/activity/' || $path === '/activity') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml($this->activityPageController()->rss((string) ($query['view'] ?? 'all')), 200);
@@ -2208,7 +2217,7 @@ final class Application
             '/downloads/images.zip', '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
-            '/activity', '/activity/', '/recent', '/recent/',
+            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',

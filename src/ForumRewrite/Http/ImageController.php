@@ -21,8 +21,8 @@ final class ImageController
             return;
         }
         if ($this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)
-            && preg_match('/^thumbs\/([a-f0-9]{64})-([12])x\.(png|jpg)$/D', $name, $thumb)) {
-            $this->serveThumbnail($method, $headers, $thumb[1] . '.' . $thumb[3], (int) $thumb[2]);
+            && preg_match('/^thumbs\/([a-f0-9]{64})-(1x|2x|tile)\.(png|jpg)$/D', $name, $thumb)) {
+            $this->serveThumbnail($method, $headers, $thumb[1] . '.' . $thumb[3], $thumb[2]);
             return;
         }
         if (!$this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED) || !preg_match('/^[a-f0-9]{64}\.(png|jpg)$/D', $name)) {
@@ -49,11 +49,11 @@ final class ImageController
     }
 
     /**
-     * A list-row thumbnail: the cached small copy, generated from the verified
+     * A list-row or gallery thumbnail: the cached small copy, generated from the verified
      * original on first request. Served only while the original is present;
      * if resizing is unavailable or fails, the original is served instead.
      */
-    private function serveThumbnail(string $method, array $headers, string $original, int $scale): void
+    private function serveThumbnail(string $method, array $headers, string $original, string $size): void
     {
         try {
             $store = new ImageStore($this->repositoryRoot);
@@ -62,12 +62,12 @@ final class ImageController
                 throw new RuntimeException('Image unavailable.');
             }
             $thumbnails = new \ForumRewrite\Images\ThumbnailStore($store);
-            $cached = $thumbnails->root . '/' . substr($original, 0, 64) . '-' . $scale . 'x.' . substr($original, 65);
+            $cached = $thumbnails->root . '/' . substr($original, 0, 64) . '-' . $size . '.' . substr($original, 65);
             if (!is_file($cached) || is_link($cached)) {
                 $ref = ImageStore::inspect($originalPath, 'Image');
                 if (\ForumRewrite\Images\ImageReference::filename($ref) !== $original) { throw new RuntimeException('Image checksum mismatch.'); }
                 try {
-                    $cached = $thumbnails->path($ref, $scale);
+                    $cached = $thumbnails->path($ref, $size);
                 } catch (RuntimeException) {
                     $this->serve($method, $original);
                     return;

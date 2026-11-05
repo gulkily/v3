@@ -374,7 +374,7 @@ final class TemplateRenderer
 
         // Desktop bar order. The account menu keeps only the viewer's own items:
         // Profile, Account and Invite. Everything else is a main destination.
-        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'profiles', 'messages', 'search', 'about', 'tools'];
+        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
         // Phone tab bar: Board (or Lobby) and Calendar stay; the rest sit in More,
         // which is the same disclosure as the desktop account menu.
@@ -464,6 +464,14 @@ final class TemplateRenderer
         if (!$isQdbNavigation && $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)) {
             $recentIndex = array_search('recent', array_column($items, 'section'), true);
             array_splice($items, $recentIndex === false ? 1 : $recentIndex + 1, 0, [['href' => '/calendar', 'label' => 'Calendar', 'section' => 'calendar']]);
+        }
+
+        // Gallery follows Recent (and Calendar) while the image gallery is on.
+        if (!$isQdbNavigation && $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)) {
+            $sections = array_column($items, 'section');
+            $after = array_search('calendar', $sections, true);
+            $after = $after === false ? array_search('recent', $sections, true) : $after;
+            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/gallery/', 'label' => 'Gallery', 'section' => 'gallery']]);
         }
 
         // Tools stays reachable by direct URL even when hidden from the nav,
