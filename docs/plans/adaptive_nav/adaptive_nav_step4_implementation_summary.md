@@ -112,3 +112,27 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 - Estimate details: original scope unchanged; uncertainty medium; no revisions. Retrospective matches the original.
 
 *— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
+
+## Stage 5 - Filling and pinning
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.14**
+
+- Changes:
+  - `nav_slots.js`: counts a use when a phone reader opens a destination from More or taps a tab that holds a slot; `decide()` keeps pins first, holds each earned slot unless a challenger leads it by `LEAD` (3) uses and was used on two different days, then fills free slots with any destination at `FILL` (3) uses. Slots keep the order earned. `pin()` writes, re-places at once and updates the buttons; `reflect()` sets each Pin button's pressed state from storage on load.
+  - `app_header.php`: each More row is a destination link plus a `Pin` toggle button (`data-nav-pin`, `aria-pressed`, labelled "Pin <name> to the tab bar"). Non-members see neither half of the Messages row.
+  - `site.css`: row layout and pin styling on phones; pins hidden on desktop; the global `button { width: 100% }` is overridden for pins.
+  - `tests/Support/app_layout_fixture.php` (new): prints the rendered app layout for browser checks served from memory.
+  - `tests/browser/nav_slots.mjs` (new): drives clicks with a fixed clock: fills after three uses; holds through twenty other visits in one day; yields to a six-use leader on day two; pin wins at once and after reload; unpin returns the leader; a guest never gets a Messages slot or pin; storage is a flat JSON object.
+- Verification:
+  - Passed: `nav_slots.mjs`, `board_search.mjs`, `tab_bar_scroll.mjs`, `viewer_nav_prepaint.mjs` (light).
+  - Passed: `./v3 test --smoke AppNavigationPlacementTest` (424 run, 424 passed).
+  - Passed: `git diff --check`.
+  - Passed: screenshots at 375px: member More panel shows six rows with Pin; Word97 guest panel hides the Messages row and its pin.
+- Notes:
+  - Thresholds live in `FILL` and `LEAD` at the top of `nav_slots.js`; the Stage 8 replay may tune them.
+  - A tap on a slotted tab also counts as a use, so a destination in steady use is not evicted by a lighter one.
+  - Pin state is applied after load inside the closed panel; nothing visible changes on the page at paint.
+- Estimate details: original scope unchanged; uncertainty medium; no revisions. Retrospective matches the original.
+
+*— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*

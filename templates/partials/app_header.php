@@ -28,7 +28,10 @@ $canPost = array_filter($navItems, static fn (array $item): bool => $item['secti
         <nav class="account-menu__links account-menu__more" aria-label="More destinations">
 <?php foreach ($moreItems as $item): ?>
 <?php $class = $item['section'] === $activeSection ? 'nav-link is-active' : 'nav-link'; ?>
-          <a data-more="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= $item['section'] === 'messages' ? ' data-private-message-unread-mirror' : '' ?>><?= $e($item['label']) ?></a>
+          <div class="account-menu__row">
+            <a data-more="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= $item['section'] === 'messages' ? ' data-private-message-unread-mirror' : '' ?>><?= $e($item['label']) ?></a>
+            <button type="button" class="nav-pin" data-nav-pin="<?= $e($item['section']) ?>" aria-pressed="false" aria-label="Pin <?= $e($item['label']) ?> to the tab bar"><span class="nav-pin__mark" aria-hidden="true"></span><span class="nav-pin__label">Pin</span></button>
+          </div>
 <?php endforeach; ?>
         </nav>
 <?php endif; ?>

@@ -118,6 +118,9 @@ final class AppNavigationPlacementTest
             assertStringContains('window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections };', $html);
             assertStringContains('var navSlotSections = ["recent","profiles","messages","search","about","tools"];', $html);
             assertStringContains('/assets/nav_slots.', $html);
+            // Every More row carries a pin toggle; the client sets its pressed state from storage.
+            assertStringContains('<button type="button" class="nav-pin" data-nav-pin="recent" aria-pressed="false" aria-label="Pin Recent to the tab bar">', $menu[0]);
+            assertSame(6, substr_count($menu[0], 'class="nav-pin"'));
             assertStringContains('href="/messages" data-member-only data-private-message-unread-mirror', $menu[0]);
             assertStringContains('data-invite-navigation', $menu[0]);
             assertStringContains('data-role="theme-menu"', $menu[0]);

@@ -540,7 +540,8 @@ pre {
    bar destinations exists only for phones. Both are decided in CSS so the
    server HTML is the same at every width. */
 .account-menu__label--more,
-.account-menu__links.account-menu__more {
+.account-menu__links.account-menu__more,
+.nav-pin {
   display: none;
 }
 
@@ -716,6 +717,56 @@ pre {
   [data-shell="app"] .account-menu__links .nav-link {
     padding: 0.7rem 0.8rem;
     font-size: 1rem;
+  }
+
+  /* Each More row: the destination, then a Pin toggle that locks it into a
+     slot (nav_slots.js). Non-members see neither half of a member-only row. */
+  [data-shell="app"] .account-menu__row {
+    display: flex;
+    gap: 0.35rem;
+    align-items: stretch;
+  }
+
+  [data-shell="app"] .account-menu__row > .nav-link {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  :root [data-shell="app"] .nav-pin {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.8rem;
+    border: 1px solid var(--line);
+    background: var(--input-bg);
+    color: inherit;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  :root [data-shell="app"] .nav-pin[aria-pressed="true"] {
+    border-color: var(--active-line);
+    background: var(--active-bg);
+    color: var(--active-ink);
+  }
+
+  [data-shell="app"] .nav-pin__mark {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+  }
+
+  [data-shell="app"] .nav-pin[aria-pressed="true"] .nav-pin__mark {
+    background: currentColor;
+  }
+
+  :root:not([data-member="approved"]) [data-member-only] + .nav-pin {
+    display: none;
   }
 
   /* More is the current tab when the page is one of its destinations, unless
