@@ -25,7 +25,7 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 
 - Changes:
   - `TemplateRenderer::navigationItems()`: in the app slot, every destination except Account, Invite and the personal Profile link is `main`; items are ordered Board, Lobby, Recent, Calendar, Users, Messages, Search, About, Tools, then menu items.
-  - `site.css`: from 640px the app header spans up to 1100px centred on the 760px column, links sit tighter, and New post and You stay on the first row when the nav wraps.
+  - `site.css`: from 640px the app header spans up to 1180px centred on the 760px column, links sit tighter, and New post and You stay on the first row when the nav wraps.
   - `AppNavigationPlacementTest`: Search, About and Tools are `main`; the bar order is asserted.
 - Verification:
   - Passed: `./v3 test --smoke AppNavigationPlacementTest CalendarPageTest` (430 run, 430 passed).
@@ -175,3 +175,36 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 - Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective matches the original.
 
 *— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
+
+## Stage 8 - Release check and iPhone replay
+
+**Original estimate: 0.13**
+**Retrospective stage work: 0.10 (headless part; the replay is pending)**
+
+- Changes:
+  - `site.css`: desktop header cap raised from 1100px to 1180px after the matrix showed Chicago's wider font pushing Tools alone onto a second row at 1280px. All four themes now fit one row at 1280px.
+  - `viewer_nav_prepaint.mjs`: the readiness check now requires each stylesheet link's loaded sheet to match its current href. The head script swaps the theme link's href, and the old sheet lingered long enough to record a pre-theme layout as the first paint, which read as a shift in icon themes at 1280px. Two full five-theme runs pass after the change.
+- Verification:
+  - Passed: `viewer_nav_prepaint.mjs`, all five default themes at 390px and 1280px, two full runs: at most five tabs, no change after first paint, slots and member links correct.
+  - Passed: `nav_slots.mjs`, `nav_active_theme_styles.mjs`, `./v3 test --smoke AppNavigationPlacementTest CalendarPageTest` (431), `git diff --check`.
+  - Passed: screenshot matrix at 375px (light, Word97, Chicago, Midnight): five tabs with Recent slotted, equal widths; at 1280px: one row in all four.
+  - **Pending: the maintainer's iPhone replay** on the deployed site: a calm bar of five tabs or fewer, a slot that appears after a few More visits and stays, and a pin. A headless 375px pass does not satisfy this condition.
+  - Pending: deployment (maintainer deploys by SSH); no schema, API, cookie, dependency or Apache change.
+  - Not run: full suite.
+- Notes:
+  - Thresholds (`FILL`, `LEAD` in `nav_slots.js`) may need tuning after the replay; that is an in-scope refinement of Stage 5.
+  - `lcd_palettes.mjs` remains a reproduced baseline failure (fails on `main` before this cycle).
+- Estimate details: original scope unchanged; uncertainty medium; no revisions. The retrospective covers the headless matrix only.
+
+*— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
+
+## Closeout
+
+- Technical completion: Stages 1–7 complete; Stage 8 pending the maintainer's iPhone replay and deployment. Branch `feat/adaptive-nav`, not merged or pushed to `main`. Commits: planning `8fe60a2a`, stages `4f290c6e`, `74a7c5b8`, `a3dfb3f9`, `d64a0f49` + `617ce9be`, `eacf6ea6`, `3c9c796e`, `5e670104`, and this Stage 8 commit.
+- Completion Contract: desktop bar and You split delivered; five-tab phone bar with More delivered; slots fill, hold, yield and pin as specified, placed before first paint; unpin, cleared storage and feature-flag refresh recovery covered by browser checks. Release condition met for the headless matrix; the iPhone condition is open.
+- Final diff review: changed files are the renderer, two header partials, the layout head script, `site.css`, `theme-nav-icons.css`, `private_message_unread.js`, `feature_flags.js`, the new `nav_slots.js`, tests and fixtures, three concept entries, the copy checklist and this cycle's plans. No dependency, schema or deployment change; `node_modules/` symlinks for Playwright are ignored and not committed.
+- Enhancement requests: JSON storage (adopted, Stage 4); local-storage editor PF-20261104-F18 (separate work, unchanged).
+
+## Study closeout
+
+2026-11-05T07:40:00Z, `railspike-effort` / `v3/adaptive_nav`. Entry projection **0.85** preserved. Separately labelled **retrospective scope assessment: 0.90**, single exposed Claude rater: the delivered slice matched the plan; the extra work was in browser-check updates for the duplicated Messages destination and the theme-swap readiness race, not in features. Stage retrospectives S1 0.08 / S2 0.16 / S3 0.06 / S4 0.14 / S5 0.14 / S6 0.05 / S7 0.08 / S8 0.10 (headless part), non-additive. Omissions: iPhone replay, deployment, full suite. Maintainer comfortable-fit judgment and study acceptance: pending. No measured labor, independent rating or accepted-count change.

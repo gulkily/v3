@@ -452,11 +452,11 @@ pre {
 }
 
 /* Desktop: the bar holds every main destination, which is wider than the
-   760px content column. The header spans up to 1100px, centred on the column,
+   760px content column. The header spans up to 1180px, centred on the column,
    and the links sit a little tighter; below that the nav wraps. */
 @media (min-width: 640px) {
   [data-shell="app"] .site-header--app {
-    --app-header-width: min(100vw - 3rem, 1100px);
+    --app-header-width: min(100vw - 3rem, 1180px);
     width: var(--app-header-width);
     margin-inline: calc((100% - var(--app-header-width)) / 2);
     align-items: flex-start;

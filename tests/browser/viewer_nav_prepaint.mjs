@@ -67,7 +67,8 @@ function observe() {
   }).observe(document, { childList: true, subtree: true });
   // Before <main> is parsed or while stylesheets are still arriving (site.css
   // loads asynchronously for everyone), only visibility is compared.
-  const stylesReady = () => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).every(link => link.sheet && link.media !== 'print');
+  // The head script swaps the theme link's href; its old sheet can linger until the new one loads.
+  const stylesReady = () => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).every(link => link.sheet && link.media !== 'print' && (!link.sheet.href || link.sheet.href === link.href));
   const frame = () => {
     if (links().length) {
       if (document.querySelector('main') && stylesReady()) record();
