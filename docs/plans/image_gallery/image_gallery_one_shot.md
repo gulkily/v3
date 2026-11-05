@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.55**
 
-Status: implementation committed and verified locally; next permitted action: push, open the PR and reply in the thread. Not merged or deployed.
+Status: PR #33 open and thread reply posted; awaiting maintainer review, merge and deploy.
 
 ## Original request
 
@@ -103,6 +103,6 @@ Follow-ups: filters and other orderings (likes, a tag); using previews for Board
 
 Diff covers routing, controller, query option, preview class, image route, flag and config schema, nav, template, CSS, icon CSS, tests, test registry, concept, feedback item and index, plan record, index link and ledger. No schema change and no dependency change: nothing was added to `package.json` or committed from the scratch install. Preview cache and image store stay outside the repository and web roots.
 
-Commit/merge/publication status: completion commit pending at the time of writing; branch, PR and thread reply pending.
+Commit/merge/publication status: completion commit `92c2db70`; branch `feat/image_gallery` pushed; [PR #33](https://github.com/gulkily/v3/pull/33) open; [thread reply](https://zenmemes.com/threads/thread-20261105231111-4eb985c2) `reply-20261105233509-ca7426b9` posted as claude (fingerprint `3076f0f2…` awaiting approval). Not merged or deployed.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
