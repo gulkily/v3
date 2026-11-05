@@ -22,6 +22,21 @@
           document.documentElement.setAttribute('data-member', 'approved');
         }
       } catch (error) {}
+<?php if ($navSlotCount > 0): ?>
+      try {
+        // Personal phone tabs, chosen by nav_slots.js and read here before paint.
+        var navSlotCount = <?= (int) $navSlotCount ?>;
+        var navSlotSections = <?= json_encode($navSlotSections, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+        window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections };
+        var navSlotState = JSON.parse(localStorage.getItem('forum_nav_slots') || 'null');
+        var navSlots = navSlotState && Array.isArray(navSlotState.slots) ? navSlotState.slots : [];
+        var navMember = document.documentElement.getAttribute('data-member') === 'approved';
+        navSlots = navSlots.filter(function (section) {
+          return navSlotSections.indexOf(section) !== -1 && (section !== 'messages' || navMember);
+        }).slice(0, navSlotCount);
+        if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
+      } catch (error) {}
+<?php endif; ?>
       var palette = 'green';
       try {
         var savedPalette = localStorage.getItem(browserRuntime.themeStorageKey + '-lcd-palette');
@@ -161,6 +176,7 @@
 <?php if ($navigationSlot === 'app'): ?>
   <script src="<?= $e($accountMenuScriptPath) ?>" defer></script>
   <script src="<?= $e($tabBarScrollScriptPath) ?>" defer></script>
+  <script src="<?= $e($navSlotsScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>

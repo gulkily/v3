@@ -683,6 +683,27 @@ pre {
     display: none;
   }
 
+  /* Personal slots: <html data-nav-slots="recent users"> (set before paint by
+     the head script from the browser's saved choice) shows those More
+     destinations as tabs, after the fixed ones and before New post and More. */
+  html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
+  html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
+  html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
+  html[data-nav-slots~="search"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="search"],
+  html[data-nav-slots~="about"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="about"],
+  html[data-nav-slots~="tools"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="tools"] {
+    display: flex;
+    order: 1;
+  }
+
+  [data-shell="app"] .site-header--app .new-post-button {
+    order: 2;
+  }
+
+  [data-shell="app"] .site-header--app .account-menu__trigger {
+    order: 3;
+  }
+
   [data-shell="app"] .account-menu__links.account-menu__more {
     display: grid;
   }
@@ -697,10 +718,23 @@ pre {
     font-size: 1rem;
   }
 
-  :root [data-shell="app"] .account-menu.is-active > .account-menu__trigger {
+  /* More is the current tab when the page is one of its destinations, unless
+     that destination holds a slot and is highlighted there instead. */
+  :root [data-shell="app"] .account-menu[data-active] > .account-menu__trigger {
     border-color: var(--line);
     background: var(--active-bg);
     color: var(--active-ink);
+  }
+
+  :root html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-active="recent"] > .account-menu__trigger,
+  :root html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-active="profiles"] > .account-menu__trigger,
+  :root html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-active="messages"] > .account-menu__trigger,
+  :root html[data-nav-slots~="search"] [data-shell="app"] .account-menu[data-active="search"] > .account-menu__trigger,
+  :root html[data-nav-slots~="about"] [data-shell="app"] .account-menu[data-active="about"] > .account-menu__trigger,
+  :root html[data-nav-slots~="tools"] [data-shell="app"] .account-menu[data-active="tools"] > .account-menu__trigger {
+    border-color: transparent;
+    background: transparent;
+    color: inherit;
   }
 
   /* Unread Messages shows on the More tab the same way it shows on the link. */

@@ -21,7 +21,7 @@ $canPost = array_filter($navItems, static fn (array $item): bool => $item['secti
 <?php if ($canPost): ?>
     <a class="new-post-button<?= $activeSection === 'compose' ? ' is-active' : '' ?>" href="/compose/thread" data-tab="compose"><span class="new-post-button__icon" aria-hidden="true">+</span><span class="new-post-button__label">New post</span></a>
 <?php endif; ?>
-    <details class="account-menu<?= $moreActive ? ' is-active' : '' ?>" data-role="account-menu" data-tab="account">
+    <details class="account-menu" data-role="account-menu" data-tab="account"<?= $moreActive ? ' data-active="' . $e($activeSection) . '"' : '' ?>>
       <summary class="account-menu__trigger" aria-label="Menu" data-private-message-unread-mirror><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span></summary>
       <div class="account-menu__panel">
 <?php if ($moreItems !== []): ?>

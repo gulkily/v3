@@ -48,8 +48,9 @@ let checked = 0;
 function observe() {
   // Each destination is observed once: the bar link on desktop, the More-panel
   // copy on phones (where bar links placed in More are hidden for every viewer).
+  const slotted = link => (document.documentElement.getAttribute('data-nav-slots') || '').split(' ').includes(link.dataset.tab);
   const links = () => Array.from(document.querySelectorAll('[data-member-only]'))
-    .filter(link => innerWidth < 640 ? !link.matches('nav.nav > [data-phone="more"]') : !link.matches('.account-menu__more a'));
+    .filter(link => innerWidth < 640 ? !(link.matches('nav.nav > [data-phone="more"]') && !slotted(link)) : !link.matches('.account-menu__more a'));
   // While parsing, only visibility is meaningful: positions depend on header
   // markup not parsed yet. Painted frames also compare positions.
   const snapshot = withBoxes => JSON.stringify(links().map(link => {
@@ -94,7 +95,7 @@ async function visit(context, path, label) {
   return { page, states, parsed };
 }
 
-function visible(state) { return state.filter(([, shown]) => shown).map(([href]) => href); }
+function visible(state) { return [...new Set(state.filter(([, shown]) => shown).map(([href]) => href))]; }
 
 async function tabBar(page, label) {
   // Phone tab bar: visible tabs share the bar evenly, with no empty slot.
@@ -117,8 +118,9 @@ async function messagesIcon(page, label, theme) {
   assert.ok(image && image !== 'none', `${label}: Messages icon in ${theme}`);
 }
 
-function seedScript({ keys, fingerprint, theme, remembered, site }) {
+function seedScript({ keys, fingerprint, theme, remembered, site, slots }) {
   localStorage.setItem(`forum-${site}-theme`, theme);
+  if (slots) localStorage.setItem('forum_nav_slots', JSON.stringify({ slots }));
   if (keys && !sessionStorage.getItem('seeded')) {
     for (const [key, value] of Object.entries({ username: 'reaction-browser', public_key: keys.publicKey, private_key: keys.privateKey, fingerprint, published_fingerprint: fingerprint })) localStorage.setItem('forum_pki_' + key, value);
     if (remembered) localStorage.setItem('forum_pki_approved_fingerprint', fingerprint.toLowerCase());
@@ -184,6 +186,29 @@ try {
         await context.close();
       }
     }
+  }
+  // Personal slots: a saved slot is a tab from first paint, with no change after;
+  // a guest never gets a Messages slot, however the browser state reads.
+  if (site !== 'qdb' && messagingEnabled) {
+    const slotTab = name => `.site-header--app nav.nav > .nav-link[data-tab="${name}"]`;
+    const viewport = { width: 390, height: 844 };
+    const guest = await browser.newContext({ serviceWorkers: 'block', viewport });
+    await guest.addInitScript(seedScript, { theme: 'light', site, slots: ['messages', 'recent'] });
+    await guest.addInitScript(observe);
+    const { page: guestPage, states: guestStates, parsed: guestParsed } = await visit(guest, '/', 'guest slot');
+    assert.deepEqual([...guestStates, ...guestParsed].flatMap(visible), [], 'guest slot: Messages stays hidden');
+    assert.equal(await guestPage.locator(slotTab('recent')).isVisible(), true, 'guest slot: Recent is a tab');
+    await tabBar(guestPage, 'guest slot');
+    await guestPage.close(); await guest.close();
+    const member = await browser.newContext({ serviceWorkers: 'block', viewport });
+    await member.addInitScript(seedScript, { keys, fingerprint, theme: 'light', remembered: true, site, slots: ['messages'] });
+    await member.addInitScript(observe);
+    const { page: memberPage, states: memberStates } = await visit(member, '/about/', 'member slot');
+    assert.equal(memberStates.length, 1, `member slot: no change after first paint (${JSON.stringify(memberStates)})`);
+    assert.equal(await memberPage.locator(slotTab('messages')).isVisible(), true, 'member slot: Messages is a tab');
+    assert.equal(await memberPage.evaluate(() => document.documentElement.getAttribute('data-nav-slots')), 'messages', 'member slot: placed before paint');
+    await tabBar(memberPage, 'member slot');
+    await memberPage.close(); await member.close();
   }
   // Keyboard: member links are reachable in order; the account menu shows Invite when open.
   {

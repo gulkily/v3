@@ -114,6 +114,10 @@ final class AppNavigationPlacementTest
             assertStringContains('account-menu__label--more">More<', $menu[0]);
             // The More tab and the panel's Messages link mirror the unread count on phones.
             assertStringContains('aria-label="Menu" data-private-message-unread-mirror', $menu[0]);
+            // The head script publishes the free slot count and the sections that may fill one, the same for every viewer.
+            assertStringContains('window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections };', $html);
+            assertStringContains('var navSlotSections = ["recent","profiles","messages","search","about","tools"];', $html);
+            assertStringContains('/assets/nav_slots.', $html);
             assertStringContains('href="/messages" data-member-only data-private-message-unread-mirror', $menu[0]);
             assertStringContains('data-invite-navigation', $menu[0]);
             assertStringContains('data-role="theme-menu"', $menu[0]);
@@ -121,6 +125,23 @@ final class AppNavigationPlacementTest
             assertStringContains('<div class="shell-sky" aria-hidden="true"></div>', $html);
             assertStringContains('/assets/account_menu.', $html);
             assertStringContains('/assets/tab_bar_scroll.', $html);
+        });
+    }
+
+    public function testSlotCountLeavesFiveTabsAtMostAndTwoSlotsAtMost(): void
+    {
+        $this->withSite('zenmemes', function (): void {
+            // Board, New post, More -> two slots; with Calendar -> one; Lobby alone -> two (capped).
+            $renderer = $this->renderer();
+            assertSame(2, TemplateRenderer::navSlotCount($renderer->navigationItems(self::VIEWERS['approved'])));
+            $events = $this->renderer([FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => true]);
+            assertSame(1, TemplateRenderer::navSlotCount($events->navigationItems(self::VIEWERS['approved'])));
+            $lobby = $this->renderer([FeatureFlagRegistry::APPROVED_MEMBERS_ONLY => true]);
+            assertSame(2, TemplateRenderer::navSlotCount($lobby->navigationItems(self::VIEWERS['unapproved'])));
+        });
+        $this->withSite('chouse', function (): void {
+            assertSame(0, TemplateRenderer::navSlotCount($this->renderer()->navigationItems(self::VIEWERS['approved'])));
+            assertSame(false, str_contains($this->renderer()->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']), '__forumNavSlots'));
         });
     }
 

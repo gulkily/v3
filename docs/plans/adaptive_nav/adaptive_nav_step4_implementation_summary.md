@@ -86,3 +86,28 @@ Branch: `feat/adaptive-nav` from `main` `a24e16df`. Planning commit `8fe60a2a`.
 - Estimate details: original scope unchanged; uncertainty low; no revisions. Retrospective 0.06, slightly under.
 
 *— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*
+
+## Stage 4 - Slot markup and pre-paint placement
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.14**
+
+- Changes:
+  - No extra markup: the bar's `data-phone="more"` links, already in every viewer's HTML, are the slot candidates.
+  - `TemplateRenderer::navSlotCount()`: five tabs minus the fixed ones, capped at two (zenmemes: one with Calendar, two without; members-only lobby: two). The layout also receives `navSlotSections`, the More destinations that may fill a slot.
+  - `layout.php` head script: publishes `window.__forumNavSlots = { count, sections }`, reads `forum_nav_slots` (JSON) from local storage, keeps known sections only, drops Messages unless the browser is remembered as approved, and sets `data-nav-slots` on `<html>` before paint.
+  - `site.css` (critical): per-section rules show a slotted tab (`order: 1`, after the fixed tabs; New post and More order 2 and 3). More loses its current-tab highlight when the current section holds a slot; the server marks the disclosure with `data-active` instead of a class.
+  - `nav_slots.js` (new): owns the storage key and format, `place()` re-applies the choice on `forum:nav-refreshed` and `forum:identity-changed`. Filling and pinning come in Stage 5.
+  - `standalone_layout.php`: no change; it has no app header and no member pre-paint script, so parity is inapplicable.
+  - Tests: placement test asserts the published config, the script include and `navSlotCount()` for three layouts and another site; `viewer_nav_prepaint.mjs` seeds slots and asserts a guest gets Recent but never Messages, and a member gets a Messages tab from first paint with no change after.
+- Verification:
+  - Passed: `./v3 test --smoke AppNavigationPlacementTest CalendarPageTest` (431 run, 431 passed).
+  - Passed: `viewer_nav_prepaint.mjs` (light), `tab_bar_scroll.mjs`, `viewer_nav_high_traffic.mjs`.
+  - Passed: `git diff --check`.
+  - Passed: screenshots at 375px: Tools slotted and current for a guest on /tools/; Recent slotted and current; More unhighlighted in both.
+- Notes:
+  - The `!important` member-only rule still hides a Messages slot for any browser not remembered as approved, whatever the stored state says.
+  - A slot shows the bar link in DOM order before Calendar but visually after it (`order`), so keyboard order and visual order differ by one tab. Accepted; noted for Stage 7's docs.
+- Estimate details: original scope unchanged; uncertainty medium; no revisions. Retrospective matches the original.
+
+*— Claude · 2026-11-05 UTC · Model: claude-fable-5-1*

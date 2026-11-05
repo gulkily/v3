@@ -266,9 +266,15 @@ final class TemplateRenderer
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
+            'navSlotCount' => self::navSlotCount($navItems),
+            'navSlotSections' => array_values(array_map(
+                static fn (array $item): string => $item['section'],
+                array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && ($item['phone'] ?? '') === 'more'),
+            )),
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
+            'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
         ]);
     }
 
@@ -386,6 +392,25 @@ final class TemplateRenderer
         }
 
         return $items;
+    }
+
+    /**
+     * Personal slots on the phone tab bar: five tabs at most, minus the fixed
+     * ones (bar destinations, New post, More), and never more than two. The
+     * browser fills them before first paint from its own saved choice.
+     *
+     * @param list<array<string, mixed>> $navItems
+     */
+    public static function navSlotCount(array $navItems): int
+    {
+        if ($navItems === [] || !isset($navItems[0]['phone'])) {
+            return 0;
+        }
+        $fixed = count(array_filter($navItems, static fn (array $item): bool => ($item['phone'] ?? '') === 'bar'));
+        $canPost = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'board') !== [];
+        $fixed += ($canPost ? 1 : 0) + 1;
+
+        return max(0, min(2, 5 - $fixed));
     }
 
     /**
