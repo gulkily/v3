@@ -12,6 +12,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
 
+[Source repository link one-shot](source_repository_link/source_repository_link_one_shot.md) — agents find the code repository from `/llms.txt` and the `/api/` index.
+
+[Chicago post actions one-shot](chicago_post_actions/chicago_post_actions_one_shot.md) — carry the Word97 post-action typography and Like/Flag bevel repairs into Chicago.
+
 [Human-readable format audit](human_readable_formats_checklist.md) — JSON conversion checklist and boundaries; [retraction text assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md).
 
 ## Production feedback
@@ -36,6 +40,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Parallel tests](parallel_tests/parallel_tests_one_shot.md) — one-shot: `--jobs=N` runs any test selection in worker processes, slowest work first; `./v3 fulltest` runs the full suite on every core.
 - [Work tracking](work_tracking/work_tracking_step3_development_plan.md) — superseded 2026-11-04; code removed, restarting from feedback data as [feedback work restart](feedback_work_restart/feedback_work_restart_step1_solution_assessment.md).
 - [Feedback work restart](feedback_work_restart/feedback_work_restart_step3_development_plan.md) — feedback items as `Key: value` files in `docs/feedback/items/`, `./v3 feedback check|index`, triage procedure in `docs/agents/`; Step 4 in progress.
+- [Delete record speed](delete_record_speed/delete_record_speed_step3_development_plan.md) — `./v3 delete-record` inspect and delete under 1s on the qdb host with live status lines and `-q`; label-file index, one-index-read commit, incremental removal instead of a full rebuild; Step 4 in progress.
 
 - [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
 
@@ -184,6 +189,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Account key approval safety](account_key_approval_safety/)
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)
+- [Adaptive nav](adaptive_nav/) — recorded steps: 3.
 - [Agent response direct preflight](agent_response_direct_preflight/)
 - [Agent response dropdown viewport fit](agent_response_dropdown_viewport_fit/)
 - [Agent response harness simplification](agent_response_harness_simplification/)
@@ -191,6 +197,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Anonymous reaction scoring](anonymous_reaction_scoring/) — recorded steps: 1.
 - [Automatic guest identity](automatic_guest_identity/)
 - [Browser private key restore](browser_private_key_restore/) — recorded steps: 1.
+- [Calendar](calendar/)
 - [Case insensitive tags](case_insensitive_tags/)
 - [Chouse production readiness](chouse_production_readiness/) — recorded steps: 1.
 - [Codebase page source details](codebase_page_source_details/) — recorded steps: 3.

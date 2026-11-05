@@ -40,8 +40,16 @@ final class AppNavigationPlacementTest
                     assertSame('main', $placements['/'], $name);
                     assertSame('main', $placements['/recent/'], $name);
                     assertSame('main', $placements['/users/'], $name);
-                    foreach (['/search', '/about/', '/tools/', '/account/key/'] as $href) {
-                        assertSame('menu', $placements[$href], $name . ' ' . $href);
+                    // Desktop bar holds every destination that is not about the viewer.
+                    foreach (['/search', '/about/', '/tools/'] as $href) {
+                        assertSame('main', $placements[$href], $name . ' ' . $href);
+                    }
+                    assertSame('menu', $placements['/account/key/'], $name);
+                    // Phones keep Board and Calendar in the bar; everything else opens from More.
+                    $phones = array_column($items, 'phone', 'href');
+                    assertSame('bar', $phones['/'], $name);
+                    foreach (['/recent/', '/users/', '/search', '/about/', '/tools/', '/account/key/'] as $href) {
+                        assertSame('more', $phones[$href], $name . ' ' . $href);
                     }
                     // Member-only links are rendered for every viewer and shown before paint by the client.
                     assertSame($messages ? 'main' : null, $placements['/messages'] ?? null, $name);
@@ -60,6 +68,7 @@ final class AppNavigationPlacementTest
             $renderer = $this->renderer([FeatureFlagRegistry::APPROVED_MEMBERS_ONLY => true]);
             $placements = array_column($renderer->navigationItems(self::VIEWERS['unapproved']), 'placement', 'href');
             assertSame(['/lobby/' => 'main', '/profiles/mouse' => 'menu', '/account/key/' => 'menu'], $placements);
+            assertSame('bar', array_column($renderer->navigationItems(self::VIEWERS['unapproved']), 'phone', 'href')['/lobby/']);
         });
     }
 
@@ -84,20 +93,71 @@ final class AppNavigationPlacementTest
                 ->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
             preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $bar);
             preg_match('/<details class="account-menu".*?<\/details>/s', $html, $menu);
-            foreach (['/', '/recent/', '/users/', '/messages'] as $href) {
+            foreach (['/', '/recent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
                 assertStringContains('href="' . $href . '"', $bar[0]);
             }
-            foreach (['/about/', '/tools/', '/account/key/', '/invites/'] as $href) {
+            // Bar order follows the Step 2 layout: Users before Messages before Search.
+            assertSame(true, strpos($bar[0], 'href="/users/"') < strpos($bar[0], 'href="/messages"'));
+            assertSame(true, strpos($bar[0], 'href="/messages"') < strpos($bar[0], 'href="/search"'));
+            foreach (['/account/key/', '/invites/'] as $href) {
                 assertSame(false, str_contains($bar[0], 'href="' . $href . '"'), $href);
                 assertStringContains('href="' . $href . '"', $menu[0]);
             }
             assertStringContains('data-tab="board"', $bar[0]);
+            assertStringContains('data-tab="board" data-phone="bar"', $bar[0]);
+            assertStringContains('data-tab="recent" data-phone="more"', $bar[0]);
+            // The same panel lists the phone-only More destinations once more, for every viewer.
+            assertStringContains('class="account-menu__links account-menu__more"', $menu[0]);
+            foreach (['/recent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
+                assertStringContains('href="' . $href . '"', $menu[0]);
+            }
+            assertStringContains('account-menu__label--more">More<', $menu[0]);
+            // The More tab and the panel's Messages link mirror the unread count on phones.
+            assertStringContains('aria-label="Menu" data-private-message-unread-mirror', $menu[0]);
+            // The head script publishes the free slot count and the sections that may fill one, the same for every viewer.
+            assertStringContains('window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections };', $html);
+            assertStringContains('var navSlotSections = ["recent","profiles","messages","search","about","tools"];', $html);
+            assertStringContains('/assets/nav_slots.', $html);
+            assertSame(false, str_contains($menu[0], 'nav-pin'));
+            // Board is in the bar, so the More tab keeps its own name.
+            assertSame(false, str_contains($menu[0], 'data-current'));
+            assertSame(false, str_contains($menu[0], 'account-menu__label--current'));
+            assertStringContains('href="/messages" data-member-only data-private-message-unread-mirror', $menu[0]);
             assertStringContains('data-invite-navigation', $menu[0]);
             assertStringContains('data-role="theme-menu"', $menu[0]);
             assertStringContains('class="new-post-button" href="/compose/thread"', $html);
             assertStringContains('<div class="shell-sky" aria-hidden="true"></div>', $html);
             assertStringContains('/assets/account_menu.', $html);
             assertStringContains('/assets/tab_bar_scroll.', $html);
+        });
+    }
+
+    public function testMoreTabTakesTheNameOfAPageListedInThePanel(): void
+    {
+        $this->withSite('zenmemes', function (): void {
+            $renderer = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true]);
+            foreach ([['about', 'About'], ['profiles', 'Users'], ['messages', 'Messages'], ['account', 'Account']] as [$section, $label]) {
+                $html = $renderer->renderLayout($label, '', $section, viewerProfile: self::VIEWERS['approved']);
+                assertStringContains('data-tab="account" data-current="' . $section . '">', $html);
+                assertStringContains('account-menu__label--more">More</span><span class="account-menu__label account-menu__label--current">' . $label . '</span></summary>', $html);
+            }
+        });
+    }
+
+    public function testSlotCountLeavesFiveTabsAtMostAndTwoSlotsAtMost(): void
+    {
+        $this->withSite('zenmemes', function (): void {
+            // Board, New post, More -> two slots; with Calendar -> one; Lobby alone -> two (capped).
+            $renderer = $this->renderer();
+            assertSame(2, TemplateRenderer::navSlotCount($renderer->navigationItems(self::VIEWERS['approved'])));
+            $events = $this->renderer([FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => true]);
+            assertSame(1, TemplateRenderer::navSlotCount($events->navigationItems(self::VIEWERS['approved'])));
+            $lobby = $this->renderer([FeatureFlagRegistry::APPROVED_MEMBERS_ONLY => true]);
+            assertSame(2, TemplateRenderer::navSlotCount($lobby->navigationItems(self::VIEWERS['unapproved'])));
+        });
+        $this->withSite('chouse', function (): void {
+            assertSame(0, TemplateRenderer::navSlotCount($this->renderer()->navigationItems(self::VIEWERS['approved'])));
+            assertSame(false, str_contains($this->renderer()->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']), '__forumNavSlots'));
         });
     }
 

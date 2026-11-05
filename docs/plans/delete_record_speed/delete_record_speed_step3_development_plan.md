@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/delete_record_speed`; [host ledger](./effort_estimation_trial.md#cycle-v3delete_record_speed). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/delete_record_speed`; [host ledger](../effort_estimation_trial.md#cycle-v3delete_record_speed). Standing P2 enrollment.
 
 Extended estimates: enabled
 
@@ -103,7 +103,7 @@ Status: Step 2 approved; Step 3 proposed; implementation unapproved.
 
 ## Concepts Touched
 
-[Read model rebuild](../concepts/read_model_rebuild.md) used unchanged as fallback; [static publication](../concepts/static_publication.md) changed (tag pages in targeted invalidation); [post retraction](../concepts/post_retraction.md) unchanged; new entries at Stage 5: *incremental source removal*, *operator command progress*.
+[Read model rebuild](../../concepts/read_model_rebuild.md) used unchanged as fallback; [static publication](../../concepts/static_publication.md) changed (tag pages in targeted invalidation); [post retraction](../../concepts/post_retraction.md) unchanged; new entries at Stage 5: *incremental source removal*, *operator command progress*.
 
 ## Enhancement Requests
 

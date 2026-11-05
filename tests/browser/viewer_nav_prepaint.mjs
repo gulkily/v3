@@ -46,7 +46,11 @@ let checked = 0;
 // Records member-link visibility and boxes from the moment each link is parsed,
 // then every frame until told to stop. Installed before any page script runs.
 function observe() {
-  const links = () => Array.from(document.querySelectorAll('[data-member-only]'));
+  // Each destination is observed once: the bar link on desktop, the More-panel
+  // copy on phones (where bar links placed in More are hidden for every viewer).
+  const slotted = link => (document.documentElement.getAttribute('data-nav-slots') || '').split(' ').includes(link.dataset.tab);
+  const links = () => Array.from(document.querySelectorAll('[data-member-only]'))
+    .filter(link => innerWidth < 640 ? !(link.matches('nav.nav > [data-phone="more"]') && !slotted(link)) : !link.matches('.account-menu__more a'));
   // While parsing, only visibility is meaningful: positions depend on header
   // markup not parsed yet. Painted frames also compare positions.
   const snapshot = withBoxes => JSON.stringify(links().map(link => {
@@ -63,7 +67,8 @@ function observe() {
   }).observe(document, { childList: true, subtree: true });
   // Before <main> is parsed or while stylesheets are still arriving (site.css
   // loads asynchronously for everyone), only visibility is compared.
-  const stylesReady = () => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).every(link => link.sheet && link.media !== 'print');
+  // The head script swaps the theme link's href; its old sheet can linger until the new one loads.
+  const stylesReady = () => Array.from(document.querySelectorAll('link[rel="stylesheet"]')).every(link => link.sheet && link.media !== 'print' && (!link.sheet.href || link.sheet.href === link.href));
   const frame = () => {
     if (links().length) {
       if (document.querySelector('main') && stylesReady()) record();
@@ -91,30 +96,36 @@ async function visit(context, path, label) {
   return { page, states, parsed };
 }
 
-function visible(state) { return state.filter(([, shown]) => shown).map(([href]) => href); }
+function visible(state) { return [...new Set(state.filter(([, shown]) => shown).map(([href]) => href))]; }
 
 async function tabBar(page, label) {
   // Phone tab bar: visible tabs share the bar evenly, with no empty slot.
   const tabs = await page.evaluate(() => {
     const bar = document.querySelector('.site-header--app .site-header-actions');
     if (!bar || getComputedStyle(bar).position !== 'fixed') return null;
-    return Array.from(bar.querySelectorAll(':scope > .nav > .nav-link, :scope > .new-post-button, :scope > .account-menu'))
+    return Array.from(bar.querySelectorAll(':scope > .nav > .nav-link, :scope > .new-post-button, :scope > .account-menu > .account-menu__trigger'))
       .filter(node => getComputedStyle(node).display !== 'none')
       .map(node => Math.round(node.getBoundingClientRect().width));
   });
   if (tabs === null) return;
   assert.ok(tabs.length >= 3, `${label}: tab bar has tabs`);
+  assert.ok(tabs.length <= 5, `${label}: at most five tabs (${tabs.length})`);
   assert.ok(Math.max(...tabs) - Math.min(...tabs) <= 2, `${label}: tabs share the bar evenly (${tabs})`);
 }
 
 async function messagesIcon(page, label, theme) {
   if (!iconThemes.has(theme)) return;
-  const image = await page.locator('.nav [data-member-only][href="/messages"]').evaluate(node => getComputedStyle(node, '::before').backgroundImage);
+  if (await page.locator('.account-menu__icon').count() && await page.evaluate(() => innerWidth < 640)) {
+    const more = await page.locator('.account-menu__icon').evaluate(node => getComputedStyle(node).backgroundImage);
+    assert.ok(more && more !== 'none', `${label}: More icon in ${theme}`);
+  }
+  const image = await page.locator('.nav [data-member-only][href="/messages"]:visible, .account-menu__more [href="/messages"]').first().evaluate(node => getComputedStyle(node, '::before').backgroundImage);
   assert.ok(image && image !== 'none', `${label}: Messages icon in ${theme}`);
 }
 
-function seedScript({ keys, fingerprint, theme, remembered, site }) {
+function seedScript({ keys, fingerprint, theme, remembered, site, slots }) {
   localStorage.setItem(`forum-${site}-theme`, theme);
+  if (slots) localStorage.setItem('forum_nav_slots', JSON.stringify({ slots }));
   if (keys && !sessionStorage.getItem('seeded')) {
     for (const [key, value] of Object.entries({ username: 'reaction-browser', public_key: keys.publicKey, private_key: keys.privateKey, fingerprint, published_fingerprint: fingerprint })) localStorage.setItem('forum_pki_' + key, value);
     if (remembered) localStorage.setItem('forum_pki_approved_fingerprint', fingerprint.toLowerCase());
@@ -161,18 +172,48 @@ try {
           if (!messagingEnabled) { await page.close(); checked++; continue; }
           await messagesIcon(page, label, theme);
           // Unread works on a page with no server viewer, without moving or re-captioning Messages.
-          const messages = page.locator('.nav [href="/messages"]');
+          const messages = page.locator(width < 640 ? '.account-menu__more [href="/messages"]' : 'nav.nav [href="/messages"]');
           const box = JSON.stringify(states[0].find(([href]) => href === '/messages').slice(2));
           await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready', null, { timeout: 10000 });
           const after = await messages.evaluate(node => { const r = node.getBoundingClientRect(); return JSON.stringify([Math.round(r.x), Math.round(r.width)]); });
           assert.equal(after, box, `${label}: unread did not move Messages`);
-          assert.equal(await messages.innerText(), 'Messages', `${label}: caption unchanged`);
+          // Phones hide the bar link, so the More tab and the panel link mirror its count.
+          if (width < 640) {
+            const counts = await page.evaluate(() => [document.querySelector('nav.nav [data-private-message-unread]').dataset.unreadCount, ...Array.from(document.querySelectorAll('[data-private-message-unread-mirror]')).map(node => node.dataset.unreadCount)]);
+            assert.equal(counts.length, 3, `${label}: two unread mirrors (${counts})`);
+            assert.ok(counts.every(count => count === counts[0] && count !== undefined), `${label}: More mirrors the unread count (${counts})`);
+          }
+          // The More-panel link sits in a closed disclosure, so innerText is empty there; fall back to textContent.
+          assert.equal((await messages.evaluate(node => node.innerText || node.textContent)).trim(), 'Messages', `${label}: caption unchanged`);
           if (shots && (path === '/' || path === '/users/')) await page.screenshot({ path: `${shots}/member-${theme}-${width}${path === '/' ? '' : '-users'}.png` });
           await page.close(); checked++;
         }
         await context.close();
       }
     }
+  }
+  // Personal slots: a saved slot is a tab from first paint, with no change after;
+  // a guest never gets a Messages slot, however the browser state reads.
+  if (site !== 'qdb' && messagingEnabled) {
+    const slotTab = name => `.site-header--app nav.nav > .nav-link[data-tab="${name}"]`;
+    const viewport = { width: 390, height: 844 };
+    const guest = await browser.newContext({ serviceWorkers: 'block', viewport });
+    await guest.addInitScript(seedScript, { theme: 'light', site, slots: ['messages', 'recent'] });
+    await guest.addInitScript(observe);
+    const { page: guestPage, states: guestStates, parsed: guestParsed } = await visit(guest, '/', 'guest slot');
+    assert.deepEqual([...guestStates, ...guestParsed].flatMap(visible), [], 'guest slot: Messages stays hidden');
+    assert.equal(await guestPage.locator(slotTab('recent')).isVisible(), true, 'guest slot: Recent is a tab');
+    await tabBar(guestPage, 'guest slot');
+    await guestPage.close(); await guest.close();
+    const member = await browser.newContext({ serviceWorkers: 'block', viewport });
+    await member.addInitScript(seedScript, { keys, fingerprint, theme: 'light', remembered: true, site, slots: ['messages'] });
+    await member.addInitScript(observe);
+    const { page: memberPage, states: memberStates } = await visit(member, '/about/', 'member slot');
+    assert.equal(memberStates.length, 1, `member slot: no change after first paint (${JSON.stringify(memberStates)})`);
+    assert.equal(await memberPage.locator(slotTab('messages')).isVisible(), true, 'member slot: Messages is a tab');
+    assert.equal(await memberPage.evaluate(() => document.documentElement.getAttribute('data-nav-slots')), 'messages', 'member slot: placed before paint');
+    await tabBar(memberPage, 'member slot');
+    await memberPage.close(); await member.close();
   }
   // Keyboard: member links are reachable in order; the account menu shows Invite when open.
   {
@@ -205,9 +246,14 @@ try {
     const first = await visit(context, '/threads/root-001', 'first sign-in');
     await first.page.waitForFunction(() => document.documentElement.getAttribute('data-member') === 'approved');
     assert.deepEqual(visible(first.states[0]), [], 'not shown before the client knows');
-    const shownLink = messagingEnabled ? '.nav [href="/messages"]' : '[data-member-only]';
+    // On phones Messages lives in the More panel, so open it to see the link appear in place.
+    const shownLink = messagingEnabled ? '.account-menu__more [href="/messages"]' : '[data-member-only]';
     if (messagingEnabled || site !== 'qdb') await first.page.waitForFunction(() => document.documentElement.getAttribute('data-member') === 'approved');
-    if (messagingEnabled) assert.equal(await first.page.locator(shownLink).isVisible(), true, 'shown in place after sign-in');
+    if (messagingEnabled && await first.page.locator('.account-menu').count()) {
+      await first.page.locator('.account-menu__trigger').click();
+      assert.equal(await first.page.locator(shownLink).isVisible(), true, 'shown in place after sign-in');
+      await first.page.locator('.account-menu__trigger').click();
+    }
     await first.page.evaluate(() => {
       ['forum_pki_public_key', 'forum_pki_private_key', 'forum_pki_fingerprint'].forEach(key => localStorage.removeItem(key));
       window.dispatchEvent(new Event('forum:identity-changed'));

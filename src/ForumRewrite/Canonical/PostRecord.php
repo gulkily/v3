@@ -39,6 +39,8 @@ final class PostRecord
         public readonly ?array $agentResponse = null,
         /** `markdown`, `plain`, or null when the record predates Body-Format (renders as plain). */
         public readonly ?string $bodyFormat = null,
+        /** Inclusive last day of a multi-day event; null means the event is one day. */
+        public readonly ?string $eventEndDate = null,
     ) {
     }
 

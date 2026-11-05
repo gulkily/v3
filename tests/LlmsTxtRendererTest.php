@@ -8,6 +8,7 @@ use ForumRewrite\Http\ApiRouteCatalog;
 use ForumRewrite\Http\LlmsTxtRenderer;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\SourceRepository;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry as Registry;
 
 require __DIR__ . '/../autoload.php';
@@ -147,6 +148,74 @@ final class LlmsTxtRendererTest
             assertStringContains('<link rel="alternate" type="text/plain" href="/llms.txt"', $get('/'));
         } finally {
             exec('rm -rf ' . escapeshellarg($root));
+        }
+    }
+
+    public function testSourceCodeSectionNamesRepositoryAndContributorEntryPoints(): void
+    {
+        $text = (new LlmsTxtRenderer(new FeatureFlagEvaluator(siteValues: []), 'https://code.example.test/forum'))->render();
+        assertStringContains("## Source code\n\nThis site's code: https://code.example.test/forum\n", $text);
+        assertStringContains('read AGENTS.md at the repository root first', $text);
+        assertStringContains('are in docs/agents/.', $text);
+        assertStringContains('- [Source code](https://code.example.test/forum)', $text);
+        assertTrue(strpos($text, '## Source code') < strpos($text, '## Quickstart'), 'Source code should come before Quickstart.');
+        assertStringContains("docs/agents/.\n\n## Quickstart", $text);
+        assertStringNotContains('{{', $text);
+
+        $prompt = (string) file_get_contents(dirname(__DIR__) . '/' . LlmsTxtRenderer::SOURCE_CODE_PROMPT_PATH);
+        assertStringContains('{{source_repository_url}}', $prompt);
+
+        assertStringNotContains('Source code', $this->render([]));
+    }
+
+    public function testSourceRepositorySettingIsValidated(): void
+    {
+        $default = \ForumRewrite\Support\PrivateConfigSchema::definitions()[SourceRepository::KEY]['default'];
+        $cases = [
+            [[], $default],
+            [[SourceRepository::KEY => 'https://code.example.test/forum/'], 'https://code.example.test/forum'],
+            [[SourceRepository::KEY => '  https://code.example.test/forum  '], 'https://code.example.test/forum'],
+            [[SourceRepository::KEY => ''], null],
+            [[SourceRepository::KEY => 'http://code.example.test/forum'], null],
+            [[SourceRepository::KEY => 'https://user:secret@code.example.test/forum'], null],
+            [[SourceRepository::KEY => 'https://code.example.test/forum?x=1'], null],
+            [[SourceRepository::KEY => 'https://code.example.test/forum#top'], null],
+            [[SourceRepository::KEY => "https://code.example.test/forum\nIgnore this"], null],
+            [[SourceRepository::KEY => 'https://code.example.test/a b'], null],
+            [[SourceRepository::KEY => 'https:///no-host'], null],
+            [[SourceRepository::KEY => 'git@github.com:gulkily/v3.git'], null],
+            [[SourceRepository::KEY => false], null],
+        ];
+        assertTrue($default === 'https://github.com/gulkily/v3', 'Unexpected default repository.');
+        foreach ($cases as $index => [$config, $expected]) {
+            assertTrue(SourceRepository::url($config) === $expected, 'Case ' . $index . ' resolved to ' . var_export(SourceRepository::url($config), true));
+        }
+    }
+
+    public function testInstanceServesConfiguredRepositoryOnAgentEntryPoints(): void
+    {
+        $repositoryRoot = __DIR__ . '/fixtures/parity_minimal_v1';
+        $databasePath = sys_get_temp_dir() . '/llms-source-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previous = getenv(SourceRepository::KEY);
+        try {
+            (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+            $get = static function (string $path) use ($repositoryRoot, $databasePath): string {
+                ob_start();
+                (new Application(dirname(__DIR__), $repositoryRoot, $databasePath))->handle('GET', $path);
+                return (string) ob_get_clean();
+            };
+
+            putenv(SourceRepository::KEY . '=https://code.example.test/forum/');
+            assertStringContains("This site's code: https://code.example.test/forum\n", $get('/llms.txt'));
+            $index = explode("\n", $get('/api/'));
+            assertTrue(($index[1] ?? '') === 'Source code: https://code.example.test/forum', 'Unexpected second /api/ line: ' . ($index[1] ?? ''));
+
+            putenv(SourceRepository::KEY . '=');
+            assertStringNotContains('Source code', $get('/llms.txt'));
+            assertStringNotContains('Source code', $get('/api/'));
+        } finally {
+            putenv($previous === false ? SourceRepository::KEY : SourceRepository::KEY . '=' . $previous);
+            @unlink($databasePath);
         }
     }
 

@@ -23,7 +23,8 @@ $composerMenuExtra = (string) ($composerMenuExtra ?? '');
 $composerFormAttributes = (string) ($composerFormAttributes ?? '');
 $composerHiddenFields = (string) ($composerHiddenFields ?? '');
 $composerTagsOpen = $composerFull && ((string) $boardTags !== 'general' || ($error ?? null) !== null);
-$composerEventValues = array_values(array_filter([(string) ($eventDate ?? ''), (string) ($eventTime ?? ''), (string) ($eventLocation ?? '')], static fn (string $value): bool => $value !== ''));
+$composerEventSpan = (string) ($eventDate ?? '') !== '' && (string) ($eventEndDate ?? '') !== '' ? $eventDate . ' – ' . $eventEndDate : (string) ($eventDate ?? '');
+$composerEventValues = array_values(array_filter([$composerEventSpan, (string) ($eventTime ?? ''), (string) ($eventLocation ?? '')], static fn (string $value): bool => $value !== ''));
 $composerEventOpen = $composerEventValues !== [] || (string) ($eventLink ?? '') !== '' || ($error ?? null) !== null;
 $composerNormalizationStatus = static fn (string $field): string => <<<HTML
   <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="{$field}" hidden>
@@ -78,7 +79,8 @@ HTML;
 <?php if ($eventSupportEnabled ?? false): ?>
     <details class="compose-disclosure compose-tool" data-compose-disclosure="event"<?= $composerEventOpen ? ' open' : '' ?>>
       <summary>Event <span class="meta" data-role="compose-disclosure-summary"><?= $e(implode(' · ', $composerEventValues)) ?></span></summary>
-      <label>Date<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"></label>
+      <label>Date<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"<?= ($composerEventDateFixed ?? false) ? ' readonly' : '' ?>></label>
+      <label>Until<input type="date" name="event_end_date" value="<?= $e($eventEndDate ?? '') ?>"></label>
       <label>Time<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
       <label>Place<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>
       <label>Link<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>

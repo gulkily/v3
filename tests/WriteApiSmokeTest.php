@@ -1219,6 +1219,137 @@ CODE;
         assertStringContains('Event-Link: https://example.test/rsvp', $record);
     }
 
+    public function testEventEndDateIsWrittenAfterEventDateAndValidatedBeforeWriting(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $service = new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            featureFlags: new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => true]),
+        );
+        $base = ['board_tags' => 'couches', 'subject' => 'Couch', 'body' => 'Spare room', 'event_time' => '19:00'];
+
+        $span = $service->createThread($base + ['event_date' => '2026-11-10', 'event_end_date' => '2026-11-12']);
+        $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $span['thread_id']));
+        assertStringContains("Event-Date: 2026-11-10\nEvent-End-Date: 2026-11-12\nEvent-Time: 19:00\n", $record);
+
+        $sameDay = $service->createThread($base + ['event_date' => '2026-11-10', 'event_end_date' => '2026-11-10']);
+        $record = (string) file_get_contents($repositoryRoot . '/' . $this->canonicalPostPath($repositoryRoot, $sameDay['thread_id']));
+        assertStringContains("Event-Date: 2026-11-10\n", $record);
+        assertStringNotContains('Event-End-Date:', $record);
+
+        $countBefore = $this->countCanonicalPostFiles($repositoryRoot);
+        foreach ([
+            [['event_date' => '2026-11-10', 'event_end_date' => '2026-11-09'], 'event_end_date must not be before event_date.'],
+            [['event_end_date' => '2026-11-12'], 'event_end_date requires event_date.'],
+            [['event_date' => '2026-11-10', 'event_end_date' => '2026-11-31'], 'event_end_date must be a valid calendar date.'],
+        ] as [$fields, $message]) {
+            try {
+                $service->createThread($base + $fields);
+                throw new RuntimeException('Expected event_end_date validation failure: ' . $message);
+            } catch (RuntimeException $exception) {
+                assertSame($message, $exception->getMessage());
+            }
+        }
+        assertSame($countBefore, $this->countCanonicalPostFiles($repositoryRoot));
+
+        $disabled = new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            featureFlags: new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => false]),
+        );
+        try {
+            $disabled->createThread(['board_tags' => 'general', 'body' => 'x', 'event_end_date' => '2026-11-12']);
+            throw new RuntimeException('Expected event-support validation failure.');
+        } catch (RuntimeException $exception) {
+            assertSame('Event support is disabled for this site.', $exception->getMessage());
+        }
+    }
+
+    public function testComposeThreadCarriesEventEndDateThroughPrefillPrepareAndErrorRerender(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        $page = $this->renderMethod($application, 'GET', '/compose/thread?event_date=2026-11-10&event_end_date=2026-11-12');
+        assertStringContains('name="event_date" value="2026-11-10"', $page);
+        assertStringContains('name="event_end_date" value="2026-11-12"', $page);
+        assertStringContains('2026-11-10 – 2026-11-12', $page);
+
+        $prepared = json_decode($this->renderMethod(
+            $application,
+            'POST',
+            '/api/prepare_thread?board_tags=couches&subject=Couch&body=Spare%20room'
+            . '&author_identity_id=' . rawurlencode('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954')
+            . '&event_date=2026-11-10&event_end_date=2026-11-12'
+        ), true, 512, JSON_THROW_ON_ERROR);
+        assertSame('ok', $prepared['status']);
+        assertStringContains("Event-Date: 2026-11-10\nEvent-End-Date: 2026-11-12\n", $prepared['canonical_record']);
+
+        $_POST = ['board_tags' => 'couches', 'body' => 'Keep this draft', 'event_date' => '2026-11-10', 'event_end_date' => '2026-11-09'];
+        try {
+            $rerender = $this->renderMethod($application, 'POST', '/compose/thread');
+        } finally {
+            $_POST = [];
+        }
+        assertStringContains('event_end_date must not be before event_date.', $rerender);
+        assertStringContains('Keep this draft', $rerender);
+        assertStringContains('name="event_end_date" value="2026-11-09"', $rerender);
+    }
+
+    public function testEventEndDateIsIndexedShownAndRebuiltFromVersion48(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        file_put_contents(
+            $repositoryRoot . '/records/instance/feature-flags.txt',
+            "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\n"
+        );
+        $service = new LocalWriteService(
+            $repositoryRoot,
+            $databasePath,
+            $artifactRoot,
+            new CanonicalRecordRepository($repositoryRoot),
+            featureFlags: new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => true]),
+        );
+        $span = $service->createThread(['board_tags' => 'couches', 'subject' => 'Span', 'body' => 'Three nights', 'event_date' => '2026-11-10', 'event_end_date' => '2026-11-12', 'event_time' => '19:00']);
+        $single = $service->createThread(['board_tags' => 'couches', 'subject' => 'Single', 'body' => 'One night', 'event_date' => '2026-11-10', 'event_time' => '19:00']);
+
+        $columns = function () use ($databasePath): array {
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $rows = $pdo->query("SELECT root_post_id, event_date, event_end_date FROM threads WHERE event_date IS NOT NULL ORDER BY root_post_id")->fetchAll(PDO::FETCH_ASSOC);
+            return array_column($rows, null, 'root_post_id');
+        };
+        $incremental = $columns();
+        assertSame('2026-11-12', $incremental[$span['thread_id']]['event_end_date']);
+        assertSame(null, $incremental[$single['thread_id']]['event_end_date']);
+
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+        assertSame($incremental, $columns());
+
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        assertStringContains('📅 2026-11-10 – 2026-11-12 at 19:00</span>', $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($span['thread_id'])));
+        // A one-day event renders exactly as it did before the end date existed.
+        assertStringContains('<span class="event-block__date">📅 2026-11-10 at 19:00</span>', $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($single['thread_id'])));
+
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->exec('ALTER TABLE threads DROP COLUMN event_end_date');
+        $pdo->exec("UPDATE metadata SET value = '48' WHERE key = 'schema_version'");
+        $pdo = null;
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        assertStringContains('📅 2026-11-10 – 2026-11-12 at 19:00</span>', $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($span['thread_id'])));
+        $pdo = new PDO('sqlite:' . $databasePath);
+        assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+        assertSame($incremental, $columns());
+    }
+
     public function testTitlelessThreadDisplaysBodyExcerptTitle(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

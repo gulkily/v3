@@ -1,0 +1,6 @@
+# Post event metadata
+
+Purpose: Let a thread root describe an event (when, until, where, link) in its own record, so event pages, the event block and the calendar all read one source.
+Scenario: A member opens Event in the composer, sets Date, Until, Time and Place, and posts. The root record carries `Event-Date`, `Event-End-Date`, `Event-Time` and `Event-Location`; the read model copies them onto the thread row; the thread page, board rows and cards show `📅 start – end at time · place · link`. Leaving Until empty, or setting it to the start, records a one-day event.
+Sources: [record headers](../specs/canonical_post_record_v1.md#event-headers), [parser](../../src/ForumRewrite/Canonical/PostRecordParser.php), [write path](../../src/ForumRewrite/Write/LocalWriteService.php), [composer fields](../../templates/partials/composer.php), [read-model columns](../specs/read_model_schema_v1.md), [event block](../../templates/partials/event_block.php).
+Boundary: Root-only; replies with event headers are rejected. Writing them requires event support; while it is off, event details are not shown and the records are unchanged. Client-built signed records cannot carry event headers; signed events go through `prepare_thread`. Older releases ignore `Event-End-Date` and show the first day only.

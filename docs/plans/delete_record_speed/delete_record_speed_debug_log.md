@@ -63,3 +63,24 @@
 **Uncertain assessments**
 
 - "≤1 page" for Step 3 with five fully specified stages in extended mode: not achievable at this stage count. Unclear whether the limit should scale with stages.
+
+## 2026-11-04 — Step 4
+
+**Necessary/useful instructions**
+
+- `step4_implementation_do.md`, Stage Boundary Protocol (verify, update summary, commit per stage): kept five reviewable commits and made the Stage 4 estimate revision visible before the work it covered. Retain.
+- `RAILSPIKE.md`, extended estimates, "append a material revision before dependent work": prompted telling the maintainer about the Stage 4 size change mid-implementation instead of only at closeout. Retain.
+- `AGENTS.md` / `CONTRIBUTING.md` schema-change rules: the prior-version startup test caught that the CLI path needed its own fallback, since CLI commands do not go through application startup. Retain.
+
+**Redundant/unnecessary instructions**
+
+- `step4_implementation_do.md`, "Stages should be about <=1 hour": Stage 4 was larger than that from the start, and the rule surfaced only after the revision. Suggest checking stage size again at Step 4 entry against what inspection has since shown. Clarify.
+
+**Inapplicable instructions**
+
+- Documentation-only checks: application change.
+
+**Uncertain assessments**
+
+- The plan said Stage 3 waits for host timings. It went ahead because the change reduces Git work whatever the numbers are, with the stop condition moved to host acceptance. Unclear whether that counts as a deviation that needed approval.
+- Host acceptance cannot be done from the workspace; Stage 5's retrospective stays pending, which the instructions allow but leave the stage formally open.

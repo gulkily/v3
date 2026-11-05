@@ -19,6 +19,7 @@ final class PrivateConfigSchema
             'FORUM_IMAGE_BACKUP_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_TEXT_BACKUP_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_STATUS_URL' => self::definition('', 'string', template: true),
+            'FORUM_SOURCE_REPOSITORY_URL' => self::definition('https://github.com/gulkily/v3', 'string', template: true),
             'LLM_PROVIDER' => self::definition('', 'string', template: true, required: true),
             'LLM_API_KEY' => self::definition('replace-with-real-key', 'string', secret: true, template: true),
             'LLM_API_BASE_URL' => self::definition('', 'string', template: true),

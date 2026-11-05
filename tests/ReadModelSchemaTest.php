@@ -42,6 +42,8 @@ final class ReadModelSchemaTest
             'profiles',
             'profiles_sync_keys',
             'reaction_signatures',
+            'thread_label_files',
+            'thread_label_files_thread_idx',
             'threads',
             'threads_last_activity_idx',
             'username_routes',

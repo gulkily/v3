@@ -74,3 +74,30 @@
     inset -1px -1px 0 0 #ffffff,
     inset 1px 1px 0 0 #7b7b7b;
 }
+
+/* Post actions are Chicago UI controls, not underlined content links. */
+:root[data-theme="chicago"] .post-card-actions > a[href^="/compose/reply"],
+:root[data-theme="chicago"] .thread-reaction-button {
+  font-family: var(--ui-font);
+  text-decoration: none;
+}
+
+/* Like and Flag use the same roomy, soft bevel as the repaired Word 97
+   controls. Keep the padding out of the other post and QDB actions. */
+:root[data-theme="chicago"] .post-card-actions button.thread-reaction-button[data-tag="like"],
+:root[data-theme="chicago"] .post-card-actions button.thread-reaction-button[data-tag="flag"] {
+  padding: 0 0.6em;
+  border: 1px solid;
+  border-color: #ffffff #7b7b7b #7b7b7b #ffffff;
+  box-shadow:
+    inset 1px 1px 0 0 #dfdfdf,
+    inset -1px -1px 0 0 #a0a0a0;
+}
+
+:root[data-theme="chicago"] .post-card-actions button.thread-reaction-button[data-tag="like"]:active,
+:root[data-theme="chicago"] .post-card-actions button.thread-reaction-button[data-tag="flag"]:active {
+  border-color: #7b7b7b #ffffff #ffffff #7b7b7b;
+  box-shadow:
+    inset 1px 1px 0 0 #a0a0a0,
+    inset -1px -1px 0 0 #dfdfdf;
+}

@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/delete_record_speed`; [host ledger](./effort_estimation_trial.md#cycle-v3delete_record_speed). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/delete_record_speed`; [host ledger](../effort_estimation_trial.md#cycle-v3delete_record_speed). Standing P2 enrollment.
 
 Extended estimates: enabled
 
@@ -71,7 +71,7 @@ Known environment: operator `qdb@pdx1-shared-a2-13`, SSH into `~/v3` on a shared
 
 ## Concepts Touched
 
-[Read model rebuild](../concepts/read_model_rebuild.md) used unchanged as fallback; [static publication](../concepts/static_publication.md) used, possibly changed for tag pages; [post retraction](../concepts/post_retraction.md) reviewed, unchanged; proposed: *incremental source removal* and *operator command progress* (inventory entries at implementation).
+[Read model rebuild](../../concepts/read_model_rebuild.md) used unchanged as fallback; [static publication](../../concepts/static_publication.md) used, possibly changed for tag pages; [post retraction](../../concepts/post_retraction.md) reviewed, unchanged; proposed: *incremental source removal* and *operator command progress* (inventory entries at implementation).
 
 ## Study Checkpoint
 

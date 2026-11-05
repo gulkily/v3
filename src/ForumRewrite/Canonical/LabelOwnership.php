@@ -30,14 +30,21 @@ final class LabelOwnership
         }
         return ['status' => 'unresolved', 'source_post_id' => $label->sourcePostId, 'reason' => 'Source absent; inspect retained removal evidence or history.'];
     }
-    /** Compute once per aggregation, never cache across canonical writes. */
-    public static function inactive(string $root): array
+    /**
+     * Compute once per aggregation, never cache across canonical writes. Each label's status
+     * depends only on that label and the removal evidence, so `$paths` (relative label
+     * files) may restrict the work to the labels a caller is about to read.
+     *
+     * @param list<string>|null $paths
+     */
+    public static function inactive(string $root, ?array $paths = null): array
     {
         $removed = RetractedPosts::effectivePostIds($root);
         $evidence = AcceptedRemoval::all($root);
         foreach ($evidence as $id => $entry) if ($entry['operation'] === 'delete') $removed[$id] = 'operator';
         $inactive = [];
-        foreach (glob($root . '/records/thread-labels/*.txt') ?: [] as $path) {
+        $files = $paths === null ? (glob($root . '/records/thread-labels/*.txt') ?: []) : array_map(static fn (string $path): string => $root . '/' . $path, $paths);
+        foreach ($files as $path) {
             $relative = 'records/thread-labels/' . basename($path);
             try { $label = (new CanonicalRecordRepository($root))->loadThreadLabel($relative); }
             catch (CanonicalRecordParseException) { continue; }

@@ -724,12 +724,25 @@ the site instead; see [Author post retraction](author_post_retraction.md).
 Deleting a post also removes its proven generated thread-label records and their
 signatures, retains content-free root/parent placeholders for surviving replies,
 and invalidates generated presentation. Independent label actions remain active.
+
+When the read model is current (same schema, built for the repository's HEAD, no
+stale marker), deletion updates only the post's thread in the read model and clears
+only the pages that can show it: the thread and post pages, its tag pages, the
+author's profile, top-level listing pages and the offline snapshot. Otherwise, or
+if that update fails, it falls back to a full rebuild and clears all generated
+pages. `--inspect` finds a thread's labels through the read model's label index
+under the same condition and scans every label file otherwise.
+
+Each step prints a timestamped line to stderr as it runs (lock waits included),
+ending with `Deleted <id> in 0.21s`. `-q`/`--quiet` keeps only errors and that final
+line; `--json` prints no step lines. Removing the post from Git history is a
+separate, later `./v3 purge-history` run.
 Source-owned labels also stop applying after signed browser retraction. When a
 prebuilt static release is required, run `./v3 build-static` with the deployment's
 normal repository/database/artifact settings after deletion.
 
 Source-post operations accept `--inspect`, `--repair-labels`, repeatable
-`--resolve-label=<label-id>`, and `--json`. Inspection is read-only; JSON reports
+`--resolve-label=<label-id>`, `--json` and `-q`/`--quiet`. Inspection is read-only; JSON reports
 acceptance separately from `label_cleanup_status` and unresolved legacy records.
 Repair does not delete a live source. An already deleted source is represented
 by retained structural removal evidence. Example:
@@ -874,7 +887,7 @@ fallbacks, but new writes use `LLM_*` names.
 - `view` / `--view` — print a redacted summary and update reminders without writing the file
 - `edit` / `--edit` — open an existing config in `$VISUAL`, `$EDITOR`, or `vi`; it does not print secrets or create a missing file
 - `update-llm` — accept the existing machine request on stdin, with a `values` object; blank API key means unchanged. The TUI also sends an internal `expected_revision` token so stale reviews fail without saving. Secrets never belong in command arguments.
-- `refresh-template` — rewrite the file with current comments/examples and every schema template setting, including `FORUM_STATUS_URL`, while preserving existing values
+- `refresh-template` — rewrite the file with current comments/examples and every schema template setting, including `FORUM_STATUS_URL` and `FORUM_SOURCE_REPOSITORY_URL` (the repository `/llms.txt` and `/api/` name for agents; empty omits it), while preserving existing values
 - `--force` — overwrite without the usual confirmation/skip behavior
 - `--api-key-stdin` — read the API key from stdin instead of an argument, so it never lands in shell history: `printf '%s\n' "$LLM_API_KEY" | ./v3 private-config --api-key-stdin`
 - `--path=...` — write to a specific file instead of the default (`FORUM_SECRETS_PATH`, else `../forum-private/<checkout folder>/secrets.php` when it exists, else `../forum-private/secrets.php`, relative to this checkout)

@@ -15,7 +15,7 @@ final class PublicationLock
         return new ExecutionLock($path);
     }
 
-    public static function withLock(string $repositoryRoot, callable $callback): mixed
+    public static function withLock(string $repositoryRoot, callable $callback, ?\Closure $onWait = null): mixed
     {
         $key = realpath($repositoryRoot) ?: $repositoryRoot;
         if (isset(self::$held[$key])) return $callback();
@@ -23,7 +23,7 @@ final class PublicationLock
             self::$held[$key] = true;
             try { return $callback(); }
             finally { unset(self::$held[$key]); }
-        });
+        }, $onWait);
     }
 
 }

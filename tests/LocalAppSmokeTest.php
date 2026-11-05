@@ -2189,7 +2189,9 @@ PHP;
         assertStringContains('/activity/', $tools);
         assertStringContains('class="nav-link is-active" href="/tools/"', $tools);
         assertStringContains('class="nav"', $tools);
-        assertSame(1, substr_count($tools, 'href="/tools/">Tools</a>'));
+        // Once in the bar; the app shell's More panel lists it again for phones.
+        preg_match('/<nav class="nav">.*?<\/nav>/s', $tools, $toolsBar);
+        assertSame(1, substr_count($toolsBar[0] ?? $tools, 'href="/tools/">Tools</a>'));
         assertStringContains('/tools/bookmarklets/', $tools);
         assertStringContains('/tools/backup/', $tools);
         assertStringContains('/tools/codebase/', $tools);
