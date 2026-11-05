@@ -211,10 +211,9 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::RAILSPIKE_ENABLED,
             FeatureFlagRegistry::IMAGE_BACKUP_ENABLED,
             FeatureFlagRegistry::TEXT_BACKUP_ENABLED,
-            FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED,
-            FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
             FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
             FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
+            FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
@@ -530,6 +529,8 @@ PHP);
     {
         $keys = [
             FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
+            FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
+            FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,
             FeatureFlagRegistry::APPROVED_MEMBERS_ONLY,
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
