@@ -8,6 +8,10 @@ feature even when only some steps were recorded; step numbers retain their origi
 workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
+## Awaiting review before merge
+
+- [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
+
 [Markdown work checklist](markdown_work_checklist.md) — relevance-sorted completed work, acceptance, follow-ups and optional compatibility decisions.
 
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
@@ -32,6 +36,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — review findings for PF-20261030-B03, the fixes, and the anonymous post ID decision.
 - [Pre-existing test failures](preexisting_test_failures/preexisting_test_failures_one_shot.md) — one-shot: the 15 tests failing on `main` in cloud workspaces (GPG socket length, running as root, missing whiptail, four tests behind deliberate changes).
 - [Fast default tests: outliers](fast_default_tests_outliers/fast_default_tests_outliers_one_shot.md) — one-shot: removes avoidable waste from the three slowest test classes (docs snapshot reuse, checkout Git wait, isolated test Git config); split from the parked [fast default tests Step 1](fast_default_tests_step1_solution_assessment.md).
 - [Smoke tests](smoke_tests/smoke_tests_one_shot.md) — one-shot: `./v3 test` runs the curated smoke set in `tests/smoke.txt`, `--smoke Name` adds touched tests, `--all` is the maintainer's periodic full run; process in `AGENTS.md` and `CONTRIBUTING.md`.

@@ -158,13 +158,13 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | Item | Title | Workflow | Evidence | Estimate | Sources |
 | --- | --- | --- | --- | --- | --- |
 | [PF-20261021-B03](items/PF-20261021-B03.txt) | Saved draft starts collapsed | blocked | locally-verified | 0.15 | 1 |
+| [PF-20261030-B03](items/PF-20261030-B03.txt) | Submitted draft stays in composer | blocked | locally-verified | — | 5 |
 | [PF-20261021-B01](items/PF-20261021-B01.txt) | Composer jumping | untriaged | unknown | 0.75 | 1 |
 | [PF-20261021-B02](items/PF-20261021-B02.txt) | Textarea edge alignment | untriaged | unknown | 0.25 | 1 |
 | [PF-20261021-B04](items/PF-20261021-B04.txt) | Slow reply feedback | untriaged | unknown | — | 7 |
 | [PF-20261021-B05](items/PF-20261021-B05.txt) | QDB temporarily busy | untriaged | unknown | 0.75 | 1 |
 | [PF-20261030-B01](items/PF-20261030-B01.txt) | Copy button fails on iPhone | untriaged | unknown | — | 1 |
 | [PF-20261030-B02](items/PF-20261030-B02.txt) | Pages jump vertically | untriaged | unknown | — | 1 |
-| [PF-20261030-B03](items/PF-20261030-B03.txt) | Submitted draft stays in composer | untriaged | unknown | — | 5 |
 | [PF-20261030-B04](items/PF-20261030-B04.txt) | Overflow button misaligned | untriaged | unknown | — | 1 |
 | [PF-20261030-B05](items/PF-20261030-B05.txt) | Midnight theme display defect | untriaged | unknown | — | 1 |
 | [PF-20261030-B06](items/PF-20261030-B06.txt) | Unicode in prepared-image message | untriaged | unknown | — | 1 |

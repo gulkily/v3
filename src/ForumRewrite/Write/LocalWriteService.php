@@ -125,36 +125,18 @@ class LocalWriteService
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
 
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
-            $attempt = !$isQdbQuote && $authorIdentityId === null ? ($input['compose_attempt'] ?? null) : null;
-            if ($attempt !== null) {
-                if (!is_string($attempt) || !preg_match('/^(\d{14})-([a-f0-9]{32})$/D', $attempt, $parts)) {
-                    throw new RuntimeException('Invalid compose attempt.');
-                }
-                $date = \DateTimeImmutable::createFromFormat('!YmdHis', $parts[1], new \DateTimeZone('UTC'));
-                if ($date === false || $date->format('YmdHis') !== $parts[1] || $date->getTimestamp() > time() + 300) {
-                    throw new RuntimeException('Invalid compose attempt date.');
-                }
-                $createdAt = $date->format('Y-m-d\TH:i:s\Z');
-                $postId = 'thread-' . $attempt;
+            $attemptId = !$isQdbQuote && $authorIdentityId === null ? $this->composeAttemptPostId('thread', $input) : null;
+            if ($attemptId !== null) {
+                $postId = $attemptId;
+                $createdAt = $this->composeAttemptCreatedAt($postId) ?? $createdAt;
             }
             $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat);
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
-            if ($attempt !== null && (\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete') {
-                throw new RuntimeException('Post was removed; replay cannot restore it.', 410);
-            }
-            if ($attempt !== null && $this->postTargetExists($postId)) {
-                $committed = $this->runGitCommand(['show', 'HEAD:' . $recordPath], 'Unable to verify existing compose submission');
-                if (rtrim($committed, "\n") !== rtrim($contents, "\n")) {
-                    throw new RuntimeException('This compose attempt already belongs to a different post.');
-                }
-                $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read publication head'));
-                if ($this->staleMarker()->exists()) {
-                    $this->refreshDerivedStateAfterCommit($head);
-                }
+            $recordPath = $attemptId !== null ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
+            if ($attemptId !== null && ($replay = $this->replayComposeAttempt($record, $recordPath, $contents)) !== null) {
                 $this->invalidator()->invalidateBoardThread($postId);
-                return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $postId, 'commit_sha' => $head, 'fastmod_new_post' => false];
+                return $replay;
             }
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
@@ -214,10 +196,14 @@ class LocalWriteService
 
             $this->assertReplyTarget($threadId, $parentId);
 
+            $attemptId = $authorIdentityId === null && $agentResponse === null && $signer === null ? $this->composeAttemptPostId('reply', $input) : null;
+            if ($attemptId !== null) {
+                $createdAt = $this->composeAttemptCreatedAt($attemptId) ?? $createdAt;
+            }
             $postId = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
-                ? \ForumRewrite\Canonical\AgentResponseMetadata::expansionId($parentId) : $this->generateRecordId('reply');
+                ? \ForumRewrite\Canonical\AgentResponseMetadata::expansionId($parentId) : ($attemptId ?? $this->generateRecordId('reply'));
             $existingPath = CanonicalPathResolver::post($postId);
-            if (is_file($this->repositoryRoot . '/' . $existingPath)) {
+            if ($attemptId === null && is_file($this->repositoryRoot . '/' . $existingPath)) {
                 $existing = $this->canonicalRepository->loadPost($existingPath);
                 if (($existing->agentResponse['expansion_of'] ?? null) !== $parentId || $existing->authorIdentityId !== $authorIdentityId) {
                     throw new RuntimeException('Expansion publication identity conflict.');
@@ -235,8 +221,12 @@ class LocalWriteService
             $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
+            $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION || $attemptId !== null
                 ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
+            if ($attemptId !== null && ($replay = $this->replayComposeAttempt($record, $recordPath, $contents)) !== null) {
+                $this->invalidator()->invalidateReply($threadId, $postId);
+                return $replay;
+            }
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
             $signature = null;
@@ -3837,6 +3827,96 @@ class LocalWriteService
         }
 
         return QdbQuoteNumbers::mint(gmdate('YmdHis'), QdbQuoteNumbers::nextAvailable($this->readModelPdo()));
+    }
+
+    /**
+     * A retried anonymous submission keeps one post ID, so a lost response cannot publish twice.
+     * The ID holds no date: the server alone decides when a post was created.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function composeAttemptPostId(string $prefix, array $input): ?string
+    {
+        $attempt = $input['compose_attempt'] ?? null;
+        if ($attempt === null) {
+            return null;
+        }
+        if (!is_string($attempt) || preg_match('/^[a-f0-9]{32}$/D', $attempt) !== 1) {
+            throw new RuntimeException('Invalid compose attempt.');
+        }
+        $postId = $prefix . '-' . $attempt;
+        if ((\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete'
+            || (\ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete') {
+            throw new RuntimeException('This post was removed and cannot be posted again.');
+        }
+
+        return $postId;
+    }
+
+    /** An earlier try's time keeps the retried record byte-identical. */
+    private function composeAttemptCreatedAt(string $postId): ?string
+    {
+        $path = $this->repositoryRoot . '/' . CanonicalPathResolver::post($postId);
+        if (!is_file($path)) {
+            return null;
+        }
+        try {
+            return (new PostRecordParser())->parse((string) file_get_contents($path))->createdAt;
+        } catch (RuntimeException) {
+            return null;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null the published result, or null when the record still has to be committed
+     */
+    private function replayComposeAttempt(PostRecord $record, string $recordPath, string $contents): ?array
+    {
+        $path = $this->repositoryRoot . '/' . $recordPath;
+        if (!is_file($path)) {
+            return null;
+        }
+        // A commit that failed or died leaves the file behind; committing it now finishes that try.
+        $committed = trim($this->runGitCommand(['status', '--porcelain', '--', $recordPath], 'Unable to inspect compose submission')) === '';
+        if (!$committed && $this->composeAttemptCreatedAt($record->postId) === null) {
+            return null;
+        }
+        if (rtrim((string) file_get_contents($path), "\n") !== rtrim($contents, "\n")) {
+            throw new RuntimeException('This compose attempt already belongs to a different post.');
+        }
+        if (!$committed) {
+            return null;
+        }
+
+        $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read publication head'));
+        $repair = $this->staleMarker()->exists() || !$this->readModelHasPost($record->postId);
+        if ($repair) {
+            $this->refreshDerivedStateAfterCommit($head);
+        }
+
+        return [
+            'status' => 'ok',
+            'post_id' => $record->postId,
+            'thread_id' => $record->threadId ?? $record->postId,
+            'commit_sha' => $head,
+            // Only a repair can mean the first request died before enqueueing the post.
+            'fastmod_new_post' => $repair,
+        ];
+    }
+
+    private function readModelHasPost(string $postId): bool
+    {
+        if (!is_file($this->databasePath)) {
+            return false;
+        }
+        try {
+            $query = $this->readModelPdo()->prepare('SELECT 1 FROM posts WHERE post_id = ?');
+            $query->execute([$postId]);
+
+            return $query->fetchColumn() !== false;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function assertQdbQuoteAuthoring(): void
