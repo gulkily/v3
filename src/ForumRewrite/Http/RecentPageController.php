@@ -39,7 +39,7 @@ final class RecentPageController
         $page['items'] = \ForumRewrite\Images\ListThumbnails::attach(
             $this->routeServices->pdo(),
             $this->routeServices->repositoryRoot(),
-            $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
+            $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED),
             $page['items'],
             'post_id',
         );

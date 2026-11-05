@@ -9,6 +9,27 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 
 final class FeatureFlagEvaluatorTest
 {
+    public function testListThumbnailsDependOnImagesAndCanBeDisabledIndependently(): void
+    {
+        $key = FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED;
+        $images = FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $this->withEnvironment([], function () use ($key, $images): void {
+            assertTrue((new FeatureFlagRegistry())->get($key)->defaultValue);
+            assertFalse((new FeatureFlagEvaluator())->isEnabled($key));
+            $enabled = new FeatureFlagEvaluator(siteValues: [$images => true]);
+            assertTrue($enabled->isEnabled($key));
+            assertTrue($enabled->evaluate($key)->canChangeFromSite());
+            $disabled = new FeatureFlagEvaluator(siteValues: [$images => true, $key => false]);
+            assertFalse($disabled->isEnabled($key));
+            assertTrue($disabled->isEnabled($images));
+        });
+        $this->withEnvironment([$images => 'true', $key => 'false'], function () use ($key): void {
+            $state = (new FeatureFlagEvaluator(siteValues: [$key => true]))->evaluate($key);
+            assertFalse($state->effectiveValue);
+            assertTrue($state->isLocked());
+        });
+    }
+
     public function testSameAuthorCollapseDefaultsAndOverrides(): void
     {
         $key = FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED;
@@ -190,6 +211,8 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::RAILSPIKE_ENABLED,
             FeatureFlagRegistry::IMAGE_BACKUP_ENABLED,
             FeatureFlagRegistry::TEXT_BACKUP_ENABLED,
+            FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED,
+            FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
             FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
             FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,

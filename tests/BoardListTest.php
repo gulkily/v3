@@ -123,6 +123,8 @@ final class BoardListTest
         $imageRoot = $repositoryRoot . '-images';
         $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
         $old = getenv($flag);
+        $thumbnailFlag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED;
+        $oldThumbnail = getenv($thumbnailFlag);
         try {
             $source = $repositoryRoot . '-pixel.png';
             file_put_contents($source, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC'));
@@ -142,6 +144,7 @@ final class BoardListTest
             $thumb = '<a class="thread-row__thumb" href="/threads/thread-present" tabindex="-1" aria-hidden="true"><img src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '" alt="" width="1" height="1" loading="lazy" decoding="async"></a>';
 
             putenv($flag . '=true');
+            putenv($thumbnailFlag . '=true');
             $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
             assertStringContains(str_replace('thread-present', 'thumb-present', $thumb), $board);
             assertSame(1, substr_count($board, 'class="thread-row__thumb"'), 'Only the post with a stored image gets a thumbnail.');
@@ -151,10 +154,15 @@ final class BoardListTest
             assertStringContains(str_replace('thread-present', 'thumb-present', $thumb), $recent);
             assertSame(1, substr_count($recent, 'class="thread-row__thumb"'));
 
+            putenv($thumbnailFlag . '=false');
+            assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/threads/?view=all&sort=newest')));
+            assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/recent/')));
+            putenv($thumbnailFlag . '=true');
             putenv($flag . '=false');
             assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/threads/?view=all&sort=newest')));
             assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/recent/')));
         } finally {
+            putenv($oldThumbnail === false ? $thumbnailFlag : $thumbnailFlag . '=' . $oldThumbnail);
             putenv($old === false ? $flag : $flag . '=' . $old);
             exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($repositoryRoot . '-pixel.png'));
         }
