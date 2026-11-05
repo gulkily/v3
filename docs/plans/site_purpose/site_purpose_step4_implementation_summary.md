@@ -34,3 +34,23 @@ Branch: `feat/site-purpose`. Planning commit: `1517b499`.
 - Estimate details: original scope as Step 3 Stage 1; no revision; retrospective lower because the copy store already had the right shape.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Site description leads `/llms.txt`
+
+**Original estimate: 0.06**
+
+**Retrospective stage work: 0.05**
+
+- Changes:
+  - `LlmsTxtRenderer`: two optional constructor arguments, site name and site description. With both, the file opens with `# <name>`, the description as the quote line, then the existing Git and OpenPGP sentence. Without them, the opening is unchanged.
+  - `Application::renderLlmsTxt()` passes the active profile's display name and `ProfilePresentationContent::siteDescription()`.
+  - `tests/LlmsTxtRendererTest.php`: new test for both openings; the generic sentence appears exactly once.
+- Verification:
+  - `./v3 test --smoke LlmsTxtRendererTest PresentationProfileMatrixTest`: 443 run, 443 passed. Full suite not run.
+  - Local server with `FORUM_SITE_ID=zenmemes`: `/llms.txt` opens with `# zenmemes` and the description.
+  - `git diff --check` clean.
+- Notes:
+  - A first draft dropped the technical sentence for zenmemes; the local fetch caught it before commit.
+- Estimate details: original scope as Step 3 Stage 2; no revision.
+
+*— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*

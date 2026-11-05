@@ -1544,6 +1544,8 @@ final class Application
         return (new \ForumRewrite\Http\LlmsTxtRenderer(
             $this->featureFlags(),
             \ForumRewrite\Support\SourceRepository::fromProjectRoot($this->projectRoot),
+            (string) \ForumRewrite\SiteProfileRegistry::active()['displayName'],
+            \ForumRewrite\ProfilePresentationContent::siteDescription(\ForumRewrite\SiteProfileRegistry::active()),
         ))->render();
     }
 

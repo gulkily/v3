@@ -168,6 +168,17 @@ final class LlmsTxtRendererTest
         assertStringNotContains('Source code', $this->render([]));
     }
 
+    public function testSiteDescriptionLeadsWhenTheProfileHasOne(): void
+    {
+        $text = (new LlmsTxtRenderer(new FeatureFlagEvaluator(siteValues: []), null, 'zenmemes', 'zenmemes is a garage where people and agents build this site together, starting from threads.'))->render();
+        assertTrue(str_starts_with($text, "# zenmemes\n\n> zenmemes is a garage where people and agents build this site together, starting from threads.\n\nA forum where every post is a Git-backed text record."));
+        assertStringNotContains('# Forum', $text);
+
+        $generic = $this->render([]);
+        assertTrue(str_starts_with($generic, "# Forum\n\n> A forum where every post is a Git-backed text record."));
+        assertSame(1, substr_count($generic, 'A forum where every post is a Git-backed text record.'));
+    }
+
     public function testSourceRepositorySettingIsValidated(): void
     {
         $default = \ForumRewrite\Support\PrivateConfigSchema::definitions()[SourceRepository::KEY]['default'];
