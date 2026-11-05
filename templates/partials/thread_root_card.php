@@ -119,6 +119,9 @@ if (!$metaVisible) {
 <?php endif; ?>
 <?php else: ?>
   <h1><?= $e($title) ?></h1>
+<?php if (($eventState ?? null) !== null): ?>
+  <p class="meta event-state" data-event-state="<?= $e($eventState) ?>">Event: <?= $e($eventState) ?></p>
+<?php endif; ?>
 <?= $bareMediaEmbedWarmBeacon ?>
 <?php if ($isRetracted): ?>
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>

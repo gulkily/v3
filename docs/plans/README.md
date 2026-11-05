@@ -194,6 +194,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Anonymous reaction scoring](anonymous_reaction_scoring/) — recorded steps: 1.
 - [Automatic guest identity](automatic_guest_identity/)
 - [Browser private key restore](browser_private_key_restore/) — recorded steps: 1.
+- [Calendar](calendar/)
 - [Case insensitive tags](case_insensitive_tags/)
 - [Chouse production readiness](chouse_production_readiness/) — recorded steps: 1.
 - [Codebase page source details](codebase_page_source_details/) — recorded steps: 3.

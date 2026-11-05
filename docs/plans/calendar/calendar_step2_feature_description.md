@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/calendar`; [host ledger](./effort_estimation_trial.md#cycle-v3calendar). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/calendar`; [host ledger](../effort_estimation_trial.md#cycle-v3calendar). Standing P2 enrollment.
 
 Extended estimates: enabled
 
@@ -42,15 +42,15 @@ Work type: application change, plus the post record spec addition for `Event-End
 
 Completion boundary: on the maintainer's instance with event support on, a member opens `/calendar/couches`, moves to a month, opens a day, posts an event (tagged `couches` by the preset) for that day or through a later day with a note and optional place, and every day in the span lists it as open. An operator replies `event: confirmed`; the grid marks the span confirmed. Declining removes it from the grid. The maintainer records an arrangement made elsewhere with one post of their own carrying the line. A failed send keeps the draft, as the composer already does. Release condition: the flow verified with JavaScript on and off, on phone and desktop widths, in the text themes and the three icon themes, with the rebuild from the prior schema version producing the same grid.
 
-Known environment: the maintainer's instance is members-only, and hosts arrive through an API-issued capped invitation link ([invitation entry](../reference/invitation_entry.md#capped-invitations-through-the-api)). A host who opens `/calendar` before approval is sent to the Lobby by the existing gate and can return after approval; success is the grid rendering for them. If a post is refused, the composer shows the reason and keeps the draft, and the host retries from the same day page. Production verification on the maintainer's instance is recorded as done or explicitly not done.
+Known environment: the maintainer's instance is members-only, and hosts arrive through an API-issued capped invitation link ([invitation entry](../../reference/invitation_entry.md#capped-invitations-through-the-api)). A host who opens `/calendar` before approval is sent to the Lobby by the existing gate and can return after approval; success is the grid rendering for them. If a post is refused, the composer shows the reason and keeps the draft, and the host retries from the same day page. Production verification on the maintainer's instance is recorded as done or explicitly not done.
 
 ## Shared Component Inventory
 
 - **Event headers and event block** (`Event-Date`, `Event-Location`, `Event-Time` and `Event-Link` parsing in `PostRecordParser`, the event columns on the threads table, `templates/partials/event_block.php`, the composer's Event disclosure): extend with the optional end date in the spec, parser, write path, one threads column, the disclosure's Until field and the block's span display. Everything else reused unchanged; the day page passes the day as the composer's event date, as `/compose/thread` already accepts.
 - **Shared composer and thread write path** (`templates/partials/composer.php`, `/compose/thread`, signed prepare/create routes, drafts and Outbox): reuse unchanged; the day page is another placement with the date fixed.
-- **Title directive and its authority** (`TitleDirective`, `TitleDirectiveAuthority`, [thread title](../concepts/thread_title.md)): reuse the line-scanning rules (quoted lines skipped) and the operator check for `event:` lines, read from the root as well as replies and derived at read time rather than recorded at write time; a sibling directive class rather than widening the title vocabulary.
+- **Title directive and its authority** (`TitleDirective`, `TitleDirectiveAuthority`, [thread title](../../concepts/thread_title.md)): reuse the line-scanning rules (quoted lines skipped) and the operator check for `event:` lines, read from the root as well as replies and derived at read time rather than recorded at write time; a sibling directive class rather than widening the title vocabulary.
 - **Members-only gate** (`membersOnlyRequestAllowed`, Lobby redirect): reuse unchanged; no route-level gate of its own (dropped from v2).
-- **Thread listing queries and effective tags** (`BoardListingQuery`, tag pages, [effective tags](../concepts/effective_tags.md)): reuse the thread row shape for day entries and the same tag matching as `/tags/<tag>`; a date-range query over the threads table, optionally by tag, is new. The composer's `board_tags` query value presets the tag on a tag calendar's day page.
+- **Thread listing queries and effective tags** (`BoardListingQuery`, tag pages, [effective tags](../../concepts/effective_tags.md)): reuse the thread row shape for day entries and the same tag matching as `/tags/<tag>`; a date-range query over the threads table, optionally by tag, is new. The composer's `board_tags` query value presets the tag on a tag calendar's day page.
 - **Read-model schema and rebuild** (`ReadModelMetadata::SCHEMA_VERSION`, `docs/specs/read_model_schema_v1.md`, `./v3 rebuild`): extend per the contributing rules for the one new column.
 - **Feature flags page**: reuse unchanged for turning event support on.
 - **New:** the month grid page with month navigation, the day page, and the day-state derivation. No existing page renders dates as a grid.
@@ -82,7 +82,7 @@ Known environment: the maintainer's instance is members-only, and hosts arrive t
 
 ## Concepts Touched
 
-[Shared composer](../concepts/shared_composer.md) used unchanged (new placement); [thread title](../concepts/thread_title.md) directive pattern reused, unchanged; [viewer session](../concepts/viewer_session.md) and [invitation lifecycle](../concepts/invitation_lifecycle.md) used unchanged; [tag browsing](../concepts/tag_browsing.md) used unchanged; [read model rebuild](../concepts/read_model_rebuild.md) changed (one column, schema version). Proposed inventory additions at implementation: *calendar* (grid, day page, derivation, operator directive) and *post event metadata* (the existing event headers, flag and block, plus the end date; currently undocumented).
+[Shared composer](../../concepts/shared_composer.md) used unchanged (new placement); [thread title](../../concepts/thread_title.md) directive pattern reused, unchanged; [viewer session](../../concepts/viewer_session.md) and [invitation lifecycle](../../concepts/invitation_lifecycle.md) used unchanged; [tag browsing](../../concepts/tag_browsing.md) used unchanged; [read model rebuild](../../concepts/read_model_rebuild.md) changed (one column, schema version). Proposed inventory additions at implementation: *calendar* (grid, day page, derivation, operator directive) and *post event metadata* (the existing event headers, flag and block, plus the end date; currently undocumented).
 
 ## Study Checkpoint
 

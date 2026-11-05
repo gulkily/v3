@@ -495,6 +495,19 @@ A retirement permanently disables one fingerprint's future account access. It pr
 
 Ordinary members require username changes disabled, matching unchanged bootstrap names and no verified rename history on actor/target. Active root-approved operators can assist across accounts or with renamed keys, but must still leave an unchanged active replacement. `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` does not grant retirement authority. See [record and acceptance contract](../specs/key_retirement_record_v1.md).
 
+## Events
+
+With event support on (`FORUM_EVENT_SUPPORT_ENABLED`), `prepare_thread` and
+`create_thread` take optional `event_date` (`YYYY-MM-DD`), `event_end_date` (the
+inclusive last day; needs `event_date` and must not be before it; equal to the start
+means one day), `event_time` (`HH:MM`), `event_location` and `event_link`. The
+prepared record carries them as `Event-Date`, `Event-End-Date`, `Event-Time`,
+`Event-Location` and `Event-Link` after `Subject`. With event support off, any of
+them is refused. Client-built records for `create_signed_post` cannot carry event
+headers; use the prepared flow. A root-approved operator settles an event with a line
+`event: confirmed` or `event: declined` in any post of its thread; see the
+[calendar reference](calendar.md#confirming-or-declining).
+
 ## Post format
 
 New posts are Markdown by default: headings, lists, bold, links, code and tables

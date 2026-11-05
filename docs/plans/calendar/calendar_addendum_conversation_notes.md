@@ -37,7 +37,7 @@ Notifications, time-of-day ordering within a day, recurring events, calendar exp
 
 ## Environment and process facts
 
-- Mockups: `docs/plans/calendar_mockups.html`, uncommitted on purpose; open it in a browser. The maintainer could not open the claude.ai artifact link, so deliverables for review are written as local files in this project.
+- Mockups: `docs/plans/calendar/calendar_mockups.html`, uncommitted on purpose; open it in a browser. The maintainer could not open the claude.ai artifact link, so deliverables for review are written as local files in this project.
 - Plans for Steps 1–3 were committed and pushed to `main` before Step 3 approval at the maintainer's request. That does not approve Step 3 or implementation; wait for `Approved Step 3`, then branch and make the planning commit per Railspike.
 - While the plans were being written, `main` received commits that removed work tracking (`WorkItems`, `status:` directive, `./v3 work`) and introduced feedback items in `docs/feedback/items/` with `Feedback: PF-...` commit trailers. No item matches the calendar. PF-20261104-B10 (composer event disclosure cannot be collapsed) is adjacent and is replayed in Stage 2.
 - A `#work` thread for this feature exists on zenmemes.com (`thread-20261104140509-96d1a44620809fe0e869364bdb42ca53`) from before that removal; it tracks nothing now.

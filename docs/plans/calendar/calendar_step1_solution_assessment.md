@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/calendar`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment. No parent cycle.
+Effort study: `railspike-effort` / `v3/calendar`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment. No parent cycle.
 
 Extended estimates: enabled
 
@@ -27,10 +27,10 @@ Just a little bit of clarification: I am the resource, not the couches. There is
 
 - The maintainer is the one travelling and being hosted; approved members are the people with couches. A member looks at a month grid of the next 60 days, picks a free day, and claims it: an offer to host the maintainer that night, with a comment. The maintainer approves one claim per day; the day then shows as claimed. The first message framed it as self-marking; the numbered answers replaced that with member claims plus approval.
 - Revision 1 (2026-11-04, after Step 1 approval): the first draft of this section had the roles reversed (maintainer as host offering a couch to members). The clarification above corrects it. The data model, options, recommendation and estimate are unchanged: one resource, members claim days, the maintainer approves. Step 2 uses the corrected roles.
-- Repository update (2026-11-04, after the merge of `main`): work tracking (`WorkItems`, the `status:` directive and the *work item status* concept) was removed upstream and replaced by feedback items. The pattern this assessment reused survives as the [thread title](../concepts/thread_title.md) directive; links below are repaired to it. The work item thread named above is orphaned and no longer tracks anything.
+- Repository update (2026-11-04, after the merge of `main`): work tracking (`WorkItems`, the `status:` directive and the *work item status* concept) was removed upstream and replaced by feedback items. The pattern this assessment reused survives as the [thread title](../../concepts/thread_title.md) directive; links below are repaired to it. The work item thread named above is orphaned and no longer tracks anything.
 - Revision 2 (2026-11-04, during Step 2): the maintainer asked for a general calendar that they also use for couch stays. Option A already treats a claim as an event thread, so the recommendation stands; Step 2 v3 generalizes it to every event thread, with the couch flow as one use. The Step 1 estimate is historical; current scope and estimate are in Step 2.
 - A claim is an ordinary signed post by the member, with the day as structured data, so it appears under their username and can be discussed like any post.
-- Access follows the existing approval model: only approved members see or use the page, and new guests arrive through an existing multi-use invitation link ([invitation lifecycle](../concepts/invitation_lifecycle.md), already capped and shared).
+- Access follows the existing approval model: only approved members see or use the page, and new guests arrive through an existing multi-use invitation link ([invitation lifecycle](../../concepts/invitation_lifecycle.md), already capped and shared).
 - Not in scope: calendar export or sync, time-of-day slots, multi-night bookings as one object, notifications.
 
 ## Problem Statement
@@ -39,10 +39,10 @@ Approved members have no way to see which days the couch is free and ask for one
 
 ## Concepts touched
 
-- All options: [viewer session](../concepts/viewer_session.md) (used unchanged for the approved-member check), [invitation lifecycle](../concepts/invitation_lifecycle.md) (used unchanged; the multi-use link already exists), [shared composer](../concepts/shared_composer.md) (used; Options A and B post the claim through it), proposed *calendar day state* (new: how a day's state is derived and shown).
-- Option A: proposed *post event metadata* (existing `Event-Date` root header and event block, undocumented as a concept), [tag browsing](../concepts/tag_browsing.md) (used unchanged: claims also list under `/tags/calendar`), [thread title](../concepts/thread_title.md) directive (pattern reused for the host's approval line; originally cited as the since-removed work item status).
+- All options: [viewer session](../../concepts/viewer_session.md) (used unchanged for the approved-member check), [invitation lifecycle](../../concepts/invitation_lifecycle.md) (used unchanged; the multi-use link already exists), [shared composer](../../concepts/shared_composer.md) (used; Options A and B post the claim through it), proposed *calendar day state* (new: how a day's state is derived and shown).
+- Option A: proposed *post event metadata* (existing `Event-Date` root header and event block, undocumented as a concept), [tag browsing](../../concepts/tag_browsing.md) (used unchanged: claims also list under `/tags/calendar`), [thread title](../../concepts/thread_title.md) directive (pattern reused for the host's approval line; originally cited as the since-removed work item status).
 - Option B: the same directive pattern (reused for both claim and approval lines).
-- Option C: [reaction record](../concepts/reaction_record.md) (sibling pattern for a new signed record family), [read model rebuild](../concepts/read_model_rebuild.md) (changed: new tables).
+- Option C: [reaction record](../../concepts/reaction_record.md) (sibling pattern for a new signed record family), [read model rebuild](../../concepts/read_model_rebuild.md) (changed: new tables).
 
 ## Solution Options
 

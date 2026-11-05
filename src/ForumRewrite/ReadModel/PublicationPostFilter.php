@@ -29,7 +29,7 @@ final class PublicationPostFilter
             // Existing HTML joins require a root row. Retain only surviving thread structure.
             $root = $post;
             $root['post_id'] = $id; $root['parent_id'] = null;
-            foreach (['subject', 'author_identity_id', 'agent_response_json', 'event_date', 'event_location', 'event_link', 'event_time'] as $key) $root[$key] = null;
+            foreach (['subject', 'author_identity_id', 'agent_response_json', 'event_date', 'event_location', 'event_link', 'event_time', 'event_end_date'] as $key) $root[$key] = null;
             $root['body'] = ''; $root['retracted_at'] = $post['created_at'];
             $root['retraction_class'] = 'author'; $root['retraction_attribution'] = 'author';
             $root['source_path'] = ''; $root['source_commit_sha'] = null;

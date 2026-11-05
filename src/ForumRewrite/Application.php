@@ -1068,6 +1068,27 @@ final class Application
             return;
         }
 
+        if ($path === '/calendar' || $path === '/calendar/') {
+            $this->sendHtml($this->calendarPageController()->grid(null, $query['month'] ?? null), 200);
+            return;
+        }
+
+        if (preg_match('#^/calendar/(?:([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/)?(\d{4}-\d{2}-\d{2})/?$#', $path, $matches) === 1) {
+            $html = $this->calendarPageController()->day($matches[1] !== '' ? $matches[1] : null, $matches[2]);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
+        if (preg_match('#^/calendar/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
+            $this->sendHtml($this->calendarPageController()->grid($matches[1], $query['month'] ?? null), 200);
+            return;
+        }
+
         if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
             $html = $this->tagsPageController()->tag($matches[1], $query['position'] ?? null);
             if ($html === null) {
@@ -1235,6 +1256,11 @@ final class Application
             \ForumRewrite\Deploy\AppUpdate::forProject($this->projectRoot),
             TaskQueueDatabaseConfig::path($this->projectRoot),
         );
+    }
+
+    private function calendarPageController(): \ForumRewrite\Http\CalendarPageController
+    {
+        return new \ForumRewrite\Http\CalendarPageController($this->routeServices(), $this->repositoryRoot);
     }
 
     private function tagsPageController(): TagsPageController
@@ -1679,7 +1705,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
                     threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
-                    threads.event_date, threads.event_location, threads.event_link, threads.event_time,
+                    threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date,
                     profiles.username_token AS author_username_token, COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -2185,6 +2211,7 @@ final class Application
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
+            '/calendar', '/calendar/',
             '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
             '/tools/fastmod', '/tools/fastmod/',
@@ -2211,7 +2238,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
             $path,
         ) === 1;
     }

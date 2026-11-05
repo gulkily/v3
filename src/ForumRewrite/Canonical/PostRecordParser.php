@@ -25,6 +25,7 @@ final class PostRecordParser
         'Event-Location',
         'Event-Link',
         'Event-Time',
+        'Event-End-Date',
     ];
 
     public function __construct(
@@ -128,6 +129,15 @@ final class PostRecordParser
         $eventLocation = $record->headers['Event-Location'] ?? null;
         $eventLink = $record->headers['Event-Link'] ?? null;
         $eventTime = isset($record->headers['Event-Time']) ? $this->parseEventTime($record->headers['Event-Time']) : null;
+        $eventEndDate = isset($record->headers['Event-End-Date']) ? $this->parseEventDate($record->headers['Event-End-Date'], 'Event-End-Date') : null;
+        if ($eventEndDate !== null) {
+            if ($eventDate === null) {
+                throw new CanonicalRecordParseException('Event-End-Date requires Event-Date.');
+            }
+            if ($eventEndDate < $eventDate) {
+                throw new CanonicalRecordParseException('Event-End-Date must not be before Event-Date.');
+            }
+        }
 
         return new PostRecord(
             $record->headers['Post-ID'],
@@ -152,6 +162,7 @@ final class PostRecordParser
             $eventTime,
             AgentResponseMetadata::fromHeaders($record->headers, $parentId),
             $bodyFormat,
+            $eventEndDate,
         );
     }
 
@@ -198,20 +209,20 @@ final class PostRecordParser
         return $value;
     }
 
-    private function parseEventDate(string $value): string
+    private function parseEventDate(string $value, string $header = 'Event-Date'): string
     {
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
-            throw new CanonicalRecordParseException('Event-Date must use the format YYYY-MM-DD like 2026-11-01.');
+            throw new CanonicalRecordParseException($header . ' must use the format YYYY-MM-DD like 2026-11-01.');
         }
 
         try {
             $date = new \DateTimeImmutable($value);
         } catch (\Exception) {
-            throw new CanonicalRecordParseException('Event-Date must be a valid calendar date.');
+            throw new CanonicalRecordParseException($header . ' must be a valid calendar date.');
         }
 
         if ($date->format('Y-m-d') !== $value) {
-            throw new CanonicalRecordParseException('Event-Date must be a valid calendar date.');
+            throw new CanonicalRecordParseException($header . ' must be a valid calendar date.');
         }
 
         return $value;

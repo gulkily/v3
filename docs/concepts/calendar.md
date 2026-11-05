@@ -1,0 +1,6 @@
+# Calendar
+
+Purpose: Show event threads by day so members can see what is on, offer a day, and tell which days are settled, without a record family of its own.
+Scenario: A host opens `/calendar/couches`, moves to a month, opens a free day and posts an offer with Until set two days later. Each day of the span lists it as open. The maintainer replies `event: confirmed`; those days are marked confirmed. A declined offer leaves the grid and stays in its thread. On a phone each day shows a count and the day page lists the titles.
+Sources: [query](../../src/ForumRewrite/Calendar/CalendarQuery.php), [day states](../../src/ForumRewrite/Calendar/CalendarDays.php), [event state](../../src/ForumRewrite/Calendar/EventStatus.php), [directive line](../../src/ForumRewrite/Support/EventStatusDirective.php), [pages](../../src/ForumRewrite/Http/CalendarPageController.php), [grid](../../templates/pages/calendar.php), [day page](../../templates/pages/calendar_day.php), [reference](../reference/calendar.md), [browser test](../../tests/browser/calendar.mjs).
+Boundary: Requires event support. Only operators settle events; authors cannot confirm their own. One confirmed event per day is a convention, not enforced. No navigation entry, notifications, recurring events, time-of-day ordering, export, or combined tags.

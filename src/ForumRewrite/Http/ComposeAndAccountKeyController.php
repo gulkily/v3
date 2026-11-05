@@ -58,7 +58,8 @@ final class ComposeAndAccountKeyController
             (string) ($query['event_date'] ?? ''),
             (string) ($query['event_location'] ?? ''),
             (string) ($query['event_link'] ?? ''),
-            (string) ($query['event_time'] ?? '')
+            (string) ($query['event_time'] ?? ''),
+            (string) ($query['event_end_date'] ?? '')
         );
     }
 
@@ -145,7 +146,8 @@ final class ComposeAndAccountKeyController
                         (string) ($input['event_date'] ?? ''),
                         (string) ($input['event_location'] ?? ''),
                         (string) ($input['event_link'] ?? ''),
-                        (string) ($input['event_time'] ?? '')
+                        (string) ($input['event_time'] ?? ''),
+                        (string) ($input['event_end_date'] ?? '')
                     ),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
@@ -279,7 +281,8 @@ final class ComposeAndAccountKeyController
         string $eventDate = '',
         string $eventLocation = '',
         string $eventLink = '',
-        string $eventTime = ''
+        string $eventTime = '',
+        string $eventEndDate = ''
     ): string {
         return $this->routeServices->renderPageTemplate('compose_thread.php', [
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
@@ -291,6 +294,7 @@ final class ComposeAndAccountKeyController
             'eventLocation' => $eventLocation,
             'eventLink' => $eventLink,
             'eventTime' => $eventTime,
+            'eventEndDate' => $eventEndDate,
         ], 'New Post', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
     }
 

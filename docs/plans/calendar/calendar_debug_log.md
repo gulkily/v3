@@ -80,3 +80,23 @@ Supersedes nothing; adds to the 14:30 Step 2 entry after the v2 scope revision.
 
 **Uncertain assessments**
 - "<=50 lines of change" per stage is not achievable for a schema column that touches six files; the hour bound was used instead. Suggest clarifying which bound governs.
+
+## 2026-11-05T01:35:00Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md` "Planning Docs Commit Gate": the plans had been committed loose on `main` before approval. The gate's organization rule moved them into the feature folder in one planning commit, so the history reads cleanly. Retain.
+- `step4_implementation_do.md` "one stage-scoped commit per completed stage" with the summary update: the stage boundary was where the unregistered Stage 1 tests and the stale signing expectations surfaced. Both were corrected in the next stage commit, not hidden by amending. Retain.
+- `implementation_standards.md` "Check affected shared consumers … themes": the theme pass found Word97's unreadable confirmed days and the phone grid hiding half the week. Neither would have appeared in route tests. Retain.
+- `RAILSPIKE.md` Enhancement Requests record (Request / Disposition / Approval / Outcome): the maintainer's three refinements, and the extension of whole-square links to every day, are traceable without a scope revision. Retain.
+- `step4_implementation_after.md` item 7, "the handoff opens with anything unverified": kept the production replay visible as not done when the maintainer chose to merge before running it. Retain.
+
+**Redundant/unnecessary instructions**
+- The stage template's "Estimate details" line repeats "original scope unchanged; no revision" in every stage of a cycle with no revisions. Suggest allowing it to be stated once. Consolidate.
+
+**Inapplicable instructions**
+- Documentation-only verification rules: application change.
+- Follow-up cycles before merge: no follow-up cycle; further work starts from `main`.
+
+**Uncertain assessments**
+- The Completion Contract makes production replay part of the release condition, but the maintainer can merge first. Recording it as "not done" and closing Step 4 seemed right. The contract does not say whether Step 4 may close with the release condition unmet at the maintainer's request. Suggest clarifying.
+- The host's test runner lists test files explicitly. Railspike's verification steps do not ask the agent to confirm that new tests actually ran, which is how the Stage 1 tests went unrun. Suggest the stage boundary protocol require confirming that the named tests appear in the runner's output.

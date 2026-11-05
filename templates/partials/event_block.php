@@ -1,5 +1,6 @@
 <?php
 $eventDate = (string) ($thread['event_date'] ?? '');
+$eventEndDate = (string) ($thread['event_end_date'] ?? '');
 $eventTime = (string) ($thread['event_time'] ?? '');
 $eventLocation = (string) ($thread['event_location'] ?? '');
 $eventLink = (string) ($thread['event_link'] ?? '');
@@ -11,7 +12,7 @@ $eventLinkIsHttp = $eventLink !== '' && preg_match('#^https?://#i', $eventLink) 
 ?>
 <?php if ($eventSupportEnabled && $eventDate !== ''): ?>
 <p class="event-block" data-event-block>
-  <span class="event-block__date">📅 <?= $e($eventDate) ?><?= $eventTime !== '' ? ' at ' . $e($eventTime) : '' ?></span>
+  <span class="event-block__date">📅 <?= $e($eventDate) ?><?= $eventEndDate !== '' ? ' – ' . $e($eventEndDate) : '' ?><?= $eventTime !== '' ? ' at ' . $e($eventTime) : '' ?></span>
 <?php if ($eventLocation !== ''): ?>
   <span class="event-block__location"> · <?= $e($eventLocation) ?></span>
 <?php endif; ?>
