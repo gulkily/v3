@@ -14,7 +14,13 @@ Step 4 entry projection, 2026-11-04 UTC: Step 3 whole-cycle 0.90 reaffirmed, sam
 
 Stage-work originals from Step 3 (non-additive): 1 0.08 · 2 0.12 · 3 0.12 · 4 0.12 · 5 0.20 · 6 0.14 · 7 0.08 · 8 0.12.
 
-Enhancement requests: none.
+Enhancement requests (all from the maintainer on 2026-11-04 after reviewing the grid; refinements of Stage 5–6 UI, no change to scope or estimates; recorded under Stage 8):
+
+| Request | Disposition and reason | Approval | Outcome |
+| --- | --- | --- | --- |
+| Days next to the blank cells before the 1st are missing borders (left of the 1st, top of the second row). | Accepted: defect. Blank cells used transparent borders, which win collapsed-border ties and hide neighbours' edges. | Maintainer request | Blank cells use `border-style: none`; browser test asserts the four edges. Stage 8 enhancements commit. |
+| List only the event title in a day. | Accepted. The author line is dropped from grid cells; the day page still shows author, span, place and state. | Maintainer request | Stage 8 enhancements commit. |
+| Make the whole square clickable for empty days. | Accepted, and extended to every day: the day link's stretched area covers the square, while titles and `+N more` sit above it, so a title still opens its thread and the rest of the square opens the day. A focus ring and hover outline mark the square. | Maintainer request; the extension to days with events is mine and can be narrowed. | Browser test clicks an empty square and the blank area of a busy square (day page) and a title (thread). Stage 8 enhancements commit. |
 
 ## Stage 1 - Event-End-Date header in the record format
 
@@ -262,5 +268,11 @@ Enhancement requests: none.
   - No feedback item matches the calendar. PF-20261104-B10 was replayed and not reproduced (Stage 2), so no `Feedback:` trailer applies.
   - Retrospective assessment, ledger closeout and the Step 4 debug report wait until the production checks are recorded.
 - Estimate details: original scope unchanged; no revision. Retrospective assessment pending.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+- Enhancements (maintainer requests above):
+  - `public/assets/calendar.css`, `templates/pages/calendar.php`, `tests/browser/calendar.mjs`.
+  - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/calendar.mjs`, including the 13-theme pass and the new border and click checks. `./v3 test --smoke CalendarPageTest`: passed. Full suite not run.
+  - Screenshot reviewed: dark theme at 1280px.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

@@ -113,6 +113,30 @@ try {
       assert.equal(await viewer.page.locator('[data-calendar-day="2026-11-29"] .calendar-day__number').isVisible(), true, 'Saturday is on screen');
     }
     assert.equal(await fitsWidth(viewer.page), true, `grid page fits ${width}px`);
+    // Days next to the blank cells before the 1st keep their borders: the 1st's left edge, the second row's top edges.
+    const edges = await viewer.page.evaluate(() => {
+      const visible = (cell, side) => { const style = getComputedStyle(cell); return parseFloat(style[`border${side}Width`]) > 0 && style[`border${side}Style`] !== 'none' && !/rgba\(0, 0, 0, 0\)/.test(style[`border${side}Color`]); };
+      return [visible(document.querySelector('[data-calendar-day="2026-11-01"]'), 'Left'),
+        visible(document.querySelector('[data-calendar-day="2026-12-01"]'), 'Left'),
+        ...['2026-12-06', '2026-12-07'].map(day => visible(document.querySelector(`[data-calendar-day="${day}"]`), 'Top'))];
+    });
+    assert.deepEqual(edges, [true, true, true, true], `${width}px: edge borders`);
+    // A click anywhere in an empty square opens that day.
+    const empty = await viewer.page.locator('[data-calendar-day="2026-11-03"]').boundingBox();
+    await viewer.page.mouse.click(empty.x + empty.width - 4, empty.y + empty.height - 4);
+    await viewer.page.waitForURL(/\/calendar\/couches\/2026-11-03$/);
+    await viewer.page.goBack();
+    if (width >= 1024) {
+      // A title opens its thread; the rest of that square opens the day.
+      assert.equal(await viewer.page.locator('[data-calendar-day="2026-11-25"] .calendar-entry__author').count(), 0, 'titles only');
+      await viewer.page.locator('[data-calendar-day="2026-11-25"] li.calendar-entry a').first().click();
+      await viewer.page.waitForURL(/\/threads\//);
+      await viewer.page.goBack();
+      const busy = await viewer.page.locator('[data-calendar-day="2026-11-25"]').boundingBox();
+      await viewer.page.mouse.click(busy.x + busy.width - 4, busy.y + busy.height - 4);
+      await viewer.page.waitForURL(/\/calendar\/couches\/2026-11-25$/);
+      await viewer.page.goBack();
+    }
     if (shots) await viewer.page.screenshot({ path: join(shots, `calendar-grid-${width}.png`), fullPage: true });
     await viewer.page.goto(base + '/calendar/couches/2026-11-25');
     assert.equal(await fitsWidth(viewer.page), true, `day page fits ${width}px`);

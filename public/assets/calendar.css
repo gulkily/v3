@@ -26,14 +26,16 @@
   padding: 0 0.3rem 0.25rem;
 }
 .calendar-day {
+  position: relative;
   vertical-align: top;
   height: 5.5rem;
   padding: 0.25rem 0.3rem;
   border: 1px solid var(--line);
   overflow: hidden;
 }
+/* Style none loses to a neighbour's solid border, so in-month days keep all four edges. */
 .calendar-day--outside {
-  border-color: transparent;
+  border-style: none;
 }
 .calendar-day--open {
   background: var(--input-bg);
@@ -55,6 +57,27 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
   font-family: var(--ui-font);
   font-size: 0.8rem;
 }
+/* The whole square opens the day; event titles sit above it and open their threads. */
+.calendar-day__number::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.calendar-day__number:focus-visible {
+  outline: none;
+}
+.calendar-day__number:focus-visible::after {
+  outline: 2px solid var(--active-line);
+  outline-offset: -2px;
+}
+.calendar-day:not(.calendar-day--outside):hover {
+  box-shadow: inset 0 0 0 1px var(--active-line);
+}
+.calendar-day__entries,
+.calendar-day__more {
+  position: relative;
+  z-index: 1;
+}
 .calendar-day__count {
   display: none;
 }
@@ -71,14 +94,6 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
 }
 .calendar-entry__state {
   color: var(--status-ok);
-}
-.calendar-entry__author {
-  display: block;
-  font-size: 0.7rem;
-}
-.calendar-entry__author * {
-  font-size: inherit;
-  font-family: inherit;
 }
 .calendar-day__more {
   font-size: 0.7rem;

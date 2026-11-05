@@ -45,7 +45,7 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 <?php if ($shown !== []): ?>
               <ul class="calendar-day__entries">
 <?php foreach ($shown as $entry): ?>
-                <li class="calendar-entry<?= $entry['event_state'] === 'confirmed' ? ' calendar-entry--confirmed' : '' ?>"><a href="/threads/<?= $e($entry['root_post_id']) ?>"><?= $entry['event_state'] === 'confirmed' ? '<span class="calendar-entry__state" aria-label="confirmed">✓</span> ' : '' ?><?= $e($threadTitle($entry)) ?></a> <span class="calendar-entry__author meta"><?= $author($entry) ?></span></li>
+                <li class="calendar-entry<?= $entry['event_state'] === 'confirmed' ? ' calendar-entry--confirmed' : '' ?>"><a href="/threads/<?= $e($entry['root_post_id']) ?>"><?= $entry['event_state'] === 'confirmed' ? '<span class="calendar-entry__state" aria-label="confirmed">✓</span> ' : '' ?><?= $e($threadTitle($entry)) ?></a></li>
 <?php endforeach; ?>
               </ul>
 <?php endif; ?>
