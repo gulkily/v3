@@ -22,6 +22,15 @@
           document.documentElement.setAttribute('data-member', 'approved');
         }
       } catch (error) {}
+      try {
+        // First-visit intro (board.php): hidden before paint for any browser with a
+        // saved identity (same keys as above) or that chose to hide it.
+        if ((/^[a-f0-9]{40}$/.test((localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase())
+            && localStorage.getItem('forum_pki_public_key') && localStorage.getItem('forum_pki_private_key'))
+          || localStorage.getItem('forum_visitor_intro_hidden') === '1') {
+          document.documentElement.setAttribute('data-visitor', 'known');
+        }
+      } catch (error) {}
 <?php if ($navSlotCount > 0): ?>
       try {
         // Personal phone tabs, chosen by nav_slots.js and read here before paint.

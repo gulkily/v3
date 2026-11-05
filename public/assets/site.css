@@ -1093,6 +1093,12 @@ pre {
   color: var(--ink-soft);
 }
 
+/* First-visit intro on the board: the head script marks a browser with a saved
+   identity, or one that hid the intro, before paint. */
+:root[data-visitor="known"] [data-visitor-intro] {
+  display: none !important;
+}
+
 /* Member-only links (Messages, Invite) are in every viewer's HTML; the head
    script marks a browser remembered as approved before paint. */
 :root:not([data-member="approved"]) [data-member-only] {

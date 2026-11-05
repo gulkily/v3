@@ -56,6 +56,26 @@ final class PresentationProfileMatrixTest
         }
     }
 
+    public function testOnlyZenmemesBoardCarriesTheFirstVisitIntro(): void
+    {
+        $application = $this->application();
+        foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+            putenv('FORUM_SITE_ID=' . $profileId);
+            try {
+                $board = $this->render($application, '/');
+                $isZenmemes = $profileId === 'zenmemes';
+                assertSame($isZenmemes, str_contains($board, 'class="card visitor-intro" data-visitor-intro'));
+                assertStringContains("localStorage.getItem('forum_visitor_intro_hidden')", $board);
+                if ($isZenmemes) {
+                    assertTrue(strpos($board, 'class="card visitor-intro"') < strpos($board, 'data-compose-root'));
+                    assertStringContains('<a href="/about/">About</a>', $board);
+                }
+            } finally {
+                putenv('FORUM_SITE_ID');
+            }
+        }
+    }
+
     public function testFourthProfileFixtureUsesTheSamePresentationMatrix(): void
     {
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());

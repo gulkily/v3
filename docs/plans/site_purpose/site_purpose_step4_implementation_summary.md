@@ -54,3 +54,27 @@ Branch: `feat/site-purpose`. Planning commit: `1517b499`.
 - Estimate details: original scope as Step 3 Stage 2; no revision.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - First-visit intro on the home page
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - `templates/partials/visitor_intro.php` (new): one card with the site description and an About link; renders nothing when the profile has no description. It is a partial because zenmemes uses `board_list.php` and other profiles use `board.php`; both include it at the top.
+  - `TemplateRenderer`: shares `siteDescription` with every template, beside `composerPrompt`.
+  - `templates/layout.php` head script: sets `data-visitor="known"` before paint when the browser has a saved identity (the same `forum_pki_*` check the member script uses) or `forum_visitor_intro_hidden` is `1`. Wrapped in try/catch; on failure the intro stays visible.
+  - `public/assets/site.css`: hides `[data-visitor-intro]` under `data-visitor="known"`.
+  - `tests/PresentationProfileMatrixTest.php`: only zenmemes renders the intro, above the composer; every profile carries the head check.
+- Verification:
+  - `./v3 test --smoke PresentationProfileMatrixTest BoardListTest`: 432 run, 432 passed. Full suite not run.
+  - Headless Chrome against a local zenmemes server, at 390 and 1280 px, recording the intro's computed display when it is first parsed: fresh browser `block`; saved identity `none` with `data-visitor="known"`; hidden flag `none`. No flash for members.
+  - Phone screenshot in the light theme: the card sits above the board controls and reads cleanly.
+  - `git diff --check` clean.
+- Notes:
+  - Step 3 named `board.php`; inspection showed zenmemes renders `board_list.php`, so the shared partial replaces a single-template edit. Same scope.
+  - `npm install --no-save` restored the declared `playwright-core` dev dependency locally for the browser check; no dependency change.
+- Estimate details: original scope as Step 3 Stage 3; no revision.
+
+*— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
