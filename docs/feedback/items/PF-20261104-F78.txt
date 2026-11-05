@@ -23,3 +23,5 @@ Notes:
 2026-11-04: User clarified that header/footer labels should always link and only body hashtags should depend on the flag. Removed metadata gating and renamed the control Hashtag links in posts, keeping FORUM_TAG_LINKS_ENABLED. Updated smoke and affected tests passed 455/455; Chromium on/off checks passed five themes, phone/desktop, JS on/off and metadata navigation with the flag disabled. Full suite not run; uncommitted, undeployed and production acceptance pending. See docs/plans/inline_hashtag_links.txt.
 
 2026-11-05: User authorized merging into main and pushing. Preparing integration with the current origin/main; deployment and production acceptance remain pending, so Workflow remains blocked. Prior local verification is recorded in docs/plans/inline_hashtag_links.txt.
+
+2026-11-05: Integrated current origin/main e269f96c without conflicts. Merged-code smoke and affected checks passed 471/471; Chromium checks passed with body links disabled and metadata links navigating across five themes, phone/desktop and JS on/off. Full suite not run. Ready for authorized main push; deployment and production acceptance pending.
