@@ -120,6 +120,72 @@ try {
     assert.deepEqual(viewer.seen, { dialogs: [], errors: [] });
     await viewer.context.close();
   }
+  // Every theme: no page overflow at phone and desktop widths, and empty, open and
+  // confirmed days look different from one another.
+  // The fixture repository's committed root-approved operator.
+  const operator = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+  const confirmedDay = '2026-11-30';
+  {
+    const settle = new URLSearchParams({ thread_id: threadId, parent_id: threadId, body: 'event: confirmed', author_identity_id: operator });
+    const settled = await fetch(base + '/api/create_reply', { method: 'POST', body: settle });
+    assert.equal(settled.ok, true, await settled.text());
+  }
+  const themes = ['light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight'];
+  for (const theme of themes) {
+    for (const width of [390, 1280]) {
+      const viewer = await open(true, width);
+      await viewer.page.addInitScript(theme => {
+        localStorage.setItem('zenmemes-theme', theme);
+        for (const key of Object.keys(localStorage)) if (key.endsWith('-theme')) localStorage.setItem(key, theme);
+      }, theme);
+      await viewer.page.goto(base + '/calendar/couches?month=2026-11');
+      assert.equal(await viewer.page.locator('html').getAttribute('data-theme'), theme);
+      assert.equal(await fitsWidth(viewer.page), true, `${theme} ${width}px: grid fits`);
+      const look = day => viewer.page.locator(`[data-calendar-day="${day}"]`).evaluate(cell => {
+        const style = getComputedStyle(cell);
+        return `${style.backgroundColor}|${style.borderTopColor}`;
+      });
+      // Text in a marked day stays readable on that day's background (WCAG ratio, large-text floor).
+      const contrast = day => viewer.page.locator(`[data-calendar-day="${day}"]`).evaluate(cell => {
+        const rgba = value => { const n = (value.match(/[\d.]+/g) || []).map(Number); return [n[0] ?? 0, n[1] ?? 0, n[2] ?? 0, n.length > 3 ? n[3] : 1]; };
+        const luminance = ([r, g, b]) => [r, g, b].map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+          .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+        // Composite translucent backgrounds from the cell up until one is opaque.
+        const layers = [];
+        for (let node = cell; node; node = node.parentElement) {
+          const layer = rgba(getComputedStyle(node).backgroundColor);
+          if (layer[3] > 0) layers.push(layer);
+          if (layer[3] >= 1) break;
+        }
+        let bgColor = [255, 255, 255];
+        for (const [r, g, b, a] of layers.reverse()) bgColor = [r * a + bgColor[0] * (1 - a), g * a + bgColor[1] * (1 - a), b * a + bgColor[2] * (1 - a)];
+        const bg = luminance(bgColor);
+        return Array.from(cell.querySelectorAll('a, .meta, .calendar-day__count')).filter(el => el.getClientRects().length > 0)
+          .map(el => { const fg = luminance(rgba(getComputedStyle(el).color)); return { ratio: (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05), what: `${el.className || el.tagName} ${getComputedStyle(el).color} on rgb(${bgColor.map(Math.round)})` }; })
+          .reduce((worst, item) => item.ratio < worst.ratio ? item : worst, { ratio: Infinity, what: '' });
+      });
+      for (const day of ['2026-11-25', confirmedDay]) {
+        const { ratio, what } = await contrast(day);
+        assert.ok(ratio >= 3, `${theme} ${width}px: text on ${day} has contrast ${ratio.toFixed(2)} (${what})`);
+      }
+      const empty = await look('2026-11-02');
+      const open_ = await look('2026-11-25');
+      assert.notEqual(open_, empty, `${theme} ${width}px: open differs from empty`);
+      {
+        assert.equal(await viewer.page.locator(`[data-calendar-day="${confirmedDay}"]`).getAttribute('data-calendar-mark'), 'confirmed');
+        const confirmed = await look(confirmedDay);
+        assert.notEqual(confirmed, empty, `${theme} ${width}px: confirmed differs from empty`);
+        assert.notEqual(confirmed, open_, `${theme} ${width}px: confirmed differs from open`);
+      }
+      if (shots && ['light', 'dark', 'word97', 'chicago', 'midnight'].includes(theme)) {
+        await viewer.page.screenshot({ path: join(shots, `calendar-${theme}-${width}.png`), fullPage: true });
+      }
+      await viewer.page.goto(base + '/calendar/couches/2026-11-30');
+      assert.equal(await fitsWidth(viewer.page), true, `${theme} ${width}px: day page fits`);
+      assert.deepEqual(viewer.seen, { dialogs: [], errors: [] });
+      await viewer.context.close();
+    }
+  }
   console.log('calendar: ok');
 } catch (error) {
   console.error(serverLog.slice(-4000));

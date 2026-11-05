@@ -235,3 +235,32 @@ Enhancement requests: none.
 - Estimate details: original scope unchanged; no revision. Retrospective stage-work assessment: 0.08.
 
 *— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Release verification (in progress)
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `public/assets/calendar.css`: confirmed days use the theme's active ink for every piece of text, at a specificity that outranks theme link colours.
+    - Before this, Word97 drew blue links on its navy active background (contrast 1.86).
+    - No other product changes.
+  - `tests/browser/calendar.mjs`: a theme pass. Every theme (light, dark, console, lcd, chicago, vapor, forge, sticker, arena, thermal, whitehot, word97, midnight) is loaded at 390px and 1280px. Each run checks:
+    - no horizontal page scroll on the grid and the day page;
+    - empty, open and confirmed days differ in background or border;
+    - every visible text element in an open or confirmed day reaches a contrast ratio of 3 against the day's composited background;
+    - no page errors.
+  - The fixture's operator confirms the offer through `/api/create_reply`, so the confirmed look is checked in every theme.
+- Verification:
+  - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/calendar.mjs`. Covers JavaScript-on signed post, JavaScript-off post, the five-event day at phone and desktop widths, and the 13-theme pass above.
+  - Passed: screenshots reviewed locally for light, dark, Word97, Chicago and Midnight.
+  - Passed: `./v3 test --smoke CalendarPageTest EventStatusTest EventEndDateParserTest`: 441 run, 441 passed. Full suite not run, per `AGENTS.md`.
+  - Inapplicable: theme navigation icons. The calendar has no navigation entry this cycle, so `theme-nav-icons.css` has nothing to map.
+  - **Pending, maintainer:** `./v3 rebuild` from schema 48 on a copy of real data. Only the fixture and scratch rebuilds (Stage 3) were run; this workspace has no copy of the instance's records.
+  - **Pending, maintainer:** deploy to the maintainer's instance and replay the invite-link path with an unapproved, then approved, host. This workspace has no access to the server.
+  - Not done: Step 2 success criteria checked one by one on production. Everything else in them is covered locally by the tests above.
+- Notes:
+  - No feedback item matches the calendar. PF-20261104-B10 was replayed and not reproduced (Stage 2), so no `Feedback:` trailer applies.
+  - Retrospective assessment, ledger closeout and the Step 4 debug report wait until the production checks are recorded.
+- Estimate details: original scope unchanged; no revision. Retrospective assessment pending.
+
+*— Claude · 2026-11-04 UTC · Model: claude-opus-5-5*

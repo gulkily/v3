@@ -42,6 +42,14 @@
   background: var(--active-bg);
   border-color: var(--active-line);
 }
+/* Outranks theme link colours (such as :root[data-theme] a) on the active background. */
+table.calendar-grid td.calendar-day--confirmed,
+table.calendar-grid td.calendar-day--confirmed a,
+table.calendar-grid td.calendar-day--confirmed .meta,
+table.calendar-grid td.calendar-day--confirmed .calendar-entry__state,
+table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
+  color: var(--active-ink);
+}
 .calendar-day__number {
   display: inline-block;
   font-family: var(--ui-font);
