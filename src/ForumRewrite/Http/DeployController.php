@@ -23,6 +23,7 @@ final class DeployController
         private readonly RouteServices $routeServices,
         private readonly AppUpdate $update,
         private readonly string $queueDatabasePath,
+        private readonly ?string $sourceRepositoryUrl = null,
     ) {
     }
 
@@ -37,6 +38,7 @@ final class DeployController
                 'canDeploy' => $canDeploy,
                 'deployState' => $this->state(),
                 'deployNotice' => $notice,
+                'commitLinkBase' => $this->commitLinkBase(),
             ],
             'Deploy',
             'tools',
@@ -192,6 +194,21 @@ final class DeployController
         }
 
         return $state;
+    }
+
+    /**
+     * Incoming commits link to the source repository only on GitHub, whose
+     * /commit/<sha> and /compare/<a>...<b> paths are known; other hosts get
+     * plain text rather than guessed URLs.
+     */
+    private function commitLinkBase(): ?string
+    {
+        $url = $this->sourceRepositoryUrl;
+        if ($url === null || strtolower((string) parse_url($url, PHP_URL_HOST)) !== 'github.com') {
+            return null;
+        }
+
+        return preg_replace('/\.git$/', '', $url);
     }
 
     private function existingStore(): ?SqliteTaskQueueStore

@@ -12,13 +12,17 @@ if ($s['behind'] === null) {
 } else {
     $behind = $s['behind'] . ' commit' . ($s['behind'] === 1 ? '' : 's');
 }
+$commitLink = static fn (string $sha): string => $commitLinkBase === null ? '' : $commitLinkBase . '/commit/' . rawurlencode($sha);
+$incoming = $s['incoming_commits'] ?? [];
+$stat = $s['incoming_stat'] ?? null;
+$queuedAt = ($task['status'] ?? null) === 'queued' ? (string) ($task['requested_at'] ?? '') : '';
 $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'stale' => 'has not run recently', 'not_observed' => 'never seen', 'failed' => 'last run failed', 'unavailable' => 'unavailable'];
 ?>
 <section class="stack">
   <article class="card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
-  <article class="card" data-deploy-root data-deploy-pending="<?= $pending ? '1' : '0' ?>">
+  <article class="card" data-deploy-root data-deploy-pending="<?= $pending ? '1' : '0' ?>"<?= $queuedAt !== '' ? ' data-deploy-queued-at="' . $e($queuedAt) . '"' : '' ?>>
     <h1>Deploy</h1>
 <?php if (!$s['is_checkout']): ?>
     <p>This application directory is not a Git checkout.</p>
@@ -43,6 +47,36 @@ $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'sta
           <th scope="row">Behind origin/main</th>
           <td><span data-deploy-field="behind"><?= $e($behind) ?></span> <span class="meta" data-deploy-field="checked"><?= $s['last_checked_at'] === null ? '(never checked)' : '(checked ' . $e($s['last_checked_at']) . ')' ?></span></td>
         </tr>
+<?php if ($incoming !== [] || $stat !== null): ?>
+        <tr>
+          <th scope="row">Incoming</th>
+          <td data-deploy-field="incoming">
+<?php
+$commitCount = count($incoming) + (int) ($s['incoming_more'] ?? 0);
+$parts = $commitCount > 0 ? [$commitCount . ' commit' . ($commitCount === 1 ? '' : 's')] : [];
+if ($stat !== null) {
+    $parts[] = $stat['files'] . ' file' . ($stat['files'] === 1 ? '' : 's') . ' changed, +' . $stat['insertions'] . ' −' . $stat['deletions'];
+}
+$summary = implode(' · ', $parts);
+?>
+            <details class="deploy-incoming"<?= $commitCount <= 5 ? ' open' : '' ?>>
+              <summary><?= $e($summary) ?></summary>
+              <ol>
+<?php foreach ($incoming as $c): ?>
+                <li><?php if ($commitLinkBase !== null): ?><a href="<?= $e($commitLink($c['commit'])) ?>"><code><?= $e(substr($c['commit'], 0, 8)) ?></code></a><?php else: ?><code><?= $e(substr($c['commit'], 0, 8)) ?></code><?php endif; ?> <?= $e($c['subject']) ?> <span class="meta"><?= $e($c['author']) ?>, <?= $e($c['date']) ?></span></li>
+<?php endforeach; ?>
+              </ol>
+<?php if (($s['incoming_more'] ?? 0) > 0): ?>
+<?php $moreText = 'and ' . $s['incoming_more'] . ' more'; ?>
+              <p class="meta"><?php if ($commitLinkBase !== null && $s['commit'] !== null && $s['remote_commit'] !== null): ?><a href="<?= $e($commitLinkBase . '/compare/' . $s['commit'] . '...' . $s['remote_commit']) ?>"><?= $e($moreText) ?></a><?php else: ?><?= $e($moreText) ?><?php endif; ?></p>
+<?php endif; ?>
+            </details>
+<?php if (($s['incoming_local_overlap'] ?? []) !== []): ?>
+            <p><strong>Also changes locally edited</strong> <?php foreach ($s['incoming_local_overlap'] as $i => $file): ?><?= $i > 0 ? ', ' : '' ?><code><?= $e($file) ?></code><?php endforeach; ?>. If the same lines changed, the deploy stops and keeps the old version.</p>
+<?php endif; ?>
+          </td>
+        </tr>
+<?php endif; ?>
         <tr>
           <th scope="row">Task worker</th>
           <td><?= $e($workerLabels[$s['worker']] ?? $s['worker']) ?></td>
@@ -66,14 +100,14 @@ $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'sta
 <?php endif; ?>
 <?php if ($canDeploy): ?>
     <form method="post" action="/tools/deploy/" class="deploy-actions" data-deploy-form>
-      <button type="submit" name="action" value="queue">Deploy</button>
+      <button type="submit" name="action" value="queue">Queue deploy</button>
       <button type="submit" name="action" value="now">Deploy now</button>
       <button type="submit" name="action" value="check">Check for updates</button>
     </form>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($canDeploy): ?>
-<?php $statusText = ($deployNotice ?? '') !== '' ? $deployNotice : ($pending ? 'A deploy is queued or running.' : ''); ?>
+<?php $statusText = ($deployNotice ?? '') !== '' ? $deployNotice : ($queuedAt !== '' ? 'Queued; waiting for the task worker.' : ($pending ? 'A deploy is running.' : '')); ?>
     <p class="meta" role="status" aria-live="polite" data-deploy-status<?= $statusText === '' ? ' hidden' : '' ?>><?= $e($statusText) ?></p>
 <?php elseif (($deployNotice ?? '') !== ''): ?>
     <p class="meta" role="status"><?= $e($deployNotice) ?></p>

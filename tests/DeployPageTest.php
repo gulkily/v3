@@ -34,6 +34,39 @@ final class DeployPageTest
         assertSame(false, is_file($base . '/missing-queue.sqlite3'));
     }
 
+    public function testPageListsIncomingCommitsWithSourceLinks(): void
+    {
+        $base = sys_get_temp_dir() . '/deploy-incoming-' . bin2hex(random_bytes(6));
+        mkdir($base, 0777, true);
+        $git = static fn (string $dir, string ...$args): array => ['git', '-c', 'user.name=Ada', '-c', 'user.email=a@example.invalid', '-C', $dir, ...$args];
+        $this->run(['git', 'init', '-q', '--bare', '-b', 'main', $base . '/remote.git']);
+        $this->run(['git', 'init', '-q', '-b', 'main', $base . '/seed']);
+        file_put_contents($base . '/seed/README.md', "app\n");
+        $this->run($git($base . '/seed', 'add', '.'));
+        $this->run($git($base . '/seed', 'commit', '-q', '-m', 'initial'));
+        $this->run($git($base . '/seed', 'remote', 'add', 'origin', $base . '/remote.git'));
+        $this->run($git($base . '/seed', 'push', '-q', 'origin', 'main'));
+        $this->run(['git', 'clone', '-q', $base . '/remote.git', $base . '/app']);
+        file_put_contents($base . '/seed/feature.txt', "one\ntwo\n");
+        $this->run($git($base . '/seed', 'add', '.'));
+        $this->run($git($base . '/seed', 'commit', '-q', '-m', 'Show <incoming> commits'));
+        $this->run($git($base . '/seed', 'push', '-q', 'origin', 'main'));
+        $incoming = trim($this->capture(['git', '-C', $base . '/seed', 'rev-parse', 'HEAD']));
+        (new AppUpdate($base . '/app'))->check();
+
+        $application = new Application(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $base . '/index.sqlite3');
+        $routeServices = (fn () => $this->routeServices())->call($application);
+        $render = static fn (?string $repository): string => (new DeployController($routeServices, new AppUpdate($base . '/app'), $base . '/missing-queue.sqlite3', $repository))->render();
+
+        $linked = $render('https://github.com/example/app');
+        foreach (['<th scope="row">Incoming</th>', '1 file changed, +2 −0', 'Show &lt;incoming&gt; commits', 'Ada, ', 'href="https://github.com/example/app/commit/' . $incoming . '"', '<code>' . substr($incoming, 0, 8) . '</code>'] as $needle) {
+            assertTrue(str_contains($linked, $needle), 'Incoming row missing: ' . $needle);
+        }
+        $plain = $render('https://git.example.org/app');
+        assertTrue(str_contains($plain, '<code>' . substr($incoming, 0, 8) . '</code>'), 'Expected the commit without a link.');
+        assertTrue(!str_contains($plain, '/commit/'), 'Only GitHub repositories get commit links.');
+    }
+
     public function testPageRendersForOperatorAndReadOnlyForOthers(): void
     {
         $script = <<<'PHP'
@@ -55,7 +88,7 @@ try {
     $app = new Application($argv[1], $argv[2], $databasePath);
     $render($app, '/threads/');
     $page = $render($app, '/tools/deploy/');
-    foreach (['<h1>Deploy</h1>', 'Behind origin/main', 'Task worker', 'href="/tools/deploy/"', 'data-deploy-form', 'value="now"', 'value="check"', '/assets/deploy_control', 'tool-details', 'which has not run on this server yet. Deploy now runs immediately.'] as $needle) {
+    foreach (['<h1>Deploy</h1>', 'Behind origin/main', 'Task worker', 'href="/tools/deploy/"', 'data-deploy-form', 'value="now"', 'value="check"', '>Queue deploy</button>', '/assets/deploy_control', 'tool-details', 'which has not run on this server yet. Deploy now runs immediately.'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Operator page missing: ' . $needle);
     }
     $tools = $render($app, '/tools/');
@@ -247,6 +280,15 @@ if (!function_exists('assertSame')) {
     {
         if ($expected !== $actual) {
             throw new RuntimeException(($message !== '' ? $message . ': ' : '') . 'Failed asserting identical values. Expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
+        }
+    }
+}
+
+if (!function_exists('assertTrue')) {
+    function assertTrue(bool $condition, string $message = 'Failed asserting that condition is true.'): void
+    {
+        if (!$condition) {
+            throw new RuntimeException($message);
         }
     }
 }

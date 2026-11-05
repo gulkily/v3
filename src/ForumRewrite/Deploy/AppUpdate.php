@@ -29,6 +29,9 @@ final class AppUpdate
 
     private const LOG_ROTATE_BYTES = 262144;
 
+    /** Commits listed before "and N more"; keeps page loads and polls cheap. */
+    public const INCOMING_LIMIT = 20;
+
     /** `git stash` needs an identity; servers often have none configured. */
     private const STASH_IDENTITY = ['-c', 'user.name=Forum deploy', '-c', 'user.email=deploy@localhost'];
 
@@ -119,6 +122,10 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             'behind' => null,
             'ahead' => null,
             'last_checked_at' => null,
+            'incoming_commits' => [],
+            'incoming_more' => 0,
+            'incoming_stat' => null,
+            'incoming_local_overlap' => [],
             'busy' => $this->isBusy(),
             'latest' => $this->latestAttempt(),
         ];
@@ -140,9 +147,68 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
                 $state['behind'] = (int) $m[2];
             }
         }
+        if (($state['behind'] ?? 0) > 0) {
+            $state = $this->incoming($state, (string) $remote) + $state;
+        }
         $state['last_checked_at'] = $this->lastFetchTime();
 
         return $state;
+    }
+
+    /**
+     * What a deploy would bring in, from the last fetch: the non-merge commits
+     * on origin/main that HEAD lacks (newest first, capped), the size of the
+     * change since the merge base, and which locally edited files it also
+     * changes (the case that can end in local_changes_conflict).
+     *
+     * @param array<string, mixed> $state
+     * @return array{incoming_commits: list<array{commit: string, subject: string, author: string, date: string}>, incoming_more: int, incoming_stat: ?array{files: int, insertions: int, deletions: int}, incoming_local_overlap: list<string>}
+     */
+    private function incoming(array $state, string $remote): array
+    {
+        $commits = [];
+        $log = $this->git(['log', '--no-color', '--no-merges', '-n', (string) self::INCOMING_LIMIT, '--format=%H%x1f%s%x1f%an%x1f%cI', 'HEAD..' . $remote], 30);
+        if ($log['code'] === 0) {
+            foreach (preg_split('/\R/', trim($log['out'])) ?: [] as $line) {
+                $fields = explode("\x1f", $line);
+                if (count($fields) === 4 && preg_match('/^[0-9a-f]{40,64}$/', $fields[0]) === 1) {
+                    $commits[] = ['commit' => $fields[0], 'subject' => $fields[1], 'author' => $fields[2], 'date' => substr($fields[3], 0, 10)];
+                }
+            }
+        }
+
+        // Merge commits are left out of the list (they repeat what the
+        // merged commits say), so "more" counts non-merge commits too.
+        $total = count($commits);
+        if ($total === self::INCOMING_LIMIT) {
+            $total = (int) ($this->gitValue(['rev-list', '--no-merges', '--count', 'HEAD..' . $remote]) ?? $total);
+        }
+
+        $stat = null;
+        $shortstat = $this->gitValue(['diff', '--no-color', '--shortstat', 'HEAD...' . $remote]);
+        if ($shortstat !== null && preg_match('/(\d+) files? changed/', $shortstat, $m) === 1) {
+            $stat = [
+                'files' => (int) $m[1],
+                'insertions' => preg_match('/(\d+) insertions?\(\+\)/', $shortstat, $i) === 1 ? (int) $i[1] : 0,
+                'deletions' => preg_match('/(\d+) deletions?\(-\)/', $shortstat, $d) === 1 ? (int) $d[1] : 0,
+            ];
+        }
+
+        $overlap = [];
+        if ($state['changed_files'] !== []) {
+            $names = $this->git(['diff', '--no-color', '--name-only', 'HEAD...' . $remote], 30);
+            if ($names['code'] === 0) {
+                $touched = preg_split('/\R/', trim($names['out'])) ?: [];
+                $overlap = array_values(array_intersect($state['changed_files'], $touched));
+            }
+        }
+
+        return [
+            'incoming_commits' => $commits,
+            'incoming_more' => max(0, $total - count($commits)),
+            'incoming_stat' => $stat,
+            'incoming_local_overlap' => $overlap,
+        ];
     }
 
     /**

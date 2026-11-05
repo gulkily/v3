@@ -16,6 +16,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261021-F06](items/PF-20261021-F06.txt) | LCD color choices | blocked | locally-verified | 0.4 | 1 |
 | [PF-20261103-F01](items/PF-20261103-F01.txt) | Retitle thread by reply; visible likes and flags | blocked | locally-verified | 0.80 | 1 |
 | [PF-20261104-F27](items/PF-20261104-F27.txt) | Discover code repository URLs | blocked | locally-verified | — | 3 |
+| [PF-20261104-F49](items/PF-20261104-F49.txt) | Deploy shows commits and queue delay | blocked | locally-verified | — | 1 |
 | [PF-20261104-F66](items/PF-20261104-F66.txt) | Apply Word97 repairs to Chicago | blocked | locally-verified | — | 1 |
 | [PF-20261104-F78](items/PF-20261104-F78.txt) | Clickable hashtags in post bodies | blocked | locally-verified | — | 1 |
 | [PF-20261021-F03](items/PF-20261021-F03.txt) | Text-entry macros | untriaged | unknown | 0.5 | 1 |
@@ -124,7 +125,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-F46](items/PF-20261104-F46.txt) | Readable commit dialog | untriaged | unknown | — | 1 |
 | [PF-20261104-F47](items/PF-20261104-F47.txt) | Explain JavaScript and CSS source | untriaged | unknown | — | 1 |
 | [PF-20261104-F48](items/PF-20261104-F48.txt) | Word97 Like and Flag bevel spacing | untriaged | unknown | — | 3 |
-| [PF-20261104-F49](items/PF-20261104-F49.txt) | Deploy shows commits and queue delay | untriaged | unknown | — | 1 |
 | [PF-20261104-F50](items/PF-20261104-F50.txt) | Import selected nested HN discussion | untriaged | unknown | — | 2 |
 | [PF-20261104-F51](items/PF-20261104-F51.txt) | Feature-request catalog and scores | untriaged | unknown | — | 2 |
 | [PF-20261104-F52](items/PF-20261104-F52.txt) | Support features with encrypted API keys | untriaged | unknown | — | 1 |

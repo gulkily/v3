@@ -504,6 +504,24 @@ form.feature-flag-control,
   outline-offset: 2px;
 }
 
+.deploy-incoming summary {
+  cursor: pointer;
+}
+
+.deploy-incoming ol {
+  margin: 0.3rem 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.deploy-incoming li + li {
+  margin-top: 0.3rem;
+}
+
+.codebase-facts td p {
+  margin: 0.3rem 0 0;
+}
+
 .deploy-actions {
   display: flex;
   flex-wrap: wrap;

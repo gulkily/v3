@@ -1,9 +1,9 @@
 ID: PF-20261104-F49
 Title: Deploy shows commits and queue delay
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 Deploy should show all available information about the update, including commits to be added; the Deploy button should communicate that it runs through a delayed queue.
@@ -13,3 +13,4 @@ Sources:
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-05: /tools/deploy shows an Incoming row after a check (non-merge commits newest first, up to 20 with "and N more", change size, and any locally edited file the update also changes); the queued button is "Queue deploy" and its status line shows how long it has waited for the task worker. `./v3 deploy --status` prints the same as Incoming-* lines. Branch feat/deploy-pending-commits; plan docs/plans/deploy_pending_commits/deploy_pending_commits_one_shot.md. Awaiting review and deployment. Not covered: PF-20261104-F41 (understandable deployment decisions).
