@@ -2585,6 +2585,162 @@ NODE;
         assertSame($result['body'], $result['savedDraft']['fields']['body']);
     }
 
+    public function testComposeLinkOpenedAfterPublishingKeepsItsPrefill(): void
+    {
+        $result = $this->runComposeAttemptScript('thread', '?subject=Clipped&body=Clipped%20text', 'navigate', true);
+
+        assertSame('Clipped', $result['subject']);
+        assertSame('Clipped text', $result['body']);
+    }
+
+    public function testBackToComposeLinkAfterPublishingDropsPublishedText(): void
+    {
+        $result = $this->runComposeAttemptScript('thread', '?subject=Clipped&body=Clipped%20text', 'back_forward', true);
+
+        assertSame('', $result['subject']);
+        assertSame('', $result['body']);
+    }
+
+    public function testBackClearsTextTheBrowserRestoresAfterInit(): void
+    {
+        $result = $this->runComposeAttemptScript('thread', '', 'back_forward', true);
+
+        assertSame('', $result['bodyAfterRestore']);
+        assertSame(null, $result['draftAfterRestore']);
+    }
+
+    public function testAnonymousThreadAttemptHasNoClientDate(): void
+    {
+        $result = $this->runComposeAttemptScript('thread', '', 'navigate', false);
+
+        assertSame(1, preg_match('/^[a-f0-9]{32}$/', $result['attempt']));
+        assertSame(['/api/get_post?post_id=thread-' . $result['attempt']], $result['lookups']);
+    }
+
+    public function testAnonymousReplyAttemptReconcilesWithReplyId(): void
+    {
+        $result = $this->runComposeAttemptScript('reply', '', 'navigate', false);
+
+        assertSame(1, preg_match('/^[a-f0-9]{32}$/', $result['attempt']));
+        assertSame(['/api/get_post?post_id=reply-' . $result['attempt']], $result['lookups']);
+        assertSame('', $result['body']);
+    }
+
+    /** @return array<string, mixed> */
+    private function runComposeAttemptScript(string $kind, string $search, string $navigation, bool $recentlyCleared): array
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const config = __CONFIG__;
+const local = {};
+const session = config.recentlyCleared ? { forum_recently_cleared_compose_draft: 'forum_compose_draft:' + config.kind } : {};
+const lookups = [];
+let domReady = null;
+let submitHandler = null;
+const pageShow = [];
+const prefill = new URLSearchParams(config.search);
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName, name, value, defaultValue: value, dataset: { composeFieldLabel: name }, hidden: false, disabled: false,
+    getAttribute(attribute) { return attribute === 'type' ? (type || null) : null; },
+    addEventListener() {}
+  };
+}
+const fields = [
+  makeField('INPUT', 'author_identity_id', '', 'hidden'),
+  makeField('INPUT', 'board_tags', 'general', 'text'),
+  makeField('INPUT', 'subject', prefill.get('subject') || '', 'text'),
+  makeField('TEXTAREA', 'body', prefill.get('body') || '', null)
+];
+const button = { dataset: { action: 'submit-anonymous-compose' }, disabled: false };
+const form = {
+  dataset: { composeKind: config.kind, threadId: 'root-001', parentId: 'root-001' },
+  querySelector(selector) {
+    const name = /^\[name="([^"]+)"\]$/.exec(selector)?.[1];
+    return fields.find((field) => field.name === name) || null;
+  },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') return fields;
+    if (selector.includes('submit')) return [button];
+    return [];
+  },
+  addEventListener(type, handler) { if (type === 'submit') submitHandler = handler; },
+  appendChild(field) { fields.push(field); },
+  submit() {},
+  reset() { fields.forEach((field) => { field.value = field.defaultValue; }); }
+};
+const statusNode = { dataset: {}, textContent: '', hidden: false, querySelector() { return null; } };
+const root = {
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-compose-form]') return form;
+    if (selector === '[data-role="compose-identity-status"]') return statusNode;
+    return null;
+  },
+  querySelectorAll() { return []; }
+};
+const store = (data) => ({
+  getItem(key) { return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : null; },
+  setItem(key, value) { data[key] = String(value); },
+  removeItem(key) { delete data[key]; }
+});
+global.window = {
+  location: { search: config.search, pathname: '/compose/' + config.kind },
+  performance: { getEntriesByType() { return [{ type: config.navigation }]; } },
+  crypto: require('node:crypto').webcrypto,
+  addEventListener(type, handler) { if (type === 'pageshow') pageShow.push(handler); },
+  localStorage: store(local),
+  sessionStorage: store(session),
+  confirm() { return true; }
+};
+global.localStorage = global.window.localStorage;
+global.sessionStorage = global.window.sessionStorage;
+global.document = {
+  addEventListener(type, handler) { if (type === 'DOMContentLoaded') domReady = handler; },
+  querySelector(selector) { return selector === '[data-compose-root]' ? root : null; },
+  createElement() { return { setAttribute() {}, style: {}, select() {}, value: '' }; },
+  body: { appendChild() {}, removeChild() {} }
+};
+global.navigator = {};
+global.fetch = async function (url) {
+  lookups.push(url);
+  const postId = url.split('post_id=')[1];
+  return { ok: true, async text() { return 'Post-ID: ' + postId + '\n'; } };
+};
+
+(async () => {
+  vm.runInThisContext(source);
+  domReady();
+  const result = { subject: fields[2].value, body: fields[3].value, attempt: '', lookups };
+  if (config.recentlyCleared) {
+    // Browsers restore typed text after init and before pageshow on a Back that reloads.
+    const typed = fields[3].value;
+    fields[3].value = 'Published text';
+    pageShow.forEach((handler) => handler({ persisted: false }));
+    result.bodyAfterRestore = fields[3].value;
+    result.draftAfterRestore = local['forum_compose_draft:' + config.kind] ?? null;
+    fields[3].value = typed;
+  }
+  if (!config.recentlyCleared) {
+    fields[3].value = 'Anonymous text';
+    await submitHandler({ submitter: button, preventDefault() {} });
+    result.attempt = fields.find((field) => field.name === 'compose_attempt').value;
+    pageShow.forEach((handler) => handler({ persisted: true }));
+    for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    result.body = fields[3].value;
+  }
+  process.stdout.write(JSON.stringify(result));
+})().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
+NODE;
+
+        return $this->runScript(str_replace('__CONFIG__', json_encode([
+            'kind' => $kind, 'search' => $search, 'navigation' => $navigation, 'recentlyCleared' => $recentlyCleared,
+        ], JSON_THROW_ON_ERROR), $script));
+    }
+
     public function testClearComposeFieldsButtonClearsEditableFieldsAndSavedDraft(): void
     {
         $script = <<<'NODE'
@@ -4607,7 +4763,8 @@ function makeField(tagName, name, value, type) {
       if (attribute === 'type') return type || null;
       return null;
     },
-    addEventListener() {}
+    listeners: {},
+    addEventListener(type, handler) { this.listeners[type] = handler; }
   };
 }
 
@@ -4801,6 +4958,10 @@ vm.runInThisContext(source);
     draftExists: Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:thread'),
     recentlyClearedDraft: state.sessionStore.forum_recently_cleared_compose_draft || ''
   };
+  const inFlightBody = fields.find((field) => field.name === 'body');
+  inFlightBody.listeners.input();
+  inFlightBody.listeners.change();
+  const draftSavedInFlight = Object.prototype.hasOwnProperty.call(state.localStore, 'forum_compose_draft:thread');
   await state.submitHandler({ submitter: submitButton, preventDefault() {} });
   const finalizeCallsAfterRepeatClick = state.fetchCalls.filter((call) => call.url === '/api/create_prepared_post').length;
   state.resolveCreatePreparedPost();
@@ -4825,6 +4986,7 @@ vm.runInThisContext(source);
   await secondSubmit;
   process.stdout.write(JSON.stringify({
     optimistic,
+    draftSavedInFlight,
     finalizeCallsAfterRepeatClick,
     restored,
     newPostReachedFinalize,
@@ -4849,6 +5011,7 @@ NODE;
             '/api/create_prepared_post',
         ], $result['optimistic']['fetchUrls']);
         assertSame(true, $result['optimistic']['pendingExists']);
+        assertSame(false, $result['draftSavedInFlight']);
         assertSame(1, $result['finalizeCallsAfterRepeatClick']);
         assertSame(['disabled' => false, 'subject' => '', 'body' => '', 'draftExists' => false], $result['restored']);
         assertSame(true, $result['newPostReachedFinalize']);

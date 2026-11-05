@@ -1,9 +1,9 @@
 ID: PF-20261030-B03
 Title: Submitted draft stays in composer
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-10-30
-Evidence: unknown
+Evidence: locally-verified
 Aliases: 2026-10-30/B03
 
 Request:
@@ -19,3 +19,5 @@ Sources:
 Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B03; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-04: Fixed on fix/duplicate-post-submissions, not yet deployed. Confirmed by test: Back after publishing, a lost response, and a repeat click no longer leave published text in the composer or publish twice for threads and replies with JavaScript. Whether this was the production cause is not confirmed; check production after deployment. Record: docs/plans/duplicate_post_submissions/duplicate_post_submissions_review_findings.md
+2026-11-05: Pushed on fix/duplicate-post-submissions and awaiting review. Not merged into main; merge after review, then deploy and check production.

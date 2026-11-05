@@ -552,6 +552,15 @@
     return restoredAny;
   }
 
+  function isBackForwardNavigation() {
+    try {
+      const entry = window.performance.getEntriesByType("navigation")[0];
+      return Boolean(entry) && entry.type === "back_forward";
+    } catch (error) {
+      return false;
+    }
+  }
+
   function hasExplicitComposePrefill(fields) {
     if (typeof window === "undefined" || !window.location || !window.location.search) {
       return false;
@@ -3582,21 +3591,20 @@
       renderTechnicalStatus(statusNode, "");
     }
 
-    function anonymousThreadFields() {
-      const fields = collectThreadSubmitFields(form);
+    function anonymousComposeFields() {
+      const fields = collectSignedSubmitFields(form);
       delete fields.author_identity_id;
       return JSON.stringify(fields);
     }
 
-    function attachAnonymousThreadAttempt() {
-      if (!isThreadComposeForm(form) || isQuoteComposeForm(form)
+    function attachAnonymousComposeAttempt() {
+      if (!(isThreadComposeForm(form) || isReplyComposeForm(form)) || isQuoteComposeForm(form)
           || !window.crypto || typeof window.crypto.getRandomValues !== "function") return;
-      const fields = anonymousThreadFields();
+      const fields = anonymousComposeFields();
       let attempt = anonymousComposeAttempts.get(form);
       if (!attempt || attempt.fields !== fields) {
         const bytes = window.crypto.getRandomValues(new Uint8Array(16));
-        const nonce = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-        attempt = { fields, id: new Date().toISOString().replace(/\D/g, "").slice(0, 14) + "-" + nonce };
+        attempt = { fields, id: Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("") };
         anonymousComposeAttempts.set(form, attempt);
       }
       let input = form.querySelector('[name="compose_attempt"]');
@@ -3610,16 +3618,16 @@
       saveComposeDraft(form);
     }
 
-    async function reconcileAnonymousThreadAttempt() {
+    async function reconcileAnonymousComposeAttempt() {
       const attempt = anonymousComposeAttempts.get(form);
-      if (!attempt || !/^\d{14}-[a-f0-9]{32}$/.test(attempt.id) || attempt.fields !== anonymousThreadFields()) return;
+      if (!attempt || !/^[a-f0-9]{32}$/.test(attempt.id) || attempt.fields !== anonymousComposeFields()) return;
       const fields = JSON.stringify(serializeComposeDraft(form).fields);
-      const postId = "thread-" + attempt.id;
+      const postId = (isReplyComposeForm(form) ? "reply-" : "thread-") + attempt.id;
       try {
         const response = await fetch("/api/get_post?post_id=" + encodeURIComponent(postId), { cache: "no-store" });
         if (!response.ok || !(await response.text()).split("\n").includes("Post-ID: " + postId)) return;
         if (submitInFlight || anonymousComposeAttempts.get(form) !== attempt
-            || attempt.fields !== anonymousThreadFields()
+            || attempt.fields !== anonymousComposeFields()
             || JSON.stringify(serializeComposeDraft(form).fields) !== fields) return;
         const saved = loadComposeDraft(form);
         if (saved?.anonymousAttempt?.id !== attempt.id || JSON.stringify(saved.fields) !== fields) return;
@@ -3813,12 +3821,21 @@
       void syncIdentityHint(preferredIdentityHint()).catch(function () {});
     }
 
+    let publishedInThisForm = false;
+
     if (root.dataset.composeSubmitted === "1") {
       resetComposeFormToServerState();
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     } else if (shouldHonorRecentlyClearedDraft()) {
-      resetPublishedComposeForm();
-      restoreComposeDraft(form);
+      // A link opened after publishing carries new text; Back to one carries the published text.
+      if (hasExplicitComposePrefill(textFields) && !isBackForwardNavigation()) {
+        resetComposeFormToServerState();
+      } else {
+        resetPublishedComposeForm();
+        restoreComposeDraft(form);
+        // The browser restores typed text after this runs, so pageshow has to clear it again.
+        publishedInThisForm = isBackForwardNavigation();
+      }
       clearRecentlyClearedComposeDraftKey();
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     } else if (hasExplicitComposePrefill(textFields)) {
@@ -3829,11 +3846,12 @@
     }
 
     textFields.forEach(function (field) {
+      // Saving during a submit would bring the published text back after Back.
       field.addEventListener("input", function () {
-        normalizeComposeFields({ removeUnsupported: false });
+        normalizeComposeFields({ removeUnsupported: false, persistDraft: !submitInFlight });
       });
       field.addEventListener("change", function () {
-        saveComposeDraft(form);
+        if (!submitInFlight) saveComposeDraft(form);
       });
     });
 
@@ -4008,7 +4026,6 @@
         }
       }) : null;
     let submitInFlight = false;
-    let publishedInThisForm = false;
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
       if (submitInFlight) {
@@ -4033,7 +4050,7 @@
         }
         if (isAnonymousComposeSubmitter(submitter)) {
           clearComposeAuthorIdentity(form);
-          attachAnonymousThreadAttempt();
+          attachAnonymousComposeAttempt();
           setStatus(statusNode, "Sending anonymous post...", "ok");
           markFirstFeedback(timing);
           completeActionTiming(timing, "submit");
@@ -4113,7 +4130,7 @@
       }
     });
 
-    window.addEventListener("pageshow", function () {
+    window.addEventListener("pageshow", function (event) {
       clearPendingComposeArtifacts(root, form);
       clearTransientComposeStatus();
       refreshComposeIdentityFromStorage();
@@ -4129,10 +4146,10 @@
       }
 
       restoreComposeUiState();
-      void reconcileAnonymousThreadAttempt();
+      if (event && event.persisted) void reconcileAnonymousComposeAttempt();
     });
 
-    void reconcileAnonymousThreadAttempt();
+    void reconcileAnonymousComposeAttempt();
     return true;
   }
 
