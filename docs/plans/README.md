@@ -187,6 +187,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Account key approval safety](account_key_approval_safety/)
 - [Agent reply task queue merge](agent_reply_task_queue_merge/)
+- [Adaptive nav](adaptive_nav/) — recorded steps: 3.
 - [Agent response direct preflight](agent_response_direct_preflight/)
 - [Agent response dropdown viewport fit](agent_response_dropdown_viewport_fit/)
 - [Agent response harness simplification](agent_response_harness_simplification/)
