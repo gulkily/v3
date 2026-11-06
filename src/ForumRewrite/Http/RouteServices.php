@@ -612,8 +612,14 @@ final class RouteServices
         return $this->renderer->renderStandalonePage($pageTemplate, $pageData, $title, $bodyClass, $scriptPaths, $additionalCssPaths);
     }
 
-    public function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
-    {
+    public function renderMessagePage(
+        string $title,
+        string $heading,
+        string $message,
+        string $activeSection,
+        string $actionUrl = '',
+        string $actionLabel = '',
+    ): string {
         // A message page is the final response for an error or other
         // server-decided state. In particular, resuming an identity from a
         // 404 would navigate straight back to the same missing URL and loop.
@@ -622,6 +628,8 @@ final class RouteServices
             [
                 'heading' => $heading,
                 'message' => $message,
+                'actionUrl' => $actionUrl,
+                'actionLabel' => $actionLabel,
             ],
             $title,
             $activeSection,
@@ -641,8 +649,10 @@ final class RouteServices
             $this->renderMessagePage(
                 'Not Found',
                 'Not Found',
-                'The requested route does not exist in the local test slice.',
-                'none'
+                'There is no page at this address. The link may be mistyped, or what was here has moved.',
+                'none',
+                '/',
+                'Back to the board'
             ),
             404
         );
