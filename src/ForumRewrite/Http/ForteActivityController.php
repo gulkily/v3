@@ -99,8 +99,9 @@ final class ForteActivityController
     }
 
     /**
-     * Renders the Forte Activity three-pane view: a left pane of the same 5
-     * category filters classic's `/activity/` offers, a list pane of items
+     * Renders the Forte Activity three-pane view: a left pane of the broad
+     * categories classic's `/activity/` offers plus one entry per activity
+     * kind (ActivityService::KIND_VIEWS), a list pane of items
      * for the selected filter, and a detail pane with the selected item's
      * full technical metadata.
      *
@@ -114,12 +115,22 @@ final class ForteActivityController
         string $requestedDirection = '',
     ): string {
         $activityService = $this->routeServices->activityService();
+        $showProfileNames = $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::USERNAME_CHANGES_ENABLED);
         $viewLabels = [
             'all' => 'All Activity',
             'content' => 'Visible Content',
+            'thread' => 'Threads',
+            'reply' => 'Replies',
+            'reaction' => 'Reactions',
+            'label' => 'Label Changes',
+            ...($showProfileNames ? ['profile_name' => 'Profile Changes'] : []),
             'identity' => 'Identity',
+            'identity_key' => 'Identity Keys',
             'bootstrap' => 'Bootstraps',
             'approval' => 'Approvals',
+            'invitation' => 'Invitations',
+            'feature_flag' => 'Feature Flag Changes',
+            'codex_handoff' => 'Codex Handoffs',
         ];
 
         if ($this->routeServices->securityReviewAllowed()) $viewLabels['security'] = 'Operator security review';
@@ -132,7 +143,7 @@ final class ForteActivityController
         }
 
         $selectedView = $activityService->normalizeActivityView($requestedView);
-        if (!$commitsAvailable && $selectedView === 'commits') {
+        if ((!$commitsAvailable && $selectedView === 'commits') || ($selectedView === 'profile_name' && !$showProfileNames)) {
             $selectedView = 'all';
         }
 
@@ -372,7 +383,7 @@ final class ForteActivityController
         foreach ($result['items'] as $item) {
             if ($rowsOnly && $view === 'security') $item = $activityService->securityReviewItem($item);
             $item['forte_link'] = $this->activityItemBoardLink($item);
-            foreach (['all', 'content', 'identity', 'bootstrap', 'approval', 'security'] as $flagView) {
+            foreach (\ForumRewrite\Activity\ActivityService::activityViews() as $flagView) {
                 $item['view_' . $flagView] = ($flagView === $view);
             }
 

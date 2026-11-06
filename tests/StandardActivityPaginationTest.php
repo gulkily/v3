@@ -39,6 +39,60 @@ final class StandardActivityPaginationTest
         return preg_match('/rel="next" href="([^"]+)"/', $html, $match) === 1 ? html_entity_decode($match[1], ENT_QUOTES) : null;
     }
 
+    public function testForteKindViewsListFilterCountAndPageEachKind(): void
+    {
+        [$app, $pdo] = $this->environment();
+        $pdo->exec('DELETE FROM activity');
+        $insert = $pdo->prepare("INSERT INTO activity (created_at,kind,record_family,action_key,label,board_tags_json,author_label)
+            VALUES (:at,:kind,:family,:key,:key,'[]','guest')");
+        $kinds = ['post_reaction_add' => 45, 'thread' => 3, 'codex_handoff' => 2, 'profile_name_change' => 4];
+        $i = 0;
+        foreach ($kinds as $kind => $total) {
+            for ($n = 0; $n < $total; $n++, $i++) {
+                $insert->execute([
+                    'at' => sprintf('2026-10-23T00:%02d:00Z', $i % 60),
+                    'kind' => $kind,
+                    'family' => $kind === 'profile_name_change' ? 'profile_name' : 'test',
+                    'key' => sprintf('%s-%03d', $kind, $n),
+                ]);
+            }
+        }
+
+        $html = $this->render($app, '/forte/activity/?view=reaction');
+        foreach (['All Activity', 'Threads', 'Replies', 'Reactions', 'Label Changes', 'Identity Keys', 'Invitations', 'Feature Flag Changes', 'Codex Handoffs', 'Bootstraps', 'Approvals'] as $label) {
+            assertStringContains('<span>' . $label . '</span>', $html);
+        }
+        assertStringContains('<span>Reactions</span><span class="paned-folder-count">45</span>', $html);
+        assertStringContains('<span>Threads</span><span class="paned-folder-count">3</span>', $html);
+        assertStringContains('<span>Codex Handoffs</span><span class="paned-folder-count">2</span>', $html);
+        assertStringContains('<span>All Activity</span><span class="paned-folder-count">50</span>', $html);
+        assertSame(1, preg_match('/paned-folder-item--selected"\s+data-paned-activity-view="reaction"/', $html));
+        assertSame(20, substr_count($html, 'data-paned-activity-view-reaction="1"'));
+        assertStringNotContains('thread-000', $html);
+
+        // Username changes are off by default: no entry, no leak, safe fallback.
+        assertStringNotContains('Profile Changes', $html);
+        assertStringNotContains('profile_name_change-', $this->render($app, '/forte/activity/?view=profile_name'));
+        assertStringContains('aria-selected="true"', $this->render($app, '/forte/activity/?view=profile_name'));
+        $leak = json_decode($this->render($app, '/api/forte_activity_page?rows_only=1&view=profile_name'), true);
+        assertSame('', $leak['html']);
+
+        $seen = [];
+        $cursor = null;
+        do {
+            $page = json_decode($this->render($app, '/api/forte_activity_page?rows_only=1&view=reaction' . ($cursor === null ? '' : '&cursor=' . rawurlencode(json_encode($cursor)))), true);
+            assertSame('ok', $page['status']);
+            preg_match_all('/data-paned-activity-id="(\d+)"/', $page['html'], $ids);
+            $seen = [...$seen, ...$ids[1]];
+            assertStringNotContains('thread-0', $page['html']);
+            $cursor = $page['next_cursor'];
+        } while ($page['has_more']);
+        assertSame(45, count(array_unique($seen)));
+
+        $unknown = $this->render($app, '/forte/activity/?view=nonsense');
+        assertStringContains('<span>All Activity</span>', $unknown);
+    }
+
     public function testNormalStandardLinksReachBeyondFirstBatchAndKeepCategory(): void
     {
         [$app, $pdo, $service] = $this->environment();

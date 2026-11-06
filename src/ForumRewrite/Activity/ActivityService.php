@@ -34,6 +34,23 @@ final class ActivityService
 {
     private const ACTIVITY_ITEM_LIMIT = 100;
 
+    /**
+     * Single-kind views: URL view key => exact `activity.kind`. Bootstrap and
+     * approval kinds are already covered by the tag-based Bootstraps and
+     * Approvals views, so they have no duplicate entry here.
+     */
+    public const KIND_VIEWS = [
+        'thread' => 'thread',
+        'reply' => 'reply',
+        'reaction' => 'post_reaction_add',
+        'label' => 'thread_label_add',
+        'profile_name' => 'profile_name_change',
+        'identity_key' => 'identity',
+        'invitation' => 'invitation',
+        'feature_flag' => 'site_feature_flag',
+        'codex_handoff' => 'codex_handoff',
+    ];
+
     /** @var array<string, list<array{status:string,path:string,previous_path:string}>|null> */
     private array $sourceCommitFileManifestCache = [];
 
@@ -424,6 +441,10 @@ final class ActivityService
      */
     private function activityViewClause(string $view, string $quotedHiddenTag): array
     {
+        if (isset(self::KIND_VIEWS[$view])) {
+            return ['AND activity.kind = :view_kind', ['view_kind' => self::KIND_VIEWS[$view]]];
+        }
+
         return match ($view) {
             'security' => ["AND (activity.kind = 'approval' OR (activity.kind = 'invitation' AND activity.label LIKE 'Invitation redeem:%') OR (activity.kind = 'site_feature_flag' AND activity.label LIKE :policy_flag))", ['policy_flag' => '%FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=%']],
             'identity' => ['AND activity.board_tags_json LIKE :identity_tag', ['identity_tag' => $quotedHiddenTag]],
@@ -501,7 +522,18 @@ final class ActivityService
 
     public function normalizeActivityView(string $view): string
     {
-        return in_array($view, ['all', 'content', 'identity', 'bootstrap', 'approval', 'security', 'commits'], true) ? $view : 'all';
+        return in_array($view, [...self::activityViews(), 'commits'], true) ? $view : 'all';
+    }
+
+    /**
+     * Every activity-table view (Commits reads its own table). Rows carry one
+     * `view_<key>` membership flag per entry.
+     *
+     * @return list<string>
+     */
+    public static function activityViews(): array
+    {
+        return ['all', 'content', 'identity', 'bootstrap', 'approval', 'security', ...array_keys(self::KIND_VIEWS)];
     }
 
     private function hasBoardTag(string $boardTagsJson, string $tag): bool
