@@ -12,6 +12,36 @@ Item format: [feedback item record](../specs/feedback_item_record_v1.md). Identi
 
 ## 2. Catch up on completed work
 
+Also run this reconciliation before reporting backlog counts or recommending
+priorities, even when no new site feedback is being imported. For a history-only
+run, record the audited application commit and history range; mark import and
+post-intake counts not applicable instead of implying a fresh runtime audit.
+
+On the first reconciliation of migrated records, inspect history from before
+their creation too: an imported open status may predate a fix. Search item IDs,
+source post IDs, outcome wording and linked implementation summaries. Exact
+mentions are leads, not evidence that the outcome is complete. Read later
+corrective commits and retained acceptance checks before proposing a transition.
+
+Distinguish commits reachable from main from unmerged branch work with Git
+ancestry checks. Existing branch work goes to review/merge, not a new build.
+For already implemented work, name the remaining deployment or acceptance check
+and who can perform it. Agents should perform available code and browser/API
+checks themselves; reserve maintainer requests for unavailable devices or
+explicit decisions and bundle those requests.
+
+Counts and priority reports must separate untriaged, ready/planned/in-progress,
+blocked and closed records. State explicitly that open is not a count of missing
+implementations. List blocked work by its recorded next action (review/merge,
+deployment, acceptance, or other); do not invent a blocker to fill a category.
+Do not put implemented work back in a build queue without contrary evidence.
+Use the existing item fields and generated index rather than another tracker.
+
+Keep the reconciliation as a dated file in docs/feedback/triage/, including
+proposed status changes, evidence links, unresolved matches and coverage limits.
+After review, apply accepted transitions through step 6. A dated report is a
+snapshot; the item files remain the authority for current status.
+
 Find work that landed since the previous run without its item being updated. The previous run is the newest `*_proposals.txt` in `docs/feedback/triage/` with `Status: applied`; use the commit that added it as the starting point (with no earlier run, use the window start).
 
 - Scan `git log <start>..HEAD` for `Feedback: PF-...` trailers (ignoring commits that only add a triage proposals file), and for PF IDs mentioned in commit messages or in plans changed in that range.

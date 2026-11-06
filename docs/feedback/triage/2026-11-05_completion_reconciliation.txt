@@ -1,0 +1,1303 @@
+Title: Completion reconciliation and priority correction
+Status: awaiting review
+Intake-Date: 2026-11-05
+Runtime-Verification: none
+Import-Window: not applicable; history-only review
+Posts-Screened: not applicable
+Item-Changes: none; proposed transitions require review
+
+Priority correction:
+Withdraw the earlier build-first ranking. Open records include existing implementations awaiting review, merge, deployment or acceptance. A count of unresolved records is not a count of missing implementations.
+
+Reviewed findings and proposals:
+PF-20261104-B21: Already blocked / locally-verified. 1220a499 merged by 058b2c6b removes reserved image space on compose pages. 13-theme checks recorded in docs/plans/ui_copy_audit_checklist.md. No status change; next verify live outcome, not rebuild.
+Compose keyboard fit: 08173dfc merged body/Post ordering and phone sizing. docs/plans/compose_keyboard_fit/compose_keyboard_fit_step4_implementation_summary.md records 39/39 Chromium fit cases and pending physical iPhone acceptance. Implemented, not an unstarted fix. Theme chrome and keyboard docking remain separate.
+PF-20261104-B02: Keep untriaged / unknown until the initial-load Sticker/Arena tab-bar condition is replayed. Related compose commits do not prove this distinct condition fixed.
+PF-20261104-B11: 7eaff338, merged by fbaf62fd, filters draft storage events. Item notes already report deployment and zero per-keystroke requests, but headers say untriaged/unknown. Proposed blocked / deployed with reported-not-independently-replayed qualifier. Next verify multi-tab behavior; do not rebuild first.
+PF-20261030-F31: e230c168 adds the single-request API, merged by 3a21fab6. docs/plans/single_request_posting/single_request_posting_step4_implementation_summary.md records eight locally complete stages and pending release verification. Proposed blocked / locally-verified. Append later approval/implementation evidence to correct the historical unapproved wording; next release acceptance, not endpoint design.
+PF-20261030-B03: 0e7737c8, 302b56e3 and cac2cf12 are on origin/fix/duplicate-post-submissions, not audited main. Branch review findings identify recovery and permanent-ID decisions pending. Candidate blocked / locally-verified with unmerged-branch limitation, subject to branch review. Next review existing work, not start again. See docs/plans/duplicate_post_submissions/duplicate_post_submissions_review_findings.md on that branch.
+PF-20261030-F58: Exact replay for create_signed_post does not complete legacy prepared-finalize retry. Keep separate; do not close based on the new endpoint.
+PF-20261021-F01: Already blocked / locally-verified with device/deployment next action. No new implementation proposed.
+PF-20261104-F27, PF-20261104-F49, PF-20261104-F66, PF-20261104-F78: Already blocked / locally-verified; main contains tagged work. Treat as verification/release queue rather than unstarted features.
+PF-20261030-B19: 75b8c876 addresses absent retraction targets; later simplification changes publication. Possible historical match, not closure. Reconcile original incident with current behavior before implementation.
+PF-20261104-B14: Archive reuse/busy recovery is related, but availability of the old archive during replacement needs its specific concurrency check. Do not infer closure.
+
+Working process:
+Keep existing item files as current authority. The accompanying docs/agents/feedback_triage.md change requires history reconciliation before counts/priorities, a first pass through pre-migration history, main-versus-branch checks, and separate build/review/deploy/acceptance work. Agents perform available verification themselves. Only unavailable physical-device checks and reserved decisions go to the maintainer. This does not install a scheduler or autonomous worker.
+
+Coverage limits:
+All current item headers and exact item/source mentions in all available main/remote-only commit messages screened. Named candidates above additionally compared with selected commits and implementation summaries. This is not a semantic audit of every implementation, production acceptance, or proof that unmatched tasks are unimplemented. Planning/triage mentions are retained as leads, not completion claims. Remote-only matches can include obsolete branch history; ancestry alone does not prove a useful current implementation.
+
+Application-Commit: 822d6134692883e145728db96b1a9aa62f1ca496
+Workflow counts: blocked=11, declined=3, duplicate=2, untriaged=195
+Items screened: 211
+Main exact-mention leads: 16
+Branch-only exact-mention leads: 1
+
+Inventory:
+PF-20261021-B01: Composer jumping
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-B01.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-B02: Textarea edge alignment
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-B02.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-B03: Saved draft starts collapsed
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261021-B03.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-B04: Slow reply feedback
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-B04.txt
+  main: 1dd5f66eeb docs(feedback): apply approved October 30–November 4 triage
+  branch-only: no exact mention
+
+PF-20261021-B05: QDB temporarily busy
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-B05.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F01: Reply focus
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261021-F01.txt
+  main: 0ae5798c38 docs(feedback): merge, link and decline items from the 2026-11-04 triage; 700b927128 feat(stage 3): pilot migration of PF-20261021-F01 and B03
+  branch-only: no exact mention
+
+PF-20261021-F02: Identity-ready notice
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261021-F02.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F03: Text-entry macros
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-F03.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F04: Simple recent activity
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261021-F04.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F05: QR appearance
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-F05.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F06: LCD color choices
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261021-F06.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F07: Default port fallback
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-F07.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F08: View query coverage
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-F08.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F09: Compact query buttons
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-F09.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F10: Query-dialog improvements
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-F10.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261021-F11: Easy-op discovery
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261021-F11.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B01: Copy button fails on iPhone
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B01.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B02: Pages jump vertically
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B02.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B03: Submitted draft stays in composer
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B03.txt
+  main: no exact mention
+  branch-only: cac2cf1237 Harden anonymous compose attempts and replay; 302b56e334 Reconcile anonymous thread drafts after interrupted navigation; 0e7737c868 Reset published compose form on browser Back
+
+PF-20261030-B04: Overflow button misaligned
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B04.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B05: Midnight theme display defect
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B05.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B06: Unicode in prepared-image message
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B06.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B07: Backup download missing Created-At
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B07.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B08: Wrong theme flashes before selected theme
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B08.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B14: Status bar overlays composer
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B14.txt
+  main: 1dd5f66eeb docs(feedback): apply approved October 30–November 4 triage
+  branch-only: no exact mention
+
+PF-20261030-B15: Long bookmarklet clips fail
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B15.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B16: Busy API returns HTML
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B16.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B17: Code-heavy posts get HTML 500
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B17.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B18: Content hash labeled as app version
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B18.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B19: Busy homepage from absent retraction targets
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B19.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B20: Activity loads slowly
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B20.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B21: CSS hex color becomes a label
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B21.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B22: Cluttered new-post flow on iPhone
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B22.txt
+  main: 1dd5f66eeb docs(feedback): apply approved October 30–November 4 triage
+  branch-only: no exact mention
+
+PF-20261030-B23: Inline reply editor timed out
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B23.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B24: Posting helper passphrase prompt
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B24.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B25: Posting helper wrong uncertain-write message
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B25.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-B26: llms.txt character rules mismatch
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-B26.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F02: Thread view sorted by last touched
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F02.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F03: Recent conversation view
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F03.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F04: Last-activity fields and post feed in the API
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F04.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F05: Since-last-visit and activity filters
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F05.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F06: Visible log-analysis request status
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F06.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F07: LLM exchanges under Details
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F07.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F08: Trim fingerprints in user displays
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F08.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F09: Names as claimable usernames
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F09.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F10: Inviting into a moderation account
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F10.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F11: Request approval from an agent
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F11.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F12: Calm or quiet theme
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F12.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F13: Timer utility
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F13.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F14: Search before starting a thread
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F14.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F15: Remove operator-only copy from ordinary pages
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F15.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F16: One toggle for hover reveal
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F16.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F18: Board post stays inline after submit
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F18.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F19: Clear fields discoverability
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F19.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F20: Per-page zoom workaround
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F20.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F21: De-emphasize subject, tags and overflow
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F21.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F22: Clipboard image attachment
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F22.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F23: Images adapt to theme
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F23.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F24: Screenshot to fix with minimal effort
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F24.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F25: Closed forum with user data access
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F25.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F26: Remove verbose prepared-image copy
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F26.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F27: Plain-text fastmod query
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F27.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F28: Sub-zens
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F28.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F29: Restore query buttons on System State
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F29.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F30: Retention policy
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F30.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F31: Single-request client-signed posting
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F31.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F41: Common tasks in AGENTS.md
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F41.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F42: Busy page copy without hardcoded branding
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F42.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F43: Invitations with a redemption count
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F43.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F44: Whole-thread score
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F44.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F45: "Sent from my iPhone" signature
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F45.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F46: Rounder corners in modern themes
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F46.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F47: Offer secure mode on HTTP
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F47.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F48: Title-only posts without empty body bar
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F48.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F49: Emergency shutdown control
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F49.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F50: Remove the New post button
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F50.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F51: Discoverable posting instructions
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F51.txt
+  main: 1dd5f66eeb docs(feedback): apply approved October 30–November 4 triage
+  branch-only: no exact mention
+
+PF-20261030-F52: Complete llms.txt and API posting recipes
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F52.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F53: Document record_path for finalize_profile_name
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F53.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F54: Small posting helper
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F54.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F55: Continuity for returning agents and new keys
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F55.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F56: Clear text normalization for API clients
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F56.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F57: Author and signature in get_thread
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F57.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F58: Idempotent finalize retry
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F58.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F59: Documented offline restore exercise
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F59.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F60: Audience and export scope before posting
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F60.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F61: Legible identity continuity
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F61.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F62: Signed AI-assistance declarations
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F62.txt
+  main: 1dd5f66eeb docs(feedback): apply approved October 30–November 4 triage
+  branch-only: no exact mention
+
+PF-20261030-F63: Prefilled compose links for chat-only agents
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F63.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-F64: Tiki theme
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-F64.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261030-O01: Developer and workflow research questions
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261030-O01.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261103-F01: Retitle thread by reply; visible likes and flags
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261103-F01.txt
+  main: 1dd5f66eeb docs(feedback): apply approved October 30–November 4 triage
+  branch-only: no exact mention
+
+PF-20261104-B01: Fastmod invalid response
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B01.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B02: Phone Post button under tab bar
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B02.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B03: Invite redemption appears unresponsive
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B03.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B04: Word97 title bar looks wrong
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B04.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B05: Offer stripping for clipped controls
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B05.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B06: Ambiguous You navigation selection
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B06.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B07: Browser and fetch board listings differ
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B07.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B08: Cookie notice omits preference cookie
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B08.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B09: Word97 key-removal message unformatted
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B09.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B10: Cannot collapse event section
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B10.txt
+  main: 24af22411b feat(stage 2): accept an optional last day in the composer and both thread write paths; c2aed7750b docs(calendar): repair plan references after work tracking removal
+  branch-only: no exact mention
+
+PF-20261104-B11: Composer keystrokes trigger profile requests
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B11.txt
+  main: 7eaff3382f Image upload: ignore draft autosaves in other tabs' storage events
+  branch-only: no exact mention
+
+PF-20261104-B12: Word97 action fonts and underlines
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B12.txt
+  main: f24b38f3ee Word 97: padded Like/Flag with a soft bevel instead of the black outline; 1b9d254258 Word 97: sans-serif, non-underlined Reply/Like/Flag post actions
+  branch-only: no exact mention
+
+PF-20261104-B13: Recent clock icon misaligned
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B13.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B14: Archive download unavailable while rebuilding
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B14.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B15: Unexplained page screenshots
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B15.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B16: Fastmod absent or provider error
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B16.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B17: Text-browser layout reports
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B17.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B18: Draft-empty message font
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B18.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B19: Fast scoring dependency label confusing
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B19.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B20: Second confusing page screenshot
+  Recorded: duplicate / unknown
+  Record: docs/feedback/items/PF-20261104-B20.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B21: Empty space below textarea
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261104-B21.txt
+  main: 1220a49992 fix: stop reserving image space between the text and Post on compose pages
+  branch-only: no exact mention
+
+PF-20261104-B22: Confusing image-upload temporary state
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B22.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B23: Sticker navigation wraps and selector clips
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B23.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B24: Posting preview indentation differs
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B24.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B25: Retweet clipping looks suboptimal
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B25.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B26: Discard draft resets default tags
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B26.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B27: Doc search pending feedback and speed
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B27.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B28: Retracted placeholder leaks author and time
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B28.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B29: Temporary unavailability after deploy
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B29.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B30: GPG helper previously working now fails
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B30.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B31: Deduplicate like attribution by user
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B31.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-B32: Expanded desktop reply stays offscreen
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-B32.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F01: Reload shows new content
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F01.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F02: Hide posts with expandable placeholders
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F02.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F03: Explain System State READY
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F03.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F04: Show feature-flag edit permission
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F04.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F05: Console color selector
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F05.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F06: Tweet bookmarklet captures images
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F06.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F07: Lockdown and unapproved-user messaging
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F07.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F08: Optional key-backup passphrase
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F08.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F09: Bookmarklet handles profile pages
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F09.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F10: Read back identity-specific likes
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F10.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F11: Block LLM replies by preference
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F11.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F12: Emoji reactions
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F12.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F13: Modern theme with icons
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F13.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F14: Agent retraction recipe and readback
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F14.txt
+  main: 63dd2d4182 feat(api): make retraction confirmable and documented for agents
+  branch-only: no exact mention
+
+PF-20261104-F15: You opens account and profile
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F15.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F16: Remember expanded advanced sections
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F16.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F17: Expand and copy fingerprints
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F17.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F18: Friendly localStorage browser
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F18.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F19: Local keychain and identity switching
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F19.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F20: Qualify edited Starfield image warning
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F20.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F21: Paste Starfield key images
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F21.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F22: Optional sign-in debug display
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F22.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F23: Stash draft and start blank
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F23.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F24: Clone local post to another instance
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F24.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F25: Explain unavailable image attachment
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F25.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F26: Make pending approval apparent
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F26.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F27: Discover code repository URLs
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261104-F27.txt
+  main: 9063cb80ca Move the llms.txt source code prose into prompts/; c6a454dfc7 Name the code repository in /llms.txt and the /api/ index
+  branch-only: no exact mention
+
+PF-20261104-F28: Assess Pollyanna float mode
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F28.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F29: Maybe identify removed characters
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F29.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F30: Agent text generation provenance
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F30.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F31: Audit Word97 era-appropriate UI
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F31.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F32: Recent options and details match Activity
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F32.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F33: Set username in text browsers
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F33.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F34: Use native confirmations for admin actions
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F34.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F35: Clone from instance root URL
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F35.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F36: Faster initial code clone
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F36.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F37: Local HTTP log readability
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F37.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F38: Shorter local HTTP log
+  Recorded: duplicate / unknown
+  Record: docs/feedback/items/PF-20261104-F38.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F39: Video demos
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F39.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F40: Thread summary field brainstorm
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F40.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F41: Understandable deployment decisions
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F41.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F42: Activity records become discussion items
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F42.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F43: Accurate root-approval reason
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F43.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F44: Use currently empty page space
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F44.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F45: Self-tags can replace Fastmod work
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F45.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F46: Readable commit dialog
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F46.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F47: Explain JavaScript and CSS source
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F47.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F48: Word97 Like and Flag bevel spacing
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F48.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F49: Deploy shows commits and queue delay
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261104-F49.txt
+  main: 29895d7dde Deploy page: show incoming commits and queued wait
+  branch-only: no exact mention
+
+PF-20261104-F50: Import selected nested HN discussion
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F50.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F51: Feature-request catalog and scores
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F51.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F52: Support features with encrypted API keys
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F52.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F53: Authenticated visitors graph series
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F53.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F54: Shared Tools navigation on tool pages
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F54.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F55: Expandable System State sizes
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F55.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F56: Commits since schema change metric
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F56.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F57: Prominent administrator sign-in state
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F57.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F58: Dismiss pending submission recovery
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F58.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F59: Easy selector for reused tags
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F59.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F60: Board and Recent image thumbnails
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F60.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F61: Tags in title field workflow
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F61.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F62: Claimable clipped-author identities
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F62.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F63: Global full-text search flag
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F63.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F64: Actionable network-error message
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F64.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F65: Prioritize document title matches
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F65.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F66: Apply Word97 repairs to Chicago
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261104-F66.txt
+  main: defa308f47 Fix Chicago post action styling
+  branch-only: no exact mention
+
+PF-20261104-F67: Readable retraction placeholders
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F67.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F68: Ctrl+Enter submits from tags
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F68.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F69: Scannable Recent summaries
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F69.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F70: Promote items from Recent
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F70.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F71: Optimistic posting UI
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F71.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F72: Identities tab on user page
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F72.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F73: Easier styling of individual pages
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F73.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F74: Simplify theme markup using CSS
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F74.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F75: Hide maintenance tasks from ordinary readers
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F75.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F76: Ignore leading hashtag-only title line
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F76.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F77: Align and copy pictured values
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-F77.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-F78: Clickable hashtags in post bodies
+  Recorded: blocked / locally-verified
+  Record: docs/feedback/items/PF-20261104-F78.txt
+  main: 4aab3169e7 Record hashtag link integration verification; 33c2b1c890 Add body hashtag link flag and always link post labels; e4fa4d32d4 Link hashtags in post bodies to tag pages
+  branch-only: no exact mention
+
+PF-20261104-O01: Explain identity record and PGP material
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-O01.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-O02: Response to a posted private key
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-O02.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-O03: Fastmod debugging runbook
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-O03.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-O04: CLI flag change with activity record
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-O04.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-O05: Polish discussion images
+  Recorded: declined / unknown
+  Record: docs/feedback/items/PF-20261104-O05.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-O06: Four-column code-review mockup
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-O06.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-O07: Polish supplied image
+  Recorded: declined / unknown
+  Record: docs/feedback/items/PF-20261104-O07.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-O08: Clean test baseline before development
+  Recorded: untriaged / unknown
+  Record: docs/feedback/items/PF-20261104-O08.txt
+  main: no exact mention
+  branch-only: no exact mention
+
+PF-20261104-O09: Add article images to gallery
+  Recorded: declined / unknown
+  Record: docs/feedback/items/PF-20261104-O09.txt
+  main: no exact mention
+  branch-only: no exact mention
+
