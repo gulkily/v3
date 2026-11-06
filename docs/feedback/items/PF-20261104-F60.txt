@@ -18,3 +18,4 @@ Retain explicit board versus Recent surfaces in completion checks; title-only re
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
 2026-11-05: built on feat/board-thumbnails (board list rows and Recent); awaiting review and deployment.
 2026-11-05: follow-up adds independent List thumbnails flag (default on, requires image attachments); runtime verification blocked by missing PHP in the implementation workspace; review/deployment pending.
+2026-11-06: board rows now use the thread's first stored image (root first, then replies in thread order, hidden replies skipped); Recent unchanged. On feat/thread-first-image-thumbnail, awaiting review and deployment.

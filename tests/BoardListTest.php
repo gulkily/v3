@@ -168,6 +168,58 @@ final class BoardListTest
         }
     }
 
+    public function testBoardRowUsesTheThreadsFirstImageEvenFromAReply(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $imageRoot = $repositoryRoot . '-images';
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $old = getenv($flag);
+        $thumbnailFlag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED;
+        $oldThumbnail = getenv($thumbnailFlag);
+        try {
+            $store = new \ForumRewrite\Images\ImageStore($repositoryRoot);
+            $references = [];
+            foreach (['first' => [10, 20, 200], 'second' => [10, 20, 30]] as $name => [$red, $green, $blue]) {
+                $source = $repositoryRoot . '-' . $name . '.png';
+                $canvas = imagecreatetruecolor(2, 2);
+                imagefill($canvas, 0, 0, imagecolorallocate($canvas, $red, $green, $blue));
+                imagepng($canvas, $source);
+                $references[$name] = \ForumRewrite\Images\ImageStore::inspect($source, '');
+                $store->put($source, $references[$name]);
+            }
+            $missing = ['sha256' => str_repeat('b', 64), 'type' => 'png', 'bytes' => 10, 'width' => 20, 'height' => 30, 'description' => ''];
+            $posts = [
+                'text-root' => ["Subject: text-root", 'Just words.', '00'],
+                'reply-missing' => ["Thread-ID: text-root\nParent-ID: text-root", \ForumRewrite\Images\ImageReference::line($missing), '01'],
+                'reply-first' => ["Thread-ID: text-root\nParent-ID: text-root", \ForumRewrite\Images\ImageReference::line($references['first']), '02'],
+                'reply-second' => ["Thread-ID: text-root\nParent-ID: reply-first", \ForumRewrite\Images\ImageReference::line($references['second']), '03'],
+                'image-root' => ["Subject: image-root", \ForumRewrite\Images\ImageReference::line($references['second']), '04'],
+                'image-reply' => ["Thread-ID: image-root\nParent-ID: image-root", \ForumRewrite\Images\ImageReference::line($references['first']), '05'],
+            ];
+            foreach ($posts as $postId => [$headers, $body, $minute]) {
+                file_put_contents($repositoryRoot . '/records/posts/' . $postId . '.txt', "Post-ID: {$postId}\nCreated-At: 2026-07-01T00:{$minute}:00Z\nBoard-Tags: general\n{$headers}\n\n{$body}\n");
+            }
+            $this->runCommand($repositoryRoot, 'git add .');
+            $this->runCommand($repositoryRoot, 'git commit -m "Add threads with images in replies"');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            putenv($flag . '=true');
+            putenv($thumbnailFlag . '=true');
+            $thumb = static fn (string $thread, array $reference): string => '<a class="thread-row__thumb" href="/threads/' . $thread . '" tabindex="-1" aria-hidden="true"><img src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '"';
+
+            $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+            assertStringContains($thumb('text-root', $references['first']), $board, 'A text-only root shows the first stored image from its replies.');
+            assertStringContains($thumb('image-root', $references['second']), $board, 'A root with its own image keeps it.');
+            assertSame(2, substr_count($board, 'class="thread-row__thumb"'));
+
+            $recent = $this->markup($this->render($application, '/recent/'));
+            assertStringNotContains('href="/threads/text-root" tabindex="-1"', $recent, 'Recent rows still show only their own post\'s image.');
+        } finally {
+            putenv($oldThumbnail === false ? $thumbnailFlag : $thumbnailFlag . '=' . $oldThumbnail);
+            putenv($old === false ? $flag : $flag . '=' . $old);
+            exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($repositoryRoot . '-first.png') . ' ' . escapeshellarg($repositoryRoot . '-second.png'));
+        }
+    }
+
     public function testLargeImagesGetSmallCachedThumbnailCopies(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
