@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/key_vocabulary
+
+2026-11-06T20:58:07Z — standing P2 enrollment; [canonical Step 1 checkpoint](./key_vocabulary_step1_solution_assessment.md#study-checkpoint). No parent. Scope v1/A: one visible noun, "key", for the per-key profile page, the user page's list and the Account page; You menu opens with the username and this browser's key, filled before paint; key page links to its user page. Routes, API names, the navbar rethink and the user-page keys tab are out of scope. Baseline `a0fa5b9b10af9f624aa52fed4c59c7bb31352982`; R1 hashes not re-verified; extended/debug enabled. Pristine intake missing because template and nav inspection preceded rating; Step 1 projection 0.50, alternatives B 0.20, C 0.50, non-additive, single exposed Claude rater. Work item thread-20261106164113-8b520a73. Pushed before approval so the maintainer can review it; no approval, implementation or accepted-count change.
+
 ## Cycle v3/instance_image_import
 
 2026-11-06T16:06:06Z — v3/instance_image_import Step 4 local closeout: Step 3 explicitly approved; branch `claude/compassionate-turing-d20wyy`, planning `fe504ce` and five stage commits. [Summary/closeout](./instance_image_import/instance_image_import_step4_implementation_summary.md#closeout-and-study-outcome). Same v1/A/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.60 at entry, no revision; retrospective scope assessment 0.55. Stage originals 0.08/0.18/0.12/0.12/0.10; retrospectives 0.06/0.16/0.10/0.12/0.10; non-additive. Smoke plus changed tests 476/476; one baseline docs-page failure reproduced at `6efe5ba`; real two-instance import and browser check passed; full suite not run. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.
