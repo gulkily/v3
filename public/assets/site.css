@@ -1040,7 +1040,7 @@ pre {
 /* A row with an attached image: the thumbnail fills a narrow first column as
    tall as the row; the image never adds height of its own. */
 .thread-row--thumb {
-  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
 }
 
 .thread-row--thumb > .thread-row__title,
@@ -1057,20 +1057,22 @@ pre {
 .thread-row__thumb {
   grid-column: 1;
   grid-row: 1 / span 4;
+  align-self: center;
   position: relative;
   display: block;
-  min-height: 2.75rem;
+  aspect-ratio: 1;
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--panel);
 }
 
+/* Fill the square and crop the edges: a list thumbnail is for recognising the image. */
 .thread-row__thumb img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .chip {
