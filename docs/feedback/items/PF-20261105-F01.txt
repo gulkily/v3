@@ -16,3 +16,4 @@ Notes:
 2026-11-05: built on feat/image_gallery (Gallery page at /gallery/, resized previews, Image gallery flag); awaiting review and deployment.
 2026-11-06: rebased onto main; gallery previews now reuse ThumbnailStore's new tile size instead of a separate preview cache.
 2026-11-06: tile previews measured at up to 306 KB live (truecolor PNG); thumbnails now encode as WebP (about 30 KB for the same tiles), palette PNG fallback without WebP; on fix/smaller-thumbnails, awaiting review and deployment.
+2026-11-06: Word97 theme styles the gallery as a figure table on a white page (fixed 4:3 cropped thumbnails, trial; one variable switches to letterboxed); on style/word97-gallery, awaiting review.
