@@ -612,14 +612,8 @@ final class RouteServices
         return $this->renderer->renderStandalonePage($pageTemplate, $pageData, $title, $bodyClass, $scriptPaths, $additionalCssPaths);
     }
 
-    public function renderMessagePage(
-        string $title,
-        string $heading,
-        string $message,
-        string $activeSection,
-        string $actionUrl = '',
-        string $actionLabel = '',
-    ): string {
+    public function renderMessagePage(string $title, string $heading, string $message, string $activeSection): string
+    {
         // A message page is the final response for an error or other
         // server-decided state. In particular, resuming an identity from a
         // 404 would navigate straight back to the same missing URL and loop.
@@ -628,8 +622,6 @@ final class RouteServices
             [
                 'heading' => $heading,
                 'message' => $message,
-                'actionUrl' => $actionUrl,
-                'actionLabel' => $actionLabel,
             ],
             $title,
             $activeSection,
@@ -643,18 +635,36 @@ final class RouteServices
         return $this->renderer->renderFragment($partialPath, $data);
     }
 
-    public function notFound(): void
+    public function notFound(string $requestPath = ''): void
     {
-        $this->sendHtml(
-            $this->renderMessagePage(
-                'Not Found',
-                'Not Found',
-                'There is no page at this address. The link may be mistyped, or what was here has moved.',
-                'none',
-                '/',
-                'Back to the board'
-            ),
-            404
+        $this->sendHtml($this->renderNotFoundPage($requestPath), 404);
+    }
+
+    public function renderNotFoundPage(string $requestPath): string
+    {
+        $suggestions = ['threads' => [], 'labels' => []];
+        // Private instances must not show thread titles to signed-out
+        // visitors, and docs pages may not touch the read model at all.
+        if ($this->readModelAccessAllowed && !$this->approvedMembersOnlyEnabled) {
+            try {
+                $suggestions = NotFoundSuggestions::fromReadModel($this->pdo());
+            } catch (\Throwable) {
+                // A missing or busy read model still gets a plain 404.
+            }
+        }
+
+        // Like renderMessagePage: resuming an identity from a 404 would
+        // navigate straight back to the same missing URL and loop.
+        return $this->renderPageTemplate(
+            'not_found.php',
+            [
+                'recentThreads' => $suggestions['threads'],
+                'labels' => $suggestions['labels'],
+                'reportUrl' => NotFoundSuggestions::reportUrl($requestPath, (string) ($_SERVER['HTTP_REFERER'] ?? '')),
+            ],
+            'Not Found',
+            'none',
+            allowPublicAuthenticationResume: false,
         );
     }
 

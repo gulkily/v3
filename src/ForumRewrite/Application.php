@@ -88,6 +88,7 @@ final class Application
     private ?\ForumRewrite\Session\ViewerSessions $viewerSessions = null;
     private ?string $appVersion = null;
     private bool $docsPage = false;
+    private string $requestPath = '/';
     private ?FeatureFlagEvaluator $featureFlags = null;
     private ?RouteServices $routeServices = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
@@ -133,6 +134,7 @@ final class Application
     {
         if (\ForumRewrite\Http\ClientDownload::serve($method, $requestUri, $this->projectRoot . "/public")) return;
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        $this->requestPath = $path;
         $docsPage = $path === '/docs' || str_starts_with($path, '/docs/');
         if ($docsPage !== $this->docsPage) {
             $this->routeServices = null;
@@ -784,7 +786,7 @@ final class Application
 
         if ($path === '/gallery/' || $path === '/gallery') {
             if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)) {
-                $this->routeServices()->notFound();
+                $this->notFound();
                 return;
             }
             $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['position'] ?? null), 200);
@@ -2700,7 +2702,7 @@ final class Application
 
     private function notFound(): void
     {
-        $this->routeServices()->notFound();
+        $this->routeServices()->notFound($this->requestPath);
     }
 
     private function sendQdbExperienceResult(QdbExperienceRouteResult $result): void

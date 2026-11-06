@@ -753,6 +753,13 @@ PHP;
             $notFound = $this->render($application, '/missing-route');
 
             assertStringContains('<h1>Not Found</h1>', $notFound);
+            // Something else to read: recent threads, labels, and a prefilled report.
+            assertStringContains('<a href="/threads/root-001">Hello world</a>', $notFound);
+            assertStringContains('<a class="chip" href="/tags/meta">#meta</a>', $notFound);
+            assertStringNotContains('href="/tags/general"', $notFound);
+            assertStringContains('/compose/thread?subject=Broken+link%3A+%2Fmissing-route+%23meta+%23bug', $notFound);
+            $compose = $this->render($application, '/compose/thread?subject=' . rawurlencode('Broken link: /missing-route #meta #bug'));
+            assertStringContains('Broken link: /missing-route #meta #bug', $compose);
             assertStringNotContains('data-public-auth-resume="true"', $notFound);
             assertStringNotContains('private_site_auth.', $notFound);
         } finally {
@@ -999,7 +1006,11 @@ PHP;
             assertStringContains('<h1>Reconnecting</h1>', $this->render($application, '/backup/'));
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
             assertStringContains('Identity not found.', $this->renderMethod($application, 'POST', '/api/prepare_invitation_redemption'));
-            assertStringContains('There is no page at this address.', $this->render($application, '/asdf'));
+            $privateNotFound = $this->render($application, '/asdf');
+            assertStringContains('There is no page at this address.', $privateNotFound);
+            // Thread titles stay private on members-only instances.
+            assertStringNotContains('data-not-found-recent', $privateNotFound);
+            assertStringNotContains('Hello world', $privateNotFound);
         } finally {
             TestViewerSession::reset();
             @unlink($databasePath);
