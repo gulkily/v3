@@ -72,6 +72,11 @@ final class GalleryPageTest
             $cache = $store->root . '-thumbs/' . ThumbnailStore::filename($wide, 'tile');
             assertSame($bytes, (string) file_get_contents($cache));
             assertSame(2, count($store->inventory()), 'Previews stay out of the image store, so its inventory still validates.');
+            if (ThumbnailStore::format() === 'webp') {
+                assertSame(IMAGETYPE_WEBP, $size[2], 'Previews are WebP, far smaller than truecolor PNG.');
+                $legacy = getimagesizefromstring($this->render($application, '/images/thumbs/' . $wide['sha256'] . '-tile.png'));
+                assertSame([480, 240, IMAGETYPE_WEBP], [$legacy[0], $legacy[1], $legacy[2]], 'A pre-WebP preview URL still resolves.');
+            }
 
             assertSame('/images/' . ImageReference::filename($small), ThumbnailStore::url($small, 'tile'), 'A small image is linked as is.');
 
