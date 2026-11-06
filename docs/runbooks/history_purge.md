@@ -51,8 +51,11 @@ would proceed; 1 means it is blocked and the output says why:
 - uncommitted changes in the working tree: commit or discard them;
 - an interrupted instance import: finish it with `./v3 import-instance --resume`;
 - legacy posts without `Created-At` and without a `records/post-timestamps/`
-  record: bake their timestamps first, because the purge preserves author dates
-  but a later history change might not;
+  record: bake their timestamps first with `./v3 bake-timestamps preview`, then
+  `./v3 bake-timestamps run`, because the purge preserves author dates but a
+  later history change might not. Run writes the dates rebuild already shows and
+  commits only `records/post-timestamps/`; a post Git cannot date is listed and
+  left unbaked, so date it by hand before purging;
 - an earlier purge that did not finish (see Recovery);
 - nothing to purge.
 

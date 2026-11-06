@@ -51,6 +51,7 @@ $testFiles = [
     __DIR__ . '/AcceptedRetractionTest.php',
     __DIR__ . '/CommitMapTest.php',
     __DIR__ . '/HistoryPurgePlannerTest.php',
+    __DIR__ . '/LegacyTimestampBakeTest.php',
     __DIR__ . '/HistoryPurgeTest.php',
     __DIR__ . '/SourceRouteCommitMapTest.php',
     __DIR__ . '/PurgeHistoryCommandTest.php',
