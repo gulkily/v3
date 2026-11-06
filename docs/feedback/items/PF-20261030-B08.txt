@@ -1,20 +1,25 @@
 ID: PF-20261030-B08
 Title: Wrong theme flashes before selected theme
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-10-30
-Evidence: unknown
+Evidence: locally-verified
 Aliases: 2026-10-30/B08
 
 Request:
 Default/light theme flashes before selected theme on pending access page and reloads, including iPhone. Identify regression cause and prevention test. Critical-CSS explanation is an agent hypothesis.
+
+Done when:
+In Auto/System theme with the OS in dark mode, a reload on iPhone shows no white frame before the page settles.
 
 Sources:
 - https://zenmemes.com/posts/thread-20261021044507-f2bc9c11
 - https://zenmemes.com/posts/thread-20261027143138-9b45e7f8
 - https://zenmemes.com/posts/thread-20261027212647-bbae87f3
 - https://zenmemes.com/posts/reply-20261027145155-70ae8c9f
+- https://zenmemes.com/posts/reply-20261106062330-51cfdbb7
 
 Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B08; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-06: Cause found. The default theme is Auto/System, which sets no data-theme, so its dark colors came only from the @media (prefers-color-scheme: dark) block in site.css. That block sat after /* critical-css-end */, so it shipped in the async site.css, and the inlined light defaults painted first. Moved the block into the critical section; ThemeRegistryTest::testSystemDarkColorsAreInTheCriticalBlock guards it (fails on the old file). Blocked on deployment and an iPhone check. Explicit dark/other themes are not covered by this change.
