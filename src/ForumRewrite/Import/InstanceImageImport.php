@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Import;
 
+use Closure;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Images\{ImageBackup, ImageReference, ImageStore, ImageZipReader};
 use ForumRewrite\Support\ExecutionLock;
 use RuntimeException;
@@ -26,6 +28,51 @@ final class InstanceImageImport
     public function references(array $extra = []): array
     {
         return ImageBackup::references($this->repositoryRoot) + $extra;
+    }
+
+    /** References from source posts that a content plan would import (for previews). */
+    public static function plannedReferences(string $sourceRoot, array $entries): array
+    {
+        $records = new CanonicalRecordRepository($sourceRoot, requireLegacyTimestampMetadata: true, signatureKeyFallbackRoot: $sourceRoot);
+        $references = [];
+        foreach ($entries as $path => $entry) {
+            if (($entry['state'] ?? '') !== 'import' || !str_starts_with($path, 'records/posts/') || !str_ends_with($path, '.txt')) { continue; }
+            try { $reference = ImageReference::fromBody($records->loadPost($path)->body); }
+            catch (RuntimeException) { continue; }
+            if ($reference !== null) { $references[ImageReference::filename($reference)] = $reference; }
+        }
+        return $references;
+    }
+
+    /**
+     * Download the source's image ZIP only when some referenced image is missing,
+     * then copy. A failure leaves text untouched and reports every missing image.
+     *
+     * @return array{status:string, added:int, present:int, missing:int, reasons:array<string,int>}
+     */
+    public function fromSource(string $sourceUrl, string $workspace, array $references, bool $preview, ?Closure $progress = null): array
+    {
+        $missing = $this->missing($references);
+        if ($missing !== []) {
+            $zip = $workspace . '/images.zip';
+            try {
+                if ($progress !== null) { $progress('Downloading image backup for ' . count($missing) . ' missing images...'); }
+                (new InstanceArchiveDownloader(progress: $progress))->download($sourceUrl, $zip, InstanceArchiveDownloader::IMAGES_PATH);
+                $result = $this->run($zip, $references, $preview);
+            } catch (RuntimeException $error) {
+                $result = ['added' => 0, 'present' => count($references) - count($missing), 'missing' => count($missing), 'reasons' => [self::failure($error) => count($missing)]];
+            } finally {
+                if (is_file($zip)) { unlink($zip); }
+            }
+        } else {
+            $result = ['added' => 0, 'present' => count($references), 'missing' => 0, 'reasons' => []];
+        }
+        return ['status' => $result['missing'] === 0 ? 'complete' : 'partial'] + $result;
+    }
+
+    private static function failure(RuntimeException $error): string
+    {
+        return $error->getMessage();
     }
 
     /** @return array<string, array> references whose image the store lacks, keyed by filename */

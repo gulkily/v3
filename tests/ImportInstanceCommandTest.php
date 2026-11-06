@@ -117,16 +117,22 @@ final class ImportInstanceCommandTest
         }
         $command = [__DIR__ . '/../v3', 'import-instance', $server->url,
             '--repository-root=' . $target, '--database-path=' . $w->root . '/target-cache/index.sqlite3', '--static-html-root=' . $w->root . '/target-static'];
+        $targetStore = new \ForumRewrite\Images\ImageStore($target);
         [$code, $output] = $w->command([...$command, '--dry-run']);
         assertSame(0, $code, $output);
         assertStringContains('Preview result: complete', $output);
+        assertStringContains('Images: complete', $output);
+        assertStringContains('images_to_add: 1', $output);
         assertTrue(!is_file($target . '/records/posts/legacy-text.txt'));
+        assertSame(false, $targetStore->isPresent($ref));
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
         assertStringNotContains('Rendering ', $output);
         assertStringNotContains('Fingerprinting and copying assets', $output);
-        assertStringContains('Image files are separate', $output);
+        assertStringContains('Images: complete', $output);
+        assertStringContains('images_added: 1', $output);
+        assertSame($ref, \ForumRewrite\Images\ImageStore::inspect($targetStore->resolve($ref), 'Legacy pixel'));
         $pdo = new PDO('sqlite:' . $w->root . '/target-cache/index.sqlite3');
         foreach ($original as $id => $bytes) {
             assertSame($bytes, file_get_contents($source . '/records/posts/' . $id . '.txt'));
@@ -144,12 +150,16 @@ final class ImportInstanceCommandTest
             'FORUM_STATIC_HTML_ROOT' => $w->root . '/target-static',
             'FORUM_TASK_QUEUE_DATABASE_PATH' => $w->root . '/target-private/tasks.sqlite3',
             'FORUM_APPROVED_MEMBERS_ONLY' => 'false',
+            'FORUM_IMAGE_CONTENT_ENABLED' => 'true',
         ]);
         assertStringContains('Legacy plain body', file_get_contents($targetServer->url . '/threads/legacy-text'));
+        assertSame(file_get_contents($image), file_get_contents($targetServer->url . '/images/' . \ForumRewrite\Images\ImageReference::filename($ref)));
         $head = $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1];
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('import: 0', $output);
+        assertStringContains('images_present: 1', $output);
+        assertStringNotContains('Downloading image backup', $output);
         assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
         assertSame('', trim($w->command(['git', '-C', $source, 'status', '--porcelain'])[1]));
 

@@ -56,6 +56,28 @@ Branch: `claude/compassionate-turing-d20wyy`, the session's designated branch. P
 
 *— Claude · 2026-11-06 UTC*
 
+## Stage 3 - Run the copy from import-instance
+
+**Original estimate: 0.12**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `scripts/import_instance.php` runs the image step after the text import. A dry run also counts images from source posts the plan would import (`InstanceImageImport::plannedReferences`).
+  - `InstanceImageImport::fromSource` downloads the image ZIP only when an image is missing. A download or copy failure reports every missing image with its reason and leaves text untouched.
+  - Report lines: `Images: complete|partial`, then a reason line per cause, then `images_added` (`images_to_add` in a dry run), `images_present` and `images_missing`. Missing images give exit 2.
+  - An error while listing references reports `Images: partial` with "Rerun the same command to retry"; it no longer aborts after text is in.
+  - Removed the "Image files are separate and are not transferred" notice from `ContentImportRunner.php` and the command. `import-repository` (local archive import) keeps its own notice, because it has no source to fetch from.
+- Verification:
+  - Passed: `./v3 test ImportInstanceCommandTest InstanceImageImportTest`, 13/13. The real-source legacy test now checks that the dry run counts 1 image to add and stores nothing, that the import stores the image and the destination serves it at `/images/<file>` with image content on, and that a repeat reports it present without downloading the ZIP.
+  - Passed: `./v3 test ContentImportPlannerTest ContentImportRecoveryTest ImportDeadlineRecoveryTest ImportedContentPublicationTest`, 22/22.
+  - Passed: `./v3 test --smoke`, 430/430.
+  - Full suite not run.
+- Notes: the time limit still covers the whole command. Images start only after text is committed, so a timeout leaves only images to retry; Stage 4 tests this.
+- Estimate details: original scope unchanged; no revisions.
+
+*— Claude · 2026-11-06 UTC*
+
 ## Enhancement Requests
 
 - Incremental sync (2026-11-06): separate work, recorded in [Step 2](./instance_image_import_step2_feature_description.md#enhancement-requests) and the [backlog](../backlog/incremental_instance_sync.md).
