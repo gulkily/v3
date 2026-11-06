@@ -341,6 +341,36 @@ ROUTER);
         assertTrue(!is_file($w->root . '/cache/index.sqlite3'));
     }
 
+    public function testImageDownloadUsesItsOwnPathAndReportsStatus(): void
+    {
+        $w = new ImportTestWorkspace();
+        $w->put($w->root . '/router.php', <<<'ROUTER'
+<?php
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if ($path === '/ok/downloads/images.zip') { header('Content-Type: application/zip'); echo 'PKzip'; exit; }
+if ($path === '/off/downloads/images.zip') { http_response_code(403); header('Content-Type: text/plain'); echo "Backup unavailable.\n"; exit; }
+http_response_code(404); echo 'not found';
+ROUTER);
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $downloader = new InstanceArchiveDownloader(timeoutSeconds: 5);
+        assertSame(5, $downloader->download($server->url . '/ok', $w->root . '/ok.zip', InstanceArchiveDownloader::IMAGES_PATH));
+        assertSame('PKzip', file_get_contents($w->root . '/ok.zip'));
+        foreach (['/off' => 403, '/old' => 404] as $prefix => $status) {
+            try {
+                $downloader->download($server->url . $prefix, $w->root . '/failed.zip', InstanceArchiveDownloader::IMAGES_PATH);
+                throw new RuntimeException('Expected image download rejection');
+            } catch (RuntimeException $error) {
+                assertSame($status, $error->getCode());
+                assertStringContains('Source image download returned HTTP ' . $status, $error->getMessage());
+                assertStringContains('Check the source image backup and retry.', $error->getMessage());
+            }
+            assertTrue(!is_file($w->root . '/failed.zip'));
+        }
+        $failed = false;
+        try { $downloader->download($server->url, $w->root . '/other', '/downloads/read_model.sqlite3'); } catch (RuntimeException) { $failed = true; }
+        assertTrue($failed);
+    }
+
     public function testDownloadFailuresAreBoundedAndLeaveNoFile(): void
     {
         $w = new ImportTestWorkspace();

@@ -9,6 +9,9 @@ use RuntimeException;
 
 final class InstanceArchiveDownloader
 {
+    public const REPOSITORY_PATH = '/downloads/repository.tar.gz';
+    public const IMAGES_PATH = '/downloads/images.zip';
+
     public function __construct(
         private readonly int $maxBytes = 268435456,
         private readonly int $timeoutSeconds = 120,
@@ -27,13 +30,18 @@ final class InstanceArchiveDownloader
         return $parts;
     }
 
-    public function download(string $instanceUrl, string $destination): int
+    /** HTTP failures carry the response status as the exception code. */
+    public function download(string $instanceUrl, string $destination, string $path = self::REPOSITORY_PATH): int
     {
+        if (!in_array($path, [self::REPOSITORY_PATH, self::IMAGES_PATH], true)) {
+            throw new RuntimeException('Unsupported source download path.');
+        }
+        $images = $path === self::IMAGES_PATH;
         $parts = self::validateUrl($instanceUrl);
         if (isset($parts['query'])) {
             throw new RuntimeException('Instance URL must not contain a query.');
         }
-        $url = rtrim($instanceUrl, '/') . '/downloads/repository.tar.gz';
+        $url = rtrim($instanceUrl, '/') . $path;
         if ($this->progress !== null) {
             ($this->progress)('Archive URL: ' . $url);
         }
@@ -49,7 +57,7 @@ final class InstanceArchiveDownloader
                 }
                 $context = stream_context_create([
                     'http' => ['method' => 'GET', 'follow_location' => 0, 'ignore_errors' => true, 'timeout' => min(20, $remaining),
-                        'header' => "Accept: application/gzip\r\nAccept-Encoding: identity\r\nConnection: close\r\nUser-Agent: ForumInstanceImport/1\r\n"],
+                        'header' => 'Accept: ' . ($images ? 'application/zip' : 'application/gzip') . "\r\nAccept-Encoding: identity\r\nConnection: close\r\nUser-Agent: ForumInstanceImport/1\r\n"],
                     'ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false],
                 ]);
                 $input = @fopen($url, 'rb', false, $context);
@@ -84,9 +92,9 @@ final class InstanceArchiveDownloader
                     }
                     if ($status !== 200) {
                         $detail = $this->errorDetail($input, $values, $deadline);
-                        throw new RuntimeException('Source archive returned HTTP ' . $status . '.'
+                        throw new RuntimeException(($images ? 'Source image download' : 'Source archive') . ' returned HTTP ' . $status . '.'
                             . ($detail === '' ? '' : ' Source error: ' . $detail)
-                            . ' Check the source repository download and retry.');
+                            . ($images ? ' Check the source image backup and retry.' : ' Check the source repository download and retry.'), $status);
                     }
                     if (isset($values['content-encoding']) && strtolower($values['content-encoding']) !== 'identity') {
                         throw new RuntimeException('Unsupported archive transport encoding.');
