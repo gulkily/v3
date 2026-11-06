@@ -622,7 +622,8 @@ controlled operator workflow.
 
 Downloads the source's public repository archive, merges supported public forum
 content and compatible Fastmod scores automatically while preserving destination
-settings/approval authority, refreshes the
+settings/approval authority, copies the images that destination posts reference
+and the destination lacks from the source's image backup, refreshes the
 read model and public offline data, and withdraws stale static HTML. Import and
 `--resume` never render pages or fingerprint/copy presentation assets. PHP serves
 imported content; run `./v3 build-static` separately when static output is needed.
@@ -657,7 +658,8 @@ when the selected destination has an interrupted-import journal. Supported legac
 posts do not need their original bytes rewritten for source backups.
 
 Exit codes are 0 for complete supported-content results, 2 for partial results
-requiring review, and 1 for failures. Reports group exclusions and rejected
+requiring review (including images that could not be copied), and 1 for failures.
+Rerun the same command to retry missing images. Reports group exclusions and rejected
 records; `--verbose` includes per-file details. `--resume` recovers a saved interrupted run without another download;
 use the original destination options and site profile. The destination must be
 initialized with a clean Git checkout. Scheduling, authenticated sources, and

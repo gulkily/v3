@@ -101,6 +101,38 @@ Branch: `claude/compassionate-turing-d20wyy`, the session's designated branch. P
 
 *— Claude · 2026-11-06 UTC*
 
+## Stage 5 - Docs and end-to-end check
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `docs/runbooks/instance_content_import.md`: new Images section with behavior, report lines, each reason and its fix, and retry by rerun or resume. The deployment example now checks `images_missing: 0` instead of saying images are a separate transfer.
+  - `docs/reference/v3_cli.md`: the command description and exit codes mention the image copy and rerun.
+  - `docs/runbooks/image_backup.md`: points operators with an existing store to `import-instance` instead of restore.
+  - `import-instance --help`: two lines on the image copy and retry.
+- Verification:
+  - Passed, end to end: two local instances on `php -S`, built from the `parity_minimal_v1` fixture. The source had one new post with a 40×20 PNG in its store. The dry run reported `images_to_add: 1` and created no image store. The import exited 0 with `images_added: 1`, and the file appeared in `dest-images`. A repeat exited 0 with `import: 0`, `images_present: 1` and no image download. Chromium opened `/threads/e2e-image` on the destination with image content on; the image loaded at 40×20 and showed in the screenshot.
+  - Passed: `./v3 test --smoke` plus `ImportInstanceCommandTest InstanceImageImportTest ImageZipRestoreTest ImageZipBackupTest ImageContentTest ContentImportPlannerTest ContentImportRecoveryTest ImportDeadlineRecoveryTest ImportedContentPublicationTest MarkdownListStructureTest PlatformDocsCatalogTest`, 476/476.
+  - Failed, baseline: `PlatformDocsPageTest::testAssetsAreInertAndMissingDocumentsOfferRecovery` (expected 1, got 2). It fails the same way at the starting revision `6efe5ba` in a separate worktree, so this cycle did not cause it.
+  - Passed: `git diff --check`.
+  - Passed: final diff review. Changes stay within the approved files plus the `ImageZipReader` extraction and `ImageStore::putAll` recorded in Stage 2. No duplicated ZIP reading or store limit logic.
+  - Not run: the full suite (`./v3 fulltest`), per project instructions.
+  - Inapplicable: theme and navigation icon checks. No UI changed; the browser check only confirms existing image rendering.
+- Notes: production and zenmemes.com imports were not tried. They are outside this cycle.
+- Estimate details: original scope unchanged; no revisions.
+
+*— Claude · 2026-11-06 UTC*
+
+## Closeout and study outcome
+
+- Delivered scope v1/A: `./v3 import-instance` copies the images that destination posts reference and lack, with dry run, counts, reasons, exit 2, and rerun and resume recovery. All five planned stages are complete, each with its own commit.
+- Commits: planning `fe504ce`; stages `84ef42d`, `c639161`, `10b3961`, `3b45acc` and this Stage 5 commit. Steps 1–3 were committed before approval, up to `46e1c06`, at the stop hook's request.
+- Corrections versus new requests: one in-scope refinement (`ImageStore::putAll`, Stage 2). One new request, incremental sync, is deferred to the backlog.
+- Unverified: production use, the full suite, and CLI-level replays of the full-store and missing-ZIP-support cases (covered by lower-level tests).
+- 2026-11-06T16:06:06Z, `railspike-effort` / `v3/instance_image_import`, Step 4 closeout. Entry projection 0.60 kept; no prospective revision. **Retrospective scope assessment: 0.55**, single exposed Claude rater; stage retrospectives 0.06/0.16/0.10/0.12/0.10, non-additive. No measured labor. Maintainer comfortable-fit judgment and acceptance pending.
+
 ## Enhancement Requests
 
 - Incremental sync (2026-11-06): separate work, recorded in [Step 2](./instance_image_import_step2_feature_description.md#enhancement-requests) and the [backlog](../backlog/incremental_instance_sync.md).

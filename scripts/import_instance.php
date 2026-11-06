@@ -211,6 +211,8 @@ Usage:
 
 Download and merge public forum content, preserving local settings and authority.
 Includes compatible Fastmod scores automatically; no scoring/provider calls.
+Copies images that destination posts reference and lack from the source's
+image backup; rerun the same command to retry missing images.
 Refreshes data and invalidates stale HTML; does not render static pages.
 Run ./v3 build-static separately when static output is needed.
 --dry-run: download and validate, then report proposed imports, duplicates,

@@ -101,6 +101,48 @@ live and refreshed offline reads; run `./v3 build-static` for static HTML.
 
 Format: [Fastmod score supplement v1](../specs/fastmod_score_transfer_v1.md).
 
+## Images
+
+`import-instance` also copies images. After the text import, it lists the images
+that destination posts reference and the destination store lacks. If any are
+missing, it downloads the source's `/downloads/images.zip` and adds only those
+images. No flag is needed.
+
+- Each image must match its post's reference exactly. Existing images are never
+  overwritten or deleted.
+- Images that no destination post references are never copied, so images of
+  posts the source removed stay out.
+- The source's image ZIP revision does not need to match its repository
+  archive, because each file is checked against its post.
+- A run with no missing images downloads no image ZIP.
+- Images go to the destination's `FORUM_IMAGE_ROOT`, or the default
+  `<repository>-images` directory beside the repository. Turn on
+  `FORUM_IMAGE_CONTENT_ENABLED` on the destination to display them.
+
+The report ends with `Images: complete` or `Images: partial`, a reason line for
+each cause, and `images_added` (`images_to_add` in a dry run), `images_present`
+and `images_missing`. Missing images make the exit code 2. The text import is
+already committed and is not undone.
+
+Common reasons:
+
+- `image backups are turned off on the source`: turn on image backups in the
+  source's Tools → Backup, then rerun.
+- `the source has no image download`: the source runs an older version. Update
+  it, then rerun.
+- `not in the source image backup`: the source no longer has that image.
+- `source image does not match its post`: the source's image file is damaged.
+- `image store is full (256 MiB / 1024 images)`: the destination store is at
+  its limit.
+- PHP ZIP support is unavailable: enable the `zip` extension on the machine
+  running the import.
+
+To retry, run the same `./v3 import-instance <source>` command again. It copies
+any images still missing, including those from earlier imports. `--resume`
+fetches images from the source URL saved with the interrupted import. If the
+time limit ends a run during the image download, the text is already in; rerun
+to copy the images.
+
 ## Coverage and results
 
 The merge includes public threads, replies, quotes, labels/tags, subject
@@ -227,7 +269,7 @@ same destination configuration:
 
 Review the preview before importing. Check an imported thread/tag page and
 original creation dates; the repeat should report `import: 0` if the source has
-not changed. Image objects remain a separate transfer. A local test pass does
+not changed, and `images_missing: 0`. A local test pass does
 not verify zenmemes.com deployment or this WSL destination's recovery.
 
 ### Interrupted merges
