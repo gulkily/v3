@@ -95,6 +95,24 @@ final class ThemeRegistryTest
         }
     }
 
+    public function testSystemDarkColorsAreInTheCriticalBlock(): void
+    {
+        // Auto/System theme sets no data-theme, so its dark colors come only from
+        // site.css. If they sit after the critical marker, the inlined light
+        // defaults paint first and dark-mode reloads flash white until the
+        // async site.css arrives.
+        $baseStyles = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $endOffset = strpos($baseStyles, '/* critical-css-end */');
+        assertSame(true, $endOffset !== false);
+
+        $criticalCss = substr($baseStyles, 0, (int) $endOffset);
+        assertSame(1, preg_match(
+            '/@media \(prefers-color-scheme: dark\)\s*\{\s*:root:not\(\[data-theme\]\)\s*\{[^}]*--page-bg:/',
+            $criticalCss
+        ));
+        assertSame(0, preg_match('/prefers-color-scheme: dark/', substr($baseStyles, (int) $endOffset)));
+    }
+
     public function testQdbQuoteHeaderActionsHaveThemeNeutralCompactLayout(): void
     {
         $styles = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
