@@ -41,3 +41,23 @@ No supported findings.
 ### Uncertain assessments
 
 - `step2_feature_description.md`, "avoid implementation details": the shared component inventory requires source paths and reuse decisions. The line between those and implementation detail is unclear for a CLI feature whose user surface is mostly existing classes.
+
+## 2026-11-06T15:51:09Z - Step 3
+
+### Necessary/useful instructions
+
+- `step3_development_plan_before.md`, reconcile requests against Step 2: the sync request arrived between Step 2 delivery and approval. Recording it as separate work before planning kept it out of the stages. Retain.
+- `implementation_standards.md`, inspect existing implementations: checking `LocalWriteService.php` showed uploads write images under the forum write lock, which settled the concurrency mitigation. Retain.
+- `step3_development_plan_do.md`, "split stories into vertical slices": Stage 3 is the first stage an operator can use; Stages 1–2 are its prerequisites. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step3_development_plan_do.md`, known user or environment replay stage: Step 2 names no user or environment.
+
+### Uncertain assessments
+
+- `step3_development_plan_after.md`, "Keep Step 1-3 planning docs uncommitted": this cloud session's stop hook requires commits, so Steps 1–2 were committed before approval. The Step 4 planning commit will then contain only the organization moves. The instructions do not cover that case.
