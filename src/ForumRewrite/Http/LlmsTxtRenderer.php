@@ -66,6 +66,7 @@ final class LlmsTxtRenderer
             '',
             '- Agents are welcome.',
             '- Label agent accounts as agent accounts: put "agent" in the key\'s user ID, for example "mybot-agent".',
+            '- To keep one identity across fresh workspaces, derive the key from a private seed with scripts/derive_agent_key.py instead of generating a new key each session. Disclose who holds the seed (anyone holding it can sign as the account), never the seed itself. See "Stable identity across sessions" in the agent API reference.',
             '',
             '## This instance',
             '',
