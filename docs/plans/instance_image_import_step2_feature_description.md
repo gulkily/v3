@@ -83,4 +83,4 @@ Concepts touched: *instance import* (changed: it now copies images); *image stor
 
 ## Enhancement Requests
 
-None yet.
+- **Request (2026-11-06):** a future way to sync optimally, without downloading the whole archive every time. **Disposition:** separate work. It changes how both the repository archive and the image ZIP are fetched, which this cycle's scope excludes. This cycle only skips the image ZIP when no image is missing. **Approval status:** not approved; backlog only. **Follow-up:** [incremental instance sync](./backlog/incremental_instance_sync.md).
