@@ -230,6 +230,9 @@ final class BoardListTest
             $source = $repositoryRoot . '-wide.png';
             $canvas = imagecreatetruecolor(400, 100);
             imagefill($canvas, 0, 0, imagecolorallocate($canvas, 200, 40, 40));
+            // Blue ends that a centred square crop leaves out.
+            imagefilledrectangle($canvas, 0, 0, 99, 99, imagecolorallocate($canvas, 20, 40, 200));
+            imagefilledrectangle($canvas, 300, 0, 399, 99, imagecolorallocate($canvas, 20, 40, 200));
             imagepng($canvas, $source);
             $reference = \ForumRewrite\Images\ImageStore::inspect($source, '');
             $store = new \ForumRewrite\Images\ImageStore($repositoryRoot);
@@ -240,19 +243,26 @@ final class BoardListTest
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             putenv($flag . '=true');
 
-            $one = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, '1x');
-            $two = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, '2x');
+            $one = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'sq');
+            $two = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'sq2x');
             $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
             assertStringContains('<img src="' . $one . '" srcset="' . $one . ' 1x, ' . $two . ' 2x" alt="" width="400" height="100"', $board);
             assertStringNotContains('src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '"', $board, 'The full-size original is not linked from the list.');
 
-            foreach ([[$one, 64, 16], [$two, 128, 32]] as [$url, $width, $height]) {
+            foreach ([[$one, 72], [$two, 100]] as [$url, $side]) {
                 $bytes = $this->render($application, $url);
                 $size = getimagesizefromstring($bytes);
-                assertSame([$width, $height], [$size[0], $size[1]], $url . ' is scaled to fit the row slot.');
+                assertSame([$side, $side], [$size[0], $size[1]], $url . ' is a square crop for the row slot, never larger than the original.');
                 assertTrue(strlen($bytes) < $reference['bytes'] || $reference['bytes'] < 1000, 'The thumbnail is not larger than needed.');
+                $pixels = imagecreatefromstring($bytes);
+                foreach ([0, $side - 1] as $x) {
+                    $color = imagecolorsforindex($pixels, imagecolorat($pixels, $x, intdiv($side, 2)));
+                    assertTrue($color['red'] > $color['blue'], $url . ' is cropped from the centre.');
+                }
             }
-            $cached = $store->root . '-thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, '1x');
+            $legacy = getimagesizefromstring($this->render($application, '/images/thumbs/' . $reference['sha256'] . '-1x.png'));
+            assertSame([72, 72], [$legacy[0], $legacy[1]], 'A list-row URL from an older page gets the square crop.');
+            $cached = $store->root . '-thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'sq');
             assertTrue(is_file($cached), 'The thumbnail is cached beside the image root.');
             assertSame($this->render($application, $one), file_get_contents($cached));
             $store->inventory();

@@ -21,8 +21,9 @@ final class ImageController
             return;
         }
         if ($this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)
-            && preg_match('/^thumbs\/(([a-f0-9]{64})-(1x|2x|tile)\.(png|jpg)(?:\.webp)?)$/D', $name, $thumb)) {
-            $this->serveThumbnail($method, $headers, $thumb[2] . '.' . $thumb[4], $thumb[3], $thumb[1]);
+            && preg_match('/^thumbs\/(([a-f0-9]{64})-(1x|2x|sq|sq2x|tile)\.(png|jpg)(?:\.webp)?)$/D', $name, $thumb)) {
+            $size = \ForumRewrite\Images\ThumbnailStore::LEGACY[$thumb[3]] ?? $thumb[3];
+            $this->serveThumbnail($method, $headers, $thumb[2] . '.' . $thumb[4], $size, $thumb[1]);
             return;
         }
         if (!$this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED) || !preg_match('/^[a-f0-9]{64}\.(png|jpg)$/D', $name)) {

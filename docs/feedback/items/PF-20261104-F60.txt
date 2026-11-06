@@ -19,3 +19,4 @@ Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 20
 2026-11-05: built on feat/board-thumbnails (board list rows and Recent); awaiting review and deployment.
 2026-11-05: follow-up adds independent List thumbnails flag (default on, requires image attachments); runtime verification blocked by missing PHP in the implementation workspace; review/deployment pending.
 2026-11-06: board rows now use the thread's first stored image (root first, then replies in thread order, hidden replies skipped); Recent unchanged. On feat/thread-first-image-thumbnail, awaiting review and deployment.
+2026-11-06: list-row thumbnails now fill a 4.5rem square (object-fit: cover) from centre-cropped 72/144px WebP copies instead of letterboxing inside a narrow tall slot; checked visually in Light, Word97, Chicago and Midnight against live board content. On feat/square-cover-thumbnails, awaiting review and deployment.

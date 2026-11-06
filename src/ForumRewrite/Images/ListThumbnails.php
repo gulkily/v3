@@ -82,15 +82,15 @@ final class ListThumbnails
     }
 
     /**
-     * Small cached copies (1x and 2x) when the host can resize images; the
+     * Small square cached copies (1x and 2x) when the host can resize images; the
      * original when it cannot, or when the original is already that small.
      *
      * @return array{src:string, srcset:?string}
      */
     public static function sources(array $reference): array
     {
-        $src = ThumbnailStore::url($reference, '1x');
-        $retina = ThumbnailStore::url($reference, '2x');
+        $src = ThumbnailStore::url($reference, 'sq');
+        $retina = ThumbnailStore::url($reference, 'sq2x');
         return ['src' => $src, 'srcset' => $retina === $src ? null : $src . ' 1x, ' . $retina . ' 2x'];
     }
 

@@ -16,10 +16,19 @@ use RuntimeException;
 final class ThumbnailStore
 {
     /**
-     * Bounding boxes in pixels by size name: list rows (the slot is 3.5rem
-     * wide) at 1x and 2x, and gallery tiles (rows are at most 12rem tall).
+     * Boxes in pixels by size name: the square list-row slot (4.5rem) at 1x
+     * and 2x, and gallery tiles (rows are at most 12rem tall).
      */
-    public const SIZES = ['1x' => [64, 128], '2x' => [128, 256], 'tile' => [480, 480]];
+    public const SIZES = ['sq' => [72, 72], 'sq2x' => [144, 144], 'tile' => [480, 480]];
+
+    /**
+     * Sizes cropped to fill their box from the centre, as the row slot shows
+     * them with object-fit: cover; other sizes fit inside their box whole.
+     */
+    private const CROPPED = ['sq', 'sq2x'];
+
+    /** Earlier list-row size names, still accepted from cached pages. */
+    public const LEGACY = ['1x' => 'sq', '2x' => 'sq2x'];
 
     public readonly string $root;
 
@@ -54,6 +63,10 @@ final class ThumbnailStore
     public static function size(array $reference, string $size): array
     {
         [$width, $height] = self::box($size);
+        if (in_array($size, self::CROPPED, true)) {
+            $side = min($width, $reference['width'], $reference['height']);
+            return ['width' => max(1, $side), 'height' => max(1, $side)];
+        }
         $ratio = min(1.0, $width / $reference['width'], $height / $reference['height']);
         return [
             'width' => max(1, (int) round($reference['width'] * $ratio)),
@@ -99,7 +112,7 @@ final class ThumbnailStore
             throw new RuntimeException('Unable to stage thumbnail.');
         }
         try {
-            $this->resize($source, $reference['type'], $temp, $pixels['width'], $pixels['height'], self::format());
+            $this->resize($source, $reference['type'], $temp, $pixels['width'], $pixels['height'], self::format(), in_array($size, self::CROPPED, true));
             if (!chmod($temp, 0600) || !rename($temp, $target)) {
                 throw new RuntimeException('Unable to save thumbnail.');
             }
@@ -109,7 +122,7 @@ final class ThumbnailStore
         return $target;
     }
 
-    private function resize(string $source, string $type, string $target, int $width, int $height, ?string $format): void
+    private function resize(string $source, string $type, string $target, int $width, int $height, ?string $format, bool $crop): void
     {
         $original = $type === 'png' ? @imagecreatefrompng($source) : @imagecreatefromjpeg($source);
         if ($original === false) {
@@ -121,7 +134,13 @@ final class ThumbnailStore
             imagesavealpha($thumb, true);
             imagefill($thumb, 0, 0, imagecolorallocatealpha($thumb, 0, 0, 0, 127));
         }
-        $ok = imagecopyresampled($thumb, $original, 0, 0, 0, 0, $width, $height, imagesx($original), imagesy($original))
+        // A cropped size takes the centred region of the original with the target's proportions.
+        $sourceWidth = imagesx($original);
+        $sourceHeight = imagesy($original);
+        $scale = $crop ? min($sourceWidth / $width, $sourceHeight / $height) : null;
+        $cropWidth = $scale === null ? $sourceWidth : (int) round($width * $scale);
+        $cropHeight = $scale === null ? $sourceHeight : (int) round($height * $scale);
+        $ok = imagecopyresampled($thumb, $original, 0, 0, intdiv($sourceWidth - $cropWidth, 2), intdiv($sourceHeight - $cropHeight, 2), $width, $height, $cropWidth, $cropHeight)
             && match (true) {
                 $format === 'webp' => imagewebp($thumb, $target, 80),
                 // Without WebP, a 256-colour palette still cuts a PNG tile to about a third.
