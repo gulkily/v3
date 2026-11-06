@@ -32,6 +32,7 @@ foreach ($posts as $post) {
 
     $replyPosts[] = $post;
 }
+$replyPosts = \ForumRewrite\ReadModel\RetractedLeafFilter::apply($replyPosts);
 
 // Pre-compute continuation flags so the root card can show a true reply count before the reply loop runs.
 $replyContinuationFlags = [];
