@@ -33,9 +33,21 @@ final class ThumbnailStore
         return function_exists('imagecreatetruecolor') && function_exists('imagecreatefromjpeg') && function_exists('imagecreatefrompng');
     }
 
+    /**
+     * Derivatives are WebP when GD can write it: a resampled screenshot stored
+     * as truecolor PNG runs to 200-300 KB at tile size, the same tile as WebP
+     * to about 30 KB, and WebP keeps transparency. The original's type stays
+     * in the name so the original can be found from the URL.
+     */
+    public static function format(): ?string
+    {
+        return function_exists('imagewebp') ? 'webp' : null;
+    }
+
     public static function filename(array $reference, string $size): string
     {
-        return $reference['sha256'] . '-' . $size . '.' . $reference['type'];
+        $format = self::format();
+        return $reference['sha256'] . '-' . $size . '.' . $reference['type'] . ($format === null ? '' : '.' . $format);
     }
 
     /** @return array{width:int, height:int} pixel size of the derivative (never larger than the original) */
@@ -87,7 +99,7 @@ final class ThumbnailStore
             throw new RuntimeException('Unable to stage thumbnail.');
         }
         try {
-            $this->resize($source, $reference['type'], $temp, $pixels['width'], $pixels['height']);
+            $this->resize($source, $reference['type'], $temp, $pixels['width'], $pixels['height'], self::format());
             if (!chmod($temp, 0600) || !rename($temp, $target)) {
                 throw new RuntimeException('Unable to save thumbnail.');
             }
@@ -97,7 +109,7 @@ final class ThumbnailStore
         return $target;
     }
 
-    private function resize(string $source, string $type, string $target, int $width, int $height): void
+    private function resize(string $source, string $type, string $target, int $width, int $height, ?string $format): void
     {
         $original = $type === 'png' ? @imagecreatefrompng($source) : @imagecreatefromjpeg($source);
         if ($original === false) {
@@ -110,7 +122,12 @@ final class ThumbnailStore
             imagefill($thumb, 0, 0, imagecolorallocatealpha($thumb, 0, 0, 0, 127));
         }
         $ok = imagecopyresampled($thumb, $original, 0, 0, 0, 0, $width, $height, imagesx($original), imagesy($original))
-            && ($type === 'png' ? imagepng($thumb, $target, 9) : imagejpeg($thumb, $target, 82));
+            && match (true) {
+                $format === 'webp' => imagewebp($thumb, $target, 80),
+                // Without WebP, a 256-colour palette still cuts a PNG tile to about a third.
+                $type === 'png' => imagetruecolortopalette($thumb, true, 256) && imagepng($thumb, $target, 9),
+                default => imagejpeg($thumb, $target, 82),
+            };
         unset($original, $thumb);
         if (!$ok) {
             throw new RuntimeException('Unable to resize image.');

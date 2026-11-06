@@ -188,8 +188,8 @@ final class BoardListTest
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             putenv($flag . '=true');
 
-            $one = '/images/thumbs/' . $reference['sha256'] . '-1x.png';
-            $two = '/images/thumbs/' . $reference['sha256'] . '-2x.png';
+            $one = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, '1x');
+            $two = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, '2x');
             $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
             assertStringContains('<img src="' . $one . '" srcset="' . $one . ' 1x, ' . $two . ' 2x" alt="" width="400" height="100"', $board);
             assertStringNotContains('src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '"', $board, 'The full-size original is not linked from the list.');
@@ -200,7 +200,7 @@ final class BoardListTest
                 assertSame([$width, $height], [$size[0], $size[1]], $url . ' is scaled to fit the row slot.');
                 assertTrue(strlen($bytes) < $reference['bytes'] || $reference['bytes'] < 1000, 'The thumbnail is not larger than needed.');
             }
-            $cached = $store->root . '-thumbs/' . $reference['sha256'] . '-1x.png';
+            $cached = $store->root . '-thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, '1x');
             assertTrue(is_file($cached), 'The thumbnail is cached beside the image root.');
             assertSame($this->render($application, $one), file_get_contents($cached));
             $store->inventory();
