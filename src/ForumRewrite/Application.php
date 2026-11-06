@@ -616,7 +616,7 @@ final class Application
                 $this->renderMessagePage(
                     'Method Not Allowed',
                     'Method Not Allowed',
-                    'Only GET is supported in the local test slice, except for the identity-hint cookie route.',
+                    'This address only accepts regular page visits, not form submissions.',
                     'none'
                 ),
                 405

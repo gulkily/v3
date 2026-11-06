@@ -999,7 +999,7 @@ PHP;
             assertStringContains('<h1>Reconnecting</h1>', $this->render($application, '/backup/'));
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
             assertStringContains('Identity not found.', $this->renderMethod($application, 'POST', '/api/prepare_invitation_redemption'));
-            assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/asdf'));
+            assertStringContains('There is no page at this address.', $this->render($application, '/asdf'));
         } finally {
             TestViewerSession::reset();
             @unlink($databasePath);
@@ -1031,7 +1031,7 @@ PHP;
                 $resume = $this->render($application, $path);
                 assertStringContains('<h1>Reconnecting</h1>', $resume);
                 assertStringContains('data-auth-return-to="' . $path . '"', $resume);
-                assertStringNotContains('The requested route does not exist in the local test slice.', $resume);
+                assertStringNotContains('There is no page at this address.', $resume);
             }
 
             foreach ([
@@ -1043,13 +1043,13 @@ PHP;
                 $response = $this->render($application, $path);
                 // Members-only API denials are JSON access_denied (single-request posting API, 2026-10-30).
                 assertSame('access_denied', json_decode($response, true)['code'] ?? null, $path . ': ' . $response);
-                assertStringNotContains('The requested route does not exist in the local test slice.', $response);
+                assertStringNotContains('There is no page at this address.', $response);
             }
 
             TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 
             assertStringContains('Forte', $this->render($application, '/forte/users/'));
-            assertStringContains('The requested route does not exist in the local test slice.', $this->render($application, '/forte/not-a-route'));
+            assertStringContains('There is no page at this address.', $this->render($application, '/forte/not-a-route'));
         } finally {
             TestViewerSession::reset();
             @unlink($databasePath);
