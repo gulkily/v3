@@ -1,6 +1,6 @@
 # Incremental instance sync
 
-Status: backlog. Requested by the maintainer on 2026-11-06 during the [instance image import](../instance_image_import_step2_feature_description.md) cycle. Not planned or approved.
+Status: backlog. Requested by the maintainer on 2026-11-06 during the [instance image import](../instance_image_import/instance_image_import_step2_feature_description.md) cycle. Not planned or approved.
 
 ## Request
 

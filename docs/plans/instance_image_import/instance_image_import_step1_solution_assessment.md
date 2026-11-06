@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/instance_image_import`; [host ledger](./effort_estimation_trial.md#cycle-v3instance_image_import). Standing P2 enrollment. No parent cycle.
+Effort study: `railspike-effort` / `v3/instance_image_import`; [host ledger](../effort_estimation_trial.md#cycle-v3instance_image_import). Standing P2 enrollment. No parent cycle.
 
 Extended estimates: enabled
 

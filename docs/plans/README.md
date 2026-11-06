@@ -76,6 +76,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Image backup ZIP](image_backup_zip/)
 
+- [Instance image import](instance_image_import/) — `import-instance` also copies the images that imported posts reference.
+
 - [Reusable archive exports](archive_export_contention/)
 
 - [Readable retraction records](retraction_text_format/)
