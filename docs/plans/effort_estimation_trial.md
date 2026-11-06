@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/instance_image_import
+
+2026-11-06T15:45:46Z — standing P2 enrollment; [canonical Step 1 checkpoint](./instance_image_import_step1_solution_assessment.md#study-checkpoint). No parent. Scope v1/A: `import-instance` copies the images that imported posts reference and the destination lacks, from the source's image ZIP through `ImageStore::put`, with counts, dry-run, partial exit and rerun recovery. Baseline `6efe5ba333ebbb1f63a474609e26c3d4da09509d`; R1 hashes not re-verified; extended/debug enabled. Pristine intake missing because import and image-store inspection in an earlier session preceded rating; Step 1 projection 0.55, alternatives B 0.50, C 0.50, non-additive, single exposed Claude rater. No approval, implementation or accepted-count change; planning uncommitted.
+
 ## Cycle v3/board_thumbnails
 
 2026-11-05T17:45:00Z — standing P2 enrollment, one-shot; [canonical record](./board_thumbnails/board_thumbnails_one_shot.md#study-history). Scope v1: thumbnails for image posts on board list rows and Recent rows (PF-20261104-F60). Baseline `822d6134692883e145728db96b1a9aa62f1ca496`; R1 hashes not re-verified; extended/debug enabled. Intake 0.50 recorded before attachment and listing code were inspected (board templates seen earlier the same day). Closeout retrospective scope assessment 0.40, single exposed Claude rater. Smoke plus changed tests passed; 13 themes at phone and desktop checked locally; full suite and live check pending. Maintainer comfortable-fit and acceptance pending; no accepted-count change.
