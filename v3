@@ -48,6 +48,7 @@ Usage:
   ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
   ./v3 codex-handoff test-local
   ./v3 retraction-sweep preview|status|run [--limit=250] [--repository-root=/path/repository]
+  ./v3 bake-timestamps preview|run [--repository-root=/path/repository] [--json]
   ./v3 purge-history preview|run [--yes] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--json]
   ./v3 task-queue enqueue-retraction-sweep
   ./v3 task-queue enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
@@ -92,6 +93,10 @@ case "${COMMAND}" in
   retraction-sweep)
     shift
     exec php "${ROOT}/scripts/retraction_sweep.php" "$@"
+    ;;
+  bake-timestamps)
+    shift
+    exec php "${ROOT}/scripts/bake_legacy_timestamps.php" "$@"
     ;;
   purge-history)
     shift

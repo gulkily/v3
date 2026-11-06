@@ -142,7 +142,7 @@ final class HistoryPurgePlanner
      *
      * @return list<string>
      */
-    private static function legacyPostsWithoutTimestamp(string $root): array
+    public static function legacyPostsWithoutTimestamp(string $root): array
     {
         $paths = [];
         foreach (explode("\n", LabelRemoval::git($root, ['ls-files', '-s', '--', 'records/posts'])) as $entry) {
