@@ -168,6 +168,52 @@ final class BoardListTest
         }
     }
 
+    public function testLargeImagesGetSmallCachedThumbnailCopies(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $imageRoot = $repositoryRoot . '-images';
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $old = getenv($flag);
+        try {
+            $source = $repositoryRoot . '-wide.png';
+            $canvas = imagecreatetruecolor(400, 100);
+            imagefill($canvas, 0, 0, imagecolorallocate($canvas, 200, 40, 40));
+            imagepng($canvas, $source);
+            $reference = \ForumRewrite\Images\ImageStore::inspect($source, '');
+            $store = new \ForumRewrite\Images\ImageStore($repositoryRoot);
+            $store->put($source, $reference);
+            file_put_contents($repositoryRoot . '/records/posts/thumb-wide.txt', "Post-ID: thumb-wide\nCreated-At: 2026-07-01T00:00:00Z\nBoard-Tags: general\nSubject: thumb-wide\n\n" . \ForumRewrite\Images\ImageReference::line($reference) . "\n");
+            $this->runCommand($repositoryRoot, 'git add .');
+            $this->runCommand($repositoryRoot, 'git commit -m "Add wide image post"');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            putenv($flag . '=true');
+
+            $one = '/images/thumbs/' . $reference['sha256'] . '-1x.png';
+            $two = '/images/thumbs/' . $reference['sha256'] . '-2x.png';
+            $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+            assertStringContains('<img src="' . $one . '" srcset="' . $one . ' 1x, ' . $two . ' 2x" alt="" width="400" height="100"', $board);
+            assertStringNotContains('src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '"', $board, 'The full-size original is not linked from the list.');
+
+            foreach ([[$one, 64, 16], [$two, 128, 32]] as [$url, $width, $height]) {
+                $bytes = $this->render($application, $url);
+                $size = getimagesizefromstring($bytes);
+                assertSame([$width, $height], [$size[0], $size[1]], $url . ' is scaled to fit the row slot.');
+                assertTrue(strlen($bytes) < $reference['bytes'] || $reference['bytes'] < 1000, 'The thumbnail is not larger than needed.');
+            }
+            $cached = $store->root . '-thumbs/' . $reference['sha256'] . '-1x.png';
+            assertTrue(is_file($cached), 'The thumbnail is cached beside the image root.');
+            assertSame($this->render($application, $one), file_get_contents($cached));
+            $store->inventory();
+
+            unlink($store->root . '/' . \ForumRewrite\Images\ImageReference::filename($reference));
+            assertStringContains('Image unavailable', $this->render($application, $one), 'A thumbnail is not served once its original is gone.');
+            assertStringContains('Image unavailable', $this->render($application, '/images/thumbs/' . str_repeat('c', 64) . '-3x.png'));
+        } finally {
+            putenv($old === false ? $flag : $flag . '=' . $old);
+            exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($imageRoot . '-thumbs') . ' ' . escapeshellarg($repositoryRoot . '-wide.png'));
+        }
+    }
+
     public function testRowMetaShowsAPendingChipAndTheFullTimestampAsTooltip(): void
     {
         $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
