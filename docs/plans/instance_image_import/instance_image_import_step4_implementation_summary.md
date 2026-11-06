@@ -132,6 +132,7 @@ Branch: `claude/compassionate-turing-d20wyy`, the session's designated branch. P
 - Corrections versus new requests: one in-scope refinement (`ImageStore::putAll`, Stage 2). One new request, incremental sync, is deferred to the backlog.
 - Unverified: production use, the full suite, and CLI-level replays of the full-store and missing-ZIP-support cases (covered by lower-level tests).
 - 2026-11-06T16:06:06Z, `railspike-effort` / `v3/instance_image_import`, Step 4 closeout. Entry projection 0.60 kept; no prospective revision. **Retrospective scope assessment: 0.55**, single exposed Claude rater; stage retrospectives 0.06/0.16/0.10/0.12/0.10, non-additive. No measured labor. Maintainer comfortable-fit judgment and acceptance pending.
+- 2026-11-06T16:35:13Z: merged as gulkily/v3#35. Maintainer accepted the outcome and left the comfortable-fit judgment to the implementing agent. Judgment by the implementing Claude rater: a comfortable one-cycle fit (0.55 retrospective against 0.60 projected; no split or scope change). This is not an independent maintainer rating.
 
 ## Enhancement Requests
 
