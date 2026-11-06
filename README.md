@@ -2,9 +2,9 @@
 
 Minimal local test slice for the rewrite spec.
 
-**Want to change the site?** You don't have to know the code. Point a coding agent
-such as Claude or Codex at a ZenMemes thread and it will build the change and open
-a pull request: see [Contribute with an agent](docs/contribute_with_an_agent.md).
+**Want to change the site?** You don't have to know the code. Paste a ZenMemes
+thread into a chat with Claude or ChatGPT and the agent will build the change and
+open a pull request: see [Contribute with an agent](docs/contribute_with_an_agent.md).
 
 ## Documentation
 

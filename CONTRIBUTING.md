@@ -1,7 +1,7 @@
 # Contributing
 
-New here? The easiest way to contribute is to hand a ZenMemes thread to a coding
-agent; see [Contribute with an agent](docs/contribute_with_an_agent.md). The rules
+New here? The easiest way to contribute is to paste a ZenMemes thread into a chat
+with a coding agent; see [Contribute with an agent](docs/contribute_with_an_agent.md). The rules
 below are the project requirements that you and your agent follow.
 
 ## Human-readable formats
