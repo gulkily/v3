@@ -55,6 +55,7 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 
 - [Feature Flag Redesign](feature_flag_redesign_spec.md)
 - [Feature Request FDP Intake](feature_request_fdp_intake_step1_solution_assessment.md)
+- [Incremental instance sync](incremental_instance_sync.md) — repeated imports transfer only changes instead of the whole repository archive and image ZIP (from the instance_image_import cycle)
 - [Imported Feature Requests Implementation Routing](imported_feature_requests_implementation_routing_plan_v1.txt)
 - [iPhone Database Web UI](iphone_database_webui_step1_solution_assessment.md)
 - [Local Dev Begin-Development FDP UI](local_dev_begin_development_fdp_ui_step1_solution_assessment.md)

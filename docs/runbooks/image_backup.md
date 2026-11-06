@@ -78,7 +78,10 @@ The default image destination is a sibling of the repository, named
 fresh directory, then configure that exact `FORUM_IMAGE_ROOT` in the new instance.
 It must be absolute, outside the repository and every served web root, and contain
 no symlink components. The commands above restore the exported content/image pair, not the complete
-instance or its trusted history. Use the normal reviewed content-import workflow
+instance or its trusted history. To add another instance's posts and images to an
+existing destination, use `./v3 import-instance` instead; it copies referenced
+images into a store that already has images. See
+[Instance Content Import](instance_content_import.md#images). Use the normal reviewed content-import workflow
 for another instance; imports preserve destination authority and can reject
 history-dependent approval/removal claims. For exact instance recovery, retain a
 separate full Git backup and private configuration. Do not fabricate acceptance
