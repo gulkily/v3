@@ -9,7 +9,7 @@ use RuntimeException;
 /**
  * Small cached copies of stored images for list rows and gallery tiles. They live beside the
  * image root (never inside it: the image store accepts only originals), are
- * named by the original's sha256 and scale, and are only served while the
+ * named by the original's sha256 and size, and are only served while the
  * original is present, so purges and restores need no extra cleanup.
  * A derivative is disposable: deleting the directory just regenerates them.
  */

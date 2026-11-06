@@ -79,6 +79,7 @@ Planning commit: `2784b051`, confirmed before implementation.
 - Correction during verification: personal phone slots are listed per section in CSS, but the slot chooser offers any More destination, so pinning Gallery would have shown no tab. Added `gallery` to both slot lists and checked the pinned tab in light and Midnight.
 - Reuse: page navigation, `board-empty`, `ListThumbnails::forPosts()` (now also returning the preview URL and description), Calendar's flag-gated nav insertion and `$barOrder` placement, List thumbnails' flag pattern including the evaluator environment-cleanup list.
 - Follow-ups recorded below; no new requests arrived during the cycle.
+- 2026-11-06: rebased onto main after #30 (thumbnail derivatives) landed its own GD cache, `ThumbnailStore`, at `/images/thumbs/`. At the maintainer's choice the gallery now reuses it: `ThumbnailStore` sizes are named (`1x`, `2x` for rows, unchanged URLs; new `tile`, a 480 x 480 box), previews are `/images/thumbs/<sha256>-tile.<ext>` in `<image root>-thumbs`, and `ImagePreview` and the `/images/preview/` route and `-previews` folder are gone. An image already within a tile links the original. `./v3 test --smoke GalleryPageTest BoardListTest FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest PrivateConfigCommandTest CalendarPageTest RecentPostTest ImageContentTest AppNavigationPlacementTest`: 465 run, 465 passed. Full suite not run; markup and CSS unchanged apart from tile `src`, so themes were not rechecked.
 
 ## Study history
 
