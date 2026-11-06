@@ -72,7 +72,11 @@ final class InstanceImageImport
 
     private static function failure(RuntimeException $error): string
     {
-        return $error->getMessage();
+        return match ($error->getCode()) {
+            403 => 'image backups are turned off on the source',
+            404 => 'the source has no image download; it may run an older version',
+            default => $error->getMessage(),
+        };
     }
 
     /** @return array<string, array> references whose image the store lacks, keyed by filename */

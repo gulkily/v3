@@ -114,17 +114,26 @@ try {
                 . (isset($entry['root_cause']) ? '; root cause: ' . $entry['root_cause'] : ''));
         }
     }
-    $images = null;
-    $imageSource = $source;
-    if ($imageSource !== null) {
-        try {
-            $imageImport = new \ForumRewrite\Import\InstanceImageImport($repository, $database);
-            $planned = $result['preview'] && $root !== null ? \ForumRewrite\Import\InstanceImageImport::plannedReferences($root, $result['entries']) : [];
-            $images = $imageImport->fromSource($imageSource, $workspace, $imageImport->references($planned), $result['preview'], $progress);
-        } catch (RuntimeException $error) {
-            // Text is already imported; report the image step and let a rerun retry it.
-            $images = ['status' => 'partial', 'added' => 0, 'present' => 0, 'missing' => 0, 'reasons' => [], 'error' => $error->getMessage()];
+    // A resumed import fetches images from the source saved with the interrupted run.
+    $imageSource = $source ?? (($result['source'] ?? '') !== '' ? $result['source'] : null);
+    try {
+        $imageImport = new \ForumRewrite\Import\InstanceImageImport($repository, $database);
+        $planned = $result['preview'] && $root !== null ? \ForumRewrite\Import\InstanceImageImport::plannedReferences($root, $result['entries']) : [];
+        $references = $imageImport->references($planned);
+        if ($imageSource === null) {
+            $missing = count($imageImport->missing($references));
+            $images = ['status' => $missing === 0 ? 'complete' : 'partial', 'added' => 0, 'present' => count($references) - $missing, 'missing' => $missing,
+                'reasons' => $missing === 0 ? [] : ['the saved import has no source URL' => $missing]];
+        } else {
+            if ($workspace === null) {
+                $workspace = sys_get_temp_dir() . '/forum-instance-import-' . bin2hex(random_bytes(12));
+                if (!mkdir($workspace, 0700)) throw new RuntimeException('Unable to create private download workspace.');
+            }
+            $images = $imageImport->fromSource($imageSource, $workspace, $references, $result['preview'], $progress);
         }
+    } catch (RuntimeException $error) {
+        // Text is already imported; report the image step and let a rerun retry it.
+        $images = ['status' => 'partial', 'added' => 0, 'present' => 0, 'missing' => 0, 'reasons' => [], 'error' => $error->getMessage()];
     }
     $progress('');
     $progress(($result['preview'] ? 'Preview' : 'Import') . ' result: ' . $result['status']);
@@ -136,16 +145,15 @@ try {
     foreach ($result['counts'] as $category => $count) {
         $progress($category . ': ' . $count);
     }
-    if ($images !== null) {
-        $progress('Images: ' . $images['status']);
-        if (isset($images['error'])) $progress('Image copy failed: ' . $images['error'] . ' Rerun the same command to retry.');
-        foreach ($images['reasons'] as $reason => $count) $progress('Images missing: ' . $count . ' — ' . $reason);
-        foreach (['added', 'present', 'missing'] as $category) $progress('images_' . ($result['preview'] && $category === 'added' ? 'to_add' : $category) . ': ' . $images[$category]);
-    }
+    $progress('Images: ' . $images['status']);
+    if (isset($images['error'])) $progress('Image copy failed: ' . $images['error']);
+    if ($images['status'] !== 'complete') $progress('Rerun ./v3 import-instance with the source URL to retry the images.');
+    foreach ($images['reasons'] as $reason => $count) $progress('Images missing: ' . $count . ' — ' . $reason);
+    foreach (['added', 'present', 'missing'] as $category) $progress('images_' . ($result['preview'] && $category === 'added' ? 'to_add' : $category) . ': ' . $images[$category]);
     if (isset($result['review_path'])) {
         $progress('Review: ' . $result['review_path'] . '/report.json');
     }
-    $exitCode = $result['status'] === 'complete' && ($images === null || $images['status'] === 'complete') ? 0 : 2;
+    $exitCode = $result['status'] === 'complete' && $images['status'] === 'complete' ? 0 : 2;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");
     if (is_string($repository) && is_file($repository . '/.git/instance-import/pending.json')) {

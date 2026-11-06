@@ -78,6 +78,29 @@ Branch: `claude/compassionate-turing-d20wyy`, the session's designated branch. P
 
 *— Claude · 2026-11-06 UTC*
 
+## Stage 4 - Recovery and resume
+
+**Original estimate: 0.12**
+
+**Retrospective stage-work assessment: 0.12**
+
+- Changes:
+  - Download reasons: HTTP 403 reads "image backups are turned off on the source"; 404 reads "the source has no image download; it may run an older version". Other failures keep their own message, including missing PHP ZIP support and timeouts.
+  - A partial image result prints "Rerun ./v3 import-instance with the source URL to retry the images."
+  - `--resume` takes the source URL saved with the interrupted import and fetches images from it, in a private workspace created for the image step. If no URL was saved and images are missing, it reports them missing for that reason. Resume still needs no network when no image is missing.
+- Verification:
+  - Passed: new `ImportInstanceCommandTest::testImageFailuresKeepTextAndRerunOrResumeRecovers`. Backups off and an older source each end text-complete, exit 2 with the reason, and no image stored. A stalled image download under `--time-limit=4` ends the run after the text is committed, with no pending import. A rerun then adds the image and exits 0. An import interrupted before publication resumes and adds the image from the saved source.
+  - Passed: `./v3 test ImportInstanceCommandTest InstanceImageImportTest ImportDeadlineRecoveryTest ContentImportRecoveryTest`, 19/19.
+  - Passed: `./v3 test --smoke`, 430/430.
+  - Full suite not run.
+- Notes:
+  - The full-store and missing-ZIP-support cases are covered below the command, by `InstanceImageImportTest` and the existing `ImageZipRestoreTest` reader check. They pass through the same report path as the tested cases; no CLI test replays them.
+  - A run killed by the time limit can leave its private staging directory in the system temp directory. Images are written by rename, so the store never holds a partial file.
+  - PHP's built-in test server handles one request at a time, so the stalled download is kept short (8 seconds) to avoid blocking the rerun.
+- Estimate details: original scope unchanged; no revisions.
+
+*— Claude · 2026-11-06 UTC*
+
 ## Enhancement Requests
 
 - Incremental sync (2026-11-06): separate work, recorded in [Step 2](./instance_image_import_step2_feature_description.md#enhancement-requests) and the [backlog](../backlog/incremental_instance_sync.md).

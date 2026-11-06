@@ -253,6 +253,83 @@ final class ImportInstanceCommandTest
         assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
     }
 
+    public function testImageFailuresKeepTextAndRerunOrResumeRecovers(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $image = $w->root . '/pixel.png';
+        $w->put($image, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC'));
+        $ref = \ForumRewrite\Images\ImageStore::inspect($image, 'Recovery pixel');
+        $name = \ForumRewrite\Images\ImageReference::filename($ref);
+        $w->put($source . '/records/posts/image-thread.txt', $w->post('image-thread', '', \ForumRewrite\Images\ImageReference::line($ref)));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $zip = new ZipArchive();
+        assertTrue($zip->open($w->root . '/images.zip', ZipArchive::CREATE) === true);
+        $zip->addFromString('manifest.json', '{"schema":"forum-images-v1","repository_head":"unrelated","objects":{}}');
+        $zip->addEmptyDir('objects');
+        $zip->addFile($image, 'objects/' . $name);
+        assertTrue($zip->close());
+        $w->put($w->root . '/router.php', <<<'ROUTER'
+<?php
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if ($path === '/downloads/repository.tar.gz') { readfile(__DIR__ . '/source.tar.gz'); exit; }
+$mode = trim((string) @file_get_contents(__DIR__ . '/mode'));
+if ($path === '/downloads/images.zip' && $mode === 'ok') { header('Content-Type: application/zip'); readfile(__DIR__ . '/images.zip'); exit; }
+if ($path === '/downloads/images.zip' && $mode === 'off') { http_response_code(403); header('Content-Type: text/plain'); echo "Backup unavailable.\n"; exit; }
+if ($path === '/downloads/images.zip' && $mode === 'slow') { sleep(8); exit; }
+http_response_code(404); echo 'not found';
+ROUTER);
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $store = new \ForumRewrite\Images\ImageStore($target);
+        $options = ['--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3', '--static-html-root=' . $w->root . '/static'];
+        $import = [__DIR__ . '/../v3', 'import-instance', $server->url, ...$options];
+
+        foreach (['off' => 'image backups are turned off on the source', 'old' => 'the source has no image download'] as $mode => $reason) {
+            $w->put($w->root . '/mode', $mode);
+            [$code, $output] = $w->command($import);
+            assertSame(2, $code, $output);
+            assertStringContains('Import result: complete', $output);
+            assertStringContains('Images: partial', $output);
+            assertStringContains('Images missing: 1 — ' . $reason, $output);
+            assertStringContains('Rerun ./v3 import-instance with the source URL', $output);
+            assertTrue(is_file($target . '/records/posts/image-thread.txt'));
+            assertSame(false, $store->isPresent($ref));
+        }
+
+        $w->put($w->root . '/mode', 'slow');
+        [$code, $output] = $w->command([...$import, '--time-limit=4']);
+        assertTrue($code !== 0, $output);
+        assertTrue(is_file($target . '/records/posts/image-thread.txt'));
+        assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
+        assertSame(false, $store->isPresent($ref));
+
+        $w->put($w->root . '/mode', 'ok');
+        [$code, $output] = $w->command($import);
+        assertSame(0, $code, $output);
+        assertStringContains('import: 0', $output);
+        assertStringContains('images_added: 1', $output);
+        assertSame($ref, \ForumRewrite\Images\ImageStore::inspect($store->resolve($ref), 'Recovery pixel'));
+
+        // An interrupted import resumes its images from the saved source URL.
+        $second = $w->repository('second', true);
+        $w->git($second);
+        $secondStore = new \ForumRewrite\Images\ImageStore($second);
+        $static = $w->root . '/second-static';
+        $w->put($static, 'File blocking publication directory creation');
+        $secondOptions = ['--repository-root=' . $second, '--database-path=' . $w->root . '/second-cache/index.sqlite3', '--static-html-root=' . $static];
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, ...$secondOptions]);
+        assertSame(1, $code, $output);
+        assertTrue(is_file($second . '/.git/instance-import/pending.json'));
+        assertSame(false, $secondStore->isPresent($ref));
+        unlink($static);
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--resume', ...$secondOptions]);
+        assertSame(0, $code, $output);
+        assertStringContains('images_added: 1', $output);
+        assertTrue($secondStore->isPresent($ref));
+    }
+
     public function testClosedOutputPipeStillFinishesImportWithoutNotices(): void
     {
         $w = new ImportTestWorkspace();
