@@ -61,3 +61,26 @@ No supported findings.
 ### Uncertain assessments
 
 - `step3_development_plan_after.md`, "Keep Step 1-3 planning docs uncommitted": this cloud session's stop hook requires commits, so Steps 1–2 were committed before approval. The Step 4 planning commit will then contain only the organization moves. The instructions do not cover that case.
+
+## 2026-11-06T16:06:17Z - Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: one commit per stage, each with its summary, kept every stage reviewable and pushed. That mattered in an ephemeral container. Retain.
+- `implementation_standards.md`, "Replay each reported failure" and the baseline-failure rule: running the failing docs test at the starting revision in a separate worktree showed the failure predates this cycle. Retain.
+- `step4_implementation_do.md`, Enhancement Requests classification: `ImageStore::putAll` was recorded as an in-scope refinement from new understanding instead of silent drift from "reuse `put` unchanged". Retain.
+- `implementation_standards.md`, complete the outcome through ordinary entry: the real two-instance import with a browser check confirmed display, which the CLI tests only checked through the `/images/` route. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_before.md`, planning-commit gate items 2 and 4 ("confirm Step 1-3 planning docs are present and unstaged"): with Steps 1–3 already committed at the stop hook's request, these checks had nothing to confirm. Suggest clarifying the gate for pre-committed planning.
+
+### Inapplicable instructions
+
+- Documentation-only rules: application change.
+- Known user or environment replay: none named.
+- Navigation icon checks (host AGENTS.md): no navigation change.
+
+### Uncertain assessments
+
+- `RAILSPIKE.md`, Follow-up Cycles Before Merge: the session's designated branch served as the feature branch instead of a new `feat/` branch. The instructions do not cover a branch fixed by the environment.
