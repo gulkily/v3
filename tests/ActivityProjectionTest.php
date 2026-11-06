@@ -135,7 +135,7 @@ PHP;
             $check = function () use ($pdo, $fixture, $db): void {
                 foreach ([false, true] as $names) {
                     $service = new ActivityService(static fn (): PDO => $pdo, $fixture->repository, $db, $names, static fn (): bool => true);
-                    foreach (['all','content','identity','bootstrap','approval','security'] as $view) {
+                    foreach (ActivityService::activityViews() as $view) {
                         $stmt = $pdo->prepare('SELECT ' . ($names ? 'total' : 'without_profile_names') . ' FROM activity_counts WHERE view=?');
                         $stmt->execute([$view]);
                         assertSame($this->legacyCount($pdo, $service, $view), (int) $stmt->fetchColumn(), $view);
@@ -153,6 +153,8 @@ PHP;
             $pdo->exec("UPDATE posts SET is_hidden=1 WHERE post_id='root-001'"); $check();
             $pdo->exec("UPDATE posts SET is_hidden=0, retracted_at='now' WHERE post_id='root-001'"); $check();
             $pdo->exec("DELETE FROM posts WHERE post_id='root-001'"); $check();
+            $pdo->exec("INSERT INTO activity(created_at,kind,record_family,label,board_tags_json,author_label) VALUES ('now','thread','post','t','[]','guest'),('now','profile_name_change','profile_name','p','[]','guest')"); $check();
+            $pdo->exec("UPDATE activity SET kind='reply' WHERE kind='thread' AND label='t'"); $check();
             $pdo->exec("UPDATE activity SET kind='test',board_tags_json='[]' WHERE kind='approval'"); $check();
             $pdo->exec('DELETE FROM activity WHERE action_key IS NULL'); $check();
             assertSame(0, (int) $pdo->query('SELECT events FROM activity_local_state')->fetchColumn());
@@ -172,6 +174,12 @@ PHP;
             try { (new Application(dirname(__DIR__), $fixture->repository, $db))->handle('GET', '/activity/'); }
             finally { ob_end_clean(); }
             assertSame((int) $pdo->query('SELECT COUNT(*) FROM activity')->fetchColumn(), (int) $pdo->query("SELECT total FROM activity_counts WHERE view='all'")->fetchColumn());
+            foreach (ActivityService::KIND_VIEWS as $view => $kind) {
+                $stmt = $pdo->prepare('SELECT (SELECT COUNT(*) FROM activity WHERE kind = ?), (SELECT total FROM activity_counts WHERE view = ?)');
+                $stmt->execute([$kind, $view]);
+                [$expected, $maintained] = $stmt->fetch(PDO::FETCH_NUM);
+                assertSame((int) $expected, (int) $maintained, $view);
+            }
         } finally { $fixture->remove(); }
     }
 

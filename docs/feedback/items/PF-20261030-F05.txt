@@ -16,3 +16,4 @@ Sources:
 Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F05; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-06: Forte Activity gained Threads and Replies (and other per-kind) left-pane filters; see docs/plans/forte_activity_kind_filters/. Since-last-visit, author filters and excluding own activity remain open.

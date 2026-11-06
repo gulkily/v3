@@ -276,7 +276,7 @@ Additional indexes: `activity_pending_evidence_idx (source_commit_sha) WHERE evi
 
 | Column | Type | Notes |
 | --- | --- | --- |
-| `view` | TEXT PK | all/content/identity/bootstrap/approval/security/commits |
+| `view` | TEXT PK | all/content/identity/bootstrap/approval/security/commits, plus one row per single-kind view in `ActivityService::KIND_VIEWS` (schema 50) |
 | `total` | INTEGER NOT NULL | Including profile-name events |
 | `without_profile_names` | INTEGER NOT NULL | Excluding profile-name events |
 
@@ -709,3 +709,13 @@ full rebuild and the incremental thread insert both fill it, retracted and
 deleted roots clear it with the other event columns, and the thread page, board
 listing queries and `Application::fetchThread` select it. Normal startup
 rebuilds version 48 and older models before the column is read.
+
+## Version 50 — Single-kind Activity views
+
+Adds `activity_counts` rows for the single-kind Activity views listed in
+`ActivityService::KIND_VIEWS` (thread, reply, reaction, label, profile_name,
+identity_key, invitation, feature_flag, codex_handoff). Each counts rows whose
+`activity.kind` equals the mapped kind; the existing activity triggers maintain
+them for every writer, so full rebuild and incremental updates agree. Normal
+startup rebuilds version 49 and older models before Forte Activity reads the
+new totals.
