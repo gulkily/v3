@@ -14,6 +14,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Board thumbnails one-shot](board_thumbnails/board_thumbnails_one_shot.md) — image posts show a small thumbnail on the board and on Recent.
 
+[Image gallery one-shot](image_gallery/image_gallery_one_shot.md) — a Gallery page shows posts with attached images as a grid of resized previews.
+
 [Deploy pending commits one-shot](deploy_pending_commits/deploy_pending_commits_one_shot.md) — the Deploy page lists the commits an update will add, its size and local-edit overlap, and says that Queue deploy waits for the task worker.
 
 [Source repository link one-shot](source_repository_link/source_repository_link_one_shot.md) — agents find the code repository from `/llms.txt` and the `/api/` index.

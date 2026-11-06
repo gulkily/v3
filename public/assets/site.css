@@ -754,6 +754,7 @@ pre {
      the head script from the browser's saved choice) shows those More
      destinations as tabs, after the fixed ones and before New post and More. */
   html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
+  html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
   html[data-nav-slots~="search"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="search"],
@@ -785,6 +786,7 @@ pre {
   }
 
   html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
+  html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
   html[data-nav-slots~="search"] [data-shell="app"] .account-menu[data-current="search"],
@@ -1153,6 +1155,75 @@ pre {
 .board-empty p {
   margin: 0 0 1rem;
   color: var(--ink-soft);
+}
+
+/* Gallery: justified rows. Each tile's basis is its (clamped) aspect ratio
+   times the row height, so rows fill the width and images keep their shape. */
+.gallery-grid {
+  --gallery-row: 12rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Keeps a short last row at row height instead of stretching it. */
+.gallery-grid::after {
+  content: "";
+  flex: 1000 1 0;
+}
+
+.gallery-tile {
+  display: flex;
+  flex: var(--ratio) 1 calc(var(--ratio) * var(--gallery-row));
+  flex-direction: column;
+  min-width: 0;
+  /* A row that wraps early may stretch, but not far past the row height. */
+  max-width: calc(var(--ratio) * var(--gallery-row) * 1.6);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: inherit;
+  text-decoration: none;
+}
+
+.gallery-tile:hover,
+.gallery-tile:focus-visible {
+  border-color: var(--ink-soft);
+}
+
+.gallery-tile img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--ratio);
+  object-fit: cover;
+  background: var(--line);
+}
+
+.gallery-tile__caption {
+  display: flex;
+  flex-direction: column;
+  padding: 0.3rem 0.5rem 0.4rem;
+  line-height: 1.3;
+}
+
+.gallery-tile__title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gallery-tile__meta {
+  color: var(--ink-soft);
+  font-size: 0.85em;
+}
+
+@media (max-width: 40rem) {
+  .gallery-grid {
+    --gallery-row: 7rem;
+    gap: 0.35rem;
+  }
 }
 
 /* Member-only links (Messages, Invite) are in every viewer's HTML; the head

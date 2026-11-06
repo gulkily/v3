@@ -7,7 +7,7 @@ namespace ForumRewrite\Images;
 use PDO;
 
 /**
- * Small thumbnails for list rows (board and Recent): the post's attached
+ * Small thumbnails for list rows (board and Recent) and gallery tiles: the post's attached
  * image, looked up for a whole page in one query by post ID. A post without a
  * well-formed reference, a retracted post or a missing file gets none.
  */
@@ -15,7 +15,7 @@ final class ListThumbnails
 {
     /**
      * @param list<string> $postIds
-     * @return array<string, array{src:string, srcset:?string, width:int, height:int}>
+     * @return array<string, array{src:string, srcset:?string, preview:string, width:int, height:int, description:string}>
      */
     public static function forPosts(PDO $pdo, ImageStore $store, array $postIds): array
     {
@@ -38,8 +38,10 @@ final class ListThumbnails
                 continue;
             }
             $thumbnails[(string) $row['post_id']] = self::sources($reference) + [
+                'preview' => ThumbnailStore::url($reference, 'tile'),
                 'width' => $reference['width'],
                 'height' => $reference['height'],
+                'description' => $reference['description'],
             ];
         }
         return $thumbnails;
@@ -53,15 +55,8 @@ final class ListThumbnails
      */
     public static function sources(array $reference): array
     {
-        $original = '/images/' . ImageReference::filename($reference);
-        if (!ThumbnailStore::available()) {
-            return ['src' => $original, 'srcset' => null];
-        }
-        $url = static fn (int $scale): string => ThumbnailStore::originalFits($reference, $scale)
-            ? $original
-            : '/images/thumbs/' . ThumbnailStore::filename($reference, $scale);
-        $src = $url(1);
-        $retina = $url(2);
+        $src = ThumbnailStore::url($reference, '1x');
+        $retina = ThumbnailStore::url($reference, '2x');
         return ['src' => $src, 'srcset' => $retina === $src ? null : $src . ' 1x, ' . $retina . ' 2x'];
     }
 

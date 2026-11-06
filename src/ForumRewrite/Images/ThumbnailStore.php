@@ -7,18 +7,19 @@ namespace ForumRewrite\Images;
 use RuntimeException;
 
 /**
- * Small cached copies of stored images for list rows. They live beside the
+ * Small cached copies of stored images for list rows and gallery tiles. They live beside the
  * image root (never inside it: the image store accepts only originals), are
- * named by the original's sha256 and scale, and are only served while the
+ * named by the original's sha256 and size, and are only served while the
  * original is present, so purges and restores need no extra cleanup.
  * A derivative is disposable: deleting the directory just regenerates them.
  */
 final class ThumbnailStore
 {
-    /** Bounding box in pixels at 1x; the list slot is 3.5rem wide. */
-    public const BOX_WIDTH = 64;
-    public const BOX_HEIGHT = 128;
-    public const SCALES = [1, 2];
+    /**
+     * Bounding boxes in pixels by size name: list rows (the slot is 3.5rem
+     * wide) at 1x and 2x, and gallery tiles (rows are at most 12rem tall).
+     */
+    public const SIZES = ['1x' => [64, 128], '2x' => [128, 256], 'tile' => [480, 480]];
 
     public readonly string $root;
 
@@ -32,15 +33,16 @@ final class ThumbnailStore
         return function_exists('imagecreatetruecolor') && function_exists('imagecreatefromjpeg') && function_exists('imagecreatefrompng');
     }
 
-    public static function filename(array $reference, int $scale): string
+    public static function filename(array $reference, string $size): string
     {
-        return $reference['sha256'] . '-' . $scale . 'x.' . $reference['type'];
+        return $reference['sha256'] . '-' . $size . '.' . $reference['type'];
     }
 
-    /** @return array{width:int, height:int} size of the derivative at this scale (never larger than the original) */
-    public static function size(array $reference, int $scale): array
+    /** @return array{width:int, height:int} pixel size of the derivative (never larger than the original) */
+    public static function size(array $reference, string $size): array
     {
-        $ratio = min(1.0, (self::BOX_WIDTH * $scale) / $reference['width'], (self::BOX_HEIGHT * $scale) / $reference['height']);
+        [$width, $height] = self::box($size);
+        $ratio = min(1.0, $width / $reference['width'], $height / $reference['height']);
         return [
             'width' => max(1, (int) round($reference['width'] * $ratio)),
             'height' => max(1, (int) round($reference['height'] * $ratio)),
@@ -48,9 +50,18 @@ final class ThumbnailStore
     }
 
     /** True when the original is already at most this size, so the original itself is the thumbnail. */
-    public static function originalFits(array $reference, int $scale): bool
+    public static function originalFits(array $reference, string $size): bool
     {
-        return $reference['width'] <= self::BOX_WIDTH * $scale && $reference['height'] <= self::BOX_HEIGHT * $scale;
+        [$width, $height] = self::box($size);
+        return $reference['width'] <= $width && $reference['height'] <= $height;
+    }
+
+    /** URL of the derivative, or of the original when resizing is unavailable or the original already fits. */
+    public static function url(array $reference, string $size): string
+    {
+        return !self::available() || self::originalFits($reference, $size)
+            ? '/images/' . ImageReference::filename($reference)
+            : '/images/thumbs/' . self::filename($reference, $size);
     }
 
     /**
@@ -58,12 +69,10 @@ final class ThumbnailStore
      * on first use. Throws when the original is unavailable or GD fails; the
      * caller then falls back to the original.
      */
-    public function path(array $reference, int $scale): string
+    public function path(array $reference, string $size): string
     {
-        if (!in_array($scale, self::SCALES, true)) {
-            throw new RuntimeException('Unsupported thumbnail scale.');
-        }
-        $target = $this->root . '/' . self::filename($reference, $scale);
+        self::box($size);
+        $target = $this->root . '/' . self::filename($reference, $size);
         if (is_file($target) && !is_link($target)) {
             return $target;
         }
@@ -71,14 +80,14 @@ final class ThumbnailStore
             throw new RuntimeException('Image resizing is unavailable.');
         }
         $source = $this->images->resolve($reference);
-        $size = self::size($reference, $scale);
+        $pixels = self::size($reference, $size);
         $this->ensureRoot();
         $temp = tempnam($this->root, '.thumb-');
         if ($temp === false) {
             throw new RuntimeException('Unable to stage thumbnail.');
         }
         try {
-            $this->resize($source, $reference['type'], $temp, $size['width'], $size['height']);
+            $this->resize($source, $reference['type'], $temp, $pixels['width'], $pixels['height']);
             if (!chmod($temp, 0600) || !rename($temp, $target)) {
                 throw new RuntimeException('Unable to save thumbnail.');
             }
@@ -106,6 +115,12 @@ final class ThumbnailStore
         if (!$ok) {
             throw new RuntimeException('Unable to resize image.');
         }
+    }
+
+    /** @return array{0:int, 1:int} */
+    private static function box(string $size): array
+    {
+        return self::SIZES[$size] ?? throw new RuntimeException('Unsupported thumbnail size.');
     }
 
     private function ensureRoot(): void

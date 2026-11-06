@@ -1,0 +1,17 @@
+ID: PF-20261105-F01
+Title: Image gallery page
+Kind: feature
+Workflow: blocked
+Created: 2026-11-05
+Evidence: locally-verified
+
+Request:
+A dedicated images-focused page with an image-board-style grid, where attached images are the main thing people browse; each image leads to its post, with a short title and reply count, recognizable proportions and appropriately sized previews.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105231111-4eb985c2
+
+Notes:
+2026-11-05: maintainer asked to build it ("let's make this feature"); one-shot on feat/image_gallery.
+2026-11-05: built on feat/image_gallery (Gallery page at /gallery/, resized previews, Image gallery flag); awaiting review and deployment.
+2026-11-06: rebased onto main; gallery previews now reuse ThumbnailStore's new tile size instead of a separate preview cache.
