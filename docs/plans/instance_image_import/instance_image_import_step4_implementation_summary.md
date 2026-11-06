@@ -33,6 +33,29 @@ Branch: `claude/compassionate-turing-d20wyy`, the session's designated branch. P
 
 *— Claude · 2026-11-06 UTC*
 
+## Stage 2 - Copy referenced images into the store
+
+**Original estimate: 0.18**
+
+**Retrospective stage-work assessment: 0.16**
+
+- Changes:
+  - New `src/ForumRewrite/Import/InstanceImageImport.php`. It lists references from destination posts, finds those the store lacks, unpacks the ZIP into a private staging directory and adds only those images. Preview checks each image and writes nothing.
+  - New `src/ForumRewrite/Images/ImageZipReader.php`: the bounded ZIP reader moved unchanged out of `ImageRestore.php`, which now calls it. Restore behavior is unchanged.
+  - `ImageStore::putAll` added. It reads the inventory once, skips present images, rejects mismatched files and skips images over the limit. It shares `put`'s write path, and `put` itself is unchanged.
+  - The copy runs under the forum write lock that uploads in `LocalWriteService.php` take.
+  - `tests/run.php` lists the new test file.
+- Verification:
+  - Passed: `./v3 test InstanceImageImportTest ImageZipRestoreTest ImageZipBackupTest ImageContentTest`, 10/10. New tests cover a non-empty store, no overwrite, an image from a removed post excluded, an image absent from the ZIP, a mismatched file, the 1024-image limit, preview writing nothing and a corrupt ZIP leaving no store.
+  - Passed: `./v3 test --smoke`, 430/430.
+  - Full suite not run.
+- Notes:
+  - In-scope refinement from new understanding: Step 3 planned to reuse `ImageStore::put` unchanged. `put` re-hashes the whole store on every call, so copying up to 1024 images could hash 256 MiB that many times. `putAll` keeps the limit checks in `ImageStore` and hashes the store once. Scope and outcome are unchanged.
+  - The copy ignores the manifest's revision, because each file is checked against its post's reference.
+- Estimate details: original scope unchanged apart from the refinement above; no revised estimate.
+
+*— Claude · 2026-11-06 UTC*
+
 ## Enhancement Requests
 
 - Incremental sync (2026-11-06): separate work, recorded in [Step 2](./instance_image_import_step2_feature_description.md#enhancement-requests) and the [backlog](../backlog/incremental_instance_sync.md).

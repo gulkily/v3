@@ -62,6 +62,48 @@ final class ImageStore
     public function put(string $source, array $reference): void
     {
         $this->validateUpload($source, $reference);
+        $this->write($source, $reference);
+    }
+
+    /**
+     * Add several images with one inventory read. Each source must match its
+     * reference exactly; existing images are verified, never overwritten.
+     * Images that would exceed the capacity limit are skipped as full.
+     *
+     * @param list<array{source:string, reference:array}> $items
+     * @return array{added:list<string>, present:list<string>, mismatched:list<string>, full:list<string>}
+     */
+    public function putAll(array $items): array
+    {
+        $inventory = $this->inventory();
+        $count = count($inventory);
+        $bytes = array_sum(array_column($inventory, 'bytes'));
+        $result = ['added' => [], 'present' => [], 'mismatched' => [], 'full' => []];
+        foreach ($items as $item) {
+            $reference = ImageReference::validate($item['reference']);
+            $name = ImageReference::filename($reference);
+            if (isset($inventory[$name])) { $result['present'][] = $name; continue; }
+            try {
+                $matches = self::inspect($item['source'], $reference['description']) === $reference;
+            } catch (RuntimeException) {
+                $matches = false;
+            }
+            if (!$matches) { $result['mismatched'][] = $name; continue; }
+            if ($count >= self::MAX_OBJECTS || $bytes + $reference['bytes'] > self::MAX_TOTAL_BYTES) {
+                $result['full'][] = $name;
+                continue;
+            }
+            $this->write($item['source'], $reference);
+            $inventory[$name] = ['bytes' => $reference['bytes']];
+            $count++;
+            $bytes += $reference['bytes'];
+            $result['added'][] = $name;
+        }
+        return $result;
+    }
+
+    private function write(string $source, array $reference): void
+    {
         $this->ensureRoot();
         $target = $this->root . '/' . ImageReference::filename($reference);
         if (is_file($target)) {
