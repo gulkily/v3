@@ -62,7 +62,7 @@ final class AppNavigationPlacementTest
         });
     }
 
-    public function testInboxTakesTheMessagesPlaceOnTheBarOnlyWhileItsFlagIsOn(): void
+    public function testInboxSitsBeforeMessagesOnTheBarOnlyWhileItsFlagIsOn(): void
     {
         $this->withSite('zenmemes', function (): void {
             $off = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true]);
@@ -74,9 +74,10 @@ final class AppNavigationPlacementTest
             $items = $on->navigationItems(self::VIEWERS['approved']);
             $placements = array_column($items, 'placement', 'href');
             assertSame('main', $placements['/inbox']);
-            assertSame('menu', $placements['/messages']);
-            $hrefs = array_column(array_filter($items, static fn (array $item): bool => $item['placement'] === 'main'), 'href');
-            assertTrue(array_search('/inbox', $hrefs, true) < array_search('/search', $hrefs, true), 'Inbox sits where Messages was.');
+            assertSame('main', $placements['/messages'], 'Messages stays on the bar with Inbox on.');
+            $hrefs = array_values(array_column(array_filter($items, static fn (array $item): bool => $item['placement'] === 'main'), 'href'));
+            assertSame(array_search('/inbox', $hrefs, true) + 1, array_search('/messages', $hrefs, true), 'Inbox sits just before Messages.');
+            assertSame('more', array_column($items, 'phone', 'href')['/messages']);
             assertSame('more', array_column($items, 'phone', 'href')['/inbox']);
             assertSame(true, array_column($items, 'member_only', 'href')['/inbox']);
             assertTrue(in_array('inbox', array_column(array_filter($items, static fn (array $item): bool => $item['placement'] === 'main' && $item['phone'] === 'more'), 'section'), true), 'Inbox can take a phone slot.');
@@ -88,6 +89,8 @@ final class AppNavigationPlacementTest
 
             $state = $on->navigationState(self::VIEWERS['approved'], 'inbox');
             assertStringContains('href="/inbox"', $state['html']);
+            // The unread count and history sync start from the Messages link on the bar.
+            assertSame(1, substr_count($state['html'], 'data-private-message-unread '));
         });
     }
 

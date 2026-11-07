@@ -395,10 +395,10 @@ final class TemplateRenderer
         // Profile, Account and Invite. Everything else is a main destination.
         $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
-        // Inbox takes Messages' place on the bar; Messages stays one tap away in the account menu.
+        // Inbox sits just before Messages on the bar. Messages stays on the bar: its
+        // link is where the unread count and history sync start.
         if (in_array('inbox', array_column($items, 'section'), true)) {
-            $barOrder[array_search('messages', $barOrder, true)] = 'inbox';
-            $menuSections[] = 'messages';
+            array_splice($barOrder, (int) array_search('messages', $barOrder, true), 0, ['inbox']);
         }
         // Phone tab bar: Board (or Lobby) and Calendar stay; the rest sit in More,
         // which is the same disclosure as the desktop account menu.

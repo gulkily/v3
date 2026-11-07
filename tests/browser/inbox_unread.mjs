@@ -41,6 +41,10 @@ for (const [width, height] of [[1100, 260], [390, 760]]) {
       continue;
     }
     await page.waitForFunction(() => document.querySelector('[data-inbox-unread]').dataset.unreadCount === '3');
+    // Messages stays on the bar with Inbox on: its link is what starts the
+    // Messages unread count and the private-message history sync.
+    assert.equal(await page.locator('[data-private-message-unread]').count(), 1, `${width}: one Messages link starts messaging`);
+    await page.waitForFunction(() => window.ForumPrivateMessageHistorySync && window.ForumPrivateMessageUnread, null, { timeout: 5000 });
     assert.deepEqual(await state(), ['3', '3', '3 unread'], `${width}: link, More tab and status agree`);
     const before = await boxes();
     count = 0;
