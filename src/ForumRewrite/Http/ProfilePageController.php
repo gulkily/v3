@@ -47,6 +47,14 @@ final class ProfilePageController
         return ($this->renderProfilePage)($profile, $self, $this->profileNoticeFromQuery($profile, $query), null, false, $query);
     }
 
+    /** Where a profile `with` link lands, or null to render the profile normally. */
+    public function withLocation(string $slug, array $query): ?string
+    {
+        if (!isset($query['with'])) return null;
+        $profile = ProfileRepository::bySlug($this->routeServices->pdo(), $slug);
+        return $profile === null ? null : ProfileHistoryView::withLocation($this->routeServices->pdo(), $profile, $query);
+    }
+
     public function username(string $username, array $query = []): ?string
     {
         $usernameToken = strtolower($username);

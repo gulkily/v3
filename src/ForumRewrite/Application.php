@@ -1131,6 +1131,11 @@ final class Application
         }
 
         if (preg_match('#^/profiles/([^/]+)/?$#', $path, $matches) === 1) {
+            $location = $this->profilePageController()->withLocation($matches[1], $query);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post on this profile.', 303, activeSection: 'profiles');
+                return;
+            }
             $html = $this->profilePageController()->profile($matches[1], isset($query['self']), $query);
             if ($html === null) {
                 $this->notFound();

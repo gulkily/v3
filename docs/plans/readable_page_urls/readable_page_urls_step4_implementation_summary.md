@@ -76,3 +76,25 @@ The maintainer did not answer whether to reuse the `plan/readable_page_urls` dra
 - Estimate details: original scope as planned; uncertainty low; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Profile history
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - `AuthoredContentRepository::visibleIdentityPage` takes a page number and returns `has_next`; new `visibleIdentityPageOf` finds a post's page in the threads or posts list.
+  - `ProfileHistoryView` reads `threads_page` and `posts_page`. Each list's links keep `self=1` and the other list's page when it is above 1, and end in `#threads` or `#posts` as before.
+  - `?with=<ID>` on a profile opens the Threads list for a thread the person started and the Posts list otherwise, landing on `#threads-post-<ID>` or `#posts-post-<ID>`. The list prefix keeps anchors unique, since a thread root appears in both lists.
+  - `ProfilePageController::withLocation` and the `/profiles/<slug>` route redirect with 303 before rendering.
+  - `PageNavigation::withLocation` gains an anchor prefix, and drops a stale page parameter from the kept state.
+- Verification:
+  - `ProfilePublicDetailsTest`: 6 passed. Covers every post on every page finding its own page, a page past the end, another identity's post returning null, independent list links, an array page value showing page 1, and `with` for a thread and for an excluded post.
+  - `tests/browser/profile_public_details.mjs`: passed, 13 themes at two widths plus static and live paging with `threads_page` and `posts_page`, a page past the end with First page, Previous, and offline recovery.
+  - `./v3 test --smoke ProfilePublicDetailsTest RecentPostTest GalleryPageTest`: all passed (see commit).
+  - Full suite not run.
+- Notes:
+  - The thread-before-post rule for `with` resolves the "two lists on one profile" risk from Step 3.
+- Estimate details: original scope as planned; uncertainty medium as planned; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

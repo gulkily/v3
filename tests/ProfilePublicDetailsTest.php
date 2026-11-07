@@ -106,25 +106,23 @@ final class ProfilePublicDetailsTest
             assertStringNotContains('data-copy-public-key', $html);
         } finally { @unlink($database); }
     }
-    public function testIdentityPagesTraverseTiesAndReturnAfterDeletionAndArrival(): void
+    public function testIdentityPagesAreNumberedAndFindTheirPosts(): void
     {
         [$app, $pdo, $database] = $this->environment();
         try {
             for ($i = 0; $i < 105; $i++) $this->contribution($pdo, sprintf('page-%03d', $i), 'openpgp:paging');
-            $first = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts');
-            $second = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', ['direction' => 'next', 'boundary' => $first['next']]);
-            $third = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', ['direction' => 'next', 'boundary' => $second['next']]);
-            $ids = array_merge(array_column($first['items'], 'post_id'), array_column($second['items'], 'post_id'), array_column($third['items'], 'post_id'));
+            $ids = []; $number = 1;
+            do {
+                $page = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', $number);
+                foreach ($page['items'] as $item) assertSame($number, AuthoredContentRepository::visibleIdentityPageOf($pdo, 'openpgp:paging', 'posts', $item['post_id']));
+                $ids = array_merge($ids, array_column($page['items'], 'post_id')); $number++;
+            } while ($page['has_next']);
             assertSame(105, count(array_unique($ids)));
+            assertSame(3, $number - 1);
             assertSame(105, AuthoredContentRepository::countVisibleIdentity($pdo, 'openpgp:paging', 'posts'));
-            assertSame(null, $first['previous']); assertSame(null, $third['next']);
-            $back = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', ['direction' => 'previous', 'boundary' => $second['previous']]);
-            assertSame(array_column($first['items'], 'post_id'), array_column($back['items'], 'post_id'));
-            $this->contribution($pdo, 'new-arrival', 'openpgp:paging', ['created_at' => '2099-01-01T00:00:00Z']);
-            $pdo->prepare('DELETE FROM posts WHERE post_id=?')->execute([$first['next']['post_id']]);
-            $after = AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', ['direction' => 'next', 'boundary' => $first['next']]);
-            assertSame(array_column($second['items'], 'post_id'), array_column($after['items'], 'post_id'));
-            assertSame(100, count(AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', null, 9999)['items']));
+            assertSame([], AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', 9)['items']);
+            assertSame(null, AuthoredContentRepository::visibleIdentityPageOf($pdo, 'openpgp:another', 'posts', 'page-000'));
+            assertSame(100, count(AuthoredContentRepository::visibleIdentityPage($pdo, 'openpgp:paging', 'posts', 1, 9999)['items']));
         } finally { @unlink($database); }
     }
 
@@ -151,14 +149,17 @@ final class ProfilePublicDetailsTest
             assertStringContains('/threads/own-004', $second);
             assertStringNotContains('/threads/own-054', $second);
             assertStringContains('/posts/own-054', $second);
-            preg_match('/rel="next" href="([^"]*posts_position[^"]+)"/', $second, $next);
-            assertStringContains('threads_position=', html_entity_decode($next[1], ENT_QUOTES));
-            $invalid = $this->render($app, $url . '?threads_position[]=bad');
-            assertStringContains('This page position is invalid.', $invalid);
-            assertStringContains('First page', $invalid);
+            assertSame($url . '?threads_page=2#threads', $secondUrl);
+            preg_match('/rel="next" href="([^"]*posts_page[^"]+)"/', $second, $next);
+            assertSame($url . '?threads_page=2&posts_page=2#posts', html_entity_decode($next[1], ENT_QUOTES));
+            $invalid = $this->render($app, $url . '?threads_page[]=bad');
+            assertStringContains('/threads/own-054', $invalid);
             assertStringContains('/posts/own-054', $invalid);
-            $wrong = \ForumRewrite\Pagination\PageNavigation::encode('profile:other:threads:created:desc', 'next', ['created_at' => '2026', 'post_id' => 'x']);
-            assertStringContains('This page position is invalid.', $this->render($app, $url . '?threads_position=' . $wrong));
+            assertStringNotContains('role="alert"', $invalid);
+            assertStringContains('id="threads-post-own-054"', $first);
+            $toThread = $this->render($app, $url . '?with=own-004');
+            assertStringContains($url . '?threads_page=2#threads-post-own-004', html_entity_decode($toThread, ENT_QUOTES));
+            assertStringContains('id="threads-post-own-054"', $this->render($app, $url . '?with=excluded-other-author'));
             $pdo->exec("DELETE FROM posts WHERE post_id <= 'own-004'");
             $empty = $this->render($app, $secondUrl);
             assertStringContains('No visible threads.', $empty);
@@ -167,7 +168,7 @@ final class ProfilePublicDetailsTest
         } finally { @unlink($database); }
     }
 
-    public function testStaticProfileAndLivePositionsNeverSubstituteFirstPage(): void
+    public function testStaticProfileAndLivePagesNeverSubstituteFirstPage(): void
     {
         $workspace = new ImportTestWorkspace();
         $profiles = getenv('FORUM_STATIC_PROFILE_PAGES_ENABLED');
@@ -199,9 +200,9 @@ final class ProfilePublicDetailsTest
             assertStringNotContains('FIRST PROFILE ARTIFACT', $second);
             assertStringContains('/threads/host-004', $second);
             assertStringNotContains('/threads/host-054', $second);
-            $invalid = $render($url . '?posts_position=bad');
-            assertStringNotContains('FIRST PROFILE ARTIFACT', $invalid);
-            assertStringContains('First page', $invalid);
+            $past = $render($url . '?posts_page=9');
+            assertStringNotContains('FIRST PROFILE ARTIFACT', $past);
+            assertStringContains('First page', $past);
             assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical($url));
         } finally {
             putenv($profiles === false ? 'FORUM_STATIC_PROFILE_PAGES_ENABLED' : 'FORUM_STATIC_PROFILE_PAGES_ENABLED=' . $profiles);

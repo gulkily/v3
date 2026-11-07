@@ -40,10 +40,11 @@ final class PageNavigation
     }
 
     /** Where `with` lands: the page holding the item, scrolled to its row. */
-    public static function withLocation(string $path, array $query, int $page, string $id, string $pageParameter = 'page'): string
+    public static function withLocation(string $path, array $query, int $page, string $id, string $pageParameter = 'page', string $anchorPrefix = 'post-'): string
     {
+        unset($query[$pageParameter]);
         $parameters = $page > 1 ? $query + [$pageParameter => (string) $page] : $query;
-        return $path . ($parameters === [] ? '' : '?' . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986)) . '#post-' . rawurlencode($id);
+        return $path . ($parameters === [] ? '' : '?' . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986)) . '#' . $anchorPrefix . rawurlencode($id);
     }
 
     /** A post or thread ID given as `with`, or null when absent or unusable. */
