@@ -198,6 +198,28 @@ final class ThreadThemeTest
         threadThemeAssertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
     }
 
+    public function testComposersOfferTheThemeChoiceAndTheFormPathWritesIt(): void
+    {
+        [$root, $database, $service, $application] = $this->environment();
+        $newThread = $this->render($application, '/compose/thread');
+        threadThemeAssertContains('<select name="theme" data-role="thread-theme-choice">', $newThread);
+        threadThemeAssertContains('<option value="midnight">', $newThread);
+        threadThemeAssertNotContains('value="none"', $newThread);
+        threadThemeAssertNotContains('<option value="qdb">', $newThread);
+        $threadPage = $this->render($application, '/threads/root-001');
+        threadThemeAssertContains('Thread theme', $threadPage);
+        threadThemeAssertContains('<option value="none">Clear thread theme</option>', $threadPage);
+
+        $_POST = ['body' => 'Hello from the form', 'board_tags' => 'general', 'theme' => 'word97'];
+        try {
+            $this->render($application, 'POST /compose/thread');
+        } finally {
+            $_POST = [];
+        }
+        $latest = trim((string) shell_exec('git -C ' . escapeshellarg($root) . ' log -1 --name-only --format='));
+        threadThemeAssertContains("Theme: word97\n", (string) file_get_contents($root . '/' . strtok($latest, "\n")));
+    }
+
     /** @return array{string,string,LocalWriteService,Application,string} */
     private function environment(): array
     {
@@ -239,8 +261,9 @@ final class ThreadThemeTest
 
     private function render(Application $application, string $path): string
     {
+        [$method, $path] = str_starts_with($path, 'POST ') ? ['POST', substr($path, 5)] : ['GET', $path];
         ob_start();
-        $application->handle('GET', $path);
+        $application->handle($method, $path);
 
         return (string) ob_get_clean();
     }

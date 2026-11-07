@@ -74,6 +74,23 @@ final class ThreadTheme
     }
 
     /**
+     * The composer's theme choices: explicit themes this site permits, with their labels.
+     *
+     * @return list<array{name: string, label: string}>
+     */
+    public static function choices(): array
+    {
+        $choices = [];
+        foreach (ThemeRegistry::permitted(SiteProfileRegistry::active()['permittedThemes']) as $theme) {
+            if (ThemeRegistry::isExplicitName($theme['name'])) {
+                $choices[] = ['name' => $theme['name'], 'label' => $theme['label']];
+            }
+        }
+
+        return $choices;
+    }
+
+    /**
      * @return list<string> explicit themes this site permits
      */
     public static function permittedNames(): array

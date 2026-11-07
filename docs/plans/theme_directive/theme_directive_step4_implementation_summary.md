@@ -94,3 +94,29 @@ Branch `feat/theme_directive`, from `feat/engagify_theme` (unmerged; this cycle 
 - Estimate details: original scope as planned plus the prior-version startup test the schema contract requires; uncertainty low. No revisions. Measured labor unknown.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Theme choice in the browser composer
+
+**Original estimate: 0.12**
+**Retrospective: 0.12**
+
+- Changes:
+  - `templates/partials/composer.php`: a theme select in the ··· menu, after Formatting help. New threads: "Theme" with "Site default" plus the site's permitted themes. Replies: "Thread theme" with "Unchanged", the themes and "Clear thread theme" (`none`), and a tooltip saying it counts only from the thread's author or an operator.
+  - `ThreadTheme::choices()` supplies names and labels; `compose.css` lays the select out on one row.
+  - `browser_signing.js`: the signed submit sends `theme` with `body_format`; Outbox sends carry it; Discard draft resets the choice.
+  - `outbox_compose.js`: Outbox drafts keep the chosen theme.
+  - `ThreadThemeTest::testComposersOfferTheThemeChoiceAndTheFormPathWritesIt` covers the markup and the unsigned form path.
+- Verification:
+  - Smoke plus `ThreadThemeTest`, the Markdown composer test and `BrowserSigningNormalizationTest` (`--jobs=4`): 530 run, 529 passed; the one failure is the base branch's `BoardListTest` failure.
+  - Browser check with headless Chrome against a local server on a fixture copy, signed in as a fresh browser identity:
+    - New thread with Word 97 picked in the menu: a fresh 380px reader sees `data-page-theme="word97"`; the post text has no theme line.
+    - Reply with Midnight picked: the reader sees Midnight after reload.
+    - Reply with "Clear thread theme": a fresh reader sees no page theme.
+    - Screenshots of the menu at 1280px (new thread) and 380px (reply, Midnight) looked right; the select fits on one row.
+- Notes:
+  - Thread pages are baked, so the reply menu shows the choice to everyone; the tooltip says who it counts for. This was the planned fallback for the baked composer risk.
+  - A thread posted anonymously has no verified author, so only an operator can theme it.
+  - After posting a theme reply, the poster sees the new theme on the next page load, not instantly.
+- Estimate details: original scope as planned; uncertainty medium, resolved: the browser sends fields to `prepare_*` and signs the server's record, so no client-side record building changed. Measured labor unknown.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
