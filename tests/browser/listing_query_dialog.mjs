@@ -237,6 +237,8 @@ try {
   const requestsBeforeRace = downloads;
   await page.locator('[data-query-key="one"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-status"]').dataset.state === 'loading');
+  // The dialog hides the viewer status, so the first download must show in the query status.
+  await page.waitForFunction(() => { const s = document.querySelector('[data-role="sqlite-query-status"]'); return !s.hidden && s.textContent.includes('Downloading the database'); });
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   await page.locator('[data-query-key="two"]').click();
