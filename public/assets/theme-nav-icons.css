@@ -393,6 +393,87 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='8' cy='8' r='5.6' stroke-width='2.4' stroke-dasharray='2.2 2.2' stroke-linecap='butt'/><circle cx='8' cy='8' r='4.3' fill='%23ede9fe'/><circle cx='8' cy='8' r='1.6' fill='%23ffffff'/></svg>");
 }
 
+/* Tools: each glyph serves the launcher button and the Tools bar link. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/activity/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/activity/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M1.5 8.5h3l1.75-4.5 3.5 8 1.75-3.5h3'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/forte"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/forte"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='1.75' y='2.75' width='12.5' height='10.5' rx='2' fill='%23ede9fe'/><path d='M6 2.75v10.5M10 2.75v10.5'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/bookmarklets/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/bookmarklets/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4 2.25A.75.75 0 0 1 4.75 1.5h6.5a.75.75 0 0 1 .75.75V14l-4-3-4 3z' fill='%23ede9fe'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/sqlite/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/sqlite/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3 3.75v8.5c0 1 2.25 1.75 5 1.75s5-.75 5-1.75v-8.5' fill='%23ede9fe'/><ellipse cx='8' cy='3.75' rx='5' ry='1.75' fill='%23ffffff'/><path d='M3 8c0 1 2.25 1.75 5 1.75S13 9 13 8'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/llm-exchanges/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/llm-exchanges/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3 2.5h10A1.5 1.5 0 0 1 14.5 4v6a1.5 1.5 0 0 1-1.5 1.5H7.5L4 14v-2.5H3A1.5 1.5 0 0 1 1.5 10V4A1.5 1.5 0 0 1 3 2.5z' fill='%23ede9fe'/><circle cx='5.25' cy='7' r='0.9' fill='%236d28d9' stroke='none'/><circle cx='8' cy='7' r='0.9' fill='%236d28d9' stroke='none'/><circle cx='10.75' cy='7' r='0.9' fill='%236d28d9' stroke='none'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/codebase/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/codebase/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 4.5 1.75 8 5 11.5M11 4.5 14.25 8 11 11.5M9.25 3l-2.5 10'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/feature-flags/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/feature-flags/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3.5 2.5h9l-2 3 2 3h-9z' fill='%23ede9fe'/><path d='M3.5 2v12'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/operations/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/operations/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M2 4h12M2 8h12M2 12h12'/><circle cx='5.5' cy='4' r='1.6' fill='%23ffffff'/><circle cx='10.5' cy='8' r='1.6' fill='%23ffffff'/><circle cx='6.5' cy='12' r='1.6' fill='%23ffffff'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/deploy/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/deploy/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M2 10v2.5A1.5 1.5 0 0 0 3.5 14h9a1.5 1.5 0 0 0 1.5-1.5V10M8 10.5V2M4.75 5.25 8 2l3.25 3.25'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/offline/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/offline/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4.5 12.5h7a3 3 0 0 0 .4-5.97A4 4 0 0 0 4.2 7.1a2.75 2.75 0 0 0 .3 5.4z' fill='%23ede9fe'/><path d='M2 2l12 12'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/docs/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/docs/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M8 4.25C6.5 3.25 4.5 3 2 3.25v9.5c2.5-.25 4.5 0 6 1 1.5-1 3.5-1.25 6-1v-9.5c-2.5-.25-4.5 0-6 1z' fill='%23ede9fe'/><path d='M8 4.25v9.5'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/outbox/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/outbox/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M14.25 1.75 1.75 7l5 2.25L9 14.25z' fill='%23ede9fe'/><path d='M14.25 1.75 6.75 9.25'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/visitor-statistics/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/visitor-statistics/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M2 2v12h12M4.75 10.5 7.5 7l2.5 2 3.5-4.5'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/user-access/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/user-access/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M8 1.75 13 3.5v4c0 3.25-2.1 5.6-5 6.75C5.1 13.1 3 10.75 3 7.5v-4z' fill='%23ede9fe'/><path d='M5.75 8l1.6 1.6 3-3.2'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/fastmod/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/fastmod/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M2.25 11a5.75 5.75 0 0 1 11.5 0z' fill='%23ede9fe'/><path d='M8 11l3-3.75M5.5 13.75h5'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/account/key/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/account/key/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='5' cy='8' r='3.25' fill='%23ede9fe'/><path d='M8.25 8h6M12.25 8v2.5M14.25 8v2'/></svg>");
+}
+
 /* Main navigation, board filters, Recent and Gallery. */
 :root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/about/"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='8' cy='8' r='6.25' fill='%23ede9fe'/><path d='M8 7.5v3.75'/><circle cx='8' cy='5' r='0.9' fill='%236d28d9' stroke='none'/></svg>");

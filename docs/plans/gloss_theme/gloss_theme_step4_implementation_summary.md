@@ -68,3 +68,23 @@ Cycle estimate: 0.95
 - Estimate details: original scope as Step 3, plus Recent and Gallery from Stage 3 and the `site.css` fix. No revision; retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Tools icons
+
+**Original estimate: 0.10**
+**Retrospective: 0.08**
+
+- Changes:
+  - `public/assets/theme-nav-icons.css`, smooth-line block: 16 rules, each serving a Tools launcher button and its Tools bar link. Activity (pulse), Forte (three panes), Bookmarklets (bookmark), SQLite (database), LLM Exchanges (bubble with dots), System status at `/tools/codebase/` (code brackets), Feature Flags (flag), Operations (sliders), Deploy (arrow out of a tray), Offline Reading (cloud, struck through), Platform Docs (open book), Outbox (paper plane), Visitor Statistics (line chart), User Access (shield with a check), Fastmod (gauge) and Account (key, as in the main navigation). Backup was drawn in Stage 1.
+  - `docs/feedback/items/PF-20261104-F13.txt`: dated note.
+- Verification:
+  - Passed: contact sheet of the 16 glyphs at 16px and 48px inspected; the gauge was redrawn once to sit centered.
+  - Passed: headless Chrome, Engagify and Word 97, 1280px and 380px, on `/tools/`, `/tools/backup/` and `/tools/bookmarklets/`. Every launcher button and Tools bar link has a glyph in Engagify. The only gaps are Stage 4's: three group headings and the Bookmarklets buttons. Word 97 has no gaps. No sideways scroll, no page errors. Full-page screenshot of `/tools/backup/` inspected.
+  - Passed: `tests/browser/tools_launcher.mjs`.
+  - Smoke: 436 run, 431 passed, 5 failed; the same 5 baseline failures.
+  - Full suite not run.
+- Notes:
+  - Recent and Gallery were drawn in Stage 2, so this stage has 16 glyphs instead of about 19.
+- Estimate details: original scope as Step 3 minus Recent and Gallery. No revision; retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
