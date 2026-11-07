@@ -49,7 +49,8 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 - Verification:
   - `InboxPageTest::testStartupRebuildsAVersion50ReadModelWithTheParentIndex`: a read model set back to version 50 without the index is rebuilt on the next request, and a lookup by parent uses the index.
   - `./v3 rebuild` on a scratch copy of the minimal fixture: 3 posts, 2 threads; the result reports schema 51.
-  - `./v3 test --smoke InboxPageTest ActivityProjectionTest`: only the baseline `BoardListTest` failure from Stage 1.
+  - `./v3 test --smoke InboxPageTest ActivityProjectionTest` at commit `0eee8731` also failed `ReadModelSchemaTest::testCanonicalStatementsCreateExpectedTablesAndIndexes`, which lists every index. The stage was committed before that failure was read. A follow-up Stage 2 commit adds `posts_parent_idx` to its expected list.
+  - After the fix, `./v3 test --smoke InboxPageTest ReadModelSchemaTest`: 438 run, 437 passed; only the baseline `BoardListTest` failure remains. `ActivityProjectionTest` and `BoardSearchTest`, which check the schema version, pass.
   - Full suite not run.
 - Notes:
   - Deploying this stage triggers the normal startup rebuild once.
