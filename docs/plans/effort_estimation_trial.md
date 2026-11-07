@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/readable_page_urls
+
+2026-11-07T00:18:52Z — v3/readable_page_urls Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./readable_page_urls/readable_page_urls_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`position` names the first item on the page; previous link computed per adapter; old tokens redirect; rule in PRINCIPLES.md). Starting revision `20d24918`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because pagination code was read while answering the maintainer's questions. Intake and projected total **0.65**; option estimates 0.65/0.60/0.35, non-additive. Await Approved Step 1; planning uncommitted.
+
 ## Cycle v3/instance_image_import
 
 2026-11-06T16:06:06Z — v3/instance_image_import Step 4 local closeout: Step 3 explicitly approved; branch `claude/compassionate-turing-d20wyy`, planning `fe504ce` and five stage commits. [Summary/closeout](./instance_image_import/instance_image_import_step4_implementation_summary.md#closeout-and-study-outcome). Same v1/A/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.60 at entry, no revision; retrospective scope assessment 0.55. Stage originals 0.08/0.18/0.12/0.12/0.10; retrospectives 0.06/0.16/0.10/0.12/0.10; non-additive. Smoke plus changed tests 476/476; one baseline docs-page failure reproduced at `6efe5ba`; real two-instance import and browser check passed; full suite not run. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.
