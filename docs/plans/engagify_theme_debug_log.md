@@ -103,3 +103,23 @@ No supported findings.
 ### Uncertain assessments
 
 - The change reverses a Step 1 revision. The instructions do not say whether Step 1 must be reopened; Step 1 kept Revision 4 as history with a pointer, and Step 2 carries the new direction.
+
+## 2026-11-07T11:58:20Z - Step 3
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, "Prefix usability, data, or rollback risks High risk": the pre-paint precedence can trap readers in a theme, so it is marked and validated in its own stage. Retain.
+- `step3_development_plan_do.md`, stage sizing near one hour: splitting nags into two stages and stretch nags into a third kept each stage small and made the stretch stage skippable. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step3_development_plan_do.md`, known user or environment replay stage: Step 2 names no user or environment.
+- Documentation-only scope rules: this is an application change.
+
+### Uncertain assessments
+
+- A conditional stage (Stage 7) may end up unbuilt. The Step 4 commit cadence expects at least one commit per stage; the instructions do not say how to record a planned stage that is skipped by design.

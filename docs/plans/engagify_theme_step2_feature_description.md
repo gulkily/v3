@@ -95,6 +95,8 @@ Delayed nags break "pages must look final on first paint" on purpose. Step 1 app
 
 Revised 2026-11-07T11:56:40Z, Step 2 revision. Scope v5: Engagify selectable again, Step 1 Revision 4 reversed by the maintainer after Step 2 approval. Same starting revision, R1, P2 and single exposed Claude rater. Projected total **0.80** reaffirmed: dropping the page-only state is offset by Exit restoring a previous saved theme and by smoke tests that list every theme. No implementation, measured labor or accepted outcome.
 
+Step 2 approved again by the maintainer on 2026-11-07 ("approved step 2") after the revision.
+
 ## Enhancement Requests
 
 Carried from Step 1: page themes declared inside a thread, moved to [`v3/theme_directive`](./theme_directive_step1_solution_assessment.md), approval pending there. Stretch nags remain conditional on Step 3. The CSS-only alternative remains declined.

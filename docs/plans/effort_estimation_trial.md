@@ -6,6 +6,8 @@
 
 ## Cycle v3/engagify_theme
 
+2026-11-07T11:58:20Z — v3/engagify_theme Step 3 handoff: user explicitly approved revised Step 2. [Plan/checkpoint](./engagify_theme_step3_development_plan.md#study-checkpoint) eight stages: theme scripts, Engagify and Exit, page themes, baked pages, three nags, newsletter and rate-us, stretch nags, docs and sweep. Whole-cycle **0.80** reaffirmed; stage-work originals 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10, non-additive. Same v5/baseline/R1/P2, single exposed Claude rater. Await Approved Step 3.
+
 2026-11-07T11:56:40Z — v3/engagify_theme Step 2 revision: maintainer reversed page-only (Step 1 Revision 4); Engagify selectable again. [Checkpoint](./engagify_theme_step2_feature_description.md#study-checkpoint). Scope v5; **0.80** reaffirmed. Same baseline/R1/P2, single exposed Claude rater. Awaiting renewed Approved Step 2.
 
 2026-11-07T11:54:11Z — v3/engagify_theme Step 2 handoff: user explicitly approved Step 1 (Option A, Revisions 1–4). [Description/checkpoint](./engagify_theme_step2_feature_description.md#study-checkpoint): theme scripts, page-only themes, page themes in the site profile, cookie notice thread first, five core nags, Exit remembered per page. Projected total 0.75 → **0.80** (new understanding: menu choice counts as Exit, standalone layout, baked pages). Same v4/A/baseline/R1/P2, single exposed Claude rater. Await Approved Step 2.
