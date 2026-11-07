@@ -2354,6 +2354,10 @@ PHP;
         assertStringContains('data-theme-option="auto"', $board);
         assertStringContains('data-theme-option="thermal"', $board);
         assertStringContains('data-theme-option="whitehot"', $board);
+        assertStringContains('data-theme-option="gloss"', $board);
+        // Engagify stays in the menu but out of the cycle button.
+        assertSame(1, preg_match('/data-theme-option="engagify"[^>]*data-theme-cycle="skip"/', $board));
+        assertSame(1, substr_count($board, 'data-theme-cycle="skip"'));
         assertStringContains('data-theme-option="word97"', $board);
         assertStringContains('data-theme-option="midnight"', $board);
         assertStringContains('data-theme-option="engagify"', $board);

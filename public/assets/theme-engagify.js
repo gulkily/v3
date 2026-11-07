@@ -48,8 +48,9 @@
           if (!stopped) callback();
         }, delay));
       },
+      // Exit lands on Gloss: the same look without the parody layer.
       exit: function () {
-        if (typeof window.forumExitTheme === "function") window.forumExitTheme();
+        if (typeof window.forumExitTheme === "function") window.forumExitTheme("gloss");
       },
       onStop: function (callback) {
         cleanups.push(callback);

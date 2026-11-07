@@ -79,6 +79,12 @@
     var themes = options.map(function (option) {
       return option.getAttribute("data-theme-option");
     });
+    // Themes the cycle button passes over; they stay in the menu.
+    var cycleSkips = options.filter(function (option) {
+      return option.getAttribute("data-theme-cycle") === "skip";
+    }).map(function (option) {
+      return option.getAttribute("data-theme-option");
+    });
     var labels = {};
     options.forEach(function (option) {
       var labelElement = option.querySelector(".theme-menu__label");
@@ -246,7 +252,7 @@
       var currentResolvedTheme = resolvedTheme(currentTheme);
       for (var offset = 1; offset < themes.length; offset += 1) {
         var candidate = themes[(currentIndex + offset) % themes.length];
-        if (resolvedTheme(candidate) !== currentResolvedTheme) {
+        if (cycleSkips.indexOf(candidate) === -1 && resolvedTheme(candidate) !== currentResolvedTheme) {
           return candidate;
         }
       }
@@ -425,16 +431,8 @@
 
     function commitSelection(theme, selectedPalette) {
       document.documentElement.removeAttribute("data-theme-loading");
-      if (pageThemeActive) {
-        // Any change on a page theme's page leaves the page theme; the page
-        // theme is never recorded as the viewer's previous theme.
-        if (theme !== pageTheme) leavePageTheme();
-      } else if (theme !== currentTheme) {
-        try {
-          localStorage.setItem(storageKey + "-previous", currentTheme);
-        } catch (error) {
-        }
-      }
+      // Any change on a page theme's page leaves the page theme.
+      if (pageThemeActive && theme !== pageTheme) leavePageTheme();
       currentTheme = theme;
       if (selectedPalette) lcdControl.set(selectedPalette);
       applyTheme(currentTheme);
@@ -454,24 +452,14 @@
       closeMenu(true);
     }
 
-    // Leaving a theme from inside it (a theme script's Exit control) returns
-    // the viewer to the theme they had before choosing it.
-    window.forumExitTheme = function () {
-      if (pageThemeActive) {
-        var saved = readSavedTheme();
-        if (saved === pageTheme) saved = defaultTheme() !== pageTheme ? defaultTheme() : "auto";
-        applySelection(saved);
-        return;
-      }
-      var previous = null;
-      try {
-        previous = localStorage.getItem(storageKey + "-previous");
-      } catch (error) {
-      }
-      if (themes.indexOf(previous) === -1 || previous === currentTheme) {
-        previous = defaultTheme() !== currentTheme ? defaultTheme() : "auto";
-      }
-      applySelection(previous);
+    // Leaving a theme from inside it (a theme script's Exit control) works
+    // like choosing the target theme in the menu: it is saved, and on a page
+    // theme's page the exit is remembered. Without a usable target, Exit
+    // falls back to the site default.
+    window.forumExitTheme = function (target) {
+      var next = themes.indexOf(target) !== -1 && target !== currentTheme ? target : null;
+      if (!next) next = defaultTheme() !== currentTheme ? defaultTheme() : "auto";
+      applySelection(next);
     };
 
     cycleButton.addEventListener("click", function () {

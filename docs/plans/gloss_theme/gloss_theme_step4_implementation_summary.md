@@ -167,3 +167,31 @@ Cycle estimate: 0.95
 - Estimate details: original scope as Step 3, plus the contrast audit change and the header fix. No revision; retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Exit to Gloss and the cycle skip
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - `public/assets/theme_toggle.js`:
+    - `forumExitTheme(target)` takes the theme to land on and applies it like a menu choice: saved as the reader's theme, and on a page theme's page the page exit is recorded. A target the site does not offer, or the current theme, falls back to the site default.
+    - The stored previous theme (`<key>-previous`) is gone; only the old Exit read it. Existing values in browsers are left unused.
+    - `nextTheme` passes over options marked `data-theme-cycle="skip"`.
+  - `public/assets/theme-engagify.js`: the Exit pill calls `forumExitTheme("gloss")`, so the Exit target lives in the theme's own script.
+  - `src/ForumRewrite/View/ThemeRegistry.php`: new optional `'cycle' => false`; Engagify sets it.
+  - `templates/partials/theme_menu.php`: such a theme's menu option carries `data-theme-cycle="skip"`. The attribute is the same for every viewer, so server HTML stays static.
+  - New `tests/browser/theme_exit.cjs`, run by `ThemeToggleScriptTest::testExitSavesItsTargetAndCycleSkipsMarkedThemes`: Exit after picking Engagify; Exit on a page theme's page over a saved Word 97, then a revisit; a target the site lacks; twelve cycle presses that never reach Engagify; a cycle press from Engagify itself.
+  - `tests/LocalAppSmokeTest.php`: the menu lists Gloss and marks only Engagify to skip the cycle.
+- Verification:
+  - Passed: `theme_exit.cjs` fails against the previous `theme_toggle.js` and passes with the change.
+  - Passed: `./v3 test --smoke ThemeToggleScriptTest LocalAppSmokeTest ThemeRegistryTest ProfileThemePresentationTest`, 444 run, 439 passed, 5 failed (the same baseline failures); `LocalAppSmokeTest::testApplicationRendersCoreRoutes`, `testPageThemeIsMarkedOnItsOwnPageOnly` and `testBakedThreadArtifactCarriesItsPageTheme` run by name and passed.
+  - Passed: headless Chrome against `./v3 start`, the cookie thread, a browser with Word 97 saved, 1280px and 380px. The page opens in Engagify with its nags; clicking Exit shows Gloss with no reload and no nags, and saves Gloss; a reload and the board stay on Gloss. No page errors. Phone screenshot inspected.
+  - Passed: Engagify picked from the menu, then Exit by keyboard (focus and Enter): Gloss, saved, no nags.
+  - Passed: with Midnight current, the cycle button's label names Auto/System as next, skipping Engagify, which follows Midnight in the order.
+  - Full suite not run.
+- Notes:
+  - As accepted in Step 2, a reader who had saved another theme and exits Engagify now has Gloss everywhere; the theme menu restores any theme in one choice.
+- Estimate details: original scope as Step 3, plus the registry field and menu attribute for the skip. No revision; retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

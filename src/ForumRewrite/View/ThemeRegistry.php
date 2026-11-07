@@ -16,11 +16,12 @@ final class ThemeRegistry
 
     /**
      * A theme may set 'script' => true to ship /assets/theme-<name>.js, which
-     * runs only while that theme is active, and 'stylesheet' => '<other>' to
-     * load /assets/theme-<other>.css instead of its own (see the theme
-     * development guide).
+     * runs only while that theme is active, 'stylesheet' => '<other>' to
+     * load /assets/theme-<other>.css instead of its own, and 'cycle' => false
+     * to stay out of the cycle button while remaining in the menu (see the
+     * theme development guide).
      *
-     * @return list<array{name: string, label: string, mode: string, script?: bool, stylesheet?: string}>
+     * @return list<array{name: string, label: string, mode: string, script?: bool, stylesheet?: string, cycle?: bool}>
      */
     public static function all(): array
     {
@@ -40,7 +41,7 @@ final class ThemeRegistry
             ['name' => 'gloss', 'label' => 'Gloss', 'mode' => 'light'],
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
             ['name' => 'midnight', 'label' => 'Midnight', 'mode' => 'dark'],
-            ['name' => 'engagify', 'label' => 'Engagify', 'mode' => 'light', 'script' => true, 'stylesheet' => 'gloss'],
+            ['name' => 'engagify', 'label' => 'Engagify', 'mode' => 'light', 'script' => true, 'stylesheet' => 'gloss', 'cycle' => false],
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
             ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
             ['name' => 'mitrapclub', 'label' => 'MIT Rap Club', 'mode' => 'dark'],

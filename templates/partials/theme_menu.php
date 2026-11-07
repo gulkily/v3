@@ -41,7 +41,8 @@
       role="menuitemradio"
       aria-checked="false"
       data-theme-option="<?= $e($theme['name']) ?>"
-      data-theme-option-mode="<?= $e($theme['mode']) ?>"
+      data-theme-option-mode="<?= $e($theme['mode']) ?>"<?php if (($theme['cycle'] ?? true) === false): ?>
+      data-theme-cycle="skip"<?php endif; ?>
     >
 <?php if ($theme['name'] === 'auto'): ?>
       <span class="theme-swatch theme-menu__swatch" data-theme-mode="auto" aria-hidden="true"></span>

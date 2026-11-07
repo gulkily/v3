@@ -21,6 +21,11 @@ final class ThemeToggleScriptTest
         $this->assertScriptPasses('theme_shared_stylesheet.cjs');
     }
 
+    public function testExitSavesItsTargetAndCycleSkipsMarkedThemes(): void
+    {
+        $this->assertScriptPasses('theme_exit.cjs');
+    }
+
     private function assertScriptPasses(string $script): void
     {
         $command = 'cd ' . escapeshellarg(dirname(__DIR__)) . ' && node '
