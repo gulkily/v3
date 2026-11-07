@@ -16,9 +16,11 @@ final class ThemeRegistry
 
     /**
      * A theme may set 'script' => true to ship /assets/theme-<name>.js, which
-     * runs only while that theme is active (see the theme development guide).
+     * runs only while that theme is active, and 'stylesheet' => '<other>' to
+     * load /assets/theme-<other>.css instead of its own (see the theme
+     * development guide).
      *
-     * @return list<array{name: string, label: string, mode: string, script?: bool}>
+     * @return list<array{name: string, label: string, mode: string, script?: bool, stylesheet?: string}>
      */
     public static function all(): array
     {
@@ -96,8 +98,11 @@ final class ThemeRegistry
     public static function stylesheetPaths(): array
     {
         $paths = [];
-        foreach (self::explicitNames() as $name) {
-            $paths[$name] = '/assets/theme-' . $name . '.css';
+        foreach (self::all() as $theme) {
+            if ($theme['name'] === 'auto') {
+                continue;
+            }
+            $paths[$theme['name']] = '/assets/theme-' . ($theme['stylesheet'] ?? $theme['name']) . '.css';
         }
 
         return $paths;

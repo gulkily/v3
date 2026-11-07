@@ -113,3 +113,24 @@ Cycle estimate: 0.95
 - Estimate details: original scope as Step 3, plus the `tools.css` fix and a PHP test in place of a one-off script. No revision; retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Shared stylesheet field
+
+**Original estimate: 0.08**
+**Retrospective: 0.06**
+
+- Changes:
+  - `src/ForumRewrite/View/ThemeRegistry.php`: an entry may set `'stylesheet' => '<other>'`; `stylesheetPaths()` then returns `/assets/theme-<other>.css` for it. No theme sets it yet. The server, both layouts and the pre-paint script already read paths from this map, so they need no change.
+  - `public/assets/theme_toggle.js`: stylesheet load states are keyed by path instead of theme name, so two names that share a file share one request and one ready state.
+  - `tests/ThemeRegistryTest.php`: each theme's path is its own stylesheet or a declared owner's; the owner must be an explicit theme that does not itself borrow; the file must exist.
+  - New `tests/browser/theme_shared_stylesheet.cjs`, run by `ThemeToggleScriptTest::testThemesSharingAStylesheetLoadItOnce`: choosing two sharing themes before the file arrives makes one request, and later switches between them apply at once.
+- Verification:
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest ProfileThemePresentationTest`, 443 run, 438 passed, 5 failed (the same baseline failures).
+  - Passed: the new script test fails against the previous `theme_toggle.js` (two requests for one file) and passes with the change.
+  - Passed: headless Chrome against `./v3 start`: menu choices Word 97, Engagify, Light, Engagify each apply; no theme stylesheet requested twice; no page errors.
+  - Full suite not run.
+- Notes:
+  - A shared link keeps the `data-theme-name` of the first theme that loaded it. Nothing reads that attribute for behavior.
+- Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

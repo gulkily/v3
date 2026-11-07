@@ -176,16 +176,17 @@
       }
     }
 
+    // Load states are keyed by path: themes that share a stylesheet load it once.
     function ensureThemeStylesheet(theme, highPriority) {
       var path = themeStylesheetPaths[theme];
       if (!path) {
         return { ready: true, promise: Promise.resolve(true) };
       }
-      if (themeLoadStates[theme]) {
+      if (themeLoadStates[path]) {
         if (highPriority) {
-          themeLoadStates[theme].link.setAttribute("fetchpriority", "high");
+          themeLoadStates[path].link.setAttribute("fetchpriority", "high");
         }
-        return themeLoadStates[theme];
+        return themeLoadStates[path];
       }
 
       var link = themeStylesheet && themeStylesheet.getAttribute("href") === path && hasThemeStyles(themeStylesheet)
@@ -209,12 +210,12 @@
             }, { once: true });
             link.addEventListener("error", function () {
               // Keep the current theme usable and let the next selection retry.
-              delete themeLoadStates[theme];
+              delete themeLoadStates[path];
               link.remove();
               resolve(false);
             }, { once: true });
           });
-      themeLoadStates[theme] = state;
+      themeLoadStates[path] = state;
       return state;
     }
 

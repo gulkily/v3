@@ -58,9 +58,16 @@ final class ThemeRegistryTest
         assertSame(ThemeRegistry::explicitNames(), array_keys($paths));
         assertSame(false, array_key_exists('auto', $paths));
 
+        $publicRoot = dirname(__DIR__) . '/public';
+        $declared = array_column(ThemeRegistry::all(), 'stylesheet', 'name');
         foreach ($paths as $name => $path) {
             assertSame(true, ThemeRegistry::isExplicitName($name));
-            assertSame('/assets/theme-' . $name . '.css', $path);
+            // A theme may share another explicit theme's stylesheet.
+            $owner = $declared[$name] ?? $name;
+            assertSame(true, ThemeRegistry::isExplicitName($owner));
+            assertSame(false, isset($declared[$owner]), $name . ' shares a stylesheet that is itself shared');
+            assertSame('/assets/theme-' . $owner . '.css', $path);
+            assertSame(true, is_file($publicRoot . $path));
         }
 
         assertSame(false, ThemeRegistry::isExplicitName('auto'));
