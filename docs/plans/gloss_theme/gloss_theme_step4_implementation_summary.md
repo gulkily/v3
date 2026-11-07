@@ -45,3 +45,26 @@ Cycle estimate: 0.95
 - **Request:** add colour to the new icons later ("Later we may want to add color to them"). **Disposition and reason:** separate work; the approved style is single-colour violet, and the request is explicitly for later. **Approval status:** not started. **Outcome:** follow-up after this cycle; not in Stages 2–8.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Main navigation icons
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `public/assets/theme-nav-icons.css`, smooth-line block: 24 rules keyed to the same links as the pixel-art set. About, Users, Tools, Account (key), Invites, New post and compose, Lobby, profiles, Messages, Tags, Calendar, Latest, Top, Leetness, Random, Add, Search, the five board filters (All, Liked, Newest, Oldest, Top), Recent and Gallery. The account menu shows a person in a circle; on phones, where it is More, a three-line list.
+  - `public/assets/site.css`: the phone More tab's fallback three-bar icon and its renamed-tab arrow excluded only the three pixel-art themes. Both rules now also exclude `gloss` and `engagify`, so those themes show their own More glyph, as the pixel-art themes do. Comment updated.
+  - `docs/feedback/items/PF-20261104-F13.txt`: dated note.
+- Verification:
+  - Passed: contact sheet of all 26 glyphs at 16px and 48px inspected.
+  - Passed: headless Chrome against `./v3 start`, Engagify and Word 97, 1280px and 380px, board page and the phone More panel. Every visible main navigation link and New post button has a glyph in Engagify. The two exceptions, the Newest sort control and the page-2 link, have none in Word 97 either, by design. The account menu and More icons render; the renamed More tab on `/about/` matches Word 97's behavior. No page errors.
+  - Not rendered, checked only by selector parity with the pixel-art set: links that need a session or a flag (Invites, Messages, profiles, Lobby, Latest, Top, Leetness, Random, Add, Gallery). Stage 8's sweep covers them signed in.
+  - Passed: `tests/browser/tools_launcher.mjs`.
+  - Smoke: 436 run, 431 passed, 5 failed; the same 5 baseline failures as Stage 1.
+  - Full suite not run.
+- Notes:
+  - Found while checking: `site.css` keeps its own list of icon themes for the phone More tab. Without the change, Engagify's More tab showed a 2px stripe instead of a glyph. Stage 4 checks `tools.css` for the same pattern on Bookmarklets buttons.
+  - Recent and Gallery moved here from Stage 3, because they are main navigation links; their rule also covers the launcher button.
+- Estimate details: original scope as Step 3, plus Recent and Gallery from Stage 3 and the `site.css` fix. No revision; retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
