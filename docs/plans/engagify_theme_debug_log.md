@@ -32,3 +32,17 @@ No supported findings.
 
 - `RAILSPIKE.md`, Follow-up Cycles Before Merge, covers follow-ups after Step 4 that reuse a branch. A split during Step 1 into a dependent cycle is not addressed; the split was handled as a distinct follow-up with a parent link.
 - The earlier stop-hook save had overwritten the closing text of two unrelated ledger entries, `readable_page_urls` and `adaptive_nav`. They were restored to "planning uncommitted" and the engagify entry was given its own `## Cycle` heading. No instruction caused this; recorded as a correction.
+
+## 2026-11-07T11:48:38Z - Step 1 Revision 2
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md`, Enhancement Requests, "Record every enhancement request before acting": the open-ended "later stages if Step 3 fits" entry let the nag list stay undecided. Updating its disposition made the maintainer's choice visible. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- `step1_solution_assessment.md` keeps content high level. A named list of required nags is close to a Step 2 requirement; it was recorded here because the maintainer decided it during Step 1.

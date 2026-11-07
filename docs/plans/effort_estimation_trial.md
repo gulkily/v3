@@ -6,6 +6,8 @@
 
 ## Cycle v3/engagify_theme
 
+2026-11-07T11:48:38Z — v3/engagify_theme Step 1 Revision 2: maintainer fixed the nag list (core: rate-us, cookie banner, newsletter, app bar, notification prompt, Exit; six stretch nags conditional). [Checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v2/A, **0.70** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
+
 2026-11-07T11:45:50Z — v3/engagify_theme Step 1 Revision 1: Option B moved to v3/theme_directive. [Checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.70** reaffirmed; A/C estimates unchanged, B's 1.00 kept as history. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; revision uncommitted.
 
 2026-11-07T11:11:04Z — v3/engagify_theme Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (Engagify parody theme with its own script, page theme list in configuration, Exit back to the viewer's theme). Starting revision `f343b626`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because theme code was read before rating. Intake and projected total **0.70**; option estimates 0.70/1.00/0.35, non-additive. Await Approved Step 1. Planning saved on `plan/engagify_theme` at the session stop hook's request; no approval implied.

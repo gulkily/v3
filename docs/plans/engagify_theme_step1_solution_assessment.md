@@ -91,6 +91,18 @@ The maintainer asked to move the page theme set from inside a thread into its ow
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
+## Revision 2 — which nags this cycle builds
+
+The maintainer agreed to fix the list of nags now, rather than leave it to Step 3. Each nag is its own small piece of `theme-engagify.js`, so later additions stay small.
+
+- Core, required: the rate-us prompt as in the mockup, the cookie banner, the newsletter popup with a guilt-trip decline, the "Open in app" bar, the fake notification prompt, and Exit.
+- Stretch, only if Step 3 fits them: fake sign-up toasts, a countdown timer, a chat bubble, a paywall fade, stacked sticky bars and "Summarize with AI" buttons.
+- Out of scope: everything else from the long list, as a follow-up.
+
+This replaces the first slice above, which named only the rate-us prompt, cookie banner, newsletter popup and Exit. Option A remains the recommendation.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
 ## Study checkpoint
 
 2026-11-07T11:11:04Z, `railspike-effort` / `v3/engagify_theme`, intake and Step 1 handoff. Scope v1: Option A as recommended above. Starting revision `f343b6269a3b786e4ebe1ab383096f2109461933`. Reference R1, protocol P2; frozen R1 hashes not re-verified for this checkpoint. Single exposed Claude rater. Before rating, the rater read `ThemeRegistry.php`, the theme part of `TemplateRenderer.php` and `layout.php`, and the theme development guide. Pristine intake is missing. Intake and Step 1 projected total **0.70**. Option estimates 0.70, 1.00 and 0.35 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
@@ -99,7 +111,9 @@ Planning saved on branch `plan/engagify_theme` at the session stop hook's reques
 
 2026-11-07T11:45:50Z, Revision 1 checkpoint: Option B moved to `v3/theme_directive` at the maintainer's request. Scope v1 and recommended Option A unchanged; projected total **0.70** reaffirmed. Option estimates 0.70 and 0.35 for A and C unchanged; B's 1.00 retained as history. Same revision, R1/P2 and single exposed rater. No approval implied.
 
+2026-11-07T11:48:38Z, Revision 2 checkpoint: the maintainer fixed the core and stretch nag lists. Scope v2: Option A with five core nags plus Exit; stretch nags are conditional and excluded from the estimate. Projected total **0.70** reaffirmed; the two added core nags are offset by stretch work moving out of the estimate. Same revision, R1/P2 and single exposed Claude rater. No approval implied.
+
 ## Enhancement Requests
 
 - Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now. Revision 1: moved to its own cycle at the maintainer's request, widened to a `theme:` directive; approval pending there; [v3/theme_directive](./theme_directive_step1_solution_assessment.md).
-- Remaining nags from the ranked list (push prompt, chat bubble, toasts, countdown, paywall, sticky bars, AI button). Disposition: in scope as later stages if Step 3 fits them; otherwise a follow-up.
+- Remaining nags from the ranked list (push prompt, chat bubble, toasts, countdown, paywall, sticky bars, AI button). Disposition: in scope as later stages if Step 3 fits them; otherwise a follow-up. Revision 2: the "Open in app" bar and notification prompt are core; the rest are stretch; approved by the maintainer in conversation.
