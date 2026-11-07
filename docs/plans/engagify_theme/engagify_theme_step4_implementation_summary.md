@@ -116,3 +116,29 @@ The `v3/theme_directive` plans and earlier drafts stay on branch `plan/engagify_
 - Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Newsletter and rate-us
+
+**Original estimate: 0.12**
+**Retrospective: 0.12**
+
+- Changes:
+  - `theme-engagify.js`:
+    - Shared centered dialog over a dimmed shade. The shade ignores clicks, so the header and theme menu stay usable.
+    - Newsletter popup after 6s: email field with a label, Subscribe, and "No thanks, I prefer being uninformed". Subscribe prevents the form submit, clears the field and shows a toast, so nothing is sent or stored.
+    - Rate-us flow, 2.5s after the newsletter closes, following the mockup. "Enjoying ZenMemes?" leads to "Yes, I love it!" or "Not really". Five stars ask for reviews on six more sites. Fewer stars, or "Not really", lead to the private box with "Send to /dev/null". "Remind me later" brings it back after 20s.
+  - `theme-engagify.css`: dialog, form, star and site grid styles.
+- Verification:
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest`; the only failure is the baseline `BoardListTest` failure.
+  - Passed: headless Chrome check at 1280px and 380px on `/threads/root-001`, mapped to Engagify for the check only:
+    - The newsletter opens with focus on its Exit control.
+    - Subscribing by keyboard closes it and makes no request off the local site.
+    - The theme menu stays clickable behind the rate-us shade.
+    - "Not really" opens the private box; Send closes it, and it returns within 20s.
+    - Four stars lead to the private box; five stars, chosen by keyboard, lead to the review list; "Remind me later" closes it.
+    - Exit from inside a dialog removes every Engagify element.
+    - No page errors. Screenshots inspected.
+- Notes: the dialogs do not trap focus. That is deliberate, so a keyboard reader can always reach the page and the theme menu.
+- Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

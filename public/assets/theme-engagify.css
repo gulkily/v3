@@ -290,3 +290,100 @@
     bottom: calc(var(--app-tabbar-offset, 0px) + 4.25rem);
   }
 }
+
+/* Dialogs: centered over a dimmed page. The shade ignores clicks, so the
+   header and theme menu stay usable behind it. */
+:root[data-theme="engagify"] .engagify-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  background: rgba(30, 27, 46, 0.45);
+  pointer-events: none;
+}
+
+:root[data-theme="engagify"] .engagify-dialog {
+  top: 50%;
+  left: 50%;
+  width: min(25rem, calc(100vw - 2rem));
+  max-height: calc(100vh - var(--app-tabbar-offset, 0px) - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: 1.4rem;
+  text-align: center;
+  align-items: center;
+  transform: translate(-50%, calc(-50% - var(--app-tabbar-offset, 0px) / 2));
+}
+
+:root[data-theme="engagify"] .engagify-dialog > .engagify-button {
+  align-self: stretch;
+}
+
+:root[data-theme="engagify"] .engagify-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-self: stretch;
+  text-align: left;
+}
+
+:root[data-theme="engagify"] .engagify-form label,
+:root[data-theme="engagify"] .engagify-dialog label {
+  align-self: flex-start;
+  flex: 1 0 100%;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+:root[data-theme="engagify"] .engagify-form input {
+  flex: 1 1 12rem;
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+}
+
+:root[data-theme="engagify"] .engagify-dialog textarea {
+  align-self: stretch;
+  margin: 0;
+}
+
+:root[data-theme="engagify"] .engagify-app-icon--large {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem;
+  font-size: 2rem;
+}
+
+:root[data-theme="engagify"] .engagify-stars {
+  display: flex;
+  gap: 0.25rem;
+}
+
+:root[data-theme="engagify"] .engagify-star {
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #d97706;
+  font: 400 2.2rem/1 var(--ui-font);
+  cursor: pointer;
+}
+
+:root[data-theme="engagify"] .engagify-sites {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:root[data-theme="engagify"] .engagify-sites li {
+  padding: 0.6rem;
+  border: 1px solid #e2dff0;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
