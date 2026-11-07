@@ -993,6 +993,23 @@ pre {
   background: var(--panel);
 }
 
+/* A module: one card holding its heading, its list and its actions (Messages,
+   and each Unread section). The list sits inside the card instead of being a
+   second window below it. */
+.card > .thread-rows,
+.card > .inbox-catch-up,
+.card > .message-list-footer:has(> :not([hidden]):not(.visually-hidden)) {
+  margin-top: 0.75rem;
+}
+
+.message-list-rows > .message-list-row + .message-list-row {
+  border-top: 1px solid var(--line);
+}
+
+.message-list-rows:not(:has(> [data-conversation-row]:not([hidden]))) {
+  display: none;
+}
+
 .thread-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

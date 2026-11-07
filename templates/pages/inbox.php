@@ -1,8 +1,7 @@
 <?php
 /**
  * Unread (internally Inbox): unread messages, then replies to the viewer's posts, then other new posts.
- * Each section opens with a card heading, as Messages does, so themes that draw card
- * headings as title bars (Word97 and others) style these the same way.
+ * Each section is one module (a card): its heading, then its list, then its Caught up button.
  *
  * @var array{enabled:bool,failed:bool,conversations:list<array{counterpart:string,unread_count:int,latest_at:string}>} $messages
  * @var array<string, array{items:list<array<string,mixed>>,failed:bool,catch_up_failed:bool}> $sections
@@ -11,16 +10,13 @@
 <section class="stack inbox" data-approved-identity="<?= $e((string) ($viewerProfile['identity_id'] ?? '')) ?>">
   <h1 class="visually-hidden">Unread</h1>
 <?php if ($messages['enabled']): ?>
-  <section class="stack inbox-section" id="inbox-messages-section" aria-labelledby="inbox-messages">
-    <article class="card">
-      <h2 id="inbox-messages">Messages</h2>
+  <article class="card inbox-section" id="inbox-messages-section" aria-labelledby="inbox-messages">
+    <h2 id="inbox-messages">Messages</h2>
 <?php if ($messages['failed']): ?>
-      <p class="message-list-alert" role="alert">Couldn’t check messages. <a href="/unread">Retry</a></p>
+    <p class="message-list-alert" role="alert">Couldn’t check messages. <a href="/unread">Retry</a></p>
 <?php elseif ($messages['conversations'] === []): ?>
-      <p class="meta">No unread messages</p>
-<?php endif; ?>
-    </article>
-<?php if (!$messages['failed'] && $messages['conversations'] !== []): ?>
+    <p class="meta">No unread messages</p>
+<?php else: ?>
     <div class="thread-rows">
 <?php foreach ($messages['conversations'] as $conversation): ?>
       <article class="thread-row inbox-conversation" data-counterpart="<?= $e($conversation['counterpart']) ?>">
@@ -30,20 +26,17 @@
 <?php endforeach; ?>
     </div>
 <?php endif; ?>
-  </section>
+  </article>
 <?php endif; ?>
 <?php $sectionHeadings = ['replies' => ['Replies', 'No new replies'], 'new' => ['New posts', 'No new posts']]; ?>
 <?php foreach ($sections as $name => $section): ?>
-  <section class="stack inbox-section" id="inbox-<?= $e($name) ?>" aria-labelledby="inbox-<?= $e($name) ?>-heading">
-    <article class="card">
-      <h2 id="inbox-<?= $e($name) ?>-heading"><?= $e($sectionHeadings[$name][0]) ?></h2>
+  <article class="card inbox-section" id="inbox-<?= $e($name) ?>" aria-labelledby="inbox-<?= $e($name) ?>-heading">
+    <h2 id="inbox-<?= $e($name) ?>-heading"><?= $e($sectionHeadings[$name][0]) ?></h2>
 <?php if ($section['failed']): ?>
-      <p class="message-list-alert" role="alert">Couldn’t check <?= $e(strtolower($sectionHeadings[$name][0])) ?>. <a href="/unread">Retry</a></p>
+    <p class="message-list-alert" role="alert">Couldn’t check <?= $e(strtolower($sectionHeadings[$name][0])) ?>. <a href="/unread">Retry</a></p>
 <?php elseif ($section['items'] === []): ?>
-      <p class="meta"><?= $e($sectionHeadings[$name][1]) ?></p>
-<?php endif; ?>
-    </article>
-<?php if (!$section['failed'] && $section['items'] !== []): ?>
+    <p class="meta"><?= $e($sectionHeadings[$name][1]) ?></p>
+<?php else: ?>
     <div class="thread-rows">
 <?php foreach ($section['items'] as $item): ?>
 <?= $indent($partial('partials/recent_entry.php', ['item' => $item]), 3) ?>
@@ -62,6 +55,6 @@
       </div>
     </form>
 <?php endif; ?>
-  </section>
+  </article>
 <?php endforeach; ?>
 </section>

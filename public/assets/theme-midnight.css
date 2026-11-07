@@ -873,3 +873,9 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
     inset -1px -1px 0 0 #6a6a6a,
     inset 1px 1px 0 0 #000000;
 }
+
+/* A list inside a module is sunken, not a second raised window. */
+:root[data-theme="midnight"] .card > .thread-rows {
+  border-color: #1a1a1a #4e4e4e #4e4e4e #1a1a1a;
+  box-shadow: none;
+}
