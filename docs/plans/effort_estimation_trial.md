@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/image_theme
+
+2026-11-07T05:30:00Z — v3/image_theme Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./image_theme_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended C + B (vision model reads the style when configured, in-browser color picker otherwise; shared contrast check; theme saved per browser; sharing deferred). Starting revision `f343b626`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because theme and model-provider code was read first. Intake and projected total **0.80**; option estimates 0.25/0.55/0.75, non-additive. Await Approved Step 1; planning saved on `plan/image_theme`, not approved.
+
 ## Cycle v3/readable_page_urls
 
 2026-11-07T02:16:44Z — v3/readable_page_urls Step 4 local closeout: branch `feat/readable_page_urls`, planning `44d072c2` and eight stage commits. [Summary/closeout](./readable_page_urls/readable_page_urls_step4_implementation_summary.md#closeout). Same v3/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.60 at entry; Stage 6 revised 0.08 → 0.11 (new understanding: offline reader tokens). Retrospective scope assessment 0.62. Stage originals 0.12/0.10/0.05/0.08/0.08/0.08/0.08/0.08; retrospectives 0.12/0.08/0.03/0.08/0.07/0.11/0.07/0.09; non-additive. Smoke plus changed tests 485/485; two browser tests fail on baseline too; full suite not run. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.
