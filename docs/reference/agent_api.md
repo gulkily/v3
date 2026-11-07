@@ -340,11 +340,13 @@ GET /api/get_post?post_id=<post_id>  -> … Retracted: yes
 
 Use `/api/text_rules` or the instance facts in `/llms.txt`.
 ASCII mode accepts printable ASCII and LF in bodies. Unicode mode accepts
-letters, marks after NFC, numbers and punctuation, plus printable ASCII and
-body newlines. It rejects non-ASCII symbols (Sm/Sc/Sk/So: arrows, currency,
-mathematical symbols and emoji), non-ASCII spacing, control/format characters
-and noncharacters. When emoji are enabled, recognized emoji bases and
-contextual sequence characters are exceptions; arbitrary symbols remain rejected.
+letters, marks after NFC, numbers, punctuation and symbols (Sm/Sc/Sk/So:
+arrows, currency, mathematical and other symbols), plus printable ASCII and
+body newlines. It rejects non-ASCII spacing, control/format characters and
+noncharacters. When emoji are disabled, characters that render as emoji by
+default (Emoji_Presentation) and the emoji variation selector U+FE0F are also
+rejected; when enabled, recognized emoji bases and contextual sequence
+characters are accepted.
 
 Outer ASCII whitespace is trimmed. Bodies convert CRLF to LF; Unicode mode
 also converts lone CR and normalizes NFC. Without server normalization support,
@@ -490,7 +492,7 @@ post target already exists.`; check `get_post`.
 | --- | --- |
 | `<field> is required.` | Send the field. |
 | `<field> must be ASCII only.` / `must be printable ASCII.` | Use chars/field to locate rejected characters; explicitly edit the draft. |
-| `<field> contains unsupported Unicode symbols.` | Non-ASCII Sm/Sc/Sk/So symbols are rejected except enabled recognized emoji. |
+| `<field> contains unsupported Unicode symbols.` | Emoji are disabled on this instance; the named character renders as emoji by default. |
 | `<field> contains unsupported Unicode spacing characters.` | Replace the named non-ASCII spacing character explicitly. |
 | `<field> contains unsupported Unicode control or format characters.` | Remove the named invisible/control character explicitly; enabled emoji sequence exceptions are contextual. |
 | `author_identity_id must use the retained openpgp identity form.` | Use `openpgp:<lowercase fingerprint>`. |

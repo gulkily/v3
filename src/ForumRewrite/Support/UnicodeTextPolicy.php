@@ -12,8 +12,8 @@ final class UnicodeTextPolicy
     {
         return [
             'status' => 'ok', 'mode' => $unicode ? 'unicode' : 'ascii', 'emoji' => $unicode && $emoji,
-            'accepted' => $unicode ? ['ASCII printable', 'L', 'M after NFC', 'N', 'P', 'LF in body'] : ['ASCII U+0020–U+007E', 'LF in body'],
-            'rejected_categories' => $unicode ? ['Sm', 'Sc', 'Sk', 'So', 'Z outside ASCII space', 'C outside body LF'] : ['non-ASCII', 'controls outside body LF'],
+            'accepted' => $unicode ? ['ASCII printable', 'L', 'M after NFC', 'N', 'P', 'S (Sm, Sc, Sk, So)', 'LF in body'] : ['ASCII U+0020–U+007E', 'LF in body'],
+            'rejected_categories' => $unicode ? array_merge($emoji ? [] : ['Emoji_Presentation symbols'], ['Z outside ASCII space', 'C outside body LF']) : ['non-ASCII', 'controls outside body LF'],
             'emoji_exceptions' => $unicode && $emoji ? 'Recognized emoji bases, variation selectors, joiners and modifiers in supported context; not every Unicode symbol.' : 'none',
             'noncharacters' => 'rejected', 'normalization' => 'Trim outer ASCII whitespace; body CRLF to LF; Unicode mode also converts lone CR and normalizes NFC.',
             'normalization_available' => class_exists(\Normalizer::class),
@@ -130,7 +130,13 @@ final class UnicodeTextPolicy
             return;
         }
 
-        if (preg_match('/^[\p{L}\p{M}\p{N}\p{P}]$/u', $character) !== 1) {
+        // Symbols (arrows, math, currency, etc.) are accepted; only characters that render as emoji by default are held back
+        // when emoji are disabled. Text-default symbols such as → or ☺ become emoji only with U+FE0F, which is rejected above.
+        if (!$this->allowEmoji && preg_match('/^\p{Emoji_Presentation}$/u', $character) === 1) {
+            throw new RuntimeException("{$field} contains unsupported Unicode symbols.");
+        }
+
+        if (preg_match('/^[\p{L}\p{M}\p{N}\p{P}\p{S}]$/u', $character) !== 1) {
             throw new RuntimeException("{$field} contains unsupported Unicode symbols.");
         }
     }
