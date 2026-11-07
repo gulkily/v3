@@ -61,3 +61,26 @@ No supported findings.
 ### Uncertain assessments
 
 - "Numbered plan (<=1 page)": eight stages plus the contract exceed one page; the maintainer asked for comprehensive plans for a handoff.
+
+## 2026-11-07T14:32:38Z - Step 4
+
+### Necessary/useful instructions
+
+- `implementation_standards.md`, inspect existing implementations before adding CSS: led to sharing the icon sizing rules between both sets instead of copying them, and to finding the separate icon-theme lists in `site.css` and `tools.css`. Without that search, Engagify's More tab and Bookmarklets buttons would have shipped wrong. Retain.
+- `step3_development_plan_do.md`, risk with early validation: the frozen-clock before/after screenshots for the Engagify move, with a repeat baseline run to measure noise, turned "looks the same" into 17 identical images and 3 known-noise diffs. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol: running checks before each commit caught the More tab stripe (Stage 2), the missing `/messages` selector (Stage 4) and the stylesheet header test (Stage 6) within their stages. Retain.
+- `AGENTS.md`, report what ran and identify baseline failures: stashing the stage's change to rerun the 5 failing tests showed they predate the cycle. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_do.md`, per-stage "Canonical components/API contracts touched" repeated from Step 3 in the summary: the summary's Changes bullets already name each file, so the field was not repeated. Suggest clarify that Changes may stand in for it.
+
+### Inapplicable instructions
+
+- `implementation_standards.md`, replaying a reported user or environment failure: none was reported.
+- `RAILSPIKE.md`, Follow-up Cycles Before Merge: the branch was shared with an approved plan, not a follow-up fix.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md`, stages of about 50 lines: the icon stages each added 50 to 120 lines, almost all inline SVG data. Line count overstated their size; review effort was in the contact sheets, not the diff.
+- Commit authorization: the maintainer's memory asks for review before commits, while Railspike requires stage commits. "Start development here, please continue" was taken as authorizing the planning and stage commits; this may deserve an explicit rule.
