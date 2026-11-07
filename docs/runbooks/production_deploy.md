@@ -464,7 +464,7 @@ Useful manual commands:
 
 ## Internal Task Queue
 
-The internal task queue handles allowlisted maintenance work outside visitor requests, including requested agent replies, read-model rebuild/recovery, Fastmod sweeps, public offline-snapshot publication and operator-requested [deploys](#deploy-from-the-site), which it claims ahead of other queued work. It does not run user-supplied commands and remains separate from the Codex-handoff queue.
+The internal task queue handles allowlisted maintenance work outside visitor requests, including requested agent replies, read-model rebuild/recovery, Fastmod sweeps, public offline-snapshot publication and operator-requested [deploys](#deploy-from-the-site), which it claims ahead of other queued work. It does not run user-supplied commands.
 
 Install the cron worker with the current-path reference:
 

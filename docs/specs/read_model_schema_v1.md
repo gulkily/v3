@@ -20,6 +20,9 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 53 removes the Codex handoff Activity view (`codex_handoff`) and its
+`activity_counts` row; prior-version startup rebuild is required.
+
 Version 52 adds `posts.theme`, the post's hidden `Theme:` header, so a thread page can
 find its own theme without reading record files; prior-version startup rebuild is required.
 The feature branch used version 51 locally; main's 51 (Inbox's `posts_parent_idx`) is
@@ -366,25 +369,6 @@ Key columns: `id` (PK), `target_post_id`, `target_content_hash`,
 `agent_post_id`, `posted_at`, `failure_code`, `failure_message`,
 `retry_after`, `request_context_json`, `raw_response_json`. Unique on
 `(target_post_id, target_content_hash)`.
-
-### `codex_handoffs` and `codex_handoff_events`
-
-Defined in `src/ForumRewrite/Codex/CodexHandoffStore.php`. Tracks Codex
-handoff requests and their status-change event log.
-
-`codex_handoffs` key columns: `id` (PK), `handoff_id` (unique), `origin_post_id`,
-`origin_thread_id`, `origin_content_hash`, `requester_identity_id`,
-`requester_profile_slug`, `requester_username`, `status`, `user_story`,
-`fdp_step1`, `confidence_summary`, `draft_text`, `status_context_json`,
-`requested_at`, `draft_ready_at`, `approved_at`, `rejected_at`, `running_at`,
-`completed_at`, `failed_at`, `updated_at`. Unique on
-`(origin_post_id, origin_content_hash)`.
-
-`codex_handoff_events` key columns: `id` (PK), `handoff_id`, `event_status`,
-`created_at`, `origin_post_id`, `origin_thread_id`, `label`,
-`author_identity_id`, `author_profile_slug`, `author_username_token`,
-`author_label`, `author_is_approved`, `context_json`. Index:
-`codex_handoff_events_recent_idx (created_at DESC, id DESC)`.
 
 ## Adjacent, separate SQLite databases
 
@@ -753,3 +737,11 @@ A thread page derives its own theme on read from this column and `theme:` lines 
 post bodies; see [canonical post record](canonical_post_record_v1.md). Normal startup
 rebuilds version 51 and older models, including main's version 51, which has
 `posts_parent_idx` but no `posts.theme`.
+
+## Version 53 — Codex handoff removed
+
+Removes the Codex handoff feature. `ActivityService::KIND_VIEWS` no longer has
+`codex_handoff`, so its `activity_counts` row and trigger branches are gone, and
+rebuilds no longer project `codex_handoff_events` into Activity. Older databases
+may still hold `codex_handoffs` and `codex_handoff_events` tables; nothing reads
+them. Normal startup rebuilds version 52 and older models.

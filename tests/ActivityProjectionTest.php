@@ -120,8 +120,8 @@ PHP;
             assertSame($before, $pdo->query('SELECT action_key, evidence_json FROM activity ORDER BY action_key')->fetchAll());
             $builder->rebuild();
             assertSame($before, $pdo->query('SELECT action_key, evidence_json FROM activity ORDER BY action_key')->fetchAll());
-            $pdo->exec("INSERT INTO activity(created_at,kind,label,board_tags_json,author_label) VALUES ('now','codex_handoff','test','[]','guest')");
-            assertSame('["","",[]]', $pdo->query("SELECT evidence_json FROM activity WHERE kind='codex_handoff'")->fetchColumn());
+            $pdo->exec("INSERT INTO activity(created_at,kind,label,board_tags_json,author_label) VALUES ('now','local_event','test','[]','guest')");
+            assertSame('["","",[]]', $pdo->query("SELECT evidence_json FROM activity WHERE kind='local_event'")->fetchColumn());
         } finally { $fixture->remove(); }
     }
 

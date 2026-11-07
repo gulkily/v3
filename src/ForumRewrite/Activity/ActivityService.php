@@ -48,7 +48,6 @@ final class ActivityService
         'identity_key' => 'identity',
         'invitation' => 'invitation',
         'feature_flag' => 'site_feature_flag',
-        'codex_handoff' => 'codex_handoff',
     ];
 
     /** @var array<string, list<array{status:string,path:string,previous_path:string}>|null> */
