@@ -120,3 +120,36 @@ Branch `feat/theme_directive`, from `feat/engagify_theme` (unmerged; this cycle 
 - Estimate details: original scope as planned; uncertainty medium, resolved: the browser sends fields to `prepare_*` and signs the server's record, so no client-side record building changed. Measured labor unknown.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Docs and close-out
+
+**Original estimate: 0.06**
+**Retrospective: 0.06**
+
+- Changes:
+  - `docs/concepts/page_theme.md`: thread-set themes in the scenario; ThreadTheme and the directive in sources.
+  - `docs/runbooks/theme_development_guide.md`: page themes section covers thread-set themes and why they need no manual rebuild.
+  - `docs/reference/agent_api.md` and `LlmsTxtRenderer` (served `llms.txt`): the `theme:` line and the `theme` input beside `event:`.
+- Verification:
+  - Local links in changed docs and plan files resolve (scripted check).
+  - Smoke plus `ThreadThemeTest LlmsTxtRendererTest PlatformDocsCatalogTest` (`--jobs=4`): 457 run, 456 passed; the one failure is the base branch's `BoardListTest` failure.
+  - Final diff review of the cycle (22 files in src, templates, public and tests); `git diff --check` clean.
+- Notes: none.
+- Estimate details: original scope as planned; uncertainty low. Measured labor unknown.
+
+## Closeout
+
+- Completion Contract:
+  - Normal entry (both forms, new thread and reply, browser and signed API): passed. Browser check in Stage 5; signed API round trip in Stage 3.
+  - End-to-end outcome (theme before first paint, hidden form not in the text, other pages unchanged): passed.
+  - Recovery (retraction, `theme: none`, Exit, old records unchanged): passed; Exit is the existing page-theme mechanism, unchanged and not re-checked in a browser this cycle.
+  - Deployment (read-model rebuild for schema 51, baked pages): startup rebuild from schema 50 tested; production deploy pending, not run from here.
+  - Release condition: smoke and changed tests pass apart from the base branch's `BoardListTest` failure. Full suite not run, per project practice.
+- Base-branch failure reproduced: `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged` fails on `feat/engagify_theme` without this cycle's changes.
+- Merge order: this branch is based on `feat/engagify_theme`; merge that first, or merge this branch, which contains it.
+
+**Cycle retrospective: 0.58** (stage retrospectives 0.12, 0.04, 0.13, 0.11, 0.12, 0.06; projection was 0.75)
+
+Retrospective scope assessment, 2026-11-07T15:32:51Z: delivered scope v2 as approved, with no scope changes during Step 4. Smaller than projected mainly because Stage 2 needed no code and Stage 5 needed no client-side record building. Rater: Claude, single exposed rater, also the planner. Maintainer comfortable-fit judgment: pending. Measured labor: unknown.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

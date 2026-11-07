@@ -76,6 +76,15 @@ on that page, leaves it there; the browser remembers that per page.
 Thread pages are baked, so after changing `pageThemes`, rebuild artifacts
 (`php scripts/build_static_artifacts.php`) or the page keeps its old theme.
 
+A thread can also set its own page theme from inside the forum, which beats
+`pageThemes` for that thread. Its author or a current operator posts a line
+`theme: <name>` in the opening post or any reply, or picks a theme in the
+composer's ··· menu, which writes a hidden `Theme:` header instead of a line.
+The latest setting wins; `theme: none` (or "Clear thread theme") clears it,
+and retracting the post withdraws it. `ThreadTheme::forThread()` decides this
+when the page is read. These pages need no manual rebuild: a reply or a
+retraction already drops the thread's baked page.
+
 ## Scoped-CSS rules of the road
 
 - **Never restyle the theme menu's rows from ambient rules.** Popover rows

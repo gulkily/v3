@@ -40,16 +40,16 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [Thread themes](theme_directive/theme_directive_step3_development_plan.md) — a thread's author or an operator sets its page theme with a visible `theme:` line or a hidden `Theme:` header, on the opening post or any reply; `theme: none` clears it; Step 4 in progress.
+- [Thread themes](theme_directive/theme_directive_step3_development_plan.md) — a thread's author or an operator sets its page theme with a visible `theme:` line or a hidden `Theme:` header, on the opening post or any reply; `theme: none` clears it; implemented locally, deploy pending.
 - [Engagify theme](engagify_theme/engagify_theme_step3_development_plan.md) — theme scripts, page themes in the site profile, and Engagify, a selectable parody theme of dark patterns that is the cookie notice thread's page theme; implemented locally, deploy check pending.
-- [Readable page URLs](readable_page_urls/readable_page_urls_step3_development_plan.md) — `?page=N` on every paged list and `?with=<ID>` to open the page holding a post, replacing base64 position tokens; "URLs are interface" rule; Step 4 in progress.
+- [Readable page URLs](readable_page_urls/readable_page_urls_step3_development_plan.md) — `?page=N` on every paged list and `?with=<ID>` to open the page holding a post, replacing base64 position tokens; "URLs are interface" rule; implemented locally, deploy pending.
 - [Pre-existing test failures](preexisting_test_failures/preexisting_test_failures_one_shot.md) — one-shot: the 15 tests failing on `main` in cloud workspaces (GPG socket length, running as root, missing whiptail, four tests behind deliberate changes).
 - [Fast default tests: outliers](fast_default_tests_outliers/fast_default_tests_outliers_one_shot.md) — one-shot: removes avoidable waste from the three slowest test classes (docs snapshot reuse, checkout Git wait, isolated test Git config); split from the parked [fast default tests Step 1](fast_default_tests_step1_solution_assessment.md).
 - [Smoke tests](smoke_tests/smoke_tests_one_shot.md) — one-shot: `./v3 test` runs the curated smoke set in `tests/smoke.txt`, `--smoke Name` adds touched tests, `--all` is the maintainer's periodic full run; process in `AGENTS.md` and `CONTRIBUTING.md`.
 - [Parallel tests](parallel_tests/parallel_tests_one_shot.md) — one-shot: `--jobs=N` runs any test selection in worker processes, slowest work first; `./v3 fulltest` runs the full suite on every core.
 - [Work tracking](work_tracking/work_tracking_step3_development_plan.md) — superseded 2026-11-04; code removed, restarting from feedback data as [feedback work restart](feedback_work_restart/feedback_work_restart_step1_solution_assessment.md).
-- [Feedback work restart](feedback_work_restart/feedback_work_restart_step3_development_plan.md) — feedback items as `Key: value` files in `docs/feedback/items/`, `./v3 feedback check|index`, triage procedure in `docs/agents/`; Step 4 in progress.
-- [Delete record speed](delete_record_speed/delete_record_speed_step3_development_plan.md) — `./v3 delete-record` inspect and delete under 1s on the qdb host with live status lines and `-q`; label-file index, one-index-read commit, incremental removal instead of a full rebuild; Step 4 in progress.
+- [Feedback work restart](feedback_work_restart/feedback_work_restart_step3_development_plan.md) — feedback items as `Key: value` files in `docs/feedback/items/`, `./v3 feedback check|index`, triage procedure in `docs/agents/`; implemented locally, deploy pending.
+- [Delete record speed](delete_record_speed/delete_record_speed_step3_development_plan.md) — `./v3 delete-record` inspect and delete under 1s on the qdb host with live status lines and `-q`; label-file index, one-index-read commit, incremental removal instead of a full rebuild; implemented locally, deploy pending.
 
 - [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
 
