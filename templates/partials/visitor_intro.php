@@ -6,7 +6,7 @@
 <?php if (($siteDescription ?? '') !== ''): ?>
 <article class="card visitor-intro" data-visitor-intro>
   <p><?= $e($siteDescription) ?> <a href="/about/">About</a></p>
-  <button type="button" data-visitor-intro-hide>Hide</button>
+  <button type="button" data-visitor-intro-hide aria-label="Hide"><span aria-hidden="true">×</span></button>
 </article>
 <script>
   document.querySelector('[data-visitor-intro-hide]').addEventListener('click', function () {

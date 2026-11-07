@@ -1100,21 +1100,31 @@ pre {
 }
 
 .visitor-intro {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  position: relative;
 }
 
+/* On the sentence, not the card: themes set their own card padding. */
 .visitor-intro p {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin: 0;
+  margin: 0 1.5rem 0 0;
 }
 
-.visitor-intro button {
-  flex: 0 0 auto;
-  width: auto;
+/* `:root` outranks themes' general button sizing. The invisible ::after gives
+   the small button a 44px touch target without covering the sentence. */
+:root .visitor-intro button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.visitor-intro button::after {
+  content: "";
+  position: absolute;
+  inset: -0.625rem;
 }
 
 /* Member-only links (Messages, Invite) are in every viewer's HTML; the head

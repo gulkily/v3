@@ -120,6 +120,21 @@ Branch: `feat/site-purpose`. Planning commit: `1517b499`.
 
 *— Claude · 2026-11-05 UTC · Model: claude-opus-5-5*
 
+## Follow-up - Hide as a small × button
+
+Requested by the maintainer after Stage 5, as a direct change.
+
+- Reuse: the visible `×` with an `aria-label`, placed absolutely in the corner, follows `image-upload-remove` (`templates/partials/image_compose_fields.php`, `public/assets/compose.css`). The button keeps each theme's own button styling. The `data-visitor-intro-hide` hook and its script are unchanged.
+- Changes: `templates/partials/visitor_intro.php`, `public/assets/site.css`, `tests/PresentationProfileMatrixTest.php`, `docs/concepts/visitor_intro.md`.
+- Sizing: 24 px visible, with an invisible `::after` extending the target to 44 px.
+- Corrected before finishing: clearance first sat on the card as padding, and the themes that set their own card padding ran text under the ×. It now sits on the sentence.
+- Verification:
+  - `./v3 test --smoke PresentationProfileMatrixTest`: 432 run, 432 passed. Full suite not run.
+  - Headless Chrome against a local zenmemes server: all 13 themes at 390 and 1280 px. The × is 24 px in the top right corner, text clears it, and there is no horizontal overflow. Measured, and screenshots reviewed.
+  - Touch tap in the extended target hides the card and it stays hidden after reload; keyboard Enter hides it; the button is exposed as "Hide".
+  - With `localStorage` throwing: the card shows, × hides it for the page, and it returns after reload.
+  - Deployment to zenmemes.com: still pending.
+
 ## Study Closeout
 
 2026-11-05T17:00:00Z. Delivered scope v1/B on `feat/site-purpose`: planning commit `1517b499` plus five stage commits. Entry projection 0.45 preserved. **Retrospective scope assessment 0.42**, by a single exposed Claude rater; it is not an independent rating or measured labor. Corrections inside scope: the zenmemes board template, the `/llms.txt` summary line and the phone layout of Hide. No new requests. Pending: live deployment check, maintainer comfortable-fit judgment and acceptance. No accepted-count change.
