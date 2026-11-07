@@ -25,7 +25,6 @@
 <?php endforeach; ?>
     </div>
 <?php endif; ?>
-    <p class="meta"><a href="/messages">All messages</a></p>
   </section>
 <?php endif; ?>
 <?php $sectionHeadings = ['replies' => ['Replies', 'No new replies'], 'new' => ['New posts', 'No new posts']]; ?>

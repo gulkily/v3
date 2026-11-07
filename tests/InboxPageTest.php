@@ -76,7 +76,7 @@ final class InboxPageTest
 
             $empty = $this->renderInbox($databasePath, $this->viewer('openpgp:alice', 'alice'), static fn (): PrivateMessageStore => $store);
             assertStringContains('No unread messages', $empty);
-            assertStringContains('href="/messages">All messages</a>', $empty);
+            assertStringNotContains('All messages', $empty);
         });
     }
 
