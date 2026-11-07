@@ -1,0 +1,7 @@
+# Page theme
+
+Purpose: Let one page show its own theme by default without changing any reader's saved theme.
+Scenario: The `zenmemes` site profile maps the cookie notice thread, `/threads/thread-20261102152258-25e82c97`, to Engagify. Every reader who opens it sees Engagify before first paint; every other page shows their usual theme. Exit, or any theme choice from the menu on that page, leaves the page theme there and shows the reader's own theme without a reload. The browser remembers that exit for that page, so a revisit stays on the reader's theme. With JavaScript off the page shows the site default.
+Sources: [site profiles](../../src/ForumRewrite/SiteProfileRegistry.php) (`pageThemes`, `pageThemePath()`, validation), [renderer](../../src/ForumRewrite/View/TemplateRenderer.php) and [layout](../../templates/layout.php) (`data-page-theme`, the pre-paint choice), [theme toggle](../../public/assets/theme_toggle.js) (page exit), [theme guide](../runbooks/theme_development_guide.md#page-themes).
+
+Paths are stored without a query or trailing slash. A page theme must be a permitted explicit theme on that site. Thread pages are baked into static files, so a changed page theme reaches them only after artifacts are rebuilt. The per-page exit lives in browser storage under `<theme storage key>-page-exit:<path>`; a browser that blocks storage sees the page theme on every visit.

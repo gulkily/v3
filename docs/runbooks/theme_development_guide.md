@@ -44,6 +44,38 @@ every theme's CSS on every page.)
 Theme choice persists in localStorage key `zenmemes-theme`; an inline
 script in `layout.php` applies it pre-paint against the allow-list.
 
+## Theme scripts
+
+A theme may also ship a script. Set `'script' => true` on its registry entry
+and add `public/assets/theme-<name>.js`. `theme_toggle.js` loads it the first
+time the theme becomes active and keeps it loaded.
+
+The script registers itself:
+`window.forumThemeScripts.register('<name>', { start: fn, stop: fn })`.
+Only the active theme is started. Every theme change calls the old theme's
+`stop` before the new one starts, without a reload, so `stop` must remove every
+element, listener and timer that `start` added. `theme-engagify.js` shows one
+pattern: a context object that records each element and timer, so `stop` is
+one call. Scripts must keep the same promises as stylesheets: never rename or
+reuse the hooks other scripts select on, keep controls reachable, and work at
+~380px. A theme that adds controls should give the reader a visible way out;
+`window.forumExitTheme()` returns them to the theme they had before.
+
+Theme script UI appears after first paint, an exception to the first-paint
+rule in `CONTRIBUTING.md`. Keep it to themes whose point is that behavior.
+`tests/browser/theme_scripts.cjs` covers loading, start and stop.
+
+## Page themes
+
+A site profile in `SiteProfileRegistry.php` may map page paths to themes in
+`pageThemes`, such as the cookie notice thread to `engagify`. Paths carry no
+query and no trailing slash, and the theme must be permitted on that site. The
+page shows its theme to every reader before paint. Exit, or any theme choice
+on that page, leaves it there; the browser remembers that per page.
+
+Thread pages are baked, so after changing `pageThemes`, rebuild artifacts
+(`php scripts/build_static_artifacts.php`) or the page keeps its old theme.
+
 ## Scoped-CSS rules of the road
 
 - **Never restyle the theme menu's rows from ambient rules.** Popover rows

@@ -171,3 +171,41 @@ The `v3/theme_directive` plans and earlier drafts stay on branch `plan/engagify_
 - Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Documentation and release sweep
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `docs/runbooks/theme_development_guide.md`: new "Theme scripts" and "Page themes" sections, including the artifact rebuild after a page theme change.
+  - New concept entries `docs/concepts/theme_script.md` and `docs/concepts/page_theme.md`; their source links were checked to resolve.
+- Verification:
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest SiteProfileRegistryTest PostActionThemeTest Word97ThemeCoverageTest`, 450 run, 449 passed. The one failure, `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged`, also fails on `main` at `f343b626` before any change in this cycle. The full suite was not run.
+  - Passed: final browser sweep at the final state, against `./v3 start`, with `/threads/root-001` mapped to Engagify for the run only:
+    - Stage 2: select, Exit to previous theme, reload, switch away.
+    - Stage 3: page theme on its page only, from a fresh browser and from a saved theme, with Exit and menu choice remembered per page.
+    - Nag check: every nag at 1280px and 380px, plus a Stage 6 check of dialog branches and a Stage 7 check of stretch nags.
+    - JavaScript off: no Engagify attribute or nags; the page uses the default light ink.
+  - Passed: `git diff --check`; the full diff against the planning commit was reviewed for scope and duplication.
+  - Pending: the real cookie notice thread, `/threads/thread-20261102152258-25e82c97`, exists only in production. Its page theme was checked through a stand-in local thread, and the baked-artifact test uses a fixture thread. After deploy, open that thread in a fresh browser and confirm Engagify and Exit. The deploy must rebuild artifacts.
+- Notes: no navigation destination was added, so theme navigation icons are unchanged.
+- Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+2026-11-07T12:32:39Z. All eight stages are complete on `feat/engagify_theme`: planning `fe15dec`, then one commit per stage. Technical completion is local; nothing is merged or deployed.
+
+- Delivered scope v5: theme scripts, Engagify selectable on ZenMemes with Exit to the previous theme, page themes in the site profile with the cookie notice thread first, five core nags, and all six stretch nags.
+- Open: production check of the cookie notice thread after deploy and artifact rebuild (pending, above). Full suite not run (maintainer runs it).
+- Corrections during work: Exit pill over the phone tab bar, base button rules stretching nag buttons, and contrast of input borders. All were found by the stage checks and fixed in their stages. No new requests arrived during Step 4.
+
+Study closeout, `railspike-effort` / `v3/engagify_theme`, R1/P2, single exposed Claude rater:
+
+- Projection at Step 4 entry 0.80, no revision. Stage originals 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10; retrospectives 0.10/0.12/0.14/0.04/0.10/0.12/0.12/0.10. They do not add up.
+- Retrospective scope assessment for the whole cycle: **0.80**. This is not measured time.
+- Maintainer comfortable-fit judgment and study acceptance: pending.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
