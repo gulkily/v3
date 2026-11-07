@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/post_revision`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment. Ledger entry pending until planning is committed.
+Effort study: `railspike-effort` / `v3/post_revision`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment. Ledger entry pending until planning is committed.
 
 Extended estimates: enabled
 
@@ -20,7 +20,7 @@ Today an author who wants to fix a post has two choices: retract it, which delet
 
 A published post cannot be corrected where it stands, so every fix either deletes the post or pushes the correction below the outdated version.
 
-Concepts touched: [post presentation](../concepts/post_presentation.md) (every option: the post shows its current version); [post body formatting](../concepts/post_body_formatting.md) (precedent for Option A: a sidecar record changes how a post displays); [thread title](../concepts/thread_title.md) (precedent for Options A and C); [post retraction](../concepts/post_retraction.md) (boundary: deleting an earlier version stays a retraction matter); a new candidate concept, **post revision**, in every option. No matching feedback item in `docs/feedback/items/`.
+Concepts touched: [post presentation](../../concepts/post_presentation.md) (every option: the post shows its current version); [post body formatting](../../concepts/post_body_formatting.md) (precedent for Option A: a sidecar record changes how a post displays); [thread title](../../concepts/thread_title.md) (precedent for Options A and C); [post retraction](../../concepts/post_retraction.md) (boundary: deleting an earlier version stays a retraction matter); a new candidate concept, **post revision**, in every option. No matching feedback item in `docs/feedback/items/`.
 
 ## Shared by every option
 
@@ -80,6 +80,12 @@ Vertical slice: the author of a reply sends a revision through the agent API; th
 ## Study checkpoint
 
 2026-11-07T18:00:00Z, `railspike-effort` / `v3/post_revision`, intake and Step 1 handoff. New cycle from the maintainer's request in conversation. Scope v1: Option A, first slice as above. Planning revision `6d432a0c1684d04bf203d79d546c8c4d42c13f72`. Reference R1, protocol P2; frozen R1 hashes not re-verified. Single exposed Claude rater. Before rating, the rater read the post-format and thread-subject record specs, `PostFormatRecordParser.php`, the post retraction and post presentation concepts, and the retraction simplification handoff, so this is not a pristine intake. Intake and Step 1 projected total **0.80**. Option estimates 0.80, 0.70 and 0.45 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
+
+2026-11-07T18:00:00Z, backlogged at the maintainer's request ("let's backlog this please"). Step 1 remains unapproved. Scope v1 and projected total **0.80** retained; the cycle is paused, not abandoned or accepted.
+
+## Status
+
+Backlogged at the maintainer's request on 2026-11-07. Step 1 remains unapproved; no further planning or implementation is authorized. Later navigation targets will exist if subsequent steps are approved.
 
 ## Enhancement Requests
 
