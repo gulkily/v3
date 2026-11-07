@@ -17,7 +17,6 @@ final class PrivateConfigSchema
             'FORUM_IMAGE_GALLERY_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_TAG_LINKS_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_STATIC_PROFILE_PAGES_ENABLED' => self::definition(null, 'boolean'),
-            'FORUM_RAILSPIKE_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_IMAGE_BACKUP_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_TEXT_BACKUP_ENABLED' => self::definition(null, 'boolean'),
             'FORUM_STATUS_URL' => self::definition('', 'string', template: true),

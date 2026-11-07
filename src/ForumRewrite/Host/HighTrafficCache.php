@@ -34,7 +34,7 @@ final class HighTrafficCache
         $flags = \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot);
         return is_string($html) && \ForumRewrite\Support\FeatureFlags\BackupAvailability::matchesHtml(
             $html, $flags
-        ) && \ForumRewrite\Support\FeatureFlags\RailspikeAvailability::matchesHtml($html, $flags) ? $html : null;
+        ) && !str_contains($html, '/assets/railspike_workflow.js') ? $html : null;
     }
 
     public function initialize(): void

@@ -198,7 +198,6 @@ if (!is_array($postAnalysisLabels)) {
       data-post-id="<?= $e($post['post_id']) ?>"
     >Agent</button>
 <?php endif; ?>
-<?= $partial('partials/railspike_workflow.php') ?>
 <?php if (!$isQdbQuoteRoot): ?>
 <?= $partial('partials/retract_post_control.php') ?>
 <?php endif; ?>

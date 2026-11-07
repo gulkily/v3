@@ -267,11 +267,6 @@ final class Application
             return;
         }
 
-        if ($path === '/api/railspike_workflow') {
-            (new \ForumRewrite\Http\RailspikeWorkflowController($this->routeServices(), $this->authenticatedViewerProfile(...), $this->projectRoot, $this->repositoryRoot))->handle($method, $query);
-            return;
-        }
-
         if ($path === '/api/set_identity_hint') {
             $this->identityHintController()->setIdentityHint($method, $query);
             return;
@@ -2284,7 +2279,7 @@ final class Application
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
-            '/api/railspike_workflow', '/api', '/api/', '/api/version', '/api/list_index',
+            '/api', '/api/', '/api/version', '/api/list_index',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',

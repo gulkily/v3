@@ -14,7 +14,6 @@ final class SqliteTaskQueueStore
     public const FAST_SCORE_SWEEP = 'fast_score_sweep';
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
     public const AGENT_REPLY = 'agent_reply';
-    public const RAILSPIKE_ASSESSMENT = 'railspike_assessment';
     /** Operator-requested application deploy; claimed ahead of all other queued work. */
     public const APP_UPDATE = 'app_update';
     public const EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS = 120;
@@ -312,22 +311,20 @@ final class SqliteTaskQueueStore
     /**
      * @return list<array<string, mixed>>
      */
-    public function claimNext(int $limit = 1, ?int $taskId = null, ?string $excludedType = null): array
+    public function claimNext(int $limit = 1, ?int $taskId = null): array
     {
         $limit = max(1, $limit);
 
-        return $this->withImmediateTransaction(function () use ($limit, $taskId, $excludedType): array {
+        return $this->withImmediateTransaction(function () use ($limit, $taskId): array {
             $select = $this->pdo->prepare(
                 'SELECT id
                  FROM internal_tasks
                  WHERE status = :status AND attempts < max_attempts AND (:task_id IS NULL OR id = :task_id)
-                   AND (:excluded_type IS NULL OR type <> :excluded_type)
                  ORDER BY CASE WHEN type = :priority_type THEN 0 ELSE 1 END, requested_at ASC, id ASC
                  LIMIT :limit'
             );
             $select->bindValue('status', 'queued');
             $select->bindValue('task_id', $taskId, $taskId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-            $select->bindValue('excluded_type', $excludedType, $excludedType === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
             $select->bindValue('limit', $limit, PDO::PARAM_INT);
             $select->bindValue('priority_type', self::APP_UPDATE);
             $select->execute();
@@ -831,7 +828,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::RAILSPIKE_ASSESSMENT, self::APP_UPDATE], true)) {
+        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::APP_UPDATE], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

@@ -6,7 +6,6 @@ namespace ForumRewrite\Support\FeatureFlags;
 
 final class FeatureFlagRegistry
 {
-    public const RAILSPIKE_ENABLED = 'FORUM_RAILSPIKE_ENABLED';
     public const COLLAPSE_SAME_AUTHOR_POSTS_ENABLED = 'FORUM_COLLAPSE_SAME_AUTHOR_POSTS_ENABLED';
     public const IMAGE_BACKUP_ENABLED = 'FORUM_IMAGE_BACKUP_ENABLED';
     public const TEXT_BACKUP_ENABLED = 'FORUM_TEXT_BACKUP_ENABLED';
@@ -57,7 +56,7 @@ final class FeatureFlagRegistry
         'FASTMOD' => [self::FAST_SCORING_ENABLED, self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
             self::FASTMOD_AUTOMATIC_TAGGING_ENABLED],
         'DEDALUS' => [self::DEDALUS_AGENT_REPLIES_ENABLED, self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
-            self::AGENT_RESPONSE_REQUESTS_ENABLED, self::RAILSPIKE_ENABLED],
+            self::AGENT_RESPONSE_REQUESTS_ENABLED],
         'LLM' => [self::LLM_CONVERSATION_RECORDING_ENABLED, self::LLM_CONVERSATION_UI_ENABLED],
     ];
 
@@ -91,15 +90,6 @@ final class FeatureFlagRegistry
     public function all(): array
     {
         return [
-            new FeatureFlagDefinition(
-                self::RAILSPIKE_ENABLED,
-                'Railspike development',
-                'Enable thread development requests. Disabling pauses queued assessments; stored workflows are retained.',
-                false,
-                self::RAILSPIKE_ENABLED,
-                siteMutable: true,
-                group: 'DEDALUS',
-            ),
             new FeatureFlagDefinition(
                 self::IMAGE_BACKUP_ENABLED,
                 'Image backups',

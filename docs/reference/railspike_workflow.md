@@ -106,9 +106,9 @@ for compatibility with both PHP previews, the browser preview, and older clients
 this terminology change requires no data migration. Runner execution and approval
 behavior are unchanged.
 
-## Phone intake deployment
+## Phone intake (removed)
 
-The operator-only phone workflow uses the instance task queue and a separate read-only Codex assessment checkout. See [deployment, Codex configuration, acceptance, and recovery](../runbooks/phone_site_development.md). It stops after revision-bound Step 1 approval; legacy localhost handoffs remain separate.
+The operator-only on-site workflow that queued a Codex Step 1 assessment from a post was removed on 2026-11-07, along with its worker, API, panel and `FORUM_RAILSPIKE_ENABLED` flag. To build from a thread, follow [thread to pull request](../agents/thread_to_pr.md).
 
 ## Continuing collection update — 2026-10-21
 
