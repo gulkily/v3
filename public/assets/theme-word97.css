@@ -905,15 +905,9 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 }
 
 /* Pagination is a dialog's button row (Back / Next), not a toolbar: raised
-   buttons at the row's edges, no grip. */
+   buttons, no grip; site.css puts them at the row's edges. */
 :root[data-theme="word97"] .pagination-nav {
-  justify-content: flex-end;
   gap: 0.4rem;
-}
-
-/* Previous sits at the left edge; Next and First page at the right. */
-:root[data-theme="word97"] .pagination-nav .nav-link[rel="prev"] {
-  margin-right: auto;
 }
 
 :root[data-theme="word97"] .pagination-nav::before {
