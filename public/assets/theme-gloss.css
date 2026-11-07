@@ -85,6 +85,12 @@
   border-color: var(--gloss-edge);
   border-radius: 1rem;
   box-shadow: var(--gloss-shadow);
+}
+
+/* Only the thread list clips, to round its rows' corners. Menus must not
+   clip: the theme picker and its palette popovers open inside the account
+   menu. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-rows {
   overflow: hidden;
 }
 

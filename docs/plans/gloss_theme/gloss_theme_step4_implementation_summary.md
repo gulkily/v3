@@ -264,3 +264,13 @@ After closeout the maintainer found Gloss mixing square and rounded corners, and
   - The calendar keeps a square grid of pale lines inside its rounded card.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Follow-up - picker clipping fix
+
+The maintainer reported the theme picker cut off after the edges follow-up. Cause: that commit gave the account menu panel `overflow: hidden` with its rounded corners, and the theme picker and palette popovers open inside that panel.
+
+- Change: `public/assets/theme-gloss.css`: only the thread list clips (to round its rows); menus keep their corners and shadow without clipping.
+- Verification: headless Chrome, `/about/`, account menu open, theme picker open, Gloss, Engagify, LCD (with its palette picker) and Word 97 at 1280px and 380px. Every picker option is the top element at its centre. Against the edges commit, desktop Gloss had 2 options hidden by the clip and 11 pushed out of view; after the fix, none. Screenshot inspected.
+- Lesson: an edge rule that clips must not reach containers that host popovers.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
