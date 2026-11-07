@@ -47,25 +47,46 @@
     apply();
   }
   // A registered identity with no remembered status asks the server, so members
-  // who signed in before this memory existed still get it. A "not approved" answer
-  // is trusted for a few minutes only: a member approved mid-visit is seen on a
-  // later page in the same tab instead of never. A 401 can mean an expired
-  // session, so it never clears a remembered approval.
-  const recheckMilliseconds = 5 * 60 * 1000;
-  function checkedRecently(current) {
-    const [value, at] = read(checkedKey, window.sessionStorage).split('@');
-    return value === current && Date.now() - Number(at) < recheckMilliseconds;
+  // who signed in before this memory existed still get it. Each "not approved"
+  // answer pushes the next question back with capped exponential backoff and
+  // jitter (30 s, 1 min, 2 min ... up to 30 min, each delay drawn between half
+  // and all of its step), so a member approved mid-visit is seen within a minute
+  // or two early on, and a long wait costs at most one request per half hour per
+  // tab. The schedule lives in sessionStorage as fingerprint@next-ms@attempt; a
+  // new tab, a new identity or an approval starts over. A 401 can mean an
+  // expired session, so it never clears a remembered approval.
+  const backoffBaseMilliseconds = 30 * 1000;
+  const backoffCapMilliseconds = 30 * 60 * 1000;
+  function schedule(current) {
+    const [value, next, attempt] = read(checkedKey, window.sessionStorage).split('@');
+    const valid = value === current && /^\d+$/.test(next || '') && /^\d+$/.test(attempt || '');
+    return valid ? { next: Number(next), attempt: Number(attempt) } : { next: 0, attempt: 0 };
   }
+  function backoffDelay(attempt) {
+    const step = Math.min(backoffCapMilliseconds, backoffBaseMilliseconds * 2 ** Math.min(attempt, 16));
+    return step / 2 + Math.random() * (step / 2);
+  }
+  let asking = false;
   async function learn() {
     const current = fingerprint();
-    if (!current || read(approvedKey) === current || checkedRecently(current)) return;
+    if (asking || !current || read(approvedKey) === current) return;
     if (root.dataset.approvedMembersOnly !== '1'
       && read('forum_pki_published_fingerprint').trim().toLowerCase() !== current) return;
-    write(checkedKey, current + '@' + Date.now(), window.sessionStorage);
+    const { next, attempt } = schedule(current);
+    if (Date.now() < next) return;
+    // Book the next slot before asking, so reloads in this tab wait their turn.
+    write(checkedKey, current + '@' + Math.round(Date.now() + backoffDelay(attempt)) + '@' + (attempt + 1), window.sessionStorage);
+    asking = true;
     try {
       const response = await fetch('/api/auth_status', { credentials: 'same-origin', cache: 'no-store' });
-      if (response.ok) record(current, true);
-    } catch (error) {}
+      if (response.ok) {
+        record(current, true);
+        write(checkedKey, '', window.sessionStorage);
+      }
+    } catch (error) {
+    } finally {
+      asking = false;
+    }
   }
 
   // Messaging scripts are listed for every viewer but downloaded only once this
@@ -120,4 +141,6 @@
   if (!apply()) syncMessaging();
   rememberFromPage();
   learn();
+  // A tab left open while approval happens asks again when the member returns to it.
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) learn(); });
 })();
