@@ -1,9 +1,11 @@
 /* Shared navigation icons: 16px pixel-art SVGs keyed to nav links and tool
-   launcher buttons. Used by the word97, chicago and midnight themes; add a theme to
-   the :is() list below to give it the same icon set. Never target the theme
+   launcher buttons. Two sets share the sizing rules: pixel art for word97,
+   chicago and midnight, and smooth lines for gloss and engagify (the
+   "Smooth-line set" block at the end). Sizing rules list all five themes;
+   glyph rules list only their set's themes. Never target the theme
    menu (.theme-swatch, .theme-menu__trigger, .theme-menu__option). */
 
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-button::before {
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button::before {
   content: "";
   flex: 0 0 auto;
   width: 16px;
@@ -112,18 +114,18 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='13' y='6' width='2' height='1' fill='%231da1f2'/><rect x='10' y='4' width='4' height='4' fill='%231da1f2'/><rect x='5' y='6' width='6' height='1' fill='%231da1f2'/><rect x='3' y='7' width='8' height='5' fill='%231da1f2'/><rect x='2' y='6' width='2' height='1' fill='%231da1f2'/><rect x='1' y='7' width='2' height='1' fill='%231da1f2'/><rect x='0' y='8' width='2' height='1' fill='%231da1f2'/><rect x='1' y='11' width='2' height='1' fill='%231da1f2'/><rect x='3' y='12' width='2' height='1' fill='%231da1f2'/><rect x='11' y='5' width='1' height='1' fill='%23ffffff'/></svg>");
 }
 
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/about/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/users/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/recent/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/gallery/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/tools/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/account/key/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/invites/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/messages"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href^="/profiles/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .new-post-button::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/compose/thread"]::before {
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/about/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/users/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/recent/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/gallery/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/tools/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/account/key/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/invites/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/messages"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href^="/profiles/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .new-post-button::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/compose/thread"]::before {
   content: "";
   display: inline-block;
   flex: 0 0 auto;
@@ -163,23 +165,23 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='3' y='2' width='9' height='13' fill='%23000000'/><rect x='4' y='3' width='7' height='11' fill='%23ffffff'/><rect x='5' y='6' width='5' height='1' fill='%23808080'/><rect x='5' y='8' width='5' height='1' fill='%23808080'/><rect x='5' y='10' width='5' height='1' fill='%23808080'/><rect x='12' y='1' width='1' height='5' fill='%23ffd700'/><rect x='10' y='3' width='5' height='1' fill='%23ffd700'/></svg>");
 }
 
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/activity/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/forte"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/bookmarklets/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/backup/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/sqlite/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/llm-exchanges/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/codebase/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/user-access/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/fastmod/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/feature-flags/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/operations/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/deploy/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/offline/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/docs/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/outbox/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/tools/visitor-statistics/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tools-nav .nav-link[href="/account/key/"]::before {
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/activity/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/forte"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/bookmarklets/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/backup/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/sqlite/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/llm-exchanges/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/codebase/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/user-access/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/fastmod/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/feature-flags/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/operations/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/deploy/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/offline/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/docs/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/outbox/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/visitor-statistics/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/account/key/"]::before {
   content: "";
   display: inline-block;
   width: 16px;
@@ -189,17 +191,17 @@
   background-repeat: no-repeat;
 }
 
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/lobby/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href^="/profiles/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href^="/messages"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/tags/"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/calendar"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/latest"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/top"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/leetness"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/random"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/add"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[href="/search"]::before {
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/lobby/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href^="/profiles/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href^="/messages"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/tags/"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/calendar"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/latest"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/top"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/leetness"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/random"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/add"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/search"]::before {
   content: "";
   display: inline-block;
   width: 16px;
@@ -253,11 +255,11 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='3' y='2' width='7' height='7' fill='%23ffffff'/><rect x='4' y='1' width='5' height='1' fill='%23000080'/><rect x='3' y='2' width='1' height='1' fill='%23000080'/><rect x='9' y='2' width='1' height='1' fill='%23000080'/><rect x='2' y='3' width='1' height='5' fill='%23000080'/><rect x='10' y='3' width='1' height='5' fill='%23000080'/><rect x='3' y='8' width='1' height='1' fill='%23000080'/><rect x='9' y='8' width='1' height='1' fill='%23000080'/><rect x='4' y='9' width='5' height='1' fill='%23000080'/><rect x='9' y='9' width='2' height='2' fill='%23404040'/><rect x='11' y='11' width='2' height='2' fill='%23404040'/><rect x='13' y='13' width='2' height='2' fill='%23404040'/></svg>");
 }
 
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[data-nav-key="all"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[data-nav-key="liked"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[data-nav-key="newest"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[data-nav-key="oldest"]::before,
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .nav-link[data-nav-key="top"]::before {
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[data-nav-key="all"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[data-nav-key="liked"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[data-nav-key="newest"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[data-nav-key="oldest"]::before,
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .nav-link[data-nav-key="top"]::before {
   content: "";
   display: inline-block;
   width: 16px;
@@ -297,7 +299,7 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='6' y='2' width='4' height='4' fill='%23000080'/><rect x='4' y='7' width='8' height='6' fill='%23000080'/><rect x='5' y='8' width='6' height='4' fill='%234040c0'/></svg>");
 }
 
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .new-post-button__icon {
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .new-post-button__icon {
   display: none;
 }
 
@@ -321,7 +323,7 @@
 
 /* Tools launcher group headings, keyed to data-shape (ToolsPageSupport::groups()):
    Your device, Reading, Community (the Users glyph) and Operator. */
-:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-group-heading[data-shape]::before {
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-group-heading[data-shape]::before {
   content: "";
   display: inline-block;
   width: 16px;
@@ -350,9 +352,9 @@
 /* Phone tab bar: the icon sits above a smaller label. Side by side, six tabs
    on a 375px screen ran each icon into the next tab's label. */
 @media (max-width: 639px) {
-  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .site-header--app .nav > .nav-link,
-  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .site-header--app .new-post-button,
-  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .site-header--app .account-menu__trigger {
+  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link,
+  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .new-post-button,
+  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .account-menu__trigger {
     flex-direction: column;
     gap: 0.2rem;
     padding: 0.2rem 0.1rem;
@@ -360,12 +362,12 @@
     line-height: 1.1;
   }
 
-  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .site-header--app .nav > .nav-link::before,
-  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .site-header--app .new-post-button::before {
+  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link::before,
+  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .new-post-button::before {
     margin-right: 0;
   }
 
-  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .site-header--app .new-post-button__label {
+  :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .new-post-button__label {
     white-space: nowrap;
   }
 
@@ -373,4 +375,20 @@
   :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .account-menu__icon {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect x='2' y='3' width='2' height='2' fill='%23000080'/><rect x='5' y='3' width='9' height='2' fill='%23808080'/><rect x='2' y='7' width='2' height='2' fill='%23000080'/><rect x='5' y='7' width='9' height='2' fill='%23808080'/><rect x='2' y='11' width='2' height='2' fill='%23000080'/><rect x='5' y='11' width='9' height='2' fill='%23808080'/></svg>");
   }
+}
+
+/* Smooth-line set (gloss, engagify): 16px, 1.5px violet strokes with a
+   lavender fill, in Gloss's palette. Keyed to the same links as the pixel-art
+   rules above; add a destination to both sets. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link[href="/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='2.5' width='12' height='11' rx='2.5' fill='%23ede9fe'/><path d='M5 6h6M5 8.5h6M5 11h3.5'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button[href="/tools/backup/"]::before,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tools-nav .nav-link[href="/tools/backup/"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='1.75' y='2.75' width='12.5' height='3.5' rx='1.25' fill='%23ede9fe'/><path d='M3 6.25v5.5a1.5 1.5 0 0 0 1.5 1.5h7a1.5 1.5 0 0 0 1.5-1.5v-5.5'/><path d='M6.5 9h3'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-group-heading[data-shape="operator"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='8' cy='8' r='5.6' stroke-width='2.4' stroke-dasharray='2.2 2.2' stroke-linecap='butt'/><circle cx='8' cy='8' r='4.3' fill='%23ede9fe'/><circle cx='8' cy='8' r='1.6' fill='%23ffffff'/></svg>");
 }
