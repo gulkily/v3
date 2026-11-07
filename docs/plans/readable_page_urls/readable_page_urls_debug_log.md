@@ -59,3 +59,23 @@ No supported findings.
 ### Uncertain assessments
 
 - `step2_feature_description.md`, Guardrails "no implementation details": the redirect status and per-row anchors are implementation choices, but each carries a user-visible risk. The guardrail does not say where a risk's mitigation may name a mechanism.
+
+## 2026-11-07T01:42:32Z - Step 3
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, vertical slices: starting with Recent alone, then adding `with` before other lists, means every later stage reuses a contract already proven end to end. Retain.
+- `step3_development_plan_do.md`, canonical components bullet: reading `RouteServices` showed its redirect defaults to 303, which resolved the moving-target risk before planning, not during implementation. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step3_development_plan_do.md`, known user or environment replay stage: Step 2 names no user or environment.
+- Documentation-only scope rules: this is an application change.
+
+### Uncertain assessments
+
+- `step3_development_plan_after.md`, item 6 (keep planning uncommitted): this cycle's drafts are already committed to `plan/readable_page_urls` at stop-hook request. The instructions do not say whether that branch may become the Step 4 branch.

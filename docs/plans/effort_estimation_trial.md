@@ -2,6 +2,8 @@
 
 ## Cycle v3/readable_page_urls
 
+2026-11-07T01:42:32Z — v3/readable_page_urls Step 3 handoff: user explicitly approved Step 2. [Plan/checkpoint](./readable_page_urls/readable_page_urls_step3_development_plan.md#study-checkpoint) eight stages: Recent page numbers, Recent `with`, Gallery, profile history, Board list, Tags and Search, Activity plus token removal, docs and checks. Whole-cycle 0.55 → **0.60** (new understanding: two profile lists in one URL, many tests build position links); stage-work originals 0.12/0.10/0.05/0.08/0.08/0.08/0.08/0.08, non-additive. Same v3/baseline/R1/P2, single exposed Claude rater. Await Approved Step 3.
+
 2026-11-07T01:37:43Z — v3/readable_page_urls Step 2 revision: maintainer dropped backward compatibility for old `position` links (ignored, page 1). [Description/checkpoint](./readable_page_urls/readable_page_urls_step2_feature_description.md#study-checkpoint). Scope v3. Projected total 0.65 → **0.55**, reason changed scope; same baseline/R1/P2, single exposed Claude rater. Await Approved Step 2; planning saved on `plan/readable_page_urls`, not approved.
 
 2026-11-07T01:35:42Z — v3/readable_page_urls Step 2 handoff: user explicitly approved Step 1 (Option B). [Description/checkpoint](./readable_page_urls/readable_page_urls_step2_feature_description.md#study-checkpoint): `?page=N` on seven lists, `?with=<ID>` on all but Activity, old tokens resolve by temporary redirect, URL rule in PRINCIPLES.md; Forte excluded by maintainer. Whole-cycle 0.60 → **0.65** (new understanding: Activity lists events, its old tokens carry an expiring revision, rows need anchors), same v2/B/baseline/R1/P2, single exposed Claude rater. Await Approved Step 2; planning saved on `plan/readable_page_urls`, not approved.
