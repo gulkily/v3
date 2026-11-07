@@ -101,6 +101,8 @@ New recommendation, Option D: Option A plus a hidden form. **Estimate: 0.70** (r
 
 2026-11-07T15:11:25Z, Revision 2 checkpoint: the maintainer asked for visible and hidden forms by poster's choice. Scope v2: Option D (A plus a hidden `Theme:` header on roots and replies). Projected total 0.40 → **0.70**, reason changed scope. Same R1/P2 and single exposed Claude rater. No approval implied.
 
+Step 1 approved by the maintainer on 2026-11-07 ("approved step 1"), with Revisions 1–2: Option D.
+
 ## Enhancement Requests
 
 - Set a thread's theme later by reply, not only at thread start. Disposition: in-scope requirement during Step 1; Revision 1; rules out Option C.

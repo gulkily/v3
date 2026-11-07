@@ -2,6 +2,8 @@
 
 ## Cycle v3/theme_directive
 
+2026-11-07T15:13:01Z — v3/theme_directive Step 2 handoff: Step 1 explicitly approved (Option D). [Checkpoint](./theme_directive_step2_feature_description.md#study-checkpoint). Scope v2 plus `theme: none`; 0.70 → **0.75**, new understanding (signed-subset spec change, header kept in read model). Starting point `feat/engagify_theme` `9276410b`. R1/P2, single exposed Claude rater. Await Approved Step 2.
+
 2026-11-07T15:11:25Z — v3/theme_directive Step 1 Revision 2: visible or hidden theme by poster's choice. [Checkpoint](./theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v2/D; 0.40 → **0.70**, changed scope. Same R1/P2, single exposed Claude rater. Await Approved Step 1.
 
 2026-11-07T14:41:57Z — v3/theme_directive branch move: planning moved from `plan/engagify_theme` to `plan/theme_directive`, based on `feat/engagify_theme`. [Checkpoint](./theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.40** unchanged; no re-rating. Await Approved Step 1.
