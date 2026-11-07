@@ -79,12 +79,29 @@ The maintainer wants to set a thread's theme later, as a comment, not only when 
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
+## Revision 2 — visible or hidden, by the poster's choice
+
+The maintainer wants both a visible and a hidden way to set a theme, chosen by whoever posts it. Combined with Revision 1, both forms must work when a thread starts and later by reply.
+
+New recommendation, Option D: Option A plus a hidden form. **Estimate: 0.70** (rough). Main driver: a `Theme:` record header accepted on replies as well as roots, through parser, write path and composer. Uncertainty: medium, mostly in whether reply records accept a new header without a spec change.
+
+- Visible: a `theme:` line in the post text, as in Option A. Readers see it, like `title:` and `event:`.
+- Hidden: a `Theme:` header in the record, above the body, set from a theme choice in the composer. It does not appear in the post text.
+- Both forms feed the same read-time lookup: the latest valid theme from the thread's author or a current operator wins, whichever form it used. Retracting the post withdraws it.
+- Option C alone fails Revision 1, since a root-only header cannot be added later. Option D keeps C's hidden header but allows it on replies.
+- Option B still adds nothing the maintainer has asked for and stays a possible later step.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
 ## Study checkpoint
 
 2026-11-07T11:45:50Z, `railspike-effort` / `v3/theme_directive`, intake and Step 1 handoff. Split from `v3/engagify_theme` Option B at the maintainer's request; distinct cycle ID with the parent link retained. Scope v1: Option A as recommended above. Starting point assumed: `v3/engagify_theme` page themes delivered; planning revision `d379f5600ab55c99e8b8055d6f0520eda0504595`. Reference R1, protocol P2; frozen R1 hashes not re-verified. Single exposed Claude rater, who also wrote the parent's estimates. Before rating, the rater read `TitleDirective.php`, `EventStatus.php`, the thread-subject record spec and the thread title and calendar concepts. Pristine intake missing. Intake and Step 1 projected total **0.40**. Option estimates 0.40, 0.75 and 0.55 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
 
 2026-11-07T14:41:57Z, branch move: the maintainer asked for this cycle to stand on its own. Planning moved from `plan/engagify_theme` to `plan/theme_directive`, branched from `feat/engagify_theme`, whose page themes are now built (Stage 3). Scope v1, Option A and projected total **0.40** unchanged; no re-rating. Step 1 still awaits approval.
 
+2026-11-07T15:11:25Z, Revision 2 checkpoint: the maintainer asked for visible and hidden forms by poster's choice. Scope v2: Option D (A plus a hidden `Theme:` header on roots and replies). Projected total 0.40 → **0.70**, reason changed scope. Same R1/P2 and single exposed Claude rater. No approval implied.
+
 ## Enhancement Requests
 
 - Set a thread's theme later by reply, not only at thread start. Disposition: in-scope requirement during Step 1; Revision 1; rules out Option C.
+- Let the poster choose a visible `theme:` line or a hidden theme setting. Disposition: in-scope requirement during Step 1; Revision 2; Option D.

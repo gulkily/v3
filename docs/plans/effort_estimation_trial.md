@@ -2,6 +2,8 @@
 
 ## Cycle v3/theme_directive
 
+2026-11-07T15:11:25Z — v3/theme_directive Step 1 Revision 2: visible or hidden theme by poster's choice. [Checkpoint](./theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v2/D; 0.40 → **0.70**, changed scope. Same R1/P2, single exposed Claude rater. Await Approved Step 1.
+
 2026-11-07T14:41:57Z — v3/theme_directive branch move: planning moved from `plan/engagify_theme` to `plan/theme_directive`, based on `feat/engagify_theme`. [Checkpoint](./theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.40** unchanged; no re-rating. Await Approved Step 1.
 
 2026-11-07T11:45:50Z — v3/theme_directive Step 1 handoff (standing P2 enrollment; split from v3/engagify_theme Option B at the maintainer's request, distinct cycle): [assessment/checkpoint](./theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`theme:` line by the thread's author or an operator, derived on read like `event:`, nothing stored). Assumed start: engagify page themes delivered; planning revision `d379f560`. R1/P2; R1 hashes not re-verified. Single exposed Claude rater, also the parent's rater; pristine intake missing. Projected total **0.40**; option estimates 0.40/0.75/0.55, non-additive. Await Approved Step 1.
