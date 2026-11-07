@@ -79,6 +79,8 @@ final class TemplateRenderer
         private readonly MediaEmbedRenderer $mediaEmbedRenderer = new MediaEmbedRenderer(),
         private readonly string $versionEndpoint = '/api/version',
         private readonly string $versionStorageKey = 'forum_pending_app_version',
+        /** Returns the current request path, for page themes. */
+        private readonly ?\Closure $requestPath = null,
     ) {
     }
 
@@ -218,8 +220,13 @@ final class TemplateRenderer
             }
         }
         $defaultTheme = $this->defaultThemeName($profile, $permittedThemeNames);
+        $pagePath = $this->requestPath !== null ? SiteProfileRegistry::pageThemePath((string) ($this->requestPath)()) : null;
+        $pageTheme = $pagePath !== null ? SiteProfileRegistry::pageThemeFor($pagePath) : null;
+        if ($pageTheme !== null && !in_array($pageTheme, $explicitThemeNames, true)) {
+            $pageTheme = null;
+        }
         $themeHint = $this->themeHint($explicitThemeNames);
-        $initialTheme = $themeHint
+        $initialTheme = $pageTheme ?? $themeHint
             ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
 
         return $this->renderFile('layout.php', [
@@ -263,6 +270,8 @@ final class TemplateRenderer
             'consolePalettes' => ThemeRegistry::CONSOLE_PALETTES,
             'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
+            'pageTheme' => $pageTheme,
+            'pagePath' => $pagePath,
             'themeStylesheetPaths' => $themeStylesheetPaths,
             'themeScriptPaths' => $themeScriptPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],

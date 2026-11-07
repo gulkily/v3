@@ -57,3 +57,24 @@ The `v3/theme_directive` plans and earlier drafts stay on branch `plan/engagify_
 - Estimate details: original scope as Step 3; no revision. Retrospective is slightly higher because of the two layout fixes; it is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Page themes
+
+**Original estimate: 0.14**
+**Retrospective: 0.14**
+
+- Changes:
+  - `SiteProfileRegistry.php`: optional `pageThemes` per profile, keyed by a normalized path (no query, no trailing slash). Validation requires a leading slash, the normalized form, and a permitted theme other than `auto`. `zenmemes` maps the cookie notice thread, `/threads/thread-20261102152258-25e82c97`, to `engagify`.
+  - `Application.php` records each request path and hands the renderer a closure that reads it. The builder renders many routes with one renderer, so the path is read at render time.
+  - `TemplateRenderer.php` and `layout.php`: the page marks `data-page-theme` and `data-page-path`. The pre-paint script shows the page theme unless this browser has a page-exit entry for that path. The page theme's stylesheet is the initial one.
+  - `theme_toggle.js`: tracks whether the page theme is showing. Any menu or cycle choice of another theme leaves it and records the page exit. `forumExitTheme()` leaves it and shows the viewer's saved theme. The page theme is never saved, and never recorded as the previous theme.
+- Verification:
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest SiteProfileRegistryTest PostActionThemeTest`, 448 run, 447 passed; the one failure is the baseline `BoardListTest` failure. New tests: `SiteProfileRegistryTest::testPageThemesUseNormalizedPathsAndPermittedThemes` and `LocalAppSmokeTest::testPageThemeIsMarkedOnItsOwnPageOnly`.
+  - Passed: headless Chrome check against `./v3 start`, with the local thread `/threads/root-001` mapped to Engagify for the check only (mapping removed afterwards). Fresh browser at 1280px and saved Midnight at 380px: the board keeps the viewer's theme; the thread shows Engagify before paint without saving it; Exit returns the viewer's theme without a reload and stays after reload; clearing the exit brings Engagify back; a menu choice of Word 97 leaves it and persists; no page errors. Screenshots inspected.
+  - Inapplicable: `standalone_layout.php` serves only Forte pages, which have no page themes; left unchanged.
+- Notes:
+  - Viewers who already left a page theme fetch its stylesheet once before the pre-paint script swaps it. That costs one cached request on one page.
+  - A browser that blocks storage cannot remember a page exit, so the page theme returns on its next visit.
+- Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

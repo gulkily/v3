@@ -1,5 +1,5 @@
 <!doctype html>
-<html data-railspike-enabled="<?= $railspikeEnabled ? '1' : '0' ?>" lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
+<html data-railspike-enabled="<?= $railspikeEnabled ? '1' : '0' ?>" lang="en" data-default-theme="<?= $e($defaultTheme) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -96,6 +96,18 @@
 
       if (allowed.indexOf(theme) === -1) {
         theme = document.documentElement.getAttribute('data-default-theme');
+      }
+
+      // A page theme shows on its own page unless this browser left it there.
+      var pageTheme = document.documentElement.getAttribute('data-page-theme');
+      if (pageTheme && allowed.indexOf(pageTheme) !== -1) {
+        var pageThemeExited = false;
+        try {
+          pageThemeExited = localStorage.getItem(browserRuntime.themeStorageKey + '-page-exit:'
+            + document.documentElement.getAttribute('data-page-path')) === '1';
+        } catch (error) {
+        }
+        if (!pageThemeExited) theme = pageTheme;
       }
 
       if (allowed.indexOf(theme) !== -1) {

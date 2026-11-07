@@ -1111,6 +1111,33 @@ PHP;
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
+    public function testPageThemeIsMarkedOnItsOwnPageOnly(): void
+    {
+        $previousCookie = $_COOKIE;
+        $publicRoot = dirname(__DIR__) . '/public';
+        $path = '/threads/thread-20261102152258-25e82c97/';
+        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates', requestPath: static function () use (&$path): string {
+            return $path;
+        });
+
+        try {
+            $_COOKIE = ['theme-hint' => 'word97'];
+            $html = $renderer->renderLayout('Cookies', '<main></main>', 'board');
+            assertStringContains('data-page-theme="engagify" data-page-path="/threads/thread-20261102152258-25e82c97"', $html);
+            // The page theme's stylesheet loads first, ahead of the viewer's hint.
+            assertStringContains('href="' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-engagify.css') . '" fetchpriority="high"', $html);
+            assertStringContains("'-page-exit:'", $html);
+            assertStringContains('"engagify":"' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-engagify.js') . '"', $html);
+
+            $path = '/threads/';
+            $other = $renderer->renderLayout('Board', '<main></main>', 'board');
+            assertStringNotContains('data-page-theme=', $other);
+            assertStringContains('href="' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-word97.css') . '" fetchpriority="high"', $other);
+        } finally {
+            $_COOKIE = $previousCookie;
+        }
+    }
+
     public function testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet(): void
     {
         $previousCookie = $_COOKIE;

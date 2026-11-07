@@ -103,7 +103,28 @@
       return attr && themes.indexOf(attr) !== -1 ? attr : "auto";
     }
 
-    function readStoredTheme() {
+    // Page theme: the theme a page shows by default (site profile), until this
+    // browser leaves it on that page with Exit or a menu choice.
+    var pageTheme = document.documentElement.getAttribute("data-page-theme");
+    var pageExitKey = storageKey + "-page-exit:" + document.documentElement.getAttribute("data-page-path");
+    var pageThemeActive = false;
+    if (pageTheme && themes.indexOf(pageTheme) !== -1) {
+      try {
+        pageThemeActive = localStorage.getItem(pageExitKey) !== "1";
+      } catch (error) {
+        pageThemeActive = true;
+      }
+    }
+
+    function leavePageTheme() {
+      pageThemeActive = false;
+      try {
+        localStorage.setItem(pageExitKey, "1");
+      } catch (error) {
+      }
+    }
+
+    function readSavedTheme() {
       try {
         var storedTheme = localStorage.getItem(storageKey);
         var aliases = window.forumThemeLegacyAliases || {};
@@ -112,6 +133,10 @@
       } catch (error) {
         return defaultTheme();
       }
+    }
+
+    function readStoredTheme() {
+      return pageThemeActive ? pageTheme : readSavedTheme();
     }
 
     function applyTheme(theme) {
@@ -399,7 +424,11 @@
 
     function commitSelection(theme, selectedPalette) {
       document.documentElement.removeAttribute("data-theme-loading");
-      if (theme !== currentTheme) {
+      if (pageThemeActive) {
+        // Any change on a page theme's page leaves the page theme; the page
+        // theme is never recorded as the viewer's previous theme.
+        if (theme !== pageTheme) leavePageTheme();
+      } else if (theme !== currentTheme) {
         try {
           localStorage.setItem(storageKey + "-previous", currentTheme);
         } catch (error) {
@@ -427,6 +456,12 @@
     // Leaving a theme from inside it (a theme script's Exit control) returns
     // the viewer to the theme they had before choosing it.
     window.forumExitTheme = function () {
+      if (pageThemeActive) {
+        var saved = readSavedTheme();
+        if (saved === pageTheme) saved = defaultTheme() !== pageTheme ? defaultTheme() : "auto";
+        applySelection(saved);
+        return;
+      }
       var previous = null;
       try {
         previous = localStorage.getItem(storageKey + "-previous");
