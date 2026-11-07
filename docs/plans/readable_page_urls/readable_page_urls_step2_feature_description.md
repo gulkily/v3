@@ -6,7 +6,11 @@ Effort study: `railspike-effort` / `v3/readable_page_urls`; [host ledger](../eff
 
 Extended estimates: enabled
 
-Cycle estimate: 0.65 (revised; Step 1 0.60)
+Cycle estimate: 0.55 (revised; Step 1 0.60, first Step 2 draft 0.65)
+
+## Revised Direction
+
+Maintainer instruction (2026-11-07): "We are still building traction, so you can leave out backwards compatibility." Old `position` links therefore get no redirect. This is a deliberate exception to the "Keep our own backward compatibility" principle, which asks for a documented error when an interface is retired. Ignoring the parameter avoids any error, so no old link breaks badly; it only loses its place.
 
 ## Problem
 
@@ -20,7 +24,6 @@ No matching feedback item in `docs/feedback/items/`.
 
 - As a reader, I want page links like `/recent/?page=3`, so that I can see where a link goes and type a page number myself.
 - As a reader, I want a link to a post's place in a list, so that it still finds that post after new posts arrive.
-- As a member who shared an old page link, I want it to keep working, so that links in past threads do not break.
 - As an agent, I want page URLs I can build from a documented pattern, so that I can page through lists without parsing tokens.
 - As a contributor, I want a written URL rule, so that new pages do not reintroduce opaque URLs.
 
@@ -28,7 +31,7 @@ No matching feedback item in `docs/feedback/items/`.
 
 - Board, Search, Tags, Recent, Gallery, Activity and profile history page with `?page=N`. Page 1 has no `page` parameter.
 - `?with=<ID>` on every list except Activity opens the page holding that post or thread and brings it into view. Activity lists events, not posts, so it has page numbers only.
-- An old `position` token opens the page that now holds its boundary item. No old link produces an error page.
+- Old `position` tokens are not supported. The parameter is ignored, so an old link opens page 1 of its list without an error. The token decoder is removed.
 - Links leave out default values, including `sort=newest` and page 1. No page link carries encoded, versioned or JSON state.
 - `PRINCIPLES.md` gains a "URLs are interface" rule, and the pagination reference describes the new scheme.
 
@@ -42,21 +45,20 @@ No matching feedback item in `docs/feedback/items/`.
 
 ## Completion boundary
 
-- Normal entry: the Next, Previous and First page links on each list, a typed `?page=N` or `?with=<ID>`, and an old `?position=` link.
-- End-to-end outcome: every list pages through all its items with readable links, and an old Gallery, Board or Recent link from this conversation opens a sensible page.
-- Recovery: a page number past the end, zero or not a number, a `with` ID that is retracted or not in that list, and an unreadable old token each show the list with a First page link. None of them shows a server error.
+- Normal entry: the Next, Previous and First page links on each list, and a typed `?page=N` or `?with=<ID>`.
+- End-to-end outcome: every list pages through all its items with readable links.
+- Recovery: a page number past the end, zero or not a number, a `with` ID that is retracted or not in that list each show the list with a First page link. None of them shows a server error.
 - Release condition: smoke and changed tests pass, the browser pagination tests pass, and each list is paged by hand with JavaScript on and off.
 
 ## Risks
 
-- **Temporary page targets.** An old token or a `with` link resolves to a page number that changes as posts arrive. Impact: a permanent redirect would get cached and point at the wrong page later. Earliest validation: confirm which redirect status the front controller already uses. Mitigation: use a temporary redirect, so every visit resolves afresh.
+- **Temporary page targets.** A `with` link resolves to a page number that changes as posts arrive. Impact: a permanent redirect would get cached and point at the wrong page later. Earliest validation: confirm which redirect status the front controller already uses. Mitigation: use a temporary redirect, so every visit resolves afresh.
 - **Missing item anchors.** Board and Recent rows carry `data-post-id` but no `id`, so the browser cannot scroll to them. Impact: `with` would land on the right page without showing the post. Earliest validation: list every row template the seven lists use. Mitigation: add one anchor per row, reusing the post's existing fragment name where one exists.
-- **Old tokens with stale state.** Activity tokens carry a local revision and expire today. Impact: those links currently show an error. Earliest validation: decode tokens from each list in the test fixtures. Mitigation: resolve the boundary time alone and ignore the revision, so an old link lands near its original place.
 - **Deep page cost.** Page N skips earlier rows instead of seeking past them. Impact: very deep pages get slower. Earliest validation: time page 40 of Recent against the capacity study's 10000-record model. Mitigation: none expected at current size; record the measurement.
 
 ## Shared component inventory
 
-- `src/ForumRewrite/Pagination/PageNavigation.php`: change. It builds page-number links and keeps a decoder for old tokens only.
+- `src/ForumRewrite/Pagination/PageNavigation.php`: change. It builds page-number links; its token encoder and decoder are removed.
 - `templates/partials/page_navigation.php`: reuse unchanged; it renders whatever links it is given.
 - `src/ForumRewrite/Qdb/QdbBoardPolicy.php` and `templates/partials/board_pagination_nav.php`: inspect for reuse. QDB already parses and bounds `?page=N`.
 - `RecentPostRepository`, `AuthoredContentRepository`, `ThreadKeysetPage` (shared by `TagPage` and `ThreadSearchPage`) and `ActivityService::fetchActivityPage`: change from boundary seeks to page offsets, plus a count that finds an item's page.
@@ -71,21 +73,23 @@ No matching feedback item in `docs/feedback/items/`.
 3. The reader edits it to `?page=5` and lands on page 5.
 4. The reader shares `/recent/?with=thread-20261105202334-ba48d42e`.
 5. A friend opens it days later and lands on whichever page now holds that post, scrolled to it.
-6. Another reader opens an old `?position=` link and lands on the page now holding its item.
 
 ## Success criteria
 
 - No page link on any of the seven lists contains `position`, base64 or JSON.
 - Paging from page 1 to the end with Next shows every item once when nothing is posted meanwhile.
 - `?with=` lands on the page holding its item for every list except Activity.
-- Each old token captured in this conversation (Gallery, Board liked/newest, Recent) opens a list page, not an error.
+- An old `?position=` link opens page 1 of its list, not an error.
 - Every recovery case above shows the list with a First page link.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+*— Revised by Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
 ## Study checkpoint
 
 2026-11-07T01:35:42Z, `railspike-effort` / `v3/readable_page_urls`, Step 2 handoff. Step 1 Option B explicitly approved. Scope v2 unchanged. Starting revision `20d24918274561ccb07a29f27f43659747417c04`; reference R1, protocol P2; frozen R1 hashes not re-verified. Single exposed Claude rater. Projected total 0.60 → **0.65**, from new understanding, not changed scope: Activity lists events and cannot take `with`, its old tokens carry an expiring revision, and list rows need anchors. Step 1 values preserved in the Step 1 artifact. No implementation, measured labor or accepted outcome.
+
+Revised 2026-11-07T01:37:43Z, Step 2 revision. Scope v3: Option B without old-token support, by maintainer instruction. Same starting revision, R1, P2 and single exposed Claude rater. Projected total 0.65 → **0.55**, reason changed scope: no token decoder, no per-list boundary conversion, no Activity revision handling. No implementation, measured labor or accepted outcome.
 
 ## Enhancement Requests
 
