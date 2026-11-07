@@ -39,3 +39,23 @@ No supported findings.
 ### Uncertain assessments
 
 - `step1_solution_assessment.md`, Deliverable "≤1 page": four options, shared tasks and a long multi-message Original Query exceed one page. The limit does not say whether the preserved query counts toward it.
+
+## 2026-11-07T01:35:42Z - Step 2
+
+### Necessary/useful instructions
+
+- `step2_feature_description.md`, Shared component inventory: inspecting the adapters showed Activity pages events, not posts, so `with` cannot apply there. That changed a core requirement. Retain.
+- `implementation_standards.md`, recovery through ordinary entry: listing every bad input (page past the end, retracted `with` target, unreadable token) turned "old links keep working" into testable cases. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step2_feature_description.md`, Known user or environment: the request names no user or machine.
+- Documentation-only scope rules: this is an application change.
+
+### Uncertain assessments
+
+- `step2_feature_description.md`, Guardrails "no implementation details": the redirect status and per-row anchors are implementation choices, but each carries a user-visible risk. The guardrail does not say where a risk's mitigation may name a mechanism.
