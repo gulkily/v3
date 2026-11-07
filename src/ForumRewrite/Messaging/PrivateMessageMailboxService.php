@@ -112,6 +112,12 @@ final class PrivateMessageMailboxService
         return $this->store->unreadStateFor((string) $this->approvedViewer($viewer)['username_token'], $counterparts);
     }
 
+    /** @return list<array{counterpart:string,unread_count:int,latest_at:string}> */
+    public function unreadConversations(array $viewer, int $limit = 25): array
+    {
+        return $this->store->unreadConversationsFor((string) $this->approvedViewer($viewer)['username_token'], $limit);
+    }
+
     public function acknowledge(array $viewer, string $counterpart, string $readToken): array
     {
         $viewer = $this->approvedViewer($viewer);

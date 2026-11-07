@@ -66,3 +66,28 @@ things; this change covers only that part on Forte).
   added).
 - Opening the page now prefetches the first page of ~14 views instead of ~5
   (sequential, background). Watch Activity load time (PF-20261030-B20).
+
+## November 7 follow-up: remove empty left-pane categories
+
+- Removed **Identity Keys** and **Codex Handoffs** from Forte's left-pane
+  `viewLabels` at the user's request. Their event kinds and backend views remain
+  indexed and accessible; All Activity is unchanged. No markup or style change.
+- Updated `StandardActivityPaginationTest` to assert those labels are absent
+  while retaining the mixed-kind All Activity count.
+- `php` is unavailable in this workspace, so the affected PHP smoke test could
+  not be executed here; full suite not run.
+- Separately, the intermittent "Failed to load commit details" UI message is
+  a generic catch for `/api/forte_commit_detail` fetch, HTTP, and JSON errors.
+  A successful later retry does not establish which failure occurred; server
+  response status/log evidence is needed before attributing a root cause.
+
+### Local patch application — 2026-11-07
+
+Workflow: Direct; user requested applying Downloads/forte-remove-empty-categories.patch and explicitly excluded the Chicago theme patch.
+Feedback search: PF-20261030-F05 is related to the original filters; no matching empty-category removal item found. This does not complete that broader feedback request.
+Reuse: Inspected src/ForumRewrite/Http/ForteActivityController.php and templates/partials/paned_activity_filter_list.php. Reuse the existing viewLabels and filter renderer; no new component, markup, CSS, API contract or dependency is needed.
+Completion: Apply the supplied patch cleanly; verify /forte/activity/ rendered category removal and retained mixed-kind All Activity totals through StandardActivityPaginationTest, plus smoke and affected recovery/default-category tests. Existing fetch/retry behavior is unchanged.
+Dependency delta: zero.
+Verification: ./v3 test --smoke StandardActivityPaginationTest ForteActivityReadModelRecoveryTest LocalAppSmokeTest::testForteActivityOffersDefaultCategoriesAndEligibleRss ran 447 tests: 442 passed, 5 failed. All StandardActivityPaginationTest and ForteActivityReadModelRecoveryTest methods and the requested default-category/RSS method passed. PHP syntax checks for both changed PHP files and git diff --check passed. PHP is available locally; the unavailable-PHP note above describes the patch author's workspace.
+Failures: AgentPostingApiTest::testSignedControlDiagnosticsBeforeGenericParserFailure; AgentPostingApiTest::testRulesErrorsAndLegacyCompatibility; SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection; SignedPostBundleValidatorTest::testStrictSubsetAndExactBytes; BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged. The run emitted an unsupported Emoji_Presentation regex-property warning in unchanged UnicodeTextPolicy.php. Failures concern Unicode validation and board pagination, outside the changed controller category list; a pristine-baseline replay was not performed and these failures were not fixed in this patch application.
+Limitations: Phone/desktop browser and theme rendering were not replayed locally; no claim of visual acceptance or commit-detail error recovery. Full suite not run.

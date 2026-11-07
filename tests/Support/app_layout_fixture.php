@@ -1,6 +1,6 @@
 <?php
 // Prints the ZenMemes app layout for a browser check that serves it from memory
-// (no read model, no server): php tests/Support/app_layout_fixture.php <section> [events=1] [messages=1]
+// (no read model, no server): php tests/Support/app_layout_fixture.php <section> [events=1] [messages=1] [inbox=0]
 declare(strict_types=1);
 
 require dirname(__DIR__, 2) . '/autoload.php';
@@ -14,6 +14,7 @@ $section = $argv[1] ?? 'board';
 $flags = new FeatureFlagEvaluator(siteValues: [
     FeatureFlagRegistry::EVENT_SUPPORT_ENABLED => ($argv[2] ?? '1') === '1',
     FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => ($argv[3] ?? '1') === '1',
+    FeatureFlagRegistry::INBOX_ENABLED => ($argv[4] ?? '0') === '1',
 ]);
 $renderer = new TemplateRenderer(dirname(__DIR__, 2) . '/templates', featureFlags: $flags);
 echo $renderer->renderLayout(ucfirst($section), '<h1>' . htmlspecialchars(ucfirst($section)) . '</h1>', $section);

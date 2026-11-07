@@ -3797,8 +3797,13 @@
         return;
       }
 
+      // Any typing field submits: the body, and also Title, tags and the event fields.
       const target = event.target || null;
-      if (!target || target.tagName !== "TEXTAREA") {
+      const inputType = target && target.tagName === "INPUT"
+        ? String((typeof target.getAttribute === "function" && target.getAttribute("type")) || "text").toLowerCase()
+        : "";
+      const typingInput = inputType !== "" && !["checkbox", "radio", "file", "button", "submit", "reset", "image", "hidden"].includes(inputType);
+      if (!target || (target.tagName !== "TEXTAREA" && !typingInput)) {
         return;
       }
 

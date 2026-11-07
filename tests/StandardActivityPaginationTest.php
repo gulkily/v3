@@ -59,12 +59,13 @@ final class StandardActivityPaginationTest
         }
 
         $html = $this->render($app, '/forte/activity/?view=reaction');
-        foreach (['All Activity', 'Threads', 'Replies', 'Reactions', 'Label Changes', 'Identity Keys', 'Invitations', 'Feature Flag Changes', 'Codex Handoffs', 'Bootstraps', 'Approvals'] as $label) {
+        foreach (['All Activity', 'Threads', 'Replies', 'Reactions', 'Label Changes', 'Invitations', 'Feature Flag Changes', 'Bootstraps', 'Approvals'] as $label) {
             assertStringContains('<span>' . $label . '</span>', $html);
         }
+        assertStringNotContains('<span>Identity Keys</span>', $html);
+        assertStringNotContains('<span>Codex Handoffs</span>', $html);
         assertStringContains('<span>Reactions</span><span class="paned-folder-count">45</span>', $html);
         assertStringContains('<span>Threads</span><span class="paned-folder-count">3</span>', $html);
-        assertStringContains('<span>Codex Handoffs</span><span class="paned-folder-count">2</span>', $html);
         assertStringContains('<span>All Activity</span><span class="paned-folder-count">50</span>', $html);
         assertSame(1, preg_match('/paned-folder-item--selected"\s+data-paned-activity-view="reaction"/', $html));
         assertSame(20, substr_count($html, 'data-paned-activity-view-reaction="1"'));

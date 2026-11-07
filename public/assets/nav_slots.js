@@ -42,7 +42,7 @@
     return live.length ? list(live) : list(config().sections);
   }
   function approved() { return root.getAttribute('data-member') === 'approved'; }
-  function usable(name) { return sections().includes(name) && (name !== 'messages' || approved()); }
+  function usable(name) { return sections().includes(name) && ((name !== 'messages' && name !== 'inbox') || approved()); }
   function today() { return new Date().toISOString().slice(0, 10); }
 
   // Mirrors the head script: known sections only, at most the free slot count, Messages only for members.

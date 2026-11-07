@@ -76,7 +76,19 @@ final class RecentPageController
     private function page(int $number, int $limit, bool $imagesOnly): array
     {
         $page = RecentPostRepository::page($this->routeServices->pdo(), $number, $limit, $imagesOnly);
-        foreach ($page['items'] as &$item) {
+        $page['items'] = self::present($page['items']);
+        return $page;
+    }
+
+    /**
+     * Adds what a Recent row shows: the link to the exact post, the thread title and a one-line excerpt.
+     *
+     * @param list<array<string, mixed>> $items rows from RecentPostRepository
+     * @return list<array<string, mixed>>
+     */
+    public static function present(array $items): array
+    {
+        foreach ($items as &$item) {
             $item['is_reply'] = $item['post_id'] !== $item['thread_id'];
             // Open the thread, anchored to the reply's card; a post whose thread is unavailable keeps its own page.
             $item['href'] = $item['context_id'] === null ? '/posts/' . rawurlencode($item['post_id'])
@@ -89,6 +101,6 @@ final class RecentPageController
             }
         }
         unset($item);
-        return $page;
+        return $items;
     }
 }

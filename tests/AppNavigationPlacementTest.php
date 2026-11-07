@@ -62,6 +62,35 @@ final class AppNavigationPlacementTest
         });
     }
 
+    public function testInboxTakesTheMessagesPlaceOnTheBarOnlyWhileItsFlagIsOn(): void
+    {
+        $this->withSite('zenmemes', function (): void {
+            $off = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true]);
+            $placements = array_column($off->navigationItems(self::VIEWERS['approved']), 'placement', 'href');
+            assertSame(null, $placements['/inbox'] ?? null);
+            assertSame('main', $placements['/messages']);
+
+            $on = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true, FeatureFlagRegistry::INBOX_ENABLED => true]);
+            $items = $on->navigationItems(self::VIEWERS['approved']);
+            $placements = array_column($items, 'placement', 'href');
+            assertSame('main', $placements['/inbox']);
+            assertSame('menu', $placements['/messages']);
+            $hrefs = array_column(array_filter($items, static fn (array $item): bool => $item['placement'] === 'main'), 'href');
+            assertTrue(array_search('/inbox', $hrefs, true) < array_search('/search', $hrefs, true), 'Inbox sits where Messages was.');
+            assertSame('more', array_column($items, 'phone', 'href')['/inbox']);
+            assertSame(true, array_column($items, 'member_only', 'href')['/inbox']);
+            assertTrue(in_array('inbox', array_column(array_filter($items, static fn (array $item): bool => $item['placement'] === 'main' && $item['phone'] === 'more'), 'section'), true), 'Inbox can take a phone slot.');
+
+            $withoutMessages = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => false, FeatureFlagRegistry::INBOX_ENABLED => true]);
+            $placements = array_column($withoutMessages->navigationItems(self::VIEWERS['approved']), 'placement', 'href');
+            assertSame('main', $placements['/inbox']);
+            assertSame(null, $placements['/messages'] ?? null);
+
+            $state = $on->navigationState(self::VIEWERS['approved'], 'inbox');
+            assertStringContains('href="/inbox"', $state['html']);
+        });
+    }
+
     public function testMembersOnlyViewersGetLobbyInTheMainBarAndTheRestInTheMenu(): void
     {
         $this->withSite('zenmemes', function (): void {

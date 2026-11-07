@@ -37,6 +37,7 @@ final class ReadModelSchemaTest
             'metadata',
             'posts',
             'posts_author_identity_idx',
+            'posts_parent_idx',
             'posts_recent_idx',
             'posts_thread_sequence_idx',
             'profiles',

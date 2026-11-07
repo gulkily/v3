@@ -292,6 +292,7 @@ final class TemplateRenderer
             )),
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
+            'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
         ]);
@@ -395,6 +396,11 @@ final class TemplateRenderer
         // Profile, Account and Invite. Everything else is a main destination.
         $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
+        // Inbox takes Messages' place on the bar; Messages stays one tap away in the account menu.
+        if (in_array('inbox', array_column($items, 'section'), true)) {
+            $barOrder[array_search('messages', $barOrder, true)] = 'inbox';
+            $menuSections[] = 'messages';
+        }
         // Phone tab bar: Board (or Lobby) and Calendar stay; the rest sit in More,
         // which is the same disclosure as the desktop account menu.
         $phoneBarSections = ['board', 'lobby', 'calendar'];
@@ -502,9 +508,12 @@ final class TemplateRenderer
             ));
         }
 
-        // Messages and Invite are rendered for every viewer and shown before
+        // Inbox, Messages and Invite are rendered for every viewer and shown before
         // paint only for a browser remembered as approved (member_approval.js),
         // so shared pages stay identical. The routes still check approval.
+        if (!$isQdbNavigation && $this->featureFlags->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+            $items[] = ['href' => '/inbox', 'label' => 'Inbox', 'section' => 'inbox', 'member_only' => true];
+        }
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)) {
             $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'member_only' => true];
         }

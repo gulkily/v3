@@ -44,6 +44,8 @@ This is a product and authorization design requirement. It should be decided bef
 
 **Acceptance.** A member who closes the site after posting can discover a later reply, open the exact contribution, and mark it read. Reading on another device updates the same state. Muted threads stay quiet, retried delivery does not duplicate alerts, and an unauthorized recipient receives no protected content.
 
+**Progress (2026-11-07).** Inbox, behind `FORUM_INBOX_ENABLED`, lists unread messages, replies to the member's posts and other new posts with cross-device [caught-up marks](../concepts/caught_up_mark.md) and an unread outline on its link. Follow/unfollow, mentions and email or push remain. [Plan](../plans/personal_inbox/personal_inbox_step4_implementation_summary.md)
+
 As a design reference, Discourse exposes distinct watching, tracking, and muted states alongside email preferences. v3 can start with fewer choices while retaining member control. [Discourse notification documentation](https://meta.discourse.org/t/configuring-default-notification-settings-for-users/285619)
 
 ## 2 General search across threads and replies

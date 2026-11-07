@@ -138,22 +138,7 @@ final class DeployController
 
     private function sameOrigin(): bool
     {
-        $site = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? null;
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
-        if ($site === null && $origin === null) {
-            return false;
-        }
-        if ($site !== null && $site !== 'same-origin') {
-            return false;
-        }
-        if ($origin !== null) {
-            $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://' : 'http://';
-            if ($origin !== $scheme . ($_SERVER['HTTP_HOST'] ?? '')) {
-                return false;
-            }
-        }
-
-        return true;
+        return SameOriginRequest::check();
     }
 
     /**

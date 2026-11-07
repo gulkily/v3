@@ -23,20 +23,21 @@ $canPost = array_filter($navItems, static fn (array $item): bool => $item['secti
     <a class="new-post-button<?= $activeSection === 'compose' ? ' is-active' : '' ?>" href="/compose/thread" data-tab="compose"><span class="new-post-button__icon" aria-hidden="true">+</span><span class="new-post-button__label">New post</span></a>
 <?php endif; ?>
     <details class="account-menu" data-role="account-menu" data-tab="account"<?= $hiddenCurrent !== null ? ' data-current="' . $e($hiddenCurrent['section']) . '"' : '' ?>>
-      <summary class="account-menu__trigger" aria-label="Menu" data-private-message-unread-mirror><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span><?php if ($hiddenCurrent !== null): ?><span class="account-menu__label account-menu__label--current"><?= $e($hiddenCurrent['label']) ?></span><?php endif; ?></summary>
+      <?php $hasInbox = in_array('inbox', array_column($navItems, 'section'), true); ?>
+      <summary class="account-menu__trigger" aria-label="Menu" <?= $hasInbox ? 'data-inbox-unread-mirror' : 'data-private-message-unread-mirror' ?>><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span><?php if ($hiddenCurrent !== null): ?><span class="account-menu__label account-menu__label--current"><?= $e($hiddenCurrent['label']) ?></span><?php endif; ?></summary>
       <div class="account-menu__panel">
 <?php if ($moreItems !== []): ?>
         <nav class="account-menu__links account-menu__more" aria-label="More destinations">
 <?php foreach ($moreItems as $item): ?>
 <?php $class = $item['section'] === $activeSection ? 'nav-link is-active' : 'nav-link'; ?>
-          <a data-more="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= $item['section'] === 'messages' ? ' data-private-message-unread-mirror' : '' ?>><?= $e($item['label']) ?></a>
+          <a data-more="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= $item['section'] === 'messages' ? ' data-private-message-unread-mirror' : '' ?><?= $item['section'] === 'inbox' ? ' data-inbox-unread-mirror' : '' ?>><?= $e($item['label']) ?></a>
 <?php endforeach; ?>
         </nav>
 <?php endif; ?>
         <nav class="account-menu__links" aria-label="Account">
 <?php foreach ($menuItems as $item): ?>
 <?php $class = $item['section'] === $activeSection ? 'nav-link is-active' : 'nav-link'; ?>
-          <a data-tab="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= !empty($item['invite_action']) ? ' data-invite-navigation' : '' ?>><?= $e($item['label']) ?></a>
+          <a data-tab="<?= $e($item['section']) ?>" class="<?= $e($class) ?>" href="<?= $e($item['href']) ?>"<?= !empty($item['member_only']) ? ' data-member-only' : '' ?><?= !empty($item['invite_action']) ? ' data-invite-navigation' : '' ?><?= $item['section'] === 'messages' ? ' data-private-message-unread-mirror' : '' ?>><?= $e($item['label']) ?></a>
 <?php endforeach; ?>
         </nav>
         <div class="account-menu__controls">

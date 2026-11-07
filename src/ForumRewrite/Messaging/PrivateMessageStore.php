@@ -30,6 +30,12 @@ final class PrivateMessageStore
         return $this->readState->state($viewer, $counterparts) + ['has_history' => $this->hasHistory($viewer)];
     }
 
+    /** @return list<array{counterpart:string,unread_count:int,latest_at:string}> */
+    public function unreadConversationsFor(string $viewer, int $limit = 25): array
+    {
+        return $this->readState->unreadConversations($viewer, $limit);
+    }
+
     private function hasHistory(string $account): bool
     {
         $q=$this->pdo->prepare('SELECT 1 FROM private_messages WHERE sender_username_token=? OR recipient_username_token=? LIMIT 1');
