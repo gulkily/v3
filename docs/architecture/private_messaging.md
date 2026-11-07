@@ -174,7 +174,7 @@ List previews, loading older pages, and sending a reply do not broaden that boun
 
 On first initialization of unread tracking, existing history is treated as seen once. Subsequent initialization preserves that baseline and recorded progress. See [PrivateMessageReadState](../../src/ForumRewrite/Messaging/PrivateMessageReadState.php) and the [unread rollout notes](../plans/private_message_unread/private_message_unread_rollout.md).
 
-While `FORUM_INBOX_ENABLED` is on, Inbox lists conversations with unread messages (at most 25, newest arrival first) through `PrivateMessageReadState::unreadConversations`, and adds their number to the Inbox link's count. It shows only the counterpart, the unread count and the latest time; it decrypts nothing and moves no read position. Opening the conversation still acknowledges it as before. If the message store fails, Inbox's other sections still render. See [caught-up mark](../concepts/caught_up_mark.md).
+While `FORUM_INBOX_ENABLED` is on, Unread lists conversations with unread messages (at most 25, newest arrival first) through `PrivateMessageReadState::unreadConversations`, and adds their number to the Unread link's count. It shows only the counterpart, the unread count and the latest time; it decrypts nothing and moves no read position. Opening the conversation still acknowledges it as before. If the message store fails, Unread's other sections still render. See [caught-up mark](../concepts/caught_up_mark.md).
 
 ### Unavailable messages and recovery
 

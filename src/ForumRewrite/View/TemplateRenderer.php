@@ -511,7 +511,8 @@ final class TemplateRenderer
         // paint only for a browser remembered as approved (member_approval.js),
         // so shared pages stay identical. The routes still check approval.
         if (!$isQdbNavigation && $this->featureFlags->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
-            $items[] = ['href' => '/inbox', 'label' => 'Inbox', 'section' => 'inbox', 'member_only' => true];
+            // Shown as Unread; the section key stays 'inbox' so pinned phone tabs keep working.
+            $items[] = ['href' => '/unread', 'label' => 'Unread', 'section' => 'inbox', 'member_only' => true];
         }
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)) {
             $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'member_only' => true];

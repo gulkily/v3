@@ -24,12 +24,14 @@ final class InboxPageTest
         $this->withRepository(function (string $repositoryRoot, string $databasePath): void {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             $this->withFlag('false', function () use ($application): void {
+                assertStringContains('Not Found', $this->render($application, '/unread'));
                 assertStringContains('Not Found', $this->render($application, '/inbox'));
             });
             $this->withFlag('true', function () use ($application): void {
-                $page = $this->render($application, '/inbox/');
-                assertStringContains('Inbox is for approved members', $page);
-                assertStringContains('Inbox opens once a member approves you.', $page);
+                $page = $this->render($application, '/unread/');
+                assertStringContains('Unread is for approved members', $page);
+                assertStringContains('Unread opens once a member approves you.', $page);
+                assertStringContains('Inbox is now Unread.', $this->render($application, '/inbox'), 'The old address redirects.');
                 assertStringNotContains('id="inbox-messages"', $page);
             });
         });
@@ -86,7 +88,7 @@ final class InboxPageTest
                 throw new RuntimeException('Private message database directory is not writable.');
             });
             assertStringContains('Couldn’t check messages.', $failed);
-            assertStringContains('<a href="/inbox">Retry</a>', $failed);
+            assertStringContains('<a href="/unread">Retry</a>', $failed);
 
             $disabled = $this->renderInbox($databasePath, $viewer, null);
             assertStringNotContains('id="inbox-messages"', $disabled);
@@ -177,7 +179,7 @@ final class InboxPageTest
         $this->withProfiles(function (\PDO $pdo, string $databasePath): void {
             $viewer = ['identity_id' => 'openpgp:waiting', 'username_token' => 'waiting', 'is_approved' => 0];
             $html = $this->renderInbox($databasePath, $viewer, null);
-            assertStringContains('Inbox is for approved members', $html);
+            assertStringContains('Unread is for approved members', $html);
             assertStringContains('data-viewer-identity-id="openpgp:waiting"', $html);
         });
     }
