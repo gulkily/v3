@@ -274,3 +274,12 @@ The maintainer reported the theme picker cut off after the edges follow-up. Caus
 - Lesson: an edge rule that clips must not reach containers that host popovers.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Follow-up - Gloss before Engagify
+
+At the maintainer's request, Gloss moved to just before Engagify in the theme picker (and so in the cycle order, where Engagify is skipped).
+
+- Changes: `ThemeRegistry.php` entry order; ZenMemes `permittedThemes` order in `SiteProfileRegistry.php`, which `ProfileThemePresentationTest` requires to match menu order; the `LocalAppSmokeTest` allow-list string.
+- Verification: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest LocalAppSmokeTest::testApplicationRendersCoreRoutes ProfileThemePresentationTest SiteProfileRegistryTest`, 453 run, 448 passed, the 5 baseline failures. Picker screenshot shows Midnight, Gloss, Engagify.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
