@@ -145,3 +145,25 @@ The maintainer did not answer whether to reuse the `plan/readable_page_urls` dra
 - Estimate details: original 0.08; revised to 0.11 before finishing the stage for the offline reader; uncertainty low after the change.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Activity and token removal
+
+**Original estimate: 0.08**
+**Retrospective: 0.07**
+
+- Changes:
+  - `ActivityService::fetchActivityPage` takes a page number and returns `has_next`. The boundary checks and the local-revision expiry are gone; order stays creation time, then action key.
+  - `ActivityPageController` reads `?page=` and leaves out `view=all`, the route's default.
+  - `PageNavigation` loses `encode`, `decode` and `links`. It now holds only `pageNumber`, `numbered`, `withId` and `withLocation`.
+  - No page link in `src/`, `templates/` or the public scripts builds a `position` parameter. The remaining `position` matches are a SQL column alias in `PrivateMessageReadState`.
+- Verification:
+  - `StandardActivityPaginationTest`: 12 passed. Traversal of 205 events in three pages, stable order across row-ID changes and a full rebuild, a page past the end with Previous and First page, malformed numbers and an old `position` showing page 1 without an alert, source-less events without expiry, and the navigation contract with an encoded filter.
+  - `./v3 test --smoke StandardActivityPaginationTest OfflineNavigationWorkerTest`: 455 run, 455 passed.
+  - `tests/browser/standard_activity_pagination.mjs`: passed with and without JavaScript, including keyboard paging to `?page=2`, history, a page past the end and HTTP retry.
+  - `tests/browser/access_history.mjs`: blocked. It fails at line 54, a private-site authentication message, both with and without this stage's changes, before reaching the paging step. Its paging line now uses `&page=9`; that step is unverified in a browser.
+  - Full suite not run.
+- Notes:
+  - Removing the expiry also removes the "This page position has expired" message. A reindex now changes nothing about page links.
+- Estimate details: original scope as planned; uncertainty medium as planned; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

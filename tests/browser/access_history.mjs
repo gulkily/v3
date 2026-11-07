@@ -114,7 +114,7 @@ try {
   await page.getByText('Historical acceptance classification, count, authority, and policy are unknown.',{exact:false}).first().waitFor();
   await page.getByRole('link',{name:'Previous',exact:true}).click();
   assert.equal(await page.locator('.access-history-event').count(),100);
-  await page.goto(base+security+'&position=invalid');
+  await page.goto(base+security+'&page=9');
   await page.getByRole('link',{name:'First page',exact:true}).click();
   await page.goto(base+'/forte/activity/?view=security');
   const firstRow=page.locator('[data-paned-activity-id]:visible').first();
