@@ -36,6 +36,7 @@ Key: Value
 - `Subject`: optional, mainly useful for thread roots
 - `Thread-Type`: optional for thread roots, omitted for replies
 - `Body-Format`: optional, `markdown` or `plain`. Absent means plain, which is how every record written before this header existed renders. New posts made through the composer and the `create_*`/`prepare_*` routes record it, defaulting to `markdown` (`plain` for QDB quotes); the `body_format` input overrides the default. In client-built signed records it follows `Subject` (threads) or `Author-Identity-ID` (replies).
+- `Theme`: optional, on thread roots and replies. A lowercase theme name (`[a-z0-9][a-z0-9_-]*`, at most 40 characters) or `none`. It sets the thread's page theme the same way a `theme:` line in the body does, without showing in the text; `none` clears it. Whether it applies (the thread's author or a current operator, a theme the site permits, the latest setting wins) is decided when the thread page is read, not when the record is written. Written from the `theme` input of the composer and the `create_*`/`prepare_*` routes. In client-built signed records it follows `Body-Format`, or takes its place when `Body-Format` is absent.
 
 ## Typed Root Headers
 
@@ -201,9 +202,10 @@ Its client IDs are `thread-YYYYMMDDHHMMSS-<32 lowercase random hex>`,
 server time; already accepted retries are exempt.
 
 Threads use headers in order: Post-ID, Created-At, Board-Tags,
-Author-Identity-ID, optional nonempty Subject, optional Body-Format. Replies use
-Post-ID, Created-At, Board-Tags, Thread-ID, Parent-ID, Author-Identity-ID,
-optional Body-Format. A record without Body-Format is plain text. Unknown, repeated or
+Author-Identity-ID, optional nonempty Subject, optional Body-Format, optional Theme.
+Replies use Post-ID, Created-At, Board-Tags, Thread-ID, Parent-ID,
+Author-Identity-ID, optional Body-Format, optional Theme. A record without
+Body-Format is plain text. Unknown, repeated or
 out-of-order headers are rejected. Protocol-only tags and image attachments
 are excluded from ordinary submissions. Existing APIs and historical records
 retain their existing formats.

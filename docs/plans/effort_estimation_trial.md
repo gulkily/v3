@@ -1,5 +1,21 @@
 # Effort estimation trial ledger
 
+## Cycle v3/theme_directive
+
+2026-11-07T15:32:51Z — v3/theme_directive Step 4 closeout: six stage commits on `feat/theme_directive`. [Summary/closeout](./theme_directive/theme_directive_step4_implementation_summary.md#closeout). Scope v2 delivered unchanged; projection **0.75**; retrospective scope assessment **0.58** (rater exposed). Maintainer judgment pending; measured labor unknown; deploy pending.
+
+2026-11-07T15:20:40Z — v3/theme_directive Step 4 entry: Step 3 explicitly approved; branch `feat/theme_directive` from `feat/engagify_theme`, planning `bcf05898`. [Summary](./theme_directive/theme_directive_step4_implementation_summary.md#step-4-entry). **0.75** reaffirmed; stage originals copied. R1/P2, single exposed Claude rater.
+
+2026-11-07T15:16:39Z — v3/theme_directive Step 3 handoff: Step 2 explicitly approved. [Checkpoint](./theme_directive/theme_directive_step3_development_plan.md#study-checkpoint). Scope v2; **0.75** reaffirmed; six stages. R1/P2, single exposed Claude rater. Await Approved Step 3.
+
+2026-11-07T15:13:01Z — v3/theme_directive Step 2 handoff: Step 1 explicitly approved (Option D). [Checkpoint](./theme_directive/theme_directive_step2_feature_description.md#study-checkpoint). Scope v2 plus `theme: none`; 0.70 → **0.75**, new understanding (signed-subset spec change, header kept in read model). Starting point `feat/engagify_theme` `9276410b`. R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-07T15:11:25Z — v3/theme_directive Step 1 Revision 2: visible or hidden theme by poster's choice. [Checkpoint](./theme_directive/theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v2/D; 0.40 → **0.70**, changed scope. Same R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-07T14:41:57Z — v3/theme_directive branch move: planning moved from `plan/engagify_theme` to `plan/theme_directive`, based on `feat/engagify_theme`. [Checkpoint](./theme_directive/theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.40** unchanged; no re-rating. Await Approved Step 1.
+
+2026-11-07T11:45:50Z — v3/theme_directive Step 1 handoff (standing P2 enrollment; split from v3/engagify_theme Option B at the maintainer's request, distinct cycle): [assessment/checkpoint](./theme_directive/theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`theme:` line by the thread's author or an operator, derived on read like `event:`, nothing stored). Assumed start: engagify page themes delivered; planning revision `d379f560`. R1/P2; R1 hashes not re-verified. Single exposed Claude rater, also the parent's rater; pristine intake missing. Projected total **0.40**; option estimates 0.40/0.75/0.55, non-additive. Await Approved Step 1.
+
 ## Cycle v3/engagify_theme
 
 2026-11-07T12:32:39Z — v3/engagify_theme Step 4 local closeout: branch `feat/engagify_theme`, planning `fe15dec` and eight stage commits. [Summary/closeout](./engagify_theme/engagify_theme_step4_implementation_summary.md#closeout). Same v5/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.80 at entry, no revision; retrospective scope assessment 0.80. Stage originals 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10; retrospectives 0.10/0.12/0.14/0.04/0.10/0.12/0.12/0.10; non-additive. Smoke plus changed tests 450 run, 449 passed; the one failure also fails on `main`; full suite not run. Production check of the cookie thread pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.

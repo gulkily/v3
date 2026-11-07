@@ -40,6 +40,20 @@ final class SingleRequestPostingTest
         $result=$broken->createSignedPost($input); assertSame(true,$result['refresh_pending']); assertSame('ok',$result['status']);
         assertSame(false,isset($writer->createSignedPost($input)['refresh_pending']));
     }
+    public function testSignedReplyCarriesHiddenThemeHeader(): void
+    {
+        [$root,$db,$artifacts]=SignedPostIdentityTest::helper('createTempEnvironment');
+        $writer=new LocalWriteService($root,$db,$artifacts,new CanonicalRecordRepository($root));
+        $input=SignedPostIdentityTest::bundle(); $first=$writer->createSignedPost($input);
+        $reply=str_replace(['Post-ID: thread-',"Subject: Test\n"],['Post-ID: reply-',''],$input['canonical_record']);
+        $reply=str_replace('Author-Identity-ID:',"Thread-ID: {$first['post_id']}\nParent-ID: {$first['post_id']}\nAuthor-Identity-ID:",$reply);
+        $reply=preg_replace('/\n\n/',"\nTheme: midnight\n\n",$reply,1);
+        $input['canonical_record']=$reply; $input['detached_signature']=SignedPostIdentityTest::helper('signCanonicalRecord',SignedPostIdentityTest::$home,$reply);
+        $result=$writer->createSignedPost($input);
+        assertSame('ok',$result['status']);
+        assertSame($reply,file_get_contents($root.'/'.$result['record_path']));
+        assertSame('midnight',(new CanonicalRecordRepository($root))->loadPost($result['record_path'])->theme);
+    }
     public function testAgedReplayAndConflictingSignedContent(): void
     {
         [$root,$db,$artifacts]=SignedPostIdentityTest::helper('createTempEnvironment');

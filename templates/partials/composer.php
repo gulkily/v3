@@ -60,6 +60,17 @@ HTML;
         <input type="hidden" name="body_format" value="plain">
         <label class="compose-action-menu-check"><input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown</label>
         <a class="compose-action-menu-link" href="/docs/reference/markdown_syntax.md" target="_blank" rel="noopener">Formatting help</a>
+        <label class="compose-action-menu-check compose-action-menu-theme"<?= $composerIsThread ? '' : ' title="Counts only from the thread\'s author or an operator"' ?>><?= $composerIsThread ? 'Theme' : 'Thread theme' ?>
+          <select name="theme" data-role="thread-theme-choice">
+            <option value=""><?= $composerIsThread ? 'Site default' : 'Unchanged' ?></option>
+<?php foreach (\ForumRewrite\View\ThreadTheme::choices() as $composerThemeChoice): ?>
+            <option value="<?= $e($composerThemeChoice['name']) ?>"><?= $e($composerThemeChoice['label']) ?></option>
+<?php endforeach; ?>
+<?php if (!$composerIsThread): ?>
+            <option value="none">Clear thread theme</option>
+<?php endif; ?>
+          </select>
+        </label>
 <?= $composerMenuExtra ?>
         <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Discard draft</button>
 <?php $composerMenuItems = (string) ob_get_clean(); ?>

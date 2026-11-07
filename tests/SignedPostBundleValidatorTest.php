@@ -15,6 +15,22 @@ final class SignedPostBundleValidatorTest
             try { $v->validateRecord($invalid); throw new LogicException('Expected rejection'); } catch (RuntimeException) {}
         }
     }
+    public function testOptionalThemeHeaderFollowsBodyFormat(): void
+    {
+        $v = new SignedPostBundleValidator(true);
+        assertSame('midnight', $v->validateRecord(str_replace("Subject: Hello\n", "Subject: Hello\nBody-Format: markdown\nTheme: midnight\n", $this->record()))->theme);
+        assertSame('none', $v->validateRecord(str_replace("Subject: Hello\n", "Subject: Hello\nTheme: none\n", $this->record()))->theme);
+        $reply = str_replace(['thread-20261030000000-' . str_repeat('a', 32), "Board-Tags: general\n", "Subject: Hello\n"], ['reply-20261030000000-' . str_repeat('c', 32), "Board-Tags: general\nThread-ID: root-001\nParent-ID: root-001\n", "Body-Format: plain\nTheme: word97\n"], $this->record());
+        assertSame('word97', $v->validateRecord($reply)->theme);
+        foreach ([
+            str_replace("Subject: Hello\n", "Subject: Hello\nTheme: midnight\nBody-Format: markdown\n", $this->record()),
+            str_replace("Subject: Hello\n", "Theme: midnight\nSubject: Hello\n", $this->record()),
+            str_replace("Subject: Hello\n", "Subject: Hello\nTheme: midnight\nTheme: midnight\n", $this->record()),
+            str_replace("Subject: Hello\n", "Subject: Hello\nTheme: Midnight\n", $this->record()),
+        ] as $invalid) {
+            try { $v->validateRecord($invalid); throw new LogicException('Expected rejection'); } catch (RuntimeException) {}
+        }
+    }
     public function testBootstrapAndTimeBoundary(): void
     {
         $v = new SignedPostBundleValidator();

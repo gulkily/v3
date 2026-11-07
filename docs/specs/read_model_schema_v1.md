@@ -20,6 +20,9 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 51 adds `posts.theme`, the post's hidden `Theme:` header, so a thread page can
+find its own theme without reading record files; prior-version startup rebuild is required.
+
 Version 47 adds the board thread search query without changing tables; see
 [Version 47](#version-47--board-thread-search).
 
@@ -113,6 +116,8 @@ row matches both branches. Normal startup rebuilds schema-26 and older models.
 | `board_tags_json` | TEXT | JSON array |
 | `thread_type` | TEXT NULL | |
 | `agent_response_json` | TEXT NULL | Optional canonical response kind, source/version, and expansion parent/version; introduced in schema 18. |
+| `body_format` | TEXT NULL | `Body-Format` header or the latest post format record; null renders as plain (schema 45) |
+| `theme` | TEXT NULL | the post's `Theme:` header, a theme name or `none`; null on retraction. The thread page's theme is derived on read from this and `theme:` lines (schema 51) |
 | `author_identity_id` | TEXT NULL | |
 | `author_profile_slug` | TEXT NULL | |
 | `author_label` | TEXT | default `'guest'` |

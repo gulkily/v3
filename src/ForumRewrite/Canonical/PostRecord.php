@@ -41,6 +41,8 @@ final class PostRecord
         public readonly ?string $bodyFormat = null,
         /** Inclusive last day of a multi-day event; null means the event is one day. */
         public readonly ?string $eventEndDate = null,
+        /** The thread's page theme set from this post without a visible `theme:` line; `none` clears. */
+        public readonly ?string $theme = null,
     ) {
     }
 

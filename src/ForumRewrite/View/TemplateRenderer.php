@@ -129,6 +129,7 @@ final class TemplateRenderer
             $viewerProfile,
             $publicAuthenticationResume,
             $pageStylesheetPaths,
+            is_string($pageData['threadTheme'] ?? null) ? $pageData['threadTheme'] : null,
         );
     }
 
@@ -145,6 +146,7 @@ final class TemplateRenderer
         ?array $viewerProfile = null,
         bool $publicAuthenticationResume = false,
         array $pageStylesheetPaths = [],
+        ?string $threadTheme = null,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
@@ -221,7 +223,8 @@ final class TemplateRenderer
         }
         $defaultTheme = $this->defaultThemeName($profile, $permittedThemeNames);
         $pagePath = $this->requestPath !== null ? SiteProfileRegistry::pageThemePath((string) ($this->requestPath)()) : null;
-        $pageTheme = $pagePath !== null ? SiteProfileRegistry::pageThemeFor($pagePath) : null;
+        // A thread's own theme (ThreadTheme) comes before the site profile's page theme list.
+        $pageTheme = $threadTheme ?? ($pagePath !== null ? SiteProfileRegistry::pageThemeFor($pagePath) : null);
         if ($pageTheme !== null && !in_array($pageTheme, $explicitThemeNames, true)) {
             $pageTheme = null;
         }
