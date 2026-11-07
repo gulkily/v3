@@ -10,15 +10,20 @@ final class ThemeRegistry
 
     public const CONSOLE_PALETTES = ['green' => 'Green', 'amber' => 'Amber', 'cyan' => 'Cyan', 'white' => 'White'];
     public const LCD_PALETTES = ['green' => 'Green', 'amber' => 'Amber', 'purple' => 'Purple', 'gray' => 'Gray'];
+    public const GLOSS_PALETTES = ['violet' => 'Violet', 'blue' => 'Blue', 'teal' => 'Teal', 'rose' => 'Rose'];
 
     /** Retired theme names mapped to their replacements, for saved preferences. */
     public const LEGACY_ALIASES = ['windark' => 'midnight'];
 
     /**
      * A theme may set 'script' => true to ship /assets/theme-<name>.js, which
-     * runs only while that theme is active (see the theme development guide).
+     * runs only while that theme is active, 'stylesheet' => '<other>' to
+     * load /assets/theme-<other>.css instead of its own, and 'cycle' => false
+     * to stay out of the cycle button while remaining in the menu, and
+     * 'palettes' => [key => label] for a colour picker beside the theme menu;
+     * the first key is the default (see the theme development guide).
      *
-     * @return list<array{name: string, label: string, mode: string, script?: bool}>
+     * @return list<array{name: string, label: string, mode: string, script?: bool, stylesheet?: string, cycle?: bool, palettes?: array<string, string>}>
      */
     public static function all(): array
     {
@@ -26,8 +31,8 @@ final class ThemeRegistry
             ['name' => 'auto', 'label' => 'Auto/System', 'mode' => 'auto'],
             ['name' => 'light', 'label' => 'Light', 'mode' => 'light'],
             ['name' => 'dark', 'label' => 'Dark', 'mode' => 'dark'],
-            ['name' => 'console', 'label' => 'Console', 'mode' => 'dark'],
-            ['name' => 'lcd', 'label' => 'LCD', 'mode' => 'light'],
+            ['name' => 'console', 'label' => 'Console', 'mode' => 'dark', 'palettes' => self::CONSOLE_PALETTES],
+            ['name' => 'lcd', 'label' => 'LCD', 'mode' => 'light', 'palettes' => self::LCD_PALETTES],
             ['name' => 'chicago', 'label' => 'Chicago', 'mode' => 'light'],
             ['name' => 'vapor', 'label' => 'Vapor', 'mode' => 'dark'],
             ['name' => 'forge', 'label' => 'Forge', 'mode' => 'dark'],
@@ -37,7 +42,8 @@ final class ThemeRegistry
             ['name' => 'whitehot', 'label' => 'Whitehot', 'mode' => 'light'],
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
             ['name' => 'midnight', 'label' => 'Midnight', 'mode' => 'dark'],
-            ['name' => 'engagify', 'label' => 'Engagify', 'mode' => 'light', 'script' => true],
+            ['name' => 'gloss', 'label' => 'Gloss', 'mode' => 'light', 'palettes' => self::GLOSS_PALETTES],
+            ['name' => 'engagify', 'label' => 'Engagify', 'mode' => 'light', 'script' => true, 'stylesheet' => 'gloss', 'cycle' => false],
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
             ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
             ['name' => 'mitrapclub', 'label' => 'MIT Rap Club', 'mode' => 'dark'],
@@ -96,11 +102,31 @@ final class ThemeRegistry
     public static function stylesheetPaths(): array
     {
         $paths = [];
-        foreach (self::explicitNames() as $name) {
-            $paths[$name] = '/assets/theme-' . $name . '.css';
+        foreach (self::all() as $theme) {
+            if ($theme['name'] === 'auto') {
+                continue;
+            }
+            $paths[$theme['name']] = '/assets/theme-' . ($theme['stylesheet'] ?? $theme['name']) . '.css';
         }
 
         return $paths;
+    }
+
+    /**
+     * Colour palettes, keyed by theme name, for themes that declare them.
+     *
+     * @return array<string, array{label: string, palettes: array<string, string>}>
+     */
+    public static function palettes(): array
+    {
+        $palettes = [];
+        foreach (self::all() as $theme) {
+            if (isset($theme['palettes'])) {
+                $palettes[$theme['name']] = ['label' => $theme['label'], 'palettes' => $theme['palettes']];
+            }
+        }
+
+        return $palettes;
     }
 
     /**

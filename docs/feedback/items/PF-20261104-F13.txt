@@ -1,9 +1,9 @@
 ID: PF-20261104-F13
 Title: Modern theme with icons
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 “It would be nice to have a modern theme with icons.” Account wishlist later asks for Whitehot’s looks with Word97’s icons and usability/accessibility features.
@@ -15,3 +15,9 @@ Sources:
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-07: v3/gloss_theme Stage 1 drew a sample of a new smooth-line icon set (Board, Backup, Operator) shown in Engagify; the maintainer approved the style. Gloss itself and the full set follow in later stages. Plan: docs/plans/gloss_theme/gloss_theme_step3_development_plan.md
+2026-11-07: v3/gloss_theme Stage 2 drew the main navigation, board filter, Recent, Gallery and account menu icons in the new set (26 glyphs), shown in Engagify.
+2026-11-07: v3/gloss_theme Stage 3 drew the 16 Tools icons in the new set (launcher buttons and Tools bar), shown in Engagify.
+2026-11-07: v3/gloss_theme Stage 4 drew the launcher group heading and Bookmarklets icons; the new set now covers every destination the pixel-art set covers (NavIconSetsTest).
+2026-11-07: v3/gloss_theme Stage 6 added Gloss, a selectable theme with the new icon set (rounded cards, inputs and pill buttons on a lavender page).
+2026-11-07: v3/gloss_theme complete locally on feat/engagify_theme (Stages 1-8): Gloss is selectable on ZenMemes with the smooth-line icon set; Exit from Engagify lands on Gloss. Blocked on merge, deploy and a production check. Summary: docs/plans/gloss_theme/gloss_theme_step4_implementation_summary.md

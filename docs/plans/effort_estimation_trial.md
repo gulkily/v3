@@ -1,5 +1,29 @@
 # Effort estimation trial ledger
 
+## Cycle v3/gloss_theme
+
+2026-11-07T14:32:27Z — v3/gloss_theme Step 4 local closeout: branch `feat/engagify_theme`, planning `b1551c6a6` and eight stage commits. [Summary/closeout](./gloss_theme/gloss_theme_step4_implementation_summary.md#closeout). Same v6/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.95 at entry, no revision; retrospective scope assessment 0.90. Stage originals 0.08/0.10/0.10/0.06/0.08/0.18/0.08/0.10; retrospectives 0.07/0.10/0.08/0.07/0.06/0.16/0.08/0.10; non-additive. Smoke plus changed tests 467 run, 462 passed; the 5 failures predate the cycle; full suite not run. Production check pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.
+
+2026-11-07T13:27:18Z — v3/gloss_theme Step 4 entry: Step 3 explicitly approved; branch `feat/engagify_theme` reused, planning `b1551c6a6`. [Summary](./gloss_theme/gloss_theme_step4_implementation_summary.md#step-4-entry). Whole-cycle **0.95** reaffirmed; stage originals copied 0.08/0.10/0.10/0.06/0.08/0.18/0.08/0.10, non-additive. Same v6/baseline/R1/P2, single exposed Claude rater.
+
+2026-11-07T13:11:40Z — v3/gloss_theme Step 3 handoff: user explicitly approved Step 2. [Plan/checkpoint](./gloss_theme/gloss_theme_step3_development_plan.md#study-checkpoint) eight stages: icon sample (maintainer gate), main navigation icons, Tools icons, headings and Bookmarklets icons, shared stylesheet field, Gloss and the move, Exit and cycle skip, docs and sweep. Whole-cycle **0.95** reaffirmed; stage-work originals 0.08/0.10/0.10/0.06/0.08/0.18/0.08/0.10, non-additive. Same v6/baseline/R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.
+
+2026-11-07T13:07:30Z — v3/gloss_theme Step 2 handoff: user explicitly approved Step 1 (Option B, Revisions 1–6). [Description/checkpoint](./gloss_theme/gloss_theme_step2_feature_description.md#study-checkpoint): Gloss selectable, one stylesheet shared with Engagify, new 52-glyph icon set for both, Exit saves Gloss, cycle button skips Engagify. Projected total 0.90 → **0.95** (new understanding: glyph count, second icon rule block, AGENTS.md rule). Same v6/baseline/R1/P2, single exposed Claude rater. Await Approved Step 2; planning uncommitted.
+
+2026-11-07T13:01:04Z — v3/gloss_theme Step 1 Revision 6: Exit saves Gloss everywhere; Engagify uses the new icons; one stylesheet shared by both registry entries recommended. [Checkpoint](./gloss_theme/gloss_theme_step1_solution_assessment.md#study-checkpoint). Scope v6; **0.90** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-07T12:59:10Z — v3/gloss_theme Step 1 Revision 5: maintainer chose Option B (two theme names, one shared look, no setting). [Checkpoint](./gloss_theme/gloss_theme_step1_solution_assessment.md#study-checkpoint). Scope v5; projected total 0.80 → **0.90** (changed scope). Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-07T12:57:11Z — v3/gloss_theme Step 1 Revision 4: name Gloss, Exit always lands on Gloss, Engagify keeps its badge, cycle button skips Engagify; one theme with a setting under discussion. [Checkpoint](./gloss_theme/gloss_theme_step1_solution_assessment.md#study-checkpoint). Scope v4; projected total 0.75 → **0.80** (changed scope). Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-07T12:54:29Z — v3/gloss_theme Step 1 Revision 3: new icon set folded back into this cycle as the first slice; `v3/gloss_icons` withdrawn before any artifact. [Checkpoint](./gloss_theme/gloss_theme_step1_solution_assessment.md#study-checkpoint). Scope v3; projected total 0.50 → **0.75** (changed scope). Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-07T12:52:34Z — v3/gloss_theme Step 1 Revision 2: new icon set moved to follow-up `v3/gloss_icons` (no artifact yet, not enrolled until its first artifact). [Checkpoint](./gloss_theme/gloss_theme_step1_solution_assessment.md#study-checkpoint). Scope v2 and **0.50** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-07T12:51:40Z — v3/gloss_theme Step 1 Revision 1: maintainer chose Option A plus Option C's icons. [Checkpoint](./gloss_theme/gloss_theme_step1_solution_assessment.md#study-checkpoint). Scope v2; projected total 0.55 → **0.50** (changed scope: separate stylesheet, existing icon set; new icon set 0.75). Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-07T12:45:05Z — v3/gloss_theme Step 1 handoff (standing P2 enrollment, related to `v3/engagify_theme`, not a child): [assessment/checkpoint](./gloss_theme/gloss_theme_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option B (Gloss, a selectable theme with Engagify's look; Engagify built on top of it; Exit from Engagify lands on Gloss). Starting revision `54ad7a65`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because the rater built Engagify and read all theme variables before rating. Intake and projected total **0.55**; option estimates 0.45/0.55/0.70, non-additive. Await Approved Step 1; planning uncommitted.
+
 ## Cycle v3/theme_directive
 
 2026-11-07T15:32:51Z — v3/theme_directive Step 4 closeout: six stage commits on `feat/theme_directive`. [Summary/closeout](./theme_directive/theme_directive_step4_implementation_summary.md#closeout). Scope v2 delivered unchanged; projection **0.75**; retrospective scope assessment **0.58** (rater exposed). Maintainer judgment pending; measured labor unknown; deploy pending.

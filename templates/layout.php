@@ -13,7 +13,7 @@
       var themeHintCookieName = <?= json_encode($themeHintCookieName, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var themeLegacyAliases = <?= json_encode($themeLegacyAliases, JSON_HEX_TAG | JSON_FORCE_OBJECT | JSON_THROW_ON_ERROR) ?>;
       var browserRuntime = <?= json_encode($browserRuntime, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
-      var lcdPalettes = <?= json_encode(array_keys($lcdPalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      var themePalettes = <?= json_encode(array_map(static fn (array $entry): array => array_keys($entry['palettes']), $themePalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       try {
         // Same rule as member_approval.js: approval remembered for this identity.
         var memberFingerprint = (localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase();
@@ -38,18 +38,16 @@
         if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
       } catch (error) {}
 <?php endif; ?>
-      var palette = 'green';
-      try {
-        var savedPalette = localStorage.getItem(browserRuntime.themeStorageKey + '-lcd-palette');
-        if (lcdPalettes.indexOf(savedPalette) !== -1) palette = savedPalette;
-      } catch (error) {}
-      document.documentElement.setAttribute('data-lcd-palette', palette);
-      var consolePalette = 'green';
-      try {
-        var savedConsolePalette = localStorage.getItem(browserRuntime.themeStorageKey + '-console-palette');
-        if (<?= json_encode(array_keys($consolePalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>.indexOf(savedConsolePalette) !== -1) consolePalette = savedConsolePalette;
-      } catch (error) {}
-      document.documentElement.setAttribute('data-console-palette', consolePalette);
+      // Each palette theme's saved colour, or its first palette.
+      Object.keys(themePalettes).forEach(function (paletteTheme) {
+        var choices = themePalettes[paletteTheme];
+        var palette = choices[0];
+        try {
+          var savedPalette = localStorage.getItem(browserRuntime.themeStorageKey + '-' + paletteTheme + '-palette');
+          if (choices.indexOf(savedPalette) !== -1) palette = savedPalette;
+        } catch (error) {}
+        document.documentElement.setAttribute('data-' + paletteTheme + '-palette', palette);
+      });
       var theme = null;
       window.forumBrowserRuntime = browserRuntime;
 

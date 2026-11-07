@@ -79,6 +79,12 @@
     var themes = options.map(function (option) {
       return option.getAttribute("data-theme-option");
     });
+    // Themes the cycle button passes over; they stay in the menu.
+    var cycleSkips = options.filter(function (option) {
+      return option.getAttribute("data-theme-cycle") === "skip";
+    }).map(function (option) {
+      return option.getAttribute("data-theme-option");
+    });
     var labels = {};
     options.forEach(function (option) {
       var labelElement = option.querySelector(".theme-menu__label");
@@ -176,16 +182,17 @@
       }
     }
 
+    // Load states are keyed by path: themes that share a stylesheet load it once.
     function ensureThemeStylesheet(theme, highPriority) {
       var path = themeStylesheetPaths[theme];
       if (!path) {
         return { ready: true, promise: Promise.resolve(true) };
       }
-      if (themeLoadStates[theme]) {
+      if (themeLoadStates[path]) {
         if (highPriority) {
-          themeLoadStates[theme].link.setAttribute("fetchpriority", "high");
+          themeLoadStates[path].link.setAttribute("fetchpriority", "high");
         }
-        return themeLoadStates[theme];
+        return themeLoadStates[path];
       }
 
       var link = themeStylesheet && themeStylesheet.getAttribute("href") === path && hasThemeStyles(themeStylesheet)
@@ -209,12 +216,12 @@
             }, { once: true });
             link.addEventListener("error", function () {
               // Keep the current theme usable and let the next selection retry.
-              delete themeLoadStates[theme];
+              delete themeLoadStates[path];
               link.remove();
               resolve(false);
             }, { once: true });
           });
-      themeLoadStates[theme] = state;
+      themeLoadStates[path] = state;
       return state;
     }
 
@@ -245,7 +252,7 @@
       var currentResolvedTheme = resolvedTheme(currentTheme);
       for (var offset = 1; offset < themes.length; offset += 1) {
         var candidate = themes[(currentIndex + offset) % themes.length];
-        if (resolvedTheme(candidate) !== currentResolvedTheme) {
+        if (cycleSkips.indexOf(candidate) === -1 && resolvedTheme(candidate) !== currentResolvedTheme) {
           return candidate;
         }
       }
@@ -318,7 +325,7 @@
       var palettePopover = paletteControl && paletteControl.querySelector('[role="menu"]');
       var paletteOptions = paletteControl ? Array.prototype.slice.call(paletteControl.querySelectorAll('[data-' + paletteTheme + '-palette-option]')) : [];
       var paletteNames = paletteOptions.map(function (option) { return option.getAttribute('data-' + paletteTheme + '-palette-option'); });
-      var palette = document.documentElement.getAttribute('data-' + paletteTheme + '-palette') || 'green';
+      var palette = document.documentElement.getAttribute('data-' + paletteTheme + '-palette') || paletteNames[0] || 'green';
 
       function setPalette(value) {
         palette = value;
@@ -386,12 +393,19 @@
 
       return { close: closePalette, sync: syncPalette, set: setPalette, names: paletteNames, options: paletteOptions, value: function () { return palette; } };
     }
-    var lcdControl = createPaletteControl('lcd', 'LCD');
-    var consoleControl = createPaletteControl('console', 'Console');
+    // One colour picker per palette theme the menu renders (ThemeRegistry 'palettes').
+    var paletteControls = Array.prototype.map.call(menu.querySelectorAll('[data-role$="-palette"]'), function (control) {
+      var name = control.getAttribute('data-role').replace(/-palette$/, '');
+      var paletteControl = createPaletteControl(name, control.getAttribute('data-palette-label') || name);
+      paletteControl.theme = name;
+      return paletteControl;
+    });
+    // LCD's palettes are also stops on the cycle button.
+    var lcdControl = paletteControls.filter(function (control) { return control.theme === 'lcd'; })[0] || createPaletteControl('lcd', 'LCD');
     var paletteNames = lcdControl.names;
     var paletteOptions = lcdControl.options;
-    function closePalette(refocus) { lcdControl.close(refocus); consoleControl.close(false); }
-    function syncPalette() { lcdControl.sync(); consoleControl.sync(); }
+    function closePalette(refocus) { paletteControls.forEach(function (control) { control.close(refocus); }); }
+    function syncPalette() { paletteControls.forEach(function (control) { control.sync(); }); }
 
     var currentTheme = readStoredTheme();
 
@@ -424,16 +438,8 @@
 
     function commitSelection(theme, selectedPalette) {
       document.documentElement.removeAttribute("data-theme-loading");
-      if (pageThemeActive) {
-        // Any change on a page theme's page leaves the page theme; the page
-        // theme is never recorded as the viewer's previous theme.
-        if (theme !== pageTheme) leavePageTheme();
-      } else if (theme !== currentTheme) {
-        try {
-          localStorage.setItem(storageKey + "-previous", currentTheme);
-        } catch (error) {
-        }
-      }
+      // Any change on a page theme's page leaves the page theme.
+      if (pageThemeActive && theme !== pageTheme) leavePageTheme();
       currentTheme = theme;
       if (selectedPalette) lcdControl.set(selectedPalette);
       applyTheme(currentTheme);
@@ -453,24 +459,14 @@
       closeMenu(true);
     }
 
-    // Leaving a theme from inside it (a theme script's Exit control) returns
-    // the viewer to the theme they had before choosing it.
-    window.forumExitTheme = function () {
-      if (pageThemeActive) {
-        var saved = readSavedTheme();
-        if (saved === pageTheme) saved = defaultTheme() !== pageTheme ? defaultTheme() : "auto";
-        applySelection(saved);
-        return;
-      }
-      var previous = null;
-      try {
-        previous = localStorage.getItem(storageKey + "-previous");
-      } catch (error) {
-      }
-      if (themes.indexOf(previous) === -1 || previous === currentTheme) {
-        previous = defaultTheme() !== currentTheme ? defaultTheme() : "auto";
-      }
-      applySelection(previous);
+    // Leaving a theme from inside it (a theme script's Exit control) works
+    // like choosing the target theme in the menu: it is saved, and on a page
+    // theme's page the exit is remembered. Without a usable target, Exit
+    // falls back to the site default.
+    window.forumExitTheme = function (target) {
+      var next = themes.indexOf(target) !== -1 && target !== currentTheme ? target : null;
+      if (!next) next = defaultTheme() !== currentTheme ? defaultTheme() : "auto";
+      applySelection(next);
     };
 
     cycleButton.addEventListener("click", function () {

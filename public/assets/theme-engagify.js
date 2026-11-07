@@ -48,13 +48,9 @@
           if (!stopped) callback();
         }, delay));
       },
+      // Exit lands on Gloss: the same look without the parody layer.
       exit: function () {
-        if (typeof window.forumExitTheme === "function") window.forumExitTheme();
-      },
-      exitButton: function (label) {
-        return el("button", { type: "button", class: "engagify-link", text: label || "Exit Engagify", onclick: function () {
-          if (typeof window.forumExitTheme === "function") window.forumExitTheme();
-        } });
+        if (typeof window.forumExitTheme === "function") window.forumExitTheme("gloss");
       },
       onStop: function (callback) {
         cleanups.push(callback);
@@ -96,7 +92,6 @@
   // that does not exist.
   NAGS.push(function appBar(ctx) {
     var bar = ctx.el("div", { class: "engagify-nag engagify-app-bar", role: "region", "aria-label": "Get the app", "data-engagify": "app-bar" });
-    bar.appendChild(ctx.exitButton("Exit"));
     bar.appendChild(ctx.el("div", { class: "engagify-app-icon", "aria-hidden": "true", text: "Z" }));
     bar.appendChild(ctx.el("p", {}, [
       ctx.el("strong", { text: "ZenMemes is better in the app" }),
@@ -128,7 +123,6 @@
         body.lastChild.textContent = "Your preferences are saved when you select Accept all.";
         accept.focus();
       } });
-      banner.appendChild(ctx.exitButton());
       banner.appendChild(body);
       banner.appendChild(ctx.el("div", { class: "engagify-actions" }, [accept, manage]));
       ctx.add(banner);
@@ -143,7 +137,6 @@
         ctx.remove(prompt);
         if (message) toast(ctx, message);
       };
-      prompt.appendChild(ctx.exitButton());
       prompt.appendChild(ctx.el("p", {}, [
         ctx.el("strong", { text: location.host || "This site" }),
         document.createTextNode(" wants to show notifications")
@@ -192,7 +185,6 @@
         toast(ctx, "Check your inbox! (We didn't send anything.)");
         ctx.later(function () { rateUs(ctx); }, 2500);
       });
-      d.box.appendChild(ctx.exitButton());
       d.box.appendChild(ctx.el("h2", { text: "Don't miss a single meme" }));
       d.box.appendChild(ctx.el("p", { text: "Join 0 subscribers who get the best of ZenMemes in their inbox every hour." }));
       d.box.appendChild(form);
@@ -215,7 +207,6 @@
     }
     function show(nodes) {
       while (d.box.firstChild) d.box.removeChild(d.box.firstChild);
-      d.box.appendChild(ctx.exitButton());
       nodes.forEach(function (node) { d.box.appendChild(node); });
       var focus = d.box.querySelector("[data-engagify-focus]") || d.box.querySelector("button");
       if (focus && d.box.parentNode) focus.focus();
@@ -284,7 +275,6 @@
     var ends = Date.now() + 10 * 60 * 1000;
     var clock = ctx.el("strong", { class: "engagify-countdown", text: "10:00" });
     var bar = ctx.el("div", { class: "engagify-nag engagify-promo", role: "region", "aria-label": "Offer", "data-engagify": "promo" }, [
-      ctx.exitButton("Exit"),
       ctx.el("p", {}, [document.createTextNode("Limited time: 0% off everything. Ends in "), clock]),
       ctx.el("button", { type: "button", class: "engagify-close", "aria-label": "Close", text: "×", onclick: function () { ctx.remove(bar); } })
     ]);
@@ -319,7 +309,6 @@
   // Chat bubble that opens itself.
   NAGS.push(function chatBubble(ctx) {
     var panel = ctx.el("div", { class: "engagify-nag engagify-card engagify-chat", role: "dialog", "aria-label": "Chat", "data-engagify": "chat-panel", hidden: "" }, [
-      ctx.exitButton(),
       ctx.el("p", {}, [ctx.el("strong", { text: "Ava from ZenMemes" }), document.createTextNode(" (a script)")]),
       ctx.el("p", { class: "engagify-chat-message", text: "Hi there! Can I help you find anything? I can also help you not find anything." })
     ]);
@@ -346,7 +335,6 @@
       root.classList.remove("engagify-paywalled");
       ctx.remove(wall);
     };
-    wall.appendChild(ctx.exitButton());
     wall.appendChild(ctx.el("h2", { text: "You've read 1 of 1 free posts this month" }));
     wall.appendChild(ctx.el("p", { text: "Subscribe to keep reading posts that are free." }));
     wall.appendChild(ctx.el("div", { class: "engagify-actions" }, [

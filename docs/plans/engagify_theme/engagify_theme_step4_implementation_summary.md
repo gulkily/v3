@@ -209,3 +209,11 @@ Study closeout, `railspike-effort` / `v3/engagify_theme`, R1/P2, single exposed 
 - Maintainer comfortable-fit judgment and study acceptance: pending.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Follow-up - single Exit control
+
+2026-11-07: at the maintainer's request, the per-nag "Exit Engagify" and "Exit" links were removed from every dialog, banner and bar; the Exit pill is the only Exit control. Each nag keeps its own dismiss controls, which now come first in its tab order. Removed the `exitButton` context helper and its CSS.
+
+- Verification: `node --check public/assets/theme-engagify.js`; no remaining `exitButton` references. The maintainer reviewed the result in the browser. No automated browser check was run for this change; full suite not run.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

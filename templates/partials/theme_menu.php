@@ -1,20 +1,19 @@
 <div class="theme-menu" data-role="theme-menu">
-<?php foreach (['lcd' => $lcdPalettes, 'console' => $consolePalettes] as $paletteTheme => $paletteChoices): ?>
-<?php if (in_array($paletteTheme, array_column($themes, 'name'), true)): ?>
-  <div class="lcd-palette" data-role="<?= $paletteTheme ?>-palette">
-    <button type="button" class="lcd-palette__trigger" data-action="<?= $paletteTheme ?>-palette-toggle"
-      aria-label="Choose <?= $paletteTheme === 'lcd' ? 'LCD' : 'Console' ?> palette" title="Choose <?= $paletteTheme === 'lcd' ? 'LCD' : 'Console' ?> palette" aria-haspopup="menu"
-      aria-expanded="false" aria-controls="<?= $paletteTheme ?>-palette-popover"><span class="lcd-palette__chip" aria-hidden="true"></span></button>
-    <div class="theme-menu__popover" id="<?= $paletteTheme ?>-palette-popover" role="menu" aria-label="<?= $paletteTheme === 'lcd' ? 'LCD' : 'Console' ?> palette" hidden>
-<?php foreach ($paletteChoices as $palette => $label): ?>
+<?php foreach ($themePalettes as $paletteTheme => $paletteEntry): ?>
+<?php $paletteLabel = $paletteEntry['label']; ?>
+  <div class="lcd-palette" data-role="<?= $e($paletteTheme) ?>-palette" data-palette-label="<?= $e($paletteLabel) ?>">
+    <button type="button" class="lcd-palette__trigger" data-action="<?= $e($paletteTheme) ?>-palette-toggle"
+      aria-label="Choose <?= $e($paletteLabel) ?> palette" title="Choose <?= $e($paletteLabel) ?> palette" aria-haspopup="menu"
+      aria-expanded="false" aria-controls="<?= $e($paletteTheme) ?>-palette-popover"><span class="lcd-palette__chip" aria-hidden="true"></span></button>
+    <div class="theme-menu__popover" id="<?= $e($paletteTheme) ?>-palette-popover" role="menu" aria-label="<?= $e($paletteLabel) ?> palette" hidden>
+<?php foreach ($paletteEntry['palettes'] as $palette => $label): ?>
       <button type="button" class="theme-menu__option lcd-palette__option" role="menuitemradio"
-        aria-checked="false" data-<?= $paletteTheme ?>-palette-option="<?= $e($palette) ?>">
-        <span class="lcd-palette__chip" data-palette-theme="<?= $paletteTheme ?>" data-palette-chip="<?= $e($palette) ?>" aria-hidden="true"></span><?= $e($label) ?>
+        aria-checked="false" data-<?= $e($paletteTheme) ?>-palette-option="<?= $e($palette) ?>">
+        <span class="lcd-palette__chip" data-palette-theme="<?= $e($paletteTheme) ?>" data-palette-chip="<?= $e($palette) ?>" aria-hidden="true"></span><?= $e($label) ?>
       </button>
 <?php endforeach; ?>
     </div>
   </div>
-<?php endif; ?>
 <?php endforeach; ?>
   <button
     type="button"
@@ -41,7 +40,8 @@
       role="menuitemradio"
       aria-checked="false"
       data-theme-option="<?= $e($theme['name']) ?>"
-      data-theme-option-mode="<?= $e($theme['mode']) ?>"
+      data-theme-option-mode="<?= $e($theme['mode']) ?>"<?php if (($theme['cycle'] ?? true) === false): ?>
+      data-theme-cycle="skip"<?php endif; ?>
     >
 <?php if ($theme['name'] === 'auto'): ?>
       <span class="theme-swatch theme-menu__swatch" data-theme-mode="auto" aria-hidden="true"></span>

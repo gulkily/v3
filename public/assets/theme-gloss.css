@@ -1,17 +1,20 @@
-/* Theme: engagify */
+/* Theme: gloss */
+/* Theme: engagify (shares this stylesheet; see the parody layer below) */
 /*
- * A parody of the engagement-optimized web: a glossy startup look, buried
- * under the nags drawn by theme-engagify.js. Controls stay usable, and the
- * Exit pill is always on screen.
+ * Gloss: a soft lavender page, white rounded cards, pill buttons, a violet
+ * accent and a sans-serif face. Engagify is Gloss plus a parody layer: a
+ * gradient wash, a "NEW" badge in the theme menu and the nags drawn by
+ * theme-engagify.js. ThemeRegistry gives engagify this stylesheet, so a fix
+ * to the shared look reaches both themes. Write shared rules for both theme
+ * names and parody rules for engagify only.
  */
+:root[data-theme="gloss"],
 :root[data-theme="engagify"],
+.theme-menu__option[data-theme-option="gloss"],
 .theme-menu__option[data-theme-option="engagify"] {
   color-scheme: light;
   --page-bg: #f6f5fb;
-  --body-background:
-    radial-gradient(circle at 12% -10%, rgba(124, 58, 237, 0.14), transparent 42%),
-    radial-gradient(circle at 100% 0%, rgba(236, 72, 153, 0.1), transparent 36%),
-    #f6f5fb;
+  --body-background: #f6f5fb;
   --ink: #1e1b2e;
   --ink-soft: #5b5670;
   --line: #8b85a3;
@@ -31,7 +34,220 @@
   --body-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --ui-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  --engagify-accent: #6d28d9;
+  --gloss-accent: #6d28d9;
+  --gloss-edge: #e2dff0;
+  --gloss-control-edge: #c4b5fd;
+  --gloss-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(76, 29, 149, 0.08);
+}
+
+.theme-swatch[data-theme="gloss"] {
+  background:
+    radial-gradient(circle at 70% 30%, #ffffff 0 18%, transparent 19%),
+    #7c3aed;
+  border-color: #6d28d9;
+}
+
+/* Shared look. */
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .card {
+  border-radius: 1rem;
+  /* Cards are not controls, so a soft border is enough; inputs keep --line. */
+  border-color: var(--gloss-edge);
+  box-shadow: var(--gloss-shadow);
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) input,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) textarea {
+  border-radius: 0.75rem;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
+  border-radius: 999px;
+  border-color: var(--gloss-control-edge);
+  font-weight: 600;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) a {
+  color: var(--gloss-accent);
+}
+
+/* Edges. One rule per kind of element:
+   - containers: 16px corners, the pale edge, and a shadow when they float;
+   - clickable things: pills with a soft violet edge;
+   - text fields: 12px corners and the darker --line, so an empty field stays
+     visible on a white card (3:1);
+   - dividers and small inner boxes: the pale edge, 8px where rounded. */
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-rows,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-menu__panel,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .board-sort__menu,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-action-menu-list {
+  border-color: var(--gloss-edge);
+  border-radius: 1rem;
+  box-shadow: var(--gloss-shadow);
+}
+
+/* Only the thread list clips, to round its rows' corners. Menus must not
+   clip: the theme picker and its palette popovers open inside the account
+   menu. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-rows {
+  overflow: hidden;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tag-group,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .bookmarklet-group,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-card,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-group,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-key-advanced,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-disclosure {
+  border-color: var(--gloss-edge);
+  border-radius: 1rem;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-row + .thread-row,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .about-section + .about-section,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-row {
+  border-color: var(--gloss-edge);
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .calendar-day {
+  border-color: var(--gloss-edge);
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) pre,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-row__thumb,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .bookmarklet-feedback {
+  border-color: var(--gloss-edge);
+  border-radius: 0.5rem;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .new-post-button,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-menu__trigger,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-action-menu-toggle {
+  border-radius: 999px;
+  border-color: var(--gloss-control-edge);
+}
+
+/* The app shell's New post rule and the theme switcher set their own edge;
+   status chips keep their status colour. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .new-post-button:not(.is-active),
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .theme-menu,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .chip:not(.chip--pending):not(.chip--approved) {
+  border-color: var(--gloss-control-edge);
+}
+
+/* Current and active links keep their stronger violet edge. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link.is-active,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link[aria-current="page"] {
+  border-color: var(--active-line);
+}
+
+/* Phone tab bar: tall tabs read better as rounded rectangles than pills. */
+@media (max-width: 639px) {
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link,
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .new-post-button,
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .account-menu__trigger {
+    border-radius: 0.75rem;
+  }
+
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .account-menu[open] > .account-menu__trigger {
+    border-color: var(--active-line);
+  }
+
+  /* The More tab renamed after the current page draws its selected look here. */
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .account-menu__label--current::before {
+    border-color: var(--active-line);
+    border-radius: 0.75rem;
+  }
+}
+
+/* Gloss colour picker (ThemeRegistry::GLOSS_PALETTES). Violet is the base
+   look above; each palette swaps the accent family. Gloss only: Engagify
+   keeps violet whatever is chosen here. The navigation icons carry violet in
+   their SVGs, so each palette turns their hue to match. */
+:root[data-theme="gloss"] .theme-menu { margin-left: 2.5rem; }
+:root[data-theme="gloss"] [data-role="gloss-palette"] { display: block; }
+:root[data-theme="gloss"] .lcd-palette__chip { --lcd-chip: var(--gloss-accent); border-radius: 999px; }
+:root[data-theme="gloss"] [data-palette-theme="gloss"][data-palette-chip="violet"] { --lcd-chip: #7c3aed; }
+:root[data-theme="gloss"] [data-palette-theme="gloss"][data-palette-chip="blue"] { --lcd-chip: #2563eb; }
+:root[data-theme="gloss"] [data-palette-theme="gloss"][data-palette-chip="teal"] { --lcd-chip: #0d9488; }
+:root[data-theme="gloss"] [data-palette-theme="gloss"][data-palette-chip="rose"] { --lcd-chip: #e11d48; }
+
+:root[data-theme="gloss"][data-gloss-palette="blue"] {
+  --page-bg: #f4f7fc;
+  --body-background: #f4f7fc;
+  --line: #7f8aa3;
+  --button-bg: #eef4ff;
+  --button-alt-bg: #eff6ff;
+  --active-bg: #dbeafe;
+  --active-ink: #1e3a8a;
+  --active-line: #2563eb;
+  --active-ring: rgba(37, 99, 235, 0.22);
+  --gloss-accent: #1d4ed8;
+  --gloss-edge: #dde5f3;
+  --gloss-control-edge: #93c5fd;
+  --gloss-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(30, 64, 175, 0.08);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="blue"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="gloss"][data-gloss-palette="blue"] .account-menu__icon {
+  filter: hue-rotate(-39deg);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="teal"] {
+  --page-bg: #f3f9f8;
+  --body-background: #f3f9f8;
+  --line: #6f8b87;
+  --button-bg: #ecfdf9;
+  --button-alt-bg: #f0fdfa;
+  --active-bg: #ccfbf1;
+  --active-ink: #134e4a;
+  --active-line: #0d9488;
+  --active-ring: rgba(13, 148, 136, 0.22);
+  --gloss-accent: #0f766e;
+  --gloss-edge: #d5ebe6;
+  --gloss-control-edge: #5eead4;
+  --gloss-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(17, 94, 89, 0.08);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="teal"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="gloss"][data-gloss-palette="teal"] .account-menu__icon {
+  filter: hue-rotate(-88deg);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="rose"] {
+  --page-bg: #fbf5f6;
+  --body-background: #fbf5f6;
+  --line: #a3858c;
+  --button-bg: #fff1f2;
+  --button-alt-bg: #fdf2f8;
+  --active-bg: #ffe4e6;
+  --active-ink: #881337;
+  --active-line: #e11d48;
+  --active-ring: rgba(225, 29, 72, 0.2);
+  --gloss-accent: #be123c;
+  --gloss-edge: #f3dde1;
+  --gloss-control-edge: #fda4af;
+  --gloss-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(159, 18, 57, 0.08);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="rose"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="gloss"][data-gloss-palette="rose"] .account-menu__icon {
+  filter: hue-rotate(82deg);
+}
+
+/* Engagify parody layer: everything below applies to engagify only. */
+
+:root[data-theme="engagify"],
+.theme-menu__option[data-theme-option="engagify"] {
+  --body-background:
+    radial-gradient(circle at 12% -10%, rgba(124, 58, 237, 0.14), transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(236, 72, 153, 0.1), transparent 36%),
+    #f6f5fb;
+  --engagify-accent: var(--gloss-accent);
   --engagify-accent-ink: #ffffff;
   --engagify-hot: #db2777;
 }
@@ -57,29 +273,6 @@
   font-size: 0.65rem;
   letter-spacing: 0.06em;
   vertical-align: middle;
-}
-
-/* Scoped section: the glossy startup look. */
-
-:root[data-theme="engagify"] .card {
-  border-radius: 1rem;
-  /* Cards are not controls, so a soft border is enough; inputs keep --line. */
-  border-color: #e2dff0;
-  box-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(76, 29, 149, 0.08);
-}
-
-:root[data-theme="engagify"] input,
-:root[data-theme="engagify"] textarea {
-  border-radius: 0.75rem;
-}
-
-:root[data-theme="engagify"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
-  border-radius: 999px;
-  font-weight: 600;
-}
-
-:root[data-theme="engagify"] a {
-  color: var(--engagify-accent);
 }
 
 /* Nags (theme-engagify.js). Nags stay under the phone tab bar and the
@@ -196,12 +389,6 @@
   box-shadow: 0 20px 50px rgba(30, 27, 46, 0.22);
 }
 
-:root[data-theme="engagify"] .engagify-card > .engagify-link:first-child {
-  align-self: flex-end;
-  min-height: 32px;
-  margin: -0.5rem -0.6rem -0.5rem 0;
-}
-
 :root[data-theme="engagify"] .engagify-card .engagify-actions > .engagify-button {
   flex: 1 1 auto;
 }
@@ -249,7 +436,6 @@
   color: #ffffff;
 }
 
-:root[data-theme="engagify"] .engagify-app-bar .engagify-link,
 :root[data-theme="engagify"] .engagify-app-bar .engagify-close {
   color: #d9d6e8;
 }
@@ -416,7 +602,6 @@
   text-align: center;
 }
 
-:root[data-theme="engagify"] .engagify-promo .engagify-link,
 :root[data-theme="engagify"] .engagify-promo .engagify-close {
   color: #ffffff;
 }

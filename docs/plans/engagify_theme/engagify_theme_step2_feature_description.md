@@ -34,7 +34,7 @@ No matching feedback item in `docs/feedback/items/`. [PF-20261104-B08](../../fee
 - **Theme scripts.** A theme in `ThemeRegistry.php` may declare a script. The script runs only while its theme is active, and stops and removes what it added when the theme changes.
 - **Selectable theme.** Engagify appears in the theme menu and the cycle button like any other theme, and a viewer can save it.
 - **Page themes.** The `zenmemes` site profile lists page themes. The first entry gives the thread "Our cookie notice (there isn't one)", `thread-20261102152258-25e82c97`, the Engagify theme. On that page, the page theme beats the site default and the viewer's saved theme.
-- **Engagify nags.** Core nags are the rate-us prompt from the mockup, a cookie banner, a newsletter popup with a guilt-trip decline, an "Open in app" bar and a fake notification prompt. Each nag can be dismissed, and every nag offers Exit. The six stretch nags from Step 1 Revision 2 are built only if Step 3 fits them.
+- **Engagify nags.** Core nags are the rate-us prompt from the mockup, a cookie banner, a newsletter popup with a guilt-trip decline, an "Open in app" bar and a fake notification prompt. Each nag can be dismissed; the always-visible Exit pill is the only Exit control. The six stretch nags from Step 1 Revision 2 are built only if Step 3 fits them.
 - **Exit.** On a page theme's page, Exit or any menu choice turns the page theme off for that page in that browser, and the viewer's own theme shows. Where the viewer chose Engagify themselves, Exit restores the theme they had before it. Both happen without a reload.
 
 Delayed nags break "pages must look final on first paint" on purpose. Step 1 approval covers this exception, which applies only while Engagify is active.

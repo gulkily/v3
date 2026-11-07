@@ -21,6 +21,8 @@ function setup(systemDark, storedTheme, names = ['auto', 'light', 'dark', 'word9
   const popover = element();
   popover.querySelectorAll = () => options;
   const menu = element();
+  // No palette pickers in these menus.
+  menu.querySelectorAll = () => [];
   menu.querySelector = selector => ({
     "[data-action='theme-cycle']": cycle,
     "[data-action='theme-toggle']": toggle,
