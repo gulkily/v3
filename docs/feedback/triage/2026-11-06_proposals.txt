@@ -1,0 +1,1889 @@
+Title: Feedback triage proposals since November 4
+Status: awaiting review
+Intake-Date: 2026-11-06
+Window-UTC: 2026-11-04T14:43:13Z through 2026-11-06T23:50:46Z
+Window-America-New_York: 2026-11-04T09:43:13-05:00 through 2026-11-06T18:50:46-05:00
+Latest-Local-Post: 2026-11-06T23:38:22Z
+Local-Repository-Commit: 01972c6570e87a0d9797ec96b4e3905f433d9172 (Import instance content 20261106GMT235046-600d59da4e12)
+Source: state/local_repository/records/posts; Created-At, all roots/replies/tags
+Workflow: Direct intake and proposal record; no new Railspike cycle
+Procedure: docs/agents/feedback_triage.md
+Canonical-Format: docs/specs/feedback_item_record_v1.md
+Match-Authority: docs/feedback/items and docs/reference/production_feedback_management.md
+Reuse: existing item identities/sources and feedback check/index commands; no new record format, markup, CSS, behavior or API payload
+Posts-Screened: 212
+Post-Classification: attach 28, create 30, skip 154 (posts; total 212)
+Proposed-New-Items: 32 (outcomes)
+New-Item-Kinds: 15 feature, 15 bug, 2 other (outcomes; total 32)
+Proposed-Existing-Item-Updates: 22 items, 30 source attachments (outcomes)
+Proposed-Status-Updates: 1 status change and 2 stale next-action corrections (existing items)
+Dependencies: zero
+Verification: local text, screenshot and Git history review only; no runtime/device replay, live fetch, implementation, deployment or external posting
+Full-Suite: not run
+
+Review notes:
+- Window starts where the last applied run (2026-11-04_proposals.txt) ended, not after the newest item Created date (2026-11-05), so posts from Nov 4 afternoon to Nov 5 are not missed. Already-sourced posts are skipped.
+- Uses the import the maintainer performed (local repository commit dated 2026-11-06T23:50:46Z); this agent did not import or fetch again.
+- Many posts were submitted several times seconds apart (the split "You button" series five times each, the offline notes five times, others two or three times). First copies are classified; later copies are skipped as duplicates. These copies are themselves evidence for PF-20261030-B03.
+- The split "You button" reposts (posts 33-85) repeat outcomes already recorded on 2026-11-04 from the original thread; they attach as sources with nothing new.
+- Agent-written reports keep agent attribution. Requirements an agent recorded "from Ilya's review" are attributed that way, not as direct maintainer posts.
+- Unsigned posts carry no author; the "guest" name is a shared fallback identity, not a known person.
+- docs/feedback/triage/2026-11-05_completion_reconciliation.txt (merged via PR #27) is still Status: awaiting review; its B11, F31 and B03 proposals are not repeated here.
+- Feedback and retraction implementation are not authorized by approving this intake.
+
+Catch-up review:
+Start: 1dd5f66ee (commit that added the last applied proposals file, 2026-11-04)
+End: d8da233ce
+Method: scanned 131 commits for Feedback trailers and PF IDs; compared named items with their records; checked ancestry against main.
+Feedback-Trailers-Found: PF-20261104-F60, PF-20261105-F01, PF-20261030-F05, PF-20261030-B08, PF-20261104-F49, PF-20261104-B21, PF-20261104-F78, PF-20261104-F66, PF-20261104-F27; all commits are on main.
+Already-Matched: F49, B21, F78, F66 and F27 records already reflect their landed work (blocked/locally-verified, deployment or acceptance next). PF-20261030-F05 notes already record the Forte Activity kind filters (9bc1a751d) as partial; the remaining filters are open, so no status change. PF-20261104-B10 notes already record the non-reproduction from calendar Stage 2.
+Missed-Update: PF-20261104-F60 and PF-20261105-F01 notes still say "awaiting review" on branches that are now merged (see status section). PF-20261030-B08 has a maintainer fixed report (post 188).
+Possible-Matches: PR #36 (a0fa5b9b1) for the new 404 item PF-20261106-B14; recorded in its Notes, no status inferred.
+Limits: repository evidence only; no tests, deployment checks or production acceptance by this agent.
+
+Proposals:
+
+Proposal index:
+- create PF-20261106-B01 | bug | Like action is slow
+- create PF-20261106-B02 | bug | New like attribution unlinked until reload
+- create PF-20261106-B03 | bug | Second tag fails while first is pending
+- create PF-20261106-B04 | bug | Compose overflow menu clipped at top
+- create PF-20261106-B05 | bug | Favicon looks odd in light theme
+- create PF-20261106-B06 | bug | Search page blank until results arrive
+- create PF-20261106-B07 | bug | Chicago pages inconsistently styled
+- create PF-20261106-B08 | bug | Reply shows a bare-text stage
+- create PF-20261106-B09 | bug | Like button makes page jump
+- create PF-20261106-B10 | bug | Offline compose thread and reply broken
+- create PF-20261106-B11 | bug | View query fails on stale saved database
+- create PF-20261106-B12 | bug | Front-page post signed as Guest
+- create PF-20261106-B13 | bug | Derived title repeats first line
+- create PF-20261106-B14 | bug | Unfriendly 404 page
+- create PF-20261106-B15 | bug | High-traffic mode turns itself off
+- create PF-20261106-F01 | feature | Clip bookmarklet keeps formatting
+- create PF-20261106-F02 | feature | Move formatting help out of overflow menu
+- create PF-20261106-F03 | feature | Plain name for Markdown checkbox
+- create PF-20261106-F04 | feature | Show new users they are ready as guest
+- create PF-20261106-F05 | feature | Compact, reachable likes in thread
+- create PF-20261106-F06 | feature | Rename events flag to events and calendar
+- create PF-20261106-F07 | feature | Basic import-instance under five seconds
+- create PF-20261106-F08 | feature | Event form date and time layout
+- create PF-20261106-F09 | feature | Replace arrow characters with -->
+- create PF-20261106-F10 | feature | Offline mode across the site
+- create PF-20261106-F11 | feature | Dismissible offline banner
+- create PF-20261106-F12 | feature | Claim Guest-fallback posts later
+- create PF-20261106-F13 | feature | Merge existing duplicate threads
+- create PF-20261106-F14 | feature | Key and proof of work to browse
+- create PF-20261106-F15 | feature | Clear user, profile and account navigation
+- create PF-20261106-O01 | other | Explain reaction and label actions
+- create PF-20261106-O02 | other | Agent workspaces lack PHP
+- attach PF-20261104-B31 | Deduplicate like attribution by user | 1 source(s)
+- attach PF-20261030-B03 | Submitted draft stays in composer | 5 source(s)
+- attach PF-20261104-F15 | You opens account and profile | 2 source(s)
+- attach PF-20261104-F16 | Remember expanded advanced sections | 1 source(s)
+- attach PF-20261104-F17 | Expand and copy fingerprints | 2 source(s)
+- attach PF-20261104-F18 | Friendly localStorage browser | 1 source(s)
+- attach PF-20261104-F19 | Local keychain and identity switching | 1 source(s)
+- attach PF-20261104-F08 | Optional key-backup passphrase | 1 source(s)
+- attach PF-20261104-F20 | Qualify edited Starfield image warning | 1 source(s)
+- attach PF-20261104-F21 | Paste Starfield key images | 1 source(s)
+- attach PF-20261104-F22 | Optional sign-in debug display | 1 source(s)
+- attach PF-20261104-F13 | Modern theme with icons | 1 source(s)
+- attach PF-20261104-B09 | Word97 key-removal message unformatted | 1 source(s)
+- attach PF-20261104-F23 | Stash draft and start blank | 1 source(s)
+- attach PF-20261104-B10 | Cannot collapse event section | 1 source(s)
+- attach PF-20261104-F52 | Support features with encrypted API keys | 1 source(s)
+- attach PF-20261030-B22 | Cluttered new-post flow on iPhone | 2 source(s)
+- attach PF-20261104-F60 | Board and Recent image thumbnails | 1 source(s)
+- attach PF-20261030-F50 | Remove the New post button | 1 source(s)
+- attach PF-20261104-B30 | GPG helper previously working now fails | 2 source(s)
+- attach PF-20261030-B08 | Wrong theme flashes before selected theme | 1 source(s)
+- attach PF-20261104-F10 | Read back identity-specific likes | 1 source(s)
+- status PF-20261030-B08 | Wrong theme flashes before selected theme
+- status PF-20261104-F60 | Board and Recent image thumbnails (next-action correction)
+- status PF-20261105-F01 | Image gallery page (next-action correction)
+
+Action: create
+ID: PF-20261106-B01
+Kind: bug
+Title: Like action is slow
+Request: Pressing Like "takes way too long" (reporter's emphasis).
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+Notes: Item 1 of a numbered list about the Like button; no timing measured. Separate from PF-20261021-B04, which covers replies.
+
+Action: create
+ID: PF-20261106-B02
+Kind: bug
+Title: New like attribution unlinked until reload
+Request: "Liked by ilyag" inserted after pressing Like does not link the username; it is linked after the page reloads.
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+Notes: Item 2 of the Like list.
+
+Action: create
+ID: PF-20261106-B03
+Kind: bug
+Title: Second tag fails while first is pending
+Request: Applying a second tag while the first is still in progress fails with "Unable to apply tag."
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+Notes: Item 4 of the Like list.
+
+Action: create
+ID: PF-20261106-B04
+Kind: bug
+Title: Compose overflow menu clipped at top
+Request: The ... menu in the compose form gets cut off when the form is near the top of the viewport.
+Sources:
+- https://zenmemes.com/posts/thread-20261104155019-1d2637f7
+Notes: Screenshot shows the menu's top items cut off on the board composer. Separate from PF-20261030-B04 (button alignment).
+
+Action: create
+ID: PF-20261106-B05
+Kind: bug
+Title: Favicon looks odd in light theme
+Request: The favicon looks odd in light theme.
+Sources:
+- https://zenmemes.com/posts/thread-20261104200237-80b737bc
+Notes: No screenshot; browser and theme name not stated.
+
+Action: create
+ID: PF-20261106-B06
+Kind: bug
+Title: Search page blank until results arrive
+Request: The search page shows no response until results come back.
+Sources:
+- https://zenmemes.com/posts/thread-20261104224320-cf567ada
+Notes: Related to PF-20261104-B27, which covers document search; this report names the search page. Kept separate until confirmed to be the same surface.
+
+Action: create
+ID: PF-20261106-B07
+Kind: bug
+Title: Chicago pages inconsistently styled
+Request: The Chicago theme has a lot of inconsistently styled pages; five screenshots give examples.
+Sources:
+- https://zenmemes.com/posts/thread-20261105061047-afaabd4f
+- https://zenmemes.com/posts/reply-20261105061233-0bf1416e
+Notes: The title comes from a title: reply. Broader than PF-20261104-F66, which covers two post-action repairs.
+
+Action: create
+ID: PF-20261106-B08
+Kind: bug
+Title: Reply shows a bare-text stage
+Request: After posting a reply, the new item goes through "posting...", then just the text without header and footer, then the full post. The middle stage should not happen.
+Sources:
+- https://zenmemes.com/posts/thread-20261105144740-03f36390
+Notes: Posted three times within 12 seconds (two copies skipped). Related to PF-20261104-F71 (optimistic posting) without being the same request.
+
+Action: create
+ID: PF-20261106-B09
+Kind: bug
+Title: Like button makes page jump
+Request: The Like button makes the page jump.
+Sources:
+- https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+- https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+Notes: Listed under "Offline mode notes"; whether it happens only offline is not stated. Possibly related to PF-20261030-B02 (pages jump vertically).
+
+Action: create
+ID: PF-20261106-B10
+Kind: bug
+Title: Offline compose thread and reply broken
+Request: "Only board works, I think we broke offline compose thread and reply."
+Sources:
+- https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+- https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+Notes: The reporter is unsure ("I think"); needs a replay.
+
+Action: create
+ID: PF-20261106-B11
+Kind: bug
+Title: View query fails on stale saved database
+Request: On the front page, View query fails with "no such column: posts.body_format", and the embedded dialog has no refresh. The maintainer identified a stale browser-saved database surviving a schema change as the cause. Agreed requirements: refresh in the background when a newer snapshot exists, validate before replacing, keep a usable copy on failure with its last-update time, and offer retry inside the dialog while preserving edited SQL.
+Sources:
+- https://zenmemes.com/posts/thread-20261105203031-f45eb3a4
+- https://zenmemes.com/posts/reply-20261105225922-8d52151c
+Notes: Investigation and requirements written by ChatGPT from Ilya's report and review. Related to PF-20261021-F10. The GitHub issue named in the source was a mistake (maintainer reply #158); tracking stays on the site.
+
+Action: create
+ID: PF-20261106-B12
+Kind: bug
+Title: Front-page post signed as Guest
+Request: The front-page composer sometimes publishes as Guest instead of signing with the browser identity (example: a roughly 400-character post). Updated requirement: post immediately and fall back to Guest if signing is not ready rather than block; warm signing in the background after page load without delaying rendering.
+Sources:
+- https://zenmemes.com/posts/thread-20261105203351-44bac944
+- https://zenmemes.com/posts/reply-20261105225914-330513e4
+Notes: Logged by ChatGPT; the later update from Ilya's review supersedes the original "require explicit anonymous posting" behavior. The length relationship and root cause are unconfirmed. Later claiming of such posts is PF-20261106-F12.
+
+Action: create
+ID: PF-20261106-B13
+Kind: bug
+Title: Derived title repeats first line
+Request: When a post has no subject, the thread page shows a truncated title derived from the first line and then the same line in full as the body. Suggestion: don't render a derived title as a separate heading on the thread page; keep it for the index and browser tab.
+Sources:
+- https://zenmemes.com/posts/thread-20261106062035-bacc3870
+Notes: Agent first-hand report (claude). Related to PF-20261104-F76 and PF-20261030-F48 without being the same request.
+
+Action: create
+ID: PF-20261106-B14
+Kind: bug
+Title: Unfriendly 404 page
+Request: The 404 page says "The requested route does not exist in the local test slice," which is not a friendly message.
+Sources:
+- https://zenmemes.com/posts/thread-20261106164558-d1bb06be
+Notes: Possible completion: PR #36 (merge a0fa5b9b1, on main) rewrote the 404 and 405 copy and added recent threads, labels and a report link. Not verified here; deployment and acceptance unknown. Agent replies on the thread describe the change.
+
+Action: create
+ID: PF-20261106-B15
+Kind: bug
+Title: High-traffic mode turns itself off
+Request: High-traffic mode keeps turning itself off. Ilya asked whether deploys are responsible.
+Sources:
+- https://zenmemes.com/posts/thread-20261106224157-743c40fe
+Notes: Code reading by claude at 0f424560 suggests not deploys: explicit withdraw on content/access writes, or a silent symlink detach in StaticArtifactInvalidator (username changes, retractions, purges) that leaves state.json enabled. Unconfirmed; the next step in the post is a server status check. Related to PF-20261030-B19.
+
+Action: create
+ID: PF-20261106-F01
+Kind: feature
+Title: Clip bookmarklet keeps formatting
+Request: Now that Markdown is supported, "it would be amazing" if the clip bookmarklet preserved italics and bold.
+Sources:
+- https://zenmemes.com/posts/thread-20261104153205-a7bb4302
+Notes: Posted twice (one copy skipped).
+
+Action: create
+ID: PF-20261106-F02
+Kind: feature
+Title: Move formatting help out of overflow menu
+Request: The ... menu is probably not the right place for "Formatting help" (or probably the Markdown checkbox).
+Sources:
+- https://zenmemes.com/posts/reply-20261104155053-d5dd8577
+Notes: Reply in the clipped-menu thread; qualifiers kept.
+
+Action: create
+ID: PF-20261106-F03
+Kind: feature
+Title: Plain name for Markdown checkbox
+Request: Call the Markdown checkbox "formatted" or "formatted text" for users who don't know what Markdown is.
+Sources:
+- https://zenmemes.com/posts/reply-20261104155114-ddad088b
+
+Action: create
+ID: PF-20261106-F04
+Kind: feature
+Title: Show new users they are ready as guest
+Request: Make it clear to a new user that they are already logged in with a guest identity and ready to participate.
+Sources:
+- https://zenmemes.com/posts/thread-20261104181317-0edea914
+Notes: Unsigned; posted three times within a second (two copies skipped). Note the tension with PF-20261021-F02 (remove the "browser identity ready" message).
+
+Action: create
+ID: PF-20261106-F05
+Kind: feature
+Title: Compact, reachable likes in thread
+Request: Likes added with the Like button don't appear in the thread in a way that lets you go to the like's record and interact with it; likes added via #like show up as full comments and take too much space.
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+Notes: Items 6 and 7 of the Like list. Related to the visibility part of PF-20261103-F01 and to PF-20261104-F42.
+
+Action: create
+ID: PF-20261106-F06
+Kind: feature
+Title: Rename events flag to events and calendar
+Request: Rename the events feature flag to "events and calendar"?
+Sources:
+- https://zenmemes.com/posts/thread-20261105122245-c67eecd9
+Notes: Asked as a question.
+
+Action: create
+ID: PF-20261106-F07
+Kind: feature
+Title: Basic import-instance under five seconds
+Request: Basic import-instance takes 22 wall seconds; it should take less than 5. The default import's content can be trimmed if needed, but the trim must cut at the seams of connected content, e.g. keep everything for a thread, including public keys.
+Sources:
+- https://zenmemes.com/posts/thread-20261105122938-06e0cb0c
+- https://zenmemes.com/posts/reply-20261105122952-c362dd68
+- https://zenmemes.com/posts/reply-20261105123029-05a19ee7
+Notes: Posted twice (one copy skipped).
+
+Action: create
+ID: PF-20261106-F08
+Kind: feature
+Title: Event form date and time layout
+Request: In the new-post event section, put date and time on the same row, and give "until" an optional time.
+Sources:
+- https://zenmemes.com/posts/thread-20261105145032-705ae942
+Notes: Related to the calendar work (docs/plans/calendar/).
+
+Action: create
+ID: PF-20261106-F09
+Kind: feature
+Title: Replace arrow characters with -->
+Request: "It would be nice" if U+2192 / &rarr; were automatically replaced with --> as part of sanitization.
+Sources:
+- https://zenmemes.com/posts/thread-20261105145531-b05bb1bd
+Notes: Related to PF-20261030-F56 (text normalization for API clients).
+
+Action: create
+ID: PF-20261106-F10
+Kind: feature
+Title: Offline mode across the site
+Request: Only the board works offline; the rest of the site needs to be added to offline mode. Image presentation is lacking and should be better even when an image is unavailable.
+Sources:
+- https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+- https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+Notes: From the "Offline mode notes" list; the copies of that list are skipped. An agent reply (#185) proposed reload-while-offline as the first acceptance check (agent proposal).
+
+Action: create
+ID: PF-20261106-F11
+Kind: feature
+Title: Dismissible offline banner
+Request: It should be possible to make the offline mode banner go away (maybe into the menubar).
+Sources:
+- https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+- https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+Notes: Agent reply (#185) suggests keeping a pending-send count in the menubar if offline sending exists (agent proposal).
+
+Action: create
+ID: PF-20261106-F12
+Kind: feature
+Title: Claim Guest-fallback posts later
+Request: When a post falls back to Guest, keep private ownership continuity with the original cookie session and capture the intended identity fingerprint when available, so whoever still controls that session can later sign the post and claim attribution (requiring the same fingerprint when one was recorded). Do not expose session secrets in public records.
+Sources:
+- https://zenmemes.com/posts/reply-20261105225914-330513e4
+Notes: Agreed requirement from Ilya's review with ChatGPT; split from PF-20261106-B12. Not implemented.
+
+Action: create
+ID: PF-20261106-F13
+Kind: feature
+Title: Merge existing duplicate threads
+Request: For confirmed duplicate threads, keep the earliest copy and reparent all replies into it, preserving reply IDs, authors, timestamps, nesting, reactions and attached state; keep old URLs working; hide duplicate roots from feeds while keeping their records; make the merge reversible. Handle only clear cases automatically and review uncertain matches.
+Sources:
+- https://zenmemes.com/posts/reply-20261105225919-0528e186
+Notes: Agreed requirement from Ilya's review with ChatGPT; split from the prevention work in PF-20261030-B03. No cleanup performed.
+
+Action: create
+ID: PF-20261106-F14
+Kind: feature
+Title: Key and proof of work to browse
+Request: Add a mode that requires a user to make a key and do a proof of work to browse anything.
+Sources:
+- https://zenmemes.com/posts/thread-20261106160023-102cdf4e
+Notes: Related to lockdown in PF-20261104-F07 and closed forums in PF-20261030-F25 without being the same request.
+
+Action: create
+ID: PF-20261106-F15
+Kind: feature
+Title: Clear user, profile and account navigation
+Request: Under You, add a link to the current profile; the profile page should link to the user page. Refine navigation so user vs profile vs account is easier, especially for non-technical users; perhaps call profile "session" or "device" or something else. All of these may be renamed.
+Sources:
+- https://zenmemes.com/posts/thread-20261106164113-8b520a73
+Notes: An agent reply (#197, claude) proposes calling it a key, with suggested labels (agent proposal). Related to PF-20261104-F15 and PF-20261104-F72.
+
+Action: create
+ID: PF-20261106-O01
+Kind: other
+Title: Explain reaction and label actions
+Request: Why are there two types of overloaded actions, post_reaction_add and thread_label_add? What is the difference between tags and labels, and why have both?
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+Notes: Items 5 and 8 of the Like list; questions, not a defined change.
+
+Action: create
+ID: PF-20261106-O02
+Kind: other
+Title: Agent workspaces lack PHP
+Request: Friction encountered by agent: PHP was not installed locally.
+Sources:
+- https://zenmemes.com/posts/thread-20261104183649-45e9b73f
+Notes: PF-20261104-F60 notes record the same blocker for runtime verification.
+
+Action: attach
+ID: PF-20261104-B31
+Title: Deduplicate like attribution by user
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+Adds:
+- post 2: Item 3 of the Like list repeats the request ("already reported").
+
+Action: attach
+ID: PF-20261030-B03
+Title: Submitted draft stays in composer
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104184550-7bb613a1
+- https://zenmemes.com/posts/reply-20261105144618-60f88fcc
+- https://zenmemes.com/posts/thread-20261105144842-ecd3231d
+- https://zenmemes.com/posts/reply-20261105144910-8eb05724
+- https://zenmemes.com/posts/reply-20261105225919-0528e186
+Adds:
+- post 23: Mashing Post or resubmitting an old draft produces duplicate posts.
+- post 127: Asks for naive exact-text indexing: hash the content and act on an exact match.
+- post 133: Repro: click New post, write, click Post, and before the redirect click New post again and repeat; result is many duplicates.
+- post 134: The server should confirm success and clear the stored draft regardless of navigation.
+- post 165: Agreed requirements: stable submission ID returning the existing post on retry; reconcile success and clear the draft if navigation interrupts; conservatively normalized content hash scoped by author/session, destination and short window as a second safeguard; warn and link on looser matches; verify whether Recent repeats rows. Merging existing duplicates is PF-20261106-F13.
+
+Action: attach
+ID: PF-20261104-F15
+Title: You opens account and profile
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104211647-eab5abec
+- https://zenmemes.com/posts/thread-20261104211755-0e8f751f
+Adds:
+- post 33: Split repost; nothing new.
+- post 38: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F16
+Title: Remember expanded advanced sections
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104211858-d516eef0
+Adds:
+- post 43: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F17
+Title: Expand and copy fingerprints
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212002-9e87866c
+- https://zenmemes.com/posts/thread-20261104212105-fd19dc1e
+Adds:
+- post 48: Split repost; nothing new.
+- post 53: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F18
+Title: Friendly localStorage browser
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212209-15935596
+Adds:
+- post 58: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F19
+Title: Local keychain and identity switching
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212316-9cbeced1
+Adds:
+- post 63: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F08
+Title: Optional key-backup passphrase
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212419-791403c6
+Adds:
+- post 68: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F20
+Title: Qualify edited Starfield image warning
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212522-5beb6e6e
+Adds:
+- post 73: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F21
+Title: Paste Starfield key images
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212625-11c72de6
+Adds:
+- post 78: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F22
+Title: Optional sign-in debug display
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212700-00c63699
+Adds:
+- post 81: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F13
+Title: Modern theme with icons
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212709-6fc3a2fc
+Adds:
+- post 82: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-B09
+Title: Word97 key-removal message unformatted
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212718-985e0629
+Adds:
+- post 83: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-F23
+Title: Stash draft and start blank
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212729-d12fbaa7
+Adds:
+- post 84: Split repost; nothing new.
+
+Action: attach
+ID: PF-20261104-B10
+Title: Cannot collapse event section
+New-Sources:
+- https://zenmemes.com/posts/thread-20261104212738-8fcf840f
+Adds:
+- post 85: Split repost of the original report, not a new occurrence; the recorded non-reproduction stands.
+
+Action: attach
+ID: PF-20261104-F52
+Title: Support features with encrypted API keys
+New-Sources:
+- https://zenmemes.com/posts/thread-20261105035303-18b09027
+Adds:
+- post 98: "Pay with api key idea"; nothing new.
+
+Action: attach
+ID: PF-20261030-B22
+Title: Cluttered new-post flow on iPhone
+New-Sources:
+- https://zenmemes.com/posts/thread-20261105144935-49bd0fb1
+- https://zenmemes.com/posts/reply-20261105144945-a0b43425
+Adds:
+- post 135: In the default theme the Post button is barely visible compared with other elements and should be more prominent. Device not stated.
+- post 136: The new post form looks very busy.
+
+Action: attach
+ID: PF-20261104-F60
+Title: Board and Recent image thumbnails
+New-Sources:
+- https://zenmemes.com/posts/reply-20261105225926-c397c06c
+Adds:
+- post 167: Agreed refinement: constrained consistent width forming a column, natural proportions with a maximum height, extreme ratios must not disrupt the page, small cached derivatives with a sharper-screen option, and checks on board and Recent including mobile with the flag on and off.
+
+Action: attach
+ID: PF-20261030-F50
+Title: Remove the New post button
+New-Sources:
+- https://zenmemes.com/posts/thread-20261106061843-86b28732
+Adds:
+- post 176: Asks whether the New post button needs to crowd the mobile toolbar when the form is at the top of the page.
+
+Action: attach
+ID: PF-20261104-B30
+Title: GPG helper previously working now fails
+New-Sources:
+- https://zenmemes.com/posts/thread-20261106071315-6baf331c
+- https://zenmemes.com/posts/thread-20261106224946-81e820f6
+Adds:
+- post 183: Agent first-hand report: gpg-agent "can't create socket: Operation not permitted"; a plain Python AF_UNIX socket also fails, and a short GPG home does not help, so the runner restricts Unix sockets. Suggests surfacing the socket error, distinguishing permission from path-length failures, and never downgrading silently to unsigned.
+- post 210: Agent first-hand report of the same restriction, worked around by signing with scripts/derive_agent_key.py primitives instead of gpg-agent.
+
+Action: attach
+ID: PF-20261030-B08
+Title: Wrong theme flashes before selected theme
+New-Sources:
+- https://zenmemes.com/posts/reply-20261106160123-ca5bab01
+Adds:
+- post 188: Maintainer: "this is fixed now #fixed" (2026-11-06T16:01Z). See status proposal.
+
+Action: attach
+ID: PF-20261104-F10
+Title: Read back identity-specific likes
+New-Sources:
+- https://zenmemes.com/posts/thread-20261106213551-f577458a
+Adds:
+- post 202: Agent-written task list (chatgpt): document the signed Like recipe for threads and replies, a runnable example, how to verify attribution, discovery from /llms.txt, and regression coverage. Broader than this item; covers its readback ask in step 3.
+
+Action: status
+ID: PF-20261030-B08
+Current: Workflow blocked, Evidence locally-verified
+Proposed: Workflow done, Evidence production-accepted
+Evidence: bb8b0c827 (merged 6efe5ba33, 2026-11-06 01:28 EST) moved the system-dark block into the critical CSS. The maintainer replied "this is fixed now #fixed" on the reported thread at 2026-11-06T16:01Z (post 188).
+Check at review: the Done when names an iPhone reload in Auto/System dark mode. If the maintainer's check was not on an iPhone in Auto mode, use Workflow blocked, Evidence deployed instead, with the iPhone check as next action. Explicit dark/other themes were outside that fix either way.
+
+Action: status
+ID: PF-20261104-F60
+Current: Workflow blocked, Evidence locally-verified (latest note says awaiting review on feat/thread-first-image-thumbnail)
+Proposed: unchanged headers; add a note that PRs #28, #29, #30 and #44 are merged to main (last d8da233ce, 2026-11-06) and the next action is deployment and acceptance, including the refinement checks attached from post 167.
+
+Action: status
+ID: PF-20261105-F01
+Current: Workflow blocked, Evidence locally-verified (latest note says awaiting review on fix/smaller-thumbnails)
+Proposed: unchanged headers; add a note that PR #33 (186a255e8) and PR #42 (ead3e2630) are merged to main, and that a production feature-flag record sets FORUM_IMAGE_GALLERY_ENABLED=false (by ilyag, 2026-11-06 11:45 EST). Next action: deployment and acceptance with the flag on. Whether the merged code is deployed is not established here.
+
+Post classification:
+
+Post: 1
+URL: https://zenmemes.com/posts/reply-20261104144601-73f43b7c
+Created-At: 2026-11-04T14:46:01Z
+Action: skip
+Reason: Uses the title: reply feature on a song post; social.
+
+Post: 2
+URL: https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+Created-At: 2026-11-04T14:46:21Z
+Action: create
+Reason: Outcomes: PF-20261106-B01, PF-20261106-B02, PF-20261106-B03, PF-20261106-F05, PF-20261106-O01, PF-20261104-B31
+
+Post: 3
+URL: https://zenmemes.com/posts/thread-20261104150535-6ece4624
+Created-At: 2026-11-04T15:05:35Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 4
+URL: https://zenmemes.com/posts/thread-20261104151622-0bc28332
+Created-At: 2026-11-04T15:16:22Z
+Action: skip
+Reason: Research write-up about agent verification records; not a request for this site.
+
+Post: 5
+URL: https://zenmemes.com/posts/bootstrap-20261104151829-86d28d0a
+Created-At: 2026-11-04T15:18:29Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 6
+URL: https://zenmemes.com/posts/reply-20261104151853-477b5044
+Created-At: 2026-11-04T15:18:53Z
+Action: skip
+Reason: Agent-only suggestion (chatgpt) about site news. Context: PF-20261104-F75 thread.
+
+Post: 7
+URL: https://zenmemes.com/posts/thread-20261104153050-c0dad1cf
+Created-At: 2026-11-04T15:30:50Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 8
+URL: https://zenmemes.com/posts/thread-20261104153205-a7bb4302
+Created-At: 2026-11-04T15:32:05Z
+Action: create
+Reason: Outcomes: PF-20261106-F01
+
+Post: 9
+URL: https://zenmemes.com/posts/thread-20261104153747-878e6df0
+Created-At: 2026-11-04T15:37:47Z
+Action: skip
+Reason: Duplicate copy of post 8, posted seconds later.
+
+Post: 10
+URL: https://zenmemes.com/posts/thread-20261104154901-b3c3d199
+Created-At: 2026-11-04T15:49:01Z
+Action: skip
+Reason: Research write-up about agent verification records; not a request for this site.
+
+Post: 11
+URL: https://zenmemes.com/posts/thread-20261104155019-1d2637f7
+Created-At: 2026-11-04T15:50:19Z
+Action: create
+Reason: Outcomes: PF-20261106-B04
+
+Post: 12
+URL: https://zenmemes.com/posts/reply-20261104155053-d5dd8577
+Created-At: 2026-11-04T15:50:53Z
+Action: create
+Reason: Outcomes: PF-20261106-F02
+
+Post: 13
+URL: https://zenmemes.com/posts/reply-20261104155114-ddad088b
+Created-At: 2026-11-04T15:51:14Z
+Action: create
+Reason: Outcomes: PF-20261106-F03
+
+Post: 14
+URL: https://zenmemes.com/posts/thread-20261104171713-25e5c629
+Created-At: 2026-11-04T17:17:13Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 15
+URL: https://zenmemes.com/posts/thread-20261104173931-952cb222
+Created-At: 2026-11-04T17:39:31Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 16
+URL: https://zenmemes.com/posts/thread-20261104173953-0288008d
+Created-At: 2026-11-04T17:39:53Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 17
+URL: https://zenmemes.com/posts/thread-20261104181317-0edea914
+Created-At: 2026-11-04T18:13:17Z
+Action: create
+Reason: Outcomes: PF-20261106-F04
+
+Post: 18
+URL: https://zenmemes.com/posts/thread-20261104181318-a5ec988f
+Created-At: 2026-11-04T18:13:18Z
+Action: skip
+Reason: Duplicate copy of post 17, posted seconds later.
+
+Post: 19
+URL: https://zenmemes.com/posts/thread-20261104181318-e84ebe49
+Created-At: 2026-11-04T18:13:18Z
+Action: skip
+Reason: Duplicate copy of post 17, posted seconds later.
+
+Post: 20
+URL: https://zenmemes.com/posts/thread-20261104182608-cc730e8b
+Created-At: 2026-11-04T18:26:08Z
+Action: skip
+Reason: Already a source of PF-20261104-F78.
+
+Post: 21
+URL: https://zenmemes.com/posts/thread-20261104183649-45e9b73f
+Created-At: 2026-11-04T18:36:49Z
+Action: create
+Reason: Outcomes: PF-20261106-O02
+
+Post: 22
+URL: https://zenmemes.com/posts/reply-20261104183935-68013225
+Created-At: 2026-11-04T18:39:35Z
+Action: skip
+Reason: Question to an agent essay; social.
+
+Post: 23
+URL: https://zenmemes.com/posts/thread-20261104184550-7bb613a1
+Created-At: 2026-11-04T18:45:50Z
+Action: attach
+Reason: Outcomes: PF-20261030-B03
+
+Post: 24
+URL: https://zenmemes.com/posts/reply-20261104185028-6f25ac5c
+Created-At: 2026-11-04T18:50:28Z
+Action: skip
+Reason: Test tag reply.
+
+Post: 25
+URL: https://zenmemes.com/posts/bootstrap-20261104185913-eced72e1dab954679ecedb2b211685f5
+Created-At: 2026-11-04T18:59:13Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 26
+URL: https://zenmemes.com/posts/reply-20261104185913-7befc7b0bdc4112d19d38b70a75c7c13
+Created-At: 2026-11-04T18:59:13Z
+Action: skip
+Reason: Agent status or design report for already-tracked work; no new request.
+
+Post: 27
+URL: https://zenmemes.com/posts/thread-20261104194536-67649dfe
+Created-At: 2026-11-04T19:45:36Z
+Action: skip
+Reason: Question about Firefox; other product.
+
+Post: 28
+URL: https://zenmemes.com/posts/thread-20261104200227-a1cca203
+Created-At: 2026-11-04T20:02:27Z
+Action: skip
+Reason: Duplicate copy of post 27, posted seconds later.
+
+Post: 29
+URL: https://zenmemes.com/posts/thread-20261104200237-80b737bc
+Created-At: 2026-11-04T20:02:37Z
+Action: create
+Reason: Outcomes: PF-20261106-B05
+
+Post: 30
+URL: https://zenmemes.com/posts/thread-20261104201612-49ac96b0
+Created-At: 2026-11-04T20:16:12Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 31
+URL: https://zenmemes.com/posts/bootstrap-20261104203842-477fe589d415eb2e834e150d793c217d
+Created-At: 2026-11-04T20:38:42Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 32
+URL: https://zenmemes.com/posts/reply-20261104203842-0879c11bfe09a30153558d7aade2d3d1
+Created-At: 2026-11-04T20:38:42Z
+Action: skip
+Reason: Agent status or design report for already-tracked work; no new request.
+
+Post: 33
+URL: https://zenmemes.com/posts/thread-20261104211647-eab5abec
+Created-At: 2026-11-04T21:16:47Z
+Action: attach
+Reason: Outcomes: PF-20261104-F15
+
+Post: 34
+URL: https://zenmemes.com/posts/thread-20261104211659-3d78e3bd
+Created-At: 2026-11-04T21:16:59Z
+Action: skip
+Reason: Duplicate copy of split repost 33.
+
+Post: 35
+URL: https://zenmemes.com/posts/thread-20261104211710-90ce43be
+Created-At: 2026-11-04T21:17:10Z
+Action: skip
+Reason: Duplicate copy of split repost 33.
+
+Post: 36
+URL: https://zenmemes.com/posts/thread-20261104211721-4f851a67
+Created-At: 2026-11-04T21:17:21Z
+Action: skip
+Reason: Duplicate copy of split repost 33.
+
+Post: 37
+URL: https://zenmemes.com/posts/thread-20261104211733-cf9e1a87
+Created-At: 2026-11-04T21:17:33Z
+Action: skip
+Reason: Duplicate copy of split repost 33.
+
+Post: 38
+URL: https://zenmemes.com/posts/thread-20261104211755-0e8f751f
+Created-At: 2026-11-04T21:17:55Z
+Action: attach
+Reason: Outcomes: PF-20261104-F15
+
+Post: 39
+URL: https://zenmemes.com/posts/thread-20261104211806-de22248f
+Created-At: 2026-11-04T21:18:06Z
+Action: skip
+Reason: Duplicate copy of split repost 38.
+
+Post: 40
+URL: https://zenmemes.com/posts/thread-20261104211816-0547f72b
+Created-At: 2026-11-04T21:18:16Z
+Action: skip
+Reason: Duplicate copy of split repost 38.
+
+Post: 41
+URL: https://zenmemes.com/posts/thread-20261104211827-ee34a5d5
+Created-At: 2026-11-04T21:18:27Z
+Action: skip
+Reason: Duplicate copy of split repost 38.
+
+Post: 42
+URL: https://zenmemes.com/posts/thread-20261104211839-70df7259
+Created-At: 2026-11-04T21:18:39Z
+Action: skip
+Reason: Duplicate copy of split repost 38.
+
+Post: 43
+URL: https://zenmemes.com/posts/thread-20261104211858-d516eef0
+Created-At: 2026-11-04T21:18:58Z
+Action: attach
+Reason: Outcomes: PF-20261104-F16
+
+Post: 44
+URL: https://zenmemes.com/posts/thread-20261104211909-1fca9612
+Created-At: 2026-11-04T21:19:09Z
+Action: skip
+Reason: Duplicate copy of split repost 43.
+
+Post: 45
+URL: https://zenmemes.com/posts/thread-20261104211920-4573a5f6
+Created-At: 2026-11-04T21:19:20Z
+Action: skip
+Reason: Duplicate copy of split repost 43.
+
+Post: 46
+URL: https://zenmemes.com/posts/thread-20261104211931-d0f92c85
+Created-At: 2026-11-04T21:19:31Z
+Action: skip
+Reason: Duplicate copy of split repost 43.
+
+Post: 47
+URL: https://zenmemes.com/posts/thread-20261104211942-7df4371f
+Created-At: 2026-11-04T21:19:42Z
+Action: skip
+Reason: Duplicate copy of split repost 43.
+
+Post: 48
+URL: https://zenmemes.com/posts/thread-20261104212002-9e87866c
+Created-At: 2026-11-04T21:20:02Z
+Action: attach
+Reason: Outcomes: PF-20261104-F17
+
+Post: 49
+URL: https://zenmemes.com/posts/thread-20261104212013-97fda929
+Created-At: 2026-11-04T21:20:13Z
+Action: skip
+Reason: Duplicate copy of split repost 48.
+
+Post: 50
+URL: https://zenmemes.com/posts/thread-20261104212024-24ff93c4
+Created-At: 2026-11-04T21:20:24Z
+Action: skip
+Reason: Duplicate copy of split repost 48.
+
+Post: 51
+URL: https://zenmemes.com/posts/thread-20261104212035-cef4faf4
+Created-At: 2026-11-04T21:20:35Z
+Action: skip
+Reason: Duplicate copy of split repost 48.
+
+Post: 52
+URL: https://zenmemes.com/posts/thread-20261104212046-3f7f192a
+Created-At: 2026-11-04T21:20:46Z
+Action: skip
+Reason: Duplicate copy of split repost 48.
+
+Post: 53
+URL: https://zenmemes.com/posts/thread-20261104212105-fd19dc1e
+Created-At: 2026-11-04T21:21:05Z
+Action: attach
+Reason: Outcomes: PF-20261104-F17
+
+Post: 54
+URL: https://zenmemes.com/posts/thread-20261104212116-9ebe0292
+Created-At: 2026-11-04T21:21:16Z
+Action: skip
+Reason: Duplicate copy of split repost 53.
+
+Post: 55
+URL: https://zenmemes.com/posts/thread-20261104212127-02f90eec
+Created-At: 2026-11-04T21:21:27Z
+Action: skip
+Reason: Duplicate copy of split repost 53.
+
+Post: 56
+URL: https://zenmemes.com/posts/thread-20261104212138-8c0902d3
+Created-At: 2026-11-04T21:21:38Z
+Action: skip
+Reason: Duplicate copy of split repost 53.
+
+Post: 57
+URL: https://zenmemes.com/posts/thread-20261104212149-c7777cc2
+Created-At: 2026-11-04T21:21:49Z
+Action: skip
+Reason: Duplicate copy of split repost 53.
+
+Post: 58
+URL: https://zenmemes.com/posts/thread-20261104212209-15935596
+Created-At: 2026-11-04T21:22:09Z
+Action: attach
+Reason: Outcomes: PF-20261104-F18
+
+Post: 59
+URL: https://zenmemes.com/posts/thread-20261104212221-eab2a241
+Created-At: 2026-11-04T21:22:21Z
+Action: skip
+Reason: Duplicate copy of split repost 58.
+
+Post: 60
+URL: https://zenmemes.com/posts/thread-20261104212235-b20d1e0f
+Created-At: 2026-11-04T21:22:35Z
+Action: skip
+Reason: Duplicate copy of split repost 58.
+
+Post: 61
+URL: https://zenmemes.com/posts/thread-20261104212246-f4c80a9d
+Created-At: 2026-11-04T21:22:46Z
+Action: skip
+Reason: Duplicate copy of split repost 58.
+
+Post: 62
+URL: https://zenmemes.com/posts/thread-20261104212257-93f4885b
+Created-At: 2026-11-04T21:22:57Z
+Action: skip
+Reason: Duplicate copy of split repost 58.
+
+Post: 63
+URL: https://zenmemes.com/posts/thread-20261104212316-9cbeced1
+Created-At: 2026-11-04T21:23:16Z
+Action: attach
+Reason: Outcomes: PF-20261104-F19
+
+Post: 64
+URL: https://zenmemes.com/posts/thread-20261104212327-9ec0a1c3
+Created-At: 2026-11-04T21:23:27Z
+Action: skip
+Reason: Duplicate copy of split repost 63.
+
+Post: 65
+URL: https://zenmemes.com/posts/thread-20261104212338-02df57db
+Created-At: 2026-11-04T21:23:38Z
+Action: skip
+Reason: Duplicate copy of split repost 63.
+
+Post: 66
+URL: https://zenmemes.com/posts/thread-20261104212349-8a0365e6
+Created-At: 2026-11-04T21:23:49Z
+Action: skip
+Reason: Duplicate copy of split repost 63.
+
+Post: 67
+URL: https://zenmemes.com/posts/thread-20261104212400-be2466b1
+Created-At: 2026-11-04T21:24:00Z
+Action: skip
+Reason: Duplicate copy of split repost 63.
+
+Post: 68
+URL: https://zenmemes.com/posts/thread-20261104212419-791403c6
+Created-At: 2026-11-04T21:24:19Z
+Action: attach
+Reason: Outcomes: PF-20261104-F08
+
+Post: 69
+URL: https://zenmemes.com/posts/thread-20261104212430-7efd8272
+Created-At: 2026-11-04T21:24:30Z
+Action: skip
+Reason: Duplicate copy of split repost 68.
+
+Post: 70
+URL: https://zenmemes.com/posts/thread-20261104212441-492b60a4
+Created-At: 2026-11-04T21:24:41Z
+Action: skip
+Reason: Duplicate copy of split repost 68.
+
+Post: 71
+URL: https://zenmemes.com/posts/thread-20261104212452-a19b46ed
+Created-At: 2026-11-04T21:24:52Z
+Action: skip
+Reason: Duplicate copy of split repost 68.
+
+Post: 72
+URL: https://zenmemes.com/posts/thread-20261104212502-ece0a69f
+Created-At: 2026-11-04T21:25:02Z
+Action: skip
+Reason: Duplicate copy of split repost 68.
+
+Post: 73
+URL: https://zenmemes.com/posts/thread-20261104212522-5beb6e6e
+Created-At: 2026-11-04T21:25:22Z
+Action: attach
+Reason: Outcomes: PF-20261104-F20
+
+Post: 74
+URL: https://zenmemes.com/posts/thread-20261104212532-ebc3869c
+Created-At: 2026-11-04T21:25:32Z
+Action: skip
+Reason: Duplicate copy of split repost 73.
+
+Post: 75
+URL: https://zenmemes.com/posts/thread-20261104212543-643bb7f3
+Created-At: 2026-11-04T21:25:43Z
+Action: skip
+Reason: Duplicate copy of split repost 73.
+
+Post: 76
+URL: https://zenmemes.com/posts/thread-20261104212554-7d50626f
+Created-At: 2026-11-04T21:25:54Z
+Action: skip
+Reason: Duplicate copy of split repost 73.
+
+Post: 77
+URL: https://zenmemes.com/posts/thread-20261104212606-b8685261
+Created-At: 2026-11-04T21:26:06Z
+Action: skip
+Reason: Duplicate copy of split repost 73.
+
+Post: 78
+URL: https://zenmemes.com/posts/thread-20261104212625-11c72de6
+Created-At: 2026-11-04T21:26:25Z
+Action: attach
+Reason: Outcomes: PF-20261104-F21
+
+Post: 79
+URL: https://zenmemes.com/posts/thread-20261104212636-c5e3e55e
+Created-At: 2026-11-04T21:26:36Z
+Action: skip
+Reason: Duplicate copy of split repost 78.
+
+Post: 80
+URL: https://zenmemes.com/posts/thread-20261104212647-71789c0d
+Created-At: 2026-11-04T21:26:47Z
+Action: skip
+Reason: Duplicate copy of split repost 78.
+
+Post: 81
+URL: https://zenmemes.com/posts/thread-20261104212700-00c63699
+Created-At: 2026-11-04T21:27:00Z
+Action: attach
+Reason: Outcomes: PF-20261104-F22
+
+Post: 82
+URL: https://zenmemes.com/posts/thread-20261104212709-6fc3a2fc
+Created-At: 2026-11-04T21:27:09Z
+Action: attach
+Reason: Outcomes: PF-20261104-F13
+
+Post: 83
+URL: https://zenmemes.com/posts/thread-20261104212718-985e0629
+Created-At: 2026-11-04T21:27:18Z
+Action: attach
+Reason: Outcomes: PF-20261104-B09
+
+Post: 84
+URL: https://zenmemes.com/posts/thread-20261104212729-d12fbaa7
+Created-At: 2026-11-04T21:27:29Z
+Action: attach
+Reason: Outcomes: PF-20261104-F23
+
+Post: 85
+URL: https://zenmemes.com/posts/thread-20261104212738-8fcf840f
+Created-At: 2026-11-04T21:27:38Z
+Action: attach
+Reason: Outcomes: PF-20261104-B10
+
+Post: 86
+URL: https://zenmemes.com/posts/bootstrap-20261104214954-96325bf5
+Created-At: 2026-11-04T21:49:54Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 87
+URL: https://zenmemes.com/posts/bootstrap-20261104220251-cbb752c7
+Created-At: 2026-11-04T22:02:51Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 88
+URL: https://zenmemes.com/posts/thread-20261104220254-ae0788af
+Created-At: 2026-11-04T22:02:54Z
+Action: skip
+Reason: Article by an agent; not a request.
+
+Post: 89
+URL: https://zenmemes.com/posts/bootstrap-20261104223350-3c8f6ded
+Created-At: 2026-11-04T22:33:50Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 90
+URL: https://zenmemes.com/posts/thread-20261104223428-111419c1
+Created-At: 2026-11-04T22:34:28Z
+Action: skip
+Reason: Article by an agent; not a request.
+
+Post: 91
+URL: https://zenmemes.com/posts/thread-20261104223540-1c5b2181
+Created-At: 2026-11-04T22:35:40Z
+Action: skip
+Reason: Screenshot of an outside chat agent discovering /llms.txt; social.
+
+Post: 92
+URL: https://zenmemes.com/posts/thread-20261104224320-cf567ada
+Created-At: 2026-11-04T22:43:20Z
+Action: create
+Reason: Outcomes: PF-20261106-B06
+
+Post: 93
+URL: https://zenmemes.com/posts/thread-20261105010619-8008eca1
+Created-At: 2026-11-05T01:06:19Z
+Action: skip
+Reason: Test post.
+
+Post: 94
+URL: https://zenmemes.com/posts/thread-20261105012215-65d2cb73
+Created-At: 2026-11-05T01:22:15Z
+Action: skip
+Reason: Test post.
+
+Post: 95
+URL: https://zenmemes.com/posts/thread-20261105013625-696d8d98
+Created-At: 2026-11-05T01:36:25Z
+Action: skip
+Reason: Test post.
+
+Post: 96
+URL: https://zenmemes.com/posts/thread-20261105015107-d34ff649
+Created-At: 2026-11-05T01:51:07Z
+Action: skip
+Reason: Test post.
+
+Post: 97
+URL: https://zenmemes.com/posts/thread-20261105015135-f25d88d4
+Created-At: 2026-11-05T01:51:35Z
+Action: skip
+Reason: Test post.
+
+Post: 98
+URL: https://zenmemes.com/posts/thread-20261105035303-18b09027
+Created-At: 2026-11-05T03:53:03Z
+Action: attach
+Reason: Outcomes: PF-20261104-F52
+
+Post: 99
+URL: https://zenmemes.com/posts/thread-20261105035313-0ddcc9ed
+Created-At: 2026-11-05T03:53:13Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 100
+URL: https://zenmemes.com/posts/bootstrap-20261105054434-52c5e517
+Created-At: 2026-11-05T05:44:34Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 101
+URL: https://zenmemes.com/posts/thread-20261105060557-d5d064cc
+Created-At: 2026-11-05T06:05:57Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 102
+URL: https://zenmemes.com/posts/thread-20261105061047-afaabd4f
+Created-At: 2026-11-05T06:10:47Z
+Action: create
+Reason: Outcomes: PF-20261106-B07
+
+Post: 103
+URL: https://zenmemes.com/posts/reply-20261105061103-8e5a80f5
+Created-At: 2026-11-05T06:11:03Z
+Action: skip
+Reason: Supporting screenshot in the Chicago thread; covered by that thread's item.
+
+Post: 104
+URL: https://zenmemes.com/posts/reply-20261105061120-6455c4c6
+Created-At: 2026-11-05T06:11:20Z
+Action: skip
+Reason: Supporting screenshot in the Chicago thread; covered by that thread's item.
+
+Post: 105
+URL: https://zenmemes.com/posts/reply-20261105061151-ed6de7e9
+Created-At: 2026-11-05T06:11:51Z
+Action: skip
+Reason: Supporting screenshot in the Chicago thread; covered by that thread's item.
+
+Post: 106
+URL: https://zenmemes.com/posts/reply-20261105061212-7f933b57
+Created-At: 2026-11-05T06:12:12Z
+Action: skip
+Reason: Supporting screenshot in the Chicago thread; covered by that thread's item.
+
+Post: 107
+URL: https://zenmemes.com/posts/reply-20261105061233-0bf1416e
+Created-At: 2026-11-05T06:12:33Z
+Action: create
+Reason: Outcomes: PF-20261106-B07
+
+Post: 108
+URL: https://zenmemes.com/posts/thread-20261105063030-cc7a044d
+Created-At: 2026-11-05T06:30:30Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 109
+URL: https://zenmemes.com/posts/reply-20261105063821-af452fe8
+Created-At: 2026-11-05T06:38:21Z
+Action: skip
+Reason: Image-only social post or reply.
+
+Post: 110
+URL: https://zenmemes.com/posts/thread-20261105075159-fbe1612b
+Created-At: 2026-11-05T07:51:59Z
+Action: skip
+Reason: Image-only social post or reply.
+
+Post: 111
+URL: https://zenmemes.com/posts/thread-20261105122245-c67eecd9
+Created-At: 2026-11-05T12:22:45Z
+Action: create
+Reason: Outcomes: PF-20261106-F06
+
+Post: 112
+URL: https://zenmemes.com/posts/thread-20261105122938-06e0cb0c
+Created-At: 2026-11-05T12:29:38Z
+Action: create
+Reason: Outcomes: PF-20261106-F07
+
+Post: 113
+URL: https://zenmemes.com/posts/reply-20261105122952-c362dd68
+Created-At: 2026-11-05T12:29:52Z
+Action: create
+Reason: Outcomes: PF-20261106-F07
+
+Post: 114
+URL: https://zenmemes.com/posts/reply-20261105123029-05a19ee7
+Created-At: 2026-11-05T12:30:29Z
+Action: create
+Reason: Outcomes: PF-20261106-F07
+
+Post: 115
+URL: https://zenmemes.com/posts/thread-20261105133335-20d67f3d
+Created-At: 2026-11-05T13:33:35Z
+Action: skip
+Reason: Duplicate copy of post 112, posted seconds later.
+
+Post: 116
+URL: https://zenmemes.com/posts/thread-20261105133452-7ca42b33
+Created-At: 2026-11-05T13:34:52Z
+Action: skip
+Reason: Test post.
+
+Post: 117
+URL: https://zenmemes.com/posts/thread-20261105133510-5faa6f86
+Created-At: 2026-11-05T13:35:10Z
+Action: skip
+Reason: Test post.
+
+Post: 118
+URL: https://zenmemes.com/posts/thread-20261105133533-6a257181
+Created-At: 2026-11-05T13:35:33Z
+Action: skip
+Reason: Test post.
+
+Post: 119
+URL: https://zenmemes.com/posts/thread-20261105133546-8bc1a777
+Created-At: 2026-11-05T13:35:46Z
+Action: skip
+Reason: Test post.
+
+Post: 120
+URL: https://zenmemes.com/posts/bootstrap-20261105142051-375b4d34
+Created-At: 2026-11-05T14:20:51Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 121
+URL: https://zenmemes.com/posts/reply-20261105142115-137ad622
+Created-At: 2026-11-05T14:21:15Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 122
+URL: https://zenmemes.com/posts/reply-20261105142138-d7777a4e
+Created-At: 2026-11-05T14:21:38Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 123
+URL: https://zenmemes.com/posts/reply-20261105142146-808f8313
+Created-At: 2026-11-05T14:21:46Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 124
+URL: https://zenmemes.com/posts/reply-20261105142319-a4ea8adf
+Created-At: 2026-11-05T14:23:19Z
+Action: skip
+Reason: Question about an agent reply's link; answered in thread.
+
+Post: 125
+URL: https://zenmemes.com/posts/reply-20261105143111-0fa7d853
+Created-At: 2026-11-05T14:31:11Z
+Action: skip
+Reason: Thanks.
+
+Post: 126
+URL: https://zenmemes.com/posts/reply-20261105143126-47a1a961
+Created-At: 2026-11-05T14:31:26Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 127
+URL: https://zenmemes.com/posts/reply-20261105144618-60f88fcc
+Created-At: 2026-11-05T14:46:18Z
+Action: attach
+Reason: Outcomes: PF-20261030-B03
+
+Post: 128
+URL: https://zenmemes.com/posts/thread-20261105144650-99998903
+Created-At: 2026-11-05T14:46:50Z
+Action: skip
+Reason: Test post.
+
+Post: 129
+URL: https://zenmemes.com/posts/reply-20261105144654-ea16cdf9
+Created-At: 2026-11-05T14:46:54Z
+Action: skip
+Reason: Test post.
+
+Post: 130
+URL: https://zenmemes.com/posts/thread-20261105144740-03f36390
+Created-At: 2026-11-05T14:47:40Z
+Action: create
+Reason: Outcomes: PF-20261106-B08
+
+Post: 131
+URL: https://zenmemes.com/posts/thread-20261105144747-d4d27225
+Created-At: 2026-11-05T14:47:47Z
+Action: skip
+Reason: Duplicate copy of post 130, posted seconds later.
+
+Post: 132
+URL: https://zenmemes.com/posts/thread-20261105144752-bb833db0
+Created-At: 2026-11-05T14:47:52Z
+Action: skip
+Reason: Duplicate copy of post 130, posted seconds later.
+
+Post: 133
+URL: https://zenmemes.com/posts/thread-20261105144842-ecd3231d
+Created-At: 2026-11-05T14:48:42Z
+Action: attach
+Reason: Outcomes: PF-20261030-B03
+
+Post: 134
+URL: https://zenmemes.com/posts/reply-20261105144910-8eb05724
+Created-At: 2026-11-05T14:49:10Z
+Action: attach
+Reason: Outcomes: PF-20261030-B03
+
+Post: 135
+URL: https://zenmemes.com/posts/thread-20261105144935-49bd0fb1
+Created-At: 2026-11-05T14:49:35Z
+Action: attach
+Reason: Outcomes: PF-20261030-B22
+
+Post: 136
+URL: https://zenmemes.com/posts/reply-20261105144945-a0b43425
+Created-At: 2026-11-05T14:49:45Z
+Action: attach
+Reason: Outcomes: PF-20261030-B22
+
+Post: 137
+URL: https://zenmemes.com/posts/thread-20261105145032-705ae942
+Created-At: 2026-11-05T14:50:32Z
+Action: create
+Reason: Outcomes: PF-20261106-F08
+
+Post: 138
+URL: https://zenmemes.com/posts/thread-20261105145435-841452bf
+Created-At: 2026-11-05T14:54:36Z
+Action: skip
+Reason: Business concept unrelated to this site.
+
+Post: 139
+URL: https://zenmemes.com/posts/thread-20261105145531-b05bb1bd
+Created-At: 2026-11-05T14:55:31Z
+Action: create
+Reason: Outcomes: PF-20261106-F09
+
+Post: 140
+URL: https://zenmemes.com/posts/bootstrap-20261105145652-39f349c2
+Created-At: 2026-11-05T14:56:52Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 141
+URL: https://zenmemes.com/posts/reply-20261105145656-10e36db1
+Created-At: 2026-11-05T14:56:56Z
+Action: skip
+Reason: Agent status or design report for already-tracked work; no new request.
+
+Post: 142
+URL: https://zenmemes.com/posts/thread-20261105152720-835ca59c
+Created-At: 2026-11-05T15:27:20Z
+Action: skip
+Reason: Agent prioritization outline and its correction; tracking record, not a request (see 2026-11-05 reconciliation).
+
+Post: 143
+URL: https://zenmemes.com/posts/reply-20261105154443-ce43d7d0
+Created-At: 2026-11-05T15:44:43Z
+Action: skip
+Reason: Agent prioritization outline and its correction; tracking record, not a request (see 2026-11-05 reconciliation).
+
+Post: 144
+URL: https://zenmemes.com/posts/bootstrap-20261105155037-a27925c0
+Created-At: 2026-11-05T15:50:37Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 145
+URL: https://zenmemes.com/posts/reply-20261105155100-8cade116
+Created-At: 2026-11-05T15:51:00Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 146
+URL: https://zenmemes.com/posts/bootstrap-20261105165349-28b44a70
+Created-At: 2026-11-05T16:53:49Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 147
+URL: https://zenmemes.com/posts/reply-20261105165352-caf2a99e
+Created-At: 2026-11-05T16:53:52Z
+Action: skip
+Reason: Agent status or design report for already-tracked work; no new request.
+
+Post: 148
+URL: https://zenmemes.com/posts/reply-20261105165800-262b8253
+Created-At: 2026-11-05T16:58:00Z
+Action: skip
+Reason: Agreement reply on the commonplace naming thread; social.
+
+Post: 149
+URL: https://zenmemes.com/posts/thread-20261105201856-2bb594b0
+Created-At: 2026-11-05T20:18:56Z
+Action: skip
+Reason: Social or general question.
+
+Post: 150
+URL: https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+Created-At: 2026-11-05T20:22:12Z
+Action: create
+Reason: Outcomes: PF-20261106-B09, PF-20261106-B10, PF-20261106-F10, PF-20261106-F11
+
+Post: 151
+URL: https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+Created-At: 2026-11-05T20:22:35Z
+Action: create
+Reason: Outcomes: PF-20261106-B09, PF-20261106-B10, PF-20261106-F10, PF-20261106-F11
+
+Post: 152
+URL: https://zenmemes.com/posts/thread-20261105202246-44cc3909
+Created-At: 2026-11-05T20:22:46Z
+Action: skip
+Reason: Duplicate copy of the "Offline mode notes" list (posts 150 and 151).
+
+Post: 153
+URL: https://zenmemes.com/posts/thread-20261105202301-fec2684c
+Created-At: 2026-11-05T20:23:01Z
+Action: skip
+Reason: Test post.
+
+Post: 154
+URL: https://zenmemes.com/posts/thread-20261105202310-30736513
+Created-At: 2026-11-05T20:23:10Z
+Action: skip
+Reason: Duplicate copy of the "Offline mode notes" list (posts 150 and 151).
+
+Post: 155
+URL: https://zenmemes.com/posts/thread-20261105202317-aa1c1019
+Created-At: 2026-11-05T20:23:17Z
+Action: skip
+Reason: Duplicate copy of the "Offline mode notes" list (posts 150 and 151).
+
+Post: 156
+URL: https://zenmemes.com/posts/thread-20261105202334-ba48d42e
+Created-At: 2026-11-05T20:23:34Z
+Action: skip
+Reason: Duplicate copy of the "Offline mode notes" list (posts 150 and 151).
+
+Post: 157
+URL: https://zenmemes.com/posts/thread-20261105203031-f45eb3a4
+Created-At: 2026-11-05T20:30:31Z
+Action: create
+Reason: Outcomes: PF-20261106-B11
+
+Post: 158
+URL: https://zenmemes.com/posts/reply-20261105203320-edbb9d28
+Created-At: 2026-11-05T20:33:20Z
+Action: skip
+Reason: Maintainer correction that GitHub issues are not used for tracking; folded into the notes of PF-20261106-B11.
+
+Post: 159
+URL: https://zenmemes.com/posts/bootstrap-20261105203344-3a344dd2
+Created-At: 2026-11-05T20:33:44Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 160
+URL: https://zenmemes.com/posts/thread-20261105203351-44bac944
+Created-At: 2026-11-05T20:33:51Z
+Action: create
+Reason: Outcomes: PF-20261106-B12
+
+Post: 161
+URL: https://zenmemes.com/posts/bootstrap-20261105204850-0841b3fa
+Created-At: 2026-11-05T20:48:50Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 162
+URL: https://zenmemes.com/posts/reply-20261105205822-f29ad41c
+Created-At: 2026-11-05T20:58:22Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 163
+URL: https://zenmemes.com/posts/thread-20261105220727-5c4b4a3c
+Created-At: 2026-11-05T22:07:27Z
+Action: skip
+Reason: Feature request for the Seahouse site; other product.
+
+Post: 164
+URL: https://zenmemes.com/posts/reply-20261105225914-330513e4
+Created-At: 2026-11-05T22:59:14Z
+Action: create
+Reason: Outcomes: PF-20261106-B12, PF-20261106-F12
+
+Post: 165
+URL: https://zenmemes.com/posts/reply-20261105225919-0528e186
+Created-At: 2026-11-05T22:59:19Z
+Action: create
+Reason: Outcomes: PF-20261106-F13, PF-20261030-B03
+
+Post: 166
+URL: https://zenmemes.com/posts/reply-20261105225922-8d52151c
+Created-At: 2026-11-05T22:59:22Z
+Action: create
+Reason: Outcomes: PF-20261106-B11
+
+Post: 167
+URL: https://zenmemes.com/posts/reply-20261105225926-c397c06c
+Created-At: 2026-11-05T22:59:26Z
+Action: attach
+Reason: Outcomes: PF-20261104-F60
+
+Post: 168
+URL: https://zenmemes.com/posts/reply-20261105225929-34047e20
+Created-At: 2026-11-05T22:59:29Z
+Action: skip
+Reason: Feature request for the Seahouse site; other product.
+
+Post: 169
+URL: https://zenmemes.com/posts/thread-20261105231111-4eb985c2
+Created-At: 2026-11-05T23:11:11Z
+Action: skip
+Reason: Already a source of PF-20261105-F01.
+
+Post: 170
+URL: https://zenmemes.com/posts/bootstrap-20261105232135-e9aefe10
+Created-At: 2026-11-05T23:21:35Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 171
+URL: https://zenmemes.com/posts/reply-20261105232136-421dd665
+Created-At: 2026-11-05T23:21:36Z
+Action: skip
+Reason: Agent status or design report for already-tracked work; no new request.
+
+Post: 172
+URL: https://zenmemes.com/posts/reply-20261105233509-ca7426b9
+Created-At: 2026-11-05T23:35:09Z
+Action: skip
+Reason: Agent status or design report for already-tracked work; no new request.
+
+Post: 173
+URL: https://zenmemes.com/posts/bootstrap-20261105233710-2e7e48be
+Created-At: 2026-11-05T23:37:10Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 174
+URL: https://zenmemes.com/posts/thread-20261105233712-bd738709
+Created-At: 2026-11-05T23:37:12Z
+Action: skip
+Reason: Test post.
+
+Post: 175
+URL: https://zenmemes.com/posts/bootstrap-20261105235358-7c447609
+Created-At: 2026-11-05T23:53:58Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 176
+URL: https://zenmemes.com/posts/thread-20261106061843-86b28732
+Created-At: 2026-11-06T06:18:43Z
+Action: attach
+Reason: Outcomes: PF-20261030-F50
+
+Post: 177
+URL: https://zenmemes.com/posts/thread-20261106061844-a6d284da
+Created-At: 2026-11-06T06:18:44Z
+Action: skip
+Reason: Duplicate copy of post 176, posted seconds later.
+
+Post: 178
+URL: https://zenmemes.com/posts/bootstrap-20261106062033-df73d918
+Created-At: 2026-11-06T06:20:33Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 179
+URL: https://zenmemes.com/posts/thread-20261106062035-bacc3870
+Created-At: 2026-11-06T06:20:35Z
+Action: create
+Reason: Outcomes: PF-20261106-B13
+
+Post: 180
+URL: https://zenmemes.com/posts/thread-20261106062135-b7c84972
+Created-At: 2026-11-06T06:21:35Z
+Action: skip
+Reason: Test post.
+
+Post: 181
+URL: https://zenmemes.com/posts/reply-20261106062330-51cfdbb7
+Created-At: 2026-11-06T06:23:30Z
+Action: skip
+Reason: Already a source of PF-20261030-B08.
+
+Post: 182
+URL: https://zenmemes.com/posts/thread-20261106071237-3ce55c14
+Created-At: 2026-11-06T07:12:37Z
+Action: skip
+Reason: Social or general question.
+
+Post: 183
+URL: https://zenmemes.com/posts/thread-20261106071315-6baf331c
+Created-At: 2026-11-06T07:13:15Z
+Action: attach
+Reason: Outcomes: PF-20261104-B30
+
+Post: 184
+URL: https://zenmemes.com/posts/bootstrap-20261106151421-35f09cca
+Created-At: 2026-11-06T15:14:21Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 185
+URL: https://zenmemes.com/posts/reply-20261106151455-c7a7c3de
+Created-At: 2026-11-06T15:14:55Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 186
+URL: https://zenmemes.com/posts/thread-20261106155940-7166c9b4
+Created-At: 2026-11-06T15:59:40Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 187
+URL: https://zenmemes.com/posts/thread-20261106160023-102cdf4e
+Created-At: 2026-11-06T16:00:23Z
+Action: create
+Reason: Outcomes: PF-20261106-F14
+
+Post: 188
+URL: https://zenmemes.com/posts/reply-20261106160123-ca5bab01
+Created-At: 2026-11-06T16:01:23Z
+Action: attach
+Reason: Outcomes: PF-20261030-B08
+
+Post: 189
+URL: https://zenmemes.com/posts/thread-20261106164113-8b520a73
+Created-At: 2026-11-06T16:41:13Z
+Action: create
+Reason: Outcomes: PF-20261106-F15
+
+Post: 190
+URL: https://zenmemes.com/posts/thread-20261106164558-d1bb06be
+Created-At: 2026-11-06T16:45:58Z
+Action: create
+Reason: Outcomes: PF-20261106-B14
+
+Post: 191
+URL: https://zenmemes.com/posts/thread-20261106175624-a672b7c5
+Created-At: 2026-11-06T17:56:24Z
+Action: skip
+Reason: Spam.
+
+Post: 192
+URL: https://zenmemes.com/posts/thread-20261106200315-c7223058
+Created-At: 2026-11-06T20:03:16Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 193
+URL: https://zenmemes.com/posts/bootstrap-20261106203604-c1147640
+Created-At: 2026-11-06T20:36:04Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 194
+URL: https://zenmemes.com/posts/reply-20261106203605-cce96b0f
+Created-At: 2026-11-06T20:36:05Z
+Action: skip
+Reason: Agent status or design report for already-tracked work; no new request.
+
+Post: 195
+URL: https://zenmemes.com/posts/reply-20261106204236-c8da7c4a
+Created-At: 2026-11-06T20:42:36Z
+Action: skip
+Reason: Agent status or design report for already-tracked work; no new request.
+
+Post: 196
+URL: https://zenmemes.com/posts/bootstrap-20261106204954-1578b07f
+Created-At: 2026-11-06T20:49:54Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 197
+URL: https://zenmemes.com/posts/reply-20261106204955-751f6f3b
+Created-At: 2026-11-06T20:49:55Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 198
+URL: https://zenmemes.com/posts/bootstrap-20261106205802-f1ef0e54
+Created-At: 2026-11-06T20:58:02Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 199
+URL: https://zenmemes.com/posts/thread-20261106210513-8ff948aa
+Created-At: 2026-11-06T21:05:13Z
+Action: skip
+Reason: Test post.
+
+Post: 200
+URL: https://zenmemes.com/posts/bootstrap-20261106212901-620dfa537180924a5485e51bbcf5d7f1
+Created-At: 2026-11-06T21:29:01Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 201
+URL: https://zenmemes.com/posts/thread-20261106212901-839bef8638281bb772cb978e0e35136b
+Created-At: 2026-11-06T21:29:01Z
+Action: skip
+Reason: Agent identity announcement; social.
+
+Post: 202
+URL: https://zenmemes.com/posts/thread-20261106213551-f577458a
+Created-At: 2026-11-06T21:35:51Z
+Action: attach
+Reason: Outcomes: PF-20261104-F10
+
+Post: 203
+URL: https://zenmemes.com/posts/thread-20261106220100-bfc72f6e
+Created-At: 2026-11-06T22:01:00Z
+Action: skip
+Reason: Article by an agent; not a request.
+
+Post: 204
+URL: https://zenmemes.com/posts/thread-20261106222047-548088f8
+Created-At: 2026-11-06T22:20:47Z
+Action: skip
+Reason: Link or article share; social.
+
+Post: 205
+URL: https://zenmemes.com/posts/reply-20261106222333-c6bcbdd0
+Created-At: 2026-11-06T22:23:33Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 206
+URL: https://zenmemes.com/posts/thread-20261106223205-8a9b7ea1
+Created-At: 2026-11-06T22:32:05Z
+Action: skip
+Reason: Social or general question.
+
+Post: 207
+URL: https://zenmemes.com/posts/thread-20261106223620-0623b252
+Created-At: 2026-11-06T22:36:20Z
+Action: skip
+Reason: Article by an agent; not a request.
+
+Post: 208
+URL: https://zenmemes.com/posts/thread-20261106224157-743c40fe
+Created-At: 2026-11-06T22:41:57Z
+Action: create
+Reason: Outcomes: PF-20261106-B15
+
+Post: 209
+URL: https://zenmemes.com/posts/reply-20261106224715-8fa29d79
+Created-At: 2026-11-06T22:47:15Z
+Action: skip
+Reason: Agent reply or agent-only proposal; referenced as context where relevant.
+
+Post: 210
+URL: https://zenmemes.com/posts/thread-20261106224946-81e820f6
+Created-At: 2026-11-06T22:49:46Z
+Action: attach
+Reason: Outcomes: PF-20261104-B30
+
+Post: 211
+URL: https://zenmemes.com/posts/bootstrap-20261106231332-9a4bb297
+Created-At: 2026-11-06T23:13:32Z
+Action: skip
+Reason: Account bootstrap record.
+
+Post: 212
+URL: https://zenmemes.com/posts/reply-20261106233822-dc2f2770
+Created-At: 2026-11-06T23:38:22Z
+Action: skip
+Reason: Image-only social post or reply.
+
+Apply steps after acceptance:
+- Create the new item files with Workflow: untriaged and Evidence: unknown, using the Request, Sources and Notes above plus the standard intake note.
+- Add attached sources and a dated note per attached item; apply the status and note changes.
+- Run ./v3 feedback check and ./v3 feedback index; review every shared-source notice.
+- Set this file to Status: applied and record the application.
+- Leave the commit to the maintainer: this file, item changes and index together, without Feedback trailers.
