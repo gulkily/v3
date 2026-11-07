@@ -98,3 +98,25 @@ The maintainer did not answer whether to reuse the `plan/readable_page_urls` dra
 - Estimate details: original scope as planned; uncertainty medium as planned; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Board list
+
+**Original estimate: 0.08**
+**Retrospective: 0.07**
+
+- Changes:
+  - `BoardPageController::boardList` slices its sorted list by page number; pinned threads appear on page 1 only, as before. The old `listPage` boundary search is removed.
+  - Links leave out `view=liked` and `sort=newest`, the route's defaults. Other views and sorts stay in the link.
+  - New `listWithLocation` finds a thread's page in the current view and sort; a pinned thread lands on page 1. It returns null for QDB, card-layout sites and threads outside the view. `Application` redirects before rendering.
+  - `templates/partials/thread_row.php` rows get `id="post-<root ID>"`. The same partial serves Search and the username page.
+- Verification:
+  - `BoardListTest`: 10 passed. The paging test now follows numbered links; a new test covers left-out defaults, a page past the end with First page and no pinned list, a malformed page, `with` for an older thread, a pinned thread and an unknown ID.
+  - `./v3 test --smoke BoardListTest`: 433 run, 433 passed. `GalleryPageTest RecentPostTest ProfilePublicDetailsTest` rerun: passed.
+  - Manual paging of liked/newest and top sorts is part of Stage 8.
+  - Full suite not run.
+- Notes:
+  - A page-content assertion matched `data-pending-thread-position="after"` on the compose form; the test now looks for `?position=` and `&amp;position=` instead.
+  - QDB's own `/latest/2` paging is untouched.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

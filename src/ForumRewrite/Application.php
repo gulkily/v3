@@ -646,11 +646,20 @@ final class Application
                 return;
             }
 
+            $location = $this->qdbExperience()->isEnabled() ? null : $this->boardPageController()->listWithLocation(
+                (string) ($query['view'] ?? 'liked'),
+                (string) ($query['sort'] ?? 'newest'),
+                $query['with'] ?? null,
+            );
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread on the board.', 303, activeSection: 'board');
+                return;
+            }
             $this->sendHtml(
                 $this->boardPageController()->board(
                     (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
-                    position: $query['position'] ?? null,
+                    listPage: $query['page'] ?? null,
                 ),
                 200
             );

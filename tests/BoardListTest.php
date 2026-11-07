@@ -65,21 +65,28 @@ final class BoardListTest
         assertStringNotContains('href="/threads/board-list-010"', $back);
     }
 
-    public function testExpiredOrForeignPositionsOfferTheFirstPage(): void
+    public function testPageNumbersWithAndDefaultsInBoardLinks(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(60);
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
 
-        $gone = \ForumRewrite\Pagination\PageNavigation::encode('board:all:newest', 'next', ['thread' => 'no-such-thread']);
-        $expired = $this->render($application, '/threads/?view=all&sort=newest&position=' . $gone);
-        assertStringContains('This page position has expired.', $expired);
-        assertStringContains('href="/threads/?view=all&amp;sort=newest">First page</a>', $expired);
+        $first = $this->render($application, '/threads/?view=all&sort=newest');
+        assertStringContains('rel="next" href="/threads/?view=all&amp;page=2">Show older threads</a>', $first, 'The default sort is left out.');
+        assertStringContains('id="post-board-list-060"', $first);
+        assertStringNotContains('?position=', $first);
+        assertStringNotContains('&amp;position=', $first);
 
-        // A position from another sort is a different context.
-        $other = \ForumRewrite\Pagination\PageNavigation::encode('board:all:top', 'next', ['thread' => 'root-001']);
-        $foreign = $this->render($application, '/threads/?view=all&sort=newest&position=' . $other);
-        assertStringContains('This page position is invalid.', $foreign);
-        assertStringContains('>First page</a>', $foreign);
+        $past = $this->render($application, '/threads/?view=all&page=9');
+        assertStringContains('href="/threads/?view=all">First page</a>', $past);
+        assertStringNotContains('pinned-list', $this->markup($past));
+
+        assertSame(51, substr_count($this->render($application, '/threads/?view=all&page=abc'), 'class="thread-row"'), 'A malformed page shows page 1.');
+
+        $older = $this->render($application, '/threads/?view=all&sort=newest&with=root-001');
+        assertStringContains('/threads/?view=all&amp;page=2#post-root-001', $older);
+        $pinned = $this->render($application, '/threads/?view=all&with=thread-zenmemes-rules');
+        assertStringContains('/threads/?view=all#post-thread-zenmemes-rules', $pinned);
+        assertSame(51, substr_count($this->render($application, '/threads/?view=all&with=no-such-thread'), 'class="thread-row"'));
     }
 
     public function testEmptyLikedViewOffersAllThreads(): void
