@@ -2961,6 +2961,38 @@ PHP;
         }
     }
 
+    public function testBakedThreadArtifactCarriesItsPageTheme(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-page-theme-repository-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-page-theme-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-page-theme-artifacts-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        mkdir($artifactRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        $profiles = \ForumRewrite\SiteProfileRegistry::all();
+        $profiles['zenmemes']['pageThemes'] = ['/threads/root-001' => 'engagify'];
+        \ForumRewrite\SiteProfileRegistry::setProfilesForTesting($profiles);
+
+        try {
+            $builder = new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $builder->build();
+            assertTrue($builder->buildSingleRoute('/threads/root-001'));
+            $thread = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
+            $board = (string) file_get_contents($artifactRoot . '/index.html');
+
+            assertStringContains('data-page-theme="engagify" data-page-path="/threads/root-001"', $thread);
+            assertStringNotContains('data-page-theme=', $board);
+            // The baked release must also carry the theme's assets.
+            assertTrue(is_file($artifactRoot . fingerprintedAssetPath($thread, 'theme-engagify.js')));
+            assertTrue(is_file($artifactRoot . fingerprintedAssetPath($thread, 'theme-engagify.css')));
+        } finally {
+            \ForumRewrite\SiteProfileRegistry::setProfilesForTesting(null);
+            $this->deleteTree($repositoryRoot);
+            $this->deleteTree($artifactRoot);
+            @unlink($databasePath);
+        }
+    }
+
     public function testFeatureFlagsPageReportsInvalidSiteRecordWithoutBreakingSite(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-flags-invalid-' . bin2hex(random_bytes(6));

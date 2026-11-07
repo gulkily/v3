@@ -78,3 +78,18 @@ The `v3/theme_directive` plans and earlier drafts stay on branch `plan/engagify_
 - Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Baked pages
+
+**Original estimate: 0.05**
+**Retrospective: 0.04**
+
+- Changes:
+  - No builder change: `StaticArtifactBuilder` renders through `Application::handle`, which now records each route's path.
+  - New `LocalAppSmokeTest::testBakedThreadArtifactCarriesItsPageTheme`. It maps a fixture thread to Engagify, builds the release, and checks three things. The baked thread carries `data-page-theme`, the baked board does not, and the release holds the fingerprinted Engagify script and stylesheet.
+- Verification:
+  - Passed: `./v3 test --smoke LocalAppSmokeTest::testBakedThreadArtifactCarriesItsPageTheme`; 436 run, 435 passed; the one failure is the baseline `BoardListTest` failure.
+- Notes: the deploy must rebuild artifacts for the cookie thread to carry its page theme, as the theme guide already requires for new themes. Stage 8 documents this for page themes.
+- Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
