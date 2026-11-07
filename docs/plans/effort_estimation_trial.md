@@ -2,6 +2,8 @@
 
 ## Cycle v3/readable_page_urls
 
+2026-11-07T00:49:18Z — v3/readable_page_urls Step 1 revision: maintainer accepted occasional repeated items and asked for page-number options, including Flickr-style `with`. [Assessment/checkpoint](./readable_page_urls/readable_page_urls_step1_solution_assessment.md#study-checkpoint). Scope v2, recommended Option B (`?page=N` plus `?with=<post-id>`, old tokens redirect, URL rule in PRINCIPLES.md). Same baseline `20d24918`/R1/P2, single exposed Claude rater. Projected total 0.65 → **0.60**, reason new requirement; option estimates 0.50/0.60/0.65/0.35, non-additive. Await Approved Step 1; planning saved on `plan/readable_page_urls`, not approved.
+
 2026-11-07T00:18:52Z — v3/readable_page_urls Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./readable_page_urls/readable_page_urls_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`position` names the first item on the page; previous link computed per adapter; old tokens redirect; rule in PRINCIPLES.md). Starting revision `20d24918`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because pagination code was read while answering the maintainer's questions. Intake and projected total **0.65**; option estimates 0.65/0.60/0.35, non-additive. Await Approved Step 1; planning uncommitted.
 
 ## Cycle v3/instance_image_import

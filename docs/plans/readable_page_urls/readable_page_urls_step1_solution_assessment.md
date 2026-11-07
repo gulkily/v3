@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/readable_page_urls`; [host ledger](../eff
 
 Extended estimates: enabled
 
-Cycle estimate: 0.65
+Cycle estimate: 0.60 (revised; original 0.65)
 
 ## Original Query
 
@@ -37,63 +37,100 @@ Two sorts need more than an ID. Search and Tags order threads by last activity, 
 
 Prior guidance: [Implementing pagination](../../reference/pagination.md) prescribes the token and calls it "readable and editable", which base64 is not. AGENTS.md forbids JSON in human-facing data, though it names records and files rather than URLs. No document explains why the token was made opaque.
 
-Problem: Page links on every list hide one ID inside an unreadable token, so people cannot read, edit or trust the URLs they share.
+## Revised Direction
 
-Concepts touched: [collection selection](../../concepts/collection_selection.md) (changed: how a list receives its boundary); [static publication](../../concepts/static_publication.md) (used unchanged in Options A and C, changed in Option B: later pages bypass first-page artifacts when a `position` query is present).
+Maintainer follow-up (2026-11-07), after reading Marcin Wichary's [Unsung Heroes: Flickr's URLs scheme](https://unsung.aresluna.org/unsung-heroes-flickrs-urls-scheme/) and its [mailbag](https://unsung.aresluna.org/mailbag-urls-as-ui): "All of these are good guidelines, period." Asked how Flickr handled pagination, then: "Is it really that big a deal if a new item is posted and a user sees duplicates?" Then: "Please go ahead. Consider adding another option using the with method in addition to page numbers."
+
+Flickr put page numbers in the path, such as `/photos/<user>/page2/`. It also offered `/photos/<user>/with/<photo-id>/`, which shows the page containing that photo. Neither scheme could be confirmed from a current source; Flickr pages now render by script.
+
+Duplicates matter little here. A new post pushes items down one slot, so the next page repeats one item. A retraction shifts items up and skips one, but retractions are rare. Keyset paging does not prevent the worse case either: a thread that gets a reply jumps to the top under both schemes.
+
+This revision adds page-number options, keeps the item-anchor and plain-token options, and drops the `before`/`after` option. That option needed two parameters and named an item the reader cannot see.
+
+Prior decision: the [consolidation checklist](../pagination_consolidation_checklist.md) chose not to require totals or arbitrary jumps. Page numbers need neither totals nor a jump control, but they do reverse its keyset choice. That reversal is the maintainer's call.
+
+Problem: Page links on every list hide one ID inside an unreadable token, so people cannot read, edit, guess or trust the URLs they share.
+
+Concepts touched: [collection selection](../../concepts/collection_selection.md) (changed: how a list selects its page); [static publication](../../concepts/static_publication.md) (used unchanged: any query string already bypasses first-page artifacts).
 
 No matching feedback item in `docs/feedback/items/`.
 
-## Option A - `position` names the first item on the page
+## Shared by every option
+
+- Add a "URLs are interface" rule to `PRINCIPLES.md`. URLs are short, readable, shareable as they are, editable, guessable and permanent. State may sit in a URL only when the page cannot work without it. Cite Wichary and "Cool URIs don't change".
+- Links leave out default values, such as `sort=newest` and page 1. Removing a parameter therefore never changes what a page shows, beyond returning to its default.
+- Old `position` tokens keep working, as "Don't break what already works" requires. Each one opens the page that holds its boundary item.
+- Correct [Implementing pagination](../../reference/pagination.md) to describe the chosen scheme.
+- Step 2 decides whether Forte's raw-JSON `cursor` and the private-message cursors are visible URLs, and therefore in scope.
+
+## Option A - page numbers
+
+**Estimate: 0.50**
+Main driver: replacing seven keyset adapters with counted offsets. Uncertainty: low to medium, mostly in Activity's mixed item kinds.
+
+Every list uses `?page=2`, `?page=3` and so on, like QDB and Platform docs already do. Next and Previous link to the neighbouring numbers. Search and Tags need no timestamps, because the page number replaces every boundary. An old token counts the items before its boundary and redirects to that page number.
+
+- Pro: the shortest, most guessable URL; a reader can type any page directly.
+- Pro: one scheme across the whole site, including QDB and Docs.
+- Pro: removes all boundary formats, including the timestamps that would need escaping.
+- Con: a new post shifts every page by one item, so readers may see one repeat.
+- Con: a shared "page 4" link shows different posts later; permalinks stay the stable link.
+- Con: deep pages scan past earlier rows; negligible at thousands of posts.
+
+## Option B - page numbers plus `with`
+
+**Estimate: 0.60**
+Main driver: Option A plus one lookup that finds the page containing a given item. Uncertainty: medium, mostly in the case where that item was retracted.
+
+Option A, plus `?with=<post-id>` on every list. It opens the page that contains that post and marks the post. Paging from there uses ordinary page numbers. Old tokens redirect through the same lookup. The lookup also gives later work a stable "show this post in Recent" link.
+
+- Pro: everything in Option A.
+- Pro: a link that stays meaningful after new posts arrive, unlike a page number.
+- Pro: old tokens and future in-list links share one lookup.
+- Con: two parameters to document, though each one reads as plain English.
+- Con: a retracted target needs a fallback, such as the time inside its ID.
+
+## Option C - `position` names the first item on the page
 
 **Estimate: 0.65**
 Main driver: computing the Previous link in seven list adapters. Uncertainty: medium, mostly in Activity's mixed item kinds and the activity-sorted thread pages.
 
-The `position` parameter keeps its name and holds the ID of the first item shown, such as `position=thread-20261102002605-a0954d22`. Search and Tags add that thread's activity timestamp before the ID. The page lists that item and the ones after it. Each adapter finds the first item of the previous page while it renders the current one, so links need no direction. Old tokens redirect to the new form.
+The `position` parameter keeps its name and holds the ID of the first item shown, such as `position=thread-20261102002605-a0954d22`. Search and Tags add a compact activity time, such as `20261102002605`, to avoid escaped characters. Each adapter finds the first item of the previous page while it renders the current one.
 
-- Pro: a page URL names what the reader sees first, so a shared link is easy to check.
-- Pro: one parameter on every list, matching the existing static-artifact bypass.
-- Pro: removes version, context and direction entirely.
-- Con: each adapter needs a second bounded query to find the previous page's first item.
-- Con: if the named item is retracted, the page must fall back to the time inside its ID.
+- Pro: pages never shift, so no repeats.
+- Pro: the URL names the first post the reader sees.
+- Con: IDs are long, and no one can guess the next page's URL.
+- Con: each adapter needs a second bounded query for the Previous link.
 
-## Option B - separate `before` and `after` parameters
-
-**Estimate: 0.60**
-Main driver: the same adapter changes as Option A, without the previous-page lookup. Uncertainty: medium.
-
-Next links use `before=<ID>` and Previous links use `after=<ID>`, each naming the last item of the neighbouring page. Activity-sorted lists add the timestamp as in Option A. Adapters keep their current direction logic, and the parameter name replaces the direction field.
-
-- Pro: maps directly onto the current keyset queries, so no extra lookup.
-- Pro: a common convention on other sites.
-- Con: two parameters, and the URL names an item the reader does not see on that page.
-- Con: the static-artifact bypass and several browser tests must learn the new names.
-
-## Option C - plain-text value in `position`, adapters unchanged
+## Option D - plain-text value in `position`, adapters unchanged
 
 **Estimate: 0.35**
 Main driver: rewriting `PageNavigation` encoding and its tests. Uncertainty: low.
 
-Only `PageNavigation` changes. It writes the direction and boundary values as plain text, such as `position=next~thread-20261102002605-a0954d22`, and drops version and context. Every adapter keeps receiving the same direction and boundary.
+Only `PageNavigation` changes. It writes the direction and boundary values as plain text, such as `position=next~thread-20261102002605-a0954d22`, and drops version and context.
 
-- Pro: smallest change; one file plus tests and docs.
-- Pro: keeps every adapter and its validation untouched.
+- Pro: the smallest change; one file plus tests and docs.
 - Con: still a small private format with a direction prefix and a separator.
-- Con: multi-field boundaries such as Recent's time and ID stay redundant in the URL.
+- Con: fails the guessable and editable tests in the new rule.
 
 ## Recommendation
 
-Choose Option A. It answers "why not just use position" directly: the parameter stays, and its value becomes the item the page starts with.
+Choose Option B. Page numbers meet every guideline the maintainer endorsed, and `with` covers what page numbers cannot: a link to a post's place in a list.
 
-Recent is the first vertical slice, because its ID already contains its time. Gallery and profile history follow the same adapter shape, then Board, Search, Tags and Activity. Option C remains a fallback if Step 2 finds the previous-page lookup too costly.
-
-Every option includes three shared tasks. Add a rule to `PRINCIPLES.md` against opaque or encoded state in URLs. Correct [Implementing pagination](../../reference/pagination.md). Check Forte's raw-JSON `cursor` and the private-message cursors in Step 2, deciding which are visible URLs.
+Recent is the first vertical slice: page numbers, `with`, and redirects for old Recent tokens. Gallery, profile history, Activity, Board, Search and Tags follow, each using the same lookup. Path forms such as Flickr's `/page2/` wait for the separate path-filter follow-up, so URLs change only once.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+*— Revised by Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
 ## Study checkpoint
 
 2026-11-07T00:18:52Z, `railspike-effort` / `v3/readable_page_urls`, intake and Step 1 handoff. Scope v1: Option A as recommended above. Starting revision `20d24918274561ccb07a29f27f43659747417c04`. Reference R1, protocol P2; frozen R1 hashes not re-verified for this checkpoint. Single exposed Claude rater. Before rating, the rater read `PageNavigation.php`, the seven controllers that call it, the boundary checks in `RecentPostRepository`, `AuthoredContentRepository` and `ThreadKeysetPage`, and the pagination reference. Pristine intake is missing. Intake and Step 1 projected total **0.65**. Option estimates 0.65, 0.60 and 0.35 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
 
+Revised 2026-11-07T00:49:18Z, same `railspike-effort` / `v3/readable_page_urls`, Step 1 revision. Scope v2: Option B, page numbers plus `with`. Same starting revision, R1, P2 and single exposed Claude rater. Reason: new requirement after the maintainer accepted repeated items and asked for page-number options. Projected total 0.65 → **0.60**. Option estimates 0.50, 0.60, 0.65 and 0.35 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
+
 ## Enhancement Requests
 
-None yet.
+- Filters in the path, such as `/threads/liked/` instead of `?view=liked`, with path page numbers like `/page2/`. Disposition: separate follow-up cycle.
+- Readable slugs after thread IDs, such as `/posts/<thread-id>/<title-slug>`, with the ID authoritative. Disposition: separate follow-up cycle.
+- An audit of every route against the new URL rule. Disposition: separate follow-up cycle.
+- A "show this post in Recent" link on post pages, built on `with`. Disposition: separate follow-up after this cycle.

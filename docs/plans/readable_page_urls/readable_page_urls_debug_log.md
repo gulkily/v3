@@ -20,3 +20,22 @@ No supported findings.
 ### Uncertain assessments
 
 - `step1_solution_assessment.md`, Original Query: the rule allows only mechanical fixes. Profanity was kept as written; the instruction does not say whether that is expected.
+
+## 2026-11-07T00:49:18Z - Step 1 revision
+
+### Necessary/useful instructions
+
+- `step1_solution_assessment.md`, Review and revision: the maintainer changed a premise (repeated items are acceptable), not just a preference. Recording that under Revised Direction kept the Original Query intact and showed why the recommendation moved. Retain.
+- `AGENTS.md`, read `PRINCIPLES.md` before weighing options: "Don't break what already works" turned old-token handling from a nice-to-have into a requirement shared by every option. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `RAILSPIKE.md`, Directory structure rule: applies only after Approved Step 3.
+
+### Uncertain assessments
+
+- `step1_solution_assessment.md`, Deliverable "≤1 page": four options, shared tasks and a long multi-message Original Query exceed one page. The limit does not say whether the preserved query counts toward it.
