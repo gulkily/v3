@@ -17,9 +17,14 @@
   }
 
   async function verificationHash(token) {
-    const bytes = new TextEncoder().encode(token);
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
-    return "sha256:" + Array.from(new Uint8Array(digest), function (value) { return value.toString(16).padStart(2, "0"); }).join("");
+    // Plain-HTTP pages have no SubtleCrypto; use the shared pure-JS SHA-256 there.
+    if (typeof crypto !== "undefined" && crypto.subtle) {
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+      return "sha256:" + Array.from(new Uint8Array(digest), function (value) { return value.toString(16).padStart(2, "0"); }).join("");
+    }
+    const shared = window.ForumPrivateMessageHistoryCrypto;
+    if (!shared || typeof shared.digest !== "function") throw new Error("Unable to prepare invitation. Reload this page and try again.");
+    return "sha256:" + shared.digest(token);
   }
 
   async function post(endpoint, values) {
