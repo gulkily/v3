@@ -67,6 +67,24 @@ final class ThemeRegistryTest
         assertSame(false, ThemeRegistry::isExplicitName('unknown'));
     }
 
+    public function testThemeScriptsBelongToExplicitThemesAndExist(): void
+    {
+        $publicRoot = dirname(__DIR__) . '/public';
+
+        foreach (ThemeRegistry::scriptPaths() as $name => $path) {
+            assertSame(true, ThemeRegistry::isExplicitName($name));
+            assertSame('/assets/theme-' . $name . '.js', $path);
+            assertSame(true, is_file($publicRoot . $path));
+        }
+
+        foreach (ThemeRegistry::all() as $theme) {
+            assertSame(
+                ($theme['script'] ?? false) === true && $theme['name'] !== 'auto',
+                array_key_exists($theme['name'], ThemeRegistry::scriptPaths()),
+            );
+        }
+    }
+
     public function testLegacyThemeAliasesPointToCurrentExplicitThemes(): void
     {
         foreach (ThemeRegistry::LEGACY_ALIASES as $legacy => $current) {

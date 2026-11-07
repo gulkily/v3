@@ -20,6 +20,11 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 52 adds `posts.theme`, the post's hidden `Theme:` header, so a thread page can
+find its own theme without reading record files; prior-version startup rebuild is required.
+The feature branch used version 51 locally; main's 51 (Inbox's `posts_parent_idx`) is
+retained, and integration advances to 52 so either lineage rebuilds before the column is read.
+
 Version 47 adds the board thread search query without changing tables; see
 [Version 47](#version-47--board-thread-search).
 
@@ -113,6 +118,8 @@ row matches both branches. Normal startup rebuilds schema-26 and older models.
 | `board_tags_json` | TEXT | JSON array |
 | `thread_type` | TEXT NULL | |
 | `agent_response_json` | TEXT NULL | Optional canonical response kind, source/version, and expansion parent/version; introduced in schema 18. |
+| `body_format` | TEXT NULL | `Body-Format` header or the latest post format record; null renders as plain (schema 45) |
+| `theme` | TEXT NULL | the post's `Theme:` header, a theme name or `none`; null on retraction. The thread page's theme is derived on read from this and `theme:` lines (schema 52) |
 | `author_identity_id` | TEXT NULL | |
 | `author_profile_slug` | TEXT NULL | |
 | `author_label` | TEXT | default `'guest'` |
@@ -738,3 +745,11 @@ Adds `posts_parent_idx (parent_id)` on `posts`. Inbox lists replies whose parent
 was written by the viewer, so it looks up posts by `parent_id`; without the
 index that query scans every post. Normal startup rebuilds version 50 and older
 models before Inbox runs the query.
+
+## Version 52 — Post theme
+
+Adds `posts.theme`, the post's hidden `Theme:` header (a theme name or `none`).
+A thread page derives its own theme on read from this column and `theme:` lines in
+post bodies; see [canonical post record](canonical_post_record_v1.md). Normal startup
+rebuilds version 51 and older models, including main's version 51, which has
+`posts_parent_idx` but no `posts.theme`.

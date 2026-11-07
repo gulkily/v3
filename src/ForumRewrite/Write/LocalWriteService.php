@@ -126,7 +126,7 @@ class LocalWriteService
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
 
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input));
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -206,7 +206,7 @@ class LocalWriteService
                 $this->invalidator()->invalidateReply($threadId, $parentId);
                 return ['status' => 'ok', 'post_id' => $postId, 'thread_id' => $threadId, 'already_posted' => true];
             }
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN), $this->normalizeTheme($input));
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
@@ -317,7 +317,7 @@ class LocalWriteService
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input));
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -363,7 +363,7 @@ class LocalWriteService
             $this->assertReplyTarget($threadId, $parentId);
 
             $postId = $this->generateRecordId('reply');
-            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, null, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN));
+            $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, null, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN), $this->normalizeTheme($input));
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -617,7 +617,8 @@ class LocalWriteService
         string $eventLink = '',
         string $eventTime = '',
         ?string $bodyFormat = null,
-        string $eventEndDate = ''
+        string $eventEndDate = '',
+        ?string $theme = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -630,6 +631,7 @@ class LocalWriteService
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
             . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
+            . ($theme !== null ? "Theme: {$theme}\n" : '')
             . "\n{$body}";
     }
 
@@ -658,7 +660,8 @@ class LocalWriteService
         string $body,
         ?string $authorIdentityId,
         ?array $agentResponse = null,
-        ?string $bodyFormat = null
+        ?string $bodyFormat = null,
+        ?string $theme = null
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -668,6 +671,7 @@ class LocalWriteService
             . ($authorIdentityId !== null ? "Author-Identity-ID: {$authorIdentityId}\n" : '')
             . ($agentResponse !== null ? \ForumRewrite\Canonical\AgentResponseMetadata::toHeaders($agentResponse) : '')
             . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
+            . ($theme !== null ? "Theme: {$theme}\n" : '')
             . "\n{$body}";
     }
 
@@ -4377,6 +4381,26 @@ class LocalWriteService
         }
 
         return $identityId;
+    }
+
+    /**
+     * Reads the optional `theme` input, which writes the hidden `Theme:` header. Blank means
+     * no header; a value that is not a theme name or `none` is rejected. Whether the theme
+     * applies (site permission, author or operator) is decided on read by ThreadTheme.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function normalizeTheme(array $input): ?string
+    {
+        $value = strtolower(trim((string) ($input['theme'] ?? '')));
+        if ($value === '') {
+            return null;
+        }
+        if (!\ForumRewrite\Canonical\PostRecordParser::isThemeValue($value)) {
+            throw new RuntimeException('theme must be a theme name or none.');
+        }
+
+        return $value;
     }
 
     /**

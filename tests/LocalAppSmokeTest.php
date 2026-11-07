@@ -1111,6 +1111,33 @@ PHP;
         assertSame(null, AssetFingerprint::sourcePathForFingerprint($publicRoot, '/assets/site.000000000000.css'));
     }
 
+    public function testPageThemeIsMarkedOnItsOwnPageOnly(): void
+    {
+        $previousCookie = $_COOKIE;
+        $publicRoot = dirname(__DIR__) . '/public';
+        $path = '/threads/thread-20261102152258-25e82c97/';
+        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates', requestPath: static function () use (&$path): string {
+            return $path;
+        });
+
+        try {
+            $_COOKIE = ['theme-hint' => 'word97'];
+            $html = $renderer->renderLayout('Cookies', '<main></main>', 'board');
+            assertStringContains('data-page-theme="engagify" data-page-path="/threads/thread-20261102152258-25e82c97"', $html);
+            // The page theme's stylesheet loads first, ahead of the viewer's hint.
+            assertStringContains('href="' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-engagify.css') . '" fetchpriority="high"', $html);
+            assertStringContains("'-page-exit:'", $html);
+            assertStringContains('"engagify":"' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-engagify.js') . '"', $html);
+
+            $path = '/threads/';
+            $other = $renderer->renderLayout('Board', '<main></main>', 'board');
+            assertStringNotContains('data-page-theme=', $other);
+            assertStringContains('href="' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-word97.css') . '" fetchpriority="high"', $other);
+        } finally {
+            $_COOKIE = $previousCookie;
+        }
+    }
+
     public function testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet(): void
     {
         $previousCookie = $_COOKIE;
@@ -1128,6 +1155,7 @@ PHP;
                 $hintedHtml
             );
             assertStringContains('var themeStylesheetPaths = ', $hintedHtml);
+            assertStringContains('window.forumThemeScriptPaths = ', $hintedHtml);
             assertStringContains("document.getElementById('theme-stylesheet')", $hintedHtml);
             assertStringContains('data-theme-hint-cookie="theme-hint"', $hintedHtml);
             assertStringContains('window.forumUpdateThemeHint = updateThemeHint;', $hintedHtml);
@@ -2319,7 +2347,7 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","midnight"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","midnight","engagify"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
@@ -2327,6 +2355,7 @@ PHP;
         assertStringContains('data-theme-option="whitehot"', $board);
         assertStringContains('data-theme-option="word97"', $board);
         assertStringContains('data-theme-option="midnight"', $board);
+        assertStringContains('data-theme-option="engagify"', $board);
         assertStringNotContains('data-theme-option="qdb"', $board);
         assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);
@@ -2926,6 +2955,38 @@ PHP;
             assertFingerprintedAsset($index, 'openpgp_loader.js');
             assertFingerprintedAsset($index, 'browser_signing.js');
         } finally {
+            $this->deleteTree($repositoryRoot);
+            $this->deleteTree($artifactRoot);
+            @unlink($databasePath);
+        }
+    }
+
+    public function testBakedThreadArtifactCarriesItsPageTheme(): void
+    {
+        $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-page-theme-repository-' . bin2hex(random_bytes(6));
+        $databasePath = sys_get_temp_dir() . '/forum-rewrite-page-theme-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-page-theme-artifacts-' . bin2hex(random_bytes(6));
+        mkdir($repositoryRoot, 0777, true);
+        mkdir($artifactRoot, 0777, true);
+        $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
+        $profiles = \ForumRewrite\SiteProfileRegistry::all();
+        $profiles['zenmemes']['pageThemes'] = ['/threads/root-001' => 'engagify'];
+        \ForumRewrite\SiteProfileRegistry::setProfilesForTesting($profiles);
+
+        try {
+            $builder = new StaticArtifactBuilder(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $builder->build();
+            assertTrue($builder->buildSingleRoute('/threads/root-001'));
+            $thread = (string) file_get_contents($artifactRoot . '/threads/root-001.html');
+            $board = (string) file_get_contents($artifactRoot . '/index.html');
+
+            assertStringContains('data-page-theme="engagify" data-page-path="/threads/root-001"', $thread);
+            assertStringNotContains('data-page-theme=', $board);
+            // The baked release must also carry the theme's assets.
+            assertTrue(is_file($artifactRoot . fingerprintedAssetPath($thread, 'theme-engagify.js')));
+            assertTrue(is_file($artifactRoot . fingerprintedAssetPath($thread, 'theme-engagify.css')));
+        } finally {
+            \ForumRewrite\SiteProfileRegistry::setProfilesForTesting(null);
             $this->deleteTree($repositoryRoot);
             $this->deleteTree($artifactRoot);
             @unlink($databasePath);

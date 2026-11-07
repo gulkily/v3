@@ -1,5 +1,43 @@
 # Effort estimation trial ledger
 
+## Cycle v3/theme_directive
+
+2026-11-07T15:32:51Z — v3/theme_directive Step 4 closeout: six stage commits on `feat/theme_directive`. [Summary/closeout](./theme_directive/theme_directive_step4_implementation_summary.md#closeout). Scope v2 delivered unchanged; projection **0.75**; retrospective scope assessment **0.58** (rater exposed). Maintainer judgment pending; measured labor unknown; deploy pending.
+
+2026-11-07T15:20:40Z — v3/theme_directive Step 4 entry: Step 3 explicitly approved; branch `feat/theme_directive` from `feat/engagify_theme`, planning `bcf05898`. [Summary](./theme_directive/theme_directive_step4_implementation_summary.md#step-4-entry). **0.75** reaffirmed; stage originals copied. R1/P2, single exposed Claude rater.
+
+2026-11-07T15:16:39Z — v3/theme_directive Step 3 handoff: Step 2 explicitly approved. [Checkpoint](./theme_directive/theme_directive_step3_development_plan.md#study-checkpoint). Scope v2; **0.75** reaffirmed; six stages. R1/P2, single exposed Claude rater. Await Approved Step 3.
+
+2026-11-07T15:13:01Z — v3/theme_directive Step 2 handoff: Step 1 explicitly approved (Option D). [Checkpoint](./theme_directive/theme_directive_step2_feature_description.md#study-checkpoint). Scope v2 plus `theme: none`; 0.70 → **0.75**, new understanding (signed-subset spec change, header kept in read model). Starting point `feat/engagify_theme` `9276410b`. R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-07T15:11:25Z — v3/theme_directive Step 1 Revision 2: visible or hidden theme by poster's choice. [Checkpoint](./theme_directive/theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v2/D; 0.40 → **0.70**, changed scope. Same R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-07T14:41:57Z — v3/theme_directive branch move: planning moved from `plan/engagify_theme` to `plan/theme_directive`, based on `feat/engagify_theme`. [Checkpoint](./theme_directive/theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.40** unchanged; no re-rating. Await Approved Step 1.
+
+2026-11-07T11:45:50Z — v3/theme_directive Step 1 handoff (standing P2 enrollment; split from v3/engagify_theme Option B at the maintainer's request, distinct cycle): [assessment/checkpoint](./theme_directive/theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`theme:` line by the thread's author or an operator, derived on read like `event:`, nothing stored). Assumed start: engagify page themes delivered; planning revision `d379f560`. R1/P2; R1 hashes not re-verified. Single exposed Claude rater, also the parent's rater; pristine intake missing. Projected total **0.40**; option estimates 0.40/0.75/0.55, non-additive. Await Approved Step 1.
+
+## Cycle v3/engagify_theme
+
+2026-11-07T12:32:39Z — v3/engagify_theme Step 4 local closeout: branch `feat/engagify_theme`, planning `fe15dec` and eight stage commits. [Summary/closeout](./engagify_theme/engagify_theme_step4_implementation_summary.md#closeout). Same v5/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.80 at entry, no revision; retrospective scope assessment 0.80. Stage originals 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10; retrospectives 0.10/0.12/0.14/0.04/0.10/0.12/0.12/0.10; non-additive. Smoke plus changed tests 450 run, 449 passed; the one failure also fails on `main`; full suite not run. Production check of the cookie thread pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.
+
+2026-11-07T12:03:35Z — v3/engagify_theme Step 4 entry: Step 3 explicitly approved; branch `feat/engagify_theme`, planning `fe15dec`. [Summary](./engagify_theme/engagify_theme_step4_implementation_summary.md#step-4-entry). Whole-cycle **0.80** reaffirmed; stage originals copied 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10, non-additive. Same v5/baseline/R1/P2, single exposed Claude rater. Planning history before this branch lives on `plan/engagify_theme`.
+
+2026-11-07T11:58:20Z — v3/engagify_theme Step 3 handoff: user explicitly approved revised Step 2. [Plan/checkpoint](./engagify_theme/engagify_theme_step3_development_plan.md#study-checkpoint) eight stages: theme scripts, Engagify and Exit, page themes, baked pages, three nags, newsletter and rate-us, stretch nags, docs and sweep. Whole-cycle **0.80** reaffirmed; stage-work originals 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10, non-additive. Same v5/baseline/R1/P2, single exposed Claude rater. Await Approved Step 3.
+
+2026-11-07T11:56:40Z — v3/engagify_theme Step 2 revision: maintainer reversed page-only (Step 1 Revision 4); Engagify selectable again. [Checkpoint](./engagify_theme/engagify_theme_step2_feature_description.md#study-checkpoint). Scope v5; **0.80** reaffirmed. Same baseline/R1/P2, single exposed Claude rater. Awaiting renewed Approved Step 2.
+
+2026-11-07T11:54:11Z — v3/engagify_theme Step 2 handoff: user explicitly approved Step 1 (Option A, Revisions 1–4). [Description/checkpoint](./engagify_theme/engagify_theme_step2_feature_description.md#study-checkpoint): theme scripts, page-only themes, page themes in the site profile, cookie notice thread first, five core nags, Exit remembered per page. Projected total 0.75 → **0.80** (new understanding: menu choice counts as Exit, standalone layout, baked pages). Same v4/A/baseline/R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-07T11:52:09Z — v3/engagify_theme Step 1 Revision 4: Engagify page-only, hidden from the theme menu. [Checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v4/A; **0.75** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-07T11:50:41Z — v3/engagify_theme Step 1 Revision 3: maintainer chose general theme scripts over CSS-only state. [Checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v3/A; projected total 0.70 → **0.75**, reason changed scope. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-07T11:48:38Z — v3/engagify_theme Step 1 Revision 2: maintainer fixed the nag list (core: rate-us, cookie banner, newsletter, app bar, notification prompt, Exit; six stretch nags conditional). [Checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v2/A, **0.70** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-07T11:45:50Z — v3/engagify_theme Step 1 Revision 1: Option B moved to v3/theme_directive. [Checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.70** reaffirmed; A/C estimates unchanged, B's 1.00 kept as history. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; revision uncommitted.
+
+2026-11-07T11:11:04Z — v3/engagify_theme Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (Engagify parody theme with its own script, page theme list in configuration, Exit back to the viewer's theme). Starting revision `f343b626`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because theme code was read before rating. Intake and projected total **0.70**; option estimates 0.70/1.00/0.35, non-additive. Await Approved Step 1. Planning saved on `plan/engagify_theme` at the session stop hook's request; no approval implied.
+
 ## Cycle v3/personal_inbox
 
 2026-11-07T13:19:50Z — v3/personal_inbox Step 4 local closeout: branch `feat/personal_inbox`, planning `33a76c03`, eight stage commits plus one Stage 2 fix. [Summary/closeout](./personal_inbox/personal_inbox_step4_implementation_summary.md#study-closeout). Same v2/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.85 at entry, not revised. Retrospective scope assessment 0.80. Stage originals 0.12/0.06/0.14/0.06/0.10/0.08/0.05/0.06; retrospectives 0.10/0.04/0.14/0.03/0.08/0.09/0.05/0.05; non-additive. Smoke plus changed tests pass except baseline `BoardListTest`; three browser checks and a two-browser walk-through pass; full suite not run. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.

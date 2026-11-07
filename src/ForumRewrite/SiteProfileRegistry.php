@@ -23,11 +23,16 @@ final class SiteProfileRegistry
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
                 'defaultTheme' => 'auto',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'engagify'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Start a thread...',
+                // Page themes: a page path and the theme it shows by default.
+                'pageThemes' => [
+                    // "Our cookie notice (there isn't one)"
+                    '/threads/thread-20261102152258-25e82c97' => 'engagify',
+                ],
                 'presentationSlots' => ['navigation' => 'app', 'boardCard' => 'list', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
             ],
             'chouse' => [
@@ -105,6 +110,23 @@ final class SiteProfileRegistry
     /**
      * @param array<string, array<string, mixed>> $profiles
      */
+    /**
+     * The form of a request path that page themes are keyed by: no query and
+     * no trailing slash, except for the root.
+     */
+    public static function pageThemePath(string $path): string
+    {
+        $path = (string) (parse_url($path, PHP_URL_PATH) ?: '/');
+
+        return $path === '/' ? '/' : rtrim($path, '/');
+    }
+
+    /** The page theme for a request path on the active site, or null. */
+    public static function pageThemeFor(string $path): ?string
+    {
+        return self::active()['pageThemes'][self::pageThemePath($path)] ?? null;
+    }
+
     public static function validate(array $profiles): void
     {
         if (!isset($profiles[self::DEFAULT_SITE_ID])) {
@@ -145,6 +167,15 @@ final class SiteProfileRegistry
 
             if (!in_array($profile['defaultTheme'], $profile['permittedThemes'], true)) {
                 throw new \RuntimeException("Site profile {$siteId} default theme must be permitted.");
+            }
+
+            foreach (($profile['pageThemes'] ?? []) as $pagePath => $pageTheme) {
+                if (!is_string($pagePath) || !str_starts_with($pagePath, '/') || $pagePath !== self::pageThemePath($pagePath)) {
+                    throw new \RuntimeException("Site profile {$siteId} has an invalid page theme path: {$pagePath}");
+                }
+                if (!is_string($pageTheme) || $pageTheme === 'auto' || !in_array($pageTheme, $profile['permittedThemes'], true)) {
+                    throw new \RuntimeException("Site profile {$siteId} page theme must be a permitted explicit theme: {$pagePath}");
+                }
             }
 
             $browserNamespace = $profile['browserNamespace'];

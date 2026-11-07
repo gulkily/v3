@@ -32,6 +32,7 @@ final class ReadModelSchema
                 thread_type TEXT NULL,
                 agent_response_json TEXT NULL,
                 body_format TEXT NULL,
+                theme TEXT NULL,
                 author_identity_id TEXT NULL,
                 author_profile_slug TEXT NULL,
                 author_label TEXT NOT NULL DEFAULT \'guest\',

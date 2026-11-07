@@ -88,6 +88,7 @@ final class Application
     private ?\ForumRewrite\Session\ViewerSessions $viewerSessions = null;
     private ?string $appVersion = null;
     private bool $docsPage = false;
+    private string $requestPath = '/';
     private ?FeatureFlagEvaluator $featureFlags = null;
     private ?RouteServices $routeServices = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
@@ -133,6 +134,7 @@ final class Application
     {
         if (\ForumRewrite\Http\ClientDownload::serve($method, $requestUri, $this->projectRoot . "/public")) return;
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        $this->requestPath = $path;
         $docsPage = $path === '/docs' || str_starts_with($path, '/docs/');
         if ($docsPage !== $this->docsPage) {
             $this->routeServices = null;
@@ -1677,6 +1679,7 @@ final class Application
             new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
             versionEndpoint: $this->docsPage ? '/api/docs-version' : '/api/version',
             versionStorageKey: $this->docsPage ? 'forum_pending_docs_version' : 'forum_pending_app_version',
+            requestPath: fn (): string => $this->requestPath,
         );
     }
 

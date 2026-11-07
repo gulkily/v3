@@ -148,6 +148,7 @@ final class ThreadAndPostPageController
                     && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)
                     ? \ForumRewrite\Calendar\EventStatus::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId)
                     : null,
+                'threadTheme' => \ForumRewrite\View\ThreadTheme::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId),
                 'railspikeThread' => $threadRow,
                 'railspikeOperators' => $this->railspikeOperators(),
                 'posts' => $posts,

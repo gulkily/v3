@@ -79,6 +79,8 @@ final class TemplateRenderer
         private readonly MediaEmbedRenderer $mediaEmbedRenderer = new MediaEmbedRenderer(),
         private readonly string $versionEndpoint = '/api/version',
         private readonly string $versionStorageKey = 'forum_pending_app_version',
+        /** Returns the current request path, for page themes. */
+        private readonly ?\Closure $requestPath = null,
     ) {
     }
 
@@ -127,6 +129,7 @@ final class TemplateRenderer
             $viewerProfile,
             $publicAuthenticationResume,
             $pageStylesheetPaths,
+            is_string($pageData['threadTheme'] ?? null) ? $pageData['threadTheme'] : null,
         );
     }
 
@@ -143,6 +146,7 @@ final class TemplateRenderer
         ?array $viewerProfile = null,
         bool $publicAuthenticationResume = false,
         array $pageStylesheetPaths = [],
+        ?string $threadTheme = null,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
@@ -211,9 +215,21 @@ final class TemplateRenderer
                 $themeStylesheetPaths[$name] = $this->assetPath($path);
             }
         }
+        $themeScriptPaths = [];
+        foreach (ThemeRegistry::scriptPaths() as $name => $path) {
+            if (in_array($name, $explicitThemeNames, true)) {
+                $themeScriptPaths[$name] = $this->assetPath($path);
+            }
+        }
         $defaultTheme = $this->defaultThemeName($profile, $permittedThemeNames);
+        $pagePath = $this->requestPath !== null ? SiteProfileRegistry::pageThemePath((string) ($this->requestPath)()) : null;
+        // A thread's own theme (ThreadTheme) comes before the site profile's page theme list.
+        $pageTheme = $threadTheme ?? ($pagePath !== null ? SiteProfileRegistry::pageThemeFor($pagePath) : null);
+        if ($pageTheme !== null && !in_array($pageTheme, $explicitThemeNames, true)) {
+            $pageTheme = null;
+        }
         $themeHint = $this->themeHint($explicitThemeNames);
-        $initialTheme = $themeHint
+        $initialTheme = $pageTheme ?? $themeHint
             ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
 
         return $this->renderFile('layout.php', [
@@ -257,7 +273,10 @@ final class TemplateRenderer
             'consolePalettes' => ThemeRegistry::CONSOLE_PALETTES,
             'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
+            'pageTheme' => $pageTheme,
+            'pagePath' => $pagePath,
             'themeStylesheetPaths' => $themeStylesheetPaths,
+            'themeScriptPaths' => $themeScriptPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
             'themeHintCookieName' => ThemeRegistry::THEME_HINT_COOKIE,
             'themeLegacyAliases' => ThemeRegistry::LEGACY_ALIASES,

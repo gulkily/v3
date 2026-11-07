@@ -3,6 +3,65 @@
   var storageKey = runtime && runtime.themeStorageKey;
   if (!storageKey) return;
 
+  // Theme scripts: a theme with a script (ThemeRegistry 'script') ships
+  // /assets/theme-<name>.js, which calls forumThemeScripts.register(name,
+  // { start: fn, stop: fn }). Only the active theme's script is started; stop
+  // must remove everything start added, including timers.
+  var themeScripts = (function () {
+    var paths = window.forumThemeScriptPaths || {};
+    var hooks = {};
+    var requested = {};
+    var active = null;
+    var wanted = null;
+
+    function run(name, phase) {
+      try {
+        if (hooks[name] && typeof hooks[name][phase] === "function") hooks[name][phase]();
+      } catch (error) {
+        if (window.console) window.console.error(error);
+      }
+    }
+
+    function startWanted() {
+      if (!wanted || active === wanted || !hooks[wanted]) return;
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startWanted, { once: true });
+        return;
+      }
+      active = wanted;
+      run(active, "start");
+    }
+
+    return {
+      register: function (name, themeHooks) {
+        hooks[name] = themeHooks || {};
+        startWanted();
+      },
+      activate: function (name) {
+        wanted = Object.prototype.hasOwnProperty.call(paths, name) ? name : null;
+        if (active && active !== wanted) {
+          var previous = active;
+          active = null;
+          run(previous, "stop");
+        }
+        if (!wanted) return;
+        if (!hooks[wanted] && !requested[wanted]) {
+          requested[wanted] = true;
+          var script = document.createElement("script");
+          script.src = paths[wanted];
+          script.async = true;
+          script.addEventListener("error", function () { delete requested[script.getAttribute("data-theme-name")]; });
+          script.setAttribute("data-theme-name", wanted);
+          document.head.appendChild(script);
+        }
+        startWanted();
+      },
+      active: function () { return active; }
+    };
+  })();
+  window.forumThemeScripts = themeScripts;
+  themeScripts.activate(document.documentElement.getAttribute("data-resolved-theme"));
+
   function systemTheme() {
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
@@ -44,7 +103,28 @@
       return attr && themes.indexOf(attr) !== -1 ? attr : "auto";
     }
 
-    function readStoredTheme() {
+    // Page theme: the theme a page shows by default (site profile), until this
+    // browser leaves it on that page with Exit or a menu choice.
+    var pageTheme = document.documentElement.getAttribute("data-page-theme");
+    var pageExitKey = storageKey + "-page-exit:" + document.documentElement.getAttribute("data-page-path");
+    var pageThemeActive = false;
+    if (pageTheme && themes.indexOf(pageTheme) !== -1) {
+      try {
+        pageThemeActive = localStorage.getItem(pageExitKey) !== "1";
+      } catch (error) {
+        pageThemeActive = true;
+      }
+    }
+
+    function leavePageTheme() {
+      pageThemeActive = false;
+      try {
+        localStorage.setItem(pageExitKey, "1");
+      } catch (error) {
+      }
+    }
+
+    function readSavedTheme() {
       try {
         var storedTheme = localStorage.getItem(storageKey);
         var aliases = window.forumThemeLegacyAliases || {};
@@ -53,6 +133,10 @@
       } catch (error) {
         return defaultTheme();
       }
+    }
+
+    function readStoredTheme() {
+      return pageThemeActive ? pageTheme : readSavedTheme();
     }
 
     function applyTheme(theme) {
@@ -77,6 +161,7 @@
       }
 
       document.documentElement.setAttribute("data-resolved-theme", resolved);
+      themeScripts.activate(resolved);
       if (typeof window.forumUpdateThemeHint === "function") {
         window.forumUpdateThemeHint(resolved);
       }
@@ -339,6 +424,16 @@
 
     function commitSelection(theme, selectedPalette) {
       document.documentElement.removeAttribute("data-theme-loading");
+      if (pageThemeActive) {
+        // Any change on a page theme's page leaves the page theme; the page
+        // theme is never recorded as the viewer's previous theme.
+        if (theme !== pageTheme) leavePageTheme();
+      } else if (theme !== currentTheme) {
+        try {
+          localStorage.setItem(storageKey + "-previous", currentTheme);
+        } catch (error) {
+        }
+      }
       currentTheme = theme;
       if (selectedPalette) lcdControl.set(selectedPalette);
       applyTheme(currentTheme);
@@ -357,6 +452,26 @@
       applySelection(theme);
       closeMenu(true);
     }
+
+    // Leaving a theme from inside it (a theme script's Exit control) returns
+    // the viewer to the theme they had before choosing it.
+    window.forumExitTheme = function () {
+      if (pageThemeActive) {
+        var saved = readSavedTheme();
+        if (saved === pageTheme) saved = defaultTheme() !== pageTheme ? defaultTheme() : "auto";
+        applySelection(saved);
+        return;
+      }
+      var previous = null;
+      try {
+        previous = localStorage.getItem(storageKey + "-previous");
+      } catch (error) {
+      }
+      if (themes.indexOf(previous) === -1 || previous === currentTheme) {
+        previous = defaultTheme() !== currentTheme ? defaultTheme() : "auto";
+      }
+      applySelection(previous);
+    };
 
     cycleButton.addEventListener("click", function () {
       var next = nextAppearance(currentTheme);

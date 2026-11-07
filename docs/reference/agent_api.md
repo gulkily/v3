@@ -544,6 +544,15 @@ headers; use the prepared flow. A root-approved operator settles an event with a
 `event: confirmed` or `event: declined` in any post of its thread; see the
 [calendar reference](calendar.md#confirming-or-declining).
 
+A thread's author or a root-approved operator can give the thread its own page
+theme, shown to every reader. Put a line `theme: <name>` in the opening post or any
+reply, or send `theme=<name>` to `prepare_*` or `create_*` to keep it out of the text;
+the prepared record carries it as a `Theme` header after `Body-Format`, and a
+direct-signed record may include it in the same place. The name must be a theme the
+site offers, such as `midnight` or `word97`. The latest setting
+wins; `none` clears it, and retracting the post withdraws it. Lines from anyone else
+stay plain text.
+
 ## Post format
 
 New posts are Markdown by default: headings, lists, bold, links, code and tables
