@@ -78,3 +78,26 @@ No supported findings.
 ### Uncertain assessments
 
 - `step3_development_plan_do.md`, "about <=1 hour or <=50 lines" per stage: Stages 1 and 3 likely exceed 50 lines including tests. They are each one vertical behavior, so they were not split further.
+
+## 2026-11-07T13:20:04Z - Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol step 2 before step 5: Stage 2 was committed before its smoke failure was read. The protocol made the miss visible, and the fix went in a separate commit instead of an amend. Retain; consider "read the test result before committing" as an explicit line.
+- `implementation_standards.md`, "inspect existing implementations": led to reusing Recent's query and row shaping and the deploy same-origin check, instead of new equivalents. Retain.
+- `step3_development_plan_do.md` risk validation carried into Step 4: the maintainer's navigation review at the end of Stage 5 happened as planned and prompted the reflow question before Stage 6. Retain.
+- `implementation_standards.md`, "Complete the recorded outcome through its ordinary entry and required recovery": the Stage 7 walk-through exercised the real server, a no-JavaScript browser, a broken store and the flag switch, which no unit test covered together. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `RAILSPIKE.md`, Follow-up Cycles Before Merge: not a follow-up cycle.
+- Documentation-only verification rules: application change.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md`, "Work stages sequentially, keeping each stage <2 hours": the walk-through stage changed no code. It is unclear whether a verification-only stage should carry its own commit; it did, holding only the summary.
+- `AGENTS.md`, feedback items: the rule says to update `Workflow` when a commit addresses an item, but gives no state for a partial delivery. The item kept its state with a dated note.
