@@ -59,6 +59,34 @@
   background: #c0c0c0;
 }
 
+/* Give the shared list and account surfaces the same square, raised frame as
+   cards. These containers are not `.card` elements, so the generic theme
+   bevel above does not reach them. */
+:root[data-theme="chicago"] .account-card,
+:root[data-theme="chicago"] .account-group,
+:root[data-theme="chicago"] .account-page > .account-key-advanced,
+:root[data-theme="chicago"] .thread-rows,
+:root[data-theme="chicago"] .board-toolbar,
+:root[data-theme="chicago"] .stack > .board-filter {
+  border: 1px solid #7b7b7b;
+  border-radius: 0;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #7b7b7b;
+}
+
+/* Keep grouped account rows flat inside their window, rather than giving
+   each button-row an independent bevel. */
+:root[data-theme="chicago"] button.account-row {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="chicago"] .account-avatar {
+  border-radius: 0;
+}
+
 :root[data-theme="chicago"] .eyebrow {
   display: inline-block;
   margin-bottom: 0.7rem;
