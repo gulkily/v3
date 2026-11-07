@@ -282,10 +282,6 @@ New-version reload banner fires when nothing was deployed
 	then re-enable the flag: version_check.js polls on tab focus and page restore, which is the
 		stale-page-on-phone case
 
-Recent icon touches its label on desktop in the icon themes
-	theme-nav-icons.css: the [href="/recent/"]::before rule lacks the margin-right the other
-		nav icons share; Word97, Chicago and Midnight
-
 Checkout housekeeping (seen 2026-11-03)
 	~/v3 is still on feature/key-retirement; that branch merged into main at fd4d0e022, switch to main
 	~/agent/v3-codex-4 is stuck mid-merge on docs/plans/effort_estimation_trial.md (UU), resolve or abort

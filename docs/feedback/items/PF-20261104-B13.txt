@@ -1,9 +1,9 @@
 ID: PF-20261104-B13
 Title: Recent clock icon misaligned
 Kind: bug
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-04
-Evidence: unknown
+Evidence: deployed
 
 Request:
 The clock icon on the Recent button looks oddly aligned.
@@ -11,6 +11,9 @@ The clock icon on the Recent button looks oddly aligned.
 Sources:
 - https://zenmemes.com/posts/reply-20261103040851-19bcc2e4
 
+Done when:
+The Recent nav icon has the same gap before its label as the other nav icons in every icon theme.
+
 Notes:
-Later changelog claims a fix; not verified here.
+Fixed by 561f7dd1 (Recent joins the shared nav-icon rule, which carries margin-right: 0.3rem). Checked 2026-11-07 on https://zenmemes.com/recent/ in headless Chrome: the computed ::before margin-right of the Recent link is 4.8px, equal to Users, in Word97, Chicago, Midnight and Gloss, and screenshots show the clock clear of the label.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
