@@ -89,3 +89,17 @@ No supported findings.
 ### Uncertain assessments
 
 - Step 1 named an exception to a project rule and asked for approval. The instructions do not say whether "Approved Step 1" approves such an exception; Step 2 records it as approved and invites correction.
+
+## 2026-11-07T11:56:40Z - Step 2 revision
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md`, Enhancement Requests, changed scope "return to the earliest affected planning step": the reversal arrived while Step 3 was being drafted. Returning to Step 2 kept Step 3 from planning a page-only state that no longer exists. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- The change reverses a Step 1 revision. The instructions do not say whether Step 1 must be reopened; Step 1 kept Revision 4 as history with a pointer, and Step 2 carries the new direction.

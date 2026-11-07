@@ -137,6 +137,8 @@ Planning saved on branch `plan/engagify_theme` at the session stop hook's reques
 
 Step 1 approved by the maintainer on 2026-11-07 ("approved step 1"), with Revisions 1–4. This approval covers the delayed-nag exception to the first-paint rule.
 
+Revision 4 reversed after Step 2 approval (2026-11-07T11:56:40Z): the maintainer asked to keep Engagify selectable. The reversal is recorded in Step 2's Revised Direction; Revision 4 stays here as history.
+
 ## Enhancement Requests
 
 - Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now. Revision 1: moved to its own cycle at the maintainer's request, widened to a `theme:` directive; approval pending there; [v3/theme_directive](./theme_directive_step1_solution_assessment.md).
