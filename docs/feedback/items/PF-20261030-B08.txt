@@ -9,15 +9,15 @@ Aliases: 2026-10-30/B08
 Request:
 Default/light theme flashes before selected theme on pending access page and reloads, including iPhone. Identify regression cause and prevention test. Critical-CSS explanation is an agent hypothesis.
 
-Done when:
-In Auto/System theme with the OS in dark mode, a reload on iPhone shows no white frame before the page settles.
-
 Sources:
 - https://zenmemes.com/posts/thread-20261021044507-f2bc9c11
 - https://zenmemes.com/posts/thread-20261027143138-9b45e7f8
 - https://zenmemes.com/posts/thread-20261027212647-bbae87f3
 - https://zenmemes.com/posts/reply-20261027145155-70ae8c9f
 - https://zenmemes.com/posts/reply-20261106062330-51cfdbb7
+
+Done when:
+In Auto/System theme with the OS in dark mode, a reload on iPhone shows no white frame before the page settles.
 
 Notes:
 Status in the October 30 summary: Open — resolution not verified

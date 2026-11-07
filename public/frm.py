@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Portable forum client. Python 3 standard library, curl and GPG; no packages."""
-FRM_VERSION = "2026-11-04"
+FRM_VERSION = "2026-11-07"
 
 import argparse
 import datetime
@@ -305,6 +305,9 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
         return submit(operation, meta, args)
     except (ClientError, OSError, ValueError) as error:
         print('Saved-operation: ' + str(operation), file=sys.stderr)
+        if rejected(operation):
+            print(REJECTED_GUIDANCE, file=sys.stderr)
+            raise error
         print('Resume: ' + recovery_command(operation, meta), file=sys.stderr)
         if meta.get('Post-ID'):
             print('Check: python3 frm.py --site ' + shlex.quote(site) + ' check ' + shlex.quote(meta['Post-ID']), file=sys.stderr)
@@ -350,6 +353,16 @@ def prepared_post(operation, meta, args, key, public, body):
     save_payload(operation, meta, '/api/create_prepared_post', payload, 'ready')
     print('Normalization: signed exact server canonical bytes; original files retained.')
 
+
+
+REJECTED_GUIDANCE = 'Rejected: the server refused this write, so nothing was published. Correct the original draft and start a new write; do not resume.'
+
+
+def rejected(operation):
+    try:
+        return load_meta(operation / 'operation.txt').get('State') == 'rejected'
+    except (OSError, ValueError):
+        return False
 
 
 def recovery_command(operation, meta):
@@ -454,7 +467,8 @@ def write_post(args, site):
             try:
                 return resume_post(operation, meta, args)
             except (ClientError, OSError, ValueError, KeyError):
-                print('Resume: ' + recovery_command(operation, meta), file=sys.stderr)
+                if not rejected(operation):
+                    print('Resume: ' + recovery_command(operation, meta), file=sys.stderr)
                 raise
         for file in state.glob('operation-*/operation.txt'):
             meta = load_meta(file)
@@ -466,7 +480,7 @@ def write_post(args, site):
 
 
 def parser():
-    p = argparse.ArgumentParser(description=__doc__, epilog='Generated keys are unencrypted in a private state directory; keep it for identity reuse and recovery. Existing keys use GPG/pinentry. No unsigned fallback or member-session automation. check verifies publication only. Failed writes print an exact --resume command.')
+    p = argparse.ArgumentParser(description=__doc__, epilog='Generated keys are unencrypted in a private state directory; keep it for identity reuse and recovery. Existing keys use GPG/pinentry. No unsigned fallback or member-session automation. check verifies publication only. Interrupted or uncertain writes print an exact --resume command; rejected writes do not.')
     p.add_argument('--version', action='version', version='frm.py ' + FRM_VERSION)
     p.add_argument('--site', required=True, help='Explicit http(s) instance URL')
     p.add_argument('--timeout', type=int, default=60, help='Per-request timeout in seconds (default: 60)')
