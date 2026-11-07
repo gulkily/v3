@@ -58,3 +58,21 @@ The maintainer did not answer whether to reuse the `plan/readable_page_urls` dra
 - Estimate details: original scope as planned; uncertainty low; no revision. Smaller than planned because the redirect helper already existed.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Gallery
+
+**Original estimate: 0.05**
+**Retrospective: 0.03**
+
+- Changes:
+  - Gallery tiles get `id="post-<ID>"`. `Application` redirects `/gallery/?with=<ID>` through the Stage 2 lookup, after the gallery flag check, with the images-only filter and the 48-tile page size.
+  - Page numbers on Gallery already arrived in Stage 1 through the shared helper.
+- Verification:
+  - `GalleryPageTest` extended: tile anchor, a `with` redirect to `/gallery/#post-gallery-wide`, a text-only post falling back to page 1, and `?page=2` past the end showing "No images on this page" with First page.
+  - `./v3 test --smoke GalleryPageTest RecentPostTest`: all passed (see commit).
+  - Full suite not run.
+- Notes:
+  - A post whose image file is missing still counts toward page offsets, because the page query counts posts and the tile step drops missing files afterwards. A page can therefore show fewer than 48 tiles, as it did before this cycle.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

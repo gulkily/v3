@@ -792,6 +792,11 @@ final class Application
                 $this->routeServices()->notFound();
                 return;
             }
+            $location = (new \ForumRewrite\Http\RecentPageController($this->routeServices()))->withLocation('gallery', $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post in Gallery.', 303, activeSection: 'gallery');
+                return;
+            }
             $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['page'] ?? null), 200);
             return;
         }
