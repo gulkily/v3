@@ -135,6 +135,8 @@ Planning saved on branch `plan/engagify_theme` at the session stop hook's reques
 
 2026-11-07T11:52:09Z, Revision 4 checkpoint: the maintainer made Engagify page-only, hidden from the theme menu and cycle button. Scope v4: Option A with a page-only theme state. Projected total **0.75** reaffirmed; the new state is small, and Exit no longer has to restore a saved theme. Same revision, R1/P2 and single exposed Claude rater. No approval implied.
 
+Step 1 approved by the maintainer on 2026-11-07 ("approved step 1"), with Revisions 1–4. This approval covers the delayed-nag exception to the first-paint rule.
+
 ## Enhancement Requests
 
 - Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now. Revision 1: moved to its own cycle at the maintainer's request, widened to a `theme:` directive; approval pending there; [v3/theme_directive](./theme_directive_step1_solution_assessment.md).

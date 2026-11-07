@@ -6,6 +6,8 @@
 
 ## Cycle v3/engagify_theme
 
+2026-11-07T11:54:11Z — v3/engagify_theme Step 2 handoff: user explicitly approved Step 1 (Option A, Revisions 1–4). [Description/checkpoint](./engagify_theme_step2_feature_description.md#study-checkpoint): theme scripts, page-only themes, page themes in the site profile, cookie notice thread first, five core nags, Exit remembered per page. Projected total 0.75 → **0.80** (new understanding: menu choice counts as Exit, standalone layout, baked pages). Same v4/A/baseline/R1/P2, single exposed Claude rater. Await Approved Step 2.
+
 2026-11-07T11:52:09Z — v3/engagify_theme Step 1 Revision 4: Engagify page-only, hidden from the theme menu. [Checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v4/A; **0.75** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
 
 2026-11-07T11:50:41Z — v3/engagify_theme Step 1 Revision 3: maintainer chose general theme scripts over CSS-only state. [Checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v3/A; projected total 0.70 → **0.75**, reason changed scope. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.

@@ -70,3 +70,22 @@ No supported findings.
 ### Redundant/unnecessary instructions
 
 No supported findings.
+
+## 2026-11-07T11:54:11Z - Step 2
+
+### Necessary/useful instructions
+
+- `implementation_standards.md`, "Identify all existing UI/API surfaces": inspecting the theme code found `standalone_layout.php`, which picks a theme on its own. Without the inventory, page themes would have missed it. Retain.
+- `step2_feature_description.md`, Risks with earliest validation: naming "switch from Engagify to Word 97 and back" as the check turned a vague cleanup worry into a test. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step2_feature_description.md`, Known user or environment: no user or environment was named.
+
+### Uncertain assessments
+
+- Step 1 named an exception to a project rule and asked for approval. The instructions do not say whether "Approved Step 1" approves such an exception; Step 2 records it as approved and invites correction.
