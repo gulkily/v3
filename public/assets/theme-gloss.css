@@ -730,3 +730,8 @@
     bottom: calc(var(--app-tabbar-offset, 0px) + 4.25rem);
   }
 }
+
+/* A list inside a module needs no shadow of its own. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .card > .thread-rows {
+  box-shadow: none;
+}
