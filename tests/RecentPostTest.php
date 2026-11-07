@@ -32,29 +32,26 @@ final class RecentPostTest
         assertSame('old-thread',$rows['reply-1']['context_id']);
     }
 
-    public function testPagingTiesDeletionArrivalAndEmptyRecovery(): void
+    public function testNumberedPagesCoverEveryPostOnceAndEndEmpty(): void
     {
-        $pdo=$this->database();$all=RecentPostRepository::page($pdo)['items'];$ids=[];$cursor=null;
-        do {$page=RecentPostRepository::page($pdo,$cursor,3);$ids=array_merge($ids,array_column($page['items'],'post_id'));$cursor=$page['next']===null?null:['direction'=>'next','boundary'=>$page['next']];}while($cursor!==null);
+        $pdo=$this->database();$all=RecentPostRepository::page($pdo)['items'];$ids=[];$number=1;
+        do {$page=RecentPostRepository::page($pdo,$number,3);$ids=array_merge($ids,array_column($page['items'],'post_id'));$number++;}while($page['has_next']);
         assertSame(array_column($all,'post_id'),$ids);
-        $first=RecentPostRepository::page($pdo,null,3);
-        $second=RecentPostRepository::page($pdo,['direction'=>'next','boundary'=>$first['next']],3);
-        $back=RecentPostRepository::page($pdo,['direction'=>'previous','boundary'=>$second['previous']],3);
-        assertSame($first['items'],$back['items']);
-        $pdo->prepare('DELETE FROM posts WHERE post_id=?')->execute([$first['next']['post_id']]);
-        assertSame($second['items'],RecentPostRepository::page($pdo,['direction'=>'next','boundary'=>$first['next']],3)['items']);
+        assertSame(4,$number-1);
+        $past=RecentPostRepository::page($pdo,99,3);
+        assertSame([],$past['items']);assertSame(false,$past['has_next']);
         $pdo->exec("UPDATE posts SET created_at='2027-01-01T00:00:00Z' WHERE post_id='new-thread'");
         assertSame('new-thread',RecentPostRepository::page($pdo)['items'][0]['post_id']);
-        $empty=RecentPostRepository::page($pdo,['direction'=>'next','boundary'=>['created_at'=>'2000','post_id'=>'gone']]);
-        assertSame([],$empty['items']);assertTrue($empty['previous']!==null);
     }
 
-    public function testMalformedBoundariesAreRejected(): void
+    public function testPageNumbersAreReadAsPlainPositiveIntegers(): void
     {
-        foreach ([[],['direction'=>'bad','boundary'=>[]],['direction'=>'next','boundary'=>['created_at'=>[],'post_id'=>'x']]] as $cursor) {
-            $caught=false;try{RecentPostRepository::page($this->database(),$cursor);}catch(InvalidArgumentException){$caught=true;}
-            assertTrue($caught);
-        }
+        foreach ([null,'','0','-1','abc','2x','01',['2'],2] as $value) assertSame(1,\ForumRewrite\Pagination\PageNavigation::pageNumber($value));
+        assertSame(2,\ForumRewrite\Pagination\PageNavigation::pageNumber('2'));
+        assertSame(\ForumRewrite\Pagination\PageNavigation::MAX_PAGE,\ForumRewrite\Pagination\PageNavigation::pageNumber('999999'));
+        $links=\ForumRewrite\Pagination\PageNavigation::numbered('/recent/',[],2,true);
+        assertSame('/recent/',$links['previous_href']);assertSame('/recent/?page=3',$links['next_href']);
+        assertSame(null,\ForumRewrite\Pagination\PageNavigation::numbered('/recent/',[],1,false)['previous_href']);
     }
 
     public function testPriorVersionStartupRestoresIndex(): void
@@ -88,8 +85,13 @@ final class RecentPostTest
         assertStringNotContains('data-role="thread-compose"',$html);
         $pdo->exec("UPDATE posts SET body='<script>alert(1)</script>' WHERE post_id='unsigned'");
         assertStringContains('&lt;script&gt;', $render('/recent/'));
-        assertStringContains('First page',$render('/recent/?position=broken'));
-        assertStringContains('role="alert"',$render('/recent/?position[]=x'));
+        assertSame(12,substr_count($render('/recent/?page=abc'),'class="thread-row recent-entry"'));
+        assertSame(12,substr_count($render('/recent/?page[]=x'),'class="thread-row recent-entry"'));
+        $old=$render('/recent/?position=eyJ2ZXJzaW9uIjoxfQ');
+        assertSame(12,substr_count($old,'class="thread-row recent-entry"'));assertStringNotContains('role="alert"',$old);
+        $past=$render('/recent/?page=9');
+        assertStringContains('No posts on this page',$past);assertStringContains('First page',$past);
+        assertStringNotContains('position=',$html);
         $pdo->exec('DELETE FROM posts');assertStringContains('No posts yet', $render('/recent/'));
         unset($pdo,$app);@unlink($file);
     }

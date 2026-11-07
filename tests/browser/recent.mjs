@@ -40,7 +40,7 @@ try {
  const context=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:900},serviceWorkers:'block'});
  const page=await context.newPage();await page.goto(base+'/');await page.locator('.site-header a[href="/recent/"]').click();
  assert.equal(await page.locator('.recent-entry').count(),50);
- await page.getByRole('link',{name:'Next',exact:true}).focus();await page.keyboard.press('Enter');await page.waitForURL(/position=/);
+ await page.getByRole('link',{name:'Next',exact:true}).focus();await page.keyboard.press('Enter');await page.waitForURL(/\?page=2$/);
  assert.ok(await page.locator('.recent-entry').count()>0);assert.ok(await page.locator('.recent-entry').count()<50);
  const cursorUrl=page.url();const ids=await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId));
  await page.reload();assert.deepEqual(await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId)),ids);

@@ -778,7 +778,7 @@ final class Application
         }
 
         if ($path === '/recent/' || $path === '/recent') {
-            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->board($query['position'] ?? null), 200);
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->board($query['page'] ?? null), 200);
             return;
         }
 
@@ -787,7 +787,7 @@ final class Application
                 $this->routeServices()->notFound();
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['position'] ?? null), 200);
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['page'] ?? null), 200);
             return;
         }
 
