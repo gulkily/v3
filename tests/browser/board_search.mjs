@@ -1,7 +1,7 @@
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome [PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs] node tests/browser/board_search.mjs [screenshot-dir] [all|theme,theme,...]
 // Board search (board_thread_search one-shot) through the real FrontController: the app account menu links Search,
 // the native form submits without JavaScript, results page with shared Previous/Next links, and the empty and
-// invalid-position states. Every permitted zenmemes theme at phone and desktop width: no overflow, no page errors,
+// past-the-end page states. Every permitted zenmemes theme at phone and desktop width: no overflow, no page errors,
 // and the Search icon in Word97, Chicago and Midnight.
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, mkdir, symlink, writeFile } from 'node:fs/promises';
@@ -97,17 +97,17 @@ try {
       assert.equal(await noOverflow(page), true, `${label}: results overflow`);
       if (shots) await page.screenshot({ path: join(shots, `${theme}-${width}-results.png`), fullPage: true });
       await page.locator('.board-search a[rel="next"]').click();
-      await page.waitForURL(/position=/);
+      await page.waitForURL(/&page=2$/);
       assert.equal(await rows(page), 5, `${label}: second page`);
       assert.equal(await page.locator('.board-search a[rel="next"]').count(), 0, `${label}: last page`);
       await page.locator('.board-search a[rel="prev"]').click();
-      await page.waitForURL(/position=/);
+      await page.waitForURL(/\/search\?q=NEEDLE$/);
       assert.equal(await rows(page), 25, `${label}: back to newer`);
       await page.goto(base + '/search?q=' + encodeURIComponent('absent '.repeat(40)));
       assert.equal(await page.getByRole('heading', { name: 'No matching threads' }).isVisible(), true, `${label}: empty state`);
       assert.equal(await noOverflow(page), true, `${label}: long query overflow`);
-      await page.goto(base + '/search?q=needle&position=bad');
-      assert.equal(await page.getByRole('alert').isVisible(), true, `${label}: invalid position`);
+      await page.goto(base + '/search?q=needle&page=9');
+      assert.equal(await rows(page), 0, `${label}: page past the end`);
       await page.getByRole('link', { name: 'First page' }).click();
       await page.waitForURL(/\/search\?q=needle$/);
       assert.equal(await rows(page), 25, `${label}: restart`);

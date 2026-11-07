@@ -4,9 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
-use ForumRewrite\Pagination\PageNavigation;
 use ForumRewrite\ReadModel\ReadModelMetadata;
-use ForumRewrite\ReadModel\TagPage;
 use ForumRewrite\ReadModel\ThreadSearchPage;
 
 /** Board search over top-level threads (`/search?q=`) on non-QDB profiles. */
@@ -98,55 +96,47 @@ final class BoardSearchTest
         } finally { @unlink($database); }
     }
 
-    public function testCompleteForwardBackwardTraversalAndLiveRetraction(): void
+    public function testNumberedPagesCoverResultsAndLiveRetraction(): void
     {
         [$app, $pdo, $database] = $this->environment(60);
         try {
             $expected = $pdo->query("SELECT root_post_id FROM threads WHERE root_post_id LIKE 'paged-%' ORDER BY last_activity_at DESC, root_post_id DESC")->fetchAll(PDO::FETCH_COLUMN);
-            $pages = [ThreadSearchPage::page($pdo, 'needle')];
-            while (($next = end($pages)['next']) !== null) {
-                $pages[] = ThreadSearchPage::page($pdo, 'needle', $next);
-            }
+            $pages = []; $number = 1;
+            do {
+                $pages[] = $page = ThreadSearchPage::page($pdo, 'needle', $number);
+                foreach ($page['items'] as $thread) assertSame($number, ThreadSearchPage::pageOf($pdo, 'needle', $thread['root_post_id']));
+                $number++;
+            } while ($page['has_next']);
             assertSame(3, count($pages));
             assertSame($expected, array_merge(...array_map(fn (array $page): array => $this->ids($page), $pages)));
-            assertSame(null, $pages[0]['previous']);
-            assertSame($this->ids($pages[1]), $this->ids(ThreadSearchPage::page($pdo, 'needle', $pages[2]['previous'], 'previous')));
-            assertSame($this->ids($pages[0]), $this->ids(ThreadSearchPage::page($pdo, 'needle', $pages[1]['previous'], 'previous')));
 
             $html = $this->render($app, '/search?q=needle');
-            preg_match('#rel="next" href="(/search\?q=needle&amp;position=[^"]+)"#', $html, $link);
-            assertTrue(isset($link[1]), 'first page links to the next page');
-            $second = $this->render($app, html_entity_decode($link[1]));
+            assertStringContains('rel="next" href="/search?q=needle&amp;page=2"', $html);
+            $second = $this->render($app, '/search?q=needle&page=2');
             assertStringContains('href="/threads/' . $expected[25] . '"', $second);
-            assertStringContains('rel="prev"', $second);
+            assertStringContains('rel="prev" href="/search?q=needle"', $second);
             assertStringNotContains('href="/threads/' . $expected[0] . '"', $second);
+            assertStringContains('/search?q=needle&amp;page=2#post-' . $expected[25], $this->render($app, '/search?q=needle&with=' . $expected[25]));
 
             $pdo->exec("UPDATE threads SET retracted_at = '2026-11-03' WHERE root_post_id = '" . $expected[0] . "'");
             assertStringNotContains('href="/threads/' . $expected[0] . '"', $this->render($app, '/search?q=needle'));
             assertSame($expected[1], ThreadSearchPage::page($pdo, 'needle')['items'][0]['root_post_id']);
+            assertSame(null, ThreadSearchPage::pageOf($pdo, 'needle', $expected[0]));
         } finally { @unlink($database); }
     }
 
-    public function testInvalidForeignAndChangedQueryPositionsOfferFirstPage(): void
+    public function testMalformedAndExhaustedPagesOfferFirstPage(): void
     {
         [$app, , $database] = $this->environment(30);
         try {
-            $urls = [
-                '/search?q=needle&position=bad', '/search?q=needle&position[]=bad',
-                '/search?q=needle&position=' . str_repeat('a', 8193),
-                '/search?q=needle&position=' . PageNavigation::encode(TagPage::context('needle'), 'next', ['activity' => '2026-09-05', 'id' => 'x']),
-                '/search?q=needle&position=' . PageNavigation::encode(ThreadSearchPage::context('other'), 'next', ['activity' => '2026-09-05', 'id' => 'x']),
-                '/search?q=needle&position=' . PageNavigation::encode(ThreadSearchPage::context('needle'), 'next', ['wrong' => 'x']),
-                '/search?q=needle&position=' . PageNavigation::encode(ThreadSearchPage::context('needle'), 'next', ['activity' => '1000', 'id' => 'x']),
-            ];
-            foreach ($urls as $url) {
+            foreach (['/search?q=needle&page=bad', '/search?q=needle&page[]=bad', '/search?q=needle&position=old', '/search?q=needle&with=no-such-thread'] as $url) {
                 $html = $this->render($app, $url);
                 assertSame(200, http_response_code(), $url);
-                assertStringContains('href="/search?q=needle">First page</a>', $html);
-                assertStringNotContains('class="thread-row"', $html);
+                assertSame(25, substr_count($html, 'class="thread-row"'), $url . ' shows page 1');
             }
-            assertSame(ThreadSearchPage::context('needle'), ThreadSearchPage::context(' needle '));
-            assertTrue(strlen(ThreadSearchPage::context(str_repeat('n', 10000))) < 80);
+            $past = $this->render($app, '/search?q=needle&page=9');
+            assertStringContains('href="/search?q=needle">First page</a>', $past);
+            assertStringNotContains('class="thread-row"', $past);
         } finally { @unlink($database); }
     }
 

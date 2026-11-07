@@ -162,7 +162,7 @@ leave the decision solely in linked evaluation notes.
 
 ## Pagination
 
-For new bounded lists, use the shared controls and position contract described
-in [Implementing pagination](docs/reference/pagination.md). Standard Activity is
+For new bounded lists, use the shared page-number controls (`?page=N`, `?with=<ID>`)
+described in [Implementing pagination](docs/reference/pagination.md). Recent is
 the worked example. Keep each list's query/access rules separate; existing list
 migrations require their own scoped review. Forte retains its append behavior.

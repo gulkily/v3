@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace ForumRewrite\ReadModel;
 
-use InvalidArgumentException;
 use PDO;
 
 /**
- * Bounded pages of listed threads by latest activity, newest first, for the
- * shared Previous/Next navigation. Callers add their own membership condition
+ * Bounded numbered pages of listed threads by latest activity, newest first,
+ * for the shared Previous/Next navigation. Callers add their own membership condition
  * to the board's eligibility; only the selected roots are hydrated.
  */
 final class ThreadKeysetPage
@@ -32,64 +31,43 @@ final class ThreadKeysetPage
         return "CASE WHEN json_valid($column) THEN CASE WHEN json_type($column) IN ('array','object') THEN $column ELSE '[]' END ELSE '[]' END";
     }
 
-    /** @param array<string, string>|null $boundary */
-    public static function validate(?array $boundary, string $direction): void
-    {
-        if (!in_array($direction, ['next', 'previous'], true)
-            || ($boundary !== null && (array_keys($boundary) !== ['activity', 'id']
-                || !is_string($boundary['activity']) || !is_string($boundary['id'])
-                || $boundary['activity'] === '' || $boundary['id'] === ''
-                || strlen($boundary['activity']) > 128 || strlen($boundary['id']) > 512))) {
-            throw new InvalidArgumentException('This page position is invalid.');
-        }
-    }
-
     /**
+     * One numbered page, newest activity first, with thread ID breaking ties.
+     *
      * @param string $base FROM/WHERE clause starting with listedRootsSql().
      * @param array<string, string> $params Named parameters used by $base.
-     * @param array<string, string>|null $boundary
-     * @return array{items:array,previous:?array,next:?array}
+     * @return array{items:array,has_next:bool}
      */
-    public static function select(PDO $pdo, string $base, array $params, ?array $boundary, string $direction): array
+    public static function select(PDO $pdo, string $base, array $params, int $page = 1): array
     {
-        self::validate($boundary, $direction);
-        $condition = $boundary === null ? '' : self::boundarySql($direction === 'next' ? '<' : '>');
-        $order = $direction === 'previous' ? 'ASC' : 'DESC';
-        $statement = $pdo->prepare('SELECT threads.root_post_id, threads.last_activity_at' . $base . $condition
-            . " ORDER BY threads.last_activity_at $order, threads.root_post_id $order LIMIT " . (self::SIZE + 1));
-        $statement->execute($params + ($boundary ?? []));
-        $rows = array_slice($statement->fetchAll(PDO::FETCH_ASSOC), 0, self::SIZE);
+        $offset = (max(1, $page) - 1) * self::SIZE;
+        $statement = $pdo->prepare('SELECT threads.root_post_id' . $base
+            . ' ORDER BY threads.last_activity_at DESC, threads.root_post_id DESC LIMIT ' . (self::SIZE + 1) . ' OFFSET ' . $offset);
+        $statement->execute($params);
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
         $statement->closeCursor();
-        if ($direction === 'previous') $rows = array_reverse($rows);
-        $previous = $next = null;
-        if ($rows !== []) {
-            $first = self::boundary($rows[0]);
-            $last = self::boundary($rows[count($rows) - 1]);
-            foreach ([['>', $first, 'previous'], ['<', $last, 'next']] as [$operator, $edge, $which]) {
-                $probe = $pdo->prepare('SELECT 1' . $base . self::boundarySql($operator) . ' LIMIT 1');
-                $probe->execute($params + $edge);
-                if ($probe->fetchColumn() !== false) {
-                    if ($which === 'previous') $previous = $edge; else $next = $edge;
-                }
-                $probe->closeCursor();
-            }
-        }
+        $hasNext = count($rows) > self::SIZE;
         $items = [];
-        foreach ($rows as $row) {
+        foreach (array_slice($rows, 0, self::SIZE) as $row) {
             $thread = ThreadRepository::byId($pdo, (string) $row['root_post_id']);
             if ($thread !== null) $items[] = $thread;
         }
-        return ['items' => $items, 'previous' => $previous, 'next' => $next];
+        return ['items' => $items, 'has_next' => $hasNext];
     }
 
-    private static function boundarySql(string $operator): string
+    /** The page holding a listed thread, or null when it is not in this list. */
+    public static function pageOf(PDO $pdo, string $base, array $params, string $threadId): ?int
     {
-        return " AND (threads.last_activity_at $operator :activity OR (threads.last_activity_at = :activity AND threads.root_post_id $operator :id))";
-    }
-
-    /** @return array{activity:string,id:string} */
-    private static function boundary(array $row): array
-    {
-        return ['activity' => (string) $row['last_activity_at'], 'id' => (string) $row['root_post_id']];
+        $target = $pdo->prepare('SELECT threads.last_activity_at' . $base . ' AND threads.root_post_id = :with_id');
+        $target->execute($params + ['with_id' => $threadId]);
+        $activity = $target->fetchColumn();
+        $target->closeCursor();
+        if ($activity === false) return null;
+        $before = $pdo->prepare('SELECT count(*)' . $base
+            . ' AND (threads.last_activity_at > :with_activity OR (threads.last_activity_at = :with_activity AND threads.root_post_id > :with_id))');
+        $before->execute($params + ['with_activity' => (string) $activity, 'with_id' => $threadId]);
+        $count = (int) $before->fetchColumn();
+        $before->closeCursor();
+        return intdiv($count, self::SIZE) + 1;
     }
 }

@@ -646,11 +646,20 @@ final class Application
                 return;
             }
 
+            $location = $this->qdbExperience()->isEnabled() ? null : $this->boardPageController()->listWithLocation(
+                (string) ($query['view'] ?? 'liked'),
+                (string) ($query['sort'] ?? 'newest'),
+                $query['with'] ?? null,
+            );
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread on the board.', 303, activeSection: 'board');
+                return;
+            }
             $this->sendHtml(
                 $this->boardPageController()->board(
                     (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
-                    position: $query['position'] ?? null,
+                    listPage: $query['page'] ?? null,
                 ),
                 200
             );
@@ -778,7 +787,12 @@ final class Application
         }
 
         if ($path === '/recent/' || $path === '/recent') {
-            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->board($query['position'] ?? null), 200);
+            $location = (new \ForumRewrite\Http\RecentPageController($this->routeServices()))->withLocation('recent', $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post in Recent.', 303, activeSection: 'recent');
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->board($query['page'] ?? null), 200);
             return;
         }
 
@@ -787,7 +801,12 @@ final class Application
                 $this->routeServices()->notFound();
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['position'] ?? null), 200);
+            $location = (new \ForumRewrite\Http\RecentPageController($this->routeServices()))->withLocation('gallery', $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post in Gallery.', 303, activeSection: 'gallery');
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['page'] ?? null), 200);
             return;
         }
 
@@ -797,7 +816,7 @@ final class Application
                 return;
             }
 
-            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all'), $query['position'] ?? null), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
+            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all'), $query['page'] ?? null), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
             return;
         }
 
@@ -1073,7 +1092,12 @@ final class Application
         }
 
         if ($path === '/search') {
-            $this->sendHtml($this->boardPageController()->search($query['q'] ?? null, $query['position'] ?? null), 200);
+            $location = $this->boardPageController()->searchWithLocation($query['q'] ?? null, $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread in the results.', 303, activeSection: 'search');
+                return;
+            }
+            $this->sendHtml($this->boardPageController()->search($query['q'] ?? null, $query['page'] ?? null), 200);
             return;
         }
 
@@ -1099,7 +1123,12 @@ final class Application
         }
 
         if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
-            $html = $this->tagsPageController()->tag($matches[1], $query['position'] ?? null);
+            $location = $this->tagsPageController()->tagWithLocation($matches[1], $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread in this tag.', 303, activeSection: 'board');
+                return;
+            }
+            $html = $this->tagsPageController()->tag($matches[1], $query['page'] ?? null);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -1121,6 +1150,11 @@ final class Application
         }
 
         if (preg_match('#^/profiles/([^/]+)/?$#', $path, $matches) === 1) {
+            $location = $this->profilePageController()->withLocation($matches[1], $query);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post on this profile.', 303, activeSection: 'profiles');
+                return;
+            }
             $html = $this->profilePageController()->profile($matches[1], isset($query['self']), $query);
             if ($html === null) {
                 $this->notFound();

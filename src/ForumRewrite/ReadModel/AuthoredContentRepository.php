@@ -42,49 +42,38 @@ final class AuthoredContentRepository
         return $where;
     }
 
-    /** @return array{items:array,previous:?array,next:?array} */
-    public static function visibleIdentityPage(PDO $pdo, string $identityId, string $kind, ?array $cursor = null, int $limit = 50): array
+    /** @return array{items:array,has_next:bool} Pages are numbered from 1, newest first. */
+    public static function visibleIdentityPage(PDO $pdo, string $identityId, string $kind, int $page = 1, int $limit = 50): array
     {
         $where = self::identityEligibility($kind);
-        $parameters = ['identity' => $identityId];
-        $direction = $cursor['direction'] ?? 'next';
-        $boundary = $cursor['boundary'] ?? null;
-        if ($cursor !== null && (!in_array($direction, ['next', 'previous'], true)
-            || !is_array($boundary) || count($boundary) !== 2
-            || !is_string($boundary['created_at'] ?? null) || !is_string($boundary['post_id'] ?? null)
-            || $boundary['created_at'] === '' || $boundary['post_id'] === ''
-            || strlen($boundary['created_at']) > 100 || strlen($boundary['post_id']) > 4096)) {
-            throw new \InvalidArgumentException('This page position is invalid.');
-        }
-        $comparison = static fn (string $operator): string => " AND (posts.created_at, posts.post_id) $operator (:created_at, :post_id)";
-        $pageWhere = $where;
-        if ($boundary !== null) {
-            $pageWhere .= $comparison($direction === 'previous' ? '>' : '<');
-            $parameters += $boundary;
-        }
-        $order = $direction === 'previous' ? 'ASC' : 'DESC';
         $limit = max(1, min(100, $limit));
+        $offset = (max(1, $page) - 1) * $limit;
         $stmt = $pdo->prepare("SELECT posts.*, posts.post_id AS root_post_id,
             posts.created_at AS root_post_created_at, posts.body AS body_preview
-            FROM posts WHERE $pageWhere ORDER BY posts.created_at $order, posts.post_id $order LIMIT $limit");
-        $stmt->execute($parameters);
+            FROM posts WHERE $where ORDER BY posts.created_at DESC, posts.post_id DESC LIMIT " . ($limit + 1) . " OFFSET $offset");
+        $stmt->execute(['identity' => $identityId]);
         $items = $stmt->fetchAll();
+        $hasNext = count($items) > $limit;
+        $items = array_slice($items, 0, $limit);
         foreach ($items as &$row) {
             $row['body_preview'] = \ForumRewrite\Support\PostText::plainPreview((string) $row['body_preview'], $row['body_format'] ?? null);
         }
         unset($row);
-        if ($direction === 'previous') $items = array_reverse($items);
-        $key = static fn (array $row): array => ['created_at' => (string) $row['created_at'], 'post_id' => (string) $row['post_id']];
-        $first = $items === [] ? $boundary : $key($items[0]);
-        $last = $items === [] ? $boundary : $key($items[count($items) - 1]);
-        $exists = static function (?array $edge, string $operator) use ($pdo, $where, $identityId, $comparison): bool {
-            if ($edge === null) return false;
-            $stmt = $pdo->prepare('SELECT 1 FROM posts WHERE ' . $where . $comparison($operator) . ' LIMIT 1');
-            $stmt->execute(['identity' => $identityId] + $edge);
-            return $stmt->fetchColumn() !== false;
-        };
-        return ['items' => $items, 'previous' => $exists($first, '>') ? $first : null,
-            'next' => $exists($last, '<') ? $last : null];
+        return ['items' => $items, 'has_next' => $hasNext];
+    }
+
+    /** The page of an identity's thread or post list holding a post, or null when it is not in that list. */
+    public static function visibleIdentityPageOf(PDO $pdo, string $identityId, string $kind, string $postId, int $limit = 50): ?int
+    {
+        $where = self::identityEligibility($kind);
+        $limit = max(1, min(100, $limit));
+        $target = $pdo->prepare("SELECT created_at FROM posts WHERE $where AND posts.post_id = :post_id");
+        $target->execute(['identity' => $identityId, 'post_id' => $postId]);
+        $createdAt = $target->fetchColumn();
+        if ($createdAt === false) return null;
+        $before = $pdo->prepare("SELECT count(*) FROM posts WHERE $where AND (posts.created_at, posts.post_id) > (:created_at, :post_id)");
+        $before->execute(['identity' => $identityId, 'created_at' => $createdAt, 'post_id' => $postId]);
+        return intdiv((int) $before->fetchColumn(), $limit) + 1;
     }
 
     /**

@@ -16,10 +16,10 @@ final class RecentPageController
 
     public function __construct(private readonly RouteServices $routeServices) {}
 
-    public function board(mixed $position = null): string
+    public function board(mixed $page = null): string
     {
-        $context = 'recent:created_at:post_id:desc';
-        [$page, $error] = $this->page($position, $context, 50, false);
+        $number = PageNavigation::pageNumber($page);
+        $page = $this->page($number, 50, false);
         $page['items'] = ListThumbnails::attach(
             $this->routeServices->pdo(),
             $this->routeServices->repositoryRoot(),
@@ -27,18 +27,18 @@ final class RecentPageController
             $page['items'],
             'post_id',
         );
-        $pagination = PageNavigation::links('/recent/', [], $context, $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
-        return $this->routeServices->renderPageTemplate('recent.php', ['items'=>$page['items'], 'pagination'=>$pagination, 'paginationError'=>$error], 'Recent', 'recent');
+        $pagination = PageNavigation::numbered('/recent/', [], $number, $page['has_next'], $page['items'] === []);
+        return $this->routeServices->renderPageTemplate('recent.php', ['items'=>$page['items'], 'pagination'=>$pagination, 'paginationError'=>null], 'Recent', 'recent');
     }
 
     /**
      * Posts with an attached image, newest first, as image tiles. Same posts as
      * Recent; a post whose image file is missing is left out.
      */
-    public function gallery(mixed $position = null): string
+    public function gallery(mixed $page = null): string
     {
-        $context = 'gallery:created_at:post_id:desc';
-        [$page, $error] = $this->page($position, $context, self::GALLERY_PAGE_SIZE, true);
+        $number = PageNavigation::pageNumber($page);
+        $page = $this->page($number, self::GALLERY_PAGE_SIZE, true);
         $pdo = $this->routeServices->pdo();
         try {
             $images = ListThumbnails::forPosts($pdo, new ImageStore($this->routeServices->repositoryRoot()), array_column($page['items'], 'post_id'));
@@ -58,22 +58,24 @@ final class RecentPageController
             if ($image === null) continue;
             $tiles[] = $item + ['image' => $image, 'reply_count' => $replyCounts[$item['thread_id']] ?? 0];
         }
-        $pagination = PageNavigation::links('/gallery/', [], $context, $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
-        return $this->routeServices->renderPageTemplate('gallery.php', ['tiles'=>$tiles, 'pagination'=>$pagination, 'paginationError'=>$error], 'Gallery', 'gallery');
+        $pagination = PageNavigation::numbered('/gallery/', [], $number, $page['has_next'], $page['items'] === []);
+        return $this->routeServices->renderPageTemplate('gallery.php', ['tiles'=>$tiles, 'pagination'=>$pagination, 'paginationError'=>null], 'Gallery', 'gallery');
     }
 
-    /** @return array{0: array{items:array,previous:?array,next:?array}, 1: ?string} */
-    private function page(mixed $position, string $context, int $limit, bool $imagesOnly): array
+    /** The page holding a `with` post on Recent or Gallery; null shows the list normally. */
+    public function withLocation(string $list, mixed $with): ?string
     {
-        $error = null;
-        try {
-            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
-            $cursor = $position === null ? null : PageNavigation::decode($position, $context);
-            $page = RecentPostRepository::page($this->routeServices->pdo(), $cursor, $limit, $imagesOnly);
-        } catch (\InvalidArgumentException $exception) {
-            $error = $exception->getMessage();
-            $page = ['items'=>[], 'previous'=>null, 'next'=>null];
-        }
+        $id = PageNavigation::withId($with);
+        if ($id === null) return null;
+        $gallery = $list === 'gallery';
+        $page = RecentPostRepository::pageOf($this->routeServices->pdo(), $id, $gallery ? self::GALLERY_PAGE_SIZE : 50, $gallery);
+        return $page === null ? null : PageNavigation::withLocation($gallery ? '/gallery/' : '/recent/', [], $page, $id);
+    }
+
+    /** @return array{items:array,has_next:bool} */
+    private function page(int $number, int $limit, bool $imagesOnly): array
+    {
+        $page = RecentPostRepository::page($this->routeServices->pdo(), $number, $limit, $imagesOnly);
         foreach ($page['items'] as &$item) {
             $item['is_reply'] = $item['post_id'] !== $item['thread_id'];
             // Open the thread, anchored to the reply's card; a post whose thread is unavailable keeps its own page.
@@ -87,6 +89,6 @@ final class RecentPageController
             }
         }
         unset($item);
-        return [$page, $error];
+        return $page;
     }
 }

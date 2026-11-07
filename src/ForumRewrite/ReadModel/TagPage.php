@@ -6,31 +6,36 @@ namespace ForumRewrite\ReadModel;
 
 use PDO;
 
-/** Select membership and stable positions before loading any thread bodies. */
+/** Select membership and page numbers before loading any thread bodies. */
 final class TagPage
 {
     public const SIZE = ThreadKeysetPage::SIZE;
 
-    public static function context(string $tag): string
+    /** @return array{items:array,has_next:bool,exists:bool} */
+    public static function page(PDO $pdo, string $tag, int $page = 1): array
     {
-        return 'tag:' . strtolower($tag) . ':activity:desc';
-    }
-
-    /** @return array{items:array,previous:?array,next:?array,exists:bool} */
-    public static function page(PDO $pdo, string $tag, ?array $boundary = null, string $direction = 'next'): array
-    {
-        ThreadKeysetPage::validate($boundary, $direction);
-        $tag = strtolower($tag);
-        $board = ThreadKeysetPage::listJson('threads.board_tags_json');
-        $labels = ThreadKeysetPage::listJson('threads.thread_labels_json');
-        $base = ThreadKeysetPage::listedRootsSql() . "
-            AND (EXISTS (SELECT 1 FROM json_each($board) WHERE type = 'text' AND lower(value) = :tag)
-              OR EXISTS (SELECT 1 FROM json_each($labels) WHERE type = 'text' AND lower(value) = :tag))";
+        [$base, $params] = self::base($tag);
         $exists = $pdo->prepare('SELECT 1' . $base . ' LIMIT 1');
-        $exists->execute(['tag' => $tag]);
+        $exists->execute($params);
         $known = $exists->fetchColumn() !== false;
         $exists->closeCursor();
 
-        return ThreadKeysetPage::select($pdo, $base, ['tag' => $tag], $boundary, $direction) + ['exists' => $known];
+        return ThreadKeysetPage::select($pdo, $base, $params, $page) + ['exists' => $known];
+    }
+
+    public static function pageOf(PDO $pdo, string $tag, string $threadId): ?int
+    {
+        [$base, $params] = self::base($tag);
+        return ThreadKeysetPage::pageOf($pdo, $base, $params, $threadId);
+    }
+
+    /** @return array{0:string,1:array<string,string>} */
+    private static function base(string $tag): array
+    {
+        $board = ThreadKeysetPage::listJson('threads.board_tags_json');
+        $labels = ThreadKeysetPage::listJson('threads.thread_labels_json');
+        return [ThreadKeysetPage::listedRootsSql() . "
+            AND (EXISTS (SELECT 1 FROM json_each($board) WHERE type = 'text' AND lower(value) = :tag)
+              OR EXISTS (SELECT 1 FROM json_each($labels) WHERE type = 'text' AND lower(value) = :tag))", ['tag' => strtolower($tag)]];
     }
 }

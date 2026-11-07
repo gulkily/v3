@@ -293,8 +293,9 @@ require live authorization. Internal tag membership preserves prior SQL/PHP sema
 | `events` | INTEGER NOT NULL | Number of source-less NULL-action-key events |
 | `revision` | TEXT NOT NULL | Random token replaced on local-event mutation |
 
-No local events means an empty cursor revision. Local-event changes/rebuilds expire
-old positions; canonical-only changes leave this token alone. All maintenance is
+No local events means an empty revision. Activity pages by number since
+2026-11-07 and no longer reads this revision; canonical-only changes leave it
+alone. All maintenance is
 inside the original mutation transaction.
 
 ### `commits`
@@ -719,3 +720,13 @@ identity_key, invitation, feature_flag, codex_handoff). Each counts rows whose
 them for every writer, so full rebuild and incremental updates agree. Normal
 startup rebuilds version 49 and older models before Forte Activity reads the
 new totals.
+
+## Numbered pages (2026-11-07, no version change)
+
+Board, Search, Tags, Recent, Gallery, Activity and profile history page by
+number (`?page=N`) with `LIMIT`/`OFFSET` over the same eligibility and order the
+version notes above describe, reading one extra row to detect a next page. The
+position boundaries those notes mention are no longer used. `?with=<ID>` counts
+eligible rows ahead of an item to find its page. The queries use existing
+columns and indexes, so the schema version is unchanged. See
+[Implementing pagination](../reference/pagination.md).

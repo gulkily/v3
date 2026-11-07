@@ -50,7 +50,7 @@ $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent';
     <p>No visible <?= $e($kind) ?>.</p>
 <?php else: ?>
 <?php foreach ($history['items'] as $item): ?>
-    <article class="card">
+    <article class="card" id="<?= $e($kind . '-post-' . $item['post_id']) ?>">
 <?php if ($kind === 'threads'): ?>
       <h3><a href="/threads/<?= $e($item['post_id']) ?>"><?= $e($threadTitle($item)) ?></a></h3>
 <?php else: ?>

@@ -12,7 +12,7 @@ $excerpt = trim((string) preg_replace('/^' . preg_quote(\ForumRewrite\Images\Ima
 $showExcerpt = $excerpt !== '' && $excerpt !== trim($subject) && ($thread['retracted_at'] ?? null) === null;
 ?>
 <?php $thumbnail = $thread['thumbnail'] ?? null; ?>
-<article class="thread-row<?= $thumbnail !== null ? ' thread-row--thumb' : '' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? null, $replyCount) ?>">
+<article id="post-<?= $e($thread['root_post_id']) ?>" class="thread-row<?= $thumbnail !== null ? ' thread-row--thumb' : '' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? null, $replyCount) ?>">
 <?php if ($thumbnail !== null): ?>
   <?= $partial('partials/row_thumbnail.php', ['thumbnail' => $thumbnail, 'href' => '/threads/' . $thread['root_post_id']]) ?>
 <?php endif; ?>

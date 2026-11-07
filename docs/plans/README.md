@@ -40,6 +40,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Readable page URLs](readable_page_urls/readable_page_urls_step3_development_plan.md) — `?page=N` on every paged list and `?with=<ID>` to open the page holding a post, replacing base64 position tokens; "URLs are interface" rule; Step 4 in progress.
 - [Pre-existing test failures](preexisting_test_failures/preexisting_test_failures_one_shot.md) — one-shot: the 15 tests failing on `main` in cloud workspaces (GPG socket length, running as root, missing whiptail, four tests behind deliberate changes).
 - [Fast default tests: outliers](fast_default_tests_outliers/fast_default_tests_outliers_one_shot.md) — one-shot: removes avoidable waste from the three slowest test classes (docs snapshot reuse, checkout Git wait, isolated test Git config); split from the parked [fast default tests Step 1](fast_default_tests_step1_solution_assessment.md).
 - [Smoke tests](smoke_tests/smoke_tests_one_shot.md) — one-shot: `./v3 test` runs the curated smoke set in `tests/smoke.txt`, `--smoke Name` adds touched tests, `--all` is the maintainer's periodic full run; process in `AGENTS.md` and `CONTRIBUTING.md`.

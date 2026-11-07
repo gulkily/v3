@@ -38,6 +38,13 @@ final class GalleryPageTest
             assertStringNotContains('Lost picture', $page);
             assertStringNotContains('Words only', $page);
             assertStringContains('class="nav-link is-active" href="/gallery/">Gallery</a>', $page);
+            assertStringContains('<a id="post-gallery-reply" class="gallery-tile"', $page);
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            assertStringContains('/gallery/#post-gallery-wide', $this->render($application, '/gallery/?with=gallery-wide'));
+            assertSame(2, substr_count($this->markup($this->render($application, '/gallery/?with=gallery-text')), 'class="gallery-tile"'), 'A post without an image shows page 1.');
+            $past = $this->markup($this->render($application, '/gallery/?page=2'));
+            assertStringContains('No images on this page', $past);
+            assertStringContains('First page', $past);
         });
     }
 

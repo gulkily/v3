@@ -18,7 +18,7 @@
   <div class="gallery-grid">
 <?php foreach ($tiles as $tile): ?>
 <?php $image = $tile['image']; $ratio = max(0.6, min(2.2, $image['width'] / $image['height'])); $replies = (int) $tile['reply_count']; ?>
-    <a class="gallery-tile" href="<?= $e($tile['href']) ?>" style="--ratio: <?= round($ratio, 3) ?>">
+    <a id="post-<?= $e($tile['post_id']) ?>" class="gallery-tile" href="<?= $e($tile['href']) ?>" style="--ratio: <?= round($ratio, 3) ?>">
       <img src="<?= $e($image['preview']) ?>" alt="<?= $e($image['description']) ?>" width="<?= (int) $image['width'] ?>" height="<?= (int) $image['height'] ?>" loading="lazy" decoding="async">
       <span class="gallery-tile__caption"><span class="gallery-tile__title"><?= $e($tile['context_title']) ?></span><span class="gallery-tile__meta"><?= $replies ?> <?= $replies === 1 ? 'reply' : 'replies' ?><?= $tile['is_reply'] ? ' · Reply' : '' ?></span></span>
     </a>

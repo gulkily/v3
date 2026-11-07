@@ -4262,7 +4262,7 @@ PHP;
         }
     }
 
-    public function testRecentStaticArtifactBypassesCursorRequests(): void
+    public function testRecentStaticArtifactBypassesPageRequests(): void
     {
         @unlink($this->databasePath);
         ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
@@ -4274,9 +4274,9 @@ PHP;
 
             assertStringContains('Static Recent', $response);
             assertStringContains('route-source: static-html', $response);
-            $cursor = $this->renderFrontController($controller, 'GET', '/recent/?position=invalid', []);
-            assertFalse(str_contains($cursor, 'Static Recent'));
-            assertStringContains('First page', $cursor);
+            $later = $this->renderFrontController($controller, 'GET', '/recent/?page=9', []);
+            assertFalse(str_contains($later, 'Static Recent'));
+            assertStringContains('First page', $later);
         } finally {
             $this->deleteTree($staticHtmlRoot);
             $this->deleteTree($publicRoot);

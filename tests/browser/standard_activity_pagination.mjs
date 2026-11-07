@@ -36,7 +36,7 @@ try {
       assert.match(new URL(page.url()).pathname,/^\/posts\/page-/);
       await page.goto(base+'/activity/?view=all');
       const next = page.getByRole('link', { name: 'Next', exact: true });
-      await next.focus(); await page.keyboard.press('Enter'); await page.waitForURL(/position=/);
+      await next.focus(); await page.keyboard.press('Enter'); await page.waitForURL(/\/activity\/\?page=2$/);
       await page.waitForLoadState('load');
       const secondUrl = page.url();
       const secondKeys = await page.locator(rowLinks).evaluateAll(nodes => nodes.map(n => n.getAttribute('href')));
@@ -60,22 +60,22 @@ try {
       assert.equal(await page.locator(rowLinks).count(), 100);
       await page.goto(secondUrl);
       await page.getByRole('link', { name: 'Approvals', exact: true }).click(); await page.waitForLoadState('load');
-      assert.equal(new URL(page.url()).searchParams.has('position'), false);
+      assert.equal(new URL(page.url()).searchParams.has('page'), false);
       await page.getByText('No activity.', { exact: true }).waitFor();
-      await page.goto(base + '/activity/?position=invalid');
-      await page.getByRole('alert').waitFor();
+      await page.goto(base + '/activity/?page=9');
+      await page.getByText('No activity.', { exact: true }).waitFor();
       await page.getByRole('link', { name: 'First page', exact: true }).click(); await page.waitForLoadState('load');
       assert.equal(await page.locator(rowLinks).count(), 100);
       // Native HTTP failure retains its requested URL; browser Reload retries it.
-      await page.route('**/activity/?**position=**', route => route.fulfill({ status: 503, contentType: 'text/html', body: '<p>Temporarily unavailable</p>' }));
+      await page.route('**/activity/?**page=**', route => route.fulfill({ status: 503, contentType: 'text/html', body: '<p>Temporarily unavailable</p>' }));
       await page.getByRole('link', { name: 'Next', exact: true }).click(); await page.waitForLoadState('load');
       await page.getByText('Temporarily unavailable').waitFor();
       const failedUrl = page.url();
-      await page.unroute('**/activity/?**position=**');
+      await page.unroute('**/activity/?**page=**');
       await page.reload();
       assert.equal(page.url(), failedUrl);
       assert.deepEqual(await page.locator(rowLinks).evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), secondKeys);
-      console.log(`PASS standard Activity JavaScript=${javaScriptEnabled}: keyboard links, all boundaries, evidence, history, reset, invalid position and HTTP retry`);
+      console.log(`PASS standard Activity JavaScript=${javaScriptEnabled}: keyboard links, all boundaries, evidence, history, reset, page past the end and HTTP retry`);
       if (javaScriptEnabled) {
         for (const width of [390, 1280]) for (const theme of themes) {
           await page.evaluate(theme => localStorage.setItem('forum-zenmemes-theme', theme), theme);
