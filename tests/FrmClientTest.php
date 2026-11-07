@@ -140,7 +140,11 @@ final class FrmClientTest
             $before=(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']);
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Denied','--body-file',$root.'/body.txt']));
             assertSame(2,$code,$out);assertStringContains('HTTP 403',$out);
+            assertStringContains('Rejected: the server refused this write',$out);
+            assertSame(false,str_contains($out,'Resume:'),$out);assertSame(false,str_contains($out,'Check:'),$out);
             $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0];assertSame($body,file_get_contents($operation.'/original-body.txt'));
+            [$code,$out]=self::run($script,array_merge($base,['thread','--resume',$operation]));
+            assertSame(2,$code,$out);assertStringContains('This operation was rejected',$out);assertSame(false,str_contains($out,'Resume:'),$out);
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','No key','--body-file',$root.'/body.txt','--signing-key','NO-SUCH-KEY','--gpg-home',dirname($operation).'/keyring']));
             assertSame(2,$code,$out);assertStringContains('GPG failed',$out);
             assertSame($before,(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']));

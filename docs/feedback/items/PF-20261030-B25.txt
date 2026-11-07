@@ -1,9 +1,9 @@
 ID: PF-20261030-B25
 Title: Posting helper wrong uncertain-write message
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-10-30
-Evidence: unknown
+Evidence: locally-verified
 Aliases: 2026-10-30/B25
 
 Request:
@@ -12,6 +12,10 @@ Posting helper says publication may have completed after a definite HTTP 400 val
 Sources:
 - https://zenmemes.com/posts/reply-20261030174136-491336b7
 
+Done when:
+After a definite 400/403 rejection, frm.py prints no Resume or Check guidance and says nothing was published; interrupted or uncertain writes still print the exact --resume command.
+
 Notes:
+2026-11-07: 42c09640 already recorded rejected operations (State: rejected), but the error path still printed Resume and Check lines, and resuming then failed with "This operation was rejected". Now a rejected write prints a Rejected line instead, and a resumed rejected operation prints no Resume line; FRM_VERSION 2026-11-07. Covered in FrmClientTest::testMemberDenialAndSigningFailurePreserveWork. Next action: deploy so /frm.py serves the new version.
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B25; that summary is a local snapshot review and its request wording is preserved here.
