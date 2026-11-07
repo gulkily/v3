@@ -100,6 +100,7 @@ $testFiles = [
     __DIR__ . '/AppNavigationPlacementTest.php',
     __DIR__ . '/BoardListTest.php',
     __DIR__ . '/GalleryPageTest.php',
+    __DIR__ . '/InboxPageTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',
     __DIR__ . '/ApprovalPolicyTest.php',
     __DIR__ . '/ApprovalAcceptanceTest.php',

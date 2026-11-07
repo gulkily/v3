@@ -338,6 +338,15 @@ final class Application
             return;
         }
 
+        if ($path === '/inbox' || $path === '/inbox/') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->inboxPageController()->show($method);
+            return;
+        }
+
         if ($path === '/messages' || $path === '/messages/') {
             $this->privateMessagePageController()->conversations($method);
             return;
@@ -2261,6 +2270,7 @@ final class Application
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
+            '/inbox', '/inbox/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api/railspike_workflow', '/api', '/api/', '/api/version', '/api/list_index',
@@ -2492,6 +2502,15 @@ final class Application
             $this->authenticatedViewerProfile(...),
             $this->privateMessageStore(...),
             $this->recordHistoryActivity(...),
+        );
+    }
+
+    private function inboxPageController(): \ForumRewrite\Http\InboxPageController
+    {
+        return new \ForumRewrite\Http\InboxPageController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED) ? $this->privateMessageStore(...) : null,
         );
     }
 
