@@ -195,3 +195,48 @@ Cycle estimate: 0.95
 - Estimate details: original scope as Step 3, plus the registry field and menu attribute for the skip. No revision; retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Docs, feedback records and sweep
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `docs/runbooks/theme_development_guide.md`: registry fields `stylesheet` and `cycle`; a new section on shared stylesheets and the cycle button, with Gloss and Engagify as the example; `forumExitTheme(target)`; Exit on a page theme saves its target; the smooth-line icon set.
+  - `docs/concepts/theme_navigation_icons.md`: two icon sets, five icon themes, the parity test, and the icon-theme lists in `site.css` and `tools.css`.
+  - `docs/concepts/page_theme.md` and `docs/concepts/theme_script.md`: Exit lands on Gloss and saves it.
+  - `AGENTS.md`, navigation icons rule: both sets and their themes; `NavIconSetsTest` checks they match.
+  - `docs/feedback/items/PF-20261104-F13.txt` and `PF-20261030-F46.txt`: `Workflow: blocked` (merge, deploy and production check pending), `Evidence: locally-verified`, dated note.
+  - Effort ledger closeout.
+- Verification:
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest LocalAppSmokeTest NavIconSetsTest ProfileThemePresentationTest SiteProfileRegistryTest Word97ThemeCoverageTest PostActionThemeTest InvitationIssuanceTest`, 467 run, 462 passed, 5 failed. The 5 are the baseline failures recorded in Stage 1, which also fail with this cycle's changes stashed.
+  - Passed: `tests/browser/tools_launcher.mjs`, 32 theme and width cases, icons in all five icon themes.
+  - Passed: `tests/theme_contrast_audit.py`: Gloss OK, Engagify OK.
+  - Passed: links in a real page, Gloss, Engagify and Word 97: 21 main navigation hrefs (including signed-in and flagged ones: Invites, Messages, a profile, Lobby, Latest, Top, Leetness, Random, Add, Gallery), the 5 board filters and the New post button were injected into the board's navigation; every one shows a glyph.
+  - Passed: keyboard, Gloss board at 1280px and 380px: 25 Tab presses, every focused element shows an outline or focus shadow.
+  - Passed (earlier stages, same code): Gloss on 13 page types at both widths (Stage 6); Engagify pixel comparison (Stage 6); Exit on the cookie thread with a saved Word 97 at both widths, by mouse and keyboard, plus reload and board (Stage 7); cycle skip (Stage 7).
+  - Passed: `./v3 feedback check`: 1 problem, `PF-20261030-B08` section order, present before this cycle.
+  - Passed: `git diff --check`; relative links and anchors in the five touched docs resolve.
+  - Not run: the full suite (the maintainer runs it); Firefox, WebKit and a physical phone; a signed-in session rendered by the server (covered by the injected links above, not by real signed-in pages).
+- Notes:
+  - Final diff review: no second copy of the look (one stylesheet, one sizing rule set for both icon sets); no unrelated files. Out-of-scope observation kept for the maintainer: Midnight's Bookmarklets buttons likely show the `tools.css` drag handle instead of their pixel glyphs (Stage 4).
+- Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+2026-11-07T14:32:27Z. All eight stages are complete on `feat/engagify_theme`: planning `b1551c6a6`, then one commit per stage. Technical completion is local; nothing is merged or deployed.
+
+- Delivered scope v6: a hand-drawn smooth-line icon set for 52 destinations; Gloss, selectable on ZenMemes, sharing `theme-gloss.css` with Engagify, which renders as before; Exit from Engagify lands on Gloss and saves it; the cycle button skips Engagify; registry fields `stylesheet` and `cycle`; guide, concepts and `AGENTS.md` updated.
+- Unverified: production after deploy (the cookie thread opens in Engagify, Exit lands on Gloss); Firefox, WebKit and a physical phone; server-rendered signed-in pages. The full suite was not run.
+- Corrections during work: the phone More tab's fallback icon in `site.css` and the Bookmarklets drag handle in `tools.css` each kept their own icon-theme lists (Stages 2 and 4); the parity test found a missing exact `/messages` selector (Stage 4); the stylesheet header check needed an Engagify line (Stage 6). All were found by stage checks and fixed in their stages.
+- New requests during Step 4: colour for the icons later (recorded above as separate work, not started).
+
+Study closeout, `railspike-effort` / `v3/gloss_theme`, R1/P2, single exposed Claude rater:
+
+- Projection at Step 4 entry 0.95, no revision. Stage originals 0.08/0.10/0.10/0.06/0.08/0.18/0.08/0.10; retrospectives 0.07/0.10/0.08/0.07/0.06/0.16/0.08/0.10. They do not add up.
+- Retrospective scope assessment for the whole cycle: **0.90**. This is not measured time.
+- Maintainer comfortable-fit judgment and study acceptance: pending.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
