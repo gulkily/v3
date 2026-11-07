@@ -164,6 +164,81 @@
   }
 }
 
+/* Gloss colour picker (ThemeRegistry::GLOSS_PALETTES). Violet is the base
+   look above; each palette swaps the accent family. Gloss only: Engagify
+   keeps violet whatever is chosen here. The navigation icons carry violet in
+   their SVGs, so each palette turns their hue to match. */
+:root[data-theme="gloss"] .theme-menu { margin-left: 2.5rem; }
+:root[data-theme="gloss"] [data-role="gloss-palette"] { display: block; }
+:root[data-theme="gloss"] .lcd-palette__chip { --lcd-chip: var(--gloss-accent); border-radius: 999px; }
+:root[data-theme="gloss"] [data-palette-theme="gloss"][data-palette-chip="violet"] { --lcd-chip: #7c3aed; }
+:root[data-theme="gloss"] [data-palette-theme="gloss"][data-palette-chip="blue"] { --lcd-chip: #2563eb; }
+:root[data-theme="gloss"] [data-palette-theme="gloss"][data-palette-chip="teal"] { --lcd-chip: #0d9488; }
+:root[data-theme="gloss"] [data-palette-theme="gloss"][data-palette-chip="rose"] { --lcd-chip: #e11d48; }
+
+:root[data-theme="gloss"][data-gloss-palette="blue"] {
+  --page-bg: #f4f7fc;
+  --body-background: #f4f7fc;
+  --line: #7f8aa3;
+  --button-bg: #eef4ff;
+  --button-alt-bg: #eff6ff;
+  --active-bg: #dbeafe;
+  --active-ink: #1e3a8a;
+  --active-line: #2563eb;
+  --active-ring: rgba(37, 99, 235, 0.22);
+  --gloss-accent: #1d4ed8;
+  --gloss-edge: #dde5f3;
+  --gloss-control-edge: #93c5fd;
+  --gloss-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(30, 64, 175, 0.08);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="blue"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="gloss"][data-gloss-palette="blue"] .account-menu__icon {
+  filter: hue-rotate(-39deg);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="teal"] {
+  --page-bg: #f3f9f8;
+  --body-background: #f3f9f8;
+  --line: #6f8b87;
+  --button-bg: #ecfdf9;
+  --button-alt-bg: #f0fdfa;
+  --active-bg: #ccfbf1;
+  --active-ink: #134e4a;
+  --active-line: #0d9488;
+  --active-ring: rgba(13, 148, 136, 0.22);
+  --gloss-accent: #0f766e;
+  --gloss-edge: #d5ebe6;
+  --gloss-control-edge: #5eead4;
+  --gloss-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(17, 94, 89, 0.08);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="teal"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="gloss"][data-gloss-palette="teal"] .account-menu__icon {
+  filter: hue-rotate(-88deg);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="rose"] {
+  --page-bg: #fbf5f6;
+  --body-background: #fbf5f6;
+  --line: #a3858c;
+  --button-bg: #fff1f2;
+  --button-alt-bg: #fdf2f8;
+  --active-bg: #ffe4e6;
+  --active-ink: #881337;
+  --active-line: #e11d48;
+  --active-ring: rgba(225, 29, 72, 0.2);
+  --gloss-accent: #be123c;
+  --gloss-edge: #f3dde1;
+  --gloss-control-edge: #fda4af;
+  --gloss-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(159, 18, 57, 0.08);
+}
+
+:root[data-theme="gloss"][data-gloss-palette="rose"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="gloss"][data-gloss-palette="rose"] .account-menu__icon {
+  filter: hue-rotate(82deg);
+}
+
 /* Engagify parody layer: everything below applies to engagify only. */
 
 :root[data-theme="engagify"],

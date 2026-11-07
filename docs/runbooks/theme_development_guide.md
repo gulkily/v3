@@ -20,7 +20,8 @@ every theme's CSS on every page.)
    (`/assets/theme-<name>.css`) - you don't wire that path anywhere else.
    Two optional fields change that (see [Shared stylesheets and the cycle
    button](#shared-stylesheets-and-the-cycle-button)): `'stylesheet' =>
-   '<other>'` and `'cycle' => false`.
+   '<other>'` and `'cycle' => false`. A third, `'palettes'`, adds a colour
+   picker (see [Colour palettes](#colour-palettes)).
    The registry feeds the popover markup, the cycle button, the anti-FOUC
    allow-list, and `templates/layout.php`'s `themeStylesheetPaths` JS map
    (which swaps the `<link id="theme-stylesheet">` `href` on theme change) -
@@ -86,6 +87,26 @@ Engagify's parody layer.
 `'cycle' => false` keeps a theme in the menu but out of the cycle button, for
 themes a reader should only choose on purpose, such as Engagify. The menu
 option carries `data-theme-cycle="skip"`.
+
+## Colour palettes
+
+A theme may offer colours, as LCD, Console and Gloss do. Set `'palettes' =>
+['key' => 'Label', ...]` on its registry entry; the first key is the default.
+The menu then renders a colour button beside the theme switcher, the pre-paint
+script restores the saved choice as `data-<theme>-palette` on `<html>` (stored
+under `<theme storage key>-<theme>-palette`), and `theme_toggle.js` wires the
+picker. No template or script changes are needed.
+
+The theme's stylesheet does the rest: show the picker with
+`:root[data-theme="x"] [data-role="x-palette"] { display: block; }`, reserve
+room with `.theme-menu { margin-left: 2.5rem; }`, colour the chips with
+`[data-palette-theme="x"][data-palette-chip="<key>"]`, and override variables
+under `:root[data-theme="x"][data-x-palette="<key>"]` for every key but the
+first. Scope palette rules to the theme's own name, so a theme that shares the
+stylesheet keeps its colours (Engagify stays violet whatever Gloss uses). Only
+LCD's colours are cycle-button stops. `ThemeRegistryTest` checks the picker and
+palette rules exist; `tests/browser/gloss_palettes.mjs` checks Gloss's colours,
+including contrast.
 
 ## Page themes
 

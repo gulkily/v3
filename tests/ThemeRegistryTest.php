@@ -100,6 +100,23 @@ final class ThemeRegistryTest
         }
     }
 
+    public function testPalettesBelongToExplicitThemesThatShowTheirPicker(): void
+    {
+        $publicRoot = dirname(__DIR__) . '/public';
+        $palettes = ThemeRegistry::palettes();
+        assertSame(['console', 'lcd', 'gloss'], array_keys($palettes));
+        foreach ($palettes as $name => $entry) {
+            assertSame(true, ThemeRegistry::isExplicitName($name));
+            assertSame(true, count($entry['palettes']) >= 2);
+            $css = (string) file_get_contents($publicRoot . ThemeRegistry::stylesheetPaths()[$name]);
+            // The theme's own stylesheet reveals its picker and styles every palette but the first.
+            assertStringContains(':root[data-theme="' . $name . '"] [data-role="' . $name . '-palette"] { display: block; }', $css);
+            foreach (array_slice(array_keys($entry['palettes']), 1) as $palette) {
+                assertStringContains(':root[data-theme="' . $name . '"][data-' . $name . '-palette="' . $palette . '"]', $css);
+            }
+        }
+    }
+
     public function testEveryExplicitThemeHasAnIsolatedStylesheet(): void
     {
         $publicRoot = dirname(__DIR__) . '/public';

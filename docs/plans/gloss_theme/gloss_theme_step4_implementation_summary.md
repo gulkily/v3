@@ -283,3 +283,23 @@ At the maintainer's request, Gloss moved to just before Engagify in the theme pi
 - Verification: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest LocalAppSmokeTest::testApplicationRendersCoreRoutes ProfileThemePresentationTest SiteProfileRegistryTest`, 453 run, 448 passed, the 5 baseline failures. Picker screenshot shows Midnight, Gloss, Engagify.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Follow-up - Gloss colour picker
+
+The maintainer asked for a colour picker for Gloss like LCD's and Console's and approved Claude's plan: registry-declared palettes, Violet/Blue/Teal/Rose, icons hue-shifted, Engagify unaffected, no cycle stops (as Console).
+
+- Changes:
+  - `ThemeRegistry.php`: optional `'palettes'` on an entry (first key is the default); LCD, Console and Gloss declare theirs; new `GLOSS_PALETTES` and `palettes()`.
+  - `TemplateRenderer.php`, `templates/layout.php`, `templates/partials/theme_menu.php`, `public/assets/theme_toggle.js`: the colour pickers, pre-paint restore and picker wiring come from the registry instead of naming `lcd` and `console`. LCD's palettes remain the only cycle stops.
+  - `public/assets/theme-gloss.css`: picker shown in Gloss only; chips; Blue, Teal and Rose override the accent family, line, edges and shadow tint; icons get `hue-rotate` per palette. All scoped to `data-theme="gloss"`, so Engagify keeps violet.
+  - New `tests/browser/gloss_palettes.mjs`; `ThemeRegistryTest::testPalettesBelongToExplicitThemesThatShowTheirPicker`; the four VM theme tests' menu mocks gain an empty `querySelectorAll`.
+  - `docs/runbooks/theme_development_guide.md`: Colour palettes section.
+- Verification:
+  - Passed: `node tests/browser/gloss_palettes.mjs`: each palette at 390px and 1280px applies, labels the button, survives reload and navigation, passes the contrast pairs (ink, accent, active and line), shifts the icons (none for Violet), and Escape returns focus; keyboard choice; Engagify shows no Gloss picker and keeps `#6d28d9` with unfiltered icons; LCD's saved palette is untouched; an invalid saved value falls back to Violet. The first run caught Teal's line at 2.99:1; darkened to `#6f8b87`. An earlier run caught the pre-paint palette list encoded as objects (`JSON_FORCE_OBJECT`), which made saved palettes ignored; fixed.
+  - Passed: LCD and Console in the browser: each palette saves, restores after reload and labels its button; LCD's cycle stops and Console's cycle label unchanged; no page errors.
+  - Pre-existing failure: `node tests/browser/lcd_palettes.mjs` stops at line 134 (the account menu summary is outside the viewport at 390px). It fails at the same line at `54ad7a658`, before the Gloss cycle, and still does.
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest LocalAppSmokeTest ProfileThemePresentationTest SiteProfileRegistryTest NavIconSetsTest`, 455 run, 450 passed, the 5 baseline failures; `tools_launcher.mjs`; contrast audit Gloss, Engagify and LCD OK (Console's `--line` result unchanged from before).
+  - Screenshots of all four palettes on `/tools/` with the picker open inspected.
+  - Full suite not run.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

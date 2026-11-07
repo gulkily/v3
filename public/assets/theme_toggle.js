@@ -325,7 +325,7 @@
       var palettePopover = paletteControl && paletteControl.querySelector('[role="menu"]');
       var paletteOptions = paletteControl ? Array.prototype.slice.call(paletteControl.querySelectorAll('[data-' + paletteTheme + '-palette-option]')) : [];
       var paletteNames = paletteOptions.map(function (option) { return option.getAttribute('data-' + paletteTheme + '-palette-option'); });
-      var palette = document.documentElement.getAttribute('data-' + paletteTheme + '-palette') || 'green';
+      var palette = document.documentElement.getAttribute('data-' + paletteTheme + '-palette') || paletteNames[0] || 'green';
 
       function setPalette(value) {
         palette = value;
@@ -393,12 +393,19 @@
 
       return { close: closePalette, sync: syncPalette, set: setPalette, names: paletteNames, options: paletteOptions, value: function () { return palette; } };
     }
-    var lcdControl = createPaletteControl('lcd', 'LCD');
-    var consoleControl = createPaletteControl('console', 'Console');
+    // One colour picker per palette theme the menu renders (ThemeRegistry 'palettes').
+    var paletteControls = Array.prototype.map.call(menu.querySelectorAll('[data-role$="-palette"]'), function (control) {
+      var name = control.getAttribute('data-role').replace(/-palette$/, '');
+      var paletteControl = createPaletteControl(name, control.getAttribute('data-palette-label') || name);
+      paletteControl.theme = name;
+      return paletteControl;
+    });
+    // LCD's palettes are also stops on the cycle button.
+    var lcdControl = paletteControls.filter(function (control) { return control.theme === 'lcd'; })[0] || createPaletteControl('lcd', 'LCD');
     var paletteNames = lcdControl.names;
     var paletteOptions = lcdControl.options;
-    function closePalette(refocus) { lcdControl.close(refocus); consoleControl.close(false); }
-    function syncPalette() { lcdControl.sync(); consoleControl.sync(); }
+    function closePalette(refocus) { paletteControls.forEach(function (control) { control.close(refocus); }); }
+    function syncPalette() { paletteControls.forEach(function (control) { control.sync(); }); }
 
     var currentTheme = readStoredTheme();
 
