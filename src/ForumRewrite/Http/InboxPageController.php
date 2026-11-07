@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Inbox\InboxFeed;
 use ForumRewrite\Messaging\ApprovedUserKeyResolver;
 use ForumRewrite\Messaging\PrivateMessageMailboxService;
 use ForumRewrite\Messaging\PrivateMessageStore;
@@ -15,22 +16,26 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 final class InboxPageController
 {
     private const MESSAGE_LIMIT = 25;
+    public const POST_SECTIONS = ['replies'];
 
     /**
      * @param \Closure(): (array<string, mixed>|null) $authenticatedViewerProfile
      * @param (\Closure(): PrivateMessageStore)|null $privateMessageStore null when private messages are disabled
+     * @param \Closure(): \ForumRewrite\Inbox\InboxMarkStore $markStore
      */
     public function __construct(
         private readonly RouteServices $routeServices,
         private readonly \Closure $authenticatedViewerProfile,
         private readonly ?\Closure $privateMessageStore,
+        private readonly \Closure $markStore,
     ) {
     }
 
-    public function show(string $method): void
+    /** @param array<string, mixed> $query */
+    public function show(string $method, array $query = []): void
     {
-        if ($method !== 'GET') {
-            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET is supported for Inbox.', 'inbox'), 405, $this->routeServices->noStoreHeaders());
+        if (!in_array($method, ['GET', 'POST'], true)) {
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET and POST are supported for Inbox.', 'inbox'), 405, $this->routeServices->noStoreHeaders());
             return;
         }
         $viewer = ($this->authenticatedViewerProfile)();
@@ -44,10 +49,67 @@ final class InboxPageController
             return;
         }
 
+        $failedCatchUp = null;
+        if ($method === 'POST') {
+            $failedCatchUp = $this->catchUp($viewer, $this->routeServices->requestData($query));
+            if ($failedCatchUp === null) return;
+        }
+
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('inbox.php', [
             'viewerProfile' => $viewer,
             'messages' => $this->messages($viewer),
-        ], 'Inbox', 'inbox'), 200, $this->routeServices->noStoreHeaders());
+            'sections' => $this->sections($viewer, $failedCatchUp),
+        ], 'Inbox', 'inbox'), $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
+    }
+
+    /**
+     * Moves one section's mark past the posts the member saw, then returns to Inbox.
+     * Returns the section whose update failed, or null after redirecting.
+     *
+     * @param array<string, mixed> $viewer
+     * @param array<string, mixed> $input
+     */
+    private function catchUp(array $viewer, array $input): ?string
+    {
+        $section = in_array($input['section'] ?? null, self::POST_SECTIONS, true) ? (string) $input['section'] : 'replies';
+        $ids = $input['post_ids'] ?? [];
+        try {
+            if (!SameOriginRequest::check() || !is_array($ids)) throw new \RuntimeException('Caught up must come from Inbox.');
+            $this->feed($viewer)->catchUp($section, array_values($ids));
+        } catch (\Throwable) {
+            return $section;
+        }
+        $this->routeServices->sendRedirect('/inbox', 'Back to Inbox.', 303, $this->routeServices->noStoreHeaders(), 'inbox');
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $viewer
+     * @return array<string, array{items:list<array<string,mixed>>,failed:bool,catch_up_failed:bool}>
+     */
+    private function sections(array $viewer, ?string $failedCatchUp): array
+    {
+        $sections = [];
+        foreach (self::POST_SECTIONS as $section) {
+            try {
+                $items = RecentPageController::present($this->feed($viewer)->items($section));
+                $failed = false;
+            } catch (\Throwable) {
+                $items = [];
+                $failed = true;
+            }
+            $sections[$section] = ['items' => $items, 'failed' => $failed, 'catch_up_failed' => $failedCatchUp === $section];
+        }
+        return $sections;
+    }
+
+    /** @param array<string, mixed> $viewer */
+    private function feed(array $viewer): InboxFeed
+    {
+        $pdo = $this->routeServices->pdo();
+        $keys = (new ApprovedUserKeyResolver($this->routeServices->repositoryRoot()))->keysForUsernameToken($pdo, (string) $viewer['username_token'], true);
+        $identityIds = array_values(array_unique([(string) $viewer['identity_id'], ...array_column($keys, 'identity_id')]));
+        return new InboxFeed($pdo, ($this->markStore)(), (string) $viewer['username_token'], $identityIds);
     }
 
     /**

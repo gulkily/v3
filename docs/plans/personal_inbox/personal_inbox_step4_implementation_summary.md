@@ -57,3 +57,27 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 - Estimate details: original scope as planned; uncertainty low; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Mark store, Replies and Caught up
+
+**Original estimate: 0.14**
+**Retrospective: 0.14**
+
+- Changes:
+  - New `ForumRewrite\Inbox\InboxMarkStore` keeps one mark per username and section in `state/private/inbox.sqlite3` (`InboxDatabaseConfig`), plus the post IDs it acknowledged in the 10 minutes before the mark. A mark starts at the current time on first use and only moves forward.
+  - New `InboxFeed` lists the oldest 50 unread posts of a section and counts them. Replies are posts whose parent was written by any key of the username, including retired keys, as `ApprovedUserKeyResolver` returns them with history. The member's own posts never count.
+  - `RecentPostRepository` shares its select with new `since` and `countSince` queries, so Inbox rows carry exactly what Recent rows carry. `RecentPageController::present` is the extracted row shaping, used by Recent, Gallery and Inbox.
+  - Inbox shows Replies with `partials/recent_entry.php` rows and a Caught up form listing the shown IDs. A POST acknowledges only IDs that are still unread in that section, then redirects to `/inbox`. A refused or failed POST re-renders the same items with "Couldn’t save. Nothing was marked read." and a Retry button, status 409.
+  - New `SameOriginRequest::check`, extracted from `DeployController::sameOrigin`, which now calls it.
+- Verification:
+  - `InboxFeedTest` (new): replies to either key, anonymous replies, exclusion of own replies and of replies to others; history before first use; Caught up hides exactly the shown posts while a late post signed during the visit stays unread; forward-only marks and independent sections; bad usernames and sections rejected.
+  - `InboxPageTest`: Replies render with links to the exact reply; opening Inbox marks nothing; a cross-site POST changes nothing and shows Retry; a same-origin POST empties Replies.
+  - `./v3 test --smoke InboxPageTest InboxFeedTest RecentPostTest GalleryPageTest`: 453 run, 452 passed; only the baseline `BoardListTest` failure. `DeployPageTest`: 5 passed.
+  - `state/private/inbox.sqlite3` is covered by the existing ignore rules.
+  - Full suite not run.
+- Notes:
+  - Reuse decision from Step 3 kept: the store follows `PrivateMessageReadState`'s forward-only, transaction-wrapped pattern, in its own file so Inbox works with private messages off.
+  - The first 10 minutes before a member's first Inbox visit count as new, because of the late-arrival window. That is deliberate and small.
+- Estimate details: original scope as planned; uncertainty medium; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

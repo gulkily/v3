@@ -343,7 +343,7 @@ final class Application
                 $this->routeServices()->notFound();
                 return;
             }
-            $this->inboxPageController()->show($method);
+            $this->inboxPageController()->show($method, $query);
             return;
         }
 
@@ -2511,6 +2511,7 @@ final class Application
             $this->routeServices(),
             $this->authenticatedViewerProfile(...),
             $this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED) ? $this->privateMessageStore(...) : null,
+            fn (): \ForumRewrite\Inbox\InboxMarkStore => new \ForumRewrite\Inbox\InboxMarkStore(\ForumRewrite\Inbox\InboxDatabaseConfig::open($this->projectRoot)),
         );
     }
 

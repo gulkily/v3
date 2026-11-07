@@ -7,6 +7,7 @@ require __DIR__ . '/../autoload.php';
 use ForumRewrite\Application;
 use ForumRewrite\Http\InboxPageController;
 use ForumRewrite\Http\RouteServices;
+use ForumRewrite\Inbox\InboxMarkStore;
 use ForumRewrite\Messaging\PrivateMessageMailboxService;
 use ForumRewrite\Messaging\PrivateMessageStore;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
@@ -15,6 +16,9 @@ use ForumRewrite\View\TemplateRenderer;
 
 final class InboxPageTest
 {
+    private InboxMarkStore $marks;
+    private string $now = '2026-11-07T12:00:00Z';
+
     public function testInboxIsNotFoundWhileTheFlagIsOffAndAsksSignedOutViewersToSignIn(): void
     {
         $this->withRepository(function (string $repositoryRoot, string $databasePath): void {
@@ -89,6 +93,34 @@ final class InboxPageTest
         });
     }
 
+    public function testRepliesShowUntilCaughtUpAndCaughtUpRefusesOtherSites(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $databasePath): void {
+            $viewer = $this->viewer('openpgp:ilyag', 'ilyag');
+            $this->post($pdo, 'my-thread', '2026-11-07T11:00:00Z', 'openpgp:ilyag');
+            $empty = $this->renderInbox($databasePath, $viewer, null);
+            assertStringContains('No new replies', $empty);
+            assertStringNotContains('Caught up', $empty);
+
+            $this->post($pdo, 'alice-reply', '2026-11-07T12:01:00Z', 'openpgp:alice', 'my-thread');
+            $this->post($pdo, 'my-reply', '2026-11-07T12:02:00Z', 'openpgp:ilyag', 'alice-reply');
+            $html = $this->renderInbox($databasePath, $viewer, null);
+            assertStringContains('href="/threads/my-thread#post-alice-reply"', $html);
+            assertStringNotContains('post-my-reply', $html);
+            assertStringContains('<input type="hidden" name="post_ids[]" value="alice-reply">', $html);
+            assertStringContains('>Caught up</button>', $html);
+            assertStringContains('href="/threads/my-thread#post-alice-reply"', $this->renderInbox($databasePath, $viewer, null), 'Opening Inbox marks nothing.');
+
+            $refused = $this->renderInbox($databasePath, $viewer, null, 'POST', ['section' => 'replies', 'post_ids' => ['alice-reply']], ['HTTP_SEC_FETCH_SITE' => 'cross-site']);
+            assertStringContains('Couldn’t save. Nothing was marked read.', $refused);
+            assertStringContains('>Retry</button>', $refused);
+            assertStringContains('post-alice-reply', $this->renderInbox($databasePath, $viewer, null));
+
+            $this->renderInbox($databasePath, $viewer, null, 'POST', ['section' => 'replies', 'post_ids' => ['alice-reply']], ['HTTP_SEC_FETCH_SITE' => 'same-origin']);
+            assertStringContains('No new replies', $this->renderInbox($databasePath, $viewer, null));
+        });
+    }
+
     public function testUnapprovedViewerGetsTheAccessPage(): void
     {
         $this->withProfiles(function (\PDO $pdo, string $databasePath): void {
@@ -100,8 +132,12 @@ final class InboxPageTest
     }
 
     /** @param (\Closure(): PrivateMessageStore)|null $store @param array<string, mixed> $viewer */
-    private function renderInbox(string $databasePath, array $viewer, ?\Closure $store): string
+    /** @param array<string, mixed> $input @param array<string, string> $headers */
+    private function renderInbox(string $databasePath, array $viewer, ?\Closure $store, string $method = 'GET', array $input = [], array $headers = []): string
     {
+        $server = $_SERVER;
+        foreach ($headers as $name => $value) $_SERVER[$name] = $value;
+        $_POST = $input;
         $services = new RouteServices(
             $databasePath,
             new TemplateRenderer(__DIR__ . '/../templates', 'test'),
@@ -116,25 +152,32 @@ final class InboxPageTest
             static fn (): array => $viewer,
         );
         ob_start();
-        (new InboxPageController($services, static fn (): array => $viewer, $store))->show('GET');
+        (new InboxPageController($services, static fn (): array => $viewer, $store, fn (): InboxMarkStore => $this->marks))->show($method, $input);
+        $_SERVER = $server;
+        $_POST = [];
         return (string) ob_get_clean();
+    }
+
+    private function post(\PDO $pdo, string $postId, string $createdAt, string $author, ?string $parentId = null): void
+    {
+        $threadId = $parentId === null ? $postId : (string) $pdo->query('SELECT thread_id FROM posts WHERE post_id = ' . $pdo->quote($parentId))->fetchColumn();
+        $pdo->prepare("INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, author_identity_id, sequence_number)
+            VALUES (?, ?, ?, ?, ?, ?, '[\"general\"]', ?, 0)")
+            ->execute([$postId, $createdAt, $threadId, $parentId, $parentId === null ? 'Subject ' . $postId : null, 'Body ' . $postId, $author]);
     }
 
     /** @param callable(\PDO, string): void $test */
     private function withProfiles(callable $test): void
     {
+        $this->now = '2026-11-07T12:00:00Z';
+        $this->marks = new InboxMarkStore(new \PDO('sqlite::memory:'), fn (): string => $this->now);
         $databasePath = sys_get_temp_dir() . '/forum-rewrite-inbox-' . bin2hex(random_bytes(6)) . '.sqlite3';
         try {
             $pdo = new \PDO('sqlite:' . $databasePath);
-            $pdo->exec('CREATE TABLE profiles (
-                identity_id TEXT PRIMARY KEY, profile_slug TEXT NOT NULL, username TEXT NOT NULL,
-                username_token TEXT NOT NULL, fallback_label TEXT NOT NULL, signer_fingerprint TEXT NOT NULL,
-                bootstrap_post_id TEXT NOT NULL, bootstrap_thread_id TEXT NOT NULL, public_key TEXT NOT NULL,
-                is_approved INTEGER NOT NULL, approved_by_identity_id TEXT NULL, approved_by_profile_slug TEXT NULL,
-                approved_by_label TEXT NULL, post_count INTEGER NOT NULL, thread_count INTEGER NOT NULL
-            )');
+            foreach (\ForumRewrite\ReadModel\ReadModelSchema::statements() as $statement) $pdo->exec($statement);
             foreach (['alice', 'bob', 'ilyag'] as $username) {
-                $pdo->prepare('INSERT INTO profiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, NULL, NULL, 0, 0)')->execute([
+                $pdo->prepare('INSERT INTO profiles (identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint,
+                    bootstrap_post_id, bootstrap_thread_id, public_key, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)')->execute([
                     'openpgp:' . $username, 'openpgp-' . $username, $username, $username, $username, str_repeat('A', 40),
                     'identity-' . $username, 'thread-' . $username, 'PUBLIC KEY ' . $username,
                 ]);
