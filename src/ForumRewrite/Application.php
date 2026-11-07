@@ -1092,7 +1092,12 @@ final class Application
         }
 
         if ($path === '/search') {
-            $this->sendHtml($this->boardPageController()->search($query['q'] ?? null, $query['position'] ?? null), 200);
+            $location = $this->boardPageController()->searchWithLocation($query['q'] ?? null, $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread in the results.', 303, activeSection: 'search');
+                return;
+            }
+            $this->sendHtml($this->boardPageController()->search($query['q'] ?? null, $query['page'] ?? null), 200);
             return;
         }
 
@@ -1118,7 +1123,12 @@ final class Application
         }
 
         if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
-            $html = $this->tagsPageController()->tag($matches[1], $query['position'] ?? null);
+            $location = $this->tagsPageController()->tagWithLocation($matches[1], $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread in this tag.', 303, activeSection: 'board');
+                return;
+            }
+            $html = $this->tagsPageController()->tag($matches[1], $query['page'] ?? null);
             if ($html === null) {
                 $this->notFound();
                 return;

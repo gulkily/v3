@@ -29,7 +29,7 @@ try {
     assert.equal(await page.locator(cards).count(),25);
     const keys=()=>page.locator(cards+' h2 a').evaluateAll(n=>n.map(v=>v.getAttribute('href')));
     const first=await keys();
-    await page.getByRole('link',{name:'Next',exact:true}).focus(); await page.keyboard.press('Enter'); await page.waitForURL(/position=/);
+    await page.getByRole('link',{name:'Next',exact:true}).focus(); await page.keyboard.press('Enter'); await page.waitForURL(/\?page=2$/);
     const secondUrl=page.url(); const second=await keys();
     assert.equal(second.length,25); assert.equal(first.some(v=>second.includes(v)),false);
     await page.getByRole('link',{name:'Next',exact:true}).click(); await page.waitForLoadState('load');
@@ -38,13 +38,13 @@ try {
     assert.deepEqual(await keys(),second);
     await page.reload(); assert.deepEqual(await keys(),second);
     await page.goBack(); await page.goForward(); assert.deepEqual(await keys(),second);
-    await page.goto(base+'/tags/paging?position=invalid');
+    await page.goto(base+'/tags/paging?page=9');
     assert.equal(await page.locator(cards).count(),0);
     await page.getByRole('link',{name:'First page',exact:true}).click(); await page.waitForLoadState('load');
     assert.deepEqual(await keys(),first);
-    await page.route('**/tags/paging?position=*',r=>r.fulfill({status:503,contentType:'text/html',body:'<p>Temporarily unavailable</p>'}));
+    await page.route('**/tags/paging?page=*',r=>r.fulfill({status:503,contentType:'text/html',body:'<p>Temporarily unavailable</p>'}));
     await page.getByRole('link',{name:'Next',exact:true}).click(); await page.waitForLoadState('load');
-    await page.getByText('Temporarily unavailable').waitFor(); await page.unroute('**/tags/paging?position=*'); await page.reload();
+    await page.getByText('Temporarily unavailable').waitFor(); await page.unroute('**/tags/paging?page=*'); await page.reload();
     assert.deepEqual(await keys(),second);
     if(javaScriptEnabled) {
       for(const width of [390,1280]) for(const theme of themes) {
@@ -82,8 +82,10 @@ try {
   });
   await page.reload(); await context.setOffline(true);
   await page.goto(base+onlineNext);
-  await page.getByText('This position is not available in the saved snapshot.',{exact:false}).waitFor();
-  assert.equal(await page.locator('[data-role="offline-reader-content"] article.thread-card').count(),0);
+  await page.getByRole('link',{name:'Previous',exact:true}).waitFor();
+  assert.equal(await page.locator('[data-role="offline-reader-content"] article.thread-card').count(),25);
+  await page.goto(base+'/tags/paging?page=9');
+  await page.getByText('This page is not in the saved snapshot.',{exact:false}).waitFor();
   await page.getByRole('link',{name:'First page',exact:true}).click(); await page.waitForLoadState('load');
   const savedCards='[data-role="offline-reader-content"] article';
   await page.getByRole('link',{name:'Next',exact:true}).waitFor();
@@ -96,9 +98,9 @@ try {
   await page.getByRole('link',{name:'Next',exact:true}).click();await page.getByRole('link',{name:'Previous',exact:true}).waitFor();assert.equal((await savedKeys()).length,15);
   await page.goBack();await page.getByRole('link',{name:'Next',exact:true}).waitFor();assert.deepEqual(await savedKeys(),savedSecond);
   await context.setOffline(false);await page.reload();
-  await page.getByRole('link',{name:'First page',exact:true}).waitFor();
-  await page.getByRole('link',{name:'First page',exact:true}).click();await page.waitForLoadState('load');assert.equal(await page.locator(cards).count(),25);
-  console.log('PASS real offline worker: online cursor recovery, saved traversal/reload/history, reconnect recovery');
+  assert.equal(await page.locator(cards).count(),25);
+  await page.getByRole('link',{name:'Previous',exact:true}).click();await page.waitForLoadState('load');assert.equal(await page.locator(cards).count(),25);
+  console.log('PASS real offline worker: online page number opens saved page, past-the-end recovery, saved traversal/reload/history, reconnect');
   await context.close();
 } finally {
   await browser.close();server.kill();await once(server,'exit');

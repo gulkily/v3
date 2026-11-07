@@ -227,33 +227,34 @@ final class BoardPageController
      * Board search (`/search?q=`) over top-level threads for non-QDB
      * profiles; QDB keeps its own classic search in QdbExperience.
      */
-    public function search(mixed $term, mixed $position): string
+    public function search(mixed $term, mixed $page): string
     {
         $term = is_string($term) ? trim($term) : '';
-        $context = \ForumRewrite\ReadModel\ThreadSearchPage::context($term);
-        $error = null;
-        try {
-            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
-            $cursor = $position === null ? null : \ForumRewrite\Pagination\PageNavigation::decode($position, $context);
-            $page = \ForumRewrite\ReadModel\ThreadSearchPage::page($this->routeServices->pdo(), $term, $cursor['boundary'] ?? null, $cursor['direction'] ?? 'next');
-        } catch (\InvalidArgumentException $exception) {
-            $error = $exception->getMessage();
-            $page = ['items' => [], 'previous' => null, 'next' => null];
-        }
-        $pagination = \ForumRewrite\Pagination\PageNavigation::links('/search', $term === '' ? [] : ['q' => $term], $context,
-            $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
-
+        $number = \ForumRewrite\Pagination\PageNavigation::pageNumber($page);
+        $page = \ForumRewrite\ReadModel\ThreadSearchPage::page($this->routeServices->pdo(), $term, $number);
+        $pagination = \ForumRewrite\Pagination\PageNavigation::numbered('/search', $term === '' ? [] : ['q' => $term], $number,
+            $page['has_next'], $page['items'] === []);
         return $this->routeServices->renderPageTemplate(
             'board_search.php',
             [
                 'term' => $term,
                 'threads' => $page['items'],
                 'pagination' => $pagination,
-                'paginationError' => $error,
+                'paginationError' => null,
             ],
             $term === '' ? 'Search' : $term . ' - Search',
             'search',
         );
+    }
+
+    /** Where a search `with` link lands, or null to show the results normally. */
+    public function searchWithLocation(mixed $term, mixed $with): ?string
+    {
+        $id = \ForumRewrite\Pagination\PageNavigation::withId($with);
+        $term = is_string($term) ? trim($term) : '';
+        if ($id === null || $term === '') return null;
+        $page = \ForumRewrite\ReadModel\ThreadSearchPage::pageOf($this->routeServices->pdo(), $term, $id);
+        return $page === null ? null : \ForumRewrite\Pagination\PageNavigation::withLocation('/search', ['q' => $term], $page, $id);
     }
 
     /**

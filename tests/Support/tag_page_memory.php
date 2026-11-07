@@ -38,12 +38,12 @@ if ($mode === 'artifacts') {
     foreach (array_merge(['memory'], array_map(static fn ($i) => 'memory' . $i, range(1, 23))) as $tag) {
         if (!$builder->buildSingleRoute('/tags/' . $tag)) throw new RuntimeException('Tag generation failed');
         $html = (string) file_get_contents($root . '/artifacts/tags/' . $tag . '.html');
-        if (preg_match_all('/<article class="card (?:post-card quote-card|thread-card)"/', $html) !== min(25, $count)) throw new RuntimeException('Unbounded or missing tag cards: ' . $tag);
+        if (preg_match_all('/<article (?:id="[^"]*" )?class="card (?:post-card quote-card|thread-card)"/', $html) !== min(25, $count)) throw new RuntimeException('Unbounded or missing tag cards: ' . $tag);
         unset($html);
     }
 } else {
     ob_start(); $app->handle('GET', '/tags/memory'); $html = (string) ob_get_clean();
-    if (preg_match_all('/<article class="card (?:post-card quote-card|thread-card)"/', $html) !== min(25, $count)) throw new RuntimeException('Incorrect tag page size');
+    if (preg_match_all('/<article (?:id="[^"]*" )?class="card (?:post-card quote-card|thread-card)"/', $html) !== min(25, $count)) throw new RuntimeException('Incorrect tag page size');
     if ($count > 25 && (!str_contains($html, 'rel="next"') || str_contains($html, '/threads/memory-000000'))) throw new RuntimeException('Wrong page boundary');
     unset($html);
 }

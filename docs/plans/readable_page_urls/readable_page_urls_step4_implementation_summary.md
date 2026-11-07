@@ -120,3 +120,28 @@ The maintainer did not answer whether to reuse the `plan/readable_page_urls` dra
 - Estimate details: original scope as planned; uncertainty low; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Tags and Search
+
+**Original estimate: 0.08**
+**Revised: 0.11** (2026-11-07, new understanding, same scope: the offline reader builds its own saved-tag tokens)
+**Retrospective: 0.11**
+
+- Changes:
+  - `ThreadKeysetPage::select` takes a page number; new `pageOf` counts listed threads with later activity (thread ID breaks ties). The boundary validation and probe queries are gone.
+  - `TagPage` and `ThreadSearchPage` share a private base clause between `page` and `pageOf`. The token `context` methods are removed.
+  - `TagsPageController::tag` and `BoardPageController::search` read `?page=`; new `tagWithLocation` and `searchWithLocation` serve `?with=`. Search links keep `q`.
+  - `templates/partials/thread_card.php` cards get `id="post-<root ID>"` for tag pages.
+  - Shared consumer found during this stage: `public/assets/offline_reader.js` paged saved tag pages with its own base64 tokens. It now reads `?page=N` too, so an online page link opens the same saved page offline. A page past the saved list shows "This page is not in the saved snapshot" with First page.
+- Verification:
+  - `TagPaginationTest` 6 passed, `BoardSearchTest` passed, `OfflineSnapshotPresentationTest` 8 passed, `OfflineNavigationWorkerTest` passed (its sample URLs now use `page` parameters).
+  - `./v3 test --smoke OfflineNavigationWorkerTest OfflineSnapshotPresentationTest TagPaginationTest BoardSearchTest BoardListTest`: 457 run, 457 passed.
+  - `tests/browser/tag_pagination.mjs`: passed with and without JavaScript, 16 themes at two widths, and the real offline worker (online page link opens the saved page, past-the-end recovery, saved traversal, reconnect).
+  - `tests/browser/board_search.mjs`: passed, 28 theme/width checks and the no-script flow.
+  - `tests/Support/tag_page_memory.php` now accepts the card `id`; the bounded-memory test passed.
+  - Full suite not run.
+- Notes:
+  - The offline reader was missing from the Step 2 inventory. It is the Tags list's offline view, so updating it stays inside the approved outcome; leaving it would have left tokens in the address bar offline.
+- Estimate details: original 0.08; revised to 0.11 before finishing the stage for the offline reader; uncertainty low after the change.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
