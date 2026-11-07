@@ -123,3 +123,25 @@ No supported findings.
 ### Uncertain assessments
 
 - A conditional stage (Stage 7) may end up unbuilt. The Step 4 commit cadence expects at least one commit per stage; the instructions do not say how to record a planned stage that is skipped by design.
+
+## 2026-11-07T12:32:52Z - Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol, verification before each commit: each stage's browser check caught a real defect in that stage. These were the Exit pill over the phone tab bar (Stage 2), stretched nag buttons (Stage 5) and weak input borders (Stage 2, via the contrast audit). Retain.
+- `implementation_standards.md`, "identify reproduced baseline failures": running the smoke set on `main` before Stage 1 separated the one `BoardListTest` failure from this cycle's work. Retain.
+- `implementation_standards.md`, "Replay each reported failure in the relevant user/environment": no failure was reported. The same rule kept the production cookie thread check marked pending, because local stand-in evidence does not satisfy it. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step4_implementation_do.md`, documentation-only stage checks: this is an application change.
+- `RAILSPIKE.md`, Follow-up Cycles Before Merge: not a follow-up cycle.
+
+### Uncertain assessments
+
+- `RAILSPIKE.md`, organization rule, "repair affected repository references": links to a sibling cycle's plans that live only on another branch had no valid target on the feature branch. They became plain text with the branch named; the rule does not say how to handle a reference whose target is on another branch.
+- Step 3 made Stage 7 conditional. Its condition was met and it was built, so the commit count is unaffected. The earlier Step 3 uncertainty about recording a skipped conditional stage remains open.
