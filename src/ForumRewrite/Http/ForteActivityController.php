@@ -125,12 +125,10 @@ final class ForteActivityController
             'label' => 'Label Changes',
             ...($showProfileNames ? ['profile_name' => 'Profile Changes'] : []),
             'identity' => 'Identity',
-            'identity_key' => 'Identity Keys',
             'bootstrap' => 'Bootstraps',
             'approval' => 'Approvals',
             'invitation' => 'Invitations',
             'feature_flag' => 'Feature Flag Changes',
-            'codex_handoff' => 'Codex Handoffs',
         ];
 
         if ($this->routeServices->securityReviewAllowed()) $viewLabels['security'] = 'Operator security review';
