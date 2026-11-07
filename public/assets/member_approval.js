@@ -46,15 +46,22 @@
     if (stored && stored !== fingerprint()) write(approvedKey, '');
     apply();
   }
-  // A registered identity with no remembered status asks once per browser
-  // session, so members who signed in before this memory existed still get it.
-  // A 401 can mean an expired session, so it never clears a remembered approval.
+  // A registered identity with no remembered status asks the server, so members
+  // who signed in before this memory existed still get it. A "not approved" answer
+  // is trusted for a few minutes only: a member approved mid-visit is seen on a
+  // later page in the same tab instead of never. A 401 can mean an expired
+  // session, so it never clears a remembered approval.
+  const recheckMilliseconds = 5 * 60 * 1000;
+  function checkedRecently(current) {
+    const [value, at] = read(checkedKey, window.sessionStorage).split('@');
+    return value === current && Date.now() - Number(at) < recheckMilliseconds;
+  }
   async function learn() {
     const current = fingerprint();
-    if (!current || read(approvedKey) === current || read(checkedKey, window.sessionStorage) === current) return;
+    if (!current || read(approvedKey) === current || checkedRecently(current)) return;
     if (root.dataset.approvedMembersOnly !== '1'
       && read('forum_pki_published_fingerprint').trim().toLowerCase() !== current) return;
-    write(checkedKey, current, window.sessionStorage);
+    write(checkedKey, current + '@' + Date.now(), window.sessionStorage);
     try {
       const response = await fetch('/api/auth_status', { credentials: 'same-origin', cache: 'no-store' });
       if (response.ok) record(current, true);
@@ -102,7 +109,15 @@
   window.addEventListener('storage', function (event) {
     if (event.key === null || event.key === approvedKey || /^forum_pki_/.test(event.key)) forgetReplacedIdentity();
   });
+  // Member pages (Messages, Inbox) are rendered only for an approved viewer and
+  // name that viewer's key, so the browser can remember the approval at once.
+  function rememberFromPage() {
+    const page = document.querySelector('[data-approved-identity]');
+    const value = page ? String(page.getAttribute('data-approved-identity') || '').replace(/^openpgp:/, '') : '';
+    if (value) record(value, true);
+  }
   // A change fires the event, which syncs messaging itself.
   if (!apply()) syncMessaging();
+  rememberFromPage();
   learn();
 })();

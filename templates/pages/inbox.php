@@ -6,7 +6,7 @@
  * @var array<string, array{items:list<array<string,mixed>>,failed:bool,catch_up_failed:bool}> $sections
  */
 ?>
-<section class="stack inbox">
+<section class="stack inbox" data-approved-identity="<?= $e((string) ($viewerProfile['identity_id'] ?? '')) ?>">
   <h1 class="visually-hidden">Inbox</h1>
 <?php if ($messages['enabled']): ?>
   <section class="stack inbox-section" aria-labelledby="inbox-messages">
