@@ -8,6 +8,8 @@ use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\StaticArtifactBuilder;
+use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\ThemeDirective;
@@ -141,6 +143,59 @@ final class ThreadThemeTest
         } catch (RuntimeException $error) {
             threadThemeAssertContains('theme must be a theme name or none', $error->getMessage());
         }
+    }
+
+    public function testHiddenAndVisibleSettingsShareOneLatestWins(): void
+    {
+        [$root, $database, $service, $application] = $this->environment();
+        $thread = $this->thread($service, 'Mixed', 'Opening post', self::OPERATOR);
+        $pdo = new PDO('sqlite:' . $database);
+        $page = fn (): string => $this->render($application, '/threads/' . rawurlencode($thread));
+
+        $service->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'Quiet change.', 'author_identity_id' => self::OPERATOR, 'theme' => 'midnight']);
+        threadThemeAssertSame('midnight', ThreadTheme::forThread($pdo, $root, $thread));
+        threadThemeAssertContains('data-page-theme="midnight"', $page());
+        threadThemeAssertNotContains('theme: midnight', $page());
+
+        $this->reply($service, $thread, 'theme: chicago', self::OPERATOR);
+        threadThemeAssertSame('chicago', ThreadTheme::forThread($pdo, $root, $thread));
+
+        $service->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'Back to normal.', 'author_identity_id' => self::OPERATOR, 'theme' => 'none']);
+        threadThemeAssertSame(null, ThreadTheme::forThread($pdo, $root, $thread));
+
+        // A header beats a line in the same post.
+        $service->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'theme: chicago', 'author_identity_id' => self::OPERATOR, 'theme' => 'word97']);
+        threadThemeAssertSame('word97', ThreadTheme::forThread($pdo, $root, $thread));
+
+        // A hidden setting from someone else changes nothing.
+        $other = (string) $service->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'Mine now.', 'author_identity_id' => self::OPERATOR, 'theme' => 'midnight'])['post_id'];
+        $pdo->prepare('UPDATE posts SET author_identity_id = ? WHERE post_id = ?')->execute([self::OTHER, $other]);
+        threadThemeAssertSame('word97', ThreadTheme::forThread($pdo, $root, $thread));
+
+        // A full rebuild reads every hidden header back from the records. (Order among
+        // posts written in the same second can differ after a rebuild, so this checks the
+        // stored values rather than which one is latest.)
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        $rebuilt = new PDO('sqlite:' . $database);
+        $stored = $rebuilt->prepare('SELECT theme FROM posts WHERE thread_id = ? AND theme IS NOT NULL ORDER BY theme');
+        $stored->execute([$thread]);
+        threadThemeAssertSame(['midnight', 'midnight', 'none', 'word97'], $stored->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public function testStartupRebuildsASchema50ReadModel(): void
+    {
+        [$root, $database, $service, , $artifacts] = $this->environment();
+        $thread = (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Old model', 'body' => 'Opening post', 'author_identity_id' => self::OPERATOR, 'theme' => 'midnight'])['thread_id'];
+
+        $pdo = new PDO('sqlite:' . $database);
+        $pdo->exec('ALTER TABLE posts DROP COLUMN theme');
+        $pdo->exec("UPDATE metadata SET value = '50' WHERE key = 'schema_version'");
+        $pdo = null;
+
+        $application = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        threadThemeAssertContains('data-page-theme="midnight"', $this->render($application, '/threads/' . rawurlencode($thread)));
+        $pdo = new PDO('sqlite:' . $database);
+        threadThemeAssertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
     }
 
     /** @return array{string,string,LocalWriteService,Application,string} */

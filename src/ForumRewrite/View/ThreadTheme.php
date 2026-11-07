@@ -10,12 +10,13 @@ use ForumRewrite\Support\ThemeDirective;
 use PDO;
 
 /**
- * A thread's own page theme, derived when read from its posts: the latest `theme:`
- * line from the thread's verified author or a current operator decides, and
- * `theme: none` clears it. A line counts only when its post is unretracted and its
- * attribution is verified, and only when it names a theme this site permits; an
- * unknown name is skipped, so the setting before it stays. Nothing is stored, so a
- * rebuild cannot disagree with the posts.
+ * A thread's own page theme, derived when read from its posts. The latest setting from
+ * the thread's verified author or a current operator decides, whether it came from a
+ * visible `theme:` line or a hidden `Theme:` header (copied into posts.theme), and
+ * `none` clears it; when one post has both, the header counts first. A setting counts
+ * only when its post is unretracted and verified and it names a theme this site
+ * permits; an unknown name is skipped, so the setting before it stays. The result is
+ * not stored, so a rebuild cannot disagree with the posts.
  */
 final class ThreadTheme
 {
@@ -33,12 +34,12 @@ final class ThreadTheme
             : '';
 
         $stmt = $pdo->prepare(
-            "SELECT posts.body, posts.author_identity_id
+            "SELECT posts.body, posts.theme, posts.author_identity_id
              FROM posts
              WHERE posts.thread_id = :thread_id
                AND posts.retracted_at IS NULL
                AND posts.attribution_verified = 1
-               AND posts.body LIKE '%theme:%'
+               AND (posts.theme IS NOT NULL OR posts.body LIKE '%theme:%')
              ORDER BY posts.created_at ASC, posts.sequence_number ASC"
         );
         $stmt->execute(['thread_id' => $threadId]);
@@ -46,8 +47,14 @@ final class ThreadTheme
         $theme = null;
         $operators = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $value = ThemeDirective::extract((string) $row['body']);
-            if ($value === null || ($value !== ThemeDirective::NONE && !in_array($value, $permitted, true))) {
+            $value = null;
+            foreach ([$row['theme'] ?? null, ThemeDirective::extract((string) $row['body'])] as $candidate) {
+                if (is_string($candidate) && ($candidate === ThemeDirective::NONE || in_array($candidate, $permitted, true))) {
+                    $value = $candidate;
+                    break;
+                }
+            }
+            if ($value === null) {
                 continue;
             }
             $author = (string) ($row['author_identity_id'] ?? '');

@@ -73,3 +73,24 @@ Branch `feat/theme_directive`, from `feat/engagify_theme` (unmerged; this cycle 
 - Estimate details: original scope as planned; uncertainty medium, resolved: `Body-Format` gave an exact pattern. No revisions. Measured labor unknown.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Read model keeps the hidden header; both forms share one rule
+
+**Original estimate: 0.10**
+**Retrospective: 0.11**
+
+- Changes:
+  - `posts.theme` (TEXT NULL) in `ReadModelSchema`; `SCHEMA_VERSION` 50 → 51.
+  - `ReadModelBuilder` and both `IncrementalReadModelUpdater` insert paths fill it; retraction placeholders clear it.
+  - `ThreadTheme` reads `posts.theme` and the body line from the same rows; latest setting wins across both forms, and a header beats a line in the same post.
+  - `docs/specs/read_model_schema_v1.md`: version 51 note; `body_format` and `theme` rows in the `posts` table.
+  - Tests: `ThreadThemeTest::testHiddenAndVisibleSettingsShareOneLatestWins` (mixed forms, `none`, header over line, other user, full rebuild) and `testStartupRebuildsASchema50ReadModel`.
+- Verification:
+  - `php tests/run.php ThreadThemeTest`: 7 passed.
+  - Smoke plus `ThreadThemeTest EventStatusTest SingleRequestPostingTest PostFormatRecordTest WriteApiSmokeTest` (`--jobs=4`): 669 run, 668 passed; the one failure is the base branch's `BoardListTest` failure.
+- Notes:
+  - Posts written in the same second can swap order after a full rebuild, as they can for `event:` and `title:`; the rebuild test checks stored values rather than which one is latest.
+  - `PublicOfflineSnapshotBuilder` keeps its own posts table and is unchanged; offline snapshots do not show page themes.
+- Estimate details: original scope as planned plus the prior-version startup test the schema contract requires; uncertainty low. No revisions. Measured labor unknown.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

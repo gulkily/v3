@@ -130,10 +130,10 @@ class IncrementalReadModelUpdater
                 $stmt = $pdo->prepare(
                     'INSERT INTO posts (
                         post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                        thread_type, agent_response_json, body_format, author_identity_id, author_profile_slug, author_label, sequence_number
+                        thread_type, agent_response_json, body_format, theme, author_identity_id, author_profile_slug, author_label, sequence_number
                      ) VALUES (
                         :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                        :thread_type, :agent_response_json, :body_format, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+                        :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
                      )'
                 );
                 $stmt->execute([
@@ -147,6 +147,7 @@ class IncrementalReadModelUpdater
                     'thread_type' => $record->threadType,
                     'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
                     'body_format' => $record->bodyFormat,
+                    'theme' => $record->theme,
                     'author_identity_id' => $record->authorIdentityId,
                     'author_profile_slug' => $author['profile_slug'],
                     'author_label' => $author['label'],
@@ -221,7 +222,7 @@ class IncrementalReadModelUpdater
 
             $this->measure($timings, 'write_placeholder_post', function () use ($pdo, $postId, $meta, $retraction): void {
                 $pdo->prepare('UPDATE posts SET subject = NULL, body = \'\', board_tags_json = \'[]\', thread_type = :thread_type,
-                        agent_response_json = NULL, body_format = NULL, retracted_at = :at, retraction_class = :class,
+                        agent_response_json = NULL, body_format = NULL, theme = NULL, retracted_at = :at, retraction_class = :class,
                         retraction_attribution = :attribution WHERE post_id = :id')
                     ->execute(['thread_type' => $meta['thread_type'] ?? null, 'id' => $postId] + $retraction);
             });
@@ -1181,10 +1182,10 @@ class IncrementalReadModelUpdater
         $stmt = $pdo->prepare(
             'INSERT INTO posts (
                 post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                thread_type, agent_response_json, body_format, author_identity_id, author_profile_slug, author_label, sequence_number
+                thread_type, agent_response_json, body_format, theme, author_identity_id, author_profile_slug, author_label, sequence_number
              ) VALUES (
                 :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                :thread_type, :agent_response_json, :body_format, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+                :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
              )'
         );
         $stmt->execute([
@@ -1198,6 +1199,7 @@ class IncrementalReadModelUpdater
             'thread_type' => $record->threadType,
                     'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
             'body_format' => $record->bodyFormat,
+                    'theme' => $record->theme,
             'author_identity_id' => $record->authorIdentityId,
             'author_profile_slug' => $author['profile_slug'],
             'author_label' => $author['label'],
