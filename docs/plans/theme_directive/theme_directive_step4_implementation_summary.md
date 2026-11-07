@@ -51,3 +51,25 @@ Branch `feat/theme_directive`, from `feat/engagify_theme` (unmerged; this cycle 
 - Estimate details: original scope as planned; uncertainty low; no revisions. Retrospective: tracing only, no code change; measured labor unknown.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Hidden `Theme:` header in records
+
+**Original estimate: 0.15**
+**Retrospective: 0.13**
+
+- Changes:
+  - `docs/specs/canonical_post_record_v1.md`: optional `Theme` on roots and replies; in the client-signed subset it follows `Body-Format`.
+  - `PostRecord` gains `?string $theme`; `PostRecordParser` reads and validates it (`isThemeValue()`: lowercase name or `none`).
+  - `SignedPostBundleValidator` accepts it only after `Body-Format`, once, lowercase.
+  - `LocalWriteService`: `normalizeTheme()` reads the `theme` input on create and prepare paths for threads and replies; the record builders append `Theme:` after `Body-Format`. Site permission and authority stay on read.
+  - Tests: `CanonicalRecordParsersTest` (parse and builders), `SignedPostBundleValidatorTest` (order, repeats, case), `SingleRequestPostingTest::testSignedReplyCarriesHiddenThemeHeader` (signed round trip), `ThreadThemeTest::testThemeInputWritesTheHiddenHeader`.
+- Verification:
+  - `php tests/run.php CanonicalRecordParsersTest SignedPostBundleValidatorTest`: 61 passed.
+  - `php tests/run.php SingleRequestPostingTest`: 8 passed. `ThreadThemeTest`: 5 passed.
+  - Smoke plus changed tests (`--jobs=4`): 451 run, 449 passed. `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged` fails on the base branch too. `LocalAppSmokeTest::testApplicationRendersTextApisAndRss` failed once under parallel jobs and passed twice alone; not touched by this stage.
+- Notes:
+  - The header does not set a theme yet; Stage 4 reads it.
+  - Clients that never send `Theme` produce the same bytes as before.
+- Estimate details: original scope as planned; uncertainty medium, resolved: `Body-Format` gave an exact pattern. No revisions. Measured labor unknown.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

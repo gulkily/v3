@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\SiteProfileRegistry;
@@ -118,6 +119,28 @@ final class ThreadThemeTest
         threadThemeAssertSame(false, is_file($path));
         threadThemeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
         threadThemeAssertContains('data-page-theme="midnight"', (string) file_get_contents($path));
+    }
+
+    public function testThemeInputWritesTheHiddenHeader(): void
+    {
+        [$root, , $service] = $this->environment();
+        $thread = (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Hidden', 'body' => 'Opening post', 'author_identity_id' => self::OPERATOR, 'theme' => 'Word97'])['thread_id'];
+        $reply = (string) $service->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'Darker now.', 'author_identity_id' => self::OPERATOR, 'theme' => 'midnight'])['post_id'];
+        $plain = (string) $service->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'No theme.', 'author_identity_id' => self::OPERATOR])['post_id'];
+        $repository = new CanonicalRecordRepository($root);
+
+        threadThemeAssertSame('word97', $repository->loadPost(CanonicalPathResolver::post($thread))->theme);
+        threadThemeAssertSame('midnight', $repository->loadPost(CanonicalPathResolver::post($reply))->theme);
+        threadThemeAssertSame(null, $repository->loadPost(CanonicalPathResolver::post($plain))->theme);
+        // The header stays out of the text.
+        threadThemeAssertSame("Darker now.\n", $repository->loadPost(CanonicalPathResolver::post($reply))->body);
+
+        try {
+            $service->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'Bad', 'author_identity_id' => self::OPERATOR, 'theme' => 'two words']);
+            throw new LogicException('Expected rejection');
+        } catch (RuntimeException $error) {
+            threadThemeAssertContains('theme must be a theme name or none', $error->getMessage());
+        }
     }
 
     /** @return array{string,string,LocalWriteService,Application,string} */

@@ -103,6 +103,17 @@ final class CanonicalRecordParsersTest
         assertThrows(fn () => $parser->parse($base . "Body-Format: html\n\nBody.\n"), 'Body-Format must be markdown or plain when present.');
     }
 
+    public function testPostThemeHeaderIsOptionalAndValidated(): void
+    {
+        $base = "Post-ID: theme-test\nCreated-At: 2026-11-07T12:00:00Z\nBoard-Tags: general\n";
+        $parser = new PostRecordParser();
+
+        assertNullValue($parser->parse($base . "\nBody.\n")->theme);
+        assertSame('midnight', $parser->parse($base . "Theme: midnight\n\nBody.\n")->theme);
+        assertSame('none', $parser->parse($base . "Thread-ID: root-001\nParent-ID: root-001\nTheme: none\n\nReply.\n")->theme);
+        assertThrows(fn () => $parser->parse($base . "Theme: Midnight Blue\n\nBody.\n"), 'Theme must be a lowercase theme name or none when present.');
+    }
+
     public function testCanonicalPostBuildersAppendBodyFormatOnlyWhenGiven(): void
     {
         $service = $this->localWriteServiceForBuilderTests();
@@ -118,6 +129,14 @@ final class CanonicalRecordParsersTest
         assertSame(
             "Post-ID: r\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\nThread-ID: t\nParent-ID: t\nBody-Format: plain\n\nReply.\n",
             $reply->invoke($service, 'r', '2026-11-03T12:00:00Z', 'general', 't', 't', "Reply.\n", null, null, 'plain')
+        );
+        assertSame(
+            "Post-ID: t\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\nSubject: S\nBody-Format: markdown\nTheme: midnight\n\nBody.\n",
+            $thread->invoke($service, 't', '2026-11-03T12:00:00Z', 'general', 'S', "Body.\n", null, '', '', '', '', 'markdown', '', 'midnight')
+        );
+        assertSame(
+            "Post-ID: r\nCreated-At: 2026-11-03T12:00:00Z\nBoard-Tags: general\nThread-ID: t\nParent-ID: t\nBody-Format: plain\nTheme: none\n\nReply.\n",
+            $reply->invoke($service, 'r', '2026-11-03T12:00:00Z', 'general', 't', 't', "Reply.\n", null, null, 'plain', 'none')
         );
     }
 

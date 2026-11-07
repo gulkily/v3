@@ -81,6 +81,7 @@ final class SignedPostBundleValidator
         $canonical .= "Author-Identity-ID: {$record->authorIdentityId}\n";
         if ($record->threadId === null && ($record->subject ?? '') !== '') $canonical .= "Subject: {$record->subject}\n";
         if ($record->bodyFormat !== null) $canonical .= "Body-Format: {$record->bodyFormat}\n";
+        if ($record->theme !== null) $canonical .= "Theme: {$record->theme}\n";
         $canonical .= "\n{$record->body}";
         if ($canonical !== $bytes) throw new RuntimeException('Record contains unsupported headers, order or noncanonical bytes.');
         return $record;
