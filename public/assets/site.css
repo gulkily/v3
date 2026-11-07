@@ -225,6 +225,16 @@ pre {
   flex: 1 1 auto;
 }
 
+/* Page links: Previous at the left edge, Next and First page at the right, so
+   a lone Next on page 1 stays where it will be on every later page. */
+.pagination-nav {
+  justify-content: flex-end;
+}
+
+.pagination-nav > .nav-link[rel="prev"] {
+  margin-right: auto;
+}
+
 .nav-link {
   display: inline-block;
   padding: 0.45rem 0.7rem;
