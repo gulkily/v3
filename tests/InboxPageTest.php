@@ -121,6 +121,30 @@ final class InboxPageTest
         });
     }
 
+    public function testNewPostsFollowRepliesWithTheirOwnMark(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $databasePath): void {
+            $viewer = $this->viewer('openpgp:ilyag', 'ilyag');
+            $this->post($pdo, 'my-thread', '2026-11-07T11:00:00Z', 'openpgp:ilyag');
+            $this->renderInbox($databasePath, $viewer, null);
+            $this->post($pdo, 'alice-reply', '2026-11-07T12:01:00Z', 'openpgp:alice', 'my-thread');
+            $this->post($pdo, 'bob-thread', '2026-11-07T12:02:00Z', 'openpgp:bob');
+            $this->post($pdo, 'my-new-thread', '2026-11-07T12:03:00Z', 'openpgp:ilyag');
+
+            $html = $this->renderInbox($databasePath, $viewer, null);
+            assertTrue(strpos($html, 'id="inbox-replies"') < strpos($html, 'id="inbox-new"'), 'Replies come before New posts.');
+            $newSection = substr($html, (int) strpos($html, 'id="inbox-new"'));
+            assertStringContains('post-bob-thread', $newSection);
+            assertStringNotContains('post-alice-reply', $newSection, 'A reply to me is listed only under Replies.');
+            assertStringNotContains('post-my-new-thread', $html);
+
+            $this->renderInbox($databasePath, $viewer, null, 'POST', ['section' => 'new', 'post_ids' => ['bob-thread']], ['HTTP_SEC_FETCH_SITE' => 'same-origin']);
+            $after = $this->renderInbox($databasePath, $viewer, null);
+            assertStringContains('No new posts', $after);
+            assertStringContains('post-alice-reply', $after, 'Catching up on New posts leaves Replies alone.');
+        });
+    }
+
     public function testUnapprovedViewerGetsTheAccessPage(): void
     {
         $this->withProfiles(function (\PDO $pdo, string $databasePath): void {

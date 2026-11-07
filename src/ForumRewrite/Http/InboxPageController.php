@@ -16,7 +16,7 @@ use ForumRewrite\Messaging\PrivateMessageStore;
 final class InboxPageController
 {
     private const MESSAGE_LIMIT = 25;
-    public const POST_SECTIONS = ['replies'];
+    public const POST_SECTIONS = ['replies', 'new'];
 
     /**
      * @param \Closure(): (array<string, mixed>|null) $authenticatedViewerProfile

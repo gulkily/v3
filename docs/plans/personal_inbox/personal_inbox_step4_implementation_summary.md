@@ -81,3 +81,20 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 - Estimate details: original scope as planned; uncertainty medium; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - New posts
+
+**Original estimate: 0.06**
+**Retrospective: 0.03**
+
+- Changes:
+  - `InboxPageController::POST_SECTIONS` adds `new`. The page shows New posts after Replies with its own Caught up form; `InboxFeed` already excluded the member's own posts and replies to them.
+- Verification:
+  - `InboxPageTest::testNewPostsFollowRepliesWithTheirOwnMark`: Replies come first; a reply to me is listed only under Replies; my own new thread is never listed; catching up on New posts leaves Replies unchanged.
+  - `./v3 test --smoke InboxPageTest InboxFeedTest`: only the baseline `BoardListTest` failure.
+  - Full suite not run.
+- Notes:
+  - Smaller than planned because Stage 3 built the feed for both sections.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
