@@ -45,7 +45,7 @@
 :root[data-theme="chicago"] .nav-link,
 :root[data-theme="chicago"] input,
 :root[data-theme="chicago"] textarea,
-:root[data-theme="chicago"] button:not(.theme-menu__option),
+:root[data-theme="chicago"] button:not(.theme-menu__option):not(.account-row),
 :root[data-theme="chicago"] [data-role="public-key-viewer"],
 :root[data-theme="chicago"] [data-role="private-key-viewer"] {
   border-color: #7b7b7b;
@@ -59,6 +59,51 @@
   background: #c0c0c0;
 }
 
+/* Shared list/account surfaces and their popovers use the card bevel. */
+:root[data-theme="chicago"] .account-card,
+:root[data-theme="chicago"] .account-group,
+:root[data-theme="chicago"] .account-page > .account-key-advanced,
+:root[data-theme="chicago"] .account-sheet,
+:root[data-theme="chicago"] .account-menu__panel,
+:root[data-theme="chicago"] .board-sort__menu,
+:root[data-theme="chicago"] .thread-rows,
+:root[data-theme="chicago"] .board-toolbar,
+:root[data-theme="chicago"] .stack > .board-filter {
+  border: 1px solid #7b7b7b;
+  border-radius: 0;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #7b7b7b;
+}
+
+/* Advanced is now a framed account surface, with the same row-sized entry
+   and content inset as its neighbouring groups. Nested disclosures stay compact. */
+:root[data-theme="chicago"] .account-page > .account-key-advanced {
+  padding-top: 0;
+}
+
+:root[data-theme="chicago"] .account-page > .account-key-advanced > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 1rem;
+}
+
+:root[data-theme="chicago"] .account-page > .account-key-advanced > div {
+  margin-top: 0;
+  padding: 0.25rem 1rem 1rem;
+}
+
+/* Override the shared type=button background so rows share their group surface. */
+:root[data-theme="chicago"] button.account-row {
+  background: transparent;
+}
+
+:root[data-theme="chicago"] .account-avatar {
+  border-radius: 0;
+}
+
 :root[data-theme="chicago"] .eyebrow {
   display: inline-block;
   margin-bottom: 0.7rem;
@@ -68,7 +113,8 @@
   letter-spacing: 0.04em;
 }
 
-:root[data-theme="chicago"] button:not(.theme-menu__option):active,
+/* Grouped account rows retain their shared flat-row treatment while pressed. */
+:root[data-theme="chicago"] button:not(.theme-menu__option):not(.account-row):active,
 :root[data-theme="chicago"] .nav-link.is-active {
   box-shadow:
     inset -1px -1px 0 0 #ffffff,

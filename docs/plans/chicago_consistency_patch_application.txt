@@ -1,0 +1,44 @@
+Task: Apply downloaded Chicago consistency patch
+Date: 2026-11-07
+Workflow: Direct; apply the supplied small CSS patch without redesign
+Source: /mnt/c/Users/digdu/Downloads/chicago-theme-consistency.patch
+Duplicate: chicago-theme-consistency(1).patch is byte-identical
+Feedback: PF-20261104-F66 is related theme work; this patch concerns list/account surfaces rather than its post-action repairs
+Scope: Apply the patch unchanged to public/assets/theme-chicago.css; leave uncommitted
+Reuse: Inspected public/assets/theme-chicago.css and theme-word97.css, shared account.css and thread-list.css, templates/pages/account_key.php and templates/layout.php. Extend existing theme selectors over canonical account/list containers; no new components or markup.
+Completion: Clean patch application and reviewable working-tree diff. UI acceptance uses /account/key/ and board/list routes; full rendered-flow acceptance remains incomplete because existing browser checks stop at the failures below.
+Recovery: git apply --check passed before application; git apply --reverse --check passed afterward. No partial/conflicted application or patch edits were needed.
+Dependencies: Zero added or changed
+
+Verification:
+./v3 test --smoke PostActionThemeTest completed: 435 run, 430 passed, 5 failed. Failures: AgentPostingApiTest::testSignedControlDiagnosticsBeforeGenericParserFailure, AgentPostingApiTest::testRulesErrorsAndLegacyCompatibility, SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection, SignedPostBundleValidatorTest::testStrictSubsetAndExactBytes, BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged. The run emitted PCRE Unicode-property compilation warnings. No theme-test failure was reported; baseline failures were not independently replayed without the patch.
+git diff --check passed.
+Temporary Chromium CSS fixture passed all six affected surface styles, flat account button row, square avatar, expanded Advanced disclosure and page overflow at 390/1280px, with shared sheets loaded after the theme as in production. Screenshots: /tmp/chicago-patch-390.png and /tmp/chicago-patch-1280.png. This fixture does not establish real-route or physical-device acceptance.
+Visual review: Inspected the 390px fixture screenshot; surfaces have square raised gray frames, the account row is flat, and the avatar is square.
+CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/offline_board_toolbar.cjs failed at Word97 390px: Tags at the right; stopped before Chicago coverage. Also emitted an undefined tagLinksEnabled fixture warning.
+CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/account_states.mjs failed at the local-key replacement assertion (line 181).
+Full suite: Not run, per project instructions
+Production: Not deployed or verified
+
+Continuation: 2026-11-07; user requested "please continue the work this patch begins"
+Workflow: Continue Direct work with bounded theme CSS fixes and rendered-flow verification; no wholesale theme redesign
+Scope: Finish Chicago account/list surfaces, their existing menus and the account backup/restore sheet. Keep behavior, copy, shared markup and other themes unchanged.
+Reuse: Existing .account-sheet in account.css, .account-menu__panel and .board-sort__menu in site.css; existing Advanced summary/content structure in identity.css and account_key.php. Reuse the patch's raised-frame rule and shared row spacing rather than adding components. Word97/Midnight provide comparable framed disclosures, but scope new summary styling to direct children so nested disclosures keep their own spacing.
+Risks to resolve: Advanced content crowds the new frame; account rows can inherit a bevel when pressed; backup sheet and existing menus still use different surface treatment. Verify real FrontController routes, guest/member states, collapsed/expanded disclosure, restore failure/retry controls, open menus and list overflow at phone/desktop sizes.
+Completion: Reviewable Chicago-only CSS changes with a reusable actual-route browser check, smoke plus affected tests, screenshots and honest acceptance limits. No deployment or commit requested.
+
+Continuation changes: Extended the existing frame rule to the account backup/restore/removal sheet and account/sort menus. Added a full-height Advanced entry and inset expanded content using direct-child selectors. Excluded grouped account rows from both raised and pressed button bevels, retaining the patch's transparent row background. Shared markup, application behavior and copy are unchanged; dependency delta remains zero.
+Regression evidence: Before continuation, the actual account-route check failed because the framed Advanced summary was shorter than a normal 44px account row. Final tests/browser/chicago_surfaces.mjs passes guest/member at 390/1280px, actual account and all-threads routes, existing account group frames, square avatars, keyboard disclosure, expanded keys, flat/transparent pressed row, removal-sheet cancellation preserving the key, restore validation feedback with available retry, sort navigation, menus and long-title overflow.
+Browser setup corrections: Narrowed the backup dialog locator because Account has two dialogs; committed fixture records in its disposable repository; used the ordinary /threads/?view=all entry because the default filtered board need not contain those fixture threads. Initial setup failures do not indicate application failures.
+Browser verification: node tests/browser/chicago_surfaces.mjs passed. CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/board_search.mjs /tmp/chicago-search-check light,word97,chicago,midnight passed eight theme/width cases plus the no-script flow. Screenshots in /tmp/chicago-surfaces and /tmp/chicago-search-check; inspected expanded guest phone/member desktop, restore-error phone and open-sort board phone views. Visual review caught a tan remove-row background from the shared type=button rule; retained the original patch's transparent override and added an actual-route assertion before rerunning successfully.
+Smoke verification: ./v3 test --smoke PostActionThemeTest completed with 435 run, 428 passed, 7 failed. Both PostActionThemeTest methods passed. Five failures match the earlier application run listed above; additional failures were SignedPostTransactionTest::testFailureRollbackAndAcceptedCommit (Git operation failure) and ViewerSessionStoreTest::testConcurrentRequestsShareOneStoreWithoutErrors (database locked). Log: /tmp/chicago-continuation-tests.log.
+Focused recheck: ./v3 test SignedPostTransactionTest::testFailureRollbackAndAcceptedCommit passed 1/1; the smoke failure was intermittent, with no backend changes made.
+Focused recheck: ./v3 test ViewerSessionStoreTest::testConcurrentRequestsShareOneStoreWithoutErrors passed 1/1; the database-lock failure was intermittent. The five failures from the earlier patch-application run remain unresolved.
+Static checks: node --check tests/browser/chicago_surfaces.mjs and git diff --check passed.
+Limitations: Chromium desktop/phone emulation with isolated local records; physical devices, other browser engines, production, successful backup restore and the prior Linux signed-save condition remain unverified. Full suite was not run. The previously failing broad account-state/offline-toolbar suites were not rerun or repaired; the new route check provides focused Chicago coverage rather than claiming those suites pass.
+Status: Continuation implemented and locally verified within the stated limits.
+Publication authorization: User requested a commit on a branch and push, followed by switching back to main.
+Branch: fix/chicago-theme-consistency-followup
+Push recovery: The initial fix/chicago-theme-consistency push was rejected because that remote branch already exists; use a distinct follow-up branch without overwriting it.
+Destination: origin; https://github.com/gulkily/v3
+Feedback record: Updated PF-20261104-F66 with related consistency work and retained blocked/locally-verified status because deployment and prior Linux signed-save acceptance are pending.
