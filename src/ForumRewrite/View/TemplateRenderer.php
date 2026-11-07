@@ -273,6 +273,7 @@ final class TemplateRenderer
             )),
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
+            'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
         ]);

@@ -338,6 +338,15 @@ final class Application
             return;
         }
 
+        if ($path === '/api/inbox/unread') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+                $this->sendJson(['status' => 'error', 'code' => 'inbox_disabled', 'error' => 'Inbox is disabled on this server.'], 404, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            $this->inboxPageController()->unread($method);
+            return;
+        }
+
         if ($path === '/inbox' || $path === '/inbox/') {
             if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
                 $this->routeServices()->notFound();
@@ -2270,7 +2279,7 @@ final class Application
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
-            '/inbox', '/inbox/',
+            '/inbox', '/inbox/', '/api/inbox/unread',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api/railspike_workflow', '/api', '/api/', '/api/version', '/api/list_index',

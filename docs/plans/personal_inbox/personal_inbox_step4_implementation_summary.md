@@ -120,3 +120,27 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 - Estimate details: original scope as planned; uncertainty medium; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Inbox count
+
+**Original estimate: 0.08**
+**Retrospective: 0.09**
+
+- Changes:
+  - `GET /api/inbox/unread` (no-store, approved members, 404 with the flag off) returns `unread_count`, the sum of unread conversations and unread replies, with each part and whether messages were available. Reading it moves no mark. It is listed in `ApiRouteCatalog`.
+  - New `public/assets/inbox_unread.js`, loaded on every page while the Inbox item exists, so server HTML stays the same for every viewer. It asks only when the browser is remembered as approved. It sets `data-unread-count` on the Inbox link and its mirrors, and writes the count to a visually hidden status span. It refreshes on load, focus, return to the tab, `pageshow` and sign-in in place; it never polls. A failure removes the count rather than leaving a stale one.
+  - `nav.php` marks the Inbox link and its hidden status span. In `app_header.php` the You/More trigger mirrors the Inbox count while Inbox exists, and the Messages link keeps its own message count wherever it sits, now including the You menu.
+  - The existing outline rules draw the count; no CSS was added.
+- Verification:
+  - `InboxPageTest::testCountAddsUnreadConversationsAndRepliesButNotNewPosts`: 1 conversation + 1 reply = 2, new posts excluded; reading twice marks nothing; Caught up on Replies lowers it; replies only without private messages; a failing message store still returns the reply count; unapproved viewers get an error.
+  - New `tests/browser/inbox_unread.mjs`: at desktop and phone width, link, More tab and status agree; changing the count from 3 to 0 and then failing moves no header box; a browser not remembered as approved makes no request. Passed.
+  - `tests/browser/nav_unread_outline.mjs` now also checks the Inbox link in all 16 themes: no layout shift, outline only above zero. Passed. `nav_slots.mjs` passed.
+  - `./v3 test --smoke InboxPageTest AppNavigationPlacementTest InboxFeedTest`, then `ApiRouteCatalogTest`: the catalog failure from the first run is fixed; only the baseline `BoardListTest` failure remains.
+  - Full suite not run.
+- Notes:
+  - Reuse decision changed from Step 3: the count is summed on the server and drawn by a small separate script, instead of extending `private_message_unread.js`. That script loads only for messaging and binds to the Messages link, while Inbox must work with private messages off.
+  - The conversation part counts at most 25 conversations; any count still shows the outline.
+  - If an operator turns the flag on mid-visit, the count appears on the next page load.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

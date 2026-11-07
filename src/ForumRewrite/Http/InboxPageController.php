@@ -63,6 +63,38 @@ final class InboxPageController
     }
 
     /**
+     * The Inbox link's count: unread conversations plus unread replies. New posts are left
+     * out, because the board would almost never show zero. Reading the count moves no mark.
+     */
+    public function unread(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Only GET is supported.'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewer = ($this->authenticatedViewerProfile)();
+        if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Inbox is for signed-in approved members.'], $viewer === null ? 401 : 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $replies = $this->feed($viewer)->unreadCount('replies');
+        } catch (\Throwable) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Inbox status unavailable.'], 503, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $messages = $this->messages($viewer);
+        $conversations = count($messages['conversations']);
+        $this->routeServices->sendJson([
+            'status' => 'ok',
+            'unread_count' => $replies + $conversations,
+            'replies' => $replies,
+            'conversations' => $conversations,
+            'messages_available' => !$messages['failed'],
+        ], 200, $this->routeServices->noStoreHeaders());
+    }
+
+    /**
      * Moves one section's mark past the posts the member saw, then returns to Inbox.
      * Returns the section whose update failed, or null after redirecting.
      *

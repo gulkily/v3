@@ -145,6 +145,32 @@ final class InboxPageTest
         });
     }
 
+    public function testCountAddsUnreadConversationsAndRepliesButNotNewPosts(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $databasePath): void {
+            $viewer = $this->viewer('openpgp:ilyag', 'ilyag');
+            $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
+            $this->post($pdo, 'my-thread', '2026-11-07T11:00:00Z', 'openpgp:ilyag');
+            assertSame(0, $this->count($databasePath, $viewer, static fn (): PrivateMessageStore => $store)['unread_count']);
+
+            (new PrivateMessageMailboxService($store, $pdo))->send($this->viewer('openpgp:alice', 'alice'), $this->message('message-001', 'ilyag'));
+            $this->post($pdo, 'alice-reply', '2026-11-07T12:01:00Z', 'openpgp:alice', 'my-thread');
+            $this->post($pdo, 'bob-thread', '2026-11-07T12:02:00Z', 'openpgp:bob');
+            $state = $this->count($databasePath, $viewer, static fn (): PrivateMessageStore => $store);
+            assertSame(['ok', 2, 1, 1, true], [$state['status'], $state['unread_count'], $state['replies'], $state['conversations'], $state['messages_available']]);
+            assertSame(2, $this->count($databasePath, $viewer, static fn (): PrivateMessageStore => $store)['unread_count'], 'Reading the count marks nothing.');
+
+            $this->renderInbox($databasePath, $viewer, null, 'POST', ['section' => 'replies', 'post_ids' => ['alice-reply']], ['HTTP_SEC_FETCH_SITE' => 'same-origin']);
+            assertSame(1, $this->count($databasePath, $viewer, static fn (): PrivateMessageStore => $store)['unread_count']);
+            assertSame(0, $this->count($databasePath, $viewer, null)['unread_count'], 'Without private messages the count is replies only.');
+            $failed = $this->count($databasePath, $viewer, static function (): PrivateMessageStore { throw new RuntimeException('down'); });
+            assertSame([0, false], [$failed['unread_count'], $failed['messages_available']]);
+
+            $guest = $this->count($databasePath, ['identity_id' => 'openpgp:waiting', 'username_token' => 'waiting', 'is_approved' => 0], null);
+            assertSame('error', $guest['status']);
+        });
+    }
+
     public function testUnapprovedViewerGetsTheAccessPage(): void
     {
         $this->withProfiles(function (\PDO $pdo, string $databasePath): void {
@@ -180,6 +206,27 @@ final class InboxPageTest
         $_SERVER = $server;
         $_POST = [];
         return (string) ob_get_clean();
+    }
+
+    /** @param (\Closure(): PrivateMessageStore)|null $store @param array<string, mixed> $viewer @return array<string, mixed> */
+    private function count(string $databasePath, array $viewer, ?\Closure $store): array
+    {
+        $services = new RouteServices(
+            $databasePath,
+            new TemplateRenderer(__DIR__ . '/../templates', 'test'),
+            'test',
+            false,
+            static fn (): array => $viewer,
+            __DIR__ . '/fixtures/parity_minimal_v1',
+            dirname(__DIR__),
+            null,
+            null,
+            FeatureFlagEvaluator::forApplication(__DIR__ . '/fixtures/parity_minimal_v1', dirname(__DIR__)),
+            static fn (): array => $viewer,
+        );
+        ob_start();
+        (new InboxPageController($services, static fn (): array => $viewer, $store, fn (): InboxMarkStore => $this->marks))->unread('GET');
+        return json_decode((string) ob_get_clean(), true, flags: JSON_THROW_ON_ERROR);
     }
 
     private function post(\PDO $pdo, string $postId, string $createdAt, string $author, ?string $parentId = null): void
