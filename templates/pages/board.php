@@ -1,4 +1,5 @@
 <section class="stack thread-list">
+<?= $indent($partial('partials/visitor_intro.php', []), 1) ?>
 <?php if (!$isQdbInstance): ?>
   <article class="card">
     <div class="nav board-controls-nav">

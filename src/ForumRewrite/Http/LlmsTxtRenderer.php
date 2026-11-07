@@ -34,16 +34,31 @@ final class LlmsTxtRenderer
     public function __construct(
         private readonly FeatureFlagEvaluator $flags,
         private readonly ?string $sourceRepositoryUrl = null,
+        private readonly string $siteName = '',
+        private readonly string $siteDescription = '',
     ) {
+    }
+
+    /**
+     * Title and summary. A profile with a site description leads with its
+     * name and that sentence; otherwise the generic forum title stays.
+     *
+     * @return list<string>
+     */
+    private function introLines(): array
+    {
+        $summary = 'A forum where every post is a Git-backed text record. Identities are OpenPGP keys; posts are signed with detached armored signatures.';
+        if ($this->siteDescription === '' || $this->siteName === '') {
+            return ['# Forum', '', '> ' . $summary, ''];
+        }
+
+        return ['# ' . $this->siteName, '', '> ' . $this->siteDescription, '', $summary, ''];
     }
 
     public function render(): string
     {
         $lines = [
-            '# Forum',
-            '',
-            '> A forum where every post is a Git-backed text record. Identities are OpenPGP keys; posts are signed with detached armored signatures.',
-            '',
+            ...$this->introLines(),
             ...$this->sourceCodeLines(),
             '## Quickstart',
             '',

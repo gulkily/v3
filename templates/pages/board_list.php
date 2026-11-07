@@ -1,4 +1,5 @@
 <section class="stack board-list">
+<?= $indent($partial('partials/visitor_intro.php', []), 1) ?>
 <?= $indent($partial('partials/board_toolbar.php', [
     'viewOptions' => $viewOptions,
     'sortOptions' => $sortOptions,

@@ -2,6 +2,12 @@
   <article class="card about-sections">
     <section class="about-section" data-about-section="intro">
       <h1><?= $e($aboutContent['title']) ?></h1>
+<?php if ($aboutContent['description'] !== ''): ?>
+      <p data-site-description><?= $e($aboutContent['description']) ?></p>
+<?php endif; ?>
+<?php if ($aboutContent['buildExample'] !== null): ?>
+      <p data-build-example><?= $e($aboutContent['buildExample']['text']) ?> <a href="<?= $e($aboutContent['buildExample']['threadHref']) ?>">Read the thread</a> · <a href="<?= $e($aboutContent['buildExample']['changeHref']) ?>">See the change</a></p>
+<?php endif; ?>
       <p><?= $e($aboutContent['introduction']) ?></p>
     </section>
     <section class="about-section" data-about-section="community">

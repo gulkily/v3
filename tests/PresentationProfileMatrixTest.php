@@ -34,6 +34,50 @@ final class PresentationProfileMatrixTest
         }
     }
 
+    public function testOnlyZenmemesAboutLeadsWithSiteDescriptionAndBuildExample(): void
+    {
+        $application = $this->application();
+        foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+            putenv('FORUM_SITE_ID=' . $profileId);
+            try {
+                $about = $this->render($application, '/about/');
+                $isZenmemes = $profileId === 'zenmemes';
+                assertSame($isZenmemes, str_contains($about, 'data-site-description'));
+                assertSame($isZenmemes, str_contains($about, 'data-build-example'));
+                if ($isZenmemes) {
+                    assertStringContains('zenmemes is a garage where people and agents build this site together, starting from threads.', $about);
+                    assertStringContains('href="/threads/thread-20261103060933-51ef9554"', $about);
+                    assertStringContains('href="https://github.com/gulkily/v3/pull/26"', $about);
+                    assertTrue(strpos($about, 'data-site-description') < strpos($about, 'data-build-example'));
+                }
+            } finally {
+                putenv('FORUM_SITE_ID');
+            }
+        }
+    }
+
+    public function testOnlyZenmemesBoardCarriesTheFirstVisitIntro(): void
+    {
+        $application = $this->application();
+        foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+            putenv('FORUM_SITE_ID=' . $profileId);
+            try {
+                $board = $this->render($application, '/');
+                $isZenmemes = $profileId === 'zenmemes';
+                assertSame($isZenmemes, str_contains($board, 'class="card visitor-intro" data-visitor-intro'));
+                assertStringContains("localStorage.getItem('forum_visitor_intro_hidden')", $board);
+                if ($isZenmemes) {
+                    assertTrue(strpos($board, 'class="card visitor-intro"') < strpos($board, 'data-compose-root'));
+                    assertStringContains('<a href="/about/">About</a>', $board);
+                    assertStringContains('data-visitor-intro-hide aria-label="Hide"', $board);
+                    assertStringContains("localStorage.setItem('forum_visitor_intro_hidden', '1')", $board);
+                }
+            } finally {
+                putenv('FORUM_SITE_ID');
+            }
+        }
+    }
+
     public function testFourthProfileFixtureUsesTheSamePresentationMatrix(): void
     {
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());

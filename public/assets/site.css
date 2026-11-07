@@ -1240,6 +1240,40 @@ pre {
   }
 }
 
+/* First-visit intro on the board: the head script marks a browser with a saved
+   identity, or one that hid the intro, before paint. */
+:root[data-visitor="known"] [data-visitor-intro] {
+  display: none !important;
+}
+
+.visitor-intro {
+  position: relative;
+}
+
+/* On the sentence, not the card: themes set their own card padding. */
+.visitor-intro p {
+  margin: 0 1.5rem 0 0;
+}
+
+/* `:root` outranks themes' general button sizing. The invisible ::after gives
+   the small button a 44px touch target without covering the sentence. */
+:root .visitor-intro button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.visitor-intro button::after {
+  content: "";
+  position: absolute;
+  inset: -0.625rem;
+}
+
 /* Member-only links (Messages, Invite) are in every viewer's HTML; the head
    script marks a browser remembered as approved before paint. */
 :root:not([data-member="approved"]) [data-member-only] {
