@@ -35,6 +35,9 @@
   --ui-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --gloss-accent: #6d28d9;
+  --gloss-edge: #e2dff0;
+  --gloss-control-edge: #c4b5fd;
+  --gloss-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(76, 29, 149, 0.08);
 }
 
 .theme-swatch[data-theme="gloss"] {
@@ -49,8 +52,8 @@
 :root:is([data-theme="gloss"], [data-theme="engagify"]) .card {
   border-radius: 1rem;
   /* Cards are not controls, so a soft border is enough; inputs keep --line. */
-  border-color: #e2dff0;
-  box-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(76, 29, 149, 0.08);
+  border-color: var(--gloss-edge);
+  box-shadow: var(--gloss-shadow);
 }
 
 :root:is([data-theme="gloss"], [data-theme="engagify"]) input,
@@ -60,11 +63,99 @@
 
 :root:is([data-theme="gloss"], [data-theme="engagify"]) button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
   border-radius: 999px;
+  border-color: var(--gloss-control-edge);
   font-weight: 600;
 }
 
 :root:is([data-theme="gloss"], [data-theme="engagify"]) a {
   color: var(--gloss-accent);
+}
+
+/* Edges. One rule per kind of element:
+   - containers: 16px corners, the pale edge, and a shadow when they float;
+   - clickable things: pills with a soft violet edge;
+   - text fields: 12px corners and the darker --line, so an empty field stays
+     visible on a white card (3:1);
+   - dividers and small inner boxes: the pale edge, 8px where rounded. */
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-rows,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-menu__panel,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .board-sort__menu,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-action-menu-list {
+  border-color: var(--gloss-edge);
+  border-radius: 1rem;
+  box-shadow: var(--gloss-shadow);
+  overflow: hidden;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tag-group,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .bookmarklet-group,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-card,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-group,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-key-advanced,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-disclosure {
+  border-color: var(--gloss-edge);
+  border-radius: 1rem;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-row + .thread-row,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .about-section + .about-section,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-row {
+  border-color: var(--gloss-edge);
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .calendar-day {
+  border-color: var(--gloss-edge);
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) pre,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-row__thumb,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .bookmarklet-feedback {
+  border-color: var(--gloss-edge);
+  border-radius: 0.5rem;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .new-post-button,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-menu__trigger,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-action-menu-toggle {
+  border-radius: 999px;
+  border-color: var(--gloss-control-edge);
+}
+
+/* The app shell's New post rule and the theme switcher set their own edge;
+   status chips keep their status colour. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .new-post-button:not(.is-active),
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .theme-menu,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .chip:not(.chip--pending):not(.chip--approved) {
+  border-color: var(--gloss-control-edge);
+}
+
+/* Current and active links keep their stronger violet edge. */
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link.is-active,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link[aria-current="page"] {
+  border-color: var(--active-line);
+}
+
+/* Phone tab bar: tall tabs read better as rounded rectangles than pills. */
+@media (max-width: 639px) {
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link,
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .new-post-button,
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .account-menu__trigger {
+    border-radius: 0.75rem;
+  }
+
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .account-menu[open] > .account-menu__trigger {
+    border-color: var(--active-line);
+  }
+
+  /* The More tab renamed after the current page draws its selected look here. */
+  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .account-menu__label--current::before {
+    border-color: var(--active-line);
+    border-radius: 0.75rem;
+  }
 }
 
 /* Engagify parody layer: everything below applies to engagify only. */

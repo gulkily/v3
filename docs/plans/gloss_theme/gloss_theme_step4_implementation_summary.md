@@ -240,3 +240,27 @@ Study closeout, `railspike-effort` / `v3/gloss_theme`, R1/P2, single exposed Cla
 - Maintainer comfortable-fit judgment and study acceptance: pending.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Follow-up - consistent edges
+
+After closeout the maintainer found Gloss mixing square and rounded corners, and dark borders with pale borders plus shadows. Claude proposed one rule per kind of element; the maintainer approved it ("i approve this"), including the softer button edges. Direct follow-up on this branch, one commit.
+
+- Changes, `public/assets/theme-gloss.css` shared section (so Engagify's page chrome changes too):
+  - Tokens `--gloss-edge` (`#e2dff0`), `--gloss-control-edge` (`#c4b5fd`) and `--gloss-shadow`.
+  - Containers (thread list, account and sort menus, compose menu): 16px corners, pale edge, shadow; the thread list clips its rows. Inner groups (tag groups, Bookmarklets groups, account cards and groups, Advanced and compose disclosures): 16px, pale edge.
+  - Clickable things (navigation links, New post, You/More, Tools buttons, sort control, compose menu toggle, the theme switcher, all buttons, plain chips): pills with the soft violet edge. Active items keep `--active-line`; status chips keep their status colour.
+  - Text fields keep 12px and the darker `--line`, for 3:1 against white.
+  - Dividers (thread rows, About sections, account rows, calendar cells) and small boxes (code blocks, thumbnails, Bookmarklets feedback): pale edge, 8px where rounded.
+  - Phone tab bar: tabs, New post, More and the renamed More tab use 12px corners and the violet active edge.
+- Verification:
+  - Passed: edge inventory of every bordered or shadowed element on 12 Gloss pages: the only dark edges left are text fields; the only other strong edges are active items, the theme swatch and status chips.
+  - Passed: before/after screenshots of the board and Tools at 1280px, the board, Tools and its renamed More tab at 380px, Account and Calendar inspected.
+  - Passed: Engagify nags: computed corners, borders, shadows, colours and widths of all 48 nag elements on the cookie thread, nags open, at 1280px and 380px, are identical before and after.
+  - Passed: Gloss on 14 page types at both widths without sideways scroll; keyboard focus visible on 25 Tab stops at both widths.
+  - Passed: contrast audit Gloss OK, Engagify OK; `tests/browser/tools_launcher.mjs`; `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest NavIconSetsTest Word97ThemeCoverageTest PostActionThemeTest`, 444 run, 439 passed, the 5 baseline failures.
+  - Full suite not run.
+- Notes:
+  - Buttons and links no longer have a 3:1 edge; their fill and text identify them, and focus rings are unchanged. Accepted by the maintainer.
+  - The calendar keeps a square grid of pale lines inside its rounded card.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
