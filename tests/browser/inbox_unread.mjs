@@ -1,4 +1,4 @@
-// The Inbox count arrives after paint as data-unread-count on the Inbox link and
+// The Unread count arrives after paint as data-unread-count on the Unread link and
 // its mirrors. CSS draws an outline, so nothing in the header moves or resizes.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
@@ -32,7 +32,7 @@ for (const [width, height] of [[1100, 260], [390, 760]]) {
     });
     const boxes = () => page.evaluate(() => [...document.querySelectorAll('.site-header a, .site-header summary')].map(e => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].join(','); }).join(';'));
     const state = () => page.evaluate(() => [document.querySelector('[data-inbox-unread]').dataset.unreadCount ?? null, document.querySelector('.account-menu__trigger').dataset.unreadCount ?? null, document.getElementById('inbox-unread-status').textContent]);
-    await page.goto('http://app.test/inbox');
+    await page.goto('http://app.test/unread');
     if (!approved) {
       await page.waitForTimeout(300);
       assert.equal(calls, 0, `${width}: a browser not remembered as approved asks for nothing`);
@@ -54,10 +54,10 @@ for (const [width, height] of [[1100, 260], [390, 760]]) {
     count = null;
     await page.evaluate(() => window.ForumInboxUnread.refresh());
     await page.waitForFunction(() => document.querySelector('[data-inbox-unread]').dataset.unreadCount === undefined);
-    assert.deepEqual(await state(), [null, null, 'Inbox status unavailable'], `${width}: a failure shows no count, never a stale one`);
+    assert.deepEqual(await state(), [null, null, 'Unread status unavailable'], `${width}: a failure shows no count, never a stale one`);
     assert.equal(await boxes(), before, `${width}: a failure moves nothing`);
     await page.close();
   }
 }
-console.log('Inbox count checked at desktop and phone widths without layout shift.');
+console.log('Unread count checked at desktop and phone widths without layout shift.');
 await browser.close();

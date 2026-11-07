@@ -27,7 +27,7 @@
       if (!response.ok || state.status !== 'ok' || !Number.isSafeInteger(state.unread_count) || state.unread_count < 0) throw new Error();
       show(state.unread_count, state.unread_count === 0 ? 'Nothing new' : state.unread_count + ' unread');
     } catch (error) {
-      if (current === generation) show(null, 'Inbox status unavailable');
+      if (current === generation) show(null, 'Unread status unavailable');
     }
   }
   function schedule() {

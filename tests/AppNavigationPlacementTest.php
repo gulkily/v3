@@ -67,28 +67,28 @@ final class AppNavigationPlacementTest
         $this->withSite('zenmemes', function (): void {
             $off = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true]);
             $placements = array_column($off->navigationItems(self::VIEWERS['approved']), 'placement', 'href');
-            assertSame(null, $placements['/inbox'] ?? null);
+            assertSame(null, $placements['/unread'] ?? null);
             assertSame('main', $placements['/messages']);
 
             $on = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true, FeatureFlagRegistry::INBOX_ENABLED => true]);
             $items = $on->navigationItems(self::VIEWERS['approved']);
             $placements = array_column($items, 'placement', 'href');
-            assertSame('main', $placements['/inbox']);
+            assertSame('main', $placements['/unread']);
             assertSame('main', $placements['/messages'], 'Messages stays on the bar with Inbox on.');
             $hrefs = array_values(array_column(array_filter($items, static fn (array $item): bool => $item['placement'] === 'main'), 'href'));
-            assertSame(array_search('/inbox', $hrefs, true) + 1, array_search('/messages', $hrefs, true), 'Inbox sits just before Messages.');
+            assertSame(array_search('/unread', $hrefs, true) + 1, array_search('/messages', $hrefs, true), 'Inbox sits just before Messages.');
             assertSame('more', array_column($items, 'phone', 'href')['/messages']);
-            assertSame('more', array_column($items, 'phone', 'href')['/inbox']);
-            assertSame(true, array_column($items, 'member_only', 'href')['/inbox']);
+            assertSame('more', array_column($items, 'phone', 'href')['/unread']);
+            assertSame(true, array_column($items, 'member_only', 'href')['/unread']);
             assertTrue(in_array('inbox', array_column(array_filter($items, static fn (array $item): bool => $item['placement'] === 'main' && $item['phone'] === 'more'), 'section'), true), 'Inbox can take a phone slot.');
 
             $withoutMessages = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => false, FeatureFlagRegistry::INBOX_ENABLED => true]);
             $placements = array_column($withoutMessages->navigationItems(self::VIEWERS['approved']), 'placement', 'href');
-            assertSame('main', $placements['/inbox']);
+            assertSame('main', $placements['/unread']);
             assertSame(null, $placements['/messages'] ?? null);
 
             $state = $on->navigationState(self::VIEWERS['approved'], 'inbox');
-            assertStringContains('href="/inbox"', $state['html']);
+            assertStringContains('href="/unread"', $state['html']);
             // The unread count and history sync start from the Messages link on the bar.
             assertSame(1, substr_count($state['html'], 'data-private-message-unread '));
         });

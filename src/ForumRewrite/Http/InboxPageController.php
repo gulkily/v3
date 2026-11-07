@@ -35,15 +35,15 @@ final class InboxPageController
     public function show(string $method, array $query = []): void
     {
         if (!in_array($method, ['GET', 'POST'], true)) {
-            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET and POST are supported for Inbox.', 'inbox'), 405, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendHtml($this->routeServices->renderMessagePage('Method Not Allowed', 'Method Not Allowed', 'Only GET and POST are supported for Unread.', 'inbox'), 405, $this->routeServices->noStoreHeaders());
             return;
         }
         $viewer = ($this->authenticatedViewerProfile)();
         if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
             $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_access.php', [
                 'viewerIdentityId' => (string) ($viewer['identity_id'] ?? ''),
-                'featureName' => 'Inbox',
-            ], 'Inbox', 'inbox', [
+                'featureName' => 'Unread',
+            ], 'Unread', 'inbox', [
                 '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/private_message_access.js',
             ]), $viewer === null ? 401 : 403, $this->routeServices->noStoreHeaders());
             return;
@@ -59,7 +59,7 @@ final class InboxPageController
             'viewerProfile' => $viewer,
             'messages' => $this->messages($viewer),
             'sections' => $this->sections($viewer, $failedCatchUp),
-        ], 'Inbox', 'inbox'), $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
+        ], 'Unread', 'inbox'), $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
     }
 
     /**
@@ -74,13 +74,13 @@ final class InboxPageController
         }
         $viewer = ($this->authenticatedViewerProfile)();
         if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Inbox is for signed-in approved members.'], $viewer === null ? 401 : 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Unread is for signed-in approved members.'], $viewer === null ? 401 : 403, $this->routeServices->noStoreHeaders());
             return;
         }
         try {
             $replies = $this->feed($viewer)->unreadCount('replies');
         } catch (\Throwable) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Inbox status unavailable.'], 503, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Unread status unavailable.'], 503, $this->routeServices->noStoreHeaders());
             return;
         }
         $messages = $this->messages($viewer);
@@ -106,12 +106,12 @@ final class InboxPageController
         $section = in_array($input['section'] ?? null, self::POST_SECTIONS, true) ? (string) $input['section'] : 'replies';
         $ids = $input['post_ids'] ?? [];
         try {
-            if (!SameOriginRequest::check() || !is_array($ids)) throw new \RuntimeException('Caught up must come from Inbox.');
+            if (!SameOriginRequest::check() || !is_array($ids)) throw new \RuntimeException('Caught up must come from Unread.');
             $this->feed($viewer)->catchUp($section, array_values($ids));
         } catch (\Throwable) {
             return $section;
         }
-        $this->routeServices->sendRedirect('/inbox', 'Back to Inbox.', 303, $this->routeServices->noStoreHeaders(), 'inbox');
+        $this->routeServices->sendRedirect('/unread', 'Back to Unread.', 303, $this->routeServices->noStoreHeaders(), 'inbox');
         return null;
     }
 
