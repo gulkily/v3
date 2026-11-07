@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/personal_inbox`; [host ledger](../effort_
 
 Extended estimates: enabled
 
-**Cycle estimate: 0.85** (Step 3 projection reaffirmed at Step 4 entry)
+**Cycle estimate: 0.85** (Step 3 projection reaffirmed at Step 4 entry; retrospective scope assessment 0.80 at closeout)
 
 Branch: `feat/personal_inbox`, planning commit `33a76c03`. Starting revision `f343b626`.
 
@@ -167,3 +167,37 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 - Estimate details: original scope as planned; uncertainty medium; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Documentation
+
+**Original estimate: 0.06**
+**Retrospective: 0.05**
+
+- Changes:
+  - New concept entry [caught-up mark](../../concepts/caught_up_mark.md).
+  - [Recent conversation](../../concepts/recent_conversation.md) now points members to Inbox for read tracking; [navigation slots](../../concepts/navigation_slots.md) describes Inbox on the bar, Messages in You, and Inbox as a member-only slot.
+  - `docs/architecture/private_messaging.md` explains what Inbox reads from the message store and that it decrypts nothing and moves no read position.
+  - `docs/product/v3_feature_priorities.md` records progress on priority 1 and what remains.
+  - `PF-20261030-F05` gains a dated note. Its `Workflow` stays as it was, because author filters and RSS/Atom are still open and nothing is deployed.
+- Verification:
+  - Every local link in the touched docs and this feature folder resolves. The one unresolved match, `/tools/feature-flags/` in the messaging doc, is a site path from before this cycle, not a file.
+  - Concept source paths checked against the code delivered in Stages 1–6.
+  - `git diff --check`: clean.
+- Notes:
+  - The commit carries a `Feedback: PF-20261030-F05` trailer.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Delivered scope: Step 2 scope v2. One Inbox page behind `FORUM_INBOX_ENABLED` (default off) with unread conversations, Replies and New posts; per-username caught-up marks; an outline count on the Inbox link; Inbox in Messages' bar slot with Messages in You.
+- Commits: planning `33a76c03`, then `6a69f8da`, `0eee8731` and its fix `e02195ba`, `0b038023`, `0d6851e4`, `9c8d6a4e`, `ba3e24c6`, `7c973a58`, and the Stage 8 commit. That is ten commits against a minimum of nine.
+- Verification: smoke set plus changed tests at every stage; `InboxPageTest`, `InboxFeedTest`, `AppNavigationPlacementTest`, `FeatureFlagEvaluatorTest`, `ReadModelSchemaTest`, `ApiRouteCatalogTest`, `ActivityProjectionTest`, `BoardSearchTest`, `DeployPageTest` pass. Browser checks `inbox_unread.mjs`, `nav_unread_outline.mjs` and `nav_slots.mjs` pass. Two-browser walk-through in Stage 7 passed, including failure and flag recovery.
+- Baseline failure: `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged` fails with and without this branch.
+- Not done: full suite (maintainer runs it); deployment and production acceptance; a walk-through with a real signed-in key rather than an issued session; a message arriving during the walk-through.
+- Final diff review: reuse of Recent's query and row shaping and of the same-origin check removed duplication; no new dependency; no unrelated file changed.
+
+### Study closeout
+
+2026-11-07T13:19:50Z, `railspike-effort` / `v3/personal_inbox`, Step 4 closeout. Scope v2, starting revision `f343b626`, R1, P2, single exposed Claude rater. Whole-cycle projection at entry 0.85, not revised. **Retrospective scope assessment: 0.80.** It is lower because Stage 3 built both sections, so Stage 4 was small. Stage originals 0.12/0.06/0.14/0.06/0.10/0.08/0.05/0.06; retrospectives 0.10/0.04/0.14/0.03/0.08/0.09/0.05/0.05; non-additive. Corrective work: one fix commit in Stage 2 for a missed schema test. New requests during Step 4: none; the maintainer asked how the count avoids reflow, answered within planned scope. Maintainer comfortable-fit judgment and acceptance pending. No measured labor.
