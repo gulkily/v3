@@ -2883,7 +2883,7 @@ NODE;
         assertSame('Sending anonymous post...', $result['status']);
     }
 
-    public function testComposeTextareaCtrlEnterRequestsPrimarySubmit(): void
+    public function testComposeTypingFieldCtrlEnterRequestsPrimarySubmit(): void
     {
         $script = <<<'NODE'
 const fs = require('fs');
@@ -2917,6 +2917,8 @@ function makeField(tagName, name, value, type) {
 const body = Object.assign(makeField('TEXTAREA', 'body', 'Draft body', null), { dataset: { composeFieldLabel: 'Body' } });
 const subject = Object.assign(makeField('INPUT', 'subject', 'Draft subject', 'text'), { dataset: { composeFieldLabel: 'Subject' } });
 const author = makeField('INPUT', 'author_identity_id', '', 'hidden');
+const tags = makeField('INPUT', 'board_tags', 'general', 'text');
+const markdown = makeField('INPUT', 'body_format', 'markdown', 'checkbox');
 const primaryButton = {
   dataset: {},
   disabled: false,
@@ -2992,7 +2994,9 @@ global.navigator = {};
 vm.runInThisContext(source);
 state.keydownHandler(keyEvent('plain'));
 state.keydownHandler(keyEvent('shift', { ctrlKey: true, shiftKey: true }));
-state.keydownHandler(keyEvent('input', { ctrlKey: true, target: subject }));
+state.keydownHandler(keyEvent('title', { ctrlKey: true, target: subject }));
+state.keydownHandler(keyEvent('tags', { ctrlKey: true, target: tags }));
+state.keydownHandler(keyEvent('checkbox', { ctrlKey: true, target: markdown }));
 state.keydownHandler(keyEvent('ctrl', { ctrlKey: true }));
 state.keydownHandler(keyEvent('meta', { metaKey: true }));
 primaryButton.disabled = true;
@@ -3008,8 +3012,8 @@ NODE;
 
         $result = $this->runScript($script);
 
-        assertSame(['primary', 'primary'], $result['requestSubmitCalls']);
-        assertSame(['ctrl', 'meta'], $result['prevented']);
+        assertSame(['primary', 'primary', 'primary', 'primary'], $result['requestSubmitCalls']);
+        assertSame(['title', 'tags', 'ctrl', 'meta'], $result['prevented']);
         assertSame(0, $result['primaryClicks']);
         assertSame(0, $result['anonymousClicks']);
     }
