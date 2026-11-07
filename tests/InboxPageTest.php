@@ -31,6 +31,25 @@ final class InboxPageTest
         });
     }
 
+    public function testStartupRebuildsAVersion50ReadModelWithTheParentIndex(): void
+    {
+        $this->withRepository(function (string $repositoryRoot, string $databasePath): void {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $this->render($application, '/recent/');
+            $pdo = new \PDO('sqlite:' . $databasePath);
+            $pdo->exec('DROP INDEX posts_parent_idx');
+            $pdo->exec("UPDATE metadata SET value='50' WHERE key='schema_version'");
+            $pdo = null;
+
+            $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/recent/');
+            $pdo = new \PDO('sqlite:' . $databasePath);
+            assertSame(\ForumRewrite\ReadModel\ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
+            assertSame('posts_parent_idx', $pdo->query("SELECT name FROM sqlite_master WHERE type='index' AND name='posts_parent_idx'")->fetchColumn());
+            $plan = implode(' ', $pdo->query("EXPLAIN QUERY PLAN SELECT post_id FROM posts WHERE parent_id = 'x'")->fetchAll(\PDO::FETCH_COLUMN, 3));
+            assertStringContains('posts_parent_idx', $plan);
+        });
+    }
+
     public function testInboxListsUnreadConversationsNewestFirst(): void
     {
         $this->withProfiles(function (\PDO $pdo, string $databasePath): void {

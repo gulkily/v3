@@ -37,3 +37,22 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 - Estimate details: original scope as planned; uncertainty low; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Parent index
+
+**Original estimate: 0.06**
+**Retrospective: 0.04**
+
+- Changes:
+  - `ReadModelSchema` adds `posts_parent_idx (parent_id)`; `ReadModelMetadata::SCHEMA_VERSION` goes from 50 to 51.
+  - `docs/specs/read_model_schema_v1.md` lists the index on `posts` and adds a Version 51 section.
+- Verification:
+  - `InboxPageTest::testStartupRebuildsAVersion50ReadModelWithTheParentIndex`: a read model set back to version 50 without the index is rebuilt on the next request, and a lookup by parent uses the index.
+  - `./v3 rebuild` on a scratch copy of the minimal fixture: 3 posts, 2 threads; the result reports schema 51.
+  - `./v3 test --smoke InboxPageTest ActivityProjectionTest`: only the baseline `BoardListTest` failure from Stage 1.
+  - Full suite not run.
+- Notes:
+  - Deploying this stage triggers the normal startup rebuild once.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

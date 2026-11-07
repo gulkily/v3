@@ -135,7 +135,8 @@ row matches both branches. Normal startup rebuilds schema-26 and older models.
 Indexes: `posts_thread_sequence_idx (thread_id, sequence_number)` backing the
 per-thread reply query (`ORDER BY sequence_number`); `posts_author_identity_idx
 (author_identity_id)` backing the `profiles` identity join used by the board and
-reply queries. Added in schema version 26.
+reply queries. Added in schema version 26. `posts_parent_idx (parent_id)` backs
+Inbox's replies-to-me lookup; added in schema version 51.
 
 ### `threads`
 
@@ -730,3 +731,10 @@ position boundaries those notes mention are no longer used. `?with=<ID>` counts
 eligible rows ahead of an item to find its page. The queries use existing
 columns and indexes, so the schema version is unchanged. See
 [Implementing pagination](../reference/pagination.md).
+
+## Version 51 — Replies by parent
+
+Adds `posts_parent_idx (parent_id)` on `posts`. Inbox lists replies whose parent
+was written by the viewer, so it looks up posts by `parent_id`; without the
+index that query scans every post. Normal startup rebuilds version 50 and older
+models before Inbox runs the query.
