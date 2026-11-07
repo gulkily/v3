@@ -393,11 +393,38 @@
   flex: 1 1 auto;
 }
 
-/* Cookie banner: bottom right, clear of the Exit pill and the tab bar. */
+/* Cookie banner: a full-width sheet over the bottom of the page, like the
+   real ones. The Exit pill and chat bubble sit in its empty bottom strip. */
 :root[data-theme="engagify"] .engagify-cookie {
-  right: 1rem;
-  bottom: calc(var(--app-tabbar-offset, 0px) + 1rem);
-  width: min(24rem, calc(100vw - 2rem));
+  left: 0;
+  right: 0;
+  bottom: var(--app-tabbar-offset, 0px);
+  min-height: min(26rem, 55vh);
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 2.5rem max(1.5rem, calc((100vw - 52rem) / 2)) 5.5rem;
+  border-width: 1px 0 0;
+  border-radius: 1.75rem 1.75rem 0 0;
+  box-shadow: 0 -24px 60px rgba(30, 27, 46, 0.25);
+}
+
+:root[data-theme="engagify"] .engagify-cookie h2 {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1.15;
+}
+
+:root[data-theme="engagify"] .engagify-cookie p {
+  font-size: 1.1rem;
+}
+
+:root[data-theme="engagify"] .engagify-cookie .engagify-button {
+  min-height: 56px;
+  padding: 0 2.5rem;
+  font-size: 1.15rem;
+}
+
+:root[data-theme="engagify"] .engagify-cookie .engagify-actions > .engagify-button {
+  flex: 0 1 auto;
 }
 
 /* Notification prompt: drawn like the browser's own, at top left. */
@@ -465,16 +492,6 @@
   font-size: 0.9rem;
   transform: translateX(-50%);
   box-shadow: 0 12px 32px rgba(30, 27, 46, 0.3);
-}
-
-@media (max-width: 639px) {
-  /* Phones: the cookie banner sits above the Exit pill. */
-  :root[data-theme="engagify"] .engagify-cookie {
-    left: 0.5rem;
-    right: 0.5rem;
-    width: auto;
-    bottom: calc(var(--app-tabbar-offset, 0px) + 4.25rem);
-  }
 }
 
 /* Dialogs: centered over a dimmed page. The shade ignores clicks, so the
@@ -655,10 +672,6 @@
   outline-offset: 2px;
 }
 
-:root[data-theme="engagify"] .engagify-cookie {
-  bottom: calc(var(--app-tabbar-offset, 0px) + 5rem);
-}
-
 :root[data-theme="engagify"] .engagify-chat {
   right: 1rem;
   bottom: calc(var(--app-tabbar-offset, 0px) + 5rem);
@@ -704,10 +717,6 @@
 }
 
 @media (max-width: 639px) {
-  :root[data-theme="engagify"] .engagify-cookie {
-    bottom: calc(var(--app-tabbar-offset, 0px) + 4.75rem);
-  }
-
   :root[data-theme="engagify"] .engagify-bubble {
     width: 48px;
     height: 48px;
