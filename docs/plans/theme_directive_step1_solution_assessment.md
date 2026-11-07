@@ -73,6 +73,12 @@ Vertical slice: the directive on one thread, with authority, retraction withdraw
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
+## Revision 1 — setting a theme later by reply
+
+The maintainer wants to set a thread's theme later, as a comment, not only when the thread starts. This becomes a requirement for every option. Options A and B meet it, since a `theme:` line works in any reply, so an existing thread gains a theme with one reply. Option C does not meet it, because a root header is fixed when the thread is created. Option C is therefore ruled out. Option A remains the recommendation, and its estimate is unchanged.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
 ## Study checkpoint
 
 2026-11-07T11:45:50Z, `railspike-effort` / `v3/theme_directive`, intake and Step 1 handoff. Split from `v3/engagify_theme` Option B at the maintainer's request; distinct cycle ID with the parent link retained. Scope v1: Option A as recommended above. Starting point assumed: `v3/engagify_theme` page themes delivered; planning revision `d379f5600ab55c99e8b8055d6f0520eda0504595`. Reference R1, protocol P2; frozen R1 hashes not re-verified. Single exposed Claude rater, who also wrote the parent's estimates. Before rating, the rater read `TitleDirective.php`, `EventStatus.php`, the thread-subject record spec and the thread title and calendar concepts. Pristine intake missing. Intake and Step 1 projected total **0.40**. Option estimates 0.40, 0.75 and 0.55 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
@@ -81,4 +87,4 @@ Vertical slice: the directive on one thread, with authority, retraction withdraw
 
 ## Enhancement Requests
 
-None yet.
+- Set a thread's theme later by reply, not only at thread start. Disposition: in-scope requirement during Step 1; Revision 1; rules out Option C.
