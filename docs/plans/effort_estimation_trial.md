@@ -1,5 +1,13 @@
 # Effort estimation trial ledger
 
+## Cycle v3/theme_directive
+
+2026-11-07T11:45:50Z — v3/theme_directive Step 1 handoff (standing P2 enrollment; split from v3/engagify_theme Option B at the maintainer's request, distinct cycle): [assessment/checkpoint](./theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`theme:` line by the thread's author or an operator, derived on read like `event:`, nothing stored). Assumed start: engagify page themes delivered; planning revision `d379f560`. R1/P2; R1 hashes not re-verified. Single exposed Claude rater, also the parent's rater; pristine intake missing. Projected total **0.40**; option estimates 0.40/0.75/0.55, non-additive. Await Approved Step 1; planning uncommitted.
+
+## Cycle v3/engagify_theme
+
+2026-11-07T11:45:50Z — v3/engagify_theme Step 1 Revision 1: Option B moved to v3/theme_directive. [Checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.70** reaffirmed; A/C estimates unchanged, B's 1.00 kept as history. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; revision uncommitted.
+
 2026-11-07T11:11:04Z — v3/engagify_theme Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (Engagify parody theme with its own script, page theme list in configuration, Exit back to the viewer's theme). Starting revision `f343b626`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because theme code was read before rating. Intake and projected total **0.70**; option estimates 0.70/1.00/0.35, non-additive. Await Approved Step 1. Planning saved on `plan/engagify_theme` at the session stop hook's request; no approval implied.
 
 ## Cycle v3/readable_page_urls
@@ -16,7 +24,7 @@
 
 2026-11-07T00:49:18Z — v3/readable_page_urls Step 1 revision: maintainer accepted occasional repeated items and asked for page-number options, including Flickr-style `with`. [Assessment/checkpoint](./readable_page_urls/readable_page_urls_step1_solution_assessment.md#study-checkpoint). Scope v2, recommended Option B (`?page=N` plus `?with=<post-id>`, old tokens redirect, URL rule in PRINCIPLES.md). Same baseline `20d24918`/R1/P2, single exposed Claude rater. Projected total 0.65 → **0.60**, reason new requirement; option estimates 0.50/0.60/0.65/0.35, non-additive. Await Approved Step 1; planning saved on `plan/readable_page_urls`, not approved.
 
-2026-11-07T00:18:52Z — v3/readable_page_urls Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./readable_page_urls/readable_page_urls_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`position` names the first item on the page; previous link computed per adapter; old tokens redirect; rule in PRINCIPLES.md). Starting revision `20d24918`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because pagination code was read while answering the maintainer's questions. Intake and projected total **0.65**; option estimates 0.65/0.60/0.35, non-additive. Await Approved Step 1. Planning saved on `plan/engagify_theme` at the session stop hook's request; no approval implied.
+2026-11-07T00:18:52Z — v3/readable_page_urls Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./readable_page_urls/readable_page_urls_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`position` names the first item on the page; previous link computed per adapter; old tokens redirect; rule in PRINCIPLES.md). Starting revision `20d24918`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because pagination code was read while answering the maintainer's questions. Intake and projected total **0.65**; option estimates 0.65/0.60/0.35, non-additive. Await Approved Step 1; planning uncommitted.
 
 ## Cycle v3/instance_image_import
 
@@ -50,7 +58,7 @@
 
 2026-11-05T04:50:00Z — v3/adaptive_nav Step 2 handoff: Step 1 approved (Option B). [Description/checkpoint](./adaptive_nav/adaptive_nav_step2_feature_description.md#study-checkpoint). Scope v2 (Messages indicator on More, slot repair after flag refresh, iPhone acceptance). Same baseline `a24e16df`/R1/P2, single exposed Claude rater. Projected total 0.80 → **0.85**, reason new code understanding. Await Approved Step 2; planning uncommitted.
 
-2026-11-05T04:40:00Z — v3/adaptive_nav Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./adaptive_nav/adaptive_nav_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option B (wider desktop bar, fixed phone bar with a More page, self-filling sticky phone slots). Starting revision `a24e16df`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater. Intake and projected total **0.80**; option estimates 0.45/0.80/0.60, non-additive. Await Approved Step 1. Planning saved on `plan/engagify_theme` at the session stop hook's request; no approval implied.
+2026-11-05T04:40:00Z — v3/adaptive_nav Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./adaptive_nav/adaptive_nav_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option B (wider desktop bar, fixed phone bar with a More page, self-filling sticky phone slots). Starting revision `a24e16df`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater. Intake and projected total **0.80**; option estimates 0.45/0.80/0.60, non-additive. Await Approved Step 1; planning uncommitted.
 
 ## Cycle v3/chicago_post_actions
 

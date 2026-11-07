@@ -53,6 +53,8 @@ A theme may ship `theme-engagify.js` beside its CSS. The page loads the script o
 ## Option B — Option A with the page theme in the thread record
 
 **Estimate: 1.00**
+
+Moved to [`v3/theme_directive`](./theme_directive_step1_solution_assessment.md) in Revision 1; kept here as first written.
 Main driver: a new root header through parser, write path, read model and composer. Uncertainty: medium to high.
 
 The theme script is the same as in Option A. A thread's root record carries a header such as `Theme: engagify`, like the event headers. The thread page shows that theme by default.
@@ -83,13 +85,21 @@ Open question for Step 2: which page gets Engagify first. The anti-cookie notice
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
+## Revision 1 — theme directive split out
+
+The maintainer asked to move the page theme set from inside a thread into its own cycle, [`v3/theme_directive`](./theme_directive_step1_solution_assessment.md). That cycle compares a `theme:` reply directive with a derived record and with this assessment's Option B header. This cycle keeps Option A: the theme script and the page theme list in configuration. Option C remains the alternative. The recommendation and slices are unchanged.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
 ## Study checkpoint
 
 2026-11-07T11:11:04Z, `railspike-effort` / `v3/engagify_theme`, intake and Step 1 handoff. Scope v1: Option A as recommended above. Starting revision `f343b6269a3b786e4ebe1ab383096f2109461933`. Reference R1, protocol P2; frozen R1 hashes not re-verified for this checkpoint. Single exposed Claude rater. Before rating, the rater read `ThemeRegistry.php`, the theme part of `TemplateRenderer.php` and `layout.php`, and the theme development guide. Pristine intake is missing. Intake and Step 1 projected total **0.70**. Option estimates 0.70, 1.00 and 0.35 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
 
 Planning saved on branch `plan/engagify_theme` at the session stop hook's request. This commit does not approve Step 1.
 
+2026-11-07T11:45:50Z, Revision 1 checkpoint: Option B moved to `v3/theme_directive` at the maintainer's request. Scope v1 and recommended Option A unchanged; projected total **0.70** reaffirmed. Option estimates 0.70 and 0.35 for A and C unchanged; B's 1.00 retained as history. Same revision, R1/P2 and single exposed rater. No approval implied.
+
 ## Enhancement Requests
 
-- Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now.
+- Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now. Revision 1: moved to its own cycle at the maintainer's request, widened to a `theme:` directive; approval pending there; [v3/theme_directive](./theme_directive_step1_solution_assessment.md).
 - Remaining nags from the ranked list (push prompt, chat bubble, toasts, countdown, paywall, sticky bars, AI button). Disposition: in scope as later stages if Step 3 fits them; otherwise a follow-up.

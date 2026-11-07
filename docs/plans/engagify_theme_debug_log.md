@@ -20,3 +20,15 @@ No supported findings.
 ### Uncertain assessments
 
 - `step1_solution_assessment.md`, Original Query: the earlier messages were requests for a list and a mockup, not for this feature. The instruction does not say whether earlier conversation turns belong in the query; they were kept because the final message depends on them.
+
+## 2026-11-07T11:45:50Z - Step 1 Revision 1
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md`, Continuing collection, "Distinct follow-up cycles get distinct IDs with their relationship retained": gave the split-out directive its own ID, `v3/theme_directive`, with a parent link, instead of revising this cycle's scope. Retain.
+- `RAILSPIKE.md`, effort snapshots, "Append revisions and retain original scope/scores": Option B and its 1.00 stay as written, with a moved note, instead of being deleted. Retain.
+
+### Uncertain assessments
+
+- `RAILSPIKE.md`, Follow-up Cycles Before Merge, covers follow-ups after Step 4 that reuse a branch. A split during Step 1 into a dependent cycle is not addressed; the split was handled as a distinct follow-up with a parent link.
+- The earlier stop-hook save had overwritten the closing text of two unrelated ledger entries, `readable_page_urls` and `adaptive_nav`. They were restored to "planning uncommitted" and the engagify entry was given its own `## Cycle` heading. No instruction caused this; recorded as a correction.
