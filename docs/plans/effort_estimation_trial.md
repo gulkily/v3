@@ -6,6 +6,8 @@
 
 ## Cycle v3/engagify_theme
 
+2026-11-07T11:50:41Z — v3/engagify_theme Step 1 Revision 3: maintainer chose general theme scripts over CSS-only state. [Checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v3/A; projected total 0.70 → **0.75**, reason changed scope. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
+
 2026-11-07T11:48:38Z — v3/engagify_theme Step 1 Revision 2: maintainer fixed the nag list (core: rate-us, cookie banner, newsletter, app bar, notification prompt, Exit; six stretch nags conditional). [Checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v2/A, **0.70** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
 
 2026-11-07T11:45:50Z — v3/engagify_theme Step 1 Revision 1: Option B moved to v3/theme_directive. [Checkpoint](./engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.70** reaffirmed; A/C estimates unchanged, B's 1.00 kept as history. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; revision uncommitted.

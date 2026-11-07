@@ -46,3 +46,17 @@ No supported findings.
 ### Uncertain assessments
 
 - `step1_solution_assessment.md` keeps content high level. A named list of required nags is close to a Step 2 requirement; it was recorded here because the maintainer decided it during Step 1.
+
+## 2026-11-07T11:50:41Z - Step 1 Revision 3
+
+### Necessary/useful instructions
+
+- `step1_solution_assessment.md`, Review and revision, "recheck compatibility, tradeoffs, risks, and scope": making the script mechanism general raised the estimate instead of hiding the added contract and guide work inside the old number. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Uncertain assessments
+
+- An alternative raised only in conversation (CSS-only state) was recorded as a declined enhancement request rather than a new option section. The instructions do not say which form a rejected late alternative should take.

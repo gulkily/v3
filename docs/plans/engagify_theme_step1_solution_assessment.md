@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/engagify_theme`; [host ledger](./effort_e
 
 Extended estimates: enabled
 
-Cycle estimate: 0.70
+Cycle estimate: 0.75 (revised; original 0.70)
 
 ## Original Query
 
@@ -103,6 +103,14 @@ This replaces the first slice above, which named only the rate-us prompt, cookie
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
+## Revision 3 — theme scripts as a general mechanism
+
+The maintainer weighed a CSS-only alternative. It stores state in checkboxes, radio buttons and `<details>` inside a hidden markup partial on every page. He chose theme scripts instead, because other themes will need them later.
+
+Option A therefore treats a theme script as a general feature, not an Engagify special case. Any entry in `ThemeRegistry.php` may declare a script beside its stylesheet. The page loads it only while that theme is active. The theme development guide documents the contract, including how a script cleans up when the viewer switches themes.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
 ## Study checkpoint
 
 2026-11-07T11:11:04Z, `railspike-effort` / `v3/engagify_theme`, intake and Step 1 handoff. Scope v1: Option A as recommended above. Starting revision `f343b6269a3b786e4ebe1ab383096f2109461933`. Reference R1, protocol P2; frozen R1 hashes not re-verified for this checkpoint. Single exposed Claude rater. Before rating, the rater read `ThemeRegistry.php`, the theme part of `TemplateRenderer.php` and `layout.php`, and the theme development guide. Pristine intake is missing. Intake and Step 1 projected total **0.70**. Option estimates 0.70, 1.00 and 0.35 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
@@ -113,7 +121,10 @@ Planning saved on branch `plan/engagify_theme` at the session stop hook's reques
 
 2026-11-07T11:48:38Z, Revision 2 checkpoint: the maintainer fixed the core and stretch nag lists. Scope v2: Option A with five core nags plus Exit; stretch nags are conditional and excluded from the estimate. Projected total **0.70** reaffirmed; the two added core nags are offset by stretch work moving out of the estimate. Same revision, R1/P2 and single exposed Claude rater. No approval implied.
 
+2026-11-07T11:50:41Z, Revision 3 checkpoint: the maintainer chose theme scripts as a general mechanism over CSS-only state. Scope v3: Option A with a reusable theme script contract and guide update. Projected total 0.70 → **0.75**, reason changed scope (general contract, cleanup on theme switch, documentation). Same revision, R1/P2 and single exposed Claude rater. No approval implied.
+
 ## Enhancement Requests
 
 - Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now. Revision 1: moved to its own cycle at the maintainer's request, widened to a `theme:` directive; approval pending there; [v3/theme_directive](./theme_directive_step1_solution_assessment.md).
 - Remaining nags from the ranked list (push prompt, chat bubble, toasts, countdown, paywall, sticky bars, AI button). Disposition: in scope as later stages if Step 3 fits them; otherwise a follow-up. Revision 2: the "Open in app" bar and notification prompt are core; the rest are stretch; approved by the maintainer in conversation.
+- A CSS-only nag mechanism using hidden form controls (raised as Option D in conversation). Disposition: declined by the maintainer in favor of general theme scripts; Revision 3.
