@@ -93,3 +93,26 @@ The `v3/theme_directive` plans and earlier drafts stay on branch `plan/engagify_
 - Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Cookie banner, app bar, notification prompt
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `theme-engagify.js`: three nag functions and a small toast.
+    - "Open in app" bar: inserted at the top of the app shell, so it pushes the page down. "Open" answers with a toast about the app that does not exist; × removes the bar.
+    - Cookie banner after 0.8s: a large "Accept all" and a small "Manage preferences", which only says preferences are saved by Accept all.
+    - Notification prompt after 3s, drawn like the browser's own; Block and Allow each close it with a toast.
+    - Every nag starts with an Exit control, so Exit comes first in its tab order.
+  - `theme-engagify.css`: card, banner, prompt, bar and toast styles; on phones the cookie banner sits above the Exit pill.
+- Verification:
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest`; the only failure is the baseline `BoardListTest` failure.
+  - Passed: headless Chrome check at 1280px and 380px on `/threads/root-001`, mapped to Engagify for the check only. All three nags appear. There is no sideways scroll. Every nag button takes focus and is at least 32px tall, with Exit first. The theme menu stays clickable with nags open. Enter on each dismiss control removes its nag, and the reply box is reachable afterwards. Choosing Light during the delays leaves no Engagify element once the timers would have fired. No page errors. Screenshots inspected.
+- Notes:
+  - Base button rules stretched nag buttons to full width; nag buttons now set their own width and margin.
+  - While open, the cookie banner covers part of the reply box. That is the joke; one click on Accept all or Exit clears it. The check confirms the reply box is reachable after dismissal, and the theme menu while nags are open.
+  - Dismissals are not remembered, so nags return on the next page load. That is intended; Exit is the way out.
+- Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

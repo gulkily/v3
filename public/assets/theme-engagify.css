@@ -138,6 +138,9 @@
 }
 
 :root[data-theme="engagify"] .engagify-button {
+  /* Base button rules stretch buttons to full width. */
+  width: auto;
+  margin: 0;
   min-height: 44px;
   padding: 0 1.2rem;
   border: 0;
@@ -149,6 +152,8 @@
 }
 
 :root[data-theme="engagify"] .engagify-link {
+  width: auto;
+  margin: 0;
   min-height: 44px;
   padding: 0 0.6rem;
   border: 0;
@@ -159,6 +164,8 @@
 }
 
 :root[data-theme="engagify"] .engagify-close {
+  width: auto;
+  margin: 0;
   width: 44px;
   height: 44px;
   border: 0;
@@ -174,4 +181,112 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+:root[data-theme="engagify"] .engagify-card {
+  position: fixed;
+  z-index: 23;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid #e2dff0;
+  border-radius: 1.1rem;
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(30, 27, 46, 0.22);
+}
+
+:root[data-theme="engagify"] .engagify-card > .engagify-link:first-child {
+  align-self: flex-end;
+  min-height: 32px;
+  margin: -0.5rem -0.6rem -0.5rem 0;
+}
+
+:root[data-theme="engagify"] .engagify-card .engagify-actions > .engagify-button {
+  flex: 1 1 auto;
+}
+
+/* Cookie banner: bottom right, clear of the Exit pill and the tab bar. */
+:root[data-theme="engagify"] .engagify-cookie {
+  right: 1rem;
+  bottom: calc(var(--app-tabbar-offset, 0px) + 1rem);
+  width: min(24rem, calc(100vw - 2rem));
+}
+
+/* Notification prompt: drawn like the browser's own, at top left. */
+:root[data-theme="engagify"] .engagify-permission {
+  top: 0.5rem;
+  left: 0.5rem;
+  width: min(21rem, calc(100vw - 1rem));
+  border-radius: 0.6rem;
+  font-size: 0.95rem;
+}
+
+:root[data-theme="engagify"] .engagify-permission .engagify-actions {
+  justify-content: flex-end;
+}
+
+/* "Open in app": in the page flow, so it pushes everything down. */
+:root[data-theme="engagify"] .engagify-app-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.9rem;
+  background: #1e1b2e;
+  color: #ffffff;
+}
+
+:root[data-theme="engagify"] .engagify-app-bar p {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #d9d6e8;
+  font-size: 0.9rem;
+}
+
+:root[data-theme="engagify"] .engagify-app-bar strong {
+  color: #ffffff;
+}
+
+:root[data-theme="engagify"] .engagify-app-bar .engagify-link,
+:root[data-theme="engagify"] .engagify-app-bar .engagify-close {
+  color: #d9d6e8;
+}
+
+:root[data-theme="engagify"] .engagify-app-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.7rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  color: #ffffff;
+  font: 800 1.2rem/1 var(--ui-font);
+}
+
+:root[data-theme="engagify"] .engagify-toast {
+  position: fixed;
+  left: 50%;
+  top: 1rem;
+  z-index: 24;
+  max-width: calc(100vw - 2rem);
+  padding: 0.75rem 1rem;
+  border-radius: 0.8rem;
+  background: #1e1b2e;
+  color: #ffffff;
+  font-size: 0.9rem;
+  transform: translateX(-50%);
+  box-shadow: 0 12px 32px rgba(30, 27, 46, 0.3);
+}
+
+@media (max-width: 639px) {
+  /* Phones: the cookie banner sits above the Exit pill. */
+  :root[data-theme="engagify"] .engagify-cookie {
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    bottom: calc(var(--app-tabbar-offset, 0px) + 4.25rem);
+  }
 }
