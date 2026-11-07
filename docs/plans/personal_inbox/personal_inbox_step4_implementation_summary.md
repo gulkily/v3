@@ -144,3 +144,26 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 - Estimate details: original scope as planned; uncertainty low; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Journey and recovery walk-through
+
+**Original estimate: 0.05**
+**Retrospective: 0.05**
+
+- Changes:
+  - None needed. The walk-through found no defect.
+- Verification (dev server on a scratch copy of the minimal fixture, `FORUM_INBOX_ENABLED=true`; one approved member signed in on two browsers through a session issued by `ViewerSessionStore`; a second approved member and the posts were added directly to the scratch read model):
+  - Laptop, JavaScript on, opened Inbox: "No new replies", which set the marks.
+  - A reply to the member's thread and a new thread by the other member arrived. On its next page load the laptop's Inbox link carried count 1 and the status "1 unread"; the new thread did not count.
+  - Phone width, JavaScript off: Inbox listed the reply under Replies, linking to `/threads/my-thread#post-alice-reply`, and the new thread under New posts. Caught up on Replies posted the form, returned to `/inbox` and showed "No new replies"; New posts were unchanged.
+  - Laptop's next page load: count 0, and its Inbox showed no replies.
+  - With the mark store replaced by a directory: Messages still rendered, Replies and New posts each showed "Couldn’t check … Retry", and `/api/inbox/unread` answered 503 with no count. After restoring the file, the earlier marks were intact.
+  - Flag off (server restarted with the flag off): `/inbox` and `/api/inbox/unread` answered 404, no page linked to Inbox, and Messages returned to the bar. Flag on again: Replies were still caught up and New posts unchanged.
+  - Dev state files created by the walk-through were removed afterwards.
+- Notes:
+  - The flag was switched through the environment with a restart, not on the Feature flags page; the in-place navigation refresh is covered by `AppNavigationPlacementTest`.
+  - Messages arriving were not part of the walk-through, to keep the shared dev message store untouched; `InboxPageTest` covers unread conversations and their count.
+  - Rows showed "guest" as the author because the seeded rows had no author label; real posts carry one.
+- Estimate details: original scope as planned; uncertainty medium; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
