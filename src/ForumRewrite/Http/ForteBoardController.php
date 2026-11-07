@@ -178,7 +178,7 @@ final class ForteBoardController
             : [];
 
         return [
-            'replyTree' => $this->buildReplyTree($replyPosts),
+            'replyTree' => $this->buildReplyTree(\ForumRewrite\ReadModel\RetractedLeafFilter::apply($replyPosts)),
             'signalActors' => \ForumRewrite\ReadModel\SignalActors::load($pdo, $threadId, $allPostIds),
             'viewerLikedThreadIds' => $viewerLikedThreadIds,
             'viewerLikedPostIds' => $viewerLikedPostIds,

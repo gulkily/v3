@@ -4538,11 +4538,15 @@ NODE;
             }
             $page = $this->renderMethod($app, 'GET', '/threads/' . $quote['post_id']);
             assertStringContains('quote-card-body meta', $page);
-            assertSame(2, substr_count($page, 'This post was retracted by its author.'));
+            // The retracted reply has no replies of its own, so the thread hides its stub; its own page keeps the notice.
+            assertSame(1, substr_count($page, 'This post was retracted by its author.'));
             assertSame(false, str_contains($page, 'retracted by an operator'));
+            $replyPage = $this->renderMethod($app, 'GET', '/posts/' . $replyId);
+            assertSame(1, substr_count($replyPage, 'This post was retracted by its author.'));
+            assertSame(false, str_contains($replyPage, 'retracted by an operator'));
         } finally { putenv($previousSite === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $previousSite); }
         $paned = $this->renderMethod($app, 'GET', '/forte?selected=' . $quote['post_id']);
-        assertSame(2, substr_count($paned, 'This post was retracted by its author.'));
+        assertSame(1, substr_count($paned, 'This post was retracted by its author.'));
         assertSame(false, str_contains($paned, 'retracted by an operator'));
         $pdo = new PDO('sqlite:' . $db);
         foreach ([\ForumRewrite\ReadModel\AuthoredContentRepository::visibleThreads($pdo, [$author['identity_id']]),
