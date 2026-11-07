@@ -277,8 +277,8 @@ final class FeatureFlagRegistry
             ),
             new FeatureFlagDefinition(
                 self::INBOX_ENABLED,
-                'Inbox',
-                'Show approved members an Inbox of unread messages, replies to their posts and other new posts, with Caught up marks shared across their devices. Inbox appears on the bar just before Messages. Disabling keeps stored marks.',
+                'Unread',
+                'Show approved members an Unread page of unread messages, replies to their posts and other new posts, with Caught up marks shared across their devices. Unread appears on the bar just before Messages. Disabling keeps stored marks.',
                 false,
                 self::INBOX_ENABLED,
                 siteMutable: true,
