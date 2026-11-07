@@ -182,14 +182,15 @@ final class ThreadThemeTest
         threadThemeAssertSame(['midnight', 'midnight', 'none', 'word97'], $stored->fetchAll(PDO::FETCH_COLUMN));
     }
 
-    public function testStartupRebuildsASchema50ReadModel(): void
+    public function testStartupRebuildsASchema51ReadModel(): void
     {
         [$root, $database, $service, , $artifacts] = $this->environment();
         $thread = (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Old model', 'body' => 'Opening post', 'author_identity_id' => self::OPERATOR, 'theme' => 'midnight'])['thread_id'];
 
         $pdo = new PDO('sqlite:' . $database);
         $pdo->exec('ALTER TABLE posts DROP COLUMN theme');
-        $pdo->exec("UPDATE metadata SET value = '50' WHERE key = 'schema_version'");
+        // Schema 51 is main's Inbox index without posts.theme.
+        $pdo->exec("UPDATE metadata SET value = '51' WHERE key = 'schema_version'");
         $pdo = null;
 
         $application = new Application(dirname(__DIR__), $root, $database, $artifacts);

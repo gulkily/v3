@@ -153,3 +153,10 @@ Branch `feat/theme_directive`, from `feat/engagify_theme` (unmerged; this cycle 
 Retrospective scope assessment, 2026-11-07T15:32:51Z: delivered scope v2 as approved, with no scope changes during Step 4. Smaller than projected mainly because Stage 2 needed no code and Stage 5 needed no client-side record building. Rater: Claude, single exposed rater, also the planner. Maintainer comfortable-fit judgment: pending. Measured labor: unknown.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Integration with main
+
+- Changes: `feat/engagify_theme` (which now contains this cycle through #56) merged with `main`. Main's Inbox work also used read-model version 51 (`posts_parent_idx`), so a database built by main would have skipped the rebuild and lacked `posts.theme`. Version advanced to 52; `ThreadThemeTest::testStartupRebuildsASchema51ReadModel` now starts from main's 51; the schema reference records both lineages.
+- Verification: smoke plus `ThreadThemeTest InboxPageTest EventStatusTest SingleRequestPostingTest SignedPostBundleValidatorTest LlmsTxtRendererTest WriteApiSmokeTest` (`--jobs=4`): 690 run, 688 passed. `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged` also fails on `main`. `WriteApiSmokeTest::testPrepareThreadRejectsMalformedEventTimeBeforeIssuingToken` failed once under parallel jobs and passed twice alone.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
