@@ -79,3 +79,26 @@ No supported findings.
 ### Uncertain assessments
 
 - `step3_development_plan_after.md`, item 6 (keep planning uncommitted): this cycle's drafts are already committed to `plan/readable_page_urls` at stop-hook request. The instructions do not say whether that branch may become the Step 4 branch.
+
+## 2026-11-07T02:16:44Z - Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, planning commit gate: a fresh branch from `main` kept the planning commit to approved plans only, even though drafts had been committed to a side branch at stop-hook request. Retain.
+- `step4_implementation_do.md`, append a revision before dependent work: the offline reader's own tokens surfaced in Stage 6 through a failing browser test. Recording a dated revision there kept the original estimate honest. Retain.
+- `implementation_standards.md`, check affected shared consumers: the offline reader, the high-traffic static bypass and the tag memory probe were all consumers outside the Step 2 inventory. Running each consumer's own test found them. Retain.
+- `implementation_standards.md`, identify reproduced baseline failures: two browser tests fail without this cycle's changes. Re-running them on the earlier state separated those failures from regressions. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step4_implementation_do.md`, documentation-only stage checks: this is an application change.
+- Known user or environment replay: no user or environment was named.
+
+### Uncertain assessments
+
+- `step4_implementation_before.md`, "Only then create the Step 4 summary": the summary was created after the planning commit but together with Stage 1 work, not before it. The instruction does not say whether the summary must be committed alone before Stage 1.
+- `step2_feature_description.md`, Shared component inventory: it asks for existing UI/API surfaces, but client scripts that parse URLs (the offline reader) are easy to miss. Consider naming client-side URL consumers explicitly.
