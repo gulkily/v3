@@ -19,3 +19,4 @@ Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 20
 2026-11-07: v3/gloss_theme Stage 2 drew the main navigation, board filter, Recent, Gallery and account menu icons in the new set (26 glyphs), shown in Engagify.
 2026-11-07: v3/gloss_theme Stage 3 drew the 16 Tools icons in the new set (launcher buttons and Tools bar), shown in Engagify.
 2026-11-07: v3/gloss_theme Stage 4 drew the launcher group heading and Bookmarklets icons; the new set now covers every destination the pixel-art set covers (NavIconSetsTest).
+2026-11-07: v3/gloss_theme Stage 6 added Gloss, a selectable theme with the new icon set (rounded cards, inputs and pill buttons on a lavender page).

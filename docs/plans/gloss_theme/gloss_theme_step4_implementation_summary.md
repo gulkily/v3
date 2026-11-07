@@ -134,3 +134,36 @@ Cycle estimate: 0.95
 - Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Gloss and the move
+
+**Original estimate: 0.18**
+**Retrospective: 0.16**
+
+- Changes:
+  - New `public/assets/theme-gloss.css`, made from `theme-engagify.css`, which is removed:
+    - Shared section for `gloss` and `engagify`: the variable block (Engagify's palette and Inter, with `--gloss-accent`), rounded cards, rounded inputs, pill buttons and violet links. Gloss's page is plain `#f6f5fb`.
+    - Gloss swatch: violet with a white highlight.
+    - Parody section for `engagify` only: the gradient page wash, `--engagify-accent` (an alias of `--gloss-accent`), `--engagify-accent-ink`, `--engagify-hot`, Engagify's swatch, its bold "NEW" menu row and every nag rule, unchanged.
+    - Header names both themes and says which rules go where.
+  - `src/ForumRewrite/View/ThemeRegistry.php`: `gloss` ("Gloss", light) after Whitehot; Engagify sets `'stylesheet' => 'gloss'`.
+  - `src/ForumRewrite/SiteProfileRegistry.php`: ZenMemes permits `gloss`.
+  - `tests/LocalAppSmokeTest.php`: the theme allow-list includes `gloss`; the cookie thread's initial stylesheet and its baked asset are `theme-gloss.css`.
+  - `tests/theme_contrast_audit.py`: reads each theme's stylesheet through the registry's `stylesheet` field.
+  - `tests/browser/tools_launcher.mjs`: Gloss joins the icon themes.
+  - Feedback items F13 and F46: dated notes.
+- Verification:
+  - Passed: Engagify before/after, time frozen, nags open (at 1s and 7s), 1280px and 380px, on board, thread, Tools, Users and the cookie thread: 20 full-page screenshots. 17 are pixel-identical. The other 3 differ only in the areas that also differed between two identical runs before the move (the phone bar region, 2794–3091px, and a 10px caret).
+  - Passed: the cookie thread and the board serve `theme-gloss.<hash>.css` for both `gloss` and `engagify`, and `theme-engagify.<hash>.js` for Engagify only.
+  - Passed: Gloss on board, thread, Recent, Calendar, Users, Search, About, Tools, Bookmarklets, compose, Account, Tags and Docs, at 1280px and 380px: Gloss applied, no Engagify element, no sideways scroll, no page errors. Screenshots inspected. Forte's standalone layout uses only the theme's light or dark mode, so Gloss needs nothing there.
+  - Passed: switching Gloss, Engagify, Gloss, Engagify, Word 97, Gloss in the browser applies each theme and never requests a theme stylesheet twice. Nags appear in Engagify (6 elements) and none remain 8s after switching to Gloss.
+  - Passed: `tests/theme_contrast_audit.py`: Gloss OK, Engagify OK. Other themes' results are unchanged by this stage.
+  - Passed: `tests/browser/tools_launcher.mjs`, 32 theme and width cases, icons in Word 97, Chicago, Midnight, Gloss and Engagify.
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest LocalAppSmokeTest NavIconSetsTest ProfileThemePresentationTest SiteProfileRegistryTest Word97ThemeCoverageTest PostActionThemeTest`, 456 run, 450 passed, 6 failed. The sixth was `ThemeRegistryTest::testEveryExplicitThemeHasAnIsolatedStylesheet`, which requires a `Theme: <name>` header for each theme. Fixed by adding Engagify's header line to `theme-gloss.css`; the smoke rerun is back to the 5 baseline failures.
+  - Full suite not run.
+- Notes:
+  - Navigation links and thread lists keep the site's square edges in both themes, as Engagify had. PF-20261030-F46 asks for rounder corners; rounding those is a possible follow-up, not in this cycle.
+  - On a fresh load with Gloss saved, the server sends the default stylesheet and the pre-paint script switches to Gloss's, as for every saved theme.
+- Estimate details: original scope as Step 3, plus the contrast audit change and the header fix. No revision; retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

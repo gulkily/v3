@@ -46,10 +46,15 @@ PAIRS = [('--ink', '--page-bg', 4.5), ('--ink', '--panel', 4.5), ('--ink-soft', 
          ('--ink-soft', '--page-bg', 4.5), ('--ink', '--input-bg', 4.5), ('--ink', '--button-bg', 4.5),
          ('--active-ink', '--active-bg', 4.5), ('--line', '--panel', 3.0), ('--line', '--input-bg', 3.0),
          ('--active-line', '--panel', 3.0)]
-themes = re.findall(r"'name' => '([a-z0-9]+)'", (root / 'src/ForumRewrite/View/ThemeRegistry.php').read_text())
+registry = (root / 'src/ForumRewrite/View/ThemeRegistry.php').read_text()
+# A theme may load another theme's stylesheet ('stylesheet' => 'gloss').
+entries = []
+for entry in re.findall(r"\['name' => '[^\]]*\]", registry):
+    owner = re.search(r"'stylesheet' => '([a-z0-9]+)'", entry)
+    entries.append((re.search(r"'name' => '([a-z0-9]+)'", entry).group(1), owner.group(1) if owner else None))
 report = {}
-for theme in [t for t in themes if t != 'auto']:
-    css = (assets / f'theme-{theme}.css').read_text()
+for theme, owner in [e for e in entries if e[0] != 'auto']:
+    css = (assets / f'theme-{owner or theme}.css').read_text()
     v = dict(defaults); v.update(blocks(css, rf'data-theme(?:-option)?="{theme}"\](?![^,]*\s[.\w#])'))
     page = parse(v.get('--page-bg', '#fff'), v) or (255, 255, 255, 1.0)
     page = over(page, (255, 255, 255, 1.0))

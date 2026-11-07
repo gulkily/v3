@@ -1,17 +1,20 @@
-/* Theme: engagify */
+/* Theme: gloss */
+/* Theme: engagify (shares this stylesheet; see the parody layer below) */
 /*
- * A parody of the engagement-optimized web: a glossy startup look, buried
- * under the nags drawn by theme-engagify.js. Controls stay usable, and the
- * Exit pill is always on screen.
+ * Gloss: a soft lavender page, white rounded cards, pill buttons, a violet
+ * accent and a sans-serif face. Engagify is Gloss plus a parody layer: a
+ * gradient wash, a "NEW" badge in the theme menu and the nags drawn by
+ * theme-engagify.js. ThemeRegistry gives engagify this stylesheet, so a fix
+ * to the shared look reaches both themes. Write shared rules for both theme
+ * names and parody rules for engagify only.
  */
+:root[data-theme="gloss"],
 :root[data-theme="engagify"],
+.theme-menu__option[data-theme-option="gloss"],
 .theme-menu__option[data-theme-option="engagify"] {
   color-scheme: light;
   --page-bg: #f6f5fb;
-  --body-background:
-    radial-gradient(circle at 12% -10%, rgba(124, 58, 237, 0.14), transparent 42%),
-    radial-gradient(circle at 100% 0%, rgba(236, 72, 153, 0.1), transparent 36%),
-    #f6f5fb;
+  --body-background: #f6f5fb;
   --ink: #1e1b2e;
   --ink-soft: #5b5670;
   --line: #8b85a3;
@@ -31,7 +34,48 @@
   --body-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --ui-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  --engagify-accent: #6d28d9;
+  --gloss-accent: #6d28d9;
+}
+
+.theme-swatch[data-theme="gloss"] {
+  background:
+    radial-gradient(circle at 70% 30%, #ffffff 0 18%, transparent 19%),
+    #7c3aed;
+  border-color: #6d28d9;
+}
+
+/* Shared look. */
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) .card {
+  border-radius: 1rem;
+  /* Cards are not controls, so a soft border is enough; inputs keep --line. */
+  border-color: #e2dff0;
+  box-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(76, 29, 149, 0.08);
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) input,
+:root:is([data-theme="gloss"], [data-theme="engagify"]) textarea {
+  border-radius: 0.75rem;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+:root:is([data-theme="gloss"], [data-theme="engagify"]) a {
+  color: var(--gloss-accent);
+}
+
+/* Engagify parody layer: everything below applies to engagify only. */
+
+:root[data-theme="engagify"],
+.theme-menu__option[data-theme-option="engagify"] {
+  --body-background:
+    radial-gradient(circle at 12% -10%, rgba(124, 58, 237, 0.14), transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(236, 72, 153, 0.1), transparent 36%),
+    #f6f5fb;
+  --engagify-accent: var(--gloss-accent);
   --engagify-accent-ink: #ffffff;
   --engagify-hot: #db2777;
 }
@@ -57,29 +101,6 @@
   font-size: 0.65rem;
   letter-spacing: 0.06em;
   vertical-align: middle;
-}
-
-/* Scoped section: the glossy startup look. */
-
-:root[data-theme="engagify"] .card {
-  border-radius: 1rem;
-  /* Cards are not controls, so a soft border is enough; inputs keep --line. */
-  border-color: #e2dff0;
-  box-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(76, 29, 149, 0.08);
-}
-
-:root[data-theme="engagify"] input,
-:root[data-theme="engagify"] textarea {
-  border-radius: 0.75rem;
-}
-
-:root[data-theme="engagify"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
-  border-radius: 999px;
-  font-weight: 600;
-}
-
-:root[data-theme="engagify"] a {
-  color: var(--engagify-accent);
 }
 
 /* Nags (theme-engagify.js). Nags stay under the phone tab bar and the

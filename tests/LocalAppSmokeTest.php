@@ -1125,7 +1125,8 @@ PHP;
             $html = $renderer->renderLayout('Cookies', '<main></main>', 'board');
             assertStringContains('data-page-theme="engagify" data-page-path="/threads/thread-20261102152258-25e82c97"', $html);
             // The page theme's stylesheet loads first, ahead of the viewer's hint.
-            assertStringContains('href="' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-engagify.css') . '" fetchpriority="high"', $html);
+            // Engagify shares Gloss's stylesheet.
+            assertStringContains('href="' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-gloss.css') . '" fetchpriority="high"', $html);
             assertStringContains("'-page-exit:'", $html);
             assertStringContains('"engagify":"' . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-engagify.js') . '"', $html);
 
@@ -2347,7 +2348,7 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","midnight","engagify"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","gloss","word97","midnight","engagify"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
@@ -2984,7 +2985,7 @@ PHP;
             assertStringNotContains('data-page-theme=', $board);
             // The baked release must also carry the theme's assets.
             assertTrue(is_file($artifactRoot . fingerprintedAssetPath($thread, 'theme-engagify.js')));
-            assertTrue(is_file($artifactRoot . fingerprintedAssetPath($thread, 'theme-engagify.css')));
+            assertTrue(is_file($artifactRoot . fingerprintedAssetPath($thread, 'theme-gloss.css')));
         } finally {
             \ForumRewrite\SiteProfileRegistry::setProfilesForTesting(null);
             $this->deleteTree($repositoryRoot);
