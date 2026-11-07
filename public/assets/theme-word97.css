@@ -903,3 +903,42 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
     padding: 0.75rem calc(0.75rem + 1px) calc(0.75rem + 1px) 0.75rem;
   }
 }
+
+/* Pagination is a dialog's button row (Back / Next), not a toolbar: raised
+   buttons at the row's edges, no grip. */
+:root[data-theme="word97"] .pagination-nav {
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+/* Previous sits at the left edge; Next and First page at the right. */
+:root[data-theme="word97"] .pagination-nav .nav-link[rel="prev"] {
+  margin-right: auto;
+}
+
+:root[data-theme="word97"] .pagination-nav::before {
+  display: none;
+}
+
+:root[data-theme="word97"] .pagination-nav .nav-link {
+  min-width: 5.5rem;
+  padding: 0.25rem 0.9rem;
+  border: 1px solid #404040;
+  background: #c0c0c0;
+  color: #000000;
+  font-family: var(--ui-font);
+  text-align: center;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #808080;
+}
+
+:root[data-theme="word97"] .pagination-nav .nav-link:hover {
+  border-color: #404040;
+}
+
+:root[data-theme="word97"] .pagination-nav .nav-link:active {
+  box-shadow:
+    inset -1px -1px 0 0 #ffffff,
+    inset 1px 1px 0 0 #808080;
+}
