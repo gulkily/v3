@@ -1604,6 +1604,39 @@ pre {
 
 }
 
+/* `:root` outranks themes' general button styling so the invite's one action reads as a button. */
+:root [data-action="redeem-invitation"] {
+  display: inline-block;
+  width: auto;
+  margin-top: 0.85rem;
+  padding: 0.7rem 1.4rem;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--page-bg);
+  font-weight: 700;
+  box-shadow: 0 2px 0 var(--active-line);
+}
+
+:root [data-action="redeem-invitation"]:hover {
+  background: var(--active-ink);
+}
+
+:root [data-action="redeem-invitation"]:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--active-line);
+}
+
+:root [data-action="redeem-invitation"]:focus-visible {
+  outline: 3px solid var(--active-ring);
+  outline-offset: 2px;
+}
+
+:root [data-action="redeem-invitation"]:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
 [data-action="copy-invitation-link"] {
   flex: 0 0 auto;
   width: auto;

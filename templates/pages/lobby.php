@@ -8,7 +8,7 @@ $hasMembersOnlyAccess = $viewerProfile !== null
     && (($viewerProfile['_members_only_access'] ?? (((int) ($viewerProfile['is_approved'] ?? 0)) === 1)) === true);
 ?>
 <section class="stack" data-private-site-auth-state data-authenticated-identity-id="<?= $e($authenticatedIdentityId) ?>">
-  <article class="card">
+  <article class="card" data-lobby-card>
     <h1>Lobby</h1>
 <?php if ($viewerProfile === null): ?>
     <p>This site is for approved members. <a href="/account/key/">Sign in or set up your account</a>.</p>
@@ -22,7 +22,7 @@ $hasMembersOnlyAccess = $viewerProfile !== null
     <p class="meta" data-role="private-site-auth-status" hidden></p>
   </article>
   <article class="card" data-invitation-redemption hidden>
-    <h2>Board invitation</h2>
+    <h1>Redeem invitation</h1>
     <form data-invitation-name-form>
       <div data-invitation-name-field hidden>
       <label>Username
@@ -32,7 +32,6 @@ $hasMembersOnlyAccess = $viewerProfile !== null
       <button type="submit" data-action="redeem-invitation">Redeem invitation</button>
     </form>
     <p class="meta" data-role="invitation-redemption-feedback" role="status" hidden></p>
-    <p><a href="/account/key/">Review or restore your account</a> · <a href="/">Go to the board</a></p>
   </article>
 </section>
 
@@ -42,6 +41,9 @@ $hasMembersOnlyAccess = $viewerProfile !== null
   var match = window.location.hash.match(/^#invite=(.*)$/);
   if (!root || !match) return;
   root.hidden = false;
+  // An invite visitor only needs the redemption form, so the lobby card goes away.
+  var lobby = document.querySelector('[data-lobby-card]');
+  if (lobby) lobby.hidden = true;
   // Decide the name control from this browser before paint; server HTML stays static.
   try {
     var name = localStorage.getItem('forum_pki_username') || 'guest';
