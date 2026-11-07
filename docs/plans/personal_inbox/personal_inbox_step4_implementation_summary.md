@@ -201,3 +201,21 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 ### Study closeout
 
 2026-11-07T13:19:50Z, `railspike-effort` / `v3/personal_inbox`, Step 4 closeout. Scope v2, starting revision `f343b626`, R1, P2, single exposed Claude rater. Whole-cycle projection at entry 0.85, not revised. **Retrospective scope assessment: 0.80.** It is lower because Stage 3 built both sections, so Stage 4 was small. Stage originals 0.12/0.06/0.14/0.06/0.10/0.08/0.05/0.06; retrospectives 0.10/0.04/0.14/0.03/0.08/0.09/0.05/0.05; non-additive. Corrective work: one fix commit in Stage 2 for a missed schema test. New requests during Step 4: none; the maintainer asked how the count avoids reflow, answered within planned scope. Maintainer comfortable-fit judgment and acceptance pending. No measured labor.
+
+## Enhancement Requests
+
+Recorded after closeout (2026-11-07). The completed cycle above is unchanged.
+
+- **Request:** Make Inbox available to all members, not only approved ones. The maintainer wants to avoid two things. First, an unapproved new or returning member must never see the locked page ("Inbox is for approved members / You’re waiting for approval as … Inbox unlocks once someone approves you."). Second, the Inbox button must not be missing for them and then appear later, on approval.
+- **Disposition and reason:** Changed scope, deferred to a follow-up cycle. The approved Step 2 limited Inbox to signed-in approved members, with the same access as Messages. The maintainer asked to record the discussion and leave the feature as it is for now.
+- **Approval status:** Not approved. No follow-up cycle started; branch reuse not requested.
+- **Outcome or follow-up link:** Proposed follow-up cycle `personal_inbox_members`. Not started.
+
+Direction discussed, for that cycle's Step 1:
+
+- **Unapproved members get the same Inbox without Messages.** Replies and New posts already work for any signed-in key. The link's count covers replies only. No lock or waiting text; on approval the Messages section joins the page.
+- **Marks for unapproved members belong to their key, not their username.** Unapproved names are not unique, and "guest" is shared by many keys, so username marks would leak between strangers. Replies are already replies to that key only. On approval, the key would start fresh under its username unless the cycle chooses to carry its marks across.
+- **Button visibility, recommended:** show Inbox to every browser holding a saved key. The head script can decide that before first paint, as it does for "approved" today, so server HTML stays identical and the button never appears late. With automatic guest keypairs on, nearly every visitor holds a key, so this is close to showing it to everyone on such sites.
+- **Button visibility, alternative:** show Inbox to everyone, including keyless readers. A keyless reader would then need either New posts with a browser-kept mark (Step 1's Option C, a second storage path) or a set-up prompt, which edges back toward the page the maintainer wants to avoid.
+- **Unchanged constraint:** in approved-members-only mode, unapproved keys are confined to the Lobby, so Inbox stays hidden for them there.
+- **Rough size:** 0.25 for the recommended version, before planning.
