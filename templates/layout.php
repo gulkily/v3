@@ -32,7 +32,7 @@
         var navSlots = navSlotState && Array.isArray(navSlotState.slots) ? navSlotState.slots : [];
         var navMember = document.documentElement.getAttribute('data-member') === 'approved';
         navSlots = navSlots.filter(function (section) {
-          return navSlotSections.indexOf(section) !== -1 && (section !== 'messages' || navMember);
+          return navSlotSections.indexOf(section) !== -1 && ((section !== 'messages' && section !== 'inbox') || navMember);
         }).slice(0, navSlotCount);
         if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
       } catch (error) {}
@@ -173,6 +173,9 @@
   <script src="<?= $e($composeDisclosureScriptPath) ?>" defer></script>
   <script src="<?= $e($markdownDetectScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
+<?php if (($inboxUnreadScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($inboxUnreadScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($navigationSlot === 'app'): ?>
   <script src="<?= $e($accountMenuScriptPath) ?>" defer></script>
   <script src="<?= $e($tabBarScrollScriptPath) ?>" defer></script>

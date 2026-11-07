@@ -17,3 +17,4 @@ Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F05; that summary is a local snapshot review and its request wording is preserved here.
 2026-11-06: Forte Activity gained Threads and Replies (and other per-kind) left-pane filters; see docs/plans/forte_activity_kind_filters/. Since-last-visit, author filters and excluding own activity remain open.
+2026-11-07: Inbox (branch feat/personal_inbox, behind FORUM_INBOX_ENABLED, off by default) delivers since-last-visit for members: Replies and New posts since an explicit Caught up, own posts excluded, visiting marks nothing. See docs/plans/personal_inbox/. Author filters and RSS/Atom remain open; not deployed.
