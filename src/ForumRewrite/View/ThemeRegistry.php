@@ -15,7 +15,10 @@ final class ThemeRegistry
     public const LEGACY_ALIASES = ['windark' => 'midnight'];
 
     /**
-     * @return list<array{name: string, label: string, mode: string}>
+     * A theme may set 'script' => true to ship /assets/theme-<name>.js, which
+     * runs only while that theme is active (see the theme development guide).
+     *
+     * @return list<array{name: string, label: string, mode: string, script?: bool}>
      */
     public static function all(): array
     {
@@ -94,6 +97,23 @@ final class ThemeRegistry
         $paths = [];
         foreach (self::explicitNames() as $name) {
             $paths[$name] = '/assets/theme-' . $name . '.css';
+        }
+
+        return $paths;
+    }
+
+    /**
+     * Theme scripts, keyed by theme name, for themes that declare one.
+     *
+     * @return array<string, string>
+     */
+    public static function scriptPaths(): array
+    {
+        $paths = [];
+        foreach (self::all() as $theme) {
+            if (($theme['script'] ?? false) === true && $theme['name'] !== 'auto') {
+                $paths[$theme['name']] = '/assets/theme-' . $theme['name'] . '.js';
+            }
         }
 
         return $paths;

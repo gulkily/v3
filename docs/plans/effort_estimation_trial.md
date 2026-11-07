@@ -1,5 +1,25 @@
 # Effort estimation trial ledger
 
+## Cycle v3/engagify_theme
+
+2026-11-07T12:03:35Z — v3/engagify_theme Step 4 entry: Step 3 explicitly approved; branch `feat/engagify_theme`, planning `fe15dec`. [Summary](./engagify_theme/engagify_theme_step4_implementation_summary.md#step-4-entry). Whole-cycle **0.80** reaffirmed; stage originals copied 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10, non-additive. Same v5/baseline/R1/P2, single exposed Claude rater. Planning history before this branch lives on `plan/engagify_theme`.
+
+2026-11-07T11:58:20Z — v3/engagify_theme Step 3 handoff: user explicitly approved revised Step 2. [Plan/checkpoint](./engagify_theme/engagify_theme_step3_development_plan.md#study-checkpoint) eight stages: theme scripts, Engagify and Exit, page themes, baked pages, three nags, newsletter and rate-us, stretch nags, docs and sweep. Whole-cycle **0.80** reaffirmed; stage-work originals 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10, non-additive. Same v5/baseline/R1/P2, single exposed Claude rater. Await Approved Step 3.
+
+2026-11-07T11:56:40Z — v3/engagify_theme Step 2 revision: maintainer reversed page-only (Step 1 Revision 4); Engagify selectable again. [Checkpoint](./engagify_theme/engagify_theme_step2_feature_description.md#study-checkpoint). Scope v5; **0.80** reaffirmed. Same baseline/R1/P2, single exposed Claude rater. Awaiting renewed Approved Step 2.
+
+2026-11-07T11:54:11Z — v3/engagify_theme Step 2 handoff: user explicitly approved Step 1 (Option A, Revisions 1–4). [Description/checkpoint](./engagify_theme/engagify_theme_step2_feature_description.md#study-checkpoint): theme scripts, page-only themes, page themes in the site profile, cookie notice thread first, five core nags, Exit remembered per page. Projected total 0.75 → **0.80** (new understanding: menu choice counts as Exit, standalone layout, baked pages). Same v4/A/baseline/R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-07T11:52:09Z — v3/engagify_theme Step 1 Revision 4: Engagify page-only, hidden from the theme menu. [Checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v4/A; **0.75** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-07T11:50:41Z — v3/engagify_theme Step 1 Revision 3: maintainer chose general theme scripts over CSS-only state. [Checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v3/A; projected total 0.70 → **0.75**, reason changed scope. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-07T11:48:38Z — v3/engagify_theme Step 1 Revision 2: maintainer fixed the nag list (core: rate-us, cookie banner, newsletter, app bar, notification prompt, Exit; six stretch nags conditional). [Checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v2/A, **0.70** reaffirmed. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-07T11:45:50Z — v3/engagify_theme Step 1 Revision 1: Option B moved to v3/theme_directive. [Checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.70** reaffirmed; A/C estimates unchanged, B's 1.00 kept as history. Same revision, R1/P2, single exposed Claude rater. Await Approved Step 1; revision uncommitted.
+
+2026-11-07T11:11:04Z — v3/engagify_theme Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./engagify_theme/engagify_theme_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (Engagify parody theme with its own script, page theme list in configuration, Exit back to the viewer's theme). Starting revision `f343b626`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because theme code was read before rating. Intake and projected total **0.70**; option estimates 0.70/1.00/0.35, non-additive. Await Approved Step 1. Planning saved on `plan/engagify_theme` at the session stop hook's request; no approval implied.
+
 ## Cycle v3/readable_page_urls
 
 2026-11-07T02:16:44Z — v3/readable_page_urls Step 4 local closeout: branch `feat/readable_page_urls`, planning `44d072c2` and eight stage commits. [Summary/closeout](./readable_page_urls/readable_page_urls_step4_implementation_summary.md#closeout). Same v3/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.60 at entry; Stage 6 revised 0.08 → 0.11 (new understanding: offline reader tokens). Retrospective scope assessment 0.62. Stage originals 0.12/0.10/0.05/0.08/0.08/0.08/0.08/0.08; retrospectives 0.12/0.08/0.03/0.08/0.07/0.11/0.07/0.09; non-additive. Smoke plus changed tests 485/485; two browser tests fail on baseline too; full suite not run. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.

@@ -1128,6 +1128,7 @@ PHP;
                 $hintedHtml
             );
             assertStringContains('var themeStylesheetPaths = ', $hintedHtml);
+            assertStringContains('window.forumThemeScriptPaths = ', $hintedHtml);
             assertStringContains("document.getElementById('theme-stylesheet')", $hintedHtml);
             assertStringContains('data-theme-hint-cookie="theme-hint"', $hintedHtml);
             assertStringContains('window.forumUpdateThemeHint = updateThemeHint;', $hintedHtml);

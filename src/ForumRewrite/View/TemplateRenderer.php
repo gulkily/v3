@@ -211,6 +211,12 @@ final class TemplateRenderer
                 $themeStylesheetPaths[$name] = $this->assetPath($path);
             }
         }
+        $themeScriptPaths = [];
+        foreach (ThemeRegistry::scriptPaths() as $name => $path) {
+            if (in_array($name, $explicitThemeNames, true)) {
+                $themeScriptPaths[$name] = $this->assetPath($path);
+            }
+        }
         $defaultTheme = $this->defaultThemeName($profile, $permittedThemeNames);
         $themeHint = $this->themeHint($explicitThemeNames);
         $initialTheme = $themeHint
@@ -258,6 +264,7 @@ final class TemplateRenderer
             'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
             'themeStylesheetPaths' => $themeStylesheetPaths,
+            'themeScriptPaths' => $themeScriptPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
             'themeHintCookieName' => ThemeRegistry::THEME_HINT_COOKIE,
             'themeLegacyAliases' => ThemeRegistry::LEGACY_ALIASES,

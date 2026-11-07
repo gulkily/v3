@@ -3,6 +3,65 @@
   var storageKey = runtime && runtime.themeStorageKey;
   if (!storageKey) return;
 
+  // Theme scripts: a theme with a script (ThemeRegistry 'script') ships
+  // /assets/theme-<name>.js, which calls forumThemeScripts.register(name,
+  // { start: fn, stop: fn }). Only the active theme's script is started; stop
+  // must remove everything start added, including timers.
+  var themeScripts = (function () {
+    var paths = window.forumThemeScriptPaths || {};
+    var hooks = {};
+    var requested = {};
+    var active = null;
+    var wanted = null;
+
+    function run(name, phase) {
+      try {
+        if (hooks[name] && typeof hooks[name][phase] === "function") hooks[name][phase]();
+      } catch (error) {
+        if (window.console) window.console.error(error);
+      }
+    }
+
+    function startWanted() {
+      if (!wanted || active === wanted || !hooks[wanted]) return;
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startWanted, { once: true });
+        return;
+      }
+      active = wanted;
+      run(active, "start");
+    }
+
+    return {
+      register: function (name, themeHooks) {
+        hooks[name] = themeHooks || {};
+        startWanted();
+      },
+      activate: function (name) {
+        wanted = Object.prototype.hasOwnProperty.call(paths, name) ? name : null;
+        if (active && active !== wanted) {
+          var previous = active;
+          active = null;
+          run(previous, "stop");
+        }
+        if (!wanted) return;
+        if (!hooks[wanted] && !requested[wanted]) {
+          requested[wanted] = true;
+          var script = document.createElement("script");
+          script.src = paths[wanted];
+          script.async = true;
+          script.addEventListener("error", function () { delete requested[script.getAttribute("data-theme-name")]; });
+          script.setAttribute("data-theme-name", wanted);
+          document.head.appendChild(script);
+        }
+        startWanted();
+      },
+      active: function () { return active; }
+    };
+  })();
+  window.forumThemeScripts = themeScripts;
+  themeScripts.activate(document.documentElement.getAttribute("data-resolved-theme"));
+
   function systemTheme() {
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
@@ -77,6 +136,7 @@
       }
 
       document.documentElement.setAttribute("data-resolved-theme", resolved);
+      themeScripts.activate(resolved);
       if (typeof window.forumUpdateThemeHint === "function") {
         window.forumUpdateThemeHint(resolved);
       }
