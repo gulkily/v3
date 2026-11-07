@@ -34,3 +34,26 @@ The `v3/theme_directive` plans and earlier drafts stay on branch `plan/engagify_
 - Estimate details: original scope as Step 3; uncertainty was low to medium; no revision. Retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Engagify and Exit
+
+**Original estimate: 0.10**
+**Retrospective: 0.12**
+
+- Changes:
+  - `ThemeRegistry.php`: `engagify` entry with `script`; `SiteProfileRegistry.php`: permitted on `zenmemes` only.
+  - `theme-engagify.css`: glossy startup palette, swatch, a "NEW" badge on its menu row, rounded cards, and shared nag styles scoped under the theme.
+  - `theme-engagify.js`: registers with the Stage 1 registry; each nag is a function given a context that tracks its elements and timers, so stop removes everything. This stage adds the always-visible Exit pill.
+  - `theme_toggle.js`: remembers the theme before each change (`<storage key>-previous`) and exposes `window.forumExitTheme()`, which returns to it.
+  - `LocalAppSmokeTest`: allow-list and menu option assertions include `engagify`.
+- Verification:
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest SiteProfileRegistryTest PostActionThemeTest`, 446 run, 445 passed; the one failure is the baseline `BoardListTest` failure.
+  - Passed: `python3 -I tests/theme_contrast_audit.py`, Engagify OK after raising `--line` from 1.31:1 to 3.5:1.
+  - Passed: headless Chrome check against `./v3 start` at 1280px and 380px, from a saved Word 97 theme. Engagify from the menu shows Exit; Exit returns Word 97 without a reload and leaves no Engagify element; reload keeps Word 97; reload while on Engagify restarts the script; choosing Light afterwards removes every Engagify element; no page errors. Screenshots inspected.
+  - This stage also completes Stage 1's pending real-browser start/stop check.
+- Notes:
+  - First check found the Exit pill covering the phone tab bar. The tab bar offset is a custom property scoped to the app shell, so nags now mount inside `[data-shell]` and sit at z-index 24, under the tab bar and account menu (25).
+  - Base button rules outranked the nag classes, so nag styles are scoped under `:root[data-theme="engagify"]`.
+- Estimate details: original scope as Step 3; no revision. Retrospective is slightly higher because of the two layout fixes; it is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

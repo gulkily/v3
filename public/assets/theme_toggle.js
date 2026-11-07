@@ -399,6 +399,12 @@
 
     function commitSelection(theme, selectedPalette) {
       document.documentElement.removeAttribute("data-theme-loading");
+      if (theme !== currentTheme) {
+        try {
+          localStorage.setItem(storageKey + "-previous", currentTheme);
+        } catch (error) {
+        }
+      }
       currentTheme = theme;
       if (selectedPalette) lcdControl.set(selectedPalette);
       applyTheme(currentTheme);
@@ -417,6 +423,20 @@
       applySelection(theme);
       closeMenu(true);
     }
+
+    // Leaving a theme from inside it (a theme script's Exit control) returns
+    // the viewer to the theme they had before choosing it.
+    window.forumExitTheme = function () {
+      var previous = null;
+      try {
+        previous = localStorage.getItem(storageKey + "-previous");
+      } catch (error) {
+      }
+      if (themes.indexOf(previous) === -1 || previous === currentTheme) {
+        previous = defaultTheme() !== currentTheme ? defaultTheme() : "auto";
+      }
+      applySelection(previous);
+    };
 
     cycleButton.addEventListener("click", function () {
       var next = nextAppearance(currentTheme);

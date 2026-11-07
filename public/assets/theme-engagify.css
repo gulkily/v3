@@ -1,0 +1,177 @@
+/* Theme: engagify */
+/*
+ * A parody of the engagement-optimized web: a glossy startup look, buried
+ * under the nags drawn by theme-engagify.js. Controls stay usable, and the
+ * Exit pill is always on screen.
+ */
+:root[data-theme="engagify"],
+.theme-menu__option[data-theme-option="engagify"] {
+  color-scheme: light;
+  --page-bg: #f6f5fb;
+  --body-background:
+    radial-gradient(circle at 12% -10%, rgba(124, 58, 237, 0.14), transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(236, 72, 153, 0.1), transparent 36%),
+    #f6f5fb;
+  --ink: #1e1b2e;
+  --ink-soft: #5b5670;
+  --line: #8b85a3;
+  --panel: #ffffff;
+  --input-bg: #ffffff;
+  --button-bg: #f1edfd;
+  --button-alt-bg: #fdf2f8;
+  --feedback-ok-bg: #ecfdf5;
+  --feedback-error-bg: #fef2f2;
+  --status-error: #b91c1c;
+  --status-ok: #047857;
+  --status-warning: #a16207;
+  --active-bg: #ede9fe;
+  --active-ink: #4c1d95;
+  --active-line: #7c3aed;
+  --active-ring: rgba(124, 58, 237, 0.22);
+  --body-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --ui-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --engagify-accent: #6d28d9;
+  --engagify-accent-ink: #ffffff;
+  --engagify-hot: #db2777;
+}
+
+.theme-swatch[data-theme="engagify"] {
+  background:
+    radial-gradient(circle at 70% 30%, #ffffff 0 18%, transparent 19%),
+    linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  border-color: #6d28d9;
+}
+
+.theme-menu__option[data-theme-option="engagify"] {
+  font-weight: 700;
+}
+
+.theme-menu__option[data-theme-option="engagify"]::after {
+  content: "NEW";
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: #db2777;
+  color: #ffffff;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+}
+
+/* Scoped section: the glossy startup look. */
+
+:root[data-theme="engagify"] .card {
+  border-radius: 1rem;
+  /* Cards are not controls, so a soft border is enough; inputs keep --line. */
+  border-color: #e2dff0;
+  box-shadow: 0 1px 2px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(76, 29, 149, 0.08);
+}
+
+:root[data-theme="engagify"] input,
+:root[data-theme="engagify"] textarea {
+  border-radius: 0.75rem;
+}
+
+:root[data-theme="engagify"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+:root[data-theme="engagify"] a {
+  color: var(--engagify-accent);
+}
+
+/* Nags (theme-engagify.js). Nags stay under the phone tab bar and the
+   account menu (z-index 25 and up), so the theme menu stays reachable. */
+
+:root[data-theme="engagify"] .engagify-exit {
+  position: fixed;
+  left: max(1rem, env(safe-area-inset-left));
+  bottom: calc(var(--app-tabbar-offset, 0px) + max(1rem, env(safe-area-inset-bottom)));
+  z-index: 24;
+  width: auto;
+  margin: 0;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #1e1b2e;
+  color: #ffffff;
+  font: 600 0.95rem/1 var(--ui-font);
+  box-shadow: 0 8px 24px rgba(30, 27, 46, 0.3);
+  cursor: pointer;
+}
+
+:root[data-theme="engagify"] .engagify-exit:focus-visible,
+:root[data-theme="engagify"] .engagify-button:focus-visible,
+:root[data-theme="engagify"] .engagify-link:focus-visible,
+:root[data-theme="engagify"] .engagify-star:focus-visible,
+:root[data-theme="engagify"] .engagify-close:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+:root[data-theme="engagify"] .engagify-nag {
+  font-family: var(--ui-font);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+:root[data-theme="engagify"] .engagify-nag *,
+:root[data-theme="engagify"] .engagify-nag *::before,
+:root[data-theme="engagify"] .engagify-nag *::after {
+  box-sizing: inherit;
+}
+
+:root[data-theme="engagify"] .engagify-nag h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+:root[data-theme="engagify"] .engagify-nag p {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+:root[data-theme="engagify"] .engagify-button {
+  min-height: 44px;
+  padding: 0 1.2rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: var(--engagify-accent);
+  color: var(--engagify-accent-ink);
+  font: 700 1rem/1 var(--ui-font);
+  cursor: pointer;
+}
+
+:root[data-theme="engagify"] .engagify-link {
+  min-height: 44px;
+  padding: 0 0.6rem;
+  border: 0;
+  background: transparent;
+  color: #6b6680;
+  font: 400 0.85rem/1.2 var(--ui-font);
+  cursor: pointer;
+}
+
+:root[data-theme="engagify"] .engagify-close {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: 400 1.4rem/1 var(--ui-font);
+  cursor: pointer;
+}
+
+:root[data-theme="engagify"] .engagify-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}

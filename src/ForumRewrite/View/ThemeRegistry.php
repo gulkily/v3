@@ -37,6 +37,7 @@ final class ThemeRegistry
             ['name' => 'whitehot', 'label' => 'Whitehot', 'mode' => 'light'],
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
             ['name' => 'midnight', 'label' => 'Midnight', 'mode' => 'dark'],
+            ['name' => 'engagify', 'label' => 'Engagify', 'mode' => 'light', 'script' => true],
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
             ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
             ['name' => 'mitrapclub', 'label' => 'MIT Rap Club', 'mode' => 'dark'],
