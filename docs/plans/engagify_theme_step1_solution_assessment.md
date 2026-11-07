@@ -111,6 +111,16 @@ Option A therefore treats a theme script as a general feature, not an Engagify s
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
+## Revision 4 — page-only themes
+
+The maintainer asked for Engagify to stay out of the theme menu, yet still serve as a page's default theme. This replaces the original "can be selected" requirement.
+
+Site-specific themes such as `chouse` and `qdb` work differently. A site that does not list one in `permittedThemes` cannot use it at all. Engagify needs a new state: page-only. A page-only theme never appears in the theme menu or the cycle button, and a viewer cannot save it as their theme. It loads only on a page whose page theme names it.
+
+Exit therefore leaves the page theme on that page and shows the viewer's own theme. The page remembers that choice in the browser, as before. Option A remains the recommendation.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
 ## Study checkpoint
 
 2026-11-07T11:11:04Z, `railspike-effort` / `v3/engagify_theme`, intake and Step 1 handoff. Scope v1: Option A as recommended above. Starting revision `f343b6269a3b786e4ebe1ab383096f2109461933`. Reference R1, protocol P2; frozen R1 hashes not re-verified for this checkpoint. Single exposed Claude rater. Before rating, the rater read `ThemeRegistry.php`, the theme part of `TemplateRenderer.php` and `layout.php`, and the theme development guide. Pristine intake is missing. Intake and Step 1 projected total **0.70**. Option estimates 0.70, 1.00 and 0.35 are alternatives and do not add up. No implementation, measured labor or accepted outcome.
@@ -123,8 +133,11 @@ Planning saved on branch `plan/engagify_theme` at the session stop hook's reques
 
 2026-11-07T11:50:41Z, Revision 3 checkpoint: the maintainer chose theme scripts as a general mechanism over CSS-only state. Scope v3: Option A with a reusable theme script contract and guide update. Projected total 0.70 → **0.75**, reason changed scope (general contract, cleanup on theme switch, documentation). Same revision, R1/P2 and single exposed Claude rater. No approval implied.
 
+2026-11-07T11:52:09Z, Revision 4 checkpoint: the maintainer made Engagify page-only, hidden from the theme menu and cycle button. Scope v4: Option A with a page-only theme state. Projected total **0.75** reaffirmed; the new state is small, and Exit no longer has to restore a saved theme. Same revision, R1/P2 and single exposed Claude rater. No approval implied.
+
 ## Enhancement Requests
 
 - Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now. Revision 1: moved to its own cycle at the maintainer's request, widened to a `theme:` directive; approval pending there; [v3/theme_directive](./theme_directive_step1_solution_assessment.md).
 - Remaining nags from the ranked list (push prompt, chat bubble, toasts, countdown, paywall, sticky bars, AI button). Disposition: in scope as later stages if Step 3 fits them; otherwise a follow-up. Revision 2: the "Open in app" bar and notification prompt are core; the rest are stretch; approved by the maintainer in conversation.
 - A CSS-only nag mechanism using hidden form controls (raised as Option D in conversation). Disposition: declined by the maintainer in favor of general theme scripts; Revision 3.
+- Hide Engagify from the theme menu and use it only as a page theme. Disposition: in-scope refinement during Step 1; Revision 4.

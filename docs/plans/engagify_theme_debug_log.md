@@ -60,3 +60,13 @@ No supported findings.
 ### Uncertain assessments
 
 - An alternative raised only in conversation (CSS-only state) was recorded as a declined enhancement request rather than a new option section. The instructions do not say which form a rejected late alternative should take.
+
+## 2026-11-07T11:52:09Z - Step 1 Revision 4
+
+### Necessary/useful instructions
+
+- `step1_solution_assessment.md`, Review and revision, "Preserve the Original Query; record the revised direction separately": the request reverses the original "can be selected". Recording the reversal in a revision kept both visible. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
