@@ -18,7 +18,10 @@ function identity(value = fingerprint, registered = true) {
   return { forum_pki_public_key: 'public', forum_pki_private_key: 'private', forum_pki_fingerprint: value.toUpperCase(),
     ...(registered ? { forum_pki_published_fingerprint: value.toUpperCase() } : {}) };
 }
-function load({ local = {}, session = {}, status = 200, membersOnly = false, blocked = false, fetchGate = null, messaging = null, preloaded = [] } = {}) {
+// The next question is booked as fingerprint@next-ms@attempt.
+function checked(value, minutesFromNow = 1, attempt = 1) { return { forum_pki_approval_checked: value + '@' + Math.round(Date.now() + minutesFromNow * 60000) + '@' + attempt }; }
+function booked(session) { const [value, next, attempt] = session.forum_pki_approval_checked.split('@'); return { value, wait: Number(next) - Date.now(), attempt: Number(attempt) }; }
+function load({ local = {}, session = {}, status = 200, membersOnly = false, blocked = false, fetchGate = null, messaging = null, preloaded = [], pageIdentity = null } = {}) {
   const attributes = {}, listeners = {}, events = [], fetches = [], appended = [], started = [];
   const localStorage = area(local, blocked), sessionStorage = area(session, blocked);
   const link = { isConnected: true };
@@ -34,7 +37,9 @@ function load({ local = {}, session = {}, status = 200, membersOnly = false, blo
     CustomEvent: function (type, options) { this.type = type; this.detail = options && options.detail; },
     URL,
     document: {
-      scripts, querySelector: selector => selector === '[data-private-message-unread]' && messaging ? link : null,
+      hidden: false, addEventListener(type, callback) { (listeners['document:' + type] = listeners['document:' + type] || []).push(callback); },
+      scripts, querySelector: selector => selector === '[data-private-message-unread]' && messaging ? link
+        : selector === '[data-approved-identity]' && pageIdentity !== null ? { getAttribute: () => pageIdentity } : null,
       createElement: () => ({}),
       head: { appendChild(script) {
         appended.push(new URL(script.src).pathname); scripts.push(script);
@@ -77,8 +82,55 @@ function load({ local = {}, session = {}, status = 200, membersOnly = false, blo
     const unapproved = load({ local: identity(other), session, status: 401 }); await unapproved.settle();
     assert.equal(unapproved.fetches.length, 1, 'a different identity gets its own check');
     const again = load({ local: identity(other), session, status: 401 }); await again.settle();
-    assert.equal(again.fetches.length, 0, 'one check per identity per session');
+    assert.equal(again.fetches.length, 0, 'a recent answer is not asked again');
     assert.equal(again.attributes['data-member'], undefined);
+  }
+  // "Not approved" answers back off exponentially with jitter, capped at 30 minutes.
+  {
+    const session = checked(fingerprint, -1, 0);
+    const first = load({ local: identity(), session, status: 401 }); await first.settle();
+    assert.deepEqual(first.fetches, ['/api/auth_status'], 'a due question is asked');
+    let b = booked(session);
+    assert.equal(b.attempt, 1);
+    assert.ok(b.wait >= 14000 && b.wait <= 30000, 'first wait is 15-30 s, got ' + b.wait);
+    const tooSoon = load({ local: identity(), session, status: 401 }); await tooSoon.settle();
+    assert.equal(tooSoon.fetches.length, 0, 'not before the booked time');
+    for (const [attempt, low, high] of [[3, 120000, 240000], [7, 900000, 1800000], [40, 900000, 1800000]]) {
+      const s2 = checked(fingerprint, -1, attempt);
+      const f = load({ local: identity(), session: s2, status: 401 }); await f.settle();
+      b = booked(s2);
+      assert.equal(f.fetches.length, 1);
+      assert.equal(b.attempt, attempt + 1);
+      assert.ok(b.wait >= low - 1000 && b.wait <= high, `attempt ${attempt}: wait ${b.wait} outside ${low}-${high}`);
+    }
+    // Once the member is approved, the next due question sees it and the schedule is cleared.
+    const s3 = checked(fingerprint, -1, 5);
+    const approved = load({ local: identity(), session: s3 }); await approved.settle();
+    assert.equal(approved.attributes['data-member'], 'approved');
+    assert.equal(s3.forum_pki_approval_checked, undefined);
+    // Records from older formats are due at once.
+    for (const old of [fingerprint, fingerprint + '@' + Date.now()]) {
+      const f = load({ local: identity(), session: { forum_pki_approval_checked: old } }); await f.settle();
+      assert.equal(f.fetches.length, 1, 'old record ' + old);
+    }
+    // Returning to the tab asks again when the booked time has passed.
+    const s4 = checked(fingerprint, 10);
+    const tab = load({ local: identity(), session: s4, status: 401 }); await tab.settle();
+    assert.equal(tab.fetches.length, 0);
+    s4.forum_pki_approval_checked = checked(fingerprint, -1, 2).forum_pki_approval_checked;
+    tab.fire('document:visibilitychange'); await tab.settle();
+    assert.equal(tab.fetches.length, 1);
+  }
+  // A member page names the approved viewer's key; the browser remembers it at once.
+  {
+    const f = load({ local: identity(), session: checked(fingerprint), pageIdentity: 'openpgp:' + fingerprint }); await f.settle();
+    assert.equal(f.local.forum_pki_approved_fingerprint, fingerprint);
+    assert.equal(f.attributes['data-member'], 'approved');
+    assert.equal(f.fetches.length, 0);
+    const mismatch = load({ local: identity(), session: checked(fingerprint), pageIdentity: 'openpgp:' + other }); await mismatch.settle();
+    assert.equal(mismatch.local.forum_pki_approved_fingerprint, undefined, 'a page for another key changes nothing');
+    const empty = load({ local: identity(), session: checked(fingerprint), pageIdentity: '' }); await empty.settle();
+    assert.equal(empty.attributes['data-member'], undefined);
   }
   // A 401 never clears a remembered approval (it may be an expired session).
   {
@@ -104,7 +156,7 @@ function load({ local = {}, session = {}, status = 200, membersOnly = false, blo
   }
   // Sign-in results: approval, a later not-approved answer, and a stale identity.
   {
-    const f = load({ local: identity(), session: { forum_pki_approval_checked: fingerprint } }); await f.settle();
+    const f = load({ local: identity(), session: checked(fingerprint) }); await f.settle();
     f.api.record(fingerprint.toUpperCase(), true);
     assert.equal(f.attributes['data-member'], 'approved');
     f.api.record(other, false);
@@ -125,7 +177,7 @@ function load({ local = {}, session = {}, status = 200, membersOnly = false, blo
     signedOut.fire('storage', { key: 'forum_pki_private_key' });
     assert.equal(signedOut.local.forum_pki_approved_fingerprint, undefined);
     assert.equal(signedOut.attributes['data-member'], undefined);
-    const otherTab = load({ local: identity(), session: { forum_pki_approval_checked: fingerprint } }); await otherTab.settle();
+    const otherTab = load({ local: identity(), session: checked(fingerprint) }); await otherTab.settle();
     otherTab.local.forum_pki_approved_fingerprint = fingerprint;
     otherTab.fire('storage', { key: 'forum_pki_approved_fingerprint' });
     assert.equal(otherTab.attributes['data-member'], 'approved');
@@ -142,7 +194,7 @@ function load({ local = {}, session = {}, status = 200, membersOnly = false, blo
     assert.deepEqual(member.started, [['unread', true]]);
     member.api.record(fingerprint, false);
     assert.deepEqual(member.started.at(-1), ['unread-stop']);
-    const later = load({ local: identity(), session: { forum_pki_approval_checked: fingerprint }, messaging }); await later.settle();
+    const later = load({ local: identity(), session: checked(fingerprint), messaging }); await later.settle();
     assert.deepEqual(later.appended, []);
     later.api.record(fingerprint, true);
     for (let i = 0; i < 5; i++) await later.settle();

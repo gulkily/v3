@@ -66,6 +66,7 @@ final class InboxPageTest
 
             $html = $this->renderInbox($databasePath, $this->viewer('openpgp:ilyag', 'ilyag'), static fn (): PrivateMessageStore => $store);
             assertStringContains('id="inbox-messages"', $html);
+            assertStringContains('data-approved-identity="openpgp:ilyag"', $html, 'The page names the approved key so the browser can remember it.');
             assertStringContains('href="/messages/conversation/alice">alice</a>', $html);
             assertStringContains('2 new', $html);
             assertTrue(strpos($html, 'data-counterpart="alice"') < strpos($html, 'data-counterpart="bob"'), 'The newest arrival comes first.');
