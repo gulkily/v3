@@ -32,7 +32,7 @@
         var navSlots = navSlotState && Array.isArray(navSlotState.slots) ? navSlotState.slots : [];
         var navMember = document.documentElement.getAttribute('data-member') === 'approved';
         navSlots = navSlots.filter(function (section) {
-          return navSlotSections.indexOf(section) !== -1 && (section !== 'messages' || navMember);
+          return navSlotSections.indexOf(section) !== -1 && ((section !== 'messages' && section !== 'inbox') || navMember);
         }).slice(0, navSlotCount);
         if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
       } catch (error) {}

@@ -767,6 +767,7 @@ pre {
   html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
+  html[data-nav-slots~="inbox"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="inbox"],
   html[data-nav-slots~="search"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="search"],
   html[data-nav-slots~="about"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="about"],
   html[data-nav-slots~="tools"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="tools"] {
@@ -799,6 +800,7 @@ pre {
   html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
+  html[data-nav-slots~="inbox"] [data-shell="app"] .account-menu[data-current="inbox"],
   html[data-nav-slots~="search"] [data-shell="app"] .account-menu[data-current="search"],
   html[data-nav-slots~="about"] [data-shell="app"] .account-menu[data-current="about"],
   html[data-nav-slots~="tools"] [data-shell="app"] .account-menu[data-current="tools"] {

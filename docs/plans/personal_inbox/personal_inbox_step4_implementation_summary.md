@@ -98,3 +98,25 @@ Ledger links were repaired to the feature folder in the Stage 1 commit, because 
 - Estimate details: original scope as planned; uncertainty low; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Navigation
+
+**Original estimate: 0.10**
+**Retrospective: 0.08**
+
+- Changes:
+  - `TemplateRenderer::navItems()` adds Inbox (`/inbox`, member only) while `FORUM_INBOX_ENABLED` is on, outside the QDB profile. In the app shell, `navigationItems()` gives Inbox the Messages slot on the desktop bar and moves Messages into the You menu. With the flag off, navigation is unchanged.
+  - Phones: Inbox opens from More like Messages did, and members can pin it to a personal tab. `site.css` gains the Inbox slot rules; `layout.php` and `nav_slots.js` treat Inbox as member-only, like Messages.
+  - `theme-nav-icons.css`: an inbox-tray glyph with a down arrow for Word97, Chicago and Midnight.
+  - The navigation refresh endpoint needed no change; it renders `navigationItems()`.
+- Verification:
+  - `AppNavigationPlacementTest::testInboxTakesTheMessagesPlaceOnTheBarOnlyWhileItsFlagIsOn`: flag off keeps Messages on the bar; flag on puts Inbox there and Messages in the menu; Inbox is member-only, slottable on phones and present without private messages; the refresh fragment carries it.
+  - `tests/browser/nav_slots.mjs`: passed (Chrome at `/usr/bin/google-chrome`, Playwright linked temporarily, link removed).
+  - Screenshots of the icon in Word97, Chicago and Midnight, and of the app shell at desktop and phone width with the You and More menus open. Checked by eye.
+  - `./v3 test --smoke AppNavigationPlacementTest InboxPageTest FeatureFlagEvaluatorTest`: only the baseline `BoardListTest` failure.
+  - Full suite not run.
+- Notes:
+  - Maintainer review of the placement is the planned checkpoint before Stage 6.
+- Estimate details: original scope as planned; uncertainty medium; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
