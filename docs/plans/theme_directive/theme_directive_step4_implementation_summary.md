@@ -34,3 +34,20 @@ Branch `feat/theme_directive`, from `feat/engagify_theme` (unmerged; this cycle 
 - Estimate details: original scope as planned; uncertainty low; no revisions. Retrospective: smaller than planned because the renderer already had the page-theme path; measured labor unknown.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Baked thread pages follow theme changes
+
+**Original estimate: 0.07**
+**Retrospective: 0.04**
+
+- Changes:
+  - No application change was needed. Every reply path already drops its thread's baked page (`invalidateReply()` in `LocalWriteService` and the signed-post path), and retraction drops all generated pages (`invalidateRetractedPostArtifacts()`).
+  - `ThreadThemeTest::testBakedThreadPageFollowsAThemeReply`: bakes a thread, posts a theme reply, checks the baked file is gone, rebuilds and reads `data-page-theme`.
+- Verification:
+  - `php tests/run.php ThreadThemeTest`: 4 passed.
+  - Retraction invalidation confirmed by reading the code, not by a new test; signing a retraction in a test needs the prepare/finalize flow, which existing retraction tests already cover.
+- Notes:
+  - As with `event:`, a baked page does not change when someone stops being an operator; it updates on the thread's next write or rebuild.
+- Estimate details: original scope as planned; uncertainty low; no revisions. Retrospective: tracing only, no code change; measured labor unknown.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

@@ -6,6 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\ThemeDirective;
@@ -102,7 +103,24 @@ final class ThreadThemeTest
         }
     }
 
-    /** @return array{string,string,LocalWriteService,Application} */
+    public function testBakedThreadPageFollowsAThemeReply(): void
+    {
+        [$root, $database, $service, , $artifacts] = $this->environment();
+        $thread = $this->thread($service, 'Baked', 'Opening post', self::OPERATOR);
+        $builder = new StaticArtifactBuilder(dirname(__DIR__), $root, $database, $artifacts);
+        $path = $artifacts . '/threads/' . $thread . '.html';
+
+        threadThemeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
+        threadThemeAssertNotContains('data-page-theme=', (string) file_get_contents($path));
+
+        $this->reply($service, $thread, 'theme: midnight', self::OPERATOR);
+        // The reply drops the baked page, so the next build carries the theme.
+        threadThemeAssertSame(false, is_file($path));
+        threadThemeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
+        threadThemeAssertContains('data-page-theme="midnight"', (string) file_get_contents($path));
+    }
+
+    /** @return array{string,string,LocalWriteService,Application,string} */
     private function environment(): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-thread-theme-repo-' . bin2hex(random_bytes(6));
@@ -118,7 +136,7 @@ final class ThreadThemeTest
         $this->render($application, '/');
         $service = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root), featureFlags: FeatureFlagEvaluator::forRepository($root));
 
-        return [$root, $database, $service, $application];
+        return [$root, $database, $service, $application, $artifacts];
     }
 
     private function thread(LocalWriteService $service, string $subject, string $body, ?string $author = null): string
