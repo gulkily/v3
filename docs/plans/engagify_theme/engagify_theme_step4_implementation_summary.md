@@ -14,7 +14,7 @@ Cycle estimate: 0.80
 
 Baseline: the smoke set on `main` has one failure, `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged` (a `rel="prev"` pagination assertion). It is unrelated to themes and is reported as a baseline failure below.
 
-The `v3/theme_directive` plans and earlier drafts stay on branch `plan/engagify_theme`. Links to them became plain text in the planning commit.
+The `v3/theme_directive` plans live on branch `plan/theme_directive`, and earlier Engagify drafts stay on branch `plan/engagify_theme`. Links to them became plain text in the planning commit.
 
 ## Stage 1 - Theme scripts
 

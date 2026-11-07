@@ -54,7 +54,7 @@ A theme may ship `theme-engagify.js` beside its CSS. The page loads the script o
 
 **Estimate: 1.00**
 
-Moved to `v3/theme_directive` (planned on branch `plan/engagify_theme`) in Revision 1; kept here as first written.
+Moved to `v3/theme_directive` (planned on branch `plan/theme_directive`) in Revision 1; kept here as first written.
 Main driver: a new root header through parser, write path, read model and composer. Uncertainty: medium to high.
 
 The theme script is the same as in Option A. A thread's root record carries a header such as `Theme: engagify`, like the event headers. The thread page shows that theme by default.
@@ -87,7 +87,7 @@ Open question for Step 2: which page gets Engagify first. The anti-cookie notice
 
 ## Revision 1 — theme directive split out
 
-The maintainer asked to move the page theme set from inside a thread into its own cycle, `v3/theme_directive` (planned on branch `plan/engagify_theme`). That cycle compares a `theme:` reply directive with a derived record and with this assessment's Option B header. This cycle keeps Option A: the theme script and the page theme list in configuration. Option C remains the alternative. The recommendation and slices are unchanged.
+The maintainer asked to move the page theme set from inside a thread into its own cycle, `v3/theme_directive` (planned on branch `plan/theme_directive`). That cycle compares a `theme:` reply directive with a derived record and with this assessment's Option B header. This cycle keeps Option A: the theme script and the page theme list in configuration. Option C remains the alternative. The recommendation and slices are unchanged.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
 
@@ -141,7 +141,7 @@ Revision 4 reversed after Step 2 approval (2026-11-07T11:56:40Z): the maintainer
 
 ## Enhancement Requests
 
-- Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now. Revision 1: moved to its own cycle at the maintainer's request, widened to a `theme:` directive; approval pending there; `v3/theme_directive` (planned on branch `plan/engagify_theme`).
+- Page themes declared in a thread's root record. Disposition: Option B, deferred to a follow-up cycle unless chosen now. Revision 1: moved to its own cycle at the maintainer's request, widened to a `theme:` directive; approval pending there; `v3/theme_directive` (planned on branch `plan/theme_directive`).
 - Remaining nags from the ranked list (push prompt, chat bubble, toasts, countdown, paywall, sticky bars, AI button). Disposition: in scope as later stages if Step 3 fits them; otherwise a follow-up. Revision 2: the "Open in app" bar and notification prompt are core; the rest are stretch; approved by the maintainer in conversation.
 - A CSS-only nag mechanism using hidden form controls (raised as Option D in conversation). Disposition: declined by the maintainer in favor of general theme scripts; Revision 3.
 - Hide Engagify from the theme menu and use it only as a page theme. Disposition: in-scope refinement during Step 1; Revision 4.

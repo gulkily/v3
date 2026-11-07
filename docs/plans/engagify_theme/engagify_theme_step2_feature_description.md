@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/engagify_theme`; [host ledger](../effort_estimation_trial.md#cycle-v3engagify_theme). Standing P2 enrollment. No parent cycle; `v3/theme_directive` (planned on branch `plan/engagify_theme`) depends on this cycle.
+Effort study: `railspike-effort` / `v3/engagify_theme`; [host ledger](../effort_estimation_trial.md#cycle-v3engagify_theme). Standing P2 enrollment. No parent cycle; `v3/theme_directive` (planned on branch `plan/theme_directive`) depends on this cycle.
 
 Extended estimates: enabled
 
@@ -99,5 +99,5 @@ Step 2 approved again by the maintainer on 2026-11-07 ("approved step 2") after 
 
 ## Enhancement Requests
 
-Carried from Step 1: page themes declared inside a thread, moved to `v3/theme_directive` (planned on branch `plan/engagify_theme`), approval pending there. Stretch nags remain conditional on Step 3. The CSS-only alternative remains declined.
+Carried from Step 1: page themes declared inside a thread, moved to `v3/theme_directive` (planned on branch `plan/theme_directive`), approval pending there. Stretch nags remain conditional on Step 3. The CSS-only alternative remains declined.
 - Keep Engagify selectable in the theme menu (reverses Step 1 Revision 4). Disposition: changed scope after Step 2 approval; Step 2 revised; awaiting renewed Approved Step 2.

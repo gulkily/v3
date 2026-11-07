@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/engagify_theme`; [host ledger](../effort_estimation_trial.md#cycle-v3engagify_theme). Standing P2 enrollment. No parent cycle; `v3/theme_directive` (planned on branch `plan/engagify_theme`) depends on this cycle.
+Effort study: `railspike-effort` / `v3/engagify_theme`; [host ledger](../effort_estimation_trial.md#cycle-v3engagify_theme). Standing P2 enrollment. No parent cycle; `v3/theme_directive` (planned on branch `plan/theme_directive`) depends on this cycle.
 
 Extended estimates: enabled
 
@@ -127,6 +127,6 @@ Concepts touched: proposed "theme script" (created in Stage 1, entry written in 
 
 ## Enhancement Requests
 
-Carried from Step 2: page themes declared inside a thread (`v3/theme_directive` (planned on branch `plan/engagify_theme`), approval pending there); stretch nags are Stage 7; the CSS-only alternative remains declined.
+Carried from Step 2: page themes declared inside a thread (`v3/theme_directive` (planned on branch `plan/theme_directive`), approval pending there); stretch nags are Stage 7; the CSS-only alternative remains declined.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
