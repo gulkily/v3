@@ -59,3 +59,26 @@ No supported findings.
 
 - Stage 3 runs independently of Stage 1; the format does not say whether parallel stages need a different numbering or note beyond Dependencies.
 
+
+## 2026-11-07T15:33:12Z - Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate: committing the approved plans first, before any code, kept the folder move and link repairs out of the stage commits and made each stage diff reviewable on its own. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol (verification recorded per stage): running smoke plus changed tests at each stage caught the base-branch `BoardListTest` failure early and kept it from being mistaken for a regression later. Retain.
+- `read_model_schema_v1.md` (project rule surfaced through the shared implementation standards' reuse step), prior-version startup test: following the event-end-date precedent added a schema-50 startup test that the Step 3 plan had not listed. Retain; consider naming project schema contracts in the Step 3 template's verification field.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_do.md`, retrospective stage-work assessment per stage plus a separate cycle retrospective: with six small stages, the per-stage retrospectives added a line each but the cycle retrospective was their sum in practice. Clarify whether the cycle retrospective should be judged independently, as the projection is.
+
+### Inapplicable instructions
+
+- `step4_implementation_do.md`, documentation-only verification: application change.
+- `step3_development_plan_do.md` replay stage for a known user or environment: none named.
+- `RAILSPIKE.md`, Follow-up Cycles Before Merge: this cycle uses a new branch based on an unmerged one, not branch reuse.
+
+### Uncertain assessments
+
+- Branching from an unmerged feature branch: the instructions cover reusing an unmerged branch for a follow-up, but not basing a new cycle's branch on another cycle's unmerged branch. This cycle recorded the base and merge order in the summary.
+- `step4_implementation_do.md`, "never amend completed commits": a status edit in the Stage 6 commit touched three unrelated index lines; the fix went in a separate commit rather than an amend. The instructions do not say whether an unpushed final stage commit counts as completed.
