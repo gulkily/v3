@@ -184,7 +184,8 @@ final class FrontController
             $imagesEnabled = $featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED);
             if (str_contains($contents, 'data-image-content-state="1"') === $imagesEnabled
                 && \ForumRewrite\Support\FeatureFlags\BackupAvailability::matchesHtml($contents, $featureFlags)
-                && \ForumRewrite\Support\FeatureFlags\RailspikeAvailability::matchesHtml($contents, $featureFlags)) {
+                // Pages rendered before the on-site Railspike workflow was removed still load its script; re-render them.
+                && !str_contains($contents, '/assets/railspike_workflow.js')) {
                 $this->sendHtml($contents, 200, true);
                 return;
             }

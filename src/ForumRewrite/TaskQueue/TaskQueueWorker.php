@@ -30,7 +30,6 @@ final class TaskQueueWorker
         ?callable $runFastScoreSweep = null,
         ?callable $publishOfflineSnapshot = null,
         ?callable $fulfillAgentReply = null,
-        private readonly mixed $assessRailspike = null,
         /** @var (callable(int, Throwable):void)|null */
         private readonly mixed $onTaskThrowable = null,
         private readonly mixed $runRetractionSweep = null,
@@ -56,14 +55,11 @@ final class TaskQueueWorker
             'retried' => 0,
             'failed' => 0,
         ];
-        if ($this->assessRailspike instanceof \ForumRewrite\Railspike\AssessmentTask) $this->assessRailspike->reconcile();
         if ($report !== null && $summary['recovered'] > 0) {
             $report('recovered', ['count' => $summary['recovered']]);
         }
 
-        $excludedType = $this->assessRailspike instanceof \ForumRewrite\Railspike\AssessmentTask
-            && !$this->assessRailspike->isEnabled() ? SqliteTaskQueueStore::RAILSPIKE_ASSESSMENT : null;
-        foreach ($this->store->claimNext($limit, $taskId, $excludedType) as $task) {
+        foreach ($this->store->claimNext($limit, $taskId) as $task) {
             $summary['claimed']++;
             if ($report !== null) {
                 $report('started', $task);
@@ -102,7 +98,6 @@ final class TaskQueueWorker
             SqliteTaskQueueStore::REBUILD_READ_MODEL => $this->runReadModelRebuild($id),
             SqliteTaskQueueStore::FAST_SCORE_SWEEP => $this->runFastScoreSweep($id),
             SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT => $this->runOfflineSnapshotPublication($id),
-            SqliteTaskQueueStore::RAILSPIKE_ASSESSMENT => $this->runRailspike($id, $task),
             SqliteTaskQueueStore::AGENT_REPLY => $this->runAgentReply($id, $task),
             SqliteTaskQueueStore::APP_UPDATE => $this->runAppUpdateTask($id),
             default => $this->store->markFailed($id, 'unsupported_task_type', 'The worker does not support this task type.', false),
@@ -204,26 +199,6 @@ final class TaskQueueWorker
         }
 
         return $this->store->markCompleted($id);
-    }
-
-    /**
-     * @param array<string, mixed> $task
-     * @return array<string, mixed>
-     */
-    private function runRailspike(int $id, array $task): array
-    {
-        try {
-            if ($this->assessRailspike === null) throw new \RuntimeException('Railspike worker is not configured.');
-            if (($this->assessRailspike)($task) === false) {
-                $deferred = $this->store->requeueClaimed($id);
-                $deferred['continued'] = true;
-                return $deferred;
-            }
-            return $this->store->markCompleted($id);
-        } catch (\Throwable $e) {
-            $this->reportThrowable($id, $e);
-            return $this->store->markFailed($id, 'railspike_assessment_failed', $e->getMessage(), false);
-        }
     }
 
     private function runAgentReply(int $id, array $task): array
