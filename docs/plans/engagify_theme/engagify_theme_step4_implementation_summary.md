@@ -142,3 +142,32 @@ The `v3/theme_directive` plans and earlier drafts stay on branch `plan/engagify_
 - Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Stretch nags
+
+**Original estimate: 0.12**
+**Retrospective: 0.12**
+
+- Status: built. Stages 1–6 finished within plan, so the condition for this stage was met.
+- Changes:
+  - `theme-engagify.js`, six nags:
+    - Promo bar with a countdown that restarts on every page load. It and the app bar stick to the top, stacked.
+    - Fake sign-up toasts every 9 seconds.
+    - Chat bubble that opens itself after 10 seconds.
+    - Paywall card after the first post. Later posts blur but stay in the page and tab order; "Continue reading" or "Subscribe for $0.00/mo" lifts it.
+    - "Summarize with AI" button on each post's action row, which answers with a useless summary.
+  - The nag context gained `onStop` for cleanup that is not an element or timer (the paywall class on the root).
+  - `theme-engagify.css`: styles for all six. The cookie banner moves up to clear the chat bubble, and `[hidden]` nags stay hidden.
+- Verification:
+  - Passed: `./v3 test --smoke ThemeRegistryTest ThemeToggleScriptTest`; the only failure is the baseline `BoardListTest` failure.
+  - Passed: the Stage 5 nag check rerun with promo, paywall, chat and chat panel added, at 1280px and 380px. Every nag shows with no sideways scroll; its buttons take focus; Exit comes first except on the chat bubble itself; dismissal works by keyboard; switching away leaves nothing.
+  - Passed: a Stage 7 check at 1280px:
+    - The paywall keeps later posts focusable, and Continue reading lifts the blur.
+    - The countdown ticks; a sign-up toast appears; an AI button answers with a toast.
+    - The promo bar stays at the top after scrolling.
+    - Exit clears the paywall class and every element. No page errors.
+  - Screenshots inspected at peak, with every nag open at once.
+- Notes: one check run could not click the root post's AI button because the newsletter dialog covered it at that moment. A direct click with the dialog closed works, and a hit test finds both AI buttons on top. This is the intended overlay, not a defect.
+- Estimate details: original scope as Step 3; no revision. Retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

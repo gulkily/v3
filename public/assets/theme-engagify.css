@@ -387,3 +387,161 @@
   font-weight: 600;
   font-size: 0.9rem;
 }
+
+/* Stretch nags. */
+
+:root[data-theme="engagify"] .engagify-nag[hidden] {
+  display: none !important;
+}
+
+/* Promo bar and app bar stick to the top, stacked. */
+:root[data-theme="engagify"] .engagify-promo {
+  position: sticky;
+  top: 0;
+  z-index: 21;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.6rem;
+  background: #db2777;
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+:root[data-theme="engagify"] .engagify-promo p {
+  flex: 1 1 auto;
+  color: #ffffff;
+  text-align: center;
+}
+
+:root[data-theme="engagify"] .engagify-promo .engagify-link,
+:root[data-theme="engagify"] .engagify-promo .engagify-close {
+  color: #ffffff;
+}
+
+:root[data-theme="engagify"] .engagify-countdown {
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme="engagify"] .engagify-app-bar {
+  position: sticky;
+  top: 3.25rem;
+  z-index: 21;
+}
+
+:root[data-theme="engagify"] .engagify-proof {
+  position: fixed;
+  top: 5.5rem;
+  right: 1rem;
+  z-index: 23;
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2dff0;
+  border-left: 0;
+  border-radius: 0.8rem;
+  background: #ffffff;
+  font-size: 0.9rem;
+  box-shadow: 0 12px 32px rgba(30, 27, 46, 0.18);
+}
+
+/* Chat bubble: bottom right; the cookie banner moves up to clear it. */
+:root[data-theme="engagify"] .engagify-bubble {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(var(--app-tabbar-offset, 0px) + 1rem);
+  z-index: 24;
+  width: 56px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  color: #ffffff;
+  font: 800 1.5rem/1 var(--ui-font);
+  box-shadow: 0 10px 28px rgba(124, 58, 237, 0.4);
+  cursor: pointer;
+}
+
+:root[data-theme="engagify"] .engagify-bubble:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+:root[data-theme="engagify"] .engagify-cookie {
+  bottom: calc(var(--app-tabbar-offset, 0px) + 5rem);
+}
+
+:root[data-theme="engagify"] .engagify-chat {
+  right: 1rem;
+  bottom: calc(var(--app-tabbar-offset, 0px) + 5rem);
+  width: min(19rem, calc(100vw - 2rem));
+  z-index: 24;
+}
+
+:root[data-theme="engagify"] .engagify-chat-message {
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.8rem 0.8rem 0.8rem 0.2rem;
+  background: #f1edfd;
+  color: var(--ink);
+}
+
+/* Paywall: posts after the first blur until "Continue reading". */
+:root[data-theme="engagify"].engagify-paywalled .engagify-paywall ~ .post-card {
+  filter: blur(4px);
+  opacity: 0.6;
+}
+
+:root[data-theme="engagify"] .engagify-paywall {
+  position: relative;
+  z-index: 1;
+  margin: 0.75rem 0;
+  text-align: center;
+  align-items: center;
+}
+
+:root[data-theme="engagify"] .engagify-ai {
+  width: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  color: #ffffff;
+  font: 600 0.8rem/1 var(--ui-font);
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+:root[data-theme="engagify"] .engagify-ai::before {
+  content: "\2726  ";
+}
+
+@media (max-width: 639px) {
+  :root[data-theme="engagify"] .engagify-cookie {
+    bottom: calc(var(--app-tabbar-offset, 0px) + 4.75rem);
+  }
+
+  :root[data-theme="engagify"] .engagify-bubble {
+    width: 48px;
+    height: 48px;
+    right: 0.75rem;
+    bottom: calc(var(--app-tabbar-offset, 0px) + 0.75rem);
+  }
+
+  :root[data-theme="engagify"] .engagify-chat {
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    bottom: calc(var(--app-tabbar-offset, 0px) + 4.25rem);
+  }
+
+  :root[data-theme="engagify"] .engagify-proof {
+    top: auto;
+    left: 0.5rem;
+    right: 0.5rem;
+    max-width: none;
+    bottom: calc(var(--app-tabbar-offset, 0px) + 4.25rem);
+  }
+}

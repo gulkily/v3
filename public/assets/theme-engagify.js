@@ -14,6 +14,7 @@
   function createContext() {
     var nodes = [];
     var timers = [];
+    var cleanups = [];
     var stopped = false;
 
     function el(tag, attributes, children) {
@@ -55,8 +56,15 @@
           if (typeof window.forumExitTheme === "function") window.forumExitTheme();
         } });
       },
+      onStop: function (callback) {
+        cleanups.push(callback);
+      },
       stop: function () {
         stopped = true;
+        cleanups.forEach(function (callback) {
+          try { callback(); } catch (error) {}
+        });
+        cleanups = [];
         timers.forEach(function (timer) { window.clearTimeout(timer); });
         nodes.forEach(function (node) {
           if (node.parentNode) node.parentNode.removeChild(node);
@@ -267,6 +275,106 @@
     ]);
     d.open();
   }
+
+  // Stretch nags.
+
+  // Promo bar with a countdown that restarts on every page load. It and the
+  // app bar stick to the top, stacked.
+  NAGS.push(function promoBar(ctx) {
+    var ends = Date.now() + 10 * 60 * 1000;
+    var clock = ctx.el("strong", { class: "engagify-countdown", text: "10:00" });
+    var bar = ctx.el("div", { class: "engagify-nag engagify-promo", role: "region", "aria-label": "Offer", "data-engagify": "promo" }, [
+      ctx.exitButton("Exit"),
+      ctx.el("p", {}, [document.createTextNode("Limited time: 0% off everything. Ends in "), clock]),
+      ctx.el("button", { type: "button", class: "engagify-close", "aria-label": "Close", text: "×", onclick: function () { ctx.remove(bar); } })
+    ]);
+    function tick() {
+      var left = Math.max(0, Math.round((ends - Date.now()) / 1000));
+      clock.textContent = Math.floor(left / 60) + ":" + ("0" + (left % 60)).slice(-2);
+      ctx.later(tick, 1000);
+    }
+    var shell = document.querySelector("[data-shell]") || document.body;
+    ctx.add(bar);
+    shell.insertBefore(bar, shell.firstChild);
+    tick();
+  });
+
+  // Fake sign-up toasts.
+  NAGS.push(function socialProof(ctx) {
+    var people = ["Sarah from Ohio", "A guy named Steve", "Someone in Cambridge", "Your former roommate", "An agent named claude", "Grandma"];
+    var actions = ["just signed up!", "just liked a thread", "is viewing this page", "just upgraded to Premium"];
+    var count = 0;
+    function next() {
+      var item = ctx.add(ctx.el("div", { class: "engagify-nag engagify-proof", role: "status", "data-engagify": "proof" }, [
+        ctx.el("strong", { text: people[count % people.length] }),
+        document.createTextNode(" " + actions[count % actions.length])
+      ]));
+      count += 1;
+      ctx.later(function () { ctx.remove(item); }, 4000);
+      ctx.later(next, 9000);
+    }
+    ctx.later(next, 4500);
+  });
+
+  // Chat bubble that opens itself.
+  NAGS.push(function chatBubble(ctx) {
+    var panel = ctx.el("div", { class: "engagify-nag engagify-card engagify-chat", role: "dialog", "aria-label": "Chat", "data-engagify": "chat-panel", hidden: "" }, [
+      ctx.exitButton(),
+      ctx.el("p", {}, [ctx.el("strong", { text: "Ava from ZenMemes" }), document.createTextNode(" (a script)")]),
+      ctx.el("p", { class: "engagify-chat-message", text: "Hi there! Can I help you find anything? I can also help you not find anything." })
+    ]);
+    var bubble = ctx.el("button", { type: "button", class: "engagify-bubble", "aria-label": "Chat with us", "aria-expanded": "false", "data-engagify": "chat", text: "?", onclick: function () {
+      var open = panel.hidden;
+      panel.hidden = !open;
+      bubble.setAttribute("aria-expanded", open ? "true" : "false");
+    } });
+    ctx.add(bubble);
+    ctx.add(panel);
+    ctx.later(function () {
+      if (panel.hidden) bubble.click();
+    }, 10000);
+  });
+
+  // Paywall fade after the first post. The posts stay in the page and in the
+  // tab order; "Continue reading" removes the blur.
+  NAGS.push(function paywall(ctx) {
+    var first = document.querySelector(".main .post-card");
+    if (!first || !first.nextElementSibling) return;
+    var root = document.documentElement;
+    var wall = ctx.el("div", { class: "engagify-nag engagify-card engagify-paywall", role: "region", "aria-label": "Subscribe", "data-engagify": "paywall" });
+    var lift = function () {
+      root.classList.remove("engagify-paywalled");
+      ctx.remove(wall);
+    };
+    wall.appendChild(ctx.exitButton());
+    wall.appendChild(ctx.el("h2", { text: "You've read 1 of 1 free posts this month" }));
+    wall.appendChild(ctx.el("p", { text: "Subscribe to keep reading posts that are free." }));
+    wall.appendChild(ctx.el("div", { class: "engagify-actions" }, [
+      ctx.el("button", { type: "button", class: "engagify-button", text: "Subscribe for $0.00/mo", onclick: function () {
+        lift();
+        toast(ctx, "Welcome to Premium. It is the same as before.");
+      } }),
+      ctx.el("button", { type: "button", class: "engagify-link", text: "Continue reading", onclick: lift })
+    ]));
+    ctx.later(function () {
+      ctx.add(wall);
+      first.parentNode.insertBefore(wall, first.nextSibling);
+      root.classList.add("engagify-paywalled");
+    }, 1500);
+    ctx.onStop(function () { root.classList.remove("engagify-paywalled"); });
+  });
+
+  // "Summarize with AI" on every post.
+  NAGS.push(function aiButtons(ctx) {
+    var summaries = ["Someone posted something.", "People have opinions.", "This post contains words.", "Too long; did read."];
+    Array.prototype.forEach.call(document.querySelectorAll(".post-card .post-card-actions"), function (row, index) {
+      var button = ctx.el("button", { type: "button", class: "engagify-ai", "data-engagify": "ai", text: "Summarize with AI", onclick: function () {
+        toast(ctx, "Summary: " + summaries[index % summaries.length]);
+      } });
+      ctx.add(button);
+      row.appendChild(button);
+    });
+  });
 
   registry.register("engagify", {
     start: function () {
