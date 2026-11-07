@@ -44,9 +44,9 @@ final class LlmsTxtRendererTest
 
     public function testEmojiFactOnlyAppearsWithUnicode(): void
     {
-        assertStringContains('Recognized emoji sequences are exceptions', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => true]));
+        assertStringContains('Recognized emoji sequences are accepted', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => true]));
         assertStringContains('Emoji are rejected.', $this->render([Registry::UNICODE_AUTHORED_TEXT => true, Registry::EMOJI_AUTHORED_TEXT => false]));
-        assertStringNotContains('Recognized emoji sequences are exceptions', $this->render([Registry::UNICODE_AUTHORED_TEXT => false, Registry::EMOJI_AUTHORED_TEXT => true]));
+        assertStringNotContains('Recognized emoji sequences are accepted', $this->render([Registry::UNICODE_AUTHORED_TEXT => false, Registry::EMOJI_AUTHORED_TEXT => true]));
     }
 
     public function testPolicyFlowAndLinks(): void

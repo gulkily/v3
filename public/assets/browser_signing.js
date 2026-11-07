@@ -265,11 +265,19 @@
         && isAllowedEmojiSequenceCharacter(character, previousCharacter, nextCharacter);
     }
 
-    if (/[\p{C}\p{Z}\p{S}]/u.test(character)) {
-      return allowEmojiAuthoredText === true && isEmojiBaseCharacter(character);
+    if (/[\p{C}\p{Z}]/u.test(character)) {
+      return false;
     }
 
-    return /^[\p{L}\p{M}\p{N}\p{P}]$/u.test(character);
+    if (allowEmojiAuthoredText === true && isEmojiBaseCharacter(character)) {
+      return true;
+    }
+
+    if (allowEmojiAuthoredText !== true && /^\p{Emoji_Presentation}$/u.test(character)) {
+      return false;
+    }
+
+    return /^[\p{L}\p{M}\p{N}\p{P}\p{S}]$/u.test(character);
   }
 
   function unsafeUnicodeComposeCharacters(text, options) {

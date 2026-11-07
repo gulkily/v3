@@ -11,7 +11,7 @@ final class SignedPostBundleValidatorTest
     {
         $v = new SignedPostBundleValidator(true);
         assertSame("Café — 5 µg, “quoted”, Привет\n", $v->validateRecord($this->record("Café — 5 µg, “quoted”, Привет\n"))->body);
-        foreach ([str_replace('Board-Tags: general','Board-Tags: identity approval',$this->record()), str_replace("Subject: Hello", "Imported-Score-Seed: 20\nSubject: Hello", $this->record()), $this->record(" hi\n"), $this->record("→\n"), str_replace("Subject: Hello", "Subject: Hello\nSubject: Hello", $this->record()), str_replace('20261030','20261031',$this->record())] as $invalid) {
+        foreach ([str_replace('Board-Tags: general','Board-Tags: identity approval',$this->record()), str_replace("Subject: Hello", "Imported-Score-Seed: 20\nSubject: Hello", $this->record()), $this->record(" hi\n"), $this->record("🙂\n"), str_replace("Subject: Hello", "Subject: Hello\nSubject: Hello", $this->record()), str_replace('20261030','20261031',$this->record())] as $invalid) {
             try { $v->validateRecord($invalid); throw new LogicException('Expected rejection'); } catch (RuntimeException) {}
         }
     }

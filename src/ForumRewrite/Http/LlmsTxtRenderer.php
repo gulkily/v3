@@ -149,7 +149,7 @@ final class LlmsTxtRenderer
 
         return [
             'Text: ' . ($unicode
-                ? 'Unicode letters, marks after NFC, numbers and punctuation are accepted. Non-ASCII Sm/Sc/Sk/So symbols, non-ASCII spacing, controls/format characters and noncharacters are rejected.' . ($emoji ? ' Recognized emoji sequences are exceptions; other symbols remain rejected.' : ' Emoji are rejected.')
+                ? 'Unicode letters, marks after NFC, numbers, punctuation and symbols (arrows, math, currency and others) are accepted. Non-ASCII spacing, controls/format characters and noncharacters are rejected.' . ($emoji ? ' Recognized emoji sequences are accepted.' : ' Emoji are rejected.')
                 : 'ASCII only. Unsupported characters are rejected with character, U+ code point and original-field index; edit your draft explicitly.'),
             'Posting: ' . ($this->flags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)
                 ? 'members only. An approved member must vouch for your identity or invite you; then authenticate (auth_challenge, sign the challenge, authenticate_identity) and keep the session cookie.'

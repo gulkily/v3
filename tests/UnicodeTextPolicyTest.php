@@ -19,7 +19,7 @@ final class UnicodeTextPolicyTest
     public function testDiagnosticsUseOriginalCodePointPositions(): void
     {
         $prefix = class_exists(\Normalizer::class) ? "  Cafe\u{0301}\r\n" : "  Café\r\n";
-        foreach (["→" => 'symbols', "\u{00A0}" => 'spacing', "\u{200B}" => 'control'] as $char => $message) {
+        foreach (["🙂" => 'symbols', "\u{00A0}" => 'spacing', "\u{200B}" => 'control'] as $char => $message) {
             $input = $prefix . 'x' . $char . 'y' . $char . 'z ';
             try { (new UnicodeTextPolicy())->normalizeBody($input, 'body'); }
             catch (\ForumRewrite\Support\TextValidationException $error) {
@@ -153,6 +153,29 @@ final class UnicodeTextPolicyTest
         }
 
         throw new RuntimeException('Expected body control rejection.');
+    }
+
+    public function testAllowsSymbolCharacters(): void
+    {
+        $policy = new UnicodeTextPolicy();
+        $text = 'm(D)→I, d ∈ D, x ≤ y, 20°C, €5, ¥, ©, ™, ☺, ↔, ⇒, ∀, ★, ✓, ^`';
+
+        assertSame($text, $policy->normalizeLine($text, 'subject'));
+        assertSame($text . "\n", $policy->normalizeBody($text, 'body'));
+    }
+
+    public function testRejectsEmojiVariationOfTextSymbol(): void
+    {
+        $policy = new UnicodeTextPolicy();
+
+        try {
+            $policy->normalizeBody("left \u{2194}\u{FE0F} right", 'body');
+        } catch (RuntimeException $exception) {
+            assertStringContains('control or format', $exception->getMessage());
+            return;
+        }
+
+        throw new RuntimeException('Expected emoji variation selector rejection.');
     }
 
     public function testRejectsEmojiSymbols(): void
