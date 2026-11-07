@@ -167,3 +167,41 @@ The maintainer did not answer whether to reuse the `plan/readable_page_urls` dra
 - Estimate details: original scope as planned; uncertainty medium as planned; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Docs and final checks
+
+**Original estimate: 0.08**
+**Retrospective: 0.09**
+
+- Changes:
+  - `PRINCIPLES.md` gains "URLs are interface" under Interface, with a summary line. It cites the maintainer, Wichary's Flickr post and mailbag, and "Cool URIs don't change". It names signed values as the one exception.
+  - `docs/reference/pagination.md` is rewritten for page numbers and `with`, with Recent as the worked example. `CONTRIBUTING.md` points to it.
+  - `docs/specs/profile_read_contract_v1.md` describes `threads_page`, `posts_page` and profile `with`. `docs/specs/read_model_schema_v1.md` gains a "Numbered pages" note and corrects the local-event revision paragraph.
+  - `docs/concepts/collection_selection.md` and `docs/plans/pagination_consolidation_checklist.md` record the change.
+- Verification:
+  - Combined: `./v3 test --smoke RecentPostTest GalleryPageTest ProfilePublicDetailsTest BoardListTest TagPaginationTest BoardSearchTest StandardActivityPaginationTest OfflineSnapshotPresentationTest OfflineNavigationWorkerTest`: 485 run, 485 passed.
+  - Manual browser paging with a temporary script on the Recent browser fixture, JavaScript on and off: Board `view=all` with newest and top sorts (Next to `?view=all&page=2` and `?view=all&sort=top&page=2`, back to page 1, `with` to `#post-recent-014` as `:target`, page 9 with First page) and Recent's Next link `/recent/?page=2`. Passed. Recent, profile, Tags, Search and Activity were paged by their browser tests in Stages 1–7.
+  - Deep pages, Recent in memory, 20 reads each: 10000 posts page 1 0.18 ms, page 40 1.76 ms, page 200 8.77 ms, `with` for the oldest post 4.24 ms; 40000 posts page 1 0.23 ms, page 40 2.15 ms, page 800 34.28 ms, `with` 15.74 ms. Acceptable at current size.
+  - Diff review from `44d072c2`: 38 source, template, public and test files; no added `base64`, `json_encode` or `position` in `src/`, `templates/` or `public/`. `git diff --check` clean.
+  - Not a read-model schema change: the queries use existing columns and indexes, so `SCHEMA_VERSION` is unchanged, per `CONTRIBUTING.md`.
+  - Full suite not run.
+- Notes:
+  - Gallery was not paged in a browser; it has no image fixture there. `GalleryPageTest` covers its links, `with` and past-the-end page.
+  - The Board's default `liked` view was not paged in a browser because the fixture has no likes. `BoardListTest` covers its links.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion: all eight stages are committed, each with its summary update. Planning commit `44d072c2` holds only the approved Steps 1–3 and debug log plus the plans index entry.
+- Contract: normal entry, end-to-end outcome and recovery are met for all seven lists and for offline saved tags.
+- Unverified or blocked:
+  - `tests/browser/access_history.mjs` fails at its private-site authentication step before paging, with and without this cycle's changes; its paging line is unverified in a browser.
+  - `tests/browser/recent.mjs` fails on baseline `20d24918` at the header Recent link (adaptive nav). Its paging steps passed in a temporary copy without that assertion.
+  - Full suite, deployment and the live site are not checked. Static first pages need a `./v3 build-static` after deploy so they carry the new links.
+- Scope change during Step 4: the offline reader's saved tag pages moved to page numbers (Stage 6). No other scope changed.
+- Cycle retrospective scope assessment: **0.62**, against the 0.60 projection; the offline reader and two baseline browser failures added work. Single exposed Claude rater; not measured time.
+- Maintainer comfortable-fit judgment and acceptance: pending.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

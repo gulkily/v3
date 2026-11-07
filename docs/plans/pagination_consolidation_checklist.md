@@ -39,6 +39,10 @@ The user agreed to this direction. Implementation proceeds through the [Activity
 - [x] Include guidance on stable ordering/positions, URL/category state, access/cache boundaries, retry/restart, required tests and explicit exceptions such as unchanged Forte append behavior; verify examples and commands against the implementation.
 - [x] Record the shared API, tests and remaining migration work in the implementation summary.
 
+## Readable page URLs (2026-11-07)
+
+- [x] Replace base64 `position` tokens with plain `?page=N` and `?with=<ID>` on Board, Search, Tags, Recent, Gallery, Activity, profile history and offline saved tags. Keyset boundaries are no longer used; repeated items after new arrivals are accepted. Old `position` links show page 1 by maintainer decision. See [readable page URLs](readable_page_urls/readable_page_urls_step3_development_plan.md) and the [URLs are interface](../../PRINCIPLES.md#urls-are-interface) principle.
+
 ## Later migrations
 
 Each migration needs its own scoped review and verification. Mark complete only after shared behavior is in use and superseded code is removed or an exception is recorded.
