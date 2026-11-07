@@ -88,6 +88,7 @@ final class Application
     private ?\ForumRewrite\Session\ViewerSessions $viewerSessions = null;
     private ?string $appVersion = null;
     private bool $docsPage = false;
+    private string $requestPath = '/';
     private ?FeatureFlagEvaluator $featureFlags = null;
     private ?RouteServices $routeServices = null;
     private ?LlmExchangeRecorder $llmExchangeRecorder = null;
@@ -133,6 +134,7 @@ final class Application
     {
         if (\ForumRewrite\Http\ClientDownload::serve($method, $requestUri, $this->projectRoot . "/public")) return;
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        $this->requestPath = $path;
         $docsPage = $path === '/docs' || str_starts_with($path, '/docs/');
         if ($docsPage !== $this->docsPage) {
             $this->routeServices = null;
@@ -338,6 +340,34 @@ final class Application
             return;
         }
 
+        if ($path === '/api/inbox/unread') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+                $this->sendJson(['status' => 'error', 'code' => 'inbox_disabled', 'error' => 'Unread is disabled on this server.'], 404, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            $this->inboxPageController()->unread($method);
+            return;
+        }
+
+        // Inbox was the page's first name; its old address keeps working.
+        if ($path === '/inbox' || $path === '/inbox/') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->routeServices()->sendRedirect('/unread', 'Inbox is now Unread.', 301, [], 'inbox');
+            return;
+        }
+
+        if ($path === '/unread' || $path === '/unread/') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->inboxPageController()->show($method, $query);
+            return;
+        }
+
         if ($path === '/messages' || $path === '/messages/') {
             $this->privateMessagePageController()->conversations($method);
             return;
@@ -455,16 +485,6 @@ final class Application
 
         if ($path === '/api/scripture_reply_status') {
             $this->postWorkflowApiController()->scriptureReplyStatus($method, $query);
-            return;
-        }
-
-        if ($path === '/api/codex_handoff') {
-            $this->postWorkflowApiController()->codexHandoff($method, $query);
-            return;
-        }
-
-        if ($path === '/api/codex_handoff_approval') {
-            $this->postWorkflowApiController()->codexHandoffApproval($method, $query);
             return;
         }
 
@@ -616,7 +636,7 @@ final class Application
                 $this->renderMessagePage(
                     'Method Not Allowed',
                     'Method Not Allowed',
-                    'Only GET is supported in the local test slice, except for the identity-hint cookie route.',
+                    'This address only accepts regular page visits, not form submissions.',
                     'none'
                 ),
                 405
@@ -646,11 +666,20 @@ final class Application
                 return;
             }
 
+            $location = $this->qdbExperience()->isEnabled() ? null : $this->boardPageController()->listWithLocation(
+                (string) ($query['view'] ?? 'liked'),
+                (string) ($query['sort'] ?? 'newest'),
+                $query['with'] ?? null,
+            );
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread on the board.', 303, activeSection: 'board');
+                return;
+            }
             $this->sendHtml(
                 $this->boardPageController()->board(
                     (string) ($query['view'] ?? 'liked'),
                     (string) ($query['sort'] ?? 'newest'),
-                    position: $query['position'] ?? null,
+                    listPage: $query['page'] ?? null,
                 ),
                 200
             );
@@ -778,7 +807,26 @@ final class Application
         }
 
         if ($path === '/recent/' || $path === '/recent') {
-            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->board($query['position'] ?? null), 200);
+            $location = (new \ForumRewrite\Http\RecentPageController($this->routeServices()))->withLocation('recent', $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post in Recent.', 303, activeSection: 'recent');
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->board($query['page'] ?? null), 200);
+            return;
+        }
+
+        if ($path === '/gallery/' || $path === '/gallery') {
+            if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $location = (new \ForumRewrite\Http\RecentPageController($this->routeServices()))->withLocation('gallery', $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post in Gallery.', 303, activeSection: 'gallery');
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['page'] ?? null), 200);
             return;
         }
 
@@ -788,7 +836,7 @@ final class Application
                 return;
             }
 
-            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all'), $query['position'] ?? null), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
+            $this->sendHtml($this->activityPageController()->board((string) ($query['view'] ?? 'all'), $query['page'] ?? null), 200, $securityReviewRequest ? $this->routeServices()->noStoreHeaders() : []);
             return;
         }
 
@@ -1064,7 +1112,12 @@ final class Application
         }
 
         if ($path === '/search') {
-            $this->sendHtml($this->boardPageController()->search($query['q'] ?? null, $query['position'] ?? null), 200);
+            $location = $this->boardPageController()->searchWithLocation($query['q'] ?? null, $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread in the results.', 303, activeSection: 'search');
+                return;
+            }
+            $this->sendHtml($this->boardPageController()->search($query['q'] ?? null, $query['page'] ?? null), 200);
             return;
         }
 
@@ -1090,7 +1143,12 @@ final class Application
         }
 
         if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
-            $html = $this->tagsPageController()->tag($matches[1], $query['position'] ?? null);
+            $location = $this->tagsPageController()->tagWithLocation($matches[1], $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that thread in this tag.', 303, activeSection: 'board');
+                return;
+            }
+            $html = $this->tagsPageController()->tag($matches[1], $query['page'] ?? null);
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -1112,6 +1170,11 @@ final class Application
         }
 
         if (preg_match('#^/profiles/([^/]+)/?$#', $path, $matches) === 1) {
+            $location = $this->profilePageController()->withLocation($matches[1], $query);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post on this profile.', 303, activeSection: 'profiles');
+                return;
+            }
             $html = $this->profilePageController()->profile($matches[1], isset($query['self']), $query);
             if ($html === null) {
                 $this->notFound();
@@ -1447,7 +1510,6 @@ final class Application
             $this->fetchThreadPosts(...),
             $this->llmExchangeRecorder(...),
             $this->resolveViewerProfileFromIdentityHint(...),
-            $this->fetchThread(...),
         );
     }
 
@@ -1618,6 +1680,7 @@ final class Application
             new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
             versionEndpoint: $this->docsPage ? '/api/docs-version' : '/api/version',
             versionStorageKey: $this->docsPage ? 'forum_pending_docs_version' : 'forum_pending_app_version',
+            requestPath: fn (): string => $this->requestPath,
         );
     }
 
@@ -2210,7 +2273,7 @@ final class Application
             '/downloads/images.zip', '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
-            '/activity', '/activity/', '/recent', '/recent/',
+            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
@@ -2220,6 +2283,7 @@ final class Application
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
+            '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api/railspike_workflow', '/api', '/api/', '/api/version', '/api/list_index',
@@ -2228,8 +2292,8 @@ final class Application
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/prepare_post_format', '/api/create_prepared_post_format', '/api/create_identity',
-            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
-            '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
+            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status',
+            '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
@@ -2454,6 +2518,16 @@ final class Application
         );
     }
 
+    private function inboxPageController(): \ForumRewrite\Http\InboxPageController
+    {
+        return new \ForumRewrite\Http\InboxPageController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED) ? $this->privateMessageStore(...) : null,
+            fn (): \ForumRewrite\Inbox\InboxMarkStore => new \ForumRewrite\Inbox\InboxMarkStore(\ForumRewrite\Inbox\InboxDatabaseConfig::open($this->projectRoot)),
+        );
+    }
+
     private function privateMessagePageController(): PrivateMessagePageController
     {
         return new PrivateMessagePageController(
@@ -2494,14 +2568,6 @@ final class Application
             $this->enqueueReadModelRecovery(...),
             $this->sendReadModelCapabilityUnavailable(...),
         );
-    }
-
-    /**
-     * @param array<string, mixed>|null $viewerProfile
-     */
-    private function viewerCanUseCodexHandoff(?array $viewerProfile): bool
-    {
-        return $this->postWorkflowService()->viewerCanUseCodexHandoff($viewerProfile);
     }
 
     /**

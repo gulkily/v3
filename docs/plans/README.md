@@ -12,6 +12,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
 
+[Board thumbnails one-shot](board_thumbnails/board_thumbnails_one_shot.md) — image posts show a small thumbnail on the board and on Recent.
+
+[Image gallery one-shot](image_gallery/image_gallery_one_shot.md) — a Gallery page shows posts with attached images as a grid of resized previews.
+
 [Site purpose](site_purpose/site_purpose_step3_development_plan.md) — tell first-time visitors and agents what zenmemes is: a garage where people and agents build the site together.
 
 [Deploy pending commits one-shot](deploy_pending_commits/deploy_pending_commits_one_shot.md) — the Deploy page lists the commits an update will add, its size and local-edit overlap, and says that Queue deploy waits for the task worker.
@@ -38,6 +42,11 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Thread themes](theme_directive/theme_directive_step3_development_plan.md) — a thread's author or an operator sets its page theme with a visible `theme:` line or a hidden `Theme:` header, on the opening post or any reply; `theme: none` clears it; implemented locally, deploy pending.
+- [Engagify theme](engagify_theme/engagify_theme_step3_development_plan.md) — theme scripts, page themes in the site profile, and Engagify, a selectable parody theme of dark patterns that is the cookie notice thread's page theme; implemented locally, deploy check pending.
+- [Personal inbox](personal_inbox/personal_inbox_step3_development_plan.md) — one Inbox page for unread messages, replies to my posts and other new posts, with per-username caught-up marks behind `FORUM_INBOX_ENABLED`; Step 4 in progress.
+- [Gloss theme](gloss_theme/gloss_theme_step3_development_plan.md) — Gloss, a selectable theme with Engagify's look and no nags, sharing one stylesheet with Engagify; a new hand-drawn icon set for both; Exit from Engagify lands on Gloss; the cycle button skips Engagify; planned.
+- [Readable page URLs](readable_page_urls/readable_page_urls_step3_development_plan.md) — `?page=N` on every paged list and `?with=<ID>` to open the page holding a post, replacing base64 position tokens; "URLs are interface" rule; Step 4 in progress.
 - [Pre-existing test failures](preexisting_test_failures/preexisting_test_failures_one_shot.md) — one-shot: the 15 tests failing on `main` in cloud workspaces (GPG socket length, running as root, missing whiptail, four tests behind deliberate changes).
 - [Fast default tests: outliers](fast_default_tests_outliers/fast_default_tests_outliers_one_shot.md) — one-shot: removes avoidable waste from the three slowest test classes (docs snapshot reuse, checkout Git wait, isolated test Git config); split from the parked [fast default tests Step 1](fast_default_tests_step1_solution_assessment.md).
 - [Smoke tests](smoke_tests/smoke_tests_one_shot.md) — one-shot: `./v3 test` runs the curated smoke set in `tests/smoke.txt`, `--smoke Name` adds touched tests, `--all` is the maintainer's periodic full run; process in `AGENTS.md` and `CONTRIBUTING.md`.
@@ -75,6 +84,8 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Profile public details](profile_public_details/)
 
 - [Image backup ZIP](image_backup_zip/)
+
+- [Instance image import](instance_image_import/) — `import-instance` also copies the images that imported posts reference.
 
 - [Reusable archive exports](archive_export_contention/)
 

@@ -23,6 +23,32 @@
   --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
+/* Auto/System theme: system dark colors must be in the critical block,
+   or the light defaults paint first while site.css loads. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --body-background: var(--page-bg);
+    --page-bg: #0b1220;
+    --ink: #d9e7ff;
+    --ink-soft: #9fb8e8;
+    --line: #344a73;
+    --panel: #111b31;
+    --input-bg: #0f1729;
+    --button-bg: #16233d;
+    --button-alt-bg: #1b2b49;
+    --feedback-ok-bg: #13263f;
+    --feedback-error-bg: #3a1a23;
+    --status-error: #ffb7c3;
+    --status-ok: #a7efb8;
+    --status-warning: #f2c66d;
+    --active-bg: #263858;
+    --active-ink: #f3f8ff;
+    --active-line: #86a9e8;
+    --active-ring: rgba(134, 169, 232, 0.18);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -197,6 +223,16 @@ pre {
   flex-wrap: wrap;
   gap: 0.5rem;
   flex: 1 1 auto;
+}
+
+/* Page links: Previous at the left edge, Next and First page at the right, so
+   a lone Next on page 1 stays where it will be on every later page. */
+.pagination-nav {
+  justify-content: flex-end;
+}
+
+.pagination-nav > .nav-link[rel="prev"] {
+  margin-right: auto;
 }
 
 .nav-link {
@@ -728,8 +764,10 @@ pre {
      the head script from the browser's saved choice) shows those More
      destinations as tabs, after the fixed ones and before New post and More. */
   html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
+  html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
+  html[data-nav-slots~="inbox"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="inbox"],
   html[data-nav-slots~="search"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="search"],
   html[data-nav-slots~="about"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="about"],
   html[data-nav-slots~="tools"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="tools"] {
@@ -759,8 +797,10 @@ pre {
   }
 
   html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
+  html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
+  html[data-nav-slots~="inbox"] [data-shell="app"] .account-menu[data-current="inbox"],
   html[data-nav-slots~="search"] [data-shell="app"] .account-menu[data-current="search"],
   html[data-nav-slots~="about"] [data-shell="app"] .account-menu[data-current="about"],
   html[data-nav-slots~="tools"] [data-shell="app"] .account-menu[data-current="tools"] {
@@ -794,9 +834,9 @@ pre {
     isolation: isolate;
   }
 
-  /* Themes without their own More glyph: three bars, drawn in the tab's ink. On a
+  /* Themes without their own More glyph (all but the icon themes in theme-nav-icons.css): three bars, drawn in the tab's ink. On a
      renamed tab an arrow replaces them, leaving room for the name. */
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .account-menu__icon {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .account-menu__icon {
     display: var(--more-tab-icon, inline-block);
     border: 0;
     border-radius: 0;
@@ -806,7 +846,7 @@ pre {
       linear-gradient(currentColor, currentColor) 0 85% / 100% 2px no-repeat;
   }
 
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) [data-shell="app"] .account-menu__label--current::after {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .account-menu__label--current::after {
     content: "\25B4";
     position: absolute;
     top: -0.05rem;
@@ -1009,6 +1049,44 @@ pre {
   font-size: 0.85rem;
 }
 
+/* A row with an attached image: the thumbnail fills a narrow first column as
+   tall as the row; the image never adds height of its own. */
+.thread-row--thumb {
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+}
+
+.thread-row--thumb > .thread-row__title,
+.thread-row--thumb > .thread-row__excerpt,
+.thread-row--thumb > .thread-row__meta,
+.thread-row--thumb > .event-block {
+  grid-column: 2;
+}
+
+.thread-row--thumb > .thread-row__count {
+  grid-column: 3;
+}
+
+.thread-row__thumb {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  align-self: center;
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+/* Fill the square and crop the edges: a list thumbnail is for recognising the image. */
+.thread-row__thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .chip {
   display: inline-block;
   padding: 0 0.4rem;
@@ -1093,6 +1171,75 @@ pre {
   color: var(--ink-soft);
 }
 
+/* Gallery: justified rows. Each tile's basis is its (clamped) aspect ratio
+   times the row height, so rows fill the width and images keep their shape. */
+.gallery-grid {
+  --gallery-row: 12rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Keeps a short last row at row height instead of stretching it. */
+.gallery-grid::after {
+  content: "";
+  flex: 1000 1 0;
+}
+
+.gallery-tile {
+  display: flex;
+  flex: var(--ratio) 1 calc(var(--ratio) * var(--gallery-row));
+  flex-direction: column;
+  min-width: 0;
+  /* A row that wraps early may stretch, but not far past the row height. */
+  max-width: calc(var(--ratio) * var(--gallery-row) * 1.6);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: inherit;
+  text-decoration: none;
+}
+
+.gallery-tile:hover,
+.gallery-tile:focus-visible {
+  border-color: var(--ink-soft);
+}
+
+.gallery-tile img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--ratio);
+  object-fit: cover;
+  background: var(--line);
+}
+
+.gallery-tile__caption {
+  display: flex;
+  flex-direction: column;
+  padding: 0.3rem 0.5rem 0.4rem;
+  line-height: 1.3;
+}
+
+.gallery-tile__title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gallery-tile__meta {
+  color: var(--ink-soft);
+  font-size: 0.85em;
+}
+
+@media (max-width: 40rem) {
+  .gallery-grid {
+    --gallery-row: 7rem;
+    gap: 0.35rem;
+  }
+}
+
 /* First-visit intro on the board: the head script marks a browser with a saved
    identity, or one that hid the intro, before paint. */
 :root[data-visitor="known"] [data-visitor-intro] {
@@ -1143,6 +1290,14 @@ pre {
 
 .post-card:target {
   border-color: var(--active-line);
+}
+
+/* A list row or tile opened with ?with= is the URL's target. */
+.thread-row:target,
+.gallery-tile:target {
+  outline: 2px solid var(--active-line);
+  outline-offset: -2px;
+  scroll-margin-top: 1rem;
 }
 
 .thread-root-card h1 {
@@ -1419,30 +1574,6 @@ pre {
   font-size: 0.78rem;
   font-weight: 650;
   text-transform: uppercase;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    color-scheme: dark;
-    --body-background: var(--page-bg);
-    --page-bg: #0b1220;
-    --ink: #d9e7ff;
-    --ink-soft: #9fb8e8;
-    --line: #344a73;
-    --panel: #111b31;
-    --input-bg: #0f1729;
-    --button-bg: #16233d;
-    --button-alt-bg: #1b2b49;
-    --feedback-ok-bg: #13263f;
-    --feedback-error-bg: #3a1a23;
-    --status-error: #ffb7c3;
-    --status-ok: #a7efb8;
-    --status-warning: #f2c66d;
-    --active-bg: #263858;
-    --active-ink: #f3f8ff;
-    --active-line: #86a9e8;
-    --active-ring: rgba(134, 169, 232, 0.18);
-  }
 }
 
 @media (min-width: 640px) {

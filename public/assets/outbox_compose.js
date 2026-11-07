@@ -4,7 +4,13 @@
   // The composer's Markdown box travels with the draft; drafts without it leave the server default.
   function withFormat(payload, fields) {
     if (fields.bodyFormat === "plain" || fields.bodyFormat === "markdown") payload.bodyFormat = fields.bodyFormat;
+    if (fields.theme) payload.theme = String(fields.theme);
     return payload;
+  }
+
+  function themeOf(form) {
+    var choice = form.querySelector('[name="theme"]');
+    return choice ? choice.value : "";
   }
 
   function bodyFormatOf(form) {
@@ -66,7 +72,8 @@
             threadId: form.querySelector('[name="thread_id"]').value,
             parentId: form.querySelector('[name="parent_id"]').value,
             body: form.querySelector('[name="body"]').value,
-            bodyFormat: bodyFormatOf(form)
+            bodyFormat: bodyFormatOf(form),
+            theme: themeOf(form)
           });
         } catch (error) {
           status.textContent = error.message;
@@ -105,7 +112,8 @@
             subject: form.querySelector('[name="subject"]').value,
             body: form.querySelector('[name="body"]').value,
             boardTags: form.querySelector('[name="board_tags"]').value,
-            bodyFormat: bodyFormatOf(form)
+            bodyFormat: bodyFormatOf(form),
+            theme: themeOf(form)
           });
         } catch (error) {
           status.textContent = error.message;

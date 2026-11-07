@@ -265,11 +265,19 @@
         && isAllowedEmojiSequenceCharacter(character, previousCharacter, nextCharacter);
     }
 
-    if (/[\p{C}\p{Z}\p{S}]/u.test(character)) {
-      return allowEmojiAuthoredText === true && isEmojiBaseCharacter(character);
+    if (/[\p{C}\p{Z}]/u.test(character)) {
+      return false;
     }
 
-    return /^[\p{L}\p{M}\p{N}\p{P}]$/u.test(character);
+    if (allowEmojiAuthoredText === true && isEmojiBaseCharacter(character)) {
+      return true;
+    }
+
+    if (allowEmojiAuthoredText !== true && /^\p{Emoji_Presentation}$/u.test(character)) {
+      return false;
+    }
+
+    return /^[\p{L}\p{M}\p{N}\p{P}\p{S}]$/u.test(character);
   }
 
   function unsafeUnicodeComposeCharacters(text, options) {
@@ -662,9 +670,12 @@
   }
 
   // Only forms with the Markdown box send a format, so other submissions keep their existing fields.
+  // A chosen thread theme travels the same way; blank leaves the record without a Theme header.
   function withBodyFormat(form, fields) {
     const format = composeBodyFormat(form);
     if (format) fields.body_format = format;
+    const theme = composeFormFieldValue(form, "theme");
+    if (theme) fields.theme = theme;
     return fields;
   }
 
@@ -1486,6 +1497,7 @@
         board_tags: String((payload && payload.boardTags) || "general"),
         body: String((payload && payload.body) || ""),
         body_format: String((payload && payload.bodyFormat) || ""),
+        theme: String((payload && payload.theme) || ""),
         author_identity_id: authorIdentityId,
       }
       : {
@@ -1493,6 +1505,7 @@
         subject: String((payload && payload.subject) || ""),
         body: String((payload && payload.body) || ""),
         body_format: String((payload && payload.bodyFormat) || ""),
+        theme: String((payload && payload.theme) || ""),
         author_identity_id: authorIdentityId,
       };
     const response = await submitUrlEncoded(isReply ? "/api/prepare_reply" : "/api/prepare_thread", fields);
@@ -3514,6 +3527,8 @@
       textFields.forEach(function (field) {
         field.value = "";
       });
+      const themeChoice = form.querySelector('select[name="theme"]');
+      if (themeChoice) themeChoice.value = "";
       clearComposeDraft(form);
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     }
@@ -3782,8 +3797,13 @@
         return;
       }
 
+      // Any typing field submits: the body, and also Title, tags and the event fields.
       const target = event.target || null;
-      if (!target || target.tagName !== "TEXTAREA") {
+      const inputType = target && target.tagName === "INPUT"
+        ? String((typeof target.getAttribute === "function" && target.getAttribute("type")) || "text").toLowerCase()
+        : "";
+      const typingInput = inputType !== "" && !["checkbox", "radio", "file", "button", "submit", "reset", "image", "hidden"].includes(inputType);
+      if (!target || (target.tagName !== "TEXTAREA" && !typingInput)) {
         return;
       }
 

@@ -58,13 +58,38 @@ final class ThemeRegistryTest
         assertSame(ThemeRegistry::explicitNames(), array_keys($paths));
         assertSame(false, array_key_exists('auto', $paths));
 
+        $publicRoot = dirname(__DIR__) . '/public';
+        $declared = array_column(ThemeRegistry::all(), 'stylesheet', 'name');
         foreach ($paths as $name => $path) {
             assertSame(true, ThemeRegistry::isExplicitName($name));
-            assertSame('/assets/theme-' . $name . '.css', $path);
+            // A theme may share another explicit theme's stylesheet.
+            $owner = $declared[$name] ?? $name;
+            assertSame(true, ThemeRegistry::isExplicitName($owner));
+            assertSame(false, isset($declared[$owner]), $name . ' shares a stylesheet that is itself shared');
+            assertSame('/assets/theme-' . $owner . '.css', $path);
+            assertSame(true, is_file($publicRoot . $path));
         }
 
         assertSame(false, ThemeRegistry::isExplicitName('auto'));
         assertSame(false, ThemeRegistry::isExplicitName('unknown'));
+    }
+
+    public function testThemeScriptsBelongToExplicitThemesAndExist(): void
+    {
+        $publicRoot = dirname(__DIR__) . '/public';
+
+        foreach (ThemeRegistry::scriptPaths() as $name => $path) {
+            assertSame(true, ThemeRegistry::isExplicitName($name));
+            assertSame('/assets/theme-' . $name . '.js', $path);
+            assertSame(true, is_file($publicRoot . $path));
+        }
+
+        foreach (ThemeRegistry::all() as $theme) {
+            assertSame(
+                ($theme['script'] ?? false) === true && $theme['name'] !== 'auto',
+                array_key_exists($theme['name'], ThemeRegistry::scriptPaths()),
+            );
+        }
     }
 
     public function testLegacyThemeAliasesPointToCurrentExplicitThemes(): void
@@ -72,6 +97,23 @@ final class ThemeRegistryTest
         foreach (ThemeRegistry::LEGACY_ALIASES as $legacy => $current) {
             assertSame(false, ThemeRegistry::isKnownName($legacy));
             assertSame(true, ThemeRegistry::isExplicitName($current));
+        }
+    }
+
+    public function testPalettesBelongToExplicitThemesThatShowTheirPicker(): void
+    {
+        $publicRoot = dirname(__DIR__) . '/public';
+        $palettes = ThemeRegistry::palettes();
+        assertSame(['console', 'lcd', 'gloss'], array_keys($palettes));
+        foreach ($palettes as $name => $entry) {
+            assertSame(true, ThemeRegistry::isExplicitName($name));
+            assertSame(true, count($entry['palettes']) >= 2);
+            $css = (string) file_get_contents($publicRoot . ThemeRegistry::stylesheetPaths()[$name]);
+            // The theme's own stylesheet reveals its picker and styles every palette but the first.
+            assertStringContains(':root[data-theme="' . $name . '"] [data-role="' . $name . '-palette"] { display: block; }', $css);
+            foreach (array_slice(array_keys($entry['palettes']), 1) as $palette) {
+                assertStringContains(':root[data-theme="' . $name . '"][data-' . $name . '-palette="' . $palette . '"]', $css);
+            }
         }
     }
 
@@ -93,6 +135,24 @@ final class ThemeRegistryTest
             assertSame(false, str_contains((string) $baseStyles, '.theme-swatch[data-theme="' . $name . '"]'));
             assertSame(false, str_contains((string) $baseStyles, 'data-theme-option="' . $name . '"'));
         }
+    }
+
+    public function testSystemDarkColorsAreInTheCriticalBlock(): void
+    {
+        // Auto/System theme sets no data-theme, so its dark colors come only from
+        // site.css. If they sit after the critical marker, the inlined light
+        // defaults paint first and dark-mode reloads flash white until the
+        // async site.css arrives.
+        $baseStyles = (string) file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        $endOffset = strpos($baseStyles, '/* critical-css-end */');
+        assertSame(true, $endOffset !== false);
+
+        $criticalCss = substr($baseStyles, 0, (int) $endOffset);
+        assertSame(1, preg_match(
+            '/@media \(prefers-color-scheme: dark\)\s*\{\s*:root:not\(\[data-theme\]\)\s*\{[^}]*--page-bg:/',
+            $criticalCss
+        ));
+        assertSame(0, preg_match('/prefers-color-scheme: dark/', substr($baseStyles, (int) $endOffset)));
     }
 
     public function testQdbQuoteHeaderActionsHaveThemeNeutralCompactLayout(): void

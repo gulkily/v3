@@ -97,6 +97,30 @@ final class SiteProfileRegistryTest
         );
     }
 
+    public function testPageThemesUseNormalizedPathsAndPermittedThemes(): void
+    {
+        assertSame('/threads/abc', SiteProfileRegistry::pageThemePath('/threads/abc/?x=1'));
+        assertSame('/', SiteProfileRegistry::pageThemePath('/'));
+        assertSame('engagify', SiteProfileRegistry::all()['zenmemes']['pageThemes']['/threads/thread-20261102152258-25e82c97']);
+
+        $cases = [
+            'trailing slash' => [['/threads/abc/' => 'light'], 'Site profile chouse has an invalid page theme path: /threads/abc/'],
+            'relative path' => [['threads/abc' => 'light'], 'Site profile chouse has an invalid page theme path: threads/abc'],
+            'unpermitted theme' => [['/threads/abc' => 'engagify'], 'Site profile chouse page theme must be a permitted explicit theme: /threads/abc'],
+            'auto' => [['/threads/abc' => 'auto'], 'Site profile chouse page theme must be a permitted explicit theme: /threads/abc'],
+        ];
+        foreach ($cases as [$pageThemes, $message]) {
+            $profiles = SiteProfileRegistry::all();
+            $profiles['chouse']['pageThemes'] = $pageThemes;
+            assertThrowsRuntime(
+                static function () use ($profiles): void {
+                    SiteProfileRegistry::validate($profiles);
+                },
+                $message,
+            );
+        }
+    }
+
     public function testBrowserRuntimeProfilesAreDerivedOnlyFromValidatedNamespaces(): void
     {
         foreach (ProfileRegressionContract::all() as $contract) {

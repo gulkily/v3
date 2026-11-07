@@ -622,7 +622,8 @@ controlled operator workflow.
 
 Downloads the source's public repository archive, merges supported public forum
 content and compatible Fastmod scores automatically while preserving destination
-settings/approval authority, refreshes the
+settings/approval authority, copies the images that destination posts reference
+and the destination lacks from the source's image backup, refreshes the
 read model and public offline data, and withdraws stale static HTML. Import and
 `--resume` never render pages or fingerprint/copy presentation assets. PHP serves
 imported content; run `./v3 build-static` separately when static output is needed.
@@ -657,7 +658,8 @@ when the selected destination has an interrupted-import journal. Supported legac
 posts do not need their original bytes rewritten for source backups.
 
 Exit codes are 0 for complete supported-content results, 2 for partial results
-requiring review, and 1 for failures. Reports group exclusions and rejected
+requiring review (including images that could not be copied), and 1 for failures.
+Rerun the same command to retry missing images. Reports group exclusions and rejected
 records; `--verbose` includes per-file details. `--resume` recovers a saved interrupted run without another download;
 use the original destination options and site profile. The destination must be
 initialized with a clean Git checkout. Scheduling, authenticated sources, and
@@ -930,32 +932,6 @@ the API key and model/service reachability.
 Runs the local (non-live) agent-reply test suite: `AgentReplyGenerationTest`,
 `AgentReplyCommandTest`, and targeted `LocalAppSmokeTest` /
 `WriteApiSmokeTest` cases covering status and task-queue fulfillment.
-
-- no parameters
-
-## Run approved Codex handoff requests
-
-```
-./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
-```
-
-Runs approved Codex handoff requests through the local `codex` binary.
-
-- `--limit=...` — maximum number of handoffs to run
-- `--dry-run` — report the approved-handoff count without running anything
-- `--database-path=...` — read-model SQLite file to read handoffs from
-- `--codex-bin=...` — path to the `codex` executable; also overridable via `FORUM_CODEX_EXECUTABLE`
-
-## Run the local Codex handoff test suite
-
-```
-./v3 codex-handoff test-local
-```
-
-Runs the local Codex handoff test suite: `CodexHandoffDraftServiceTest`,
-`CodexHandoffStoreTest`, `CodexHandoffRunnerTest`, and the `WriteApiSmokeTest`
-cases covering the handoff API, approval/rejection flow, development-tag
-requirements, activity lifecycle, and UI bindings.
 
 - no parameters
 

@@ -1,9 +1,9 @@
 ID: PF-20261030-F46
 Title: Rounder corners in modern themes
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-10-30
-Evidence: unknown
+Evidence: locally-verified
 Aliases: 2026-10-30/F46
 
 Request:
@@ -15,3 +15,6 @@ Sources:
 Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F46; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-07: v3/gloss_theme Stage 6 added Gloss: rounded cards (1rem), rounded inputs (0.75rem) and pill buttons. Navigation links and thread lists keep the shared square edges; rounding them is not in this cycle.
+2026-11-07: v3/gloss_theme complete locally on feat/engagify_theme (Stages 1-8): Gloss is selectable on ZenMemes with the smooth-line icon set; Exit from Engagify lands on Gloss. Blocked on merge, deploy and a production check. Summary: docs/plans/gloss_theme/gloss_theme_step4_implementation_summary.md
+2026-11-07: v3/gloss_theme follow-up: Gloss now rounds navigation links, Tools buttons, menus, the thread list and sections too, with one edge rule (containers 16px, clickable things pills, fields 12px). Still blocked on deploy.

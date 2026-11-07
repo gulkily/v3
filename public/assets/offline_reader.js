@@ -240,35 +240,18 @@
       options.content.appendChild(card);
       return groups;
     },
-    savedTagPage: function (group, position, generatedAt) {
+    // Saved tag pages are numbered like live ones: ?page=2; anything else is page 1.
+    savedTagPage: function (group, page) {
       var threads = group ? group.threads : [];
-      // A non-security fingerprint invalidates positions when saved membership/order changes.
-      var hash = 2166136261;
-      threads.forEach(function (thread) {
-        var key = thread.id + "\n" + thread.lastActivityAt + "\n";
-        for (var i = 0; i < key.length; i++) hash = Math.imul(hash ^ key.charCodeAt(i), 16777619);
-      });
-      var context = "saved-tag:" + (group ? group.tag : "") + ":" + generatedAt + ":" + (hash >>> 0);
-      var offset = 0;
-      var invalid = false;
-      if (position !== null && position !== undefined) {
-        try {
-          if (typeof position !== "string" || position.length > 8192 || !/^[A-Za-z0-9_-]+$/.test(position)) throw new Error();
-          var value = JSON.parse(atob(position.replace(/-/g, "+").replace(/_/g, "/")));
-          offset = value.boundary && value.boundary.offset;
-          if (value.version !== 1 || value.context !== context || value.direction !== "next"
-              || !Number.isSafeInteger(offset) || offset < 0 || offset % 25 !== 0 || offset >= threads.length) throw new Error();
-        } catch (_) { invalid = true; }
-      }
-      function token(start) {
-        return btoa(JSON.stringify({ version: 1, context: context, direction: "next", boundary: { offset: start } }))
-          .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-      }
+      var number = typeof page === "string" && /^[1-9][0-9]{0,5}$/.test(page) ? Math.min(Number(page), 100000) : 1;
+      var offset = (number - 1) * 25;
+      var items = threads.slice(offset, offset + 25);
       return {
-        items: invalid ? [] : threads.slice(offset, offset + 25),
-        previous: !invalid && offset > 0 ? token(offset - 25) : null,
-        next: !invalid && offset + 25 < threads.length ? token(offset + 25) : null,
-        invalid: invalid
+        number: number,
+        items: items,
+        previous: number > 1 ? number - 1 : null,
+        next: offset + 25 < threads.length ? number + 1 : null,
+        past: number > 1 && items.length === 0
       };
     },
     renderTagResult: function (options) {
@@ -312,25 +295,25 @@
         return false;
       }
       var parameters = new URLSearchParams(options.search !== undefined ? options.search : (window.location ? window.location.search : ""));
-      var position = parameters.getAll("position");
-      var page = snapshotPresentation.savedTagPage(group, position.length > 1 ? [] : (position[0] === undefined ? null : position[0]), snapshotPresentation.metadataValue(options.database, "generated_at"));
-      if (page.invalid) {
+      var requested = parameters.getAll("page");
+      var page = snapshotPresentation.savedTagPage(group, requested.length === 1 ? requested[0] : null);
+      if (page.past) {
         var recovery = document.createElement("p");
         recovery.className = "meta";
-        recovery.textContent = "This position is not available in the saved snapshot. Open its first page or reconnect and retry the original link.";
+        recovery.textContent = "This page is not in the saved snapshot. Open its first page or reconnect and retry the original link.";
         options.content.appendChild(recovery);
       }
       snapshotPresentation.appendThreadCards(options.content, page.items);
-      if (page.previous !== null || page.next !== null || page.invalid) {
+      if (page.previous !== null || page.next !== null || page.past) {
         var pages = document.createElement("nav");
         pages.className = "nav pagination-nav";
         pages.setAttribute("aria-label", "Pagination");
-        [["Previous", page.previous, "prev"], ["Next", page.next, "next"], ["First page", page.invalid ? "" : null, ""]].forEach(function (item) {
+        [["Previous", page.previous, "prev"], ["Next", page.next, "next"], ["First page", page.past ? 1 : null, ""]].forEach(function (item) {
           if (item[1] === null) return;
           var link = document.createElement("a");
           link.className = "nav-link";
           link.textContent = item[0];
-          link.href = "/tags/" + encodeURIComponent(tag) + (item[1] ? "?position=" + item[1] : "");
+          link.href = "/tags/" + encodeURIComponent(tag) + (item[1] > 1 ? "?page=" + item[1] : "");
           if (item[2]) link.setAttribute("rel", item[2]);
           pages.appendChild(link);
         });

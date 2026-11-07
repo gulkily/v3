@@ -14,7 +14,7 @@ use ForumRewrite\Support\ThreadTitle;
  * Twenty-eighth Phase 2 slice (see docs/plans/codebase_cleanup_audit_plan_v1.md):
  * the single-thread view - /threads/{id} (+ /threads/{id}?format=rss) and
  * /posts/{id}. Earlier passes flagged this as harder tier (13+
- * collaborators spanning agent-reply, Codex handoff, LLM-exchange, and
+ * collaborators spanning agent-reply, LLM-exchange, and
  * post-analysis subsystems), but by the time this slice landed, every one
  * of those subsystems had already been extracted into ActivityService/
  * PostWorkflowService - so what's left here are calls to already-cheap
@@ -130,12 +130,9 @@ final class ThreadAndPostPageController
         $signalActors = SignalActors::load($this->routeServices->pdo(), $threadId, array_values(array_unique([$threadId, ...array_map('strval', array_column($posts, 'post_id'))])));
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
-        $viewerCanUseCodexHandoff = $service->viewerCanUseCodexHandoff($viewerProfile);
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
-        $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $service->fetchCodexHandoffsForPosts($posts) : [];
-        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $service->codexHandoffEligiblePostIds($posts, $threadRow) : [];
 
         return $this->routeServices->renderPageTemplate(
             'thread.php',
@@ -148,6 +145,7 @@ final class ThreadAndPostPageController
                     && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)
                     ? \ForumRewrite\Calendar\EventStatus::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId)
                     : null,
+                'threadTheme' => \ForumRewrite\View\ThreadTheme::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId),
                 'railspikeThread' => $threadRow,
                 'railspikeOperators' => $this->railspikeOperators(),
                 'posts' => $posts,
@@ -166,13 +164,10 @@ final class ThreadAndPostPageController
                 'createdPostId' => $createdPostId,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
-                'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
                 'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'scriptureExpansionsByPostId' => $service->scriptureExpansionsForPosts($posts),
-                'codexHandoffsByPostId' => $codexHandoffsByPostId,
-                'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $service->agentReplyWorkByPostId(
                     $posts,
                     $createdPostId,
@@ -250,14 +245,10 @@ final class ThreadAndPostPageController
         $signalActors = SignalActors::load($this->routeServices->pdo(), (string) $post['thread_id'], [(string) $post['post_id']]);
         $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
-        $viewerCanUseCodexHandoff = $service->viewerCanUseCodexHandoff($viewerProfile);
         $posts = [$post];
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
         $llmExchangesByPostId = ($this->viewerCanInspectLlmExchanges)() ? ($this->fetchLlmExchangesForPosts)($posts) : [];
-        $codexHandoffsByPostId = $viewerCanUseCodexHandoff ? $service->fetchCodexHandoffsForPosts($posts) : [];
-        $threadRow = ($this->fetchThread)((string) $post['thread_id']);
-        $codexHandoffEligiblePostIds = $viewerCanUseCodexHandoff ? $service->codexHandoffEligiblePostIds($posts, $threadRow) : [];
 
         return $this->routeServices->renderPageTemplate(
             'post.php',
@@ -274,15 +265,12 @@ final class ThreadAndPostPageController
                 'signalActors' => $signalActors,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
-                'viewerCanUseCodexHandoff' => $viewerCanUseCodexHandoff,
                 'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],
                 'postAnalysesByPostId' => $viewerCanSeePostAnalysis ? $postAnalysesForWork : [],
                 'agentRepliesByPostId' => $agentRepliesByPostId,
                 'scriptureExpansionsByPostId' => $service->scriptureExpansionsForPosts($posts),
                 'llmExchangesByPostId' => $llmExchangesByPostId,
                 'fastScore' => ($this->latestFastScoreForPost)($post),
-                'codexHandoffsByPostId' => $codexHandoffsByPostId,
-                'codexHandoffEligiblePostIds' => $codexHandoffEligiblePostIds,
                 'agentReplyWorkByPostId' => $service->agentReplyWorkByPostId(
                     $posts,
                     '',

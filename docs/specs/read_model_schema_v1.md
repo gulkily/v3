@@ -20,6 +20,14 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 53 removes the Codex handoff Activity view (`codex_handoff`) and its
+`activity_counts` row; prior-version startup rebuild is required.
+
+Version 52 adds `posts.theme`, the post's hidden `Theme:` header, so a thread page can
+find its own theme without reading record files; prior-version startup rebuild is required.
+The feature branch used version 51 locally; main's 51 (Inbox's `posts_parent_idx`) is
+retained, and integration advances to 52 so either lineage rebuilds before the column is read.
+
 Version 47 adds the board thread search query without changing tables; see
 [Version 47](#version-47--board-thread-search).
 
@@ -113,6 +121,8 @@ row matches both branches. Normal startup rebuilds schema-26 and older models.
 | `board_tags_json` | TEXT | JSON array |
 | `thread_type` | TEXT NULL | |
 | `agent_response_json` | TEXT NULL | Optional canonical response kind, source/version, and expansion parent/version; introduced in schema 18. |
+| `body_format` | TEXT NULL | `Body-Format` header or the latest post format record; null renders as plain (schema 45) |
+| `theme` | TEXT NULL | the post's `Theme:` header, a theme name or `none`; null on retraction. The thread page's theme is derived on read from this and `theme:` lines (schema 52) |
 | `author_identity_id` | TEXT NULL | |
 | `author_profile_slug` | TEXT NULL | |
 | `author_label` | TEXT | default `'guest'` |
@@ -135,7 +145,8 @@ row matches both branches. Normal startup rebuilds schema-26 and older models.
 Indexes: `posts_thread_sequence_idx (thread_id, sequence_number)` backing the
 per-thread reply query (`ORDER BY sequence_number`); `posts_author_identity_idx
 (author_identity_id)` backing the `profiles` identity join used by the board and
-reply queries. Added in schema version 26.
+reply queries. Added in schema version 26. `posts_parent_idx (parent_id)` backs
+Inbox's replies-to-me lookup; added in schema version 51.
 
 ### `threads`
 
@@ -276,7 +287,7 @@ Additional indexes: `activity_pending_evidence_idx (source_commit_sha) WHERE evi
 
 | Column | Type | Notes |
 | --- | --- | --- |
-| `view` | TEXT PK | all/content/identity/bootstrap/approval/security/commits |
+| `view` | TEXT PK | all/content/identity/bootstrap/approval/security/commits, plus one row per single-kind view in `ActivityService::KIND_VIEWS` (schema 50) |
 | `total` | INTEGER NOT NULL | Including profile-name events |
 | `without_profile_names` | INTEGER NOT NULL | Excluding profile-name events |
 
@@ -293,8 +304,9 @@ require live authorization. Internal tag membership preserves prior SQL/PHP sema
 | `events` | INTEGER NOT NULL | Number of source-less NULL-action-key events |
 | `revision` | TEXT NOT NULL | Random token replaced on local-event mutation |
 
-No local events means an empty cursor revision. Local-event changes/rebuilds expire
-old positions; canonical-only changes leave this token alone. All maintenance is
+No local events means an empty revision. Activity pages by number since
+2026-11-07 and no longer reads this revision; canonical-only changes leave it
+alone. All maintenance is
 inside the original mutation transaction.
 
 ### `commits`
@@ -357,25 +369,6 @@ Key columns: `id` (PK), `target_post_id`, `target_content_hash`,
 `agent_post_id`, `posted_at`, `failure_code`, `failure_message`,
 `retry_after`, `request_context_json`, `raw_response_json`. Unique on
 `(target_post_id, target_content_hash)`.
-
-### `codex_handoffs` and `codex_handoff_events`
-
-Defined in `src/ForumRewrite/Codex/CodexHandoffStore.php`. Tracks Codex
-handoff requests and their status-change event log.
-
-`codex_handoffs` key columns: `id` (PK), `handoff_id` (unique), `origin_post_id`,
-`origin_thread_id`, `origin_content_hash`, `requester_identity_id`,
-`requester_profile_slug`, `requester_username`, `status`, `user_story`,
-`fdp_step1`, `confidence_summary`, `draft_text`, `status_context_json`,
-`requested_at`, `draft_ready_at`, `approved_at`, `rejected_at`, `running_at`,
-`completed_at`, `failed_at`, `updated_at`. Unique on
-`(origin_post_id, origin_content_hash)`.
-
-`codex_handoff_events` key columns: `id` (PK), `handoff_id`, `event_status`,
-`created_at`, `origin_post_id`, `origin_thread_id`, `label`,
-`author_identity_id`, `author_profile_slug`, `author_username_token`,
-`author_label`, `author_is_approved`, `context_json`. Index:
-`codex_handoff_events_recent_idx (created_at DESC, id DESC)`.
 
 ## Adjacent, separate SQLite databases
 
@@ -709,3 +702,46 @@ full rebuild and the incremental thread insert both fill it, retracted and
 deleted roots clear it with the other event columns, and the thread page, board
 listing queries and `Application::fetchThread` select it. Normal startup
 rebuilds version 48 and older models before the column is read.
+
+## Version 50 — Single-kind Activity views
+
+Adds `activity_counts` rows for the single-kind Activity views listed in
+`ActivityService::KIND_VIEWS` (thread, reply, reaction, label, profile_name,
+identity_key, invitation, feature_flag, codex_handoff). Each counts rows whose
+`activity.kind` equals the mapped kind; the existing activity triggers maintain
+them for every writer, so full rebuild and incremental updates agree. Normal
+startup rebuilds version 49 and older models before Forte Activity reads the
+new totals.
+
+## Numbered pages (2026-11-07, no version change)
+
+Board, Search, Tags, Recent, Gallery, Activity and profile history page by
+number (`?page=N`) with `LIMIT`/`OFFSET` over the same eligibility and order the
+version notes above describe, reading one extra row to detect a next page. The
+position boundaries those notes mention are no longer used. `?with=<ID>` counts
+eligible rows ahead of an item to find its page. The queries use existing
+columns and indexes, so the schema version is unchanged. See
+[Implementing pagination](../reference/pagination.md).
+
+## Version 51 — Replies by parent
+
+Adds `posts_parent_idx (parent_id)` on `posts`. Inbox lists replies whose parent
+was written by the viewer, so it looks up posts by `parent_id`; without the
+index that query scans every post. Normal startup rebuilds version 50 and older
+models before Inbox runs the query.
+
+## Version 52 — Post theme
+
+Adds `posts.theme`, the post's hidden `Theme:` header (a theme name or `none`).
+A thread page derives its own theme on read from this column and `theme:` lines in
+post bodies; see [canonical post record](canonical_post_record_v1.md). Normal startup
+rebuilds version 51 and older models, including main's version 51, which has
+`posts_parent_idx` but no `posts.theme`.
+
+## Version 53 — Codex handoff removed
+
+Removes the Codex handoff feature. `ActivityService::KIND_VIEWS` no longer has
+`codex_handoff`, so its `activity_counts` row and trigger branches are gone, and
+rebuilds no longer project `codex_handoff_events` into Activity. Older databases
+may still hold `codex_handoffs` and `codex_handoff_events` tables; nothing reads
+them. Normal startup rebuilds version 52 and older models.

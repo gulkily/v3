@@ -65,21 +65,28 @@ final class BoardListTest
         assertStringNotContains('href="/threads/board-list-010"', $back);
     }
 
-    public function testExpiredOrForeignPositionsOfferTheFirstPage(): void
+    public function testPageNumbersWithAndDefaultsInBoardLinks(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(60);
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
 
-        $gone = \ForumRewrite\Pagination\PageNavigation::encode('board:all:newest', 'next', ['thread' => 'no-such-thread']);
-        $expired = $this->render($application, '/threads/?view=all&sort=newest&position=' . $gone);
-        assertStringContains('This page position has expired.', $expired);
-        assertStringContains('href="/threads/?view=all&amp;sort=newest">First page</a>', $expired);
+        $first = $this->render($application, '/threads/?view=all&sort=newest');
+        assertStringContains('rel="next" href="/threads/?view=all&amp;page=2">Show older threads</a>', $first, 'The default sort is left out.');
+        assertStringContains('id="post-board-list-060"', $first);
+        assertStringNotContains('?position=', $first);
+        assertStringNotContains('&amp;position=', $first);
 
-        // A position from another sort is a different context.
-        $other = \ForumRewrite\Pagination\PageNavigation::encode('board:all:top', 'next', ['thread' => 'root-001']);
-        $foreign = $this->render($application, '/threads/?view=all&sort=newest&position=' . $other);
-        assertStringContains('This page position is invalid.', $foreign);
-        assertStringContains('>First page</a>', $foreign);
+        $past = $this->render($application, '/threads/?view=all&page=9');
+        assertStringContains('href="/threads/?view=all">First page</a>', $past);
+        assertStringNotContains('pinned-list', $this->markup($past));
+
+        assertSame(51, substr_count($this->render($application, '/threads/?view=all&page=abc'), 'class="thread-row"'), 'A malformed page shows page 1.');
+
+        $older = $this->render($application, '/threads/?view=all&sort=newest&with=root-001');
+        assertStringContains('/threads/?view=all&amp;page=2#post-root-001', $older);
+        $pinned = $this->render($application, '/threads/?view=all&with=thread-zenmemes-rules');
+        assertStringContains('/threads/?view=all#post-thread-zenmemes-rules', $pinned);
+        assertSame(51, substr_count($this->render($application, '/threads/?view=all&with=no-such-thread'), 'class="thread-row"'));
     }
 
     public function testEmptyLikedViewOffersAllThreads(): void
@@ -115,6 +122,165 @@ final class BoardListTest
 
         assertStringContains('href="/threads/board-list-image">Image</a>', $board);
         assertStringNotContains('Image-v1:', $board);
+    }
+
+    public function testImagePostsShowAThumbnailOnTheBoardAndRecent(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $imageRoot = $repositoryRoot . '-images';
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $old = getenv($flag);
+        $thumbnailFlag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED;
+        $oldThumbnail = getenv($thumbnailFlag);
+        try {
+            $source = $repositoryRoot . '-pixel.png';
+            file_put_contents($source, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC'));
+            $reference = \ForumRewrite\Images\ImageStore::inspect($source, '');
+            (new \ForumRewrite\Images\ImageStore($repositoryRoot))->put($source, $reference);
+            $missing = ['sha256' => str_repeat('b', 64), 'type' => 'png', 'bytes' => 10, 'width' => 20, 'height' => 30, 'description' => ''];
+            foreach ([
+                'thumb-present' => \ForumRewrite\Images\ImageReference::line($reference),
+                'thumb-missing' => \ForumRewrite\Images\ImageReference::line($missing),
+                'thumb-none' => 'Just words.',
+            ] as $postId => $body) {
+                file_put_contents($repositoryRoot . '/records/posts/' . $postId . '.txt', "Post-ID: {$postId}\nCreated-At: 2026-07-01T00:00:00Z\nBoard-Tags: general\nSubject: {$postId}\n\nWords first.\n{$body}\n");
+            }
+            $this->runCommand($repositoryRoot, 'git add .');
+            $this->runCommand($repositoryRoot, 'git commit -m "Add image posts"');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $thumb = '<a class="thread-row__thumb" href="/threads/thread-present" tabindex="-1" aria-hidden="true"><img src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '" alt="" width="1" height="1" loading="lazy" decoding="async"></a>';
+
+            putenv($flag . '=true');
+            putenv($thumbnailFlag . '=true');
+            $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+            assertStringContains(str_replace('thread-present', 'thumb-present', $thumb), $board);
+            assertSame(1, substr_count($board, 'class="thread-row__thumb"'), 'Only the post with a stored image gets a thumbnail.');
+            assertSame(1, substr_count($board, 'thread-row--thumb'));
+
+            $recent = $this->markup($this->render($application, '/recent/'));
+            assertStringContains(str_replace('thread-present', 'thumb-present', $thumb), $recent);
+            assertSame(1, substr_count($recent, 'class="thread-row__thumb"'));
+
+            putenv($thumbnailFlag . '=false');
+            assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/threads/?view=all&sort=newest')));
+            assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/recent/')));
+            putenv($thumbnailFlag . '=true');
+            putenv($flag . '=false');
+            assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/threads/?view=all&sort=newest')));
+            assertStringNotContains('thread-row__thumb', $this->markup($this->render($application, '/recent/')));
+        } finally {
+            putenv($oldThumbnail === false ? $thumbnailFlag : $thumbnailFlag . '=' . $oldThumbnail);
+            putenv($old === false ? $flag : $flag . '=' . $old);
+            exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($repositoryRoot . '-pixel.png'));
+        }
+    }
+
+    public function testBoardRowUsesTheThreadsFirstImageEvenFromAReply(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $imageRoot = $repositoryRoot . '-images';
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $old = getenv($flag);
+        $thumbnailFlag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED;
+        $oldThumbnail = getenv($thumbnailFlag);
+        try {
+            $store = new \ForumRewrite\Images\ImageStore($repositoryRoot);
+            $references = [];
+            foreach (['first' => [10, 20, 200], 'second' => [10, 20, 30]] as $name => [$red, $green, $blue]) {
+                $source = $repositoryRoot . '-' . $name . '.png';
+                $canvas = imagecreatetruecolor(2, 2);
+                imagefill($canvas, 0, 0, imagecolorallocate($canvas, $red, $green, $blue));
+                imagepng($canvas, $source);
+                $references[$name] = \ForumRewrite\Images\ImageStore::inspect($source, '');
+                $store->put($source, $references[$name]);
+            }
+            $missing = ['sha256' => str_repeat('b', 64), 'type' => 'png', 'bytes' => 10, 'width' => 20, 'height' => 30, 'description' => ''];
+            $posts = [
+                'text-root' => ["Subject: text-root", 'Just words.', '00'],
+                'reply-missing' => ["Thread-ID: text-root\nParent-ID: text-root", \ForumRewrite\Images\ImageReference::line($missing), '01'],
+                'reply-first' => ["Thread-ID: text-root\nParent-ID: text-root", \ForumRewrite\Images\ImageReference::line($references['first']), '02'],
+                'reply-second' => ["Thread-ID: text-root\nParent-ID: reply-first", \ForumRewrite\Images\ImageReference::line($references['second']), '03'],
+                'image-root' => ["Subject: image-root", \ForumRewrite\Images\ImageReference::line($references['second']), '04'],
+                'image-reply' => ["Thread-ID: image-root\nParent-ID: image-root", \ForumRewrite\Images\ImageReference::line($references['first']), '05'],
+            ];
+            foreach ($posts as $postId => [$headers, $body, $minute]) {
+                file_put_contents($repositoryRoot . '/records/posts/' . $postId . '.txt', "Post-ID: {$postId}\nCreated-At: 2026-07-01T00:{$minute}:00Z\nBoard-Tags: general\n{$headers}\n\n{$body}\n");
+            }
+            $this->runCommand($repositoryRoot, 'git add .');
+            $this->runCommand($repositoryRoot, 'git commit -m "Add threads with images in replies"');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            putenv($flag . '=true');
+            putenv($thumbnailFlag . '=true');
+            $thumb = static fn (string $thread, array $reference): string => '<a class="thread-row__thumb" href="/threads/' . $thread . '" tabindex="-1" aria-hidden="true"><img src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '"';
+
+            $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+            assertStringContains($thumb('text-root', $references['first']), $board, 'A text-only root shows the first stored image from its replies.');
+            assertStringContains($thumb('image-root', $references['second']), $board, 'A root with its own image keeps it.');
+            assertSame(2, substr_count($board, 'class="thread-row__thumb"'));
+
+            $recent = $this->markup($this->render($application, '/recent/'));
+            assertStringNotContains('href="/threads/text-root" tabindex="-1"', $recent, 'Recent rows still show only their own post\'s image.');
+        } finally {
+            putenv($oldThumbnail === false ? $thumbnailFlag : $thumbnailFlag . '=' . $oldThumbnail);
+            putenv($old === false ? $flag : $flag . '=' . $old);
+            exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($repositoryRoot . '-first.png') . ' ' . escapeshellarg($repositoryRoot . '-second.png'));
+        }
+    }
+
+    public function testLargeImagesGetSmallCachedThumbnailCopies(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $imageRoot = $repositoryRoot . '-images';
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $old = getenv($flag);
+        try {
+            $source = $repositoryRoot . '-wide.png';
+            $canvas = imagecreatetruecolor(400, 100);
+            imagefill($canvas, 0, 0, imagecolorallocate($canvas, 200, 40, 40));
+            // Blue ends that a centred square crop leaves out.
+            imagefilledrectangle($canvas, 0, 0, 99, 99, imagecolorallocate($canvas, 20, 40, 200));
+            imagefilledrectangle($canvas, 300, 0, 399, 99, imagecolorallocate($canvas, 20, 40, 200));
+            imagepng($canvas, $source);
+            $reference = \ForumRewrite\Images\ImageStore::inspect($source, '');
+            $store = new \ForumRewrite\Images\ImageStore($repositoryRoot);
+            $store->put($source, $reference);
+            file_put_contents($repositoryRoot . '/records/posts/thumb-wide.txt', "Post-ID: thumb-wide\nCreated-At: 2026-07-01T00:00:00Z\nBoard-Tags: general\nSubject: thumb-wide\n\n" . \ForumRewrite\Images\ImageReference::line($reference) . "\n");
+            $this->runCommand($repositoryRoot, 'git add .');
+            $this->runCommand($repositoryRoot, 'git commit -m "Add wide image post"');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            putenv($flag . '=true');
+
+            $one = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'sq');
+            $two = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'sq2x');
+            $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+            assertStringContains('<img src="' . $one . '" srcset="' . $one . ' 1x, ' . $two . ' 2x" alt="" width="400" height="100"', $board);
+            assertStringNotContains('src="/images/' . \ForumRewrite\Images\ImageReference::filename($reference) . '"', $board, 'The full-size original is not linked from the list.');
+
+            foreach ([[$one, 72], [$two, 100]] as [$url, $side]) {
+                $bytes = $this->render($application, $url);
+                $size = getimagesizefromstring($bytes);
+                assertSame([$side, $side], [$size[0], $size[1]], $url . ' is a square crop for the row slot, never larger than the original.');
+                assertTrue(strlen($bytes) < $reference['bytes'] || $reference['bytes'] < 1000, 'The thumbnail is not larger than needed.');
+                $pixels = imagecreatefromstring($bytes);
+                foreach ([0, $side - 1] as $x) {
+                    $color = imagecolorsforindex($pixels, imagecolorat($pixels, $x, intdiv($side, 2)));
+                    assertTrue($color['red'] > $color['blue'], $url . ' is cropped from the centre.');
+                }
+            }
+            $legacy = getimagesizefromstring($this->render($application, '/images/thumbs/' . $reference['sha256'] . '-1x.png'));
+            assertSame([72, 72], [$legacy[0], $legacy[1]], 'A list-row URL from an older page gets the square crop.');
+            $cached = $store->root . '-thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'sq');
+            assertTrue(is_file($cached), 'The thumbnail is cached beside the image root.');
+            assertSame($this->render($application, $one), file_get_contents($cached));
+            $store->inventory();
+
+            unlink($store->root . '/' . \ForumRewrite\Images\ImageReference::filename($reference));
+            assertStringContains('Image unavailable', $this->render($application, $one), 'A thumbnail is not served once its original is gone.');
+            assertStringContains('Image unavailable', $this->render($application, '/images/thumbs/' . str_repeat('c', 64) . '-3x.png'));
+        } finally {
+            putenv($old === false ? $flag : $flag . '=' . $old);
+            exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($imageRoot . '-thumbs') . ' ' . escapeshellarg($repositoryRoot . '-wide.png'));
+        }
     }
 
     public function testRowMetaShowsAPendingChipAndTheFullTimestampAsTooltip(): void

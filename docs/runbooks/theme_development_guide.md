@@ -18,6 +18,10 @@ every theme's CSS on every page.)
    here is menu order and cycle order. `ThemeRegistry::stylesheetPaths()`
    derives each theme's stylesheet path from its `name` automatically
    (`/assets/theme-<name>.css`) - you don't wire that path anywhere else.
+   Two optional fields change that (see [Shared stylesheets and the cycle
+   button](#shared-stylesheets-and-the-cycle-button)): `'stylesheet' =>
+   '<other>'` and `'cycle' => false`. A third, `'palettes'`, adds a colour
+   picker (see [Colour palettes](#colour-palettes)).
    The registry feeds the popover markup, the cycle button, the anti-FOUC
    allow-list, and `templates/layout.php`'s `themeStylesheetPaths` JS map
    (which swaps the `<link id="theme-stylesheet">` `href` on theme change) -
@@ -43,6 +47,87 @@ every theme's CSS on every page.)
 
 Theme choice persists in localStorage key `zenmemes-theme`; an inline
 script in `layout.php` applies it pre-paint against the allow-list.
+
+## Theme scripts
+
+A theme may also ship a script. Set `'script' => true` on its registry entry
+and add `public/assets/theme-<name>.js`. `theme_toggle.js` loads it the first
+time the theme becomes active and keeps it loaded.
+
+The script registers itself:
+`window.forumThemeScripts.register('<name>', { start: fn, stop: fn })`.
+Only the active theme is started. Every theme change calls the old theme's
+`stop` before the new one starts, without a reload, so `stop` must remove every
+element, listener and timer that `start` added. `theme-engagify.js` shows one
+pattern: a context object that records each element and timer, so `stop` is
+one call. Scripts must keep the same promises as stylesheets: never rename or
+reuse the hooks other scripts select on, keep controls reachable, and work at
+~380px. A theme that adds controls should give the reader a visible way out:
+`window.forumExitTheme('<target>')` applies the target theme like a menu
+choice, saving it and leaving a page theme. Engagify passes `'gloss'`. A target
+the site does not offer falls back to the site default.
+
+Theme script UI appears after first paint, an exception to the first-paint
+rule in `CONTRIBUTING.md`. Keep it to themes whose point is that behavior.
+`tests/browser/theme_scripts.cjs` covers loading, start and stop.
+
+## Shared stylesheets and the cycle button
+
+Two themes with one look should share one stylesheet rather than copy it. Set
+`'stylesheet' => '<owner>'` on the borrowing entry; it then loads
+`/assets/theme-<owner>.css`. The owner must be an explicit theme that does not
+itself borrow. In the shared file, write shared rules for both names
+(`:root:is([data-theme="gloss"], [data-theme="engagify"]) .card`) and the
+borrower's extra rules for its name alone. Start the file with a `Theme:` line
+for each name. `theme_toggle.js` tracks loaded stylesheets by path, so
+switching between the two never fetches the file twice. Gloss and Engagify
+are the worked example: `theme-gloss.css` holds Gloss's look and, below it,
+Engagify's parody layer.
+
+`'cycle' => false` keeps a theme in the menu but out of the cycle button, for
+themes a reader should only choose on purpose, such as Engagify. The menu
+option carries `data-theme-cycle="skip"`.
+
+## Colour palettes
+
+A theme may offer colours, as LCD, Console and Gloss do. Set `'palettes' =>
+['key' => 'Label', ...]` on its registry entry; the first key is the default.
+The menu then renders a colour button beside the theme switcher, the pre-paint
+script restores the saved choice as `data-<theme>-palette` on `<html>` (stored
+under `<theme storage key>-<theme>-palette`), and `theme_toggle.js` wires the
+picker. No template or script changes are needed.
+
+The theme's stylesheet does the rest: show the picker with
+`:root[data-theme="x"] [data-role="x-palette"] { display: block; }`, reserve
+room with `.theme-menu { margin-left: 2.5rem; }`, colour the chips with
+`[data-palette-theme="x"][data-palette-chip="<key>"]`, and override variables
+under `:root[data-theme="x"][data-x-palette="<key>"]` for every key but the
+first. Scope palette rules to the theme's own name, so a theme that shares the
+stylesheet keeps its colours (Engagify stays violet whatever Gloss uses). Only
+LCD's colours are cycle-button stops. `ThemeRegistryTest` checks the picker and
+palette rules exist; `tests/browser/gloss_palettes.mjs` checks Gloss's colours,
+including contrast.
+
+## Page themes
+
+A site profile in `SiteProfileRegistry.php` may map page paths to themes in
+`pageThemes`, such as the cookie notice thread to `engagify`. Paths carry no
+query and no trailing slash, and the theme must be permitted on that site. The
+page shows its theme to every reader before paint. Exit, or any theme choice
+on that page, leaves it there; the browser remembers that per page. Exit saves
+its target as the reader's theme, as a menu choice does.
+
+Thread pages are baked, so after changing `pageThemes`, rebuild artifacts
+(`php scripts/build_static_artifacts.php`) or the page keeps its old theme.
+
+A thread can also set its own page theme from inside the forum, which beats
+`pageThemes` for that thread. Its author or a current operator posts a line
+`theme: <name>` in the opening post or any reply, or picks a theme in the
+composer's ··· menu, which writes a hidden `Theme:` header instead of a line.
+The latest setting wins; `theme: none` (or "Clear thread theme") clears it,
+and retracting the post withdraws it. `ThreadTheme::forThread()` decides this
+when the page is read. These pages need no manual rebuild: a reply or a
+retraction already drops the thread's baked page.
 
 ## Scoped-CSS rules of the road
 
@@ -77,6 +162,11 @@ Everything is inline `data:image/svg+xml;utf8,...` URIs in the CSS
   background, harmless elsewhere. Key icons off *stable attributes*, not
   position: `href` for links, data attributes (`data-bookmarklet-kind`)
   when hrefs collide.
+- **Smooth-line icons (Gloss and Engagify):** the second navigation icon set in
+  `theme-nav-icons.css`: `viewBox='0 0 16 16'`, 1.5px round strokes in
+  `#6d28d9` with a `#ede9fe` fill, no crispEdges. Both sets share the sizing
+  rules and key glyphs to the same selectors; `NavIconSetsTest` fails when a
+  destination is in one set and not the other.
 - **Theme-neutral glyphs (all themes):** draw smooth shapes (no
   crispEdges), apply via `mask` + `background-color: currentColor` so the
   glyph inherits each theme's ink automatically:

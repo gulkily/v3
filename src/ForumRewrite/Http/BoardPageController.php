@@ -38,7 +38,7 @@ final class BoardPageController
     /** Threads per board list page; pinned threads come on the first page in addition. */
     private const LIST_PAGE_SIZE = 50;
 
-    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1, ?QdbBoardPolicy $qdbPolicy = null, mixed $position = null): string
+    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1, ?QdbBoardPolicy $qdbPolicy = null, mixed $listPage = null): string
     {
         $view = BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
@@ -62,7 +62,7 @@ final class BoardPageController
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
         $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
         if ($boardCardSlot === 'list' && $qdbPolicy === null) {
-            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, $position);
+            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, \ForumRewrite\Pagination\PageNavigation::pageNumber($listPage));
         }
 
         return $this->routeServices->renderPageTemplate(
@@ -106,30 +106,24 @@ final class BoardPageController
     }
 
     /**
-     * The `list` board: pinned threads grouped above the latest ones, which
-     * are paged with the shared native-link pagination. The position names
-     * the boundary thread in the sorted list, so filter and sort changes
-     * (a different context) discard it.
+     * The `list` board: pinned threads grouped above the latest ones on page 1;
+     * the latest ones are paged by number with the shared native links.
      *
      * @param array<int, array<string, mixed>> $threads Sorted, pinned first.
      * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $viewOptions
      * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $sortOptions
      */
-    private function boardList(string $view, string $sort, array $threads, array $viewOptions, array $sortOptions, mixed $position): string
+    private function boardList(string $view, string $sort, array $threads, array $viewOptions, array $sortOptions, int $number): string
     {
-        $context = 'board:' . $view . ':' . $sort;
         $pinned = array_values(array_filter($threads, fn (array $thread): bool => $this->isPinned($thread)));
         $latest = array_values(array_filter($threads, fn (array $thread): bool => !$this->isPinned($thread)));
-        $error = null;
-        try {
-            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
-            $cursor = $position === null ? null : \ForumRewrite\Pagination\PageNavigation::decode($position, $context);
-            $page = $this->listPage($latest, $cursor);
-        } catch (\InvalidArgumentException $exception) {
-            $error = $exception->getMessage();
-            $page = ['items' => [], 'previous' => null, 'next' => null];
-        }
-        $pagination = \ForumRewrite\Pagination\PageNavigation::links('/threads/', ['view' => $view, 'sort' => $sort], $context, $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
+        $items = array_slice($latest, ($number - 1) * self::LIST_PAGE_SIZE, self::LIST_PAGE_SIZE);
+        $hasNext = $number * self::LIST_PAGE_SIZE < count($latest);
+        $pagination = \ForumRewrite\Pagination\PageNavigation::numbered('/threads/', self::listState($view, $sort), $number, $hasNext, $items === []);
+        $pinned = $number === 1 ? $pinned : [];
+        $imagesEnabled = $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED);
+        $pinned = \ForumRewrite\Images\ListThumbnails::attach($this->routeServices->pdo(), $this->repositoryRoot, $imagesEnabled, $pinned, 'root_post_id', true);
+        $items = \ForumRewrite\Images\ListThumbnails::attach($this->routeServices->pdo(), $this->repositoryRoot, $imagesEnabled, $items, 'root_post_id', true);
 
         return $this->routeServices->renderPageTemplate(
             'board_list.php',
@@ -140,10 +134,10 @@ final class BoardPageController
                 'viewOptions' => $viewOptions,
                 'sortOptions' => $sortOptions,
                 'sortLabel' => BoardViewOptions::activeLabel($sortOptions, $sort),
-                'pinnedThreads' => $position === null ? $pinned : [],
-                'threads' => $page['items'],
+                'pinnedThreads' => $pinned,
+                'threads' => $items,
                 'pagination' => $pagination,
-                'paginationError' => $error,
+                'paginationError' => null,
             ],
             'Board',
             'board',
@@ -152,35 +146,34 @@ final class BoardPageController
     }
 
     /**
-     * @param array<int, array<string, mixed>> $threads
-     * @param array{direction:string,boundary:array<string,string>}|null $cursor
-     * @return array{items: array<int, array<string, mixed>>, previous: array<string,string>|null, next: array<string,string>|null}
+     * Where a board `with` link lands: the list page holding that thread, or
+     * page 1 for a pinned thread. Null for QDB boards, card layouts and
+     * threads outside this view.
      */
-    private function listPage(array $threads, ?array $cursor): array
+    public function listWithLocation(string $view, string $sort, mixed $with): ?string
     {
-        $start = 0;
-        if ($cursor !== null) {
-            $boundaryId = $cursor['boundary']['thread'] ?? null;
-            if (!is_string($boundaryId) || array_keys($cursor['boundary']) !== ['thread']) {
-                throw new \InvalidArgumentException('This page position is invalid.');
-            }
-            $index = array_search($boundaryId, array_map(static fn (array $thread): string => (string) $thread['root_post_id'], $threads), true);
-            if ($index === false) {
-                throw new \InvalidArgumentException('This page position has expired.');
-            }
-            $start = $cursor['direction'] === 'next' ? $index + 1 : max(0, $index - self::LIST_PAGE_SIZE);
-            $end = $cursor['direction'] === 'next' ? $start + self::LIST_PAGE_SIZE : $index;
-        } else {
-            $end = self::LIST_PAGE_SIZE;
+        $id = \ForumRewrite\Pagination\PageNavigation::withId($with);
+        if ($id === null || PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard') !== 'list') return null;
+        $view = BoardViewOptions::normalizeView($view);
+        $sort = BoardViewOptions::normalizeSort($sort);
+        $threads = $this->fetchBoardThreads($view, $sort, null);
+        $latest = array_values(array_filter($threads, fn (array $thread): bool => !$this->isPinned($thread)));
+        $index = array_search($id, array_map(static fn (array $thread): string => (string) $thread['root_post_id'], $latest), true);
+        if ($index === false) {
+            $pinned = in_array($id, array_map(static fn (array $thread): string => (string) $thread['root_post_id'], $threads), true);
+            if (!$pinned) return null;
+            $index = 0;
         }
-        $items = array_slice($threads, $start, $end - $start);
-        $boundary = static fn (array $thread): array => ['thread' => (string) $thread['root_post_id']];
+        return \ForumRewrite\Pagination\PageNavigation::withLocation('/threads/', self::listState($view, $sort), intdiv($index, self::LIST_PAGE_SIZE) + 1, $id);
+    }
 
-        return [
-            'items' => $items,
-            'previous' => $items !== [] && $start > 0 ? $boundary($items[0]) : null,
-            'next' => $items !== [] && $start + count($items) < count($threads) ? $boundary($items[count($items) - 1]) : null,
-        ];
+    /** @return array<string,string> View and sort for links, leaving out the defaults (liked, newest). */
+    private static function listState(string $view, string $sort): array
+    {
+        $state = [];
+        if ($view !== 'liked') $state['view'] = $view;
+        if ($sort !== 'newest') $state['sort'] = $sort;
+        return $state;
     }
 
     /**
@@ -234,33 +227,34 @@ final class BoardPageController
      * Board search (`/search?q=`) over top-level threads for non-QDB
      * profiles; QDB keeps its own classic search in QdbExperience.
      */
-    public function search(mixed $term, mixed $position): string
+    public function search(mixed $term, mixed $page): string
     {
         $term = is_string($term) ? trim($term) : '';
-        $context = \ForumRewrite\ReadModel\ThreadSearchPage::context($term);
-        $error = null;
-        try {
-            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
-            $cursor = $position === null ? null : \ForumRewrite\Pagination\PageNavigation::decode($position, $context);
-            $page = \ForumRewrite\ReadModel\ThreadSearchPage::page($this->routeServices->pdo(), $term, $cursor['boundary'] ?? null, $cursor['direction'] ?? 'next');
-        } catch (\InvalidArgumentException $exception) {
-            $error = $exception->getMessage();
-            $page = ['items' => [], 'previous' => null, 'next' => null];
-        }
-        $pagination = \ForumRewrite\Pagination\PageNavigation::links('/search', $term === '' ? [] : ['q' => $term], $context,
-            $page['previous'], $page['next'], $error !== null || ($position !== null && $page['items'] === []));
-
+        $number = \ForumRewrite\Pagination\PageNavigation::pageNumber($page);
+        $page = \ForumRewrite\ReadModel\ThreadSearchPage::page($this->routeServices->pdo(), $term, $number);
+        $pagination = \ForumRewrite\Pagination\PageNavigation::numbered('/search', $term === '' ? [] : ['q' => $term], $number,
+            $page['has_next'], $page['items'] === []);
         return $this->routeServices->renderPageTemplate(
             'board_search.php',
             [
                 'term' => $term,
                 'threads' => $page['items'],
                 'pagination' => $pagination,
-                'paginationError' => $error,
+                'paginationError' => null,
             ],
             $term === '' ? 'Search' : $term . ' - Search',
             'search',
         );
+    }
+
+    /** Where a search `with` link lands, or null to show the results normally. */
+    public function searchWithLocation(mixed $term, mixed $with): ?string
+    {
+        $id = \ForumRewrite\Pagination\PageNavigation::withId($with);
+        $term = is_string($term) ? trim($term) : '';
+        if ($id === null || $term === '') return null;
+        $page = \ForumRewrite\ReadModel\ThreadSearchPage::pageOf($this->routeServices->pdo(), $term, $id);
+        return $page === null ? null : \ForumRewrite\Pagination\PageNavigation::withLocation('/search', ['q' => $term], $page, $id);
     }
 
     /**

@@ -117,16 +117,22 @@ final class ImportInstanceCommandTest
         }
         $command = [__DIR__ . '/../v3', 'import-instance', $server->url,
             '--repository-root=' . $target, '--database-path=' . $w->root . '/target-cache/index.sqlite3', '--static-html-root=' . $w->root . '/target-static'];
+        $targetStore = new \ForumRewrite\Images\ImageStore($target);
         [$code, $output] = $w->command([...$command, '--dry-run']);
         assertSame(0, $code, $output);
         assertStringContains('Preview result: complete', $output);
+        assertStringContains('Images: complete', $output);
+        assertStringContains('images_to_add: 1', $output);
         assertTrue(!is_file($target . '/records/posts/legacy-text.txt'));
+        assertSame(false, $targetStore->isPresent($ref));
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
         assertStringNotContains('Rendering ', $output);
         assertStringNotContains('Fingerprinting and copying assets', $output);
-        assertStringContains('Image files are separate', $output);
+        assertStringContains('Images: complete', $output);
+        assertStringContains('images_added: 1', $output);
+        assertSame($ref, \ForumRewrite\Images\ImageStore::inspect($targetStore->resolve($ref), 'Legacy pixel'));
         $pdo = new PDO('sqlite:' . $w->root . '/target-cache/index.sqlite3');
         foreach ($original as $id => $bytes) {
             assertSame($bytes, file_get_contents($source . '/records/posts/' . $id . '.txt'));
@@ -144,12 +150,16 @@ final class ImportInstanceCommandTest
             'FORUM_STATIC_HTML_ROOT' => $w->root . '/target-static',
             'FORUM_TASK_QUEUE_DATABASE_PATH' => $w->root . '/target-private/tasks.sqlite3',
             'FORUM_APPROVED_MEMBERS_ONLY' => 'false',
+            'FORUM_IMAGE_CONTENT_ENABLED' => 'true',
         ]);
         assertStringContains('Legacy plain body', file_get_contents($targetServer->url . '/threads/legacy-text'));
+        assertSame(file_get_contents($image), file_get_contents($targetServer->url . '/images/' . \ForumRewrite\Images\ImageReference::filename($ref)));
         $head = $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1];
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('import: 0', $output);
+        assertStringContains('images_present: 1', $output);
+        assertStringNotContains('Downloading image backup', $output);
         assertSame($head, $w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
         assertSame('', trim($w->command(['git', '-C', $source, 'status', '--porcelain'])[1]));
 
@@ -241,6 +251,83 @@ final class ImportInstanceCommandTest
         assertStringNotContains('Fingerprinting and copying assets', $output);
         assertTrue(!file_exists($static . '/current'));
         assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
+    }
+
+    public function testImageFailuresKeepTextAndRerunOrResumeRecovers(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $image = $w->root . '/pixel.png';
+        $w->put($image, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC'));
+        $ref = \ForumRewrite\Images\ImageStore::inspect($image, 'Recovery pixel');
+        $name = \ForumRewrite\Images\ImageReference::filename($ref);
+        $w->put($source . '/records/posts/image-thread.txt', $w->post('image-thread', '', \ForumRewrite\Images\ImageReference::line($ref)));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $zip = new ZipArchive();
+        assertTrue($zip->open($w->root . '/images.zip', ZipArchive::CREATE) === true);
+        $zip->addFromString('manifest.json', '{"schema":"forum-images-v1","repository_head":"unrelated","objects":{}}');
+        $zip->addEmptyDir('objects');
+        $zip->addFile($image, 'objects/' . $name);
+        assertTrue($zip->close());
+        $w->put($w->root . '/router.php', <<<'ROUTER'
+<?php
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if ($path === '/downloads/repository.tar.gz') { readfile(__DIR__ . '/source.tar.gz'); exit; }
+$mode = trim((string) @file_get_contents(__DIR__ . '/mode'));
+if ($path === '/downloads/images.zip' && $mode === 'ok') { header('Content-Type: application/zip'); readfile(__DIR__ . '/images.zip'); exit; }
+if ($path === '/downloads/images.zip' && $mode === 'off') { http_response_code(403); header('Content-Type: text/plain'); echo "Backup unavailable.\n"; exit; }
+if ($path === '/downloads/images.zip' && $mode === 'slow') { sleep(8); exit; }
+http_response_code(404); echo 'not found';
+ROUTER);
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $store = new \ForumRewrite\Images\ImageStore($target);
+        $options = ['--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3', '--static-html-root=' . $w->root . '/static'];
+        $import = [__DIR__ . '/../v3', 'import-instance', $server->url, ...$options];
+
+        foreach (['off' => 'image backups are turned off on the source', 'old' => 'the source has no image download'] as $mode => $reason) {
+            $w->put($w->root . '/mode', $mode);
+            [$code, $output] = $w->command($import);
+            assertSame(2, $code, $output);
+            assertStringContains('Import result: complete', $output);
+            assertStringContains('Images: partial', $output);
+            assertStringContains('Images missing: 1 — ' . $reason, $output);
+            assertStringContains('Rerun ./v3 import-instance with the source URL', $output);
+            assertTrue(is_file($target . '/records/posts/image-thread.txt'));
+            assertSame(false, $store->isPresent($ref));
+        }
+
+        $w->put($w->root . '/mode', 'slow');
+        [$code, $output] = $w->command([...$import, '--time-limit=4']);
+        assertTrue($code !== 0, $output);
+        assertTrue(is_file($target . '/records/posts/image-thread.txt'));
+        assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
+        assertSame(false, $store->isPresent($ref));
+
+        $w->put($w->root . '/mode', 'ok');
+        [$code, $output] = $w->command($import);
+        assertSame(0, $code, $output);
+        assertStringContains('import: 0', $output);
+        assertStringContains('images_added: 1', $output);
+        assertSame($ref, \ForumRewrite\Images\ImageStore::inspect($store->resolve($ref), 'Recovery pixel'));
+
+        // An interrupted import resumes its images from the saved source URL.
+        $second = $w->repository('second', true);
+        $w->git($second);
+        $secondStore = new \ForumRewrite\Images\ImageStore($second);
+        $static = $w->root . '/second-static';
+        $w->put($static, 'File blocking publication directory creation');
+        $secondOptions = ['--repository-root=' . $second, '--database-path=' . $w->root . '/second-cache/index.sqlite3', '--static-html-root=' . $static];
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, ...$secondOptions]);
+        assertSame(1, $code, $output);
+        assertTrue(is_file($second . '/.git/instance-import/pending.json'));
+        assertSame(false, $secondStore->isPresent($ref));
+        unlink($static);
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--resume', ...$secondOptions]);
+        assertSame(0, $code, $output);
+        assertStringContains('images_added: 1', $output);
+        assertTrue($secondStore->isPresent($ref));
     }
 
     public function testClosedOutputPipeStillFinishesImportWithoutNotices(): void
@@ -339,6 +426,36 @@ ROUTER);
         assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
         assertTrue(!is_dir($w->root . '/static'));
         assertTrue(!is_file($w->root . '/cache/index.sqlite3'));
+    }
+
+    public function testImageDownloadUsesItsOwnPathAndReportsStatus(): void
+    {
+        $w = new ImportTestWorkspace();
+        $w->put($w->root . '/router.php', <<<'ROUTER'
+<?php
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if ($path === '/ok/downloads/images.zip') { header('Content-Type: application/zip'); echo 'PKzip'; exit; }
+if ($path === '/off/downloads/images.zip') { http_response_code(403); header('Content-Type: text/plain'); echo "Backup unavailable.\n"; exit; }
+http_response_code(404); echo 'not found';
+ROUTER);
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $downloader = new InstanceArchiveDownloader(timeoutSeconds: 5);
+        assertSame(5, $downloader->download($server->url . '/ok', $w->root . '/ok.zip', InstanceArchiveDownloader::IMAGES_PATH));
+        assertSame('PKzip', file_get_contents($w->root . '/ok.zip'));
+        foreach (['/off' => 403, '/old' => 404] as $prefix => $status) {
+            try {
+                $downloader->download($server->url . $prefix, $w->root . '/failed.zip', InstanceArchiveDownloader::IMAGES_PATH);
+                throw new RuntimeException('Expected image download rejection');
+            } catch (RuntimeException $error) {
+                assertSame($status, $error->getCode());
+                assertStringContains('Source image download returned HTTP ' . $status, $error->getMessage());
+                assertStringContains('Check the source image backup and retry.', $error->getMessage());
+            }
+            assertTrue(!is_file($w->root . '/failed.zip'));
+        }
+        $failed = false;
+        try { $downloader->download($server->url, $w->root . '/other', '/downloads/read_model.sqlite3'); } catch (RuntimeException) { $failed = true; }
+        assertTrue($failed);
     }
 
     public function testDownloadFailuresAreBoundedAndLeaveNoFile(): void

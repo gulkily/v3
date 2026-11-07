@@ -12,7 +12,7 @@ final class AgentPostingApiTest
     {
         [$server]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
         try {
-            foreach (["\u{200B}","\u{00A0}","→"] as $char) {
+            foreach (["\u{200B}","\u{00A0}","🙂"] as $char) {
                 $input=SignedPostIdentityTest::bundle();
                 $input['canonical_record']=str_replace('Hello', 'x'.$char.'y', $input['canonical_record']);
                 $input['detached_signature']=SignedPostIdentityTest::helper('signCanonicalRecord',SignedPostIdentityTest::$home,$input['canonical_record']);
@@ -29,7 +29,7 @@ final class AgentPostingApiTest
         try {
             [$h,$body] = self::request($server, '/api/text_rules');
             assertSame('unicode', json_decode($body,true)['mode']);
-            [$h,$body] = self::request($server, '/api/prepare_thread','POST',['body'=>"  a\r\né→",'subject'=>'test']);
+            [$h,$body] = self::request($server, '/api/prepare_thread','POST',['body'=>"  a\r\né🙂",'subject'=>'test']);
             $error=json_decode($body,true); assertSame(6,$error['chars'][0]['index']); assertSame('body',$error['field']);
             [$h,$body] = self::request($server, '/api/no_such_route?x=1');
             assertStringContains('404',$h[0]); assertSame('error',json_decode($body,true)['status']);

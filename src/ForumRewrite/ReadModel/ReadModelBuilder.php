@@ -187,8 +187,8 @@ final class ReadModelBuilder
     private function indexPosts(PDO $pdo): array
     {
         $insertPost = $pdo->prepare(
-            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, agent_response_json, body_format, author_identity_id, retracted_at, retraction_class, retraction_attribution, sequence_number)
-             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :sequence_number)'
+            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, agent_response_json, body_format, theme, author_identity_id, retracted_at, retraction_class, retraction_attribution, sequence_number)
+             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
             'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, event_end_date, retracted_at, retraction_class, retraction_attribution)
@@ -223,6 +223,7 @@ final class ReadModelBuilder
                 'thread_type' => $record->threadType,
                 'agent_response_json' => $record->agentResponse === null ? null : json_encode($record->agentResponse, JSON_THROW_ON_ERROR),
                 'body_format' => $record->bodyFormat,
+                'theme' => $isRetracted ? null : $record->theme,
                 'author_identity_id' => $record->authorIdentityId,
                 'imported_score_seed' => $record->importedScoreSeed,
                 'imported_vote_count_seed' => $record->importedVoteCountSeed,
@@ -249,7 +250,7 @@ final class ReadModelBuilder
                 'post_id' => $id, 'created_at' => $meta['created_at'], 'thread_id' => $meta['thread_id'],
                 'parent_id' => $meta['parent_id'], 'subject' => null, 'body' => '',
                 'retracted_at' => $removal['accepted_at'], 'retraction_class' => $removal['classification'] ?? 'operator', 'retraction_attribution' => $removal['attribution'] ?? 'operator',
-                'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null, 'body_format' => null,
+                'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null, 'body_format' => null, 'theme' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
                 'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null, 'event_end_date' => null,
                 'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => $low + 0.5,
@@ -293,6 +294,7 @@ final class ReadModelBuilder
                 'thread_type' => $post['thread_type'],
                 'agent_response_json' => $post['agent_response_json'],
                 'body_format' => $post['body_format'],
+                'theme' => $post['theme'],
                 'author_identity_id' => $post['author_identity_id'],
                 'retracted_at' => $post['retracted_at'],
                 'retraction_class' => $post['retraction_class'],
@@ -1092,26 +1094,6 @@ final class ReadModelBuilder
                 'source_commit_sha' => $event['source_commit_sha'],
             ]);
         }
-
-        foreach ($this->progressItems('writing_handoff_activity', $this->codexHandoffActivityEvents($pdo)) as $event) {
-            $stmt->execute([
-                'created_at' => $event['created_at'],
-                'kind' => 'codex_handoff',
-                'record_family' => 'codex_handoff',
-                'action_key' => null,
-                'post_id' => $event['origin_post_id'],
-                'thread_id' => $event['origin_thread_id'],
-                'label' => $event['label'],
-                'board_tags_json' => '["codex","handoff"]',
-                'author_identity_id' => $event['author_identity_id'],
-                'author_profile_slug' => $event['author_profile_slug'],
-                'author_username_token' => $event['author_username_token'],
-                'author_label' => $event['author_label'],
-                'author_is_approved' => $event['author_is_approved'],
-                'source_path' => null,
-                'source_commit_sha' => null,
-            ]);
-        }
     }
 
     /**
@@ -1456,52 +1438,6 @@ final class ReadModelBuilder
         });
 
         return $records;
-    }
-
-    /**
-     * @return list<array{created_at:string,origin_post_id:string,origin_thread_id:string,label:string,author_identity_id:?string,author_profile_slug:?string,author_username_token:?string,author_label:string,author_is_approved:int}>
-     */
-    private function codexHandoffActivityEvents(PDO $pdo): array
-    {
-        if (!$this->tableExists($pdo, 'codex_handoff_events')) {
-            return [];
-        }
-
-        $stmt = $pdo->query(
-            'SELECT created_at, origin_post_id, origin_thread_id, label,
-                    author_identity_id, author_profile_slug, author_username_token,
-                    author_label, author_is_approved
-             FROM codex_handoff_events
-             ORDER BY created_at ASC, id ASC'
-        );
-        if ($stmt === false) {
-            return [];
-        }
-
-        $events = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $events[] = [
-                'created_at' => (string) ($row['created_at'] ?? ''),
-                'origin_post_id' => (string) ($row['origin_post_id'] ?? ''),
-                'origin_thread_id' => (string) ($row['origin_thread_id'] ?? ''),
-                'label' => (string) ($row['label'] ?? ''),
-                'author_identity_id' => isset($row['author_identity_id']) ? (string) $row['author_identity_id'] : null,
-                'author_profile_slug' => isset($row['author_profile_slug']) ? (string) $row['author_profile_slug'] : null,
-                'author_username_token' => isset($row['author_username_token']) ? (string) $row['author_username_token'] : null,
-                'author_label' => (string) ($row['author_label'] ?? 'approved user'),
-                'author_is_approved' => (int) ($row['author_is_approved'] ?? 1),
-            ];
-        }
-
-        return $events;
-    }
-
-    private function tableExists(PDO $pdo, string $table): bool
-    {
-        $stmt = $pdo->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = :name");
-        $stmt->execute(['name' => $table]);
-
-        return $stmt->fetchColumn() !== false;
     }
 
     /**

@@ -32,6 +32,7 @@ final class ReadModelSchema
                 thread_type TEXT NULL,
                 agent_response_json TEXT NULL,
                 body_format TEXT NULL,
+                theme TEXT NULL,
                 author_identity_id TEXT NULL,
                 author_profile_slug TEXT NULL,
                 author_label TEXT NOT NULL DEFAULT \'guest\',
@@ -53,6 +54,7 @@ final class ReadModelSchema
             )',
             'CREATE INDEX posts_recent_idx ON posts (created_at DESC, post_id DESC) WHERE is_hidden = 0 AND retracted_at IS NULL',
             'CREATE INDEX posts_author_identity_idx ON posts (author_identity_id)',
+            'CREATE INDEX posts_parent_idx ON posts (parent_id)',
             'CREATE TABLE threads (
                 root_post_id TEXT PRIMARY KEY,
                 root_post_created_at TEXT NOT NULL,

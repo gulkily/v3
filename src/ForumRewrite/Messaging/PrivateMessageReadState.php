@@ -71,6 +71,38 @@ final class PrivateMessageReadState
         }
     }
 
+    /**
+     * Conversations with messages the viewer has not seen, newest arrival first.
+     *
+     * @return list<array{counterpart:string,unread_count:int,latest_at:string}>
+     */
+    public function unreadConversations(string $viewer, int $limit = 25): array
+    {
+        $viewer = strtolower(trim($viewer));
+        $limit = max(1, min(100, $limit));
+        $this->pdo->beginTransaction();
+        try {
+            $metadata = $this->validatedMetadata($viewer);
+            $stmt = $this->pdo->prepare('SELECT m.sender_username_token AS counterpart, COUNT(*) AS unread_count,
+                    MAX(m.created_at) AS latest_at, MAX(m.rowid) AS latest_row
+                FROM private_messages m
+                LEFT JOIN private_message_seen s ON s.viewer = :viewer AND s.counterpart = m.sender_username_token
+                WHERE m.recipient_username_token = :viewer AND m.sender_username_token != :viewer
+                    AND m.rowid > :baseline AND m.rowid > COALESCE(s.seen_row, 0)
+                GROUP BY m.sender_username_token ORDER BY latest_row DESC LIMIT ' . $limit);
+            $stmt->execute(['viewer' => $viewer, 'baseline' => $metadata['baseline_row']]);
+            $rows = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $rows[] = ['counterpart' => (string) $row['counterpart'], 'unread_count' => (int) $row['unread_count'], 'latest_at' => (string) $row['latest_at']];
+            }
+            $this->pdo->commit();
+            return $rows;
+        } catch (\Throwable $error) {
+            $this->pdo->rollBack();
+            throw $error;
+        }
+    }
+
     public function mark(string $viewer, string $counterpart, string $messageId): void
     {
         $viewer = strtolower(trim($viewer));

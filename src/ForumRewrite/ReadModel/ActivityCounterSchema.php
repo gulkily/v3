@@ -10,7 +10,10 @@ final class ActivityCounterSchema
     {
         $sql = [
             'CREATE TABLE activity_counts (view TEXT PRIMARY KEY, total INTEGER NOT NULL, without_profile_names INTEGER NOT NULL)',
-            "INSERT INTO activity_counts VALUES ('all',0,0),('content',0,0),('identity',0,0),('bootstrap',0,0),('approval',0,0),('security',0,0),('commits',0,0)",
+            'INSERT INTO activity_counts VALUES ' . implode(',', array_map(
+                static fn (string $view): string => "('$view',0,0)",
+                [...\ForumRewrite\Activity\ActivityService::activityViews(), 'commits'],
+            )),
             'CREATE TABLE activity_local_state (singleton INTEGER PRIMARY KEY, events INTEGER NOT NULL, revision TEXT NOT NULL)',
             "INSERT INTO activity_local_state VALUES (1,0,'')",
             "CREATE INDEX activity_page_idx ON activity(created_at DESC, COALESCE(action_key, 'local:' || id) DESC)",
@@ -57,7 +60,12 @@ final class ActivityCounterSchema
         $tag = static fn (string $tag): string => "json_type($json) IN ('array','object') AND EXISTS (SELECT 1 FROM json_each($json) WHERE type='text' AND value='$tag' COLLATE BINARY)";
         $identity = $tag('identity');
         $visible = "NOT EXISTS (SELECT 1 FROM posts WHERE post_id=$r.post_id AND (COALESCE(is_hidden,0) != 0 OR retracted_at IS NOT NULL))";
+        $kinds = [];
+        foreach (\ForumRewrite\Activity\ActivityService::KIND_VIEWS as $view => $kind) {
+            $kinds[$view] = "$r.kind='$kind'";
+        }
         return [
+            ...$kinds,
             'all' => '1',
             'content' => "$r.board_tags_json NOT LIKE '%\"identity\"%' AND NOT ($identity) AND ($visible)",
             'identity' => "$r.board_tags_json LIKE '%\"identity\"%' AND ($identity)",

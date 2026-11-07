@@ -8,7 +8,6 @@ use ForumRewrite\ReadModel\TagPage;
 use ForumRewrite\ReadModel\TagGrouping;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
-use ForumRewrite\Pagination\PageNavigation;
 
 final class TagPaginationTest
 {
@@ -70,55 +69,43 @@ final class TagPaginationTest
             assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM threads WHERE root_post_id LIKE 'paged-%'")->fetchColumn());
         } finally { @unlink($database); }
     }
-    public function testCompleteForwardBackwardTraversalAndDeletedAnchor(): void
+    public function testNumberedPagesCoverTheTagAndFindTheirThreads(): void
     {
         [$app, $pdo, $database] = $this->environment();
         try {
             $expected = array_column(TagGrouping::find(TagGrouping::byTag(ThreadRepository::fetchThreads($pdo)), 'page')['threads'], 'root_post_id');
-            $seen = []; $boundary = null; $pages = [];
+            $seen = []; $pages = []; $number = 1;
             do {
-                $page = TagPage::page($pdo, 'page', $boundary);
+                $page = TagPage::page($pdo, 'page', $number);
                 $pages[] = $page;
+                foreach ($page['items'] as $thread) assertSame($number, TagPage::pageOf($pdo, 'page', $thread['root_post_id']));
                 $seen = array_merge($seen, array_column($page['items'], 'root_post_id'));
-                $boundary = $page['next'];
-            } while ($boundary !== null);
+                $number++;
+            } while ($page['has_next']);
             assertSame($expected, $seen);
             assertSame([25, 25, 15], array_map(static fn ($p) => count($p['items']), $pages));
-            for ($i = 2; $i > 0; $i--) {
-                $back = TagPage::page($pdo, 'page', $pages[$i]['previous'], 'previous');
-                assertSame(array_column($pages[$i-1]['items'], 'root_post_id'), array_column($back['items'], 'root_post_id'));
-            }
-            $anchor = $pages[0]['next'];
-            $pdo->prepare('DELETE FROM threads WHERE root_post_id = ?')->execute([$anchor['id']]);
-            $after = TagPage::page($pdo, 'page', $anchor);
-            assertSame(array_column($pages[1]['items'], 'root_post_id'), array_column($after['items'], 'root_post_id'));
-            $url = '/tags/PAGE?position=' . PageNavigation::encode(TagPage::context('page'), 'next', $anchor);
-            assertStringContains('paged-039', $this->render($app, $url));
-            assertStringNotContains('paged-064', $this->render($app, $url));
+            assertSame(null, TagPage::pageOf($pdo, 'news', 'paged-000'));
+            $html = $this->render($app, '/tags/PAGE?page=2');
+            assertStringContains('paged-039', $html);
+            assertStringNotContains('paged-064', $html);
+            assertStringContains('id="post-paged-039"', $html);
+            assertStringContains('/tags/page?page=3#post-paged-000', $this->render($app, '/tags/page?with=paged-000'));
         } finally { @unlink($database); }
     }
 
-    public function testInvalidForeignAndExhaustedPositionsOfferRecovery(): void
+    public function testMalformedAndExhaustedPagesOfferRecovery(): void
     {
         [$app, $pdo, $database] = $this->environment();
         try {
-            $urls = [
-                '/tags/page?position=bad', '/tags/page?position[]=bad',
-                '/tags/page?position=' . str_repeat('a', 8193),
-                '/tags/page?position=' . PageNavigation::encode(TagPage::context('news'), 'next', ['activity'=>'2026-01-01', 'id'=>'x']),
-                '/tags/page?position=' . PageNavigation::encode(TagPage::context('page'), 'next', ['wrong'=>'x']),
-                '/tags/page?position=' . PageNavigation::encode(TagPage::context('page'), 'next', ['activity'=>'1000', 'id'=>'x']),
-            ];
-            foreach ($urls as $url) {
-                $html = $this->render($app, $url);
-                assertStringContains('href="/tags/page">First page</a>', $html);
-                assertStringNotContains('paged-064', $html);
+            foreach (['/tags/page?page=bad', '/tags/page?page[]=bad', '/tags/page?position=old', '/tags/page?with=no-such-thread'] as $url) {
+                assertStringContains('paged-064', $this->render($app, $url), $url . ' shows page 1');
             }
-            $first = TagPage::page($pdo, 'page');
+            $past = $this->render($app, '/tags/page?page=9');
+            assertStringContains('href="/tags/page">First page</a>', $past);
+            assertStringNotContains('paged-064', $past);
             $pdo->exec("UPDATE threads SET last_activity_at='2027-01-01' WHERE root_post_id='paged-000'");
-            $next = TagPage::page($pdo, 'page', $first['next']);
-            assertTrue(!in_array('paged-000', array_column($next['items'], 'root_post_id'), true));
             assertSame('paged-000', TagPage::page($pdo, 'page')['items'][0]['root_post_id']);
+            assertSame(1, TagPage::pageOf($pdo, 'page', 'paged-000'));
         } finally { @unlink($database); }
     }
 

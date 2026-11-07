@@ -9,9 +9,8 @@ use RuntimeException;
 
 /**
  * Twenty-seventh Phase 2 slice (see docs/plans/codebase_cleanup_audit_plan_v1.md):
- * the post-analysis/agent-reply/Codex-handoff API group -
- * /api/analyze_post, /api/generate_agent_reply, /api/codex_handoff,
- * /api/codex_handoff_approval. A dedicated dependency-graph investigation
+ * the post-analysis/agent-reply API group -
+ * /api/analyze_post, /api/generate_agent_reply. A dedicated dependency-graph investigation
  * (same treatment the activity subsystem got) found this cluster has the
  * same shape: a large pure data/orchestration layer (now
  * ForumRewrite\Agent\PostWorkflowService) plus a small config-touching
@@ -30,7 +29,6 @@ final class PostWorkflowApiController
      * @param \Closure(string): array<int, array<string, mixed>> $fetchThreadPosts
      * @param \Closure(): (\ForumRewrite\Llm\LlmExchangeRecorder|null) $llmExchangeRecorderFactory
      * @param \Closure(): (array<string, mixed>|null) $resolveViewerProfileFromIdentityHint
-     * @param \Closure(string): (array<string, mixed>|null) $fetchThread
      */
     public function __construct(
         private readonly RouteServices $routeServices,
@@ -38,7 +36,6 @@ final class PostWorkflowApiController
         private readonly \Closure $fetchThreadPosts,
         private readonly \Closure $llmExchangeRecorderFactory,
         private readonly \Closure $resolveViewerProfileFromIdentityHint,
-        private readonly \Closure $fetchThread,
     ) {
     }
 
@@ -296,161 +293,6 @@ final class PostWorkflowApiController
         }
 
         $this->routeServices->sendJson($response, 200, $headersWithTimings());
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    public function codexHandoff(string $method, array $query): void
-    {
-        $service = $this->postWorkflowService();
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $headersWithTimings = function () use (&$timings, $totalStartedAt): array {
-            $withTotal = $timings;
-            $withTotal['total'] = $this->routeServices->elapsedMilliseconds($totalStartedAt);
-            return array_merge($this->routeServices->noStoreHeaders(), $this->routeServices->serverTimingHeaders(['timings' => $withTotal]));
-        };
-
-        if (!in_array($method, ['GET', 'POST'], true)) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headersWithTimings());
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
-        $timings['viewer_profile'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
-        if (!$service->viewerCanUseCodexHandoff($viewerProfile)) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->routeServices->requestData($query);
-        $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
-
-        try {
-            if ($method === 'GET') {
-                $handoff = $service->findCodexHandoffFromInput($input);
-                if ($handoff === null) {
-                    $this->routeServices->sendJson(['status' => 'error', 'error' => 'handoff not found'], 404, $headersWithTimings());
-                    return;
-                }
-
-                $this->routeServices->sendJson($service->codexHandoffResponse($handoff), 200, $headersWithTimings());
-                return;
-            }
-
-            $postId = trim((string) ($input['post_id'] ?? ''));
-            if ($postId === '') {
-                $this->routeServices->sendJson(['status' => 'error', 'error' => 'Missing post_id.'], 400, $headersWithTimings());
-                return;
-            }
-
-            $phaseStartedAt = hrtime(true);
-            $post = ($this->fetchPost)($postId);
-            $timings['fetch_post'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
-            if ($post === null) {
-                $this->routeServices->sendJson(['status' => 'error', 'error' => 'post not found'], 404, $headersWithTimings());
-                return;
-            }
-
-            if ((string) ($post['author_label'] ?? '') === \ForumRewrite\Agent\AgentIdentityService::USERNAME) {
-                $this->routeServices->sendJson(['status' => 'error', 'error' => 'codex handoff target is not eligible'], 400, $headersWithTimings());
-                return;
-            }
-            $thread = ($this->fetchThread)((string) ($post['thread_id'] ?? ''));
-            if (!$service->postCanUseCodexHandoffTarget($post, $thread)) {
-                $this->routeServices->sendJson(['status' => 'error', 'error' => 'codex handoff target requires a development tag or thread label'], 400, $headersWithTimings());
-                return;
-            }
-
-            $phaseStartedAt = hrtime(true);
-            $store = $service->codexHandoffStore();
-            $handoff = $store->requestForPost($post, $viewerProfile ?? []);
-            if ((string) ($handoff['status'] ?? '') === 'requested') {
-                $draft = $service->codexHandoffDraftService()->prepare($handoff, $post);
-                $handoff = $store->updateStatus((string) $handoff['handoff_id'], 'draft_ready', $draft);
-            }
-            $timings['codex_handoff'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
-
-            $this->routeServices->sendJson($service->codexHandoffResponse($handoff), 200, $headersWithTimings());
-        } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $headersWithTimings());
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $query
-     */
-    public function codexHandoffApproval(string $method, array $query): void
-    {
-        $service = $this->postWorkflowService();
-        $totalStartedAt = hrtime(true);
-        $timings = [];
-        $headersWithTimings = function () use (&$timings, $totalStartedAt): array {
-            $withTotal = $timings;
-            $withTotal['total'] = $this->routeServices->elapsedMilliseconds($totalStartedAt);
-            return array_merge($this->routeServices->noStoreHeaders(), $this->routeServices->serverTimingHeaders(['timings' => $withTotal]));
-        };
-
-        if ($method !== 'POST') {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headersWithTimings());
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
-        $timings['viewer_profile'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
-        if (!$service->viewerCanUseCodexHandoff($viewerProfile)) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
-            return;
-        }
-
-        $phaseStartedAt = hrtime(true);
-        $input = $this->routeServices->requestData($query);
-        $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
-        $handoffId = trim((string) ($input['handoff_id'] ?? ''));
-        $decision = trim((string) ($input['decision'] ?? ''));
-        if ($handoffId === '') {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Missing handoff_id.'], 400, $headersWithTimings());
-            return;
-        }
-
-        try {
-            $store = $service->codexHandoffStore();
-            $handoff = $store->findByHandoffId($handoffId);
-            if ($handoff === null) {
-                $this->routeServices->sendJson(['status' => 'error', 'error' => 'handoff not found'], 404, $headersWithTimings());
-                return;
-            }
-
-            if ($decision === 'approve') {
-                if ((string) ($handoff['status'] ?? '') !== 'draft_ready') {
-                    $this->routeServices->sendJson(['status' => 'error', 'error' => 'Codex handoff approval requires draft_ready status.'], 400, $headersWithTimings());
-                    return;
-                }
-
-                $handoff = $store->updateStatus($handoffId, 'approved', [
-                    'approved_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
-                    'approved_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
-                    'approved_by_username' => (string) ($viewerProfile['username'] ?? ''),
-                ]);
-            } elseif ($decision === 'reject') {
-                $handoff = $store->updateStatus($handoffId, 'rejected', [
-                    'rejected_by_identity_id' => (string) ($viewerProfile['identity_id'] ?? ''),
-                    'rejected_by_profile_slug' => (string) ($viewerProfile['profile_slug'] ?? ''),
-                    'rejected_by_username' => (string) ($viewerProfile['username'] ?? ''),
-                ]);
-            } else {
-                $this->routeServices->sendJson(['status' => 'error', 'error' => 'decision must be approve or reject'], 400, $headersWithTimings());
-                return;
-            }
-
-            $this->routeServices->sendJson($service->codexHandoffResponse($handoff), 200, $headersWithTimings());
-        } catch (RuntimeException $exception) {
-            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $headersWithTimings());
-        }
     }
 
     /**

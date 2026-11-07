@@ -47,6 +47,12 @@ final class PlatformDocsCatalog
                 'description' => 'Commands, options, and error handling for the v3 CLI.',
             ],
             [
+                'title' => 'Contribute with an Agent',
+                'category' => 'Extending the Platform',
+                'path' => 'docs/contribute_with_an_agent.md',
+                'description' => 'Hand a ZenMemes thread to a coding agent and get a pull request back.',
+            ],
+            [
                 'title' => 'Extension and Improvement Cookbook',
                 'category' => 'Extending the Platform',
                 'path' => 'docs/examples/extension_improvement_cookbook.md',

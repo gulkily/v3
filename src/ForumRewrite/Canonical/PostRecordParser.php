@@ -125,6 +125,11 @@ final class PostRecordParser
             throw new CanonicalRecordParseException('Body-Format must be markdown or plain when present.');
         }
 
+        $theme = $record->headers['Theme'] ?? null;
+        if ($theme !== null && !self::isThemeValue($theme)) {
+            throw new CanonicalRecordParseException('Theme must be a lowercase theme name or none when present.');
+        }
+
         $eventDate = isset($record->headers['Event-Date']) ? $this->parseEventDate($record->headers['Event-Date']) : null;
         $eventLocation = $record->headers['Event-Location'] ?? null;
         $eventLink = $record->headers['Event-Link'] ?? null;
@@ -163,7 +168,13 @@ final class PostRecordParser
             AgentResponseMetadata::fromHeaders($record->headers, $parentId),
             $bodyFormat,
             $eventEndDate,
+            $theme,
         );
+    }
+
+    public static function isThemeValue(string $value): bool
+    {
+        return preg_match('/^[a-z0-9][a-z0-9_-]{0,39}$/', $value) === 1;
     }
 
     /**

@@ -10,12 +10,9 @@ $itemId = (string) $item['id'];
 <div
   class="paned-list-row<?= $isSelected ? ' paned-list-row--selected' : '' ?>"
   data-paned-activity-id="<?= $e($itemId) ?>"
-  data-paned-activity-view-all="<?= $item['view_all'] ? '1' : '0' ?>"
-  data-paned-activity-view-content="<?= $item['view_content'] ? '1' : '0' ?>"
-  data-paned-activity-view-identity="<?= $item['view_identity'] ? '1' : '0' ?>"
-  data-paned-activity-view-bootstrap="<?= $item['view_bootstrap'] ? '1' : '0' ?>"
-  data-paned-activity-view-approval="<?= $item['view_approval'] ? '1' : '0' ?>"
-  data-paned-activity-view-security="<?= ($item['view_security'] ?? false) ? '1' : '0' ?>"
+<?php foreach (\ForumRewrite\Activity\ActivityService::activityViews() as $viewKey): ?>
+  data-paned-activity-view-<?= $viewKey ?>="<?= ($item['view_' . $viewKey] ?? false) ? '1' : '0' ?>"
+<?php endforeach; ?>
   role="option"
   aria-selected="<?= $isSelected ? 'true' : 'false' ?>"
   tabindex="<?= $isTabStop ? '0' : '-1' ?>"

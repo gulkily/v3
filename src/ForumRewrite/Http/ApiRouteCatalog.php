@@ -86,9 +86,6 @@ final class ApiRouteCatalog
             ['POST', '/api/expand_agent_reply', 'member', 'json', 'Request a longer agent reply.'],
             ['GET', '/api/agent_expansion_status?post_id=<id>', 'public', 'json', 'Status of an agent reply expansion.'],
             ['GET', '/api/scripture_reply_status?post_id=<id>', 'public', 'json', 'Status of a scripture reply.'],
-            ['GET', '/api/codex_handoff?handoff_id=<id>', 'operator', 'json', 'Read a Codex handoff.'],
-            ['POST', '/api/codex_handoff', 'operator', 'json', 'Create a Codex handoff for post_id.'],
-            ['POST', '/api/codex_handoff_approval', 'operator', 'json', 'Approve a Codex handoff.'],
             // Private messages
             ['GET', '/api/private_messages/inbox', 'member', 'json', 'Received messages.'],
             ['GET', '/api/private_messages/sent', 'member', 'json', 'Sent messages.'],
@@ -96,6 +93,7 @@ final class ApiRouteCatalog
             ['GET', '/api/private_messages/conversations?cursor=<optional-opaque-cursor>', 'member', 'json', 'Conversation list.'],
             ['GET', '/api/private_messages/recipient_keys?username_token=<username>', 'member', 'json', 'Recipient encryption keys.'],
             ['GET', '/api/private_messages/unread?counterparts[]=<optional-username>', 'member', 'json', 'Unread state.'],
+            ['GET', '/api/inbox/unread', 'member', 'json', 'Unread link count: unread conversations plus unread replies. Requires the Unread flag.'],
             ['POST', '/api/private_messages', 'member', 'json', 'Send an encrypted message.'],
             ['POST', '/api/private_messages/read', 'member', 'json', 'Acknowledge read messages.'],
             ['POST', '/api/private_messages/history_sync/work', 'member', 'json', 'Combined bounded history-sync discovery and scan progress.'],

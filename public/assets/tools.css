@@ -180,8 +180,8 @@
 }
 
 /* Drag glyph for themes that do not already draw a leading icon through
-   theme-nav-icons.css (word97 and chicago). */
-:root:not([data-theme="word97"]):not([data-theme="chicago"]) .bookmarklets-page .tool-launcher-button::before {
+   theme-nav-icons.css (word97, chicago, gloss and engagify). */
+:root:not([data-theme="word97"]):not([data-theme="chicago"]):not([data-theme="gloss"]):not([data-theme="engagify"]) .bookmarklets-page .tool-launcher-button::before {
   content: "";
   flex: 0 0 auto;
   width: 0.75rem;

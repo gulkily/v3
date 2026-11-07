@@ -23,6 +23,7 @@ If a change seems to need an exception, raise it before building.
 - Cut anything that isn't necessary, especially words and UI.
 - Never lose what the user wrote. If it can't be sent, say why.
 - The basics work on any browser or client, no matter how old or limited.
+- URLs are interface: short, readable, editable and free of encoded state.
 - Build with a stack of technologies that have been around for 20+ years.
 - Write it ourselves; don't rely on other people's code.*
 - A site should keep running for years with minimal or no maintenance.
@@ -133,6 +134,24 @@ input. Keep drafts when sending fails.
 
 - Rules out: silently converting a refused post to a different kind of post.
 - Source: maintainer (2026-10-23); the API's error-first contract and the compose form keeping drafts on failure.
+
+### URLs are interface
+
+A URL is something people read, type, edit, share and keep. Make it short,
+readable, shareable as it is, editable by hand and guessable once the pattern is
+known. Trimming the end goes up a level or back to a default. Links keep working.
+
+State goes in a URL only when the page cannot work without it, and then as
+plain values: `/recent/?page=3`, `/threads/?with=<thread ID>`. Leave default
+values out of links.
+
+- Rules out: base64, JSON or versioned tokens in page URLs; encoded state a
+  person cannot read; parameters that only repeat the path.
+- Exception: a value signed to prevent forgery, which is unreadable by design.
+- Source: maintainer (2026-11-07); Marcin Wichary,
+  [Unsung Heroes: Flickr's URLs scheme](https://unsung.aresluna.org/unsung-heroes-flickrs-urls-scheme/)
+  and [Mailbag: URLs as UI](https://unsung.aresluna.org/mailbag-urls-as-ui);
+  Tim Berners-Lee, [Cool URIs don't change](https://www.w3.org/Provider/Style/URI).
 
 ### Basic reading and posting work without JavaScript
 

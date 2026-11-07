@@ -78,15 +78,15 @@ Every resolved profile read must be able to surface at least:
   reactions and other audit records are outside these authored-content lists.
 - Each list defaults to 50 items (reader limit capped at 100), ordered by creation
   time descending with descending post ID as a stable tie-breaker. Independent
-  `threads_position` and `posts_position` parameters preserve the other list's
-  position; contexts bind each token to the identity, list and order. Tokens
-  confer no access rights. Totals count all eligible rows, not the current page.
-- Invalid positions show an error and First page recovery without silently
-  displaying a first-page list. Empty positioned pages retain return navigation
-  when rows remain, plus First page. Native links work without JavaScript;
+  `threads_page` and `posts_page` numbers keep the other list's page in each
+  list's links. Totals count all eligible rows, not the current page.
+- A malformed page number shows page 1. A page past the end shows the empty
+  state with Previous and First page. `?with=<post ID>` redirects to the page
+  holding that post: the Threads list for a thread the person started, otherwise
+  the Posts list. Native links work without JavaScript;
   failed network navigation can be retried with Reload or left with Back.
-- Static publication contains the first page. Positioned URLs use live profile
-  rendering; they must never receive the unpositioned artifact. Profile HTML is
+- Static publication contains the first page. Later pages use live profile
+  rendering; they must never receive the first-page artifact. Profile HTML is
   not an offline-reader route. Existing refresh policy remains unchanged.
 - Tools retains detailed approval/history and bootstrap inspection. Username
   aggregation remains a separate approved-user view; it is supplementary to the

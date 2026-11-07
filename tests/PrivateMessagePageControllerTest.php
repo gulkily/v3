@@ -106,6 +106,7 @@ final class PrivateMessagePageControllerTest
             $viewer = $this->viewer('alice-key', 'alice');
             $html = $this->renderMailbox($databasePath, $store, $viewer, 'conversations');
             assertStringContains('<h1>Messages</h1>', $html);
+            assertStringContains('data-approved-identity="' . $viewer['identity_id'] . '"', $html);
             assertSame(1, substr_count($html, 'data-counterpart="bob"'));
             assertStringContains('href="/messages/conversation/bob"', $html);
             assertStringNotContains('secret envelope', $html);
@@ -125,6 +126,7 @@ final class PrivateMessagePageControllerTest
             $conversation = $this->renderMailbox($databasePath, $store, $viewer, 'conversation');
             assertStringContains('href="/user/bob"', $conversation);
             assertStringContains('Back to Messages', $conversation);
+            assertStringContains('data-approved-identity="' . $viewer['identity_id'] . '"', $conversation);
             assertStringContains('data-role="private-message-template"', $conversation);
             // Restart history lives under the ··· menu, which opens itself when a restart is required.
             assertStringContains('data-role="history-more"', $conversation);

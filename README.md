@@ -2,6 +2,10 @@
 
 Minimal local test slice for the rewrite spec.
 
+**Want to change the site?** You don't have to know the code. Point a coding agent
+such as Claude or Codex at a ZenMemes thread and it will build the change and open
+a pull request: see [Contribute with an agent](docs/contribute_with_an_agent.md).
+
 ## Documentation
 
 An index of everything under `docs/` plus the project-level notes at the
@@ -22,6 +26,7 @@ Operational how-tos for running and maintaining a deployment:
 - [Offline Reading Runbook](docs/runbooks/offline_reading.md) — public snapshot limits, refresh, and browser-cache recovery
 - [Theme Development Guide](docs/runbooks/theme_development_guide.md) — how to add or modify a theme
 - [Contributor Guide](CONTRIBUTING.md) — project-wide development requirements
+- [Contribute with an agent](docs/contribute_with_an_agent.md) — turn a site thread into a pull request by handing it to a coding agent
 - [Instance Content Import](docs/runbooks/instance_content_import.md) — on-demand remote content import, names/URLs, preview, and recovery
 - [QDB Archive Import Runbook](docs/runbooks/qdb_archive_import.md) — running the one-shot qdb.us quote backfill against a production vhost
 
@@ -52,7 +57,7 @@ that stays accurate even as implementation details move around:
 - [Authentication Modes and Access](docs/reference/authentication_modes.md) — public and members-only access, browser identities, approval, and session recovery
 - [Browser key backups](docs/reference/key_backups.md) — encrypted text/Starfield downloads and recovery
 - [Calendar](docs/reference/calendar.md) — month grids and day pages over event threads, tag calendars, and the operator `event:` line
-- [`v3` CLI Reference](docs/reference/v3_cli.md) — every `./v3` subcommand, including ones not covered below (`rebuild`, `build-static`, `import-repository`, `thread-attributes`, `delete-record`, `unicode-risk-backfill`, `archive-thread`, `agent-reply status`/`test-local`, `codex-handoff run`/`test-local`, `task-queue`), plus the 3 standalone operator scripts not wired into `./v3`
+- [`v3` CLI Reference](docs/reference/v3_cli.md) — every `./v3` subcommand, including ones not covered below (`rebuild`, `build-static`, `import-repository`, `thread-attributes`, `delete-record`, `unicode-risk-backfill`, `archive-thread`, `agent-reply status`/`test-local`, `task-queue`), plus the 3 standalone operator scripts not wired into `./v3`
 - [Fastmod](docs/reference/fast_post_scoring.md) — configuration and approved-operator workflow for modular 0–1 LLM rubric scores
 
 ### Examples (`docs/examples/`)

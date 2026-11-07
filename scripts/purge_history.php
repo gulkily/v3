@@ -37,7 +37,7 @@ $blockerText = [
     'dirty_tree' => 'the working tree has uncommitted changes; commit or discard them',
     'interrupted_import' => 'an instance import is interrupted; finish it with ./v3 import-instance --resume first',
     'interrupted_purge' => 'an earlier purge did not finish',
-    'legacy_timestamps_missing' => 'legacy posts lack a Created-At header and a records/post-timestamps/ record; bake timestamps first',
+    'legacy_timestamps_missing' => 'legacy posts lack a Created-At header and a records/post-timestamps/ record; bake timestamps first with ./v3 bake-timestamps run',
     'no_targets' => 'no accepted delete receipt names a path that exists in history; nothing to purge',
 ];
 

@@ -46,29 +46,30 @@ final class TagsPageController
         );
     }
 
-    public function tag(string $tag, mixed $position = null): ?string
+    /** Where a tag `with` link lands, or null to show the tag normally. */
+    public function tagWithLocation(string $tag, mixed $with): ?string
+    {
+        $id = PageNavigation::withId($with);
+        if ($id === null) return null;
+        $tag = strtolower($tag);
+        $page = TagPage::pageOf($this->routeServices->pdo(), $tag, $id);
+        return $page === null ? null : PageNavigation::withLocation('/tags/' . $tag, [], $page, $id);
+    }
+
+    public function tag(string $tag, mixed $page = null): ?string
     {
         $tag = strtolower($tag);
-        $error = null;
-        try {
-            if ($position !== null && !is_string($position)) throw new \InvalidArgumentException('This page position is invalid.');
-            $cursor = $position === null ? null : PageNavigation::decode($position, TagPage::context($tag));
-            $page = TagPage::page($this->routeServices->pdo(), $tag, $cursor['boundary'] ?? null, $cursor['direction'] ?? 'next');
-        } catch (\InvalidArgumentException $exception) {
-            $error = $exception->getMessage();
-            $page = ['items' => [], 'previous' => null, 'next' => null, 'exists' => true];
-        }
-        if (!$page['exists'] && $position === null) return null;
+        $number = PageNavigation::pageNumber($page);
+        $page = TagPage::page($this->routeServices->pdo(), $tag, $number);
+        if (!$page['exists'] && $number === 1) return null;
         $group = ['tag' => $tag, 'threads' => $page['items']];
-        $pagination = PageNavigation::links('/tags/' . $tag, [], TagPage::context($tag), $page['previous'], $page['next'],
-            $error !== null || ($position !== null && $page['items'] === []));
-
+        $pagination = PageNavigation::numbered('/tags/' . $tag, [], $number, $page['has_next'], $page['items'] === []);
         return $this->routeServices->renderPageTemplate(
             'tag.php',
             [
                 'group' => $group,
                 'pagination' => $pagination,
-                'paginationError' => $error,
+                'paginationError' => null,
             ],
             '#' . $group['tag'] . ' - Tag',
             'board',

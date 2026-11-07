@@ -79,6 +79,8 @@ final class TemplateRenderer
         private readonly MediaEmbedRenderer $mediaEmbedRenderer = new MediaEmbedRenderer(),
         private readonly string $versionEndpoint = '/api/version',
         private readonly string $versionStorageKey = 'forum_pending_app_version',
+        /** Returns the current request path, for page themes. */
+        private readonly ?\Closure $requestPath = null,
     ) {
     }
 
@@ -127,6 +129,7 @@ final class TemplateRenderer
             $viewerProfile,
             $publicAuthenticationResume,
             $pageStylesheetPaths,
+            is_string($pageData['threadTheme'] ?? null) ? $pageData['threadTheme'] : null,
         );
     }
 
@@ -143,6 +146,7 @@ final class TemplateRenderer
         ?array $viewerProfile = null,
         bool $publicAuthenticationResume = false,
         array $pageStylesheetPaths = [],
+        ?string $threadTheme = null,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
@@ -211,9 +215,21 @@ final class TemplateRenderer
                 $themeStylesheetPaths[$name] = $this->assetPath($path);
             }
         }
+        $themeScriptPaths = [];
+        foreach (ThemeRegistry::scriptPaths() as $name => $path) {
+            if (in_array($name, $explicitThemeNames, true)) {
+                $themeScriptPaths[$name] = $this->assetPath($path);
+            }
+        }
         $defaultTheme = $this->defaultThemeName($profile, $permittedThemeNames);
+        $pagePath = $this->requestPath !== null ? SiteProfileRegistry::pageThemePath((string) ($this->requestPath)()) : null;
+        // A thread's own theme (ThreadTheme) comes before the site profile's page theme list.
+        $pageTheme = $threadTheme ?? ($pagePath !== null ? SiteProfileRegistry::pageThemeFor($pagePath) : null);
+        if ($pageTheme !== null && !in_array($pageTheme, $explicitThemeNames, true)) {
+            $pageTheme = null;
+        }
         $themeHint = $this->themeHint($explicitThemeNames);
-        $initialTheme = $themeHint
+        $initialTheme = $pageTheme ?? $themeHint
             ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
 
         return $this->renderFile('layout.php', [
@@ -253,11 +269,13 @@ final class TemplateRenderer
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
             'themes' => $themes,
-            'lcdPalettes' => ThemeRegistry::LCD_PALETTES,
-            'consolePalettes' => ThemeRegistry::CONSOLE_PALETTES,
+            'themePalettes' => array_intersect_key(ThemeRegistry::palettes(), array_flip($permittedThemeNames)),
             'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
+            'pageTheme' => $pageTheme,
+            'pagePath' => $pagePath,
             'themeStylesheetPaths' => $themeStylesheetPaths,
+            'themeScriptPaths' => $themeScriptPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
             'themeHintCookieName' => ThemeRegistry::THEME_HINT_COOKIE,
             'themeLegacyAliases' => ThemeRegistry::LEGACY_ALIASES,
@@ -273,6 +291,7 @@ final class TemplateRenderer
             )),
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
+            'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
         ]);
@@ -374,8 +393,13 @@ final class TemplateRenderer
 
         // Desktop bar order. The account menu keeps only the viewer's own items:
         // Profile, Account and Invite. Everything else is a main destination.
-        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'profiles', 'messages', 'search', 'about', 'tools'];
+        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
+        // Inbox sits just before Messages on the bar. Messages stays on the bar: its
+        // link is where the unread count and history sync start.
+        if (in_array('inbox', array_column($items, 'section'), true)) {
+            array_splice($barOrder, (int) array_search('messages', $barOrder, true), 0, ['inbox']);
+        }
         // Phone tab bar: Board (or Lobby) and Calendar stay; the rest sit in More,
         // which is the same disclosure as the desktop account menu.
         $phoneBarSections = ['board', 'lobby', 'calendar'];
@@ -466,6 +490,14 @@ final class TemplateRenderer
             array_splice($items, $recentIndex === false ? 1 : $recentIndex + 1, 0, [['href' => '/calendar', 'label' => 'Calendar', 'section' => 'calendar']]);
         }
 
+        // Gallery follows Recent (and Calendar) while the image gallery is on.
+        if (!$isQdbNavigation && $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)) {
+            $sections = array_column($items, 'section');
+            $after = array_search('calendar', $sections, true);
+            $after = $after === false ? array_search('recent', $sections, true) : $after;
+            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/gallery/', 'label' => 'Gallery', 'section' => 'gallery']]);
+        }
+
         // Tools stays reachable by direct URL even when hidden from the nav,
         // same precedent qdb already sets for Account/Invite below.
         if (!$isQdbNavigation && $hideToolsNav) {
@@ -475,9 +507,13 @@ final class TemplateRenderer
             ));
         }
 
-        // Messages and Invite are rendered for every viewer and shown before
+        // Inbox, Messages and Invite are rendered for every viewer and shown before
         // paint only for a browser remembered as approved (member_approval.js),
         // so shared pages stay identical. The routes still check approval.
+        if (!$isQdbNavigation && $this->featureFlags->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+            // Shown as Unread; the section key stays 'inbox' so pinned phone tabs keep working.
+            $items[] = ['href' => '/unread', 'label' => 'Unread', 'section' => 'inbox', 'member_only' => true];
+        }
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED)) {
             $items[] = ['href' => '/messages', 'label' => 'Messages', 'section' => 'messages', 'member_only' => true];
         }

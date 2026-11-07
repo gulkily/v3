@@ -1,5 +1,5 @@
 <!doctype html>
-<html data-railspike-enabled="<?= $railspikeEnabled ? '1' : '0' ?>" lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
+<html data-railspike-enabled="<?= $railspikeEnabled ? '1' : '0' ?>" lang="en" data-default-theme="<?= $e($defaultTheme) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,10 +9,11 @@
     (function () {
       var allowed = <?= json_encode($explicitThemeNames, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var themeStylesheetPaths = <?= json_encode($themeStylesheetPaths, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
+      window.forumThemeScriptPaths = <?= json_encode($themeScriptPaths, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_FORCE_OBJECT | JSON_THROW_ON_ERROR) ?>;
       var themeHintCookieName = <?= json_encode($themeHintCookieName, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       var themeLegacyAliases = <?= json_encode($themeLegacyAliases, JSON_HEX_TAG | JSON_FORCE_OBJECT | JSON_THROW_ON_ERROR) ?>;
       var browserRuntime = <?= json_encode($browserRuntime, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
-      var lcdPalettes = <?= json_encode(array_keys($lcdPalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+      var themePalettes = <?= json_encode(array_map(static fn (array $entry): array => array_keys($entry['palettes']), $themePalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
       try {
         // Same rule as member_approval.js: approval remembered for this identity.
         var memberFingerprint = (localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase();
@@ -41,23 +42,21 @@
         var navSlots = navSlotState && Array.isArray(navSlotState.slots) ? navSlotState.slots : [];
         var navMember = document.documentElement.getAttribute('data-member') === 'approved';
         navSlots = navSlots.filter(function (section) {
-          return navSlotSections.indexOf(section) !== -1 && (section !== 'messages' || navMember);
+          return navSlotSections.indexOf(section) !== -1 && ((section !== 'messages' && section !== 'inbox') || navMember);
         }).slice(0, navSlotCount);
         if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
       } catch (error) {}
 <?php endif; ?>
-      var palette = 'green';
-      try {
-        var savedPalette = localStorage.getItem(browserRuntime.themeStorageKey + '-lcd-palette');
-        if (lcdPalettes.indexOf(savedPalette) !== -1) palette = savedPalette;
-      } catch (error) {}
-      document.documentElement.setAttribute('data-lcd-palette', palette);
-      var consolePalette = 'green';
-      try {
-        var savedConsolePalette = localStorage.getItem(browserRuntime.themeStorageKey + '-console-palette');
-        if (<?= json_encode(array_keys($consolePalettes), JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>.indexOf(savedConsolePalette) !== -1) consolePalette = savedConsolePalette;
-      } catch (error) {}
-      document.documentElement.setAttribute('data-console-palette', consolePalette);
+      // Each palette theme's saved colour, or its first palette.
+      Object.keys(themePalettes).forEach(function (paletteTheme) {
+        var choices = themePalettes[paletteTheme];
+        var palette = choices[0];
+        try {
+          var savedPalette = localStorage.getItem(browserRuntime.themeStorageKey + '-' + paletteTheme + '-palette');
+          if (choices.indexOf(savedPalette) !== -1) palette = savedPalette;
+        } catch (error) {}
+        document.documentElement.setAttribute('data-' + paletteTheme + '-palette', palette);
+      });
       var theme = null;
       window.forumBrowserRuntime = browserRuntime;
 
@@ -104,6 +103,18 @@
 
       if (allowed.indexOf(theme) === -1) {
         theme = document.documentElement.getAttribute('data-default-theme');
+      }
+
+      // A page theme shows on its own page unless this browser left it there.
+      var pageTheme = document.documentElement.getAttribute('data-page-theme');
+      if (pageTheme && allowed.indexOf(pageTheme) !== -1) {
+        var pageThemeExited = false;
+        try {
+          pageThemeExited = localStorage.getItem(browserRuntime.themeStorageKey + '-page-exit:'
+            + document.documentElement.getAttribute('data-page-path')) === '1';
+        } catch (error) {
+        }
+        if (!pageThemeExited) theme = pageTheme;
       }
 
       if (allowed.indexOf(theme) !== -1) {
@@ -182,6 +193,9 @@
   <script src="<?= $e($composeDisclosureScriptPath) ?>" defer></script>
   <script src="<?= $e($markdownDetectScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
+<?php if (($inboxUnreadScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($inboxUnreadScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($navigationSlot === 'app'): ?>
   <script src="<?= $e($accountMenuScriptPath) ?>" defer></script>
   <script src="<?= $e($tabBarScrollScriptPath) ?>" defer></script>

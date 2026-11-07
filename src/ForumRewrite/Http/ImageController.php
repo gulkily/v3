@@ -20,6 +20,12 @@ final class ImageController
             $this->services->sendText("Method not allowed\n", 405, $headers);
             return;
         }
+        if ($this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)
+            && preg_match('/^thumbs\/(([a-f0-9]{64})-(1x|2x|sq|sq2x|tile)\.(png|jpg)(?:\.webp)?)$/D', $name, $thumb)) {
+            $size = \ForumRewrite\Images\ThumbnailStore::LEGACY[$thumb[3]] ?? $thumb[3];
+            $this->serveThumbnail($method, $headers, $thumb[2] . '.' . $thumb[4], $size, $thumb[1]);
+            return;
+        }
         if (!$this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED) || !preg_match('/^[a-f0-9]{64}\.(png|jpg)$/D', $name)) {
             $this->services->sendText("Image unavailable\n", 404, $headers);
             return;
@@ -41,5 +47,46 @@ final class ImageController
             header('Content-Disposition: inline; filename="' . $name . '"');
         }
         if ($method === 'GET') { readfile($path); }
+    }
+
+    /**
+     * A list-row or gallery thumbnail: the cached small copy, generated from the verified
+     * original on first request. Served only while the original is present;
+     * if resizing is unavailable or fails, the original is served instead.
+     */
+    private function serveThumbnail(string $method, array $headers, string $original, string $size, string $requested): void
+    {
+        try {
+            $store = new ImageStore($this->repositoryRoot);
+            $originalPath = $store->root . '/' . $original;
+            if (is_link($originalPath) || !is_file($originalPath)) {
+                throw new RuntimeException('Image unavailable.');
+            }
+            $thumbnails = new \ForumRewrite\Images\ThumbnailStore($store);
+            // Older pages may still ask for a pre-WebP name; those regenerate in the current format.
+            $cached = $thumbnails->root . '/' . $requested;
+            if (!is_file($cached) || is_link($cached)) {
+                $ref = ImageStore::inspect($originalPath, 'Image');
+                if (\ForumRewrite\Images\ImageReference::filename($ref) !== $original) { throw new RuntimeException('Image checksum mismatch.'); }
+                try {
+                    $cached = $thumbnails->path($ref, $size);
+                } catch (RuntimeException) {
+                    $this->serve($method, $original);
+                    return;
+                }
+            }
+        } catch (RuntimeException) {
+            $this->services->sendText("Image unavailable; restore a verified image backup.\n", 404, $headers);
+            return;
+        }
+        clearstatcache(true, $cached);
+        if (!headers_sent()) {
+            http_response_code(200);
+            foreach ($headers as $header) { header($header); }
+            header('Content-Type: image/' . match (pathinfo($cached, PATHINFO_EXTENSION)) { 'webp' => 'webp', 'jpg' => 'jpeg', default => 'png' });
+            header('Content-Length: ' . filesize($cached));
+            header('Content-Disposition: inline; filename="' . basename($cached) . '"');
+        }
+        if ($method === 'GET') { readfile($cached); }
     }
 }

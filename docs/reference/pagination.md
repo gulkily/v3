@@ -1,165 +1,149 @@
 # Implementing pagination
 
-Use the shared native-link pagination contract for new bounded lists. Standard
-Activity is the first consumer. Tag pages and board search share one thread
-adapter, [ThreadKeysetPage](../../src/ForumRewrite/ReadModel/ThreadKeysetPage.php),
-which adds a membership condition to board eligibility. Keep list-specific queries and access rules in
-the list's service; reuse position handling and navigation controls instead of
-building another paginator.
+Paged lists use plain page numbers: `/recent/?page=3`. Page 1 has no `page`
+parameter. A list can also open the page holding a given post or thread with
+`?with=<ID>`. Both follow the [URLs are interface](../../PRINCIPLES.md#urls-are-interface)
+principle: no encoded, versioned or JSON state in page links.
 
-Forte Activity and Commits intentionally retain their existing **Load more**
-behavior. QDB, Docs, SQLite viewer, messages and account key history also retain
-their current implementations until separately reviewed migrations. Track those
-in the [consolidation checklist](../plans/pagination_consolidation_checklist.md).
+Board, Search, Tags, Recent, Gallery, Activity and profile history use this
+contract. Tags and Search share one thread adapter,
+[ThreadKeysetPage](../../src/ForumRewrite/ReadModel/ThreadKeysetPage.php),
+which adds a membership condition to board eligibility. Keep list-specific
+queries and access rules in the list's service; reuse the page parsing and
+navigation controls instead of building another paginator.
+
+Forte Activity and Commits intentionally keep their **Load more** behavior. QDB,
+Docs, the SQLite viewer, messages and account key history keep their own
+implementations. QDB and Docs already use plain page numbers. Track the rest in
+the [consolidation checklist](../plans/pagination_consolidation_checklist.md).
 
 ## Shared interfaces
 
 [PageNavigation](../../src/ForumRewrite/Pagination/PageNavigation.php) provides:
 
-- `encode(context, direction, boundary)` creates a URL-safe position token.
-- `decode(token, context)` returns `direction` and `boundary`, rejecting malformed,
-  oversized, unsupported-version or mismatched-context tokens with
-  `InvalidArgumentException`.
-- `links(path, query, context, previous, next, restart)` returns `previous_href`,
-  `next_href` and `restart_href`. Unavailable destinations are null. Filter/order
-  query parameters are preserved and the position parameter is replaced.
+- `pageNumber(value)`: the requested page. A missing, malformed, zero, array or
+  out-of-range value reads as page 1; values are capped at 100000.
+- `numbered(path, query, page, hasNext, restart, pageParameter, fragment)`:
+  `previous_href`, `next_href` and `restart_href`. Page 1 links leave out the
+  page parameter. `restart_href` (First page) appears only on a page past page 1.
+- `withId(value)`: a usable `with` ID (letters, digits, `.`, `_`, `:`, `-`, at
+  most 512 characters) or null.
+- `withLocation(path, query, page, id, pageParameter, anchorPrefix)`: the
+  address of the page holding an item, ending in `#post-<ID>` by default.
+
+Pass only non-default state in `query`. For example, the board leaves out
+`view=liked` and `sort=newest`, and Activity leaves out `view=all`.
 
 The reusable [navigation partial](../../templates/partials/page_navigation.php)
-accepts that result as `pagination`. It renders native Previous/Next links,
-with `rel="prev"`/`rel="next"`, and First page when recovery is requested.
-It omits unavailable links and needs no JavaScript. Use the existing theme
-navigation classes; add no new navigation destination or routine help panel.
+renders Previous, Next and First page with `rel="prev"`/`rel="next"`, omits
+unavailable links and needs no JavaScript. Add no new navigation destination or
+routine help panel.
 
-A list adapter returns `items`, `previous` and `next`. Boundaries are maps of
-strings owned and validated by that adapter. Totals and numbered jumps are not
-required by the shared component; add capabilities only for a reviewed consumer.
+A list adapter returns `items` and `has_next`. Read one row more than the page
+size to learn whether a next page exists. For `with`, add a `pageOf` that finds
+the item under the same eligibility and counts the eligible rows ahead of it.
 
 ## Connect a list
 
-1. Define a context identifying the list, normalized filters and ordering.
-   Authorization remains a separate server check on **every request**, including
-   direct links, reloads and history navigation.
-2. Decode the optional position using that context. Validate boundary fields in
-   the query adapter; never interpolate token contents into SQL. Tokens are
-   readable and editable, not signed credentials: include no secrets or private
-   payloads and never treat context matching as authorization.
-3. Query a bounded page with stable ordering, and return boundaries for available
-   directions. Previous moves toward the start of that ordering; Next moves away.
-4. Build links with the normalized filter/order query and render the shared
-   partial. Category/order changes must discard the old position.
-5. Catch invalid/expired positions at the page boundary and offer First page.
-   Empty pages must retain valid return navigation. Native failed navigation can
-   be retried with browser Reload or left using Back. If enhanced navigation is
-   needed later, preserve the current page until success, provide retry and
-   discard responses from abandoned requests.
+1. Read the page with `PageNavigation::pageNumber`. Authorization stays a
+   separate server check on **every request**, including direct links, reloads
+   and history navigation.
+2. Query a bounded page with a stable order: the list's sort key, then a unique
+   ID as tie-breaker.
+3. Build links with `numbered`, passing the list's non-default filter and order.
+   Changing a filter or order starts from page 1.
+4. A page past the end shows the empty state with Previous and First page. A
+   malformed page shows page 1, never an error.
+5. For `with`, look the item up before rendering. When found, redirect with
+   303 to `withLocation`; the page number changes as items arrive, so the
+   redirect must never be permanent. When the ID is unusable or not in the
+   list, render page 1. Give each row `id="post-<ID>"` so the browser scrolls
+   to it; `.thread-row:target` and `.gallery-tile:target` are outlined.
 
-## Standard Activity example
+## Example: Recent
 
-The implemented consumer is
-[ActivityPageController](../../src/ForumRewrite/Http/ActivityPageController.php).
-After existing route authorization, its normal flow is equivalent to:
+[RecentPageController](../../src/ForumRewrite/Http/RecentPageController.php) is
+the smallest complete consumer:
 
 ```php
 use ForumRewrite\Pagination\PageNavigation;
 
-$view = $activityService->normalizeActivityView($requestedView);
-$context = 'activity:' . $view . ':date:desc';
-$cursor = $position === null ? null : PageNavigation::decode($position, $context);
-$page = $activityService->fetchActivityPage(
-    $view, $cursor['boundary'] ?? null, $cursor['direction'] ?? 'next'
-);
-$pagination = PageNavigation::links(
-    '/activity/', ['view' => $view], $context,
-    $page['previous'], $page['next']
-);
+$number = PageNavigation::pageNumber($query['page'] ?? null);
+$page = RecentPostRepository::page($pdo, $number, 50);
+$pagination = PageNavigation::numbered('/recent/', [], $number, $page['has_next'], $page['items'] === []);
 ```
 
-Use the controller's complete implementation for non-string input validation,
-exception handling, empty-page recovery, item links and rendering. The example
-shows the successful path; errors must not silently become an unrelated first
-page. `activity.php` renders the shared partial once below the list.
+and, before rendering:
+
+```php
+$id = PageNavigation::withId($query['with'] ?? null);
+$found = $id === null ? null : RecentPostRepository::pageOf($pdo, $id, 50);
+if ($found !== null) redirect(PageNavigation::withLocation('/recent/', [], $found, $id)); // 303
+```
+
+Profile history keeps two lists in one URL with `threads_page` and
+`posts_page`; each list's links carry the other list's page. A profile `with`
+opens the Threads list for a thread the person started and the Posts list
+otherwise, with `#threads-post-<ID>` or `#posts-post-<ID>` anchors, because a
+thread's root appears in both lists.
 
 ## Query and consistency rules
 
-[ActivityService::fetchActivityPage](../../src/ForumRewrite/Activity/ActivityService.php)
-adds a standard-only query capped at 100 entries. Existing `fetchActivity`,
-`fetchActivityRows` and Forte APIs retain their contracts; RSS remains a recent
-100-item feed. Standard Activity keeps date-descending order, without new sort
-controls.
-
-- Filter accessible membership **before** limiting. Use the same eligibility and
-  visibility rules for page queries, boundary availability and any totals.
-- Activity orders by record time and canonical action key. Forward comparisons
-  exclude the boundary; Previous queries reverse the comparison/order, then
-  restore display order. Do not base canonical positions on disposable SQLite IDs.
+- Filter accessible membership **before** limiting. Use the same eligibility for
+  the page query, `pageOf` and any totals.
+- Order by the list's key and a unique ID. Activity orders by record time and
+  canonical action key; source-less local events use a local fallback key.
+- Pages are live. A new item shifts later pages by one, so a reader may see one
+  item again on the next page. A retraction shifts them the other way. This is
+  accepted: a post's permalink, or a `with` link, is the stable way to point at
+  it. Refresh/Back does not promise an immutable snapshot.
+- Offsets scan past earlier rows. Measure deep pages before adding a list that
+  grows large; see the timing in the
+  [readable page URLs summary](../plans/readable_page_urls/readable_page_urls_step4_implementation_summary.md).
 - Bound per-item detail as well as item count. Standard Activity uses only
-  `relevant_files` and skips full commit enrichment. Keep complete manifests on
-  explicit commit pages; a 100-item limit does not bound HTML if every item
-  repeats thousands of unrelated files. Test a large Git-backed shared commit.
-- Boundaries need not refer to an existing anchor row. Deleting an anchor must
-  not strand the reader. Probe available directions, including empty pages.
-- An unchanged dataset traverses once without gaps or duplicates. New entries
-  ahead of an existing boundary appear when returning to the first page.
-  Results remain live: deletion, withdrawal and permission changes apply now.
-  Refresh/Back does not promise an immutable historical snapshot.
-- Source-less local events have no canonical keys. Activity includes them using
-  a local fallback and fingerprints that unkeyed history in positions. Changes
-  or reindexing of that history expire the cursor with a First page link.
-  Canonical-only cursors survive rebuilt SQLite IDs.
-- Keep the adapter independent of navigation rendering. Avoid migrating another
-  list or introducing unused adapters merely to demonstrate an abstraction.
+  `relevant_files` and skips full commit enrichment; keep complete manifests on
+  explicit commit pages.
+- Keep the adapter independent of navigation rendering.
 
-Changes to core read-model queries require the version, schema documentation,
-prior-version startup regression and rebuild verification specified in
-[CONTRIBUTING](../../CONTRIBUTING.md#read-model-schema-changes). Standard Activity
-introduced this contract in read-model version 25 without changing table shape.
+Changing a query to depend on new tables, columns or indexes still requires the
+[read-model schema change steps](../../CONTRIBUTING.md#read-model-schema-changes).
 
 ## Serving and access
 
-Query-bearing standard Activity requests bypass first-page static artifacts;
-`StaticArtifactBuilder` publishes only the first `/activity/` page. Preserve
-normal publication invalidation. When deploying changed pagination markup, rebuild
-or republish existing static HTML as well as updating the application/read model;
-a previously published first page will not gain controls merely from a PHP
-change. The normal operator command is:
+Any query string bypasses first-page static artifacts, so `?page=` and `?with=`
+always render live. `StaticArtifactBuilder` publishes only first pages. When
+deploying changed pagination markup, rebuild or republish existing static HTML
+as well as updating the application:
 
 ```bash
 ./v3 build-static /path/to/content-repository /path/to/read-model.sqlite3 /path/to/static-artifacts
 ```
 
-Use the artifact destination configured for that installation. Verify the actual FrontController path, not
-only direct Application rendering. Never strip a position and serve page one
-under an older-page URL.
+Verify through the actual FrontController path, not only direct Application
+rendering. Never serve page 1 under a later page's URL.
 
-Activity HTML is not cached or handled by the offline reader fallback. An
-uncached offline request requires reconnecting and browser Reload/Back; it must
-not receive an unrelated reader shell. Protected security review retains live
-authorization/no-store behavior. Tokens cannot confer access. Do not preload or
-cache protected rows in ordinary documents.
+The offline reader pages saved tag pages with the same `?page=N` numbers, so an
+online link opens the matching saved page. Activity HTML is not cached for the
+offline reader; an uncached offline request needs a reconnect. Protected
+security review keeps live authorization and no-store behavior.
 
 ## Verification before adopting
 
-Run shared contract checks plus the adapter's real UI flow. Cover first, middle,
-last and empty pages; equal sort values; arrivals/deletions; rebuilds; malformed,
-expired and cross-context positions; filter/order resets; direct links; history;
-access changes; counts; evidence; and failed-request retry/return. Verify native
-links without JavaScript, keyboard access, phone/desktop themes and long values.
-Check existing shared-service consumers for regressions.
-
-For the current implementation:
+Cover first, middle, last and past-the-end pages; malformed numbers; equal sort
+values; arrivals and deletions; rebuilds; filter and order changes; `with` for
+an item on page 1, a later page, a hidden item and an unknown ID; direct links;
+history; and failed-request retry. Verify native links without JavaScript,
+keyboard access, phone and desktop themes and long values.
 
 ```bash
-php tests/run.php StandardActivityPaginationTest LocalAppSmokeTest::testVersion24StartupRebuildsBeforeServingStandardActivityPages
-php tests/run.php OfflineNavigationWorkerTest
+./v3 test --smoke RecentPostTest GalleryPageTest ProfilePublicDetailsTest BoardListTest TagPaginationTest BoardSearchTest StandardActivityPaginationTest OfflineSnapshotPresentationTest OfflineNavigationWorkerTest
+node tests/browser/recent.mjs
+node tests/browser/profile_public_details.mjs
+node tests/browser/tag_pagination.mjs
+node tests/browser/board_search.mjs
 node tests/browser/standard_activity_pagination.mjs
-node tests/browser/forte_activity_parity.mjs
-node tests/browser/signed_reactions.mjs
-./v3 rebuild /path/to/content-repository /path/to/read-model.sqlite3
 ```
 
-Browser tests require `playwright-core` and Chromium. Set `CHROMIUM_PATH` to the
-installed executable if it is not `/opt/google/chrome/chrome`; the standalone
-paging harness also accepts `PLAYWRIGHT_MODULE`. Node must be on `PATH` for the
-worker-policy tests. Use isolated test repositories; do not rewrite user content
-as a pagination fixture. Record local environment failures, deployment and
-physical-device limits separately from focused passes.
+Browser tests require `playwright-core` and Chromium. Set `CHROMIUM_PATH` if it
+is not `/opt/google/chrome/chrome`. Use isolated test repositories; do not
+rewrite user content as a pagination fixture.

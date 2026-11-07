@@ -11,8 +11,6 @@ use ForumRewrite\Analysis\SqlitePostAnalysisStore;
 use ForumRewrite\Analysis\SqliteUnicodeRiskStore;
 use ForumRewrite\Analysis\UnicodeRiskInspector;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
-use ForumRewrite\Codex\CodexHandoffDraftService;
-use ForumRewrite\Codex\CodexHandoffStore;
 use ForumRewrite\ReadModel\ThreadRowSupport;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -25,7 +23,7 @@ use PDO;
 use RuntimeException;
 
 /**
- * The post-analysis/agent-reply/Codex-handoff data and orchestration
+ * The post-analysis/agent-reply data and orchestration
  * layer, extracted from Application.php (see
  * docs/plans/codebase_cleanup_audit_plan_v1.md and the dedicated
  * dependency-graph investigation that preceded this slice - same
@@ -41,17 +39,14 @@ use RuntimeException;
  *
  * PDO is lazy (a factory closure, memoized on first real use) rather than
  * built eagerly at construction - the same fix ActivityService needed:
- * some callers (e.g. viewerCanUseCodexHandoff(), which a test reflects
- * into directly without going through ensureReadModel()) never touch the
- * main read-model at all, and eagerly opening it would break that case
- * again.
+ * some callers never touch the main read-model at all, and eagerly
+ * opening it would break that case again.
  */
 final class PostWorkflowService
 {
     private const ANALYSIS_SCHEMA_VERSION = 5;
     private const THREAD_CONTEXT_COMMENT_BODY_LIMIT = 3000;
     private const THREAD_CONTEXT_TOTAL_BODY_LIMIT = 18000;
-    private const CODEX_HANDOFF_DEVELOPMENT_TAGS = ['feature', 'bug', 'task', 'dev', 'development', 'codex', 'implementation', 'fdp', 'railspike'];
 
     private ?PDO $pdo = null;
 
@@ -482,35 +477,6 @@ final class PostWorkflowService
 
     /**
      * @param array<int, array<string, mixed>> $posts
-     * @return array<string, array<string, mixed>>
-     */
-    public function fetchCodexHandoffsForPosts(array $posts): array
-    {
-        if ($posts === []) {
-            return [];
-        }
-
-        try {
-            $store = $this->codexHandoffStore();
-        } catch (\Throwable) {
-            return [];
-        }
-
-        $handoffs = [];
-        foreach ($posts as $post) {
-            $handoff = $store->findByPost($post);
-            if ($handoff === null) {
-                continue;
-            }
-
-            $handoffs[(string) $post['post_id']] = $handoff;
-        }
-
-        return $handoffs;
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $posts
      * @param array<string, array<string, mixed>> $analysesByPostId
      * @param array<string, array<string, mixed>> $agentRepliesByPostId
      * @return array<string, string>
@@ -572,150 +538,6 @@ final class PostWorkflowService
         }
 
         return $this->agentReplyGateFailure($post, $analysis) === null ? 'publish' : 'none';
-    }
-
-    /**
-     * @param array<string, mixed>|null $viewerProfile
-     */
-    public function viewerCanUseCodexHandoff(?array $viewerProfile): bool
-    {
-        return $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
-            && $this->requestIsLocalhost();
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $posts
-     * @param array<string, mixed>|null $thread
-     * @return array<string, bool>
-     */
-    public function codexHandoffEligiblePostIds(array $posts, ?array $thread = null): array
-    {
-        $eligible = [];
-        foreach ($posts as $post) {
-            if ($this->postCanUseCodexHandoffTarget($post, $thread)) {
-                $eligible[(string) ($post['post_id'] ?? '')] = true;
-            }
-        }
-
-        return $eligible;
-    }
-
-    /**
-     * @param array<string, mixed> $post
-     * @param array<string, mixed>|null $thread
-     */
-    public function postCanUseCodexHandoffTarget(array $post, ?array $thread = null): bool
-    {
-        if ((string) ($post['author_label'] ?? '') === AgentIdentityService::USERNAME) {
-            return false;
-        }
-
-        if ($this->hasCodexHandoffTag(ThreadRowSupport::decodeStringList((string) ($post['board_tags_json'] ?? '[]')))) {
-            return true;
-        }
-
-        if ((string) ($post['post_id'] ?? '') !== (string) ($post['thread_id'] ?? '')) {
-            return false;
-        }
-
-        $threadLabels = [];
-        if ($thread !== null) {
-            $threadLabels = is_array($thread['thread_labels'] ?? null)
-                ? array_map('strval', $thread['thread_labels'])
-                : ThreadRowSupport::decodeStringList((string) ($thread['thread_labels_json'] ?? '[]'));
-        }
-
-        return $this->hasCodexHandoffTag($threadLabels);
-    }
-
-    /**
-     * @param list<string> $tags
-     */
-    private function hasCodexHandoffTag(array $tags): bool
-    {
-        foreach ($tags as $tag) {
-            if (in_array(strtolower($tag), self::CODEX_HANDOFF_DEVELOPMENT_TAGS, true)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function requestIsLocalhost(): bool
-    {
-        $host = trim((string) ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? ''));
-        if ($host !== '') {
-            $host = strtolower($host);
-            if (str_starts_with($host, '[')) {
-                $closingBracket = strpos($host, ']');
-                $host = $closingBracket === false ? $host : substr($host, 1, $closingBracket - 1);
-            } elseif (str_contains($host, ':')) {
-                $host = explode(':', $host, 2)[0];
-            }
-
-            return in_array($host, ['localhost', '127.0.0.1', '::1'], true)
-                || str_ends_with($host, '.localhost');
-        }
-
-        $remoteAddress = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-        if ($remoteAddress === '') {
-            return PHP_SAPI === 'cli';
-        }
-
-        return in_array($remoteAddress, ['127.0.0.1', '::1'], true);
-    }
-
-    /**
-     * @param array<string, mixed> $input
-     * @return array<string, mixed>|null
-     */
-    public function findCodexHandoffFromInput(array $input): ?array
-    {
-        $store = $this->codexHandoffStore();
-        $handoffId = trim((string) ($input['handoff_id'] ?? ''));
-        if ($handoffId !== '') {
-            return $store->findByHandoffId($handoffId);
-        }
-
-        $postId = trim((string) ($input['post_id'] ?? ''));
-        if ($postId === '') {
-            return null;
-        }
-
-        $post = ($this->fetchPost)($postId);
-        if ($post === null) {
-            return null;
-        }
-
-        return $store->findByPost($post);
-    }
-
-    /**
-     * @param array<string, mixed> $handoff
-     * @return array<string, mixed>
-     */
-    public function codexHandoffResponse(array $handoff): array
-    {
-        return [
-            'status' => 'ok',
-            'handoff_id' => (string) ($handoff['handoff_id'] ?? ''),
-            'handoff_status' => (string) ($handoff['status'] ?? ''),
-            'origin_post_id' => (string) ($handoff['origin_post_id'] ?? ''),
-            'origin_thread_id' => (string) ($handoff['origin_thread_id'] ?? ''),
-            'user_story' => $handoff['user_story'] ?? null,
-            'fdp_step1' => $handoff['fdp_step1'] ?? null,
-            'confidence_summary' => $handoff['confidence_summary'] ?? null,
-            'draft_text' => $handoff['draft_text'] ?? null,
-            'requested_at' => $handoff['requested_at'] ?? null,
-            'draft_ready_at' => $handoff['draft_ready_at'] ?? null,
-            'approved_at' => $handoff['approved_at'] ?? null,
-            'rejected_at' => $handoff['rejected_at'] ?? null,
-            'running_at' => $handoff['running_at'] ?? null,
-            'completed_at' => $handoff['completed_at'] ?? null,
-            'failed_at' => $handoff['failed_at'] ?? null,
-        ];
     }
 
     /**
@@ -913,16 +735,6 @@ final class PostWorkflowService
         }
 
         return $this->agentReplyFulfillmentService()->publishForPost($post);
-    }
-
-    public function codexHandoffStore(): CodexHandoffStore
-    {
-        return new CodexHandoffStore($this->pdo());
-    }
-
-    public function codexHandoffDraftService(): CodexHandoffDraftService
-    {
-        return new CodexHandoffDraftService();
     }
 
     private function agentIdentityService(): AgentIdentityService

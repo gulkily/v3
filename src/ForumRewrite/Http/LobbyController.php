@@ -58,7 +58,7 @@ final class LobbyController
             ['destination' => trim((string) ($query['destination'] ?? ''))],
             'Generate invite',
             'invite',
-            $this->identityScripts(['/assets/private_site_auth.js', '/assets/qrcode-generator.js', '/assets/invite_issuance.js']),
+            $this->identityScripts(['/assets/private_site_auth.js', '/assets/qrcode-generator.js', '/assets/private_message_history_crypto.js', '/assets/invite_issuance.js']),
         );
     }
 

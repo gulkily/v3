@@ -745,3 +745,131 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
     border-color: #000000 #6a6a6a #6a6a6a #000000;
   }
 }
+
+/* Gallery: a dark document page in the theme's window frame, with the
+   tiles laid out as a Word table (even cells, gridlines) and each title set
+   as a numbered figure caption. Thumbnails share one box; --gallery-fit
+   switches between cropping (cover) and letterboxing (contain). */
+:root[data-theme="midnight"] .gallery-grid {
+  --gallery-fit: cover;
+  counter-reset: gallery-figure;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 1.5rem calc(1.75rem + 1px) calc(1.5rem + 1px) 1.75rem;
+  border: 2px solid;
+  border-color: #4e4e4e #1a1a1a #1a1a1a #4e4e4e;
+  background: #121212;
+  box-shadow:
+    -1px -1px 0 0 #686868,
+    1px 1px 0 0 #000000,
+    6px 6px 0 0 #000000;
+}
+
+:root[data-theme="midnight"] .gallery-grid::after {
+  display: none;
+}
+
+/* Cell borders overlap by a pixel so neighbours share one gridline. */
+:root[data-theme="midnight"] .gallery-tile {
+  counter-increment: gallery-figure;
+  max-width: none;
+  margin: 0 -1px -1px 0;
+  padding: 0.5rem 0.5rem 0.45rem;
+  border: 1px solid #5a5a5a;
+  background: #121212;
+  color: #c8c8c8;
+}
+
+:root[data-theme="midnight"] .gallery-tile:hover,
+:root[data-theme="midnight"] .gallery-tile:focus-visible {
+  border-color: #5a5a5a;
+}
+
+:root[data-theme="midnight"] .gallery-tile img {
+  aspect-ratio: 4 / 3;
+  object-fit: var(--gallery-fit);
+  border: 1px solid #000000;
+  background: #000000;
+}
+
+:root[data-theme="midnight"] .gallery-tile:hover img {
+  outline: 2px solid #7aa8ff;
+  outline-offset: -1px;
+}
+
+:root[data-theme="midnight"] .gallery-tile:focus-visible {
+  outline: 1px dotted #c8c8c8;
+  outline-offset: -4px;
+}
+
+:root[data-theme="midnight"] .gallery-tile__caption {
+  padding: 0.4rem 0 0;
+  font-family: var(--body-font);
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+:root[data-theme="midnight"] .gallery-tile__title {
+  display: -webkit-box;
+  font-weight: 400;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+:root[data-theme="midnight"] .gallery-tile__title::before {
+  content: "Figure " counter(gallery-figure) ": ";
+  font-weight: 700;
+}
+
+:root[data-theme="midnight"] .gallery-tile:hover .gallery-tile__title {
+  text-decoration: underline;
+}
+
+:root[data-theme="midnight"] .gallery-tile__meta {
+  margin-top: 0.15rem;
+  color: #9a9a9a;
+  font-family: var(--ui-font);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 40rem) {
+  :root[data-theme="midnight"] .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0.75rem calc(0.75rem + 1px) calc(0.75rem + 1px) 0.75rem;
+  }
+}
+
+/* Pagination is a dialog's button row (Back / Next), not a toolbar: raised
+   buttons, no grip; site.css puts them at the row's edges. */
+:root[data-theme="midnight"] .pagination-nav {
+  gap: 0.4rem;
+}
+
+:root[data-theme="midnight"] .pagination-nav::before {
+  display: none;
+}
+
+:root[data-theme="midnight"] .pagination-nav .nav-link {
+  min-width: 5.5rem;
+  padding: 0.25rem 0.9rem;
+  border: 1px solid #000000;
+  background: #2b2b2b;
+  color: #c8c8c8;
+  font-family: var(--ui-font);
+  text-align: center;
+  box-shadow:
+    inset 1px 1px 0 0 #6a6a6a,
+    inset -1px -1px 0 0 #000000;
+}
+
+:root[data-theme="midnight"] .pagination-nav .nav-link:hover {
+  border-color: #000000;
+}
+
+:root[data-theme="midnight"] .pagination-nav .nav-link:active {
+  box-shadow:
+    inset -1px -1px 0 0 #6a6a6a,
+    inset 1px 1px 0 0 #000000;
+}

@@ -3,6 +3,65 @@
   var storageKey = runtime && runtime.themeStorageKey;
   if (!storageKey) return;
 
+  // Theme scripts: a theme with a script (ThemeRegistry 'script') ships
+  // /assets/theme-<name>.js, which calls forumThemeScripts.register(name,
+  // { start: fn, stop: fn }). Only the active theme's script is started; stop
+  // must remove everything start added, including timers.
+  var themeScripts = (function () {
+    var paths = window.forumThemeScriptPaths || {};
+    var hooks = {};
+    var requested = {};
+    var active = null;
+    var wanted = null;
+
+    function run(name, phase) {
+      try {
+        if (hooks[name] && typeof hooks[name][phase] === "function") hooks[name][phase]();
+      } catch (error) {
+        if (window.console) window.console.error(error);
+      }
+    }
+
+    function startWanted() {
+      if (!wanted || active === wanted || !hooks[wanted]) return;
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startWanted, { once: true });
+        return;
+      }
+      active = wanted;
+      run(active, "start");
+    }
+
+    return {
+      register: function (name, themeHooks) {
+        hooks[name] = themeHooks || {};
+        startWanted();
+      },
+      activate: function (name) {
+        wanted = Object.prototype.hasOwnProperty.call(paths, name) ? name : null;
+        if (active && active !== wanted) {
+          var previous = active;
+          active = null;
+          run(previous, "stop");
+        }
+        if (!wanted) return;
+        if (!hooks[wanted] && !requested[wanted]) {
+          requested[wanted] = true;
+          var script = document.createElement("script");
+          script.src = paths[wanted];
+          script.async = true;
+          script.addEventListener("error", function () { delete requested[script.getAttribute("data-theme-name")]; });
+          script.setAttribute("data-theme-name", wanted);
+          document.head.appendChild(script);
+        }
+        startWanted();
+      },
+      active: function () { return active; }
+    };
+  })();
+  window.forumThemeScripts = themeScripts;
+  themeScripts.activate(document.documentElement.getAttribute("data-resolved-theme"));
+
   function systemTheme() {
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
@@ -18,6 +77,12 @@
       ? Array.prototype.slice.call(popover.querySelectorAll("[data-theme-option]"))
       : [];
     var themes = options.map(function (option) {
+      return option.getAttribute("data-theme-option");
+    });
+    // Themes the cycle button passes over; they stay in the menu.
+    var cycleSkips = options.filter(function (option) {
+      return option.getAttribute("data-theme-cycle") === "skip";
+    }).map(function (option) {
       return option.getAttribute("data-theme-option");
     });
     var labels = {};
@@ -44,7 +109,28 @@
       return attr && themes.indexOf(attr) !== -1 ? attr : "auto";
     }
 
-    function readStoredTheme() {
+    // Page theme: the theme a page shows by default (site profile), until this
+    // browser leaves it on that page with Exit or a menu choice.
+    var pageTheme = document.documentElement.getAttribute("data-page-theme");
+    var pageExitKey = storageKey + "-page-exit:" + document.documentElement.getAttribute("data-page-path");
+    var pageThemeActive = false;
+    if (pageTheme && themes.indexOf(pageTheme) !== -1) {
+      try {
+        pageThemeActive = localStorage.getItem(pageExitKey) !== "1";
+      } catch (error) {
+        pageThemeActive = true;
+      }
+    }
+
+    function leavePageTheme() {
+      pageThemeActive = false;
+      try {
+        localStorage.setItem(pageExitKey, "1");
+      } catch (error) {
+      }
+    }
+
+    function readSavedTheme() {
       try {
         var storedTheme = localStorage.getItem(storageKey);
         var aliases = window.forumThemeLegacyAliases || {};
@@ -53,6 +139,10 @@
       } catch (error) {
         return defaultTheme();
       }
+    }
+
+    function readStoredTheme() {
+      return pageThemeActive ? pageTheme : readSavedTheme();
     }
 
     function applyTheme(theme) {
@@ -77,6 +167,7 @@
       }
 
       document.documentElement.setAttribute("data-resolved-theme", resolved);
+      themeScripts.activate(resolved);
       if (typeof window.forumUpdateThemeHint === "function") {
         window.forumUpdateThemeHint(resolved);
       }
@@ -91,16 +182,17 @@
       }
     }
 
+    // Load states are keyed by path: themes that share a stylesheet load it once.
     function ensureThemeStylesheet(theme, highPriority) {
       var path = themeStylesheetPaths[theme];
       if (!path) {
         return { ready: true, promise: Promise.resolve(true) };
       }
-      if (themeLoadStates[theme]) {
+      if (themeLoadStates[path]) {
         if (highPriority) {
-          themeLoadStates[theme].link.setAttribute("fetchpriority", "high");
+          themeLoadStates[path].link.setAttribute("fetchpriority", "high");
         }
-        return themeLoadStates[theme];
+        return themeLoadStates[path];
       }
 
       var link = themeStylesheet && themeStylesheet.getAttribute("href") === path && hasThemeStyles(themeStylesheet)
@@ -124,12 +216,12 @@
             }, { once: true });
             link.addEventListener("error", function () {
               // Keep the current theme usable and let the next selection retry.
-              delete themeLoadStates[theme];
+              delete themeLoadStates[path];
               link.remove();
               resolve(false);
             }, { once: true });
           });
-      themeLoadStates[theme] = state;
+      themeLoadStates[path] = state;
       return state;
     }
 
@@ -160,7 +252,7 @@
       var currentResolvedTheme = resolvedTheme(currentTheme);
       for (var offset = 1; offset < themes.length; offset += 1) {
         var candidate = themes[(currentIndex + offset) % themes.length];
-        if (resolvedTheme(candidate) !== currentResolvedTheme) {
+        if (cycleSkips.indexOf(candidate) === -1 && resolvedTheme(candidate) !== currentResolvedTheme) {
           return candidate;
         }
       }
@@ -233,7 +325,7 @@
       var palettePopover = paletteControl && paletteControl.querySelector('[role="menu"]');
       var paletteOptions = paletteControl ? Array.prototype.slice.call(paletteControl.querySelectorAll('[data-' + paletteTheme + '-palette-option]')) : [];
       var paletteNames = paletteOptions.map(function (option) { return option.getAttribute('data-' + paletteTheme + '-palette-option'); });
-      var palette = document.documentElement.getAttribute('data-' + paletteTheme + '-palette') || 'green';
+      var palette = document.documentElement.getAttribute('data-' + paletteTheme + '-palette') || paletteNames[0] || 'green';
 
       function setPalette(value) {
         palette = value;
@@ -301,12 +393,19 @@
 
       return { close: closePalette, sync: syncPalette, set: setPalette, names: paletteNames, options: paletteOptions, value: function () { return palette; } };
     }
-    var lcdControl = createPaletteControl('lcd', 'LCD');
-    var consoleControl = createPaletteControl('console', 'Console');
+    // One colour picker per palette theme the menu renders (ThemeRegistry 'palettes').
+    var paletteControls = Array.prototype.map.call(menu.querySelectorAll('[data-role$="-palette"]'), function (control) {
+      var name = control.getAttribute('data-role').replace(/-palette$/, '');
+      var paletteControl = createPaletteControl(name, control.getAttribute('data-palette-label') || name);
+      paletteControl.theme = name;
+      return paletteControl;
+    });
+    // LCD's palettes are also stops on the cycle button.
+    var lcdControl = paletteControls.filter(function (control) { return control.theme === 'lcd'; })[0] || createPaletteControl('lcd', 'LCD');
     var paletteNames = lcdControl.names;
     var paletteOptions = lcdControl.options;
-    function closePalette(refocus) { lcdControl.close(refocus); consoleControl.close(false); }
-    function syncPalette() { lcdControl.sync(); consoleControl.sync(); }
+    function closePalette(refocus) { paletteControls.forEach(function (control) { control.close(refocus); }); }
+    function syncPalette() { paletteControls.forEach(function (control) { control.sync(); }); }
 
     var currentTheme = readStoredTheme();
 
@@ -339,6 +438,8 @@
 
     function commitSelection(theme, selectedPalette) {
       document.documentElement.removeAttribute("data-theme-loading");
+      // Any change on a page theme's page leaves the page theme.
+      if (pageThemeActive && theme !== pageTheme) leavePageTheme();
       currentTheme = theme;
       if (selectedPalette) lcdControl.set(selectedPalette);
       applyTheme(currentTheme);
@@ -357,6 +458,16 @@
       applySelection(theme);
       closeMenu(true);
     }
+
+    // Leaving a theme from inside it (a theme script's Exit control) works
+    // like choosing the target theme in the menu: it is saved, and on a page
+    // theme's page the exit is remembered. Without a usable target, Exit
+    // falls back to the site default.
+    window.forumExitTheme = function (target) {
+      var next = themes.indexOf(target) !== -1 && target !== currentTheme ? target : null;
+      if (!next) next = defaultTheme() !== currentTheme ? defaultTheme() : "auto";
+      applySelection(next);
+    };
 
     cycleButton.addEventListener("click", function () {
       var next = nextAppearance(currentTheme);
