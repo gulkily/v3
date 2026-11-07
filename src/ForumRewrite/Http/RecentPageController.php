@@ -62,6 +62,16 @@ final class RecentPageController
         return $this->routeServices->renderPageTemplate('gallery.php', ['tiles'=>$tiles, 'pagination'=>$pagination, 'paginationError'=>null], 'Gallery', 'gallery');
     }
 
+    /** The page holding a `with` post on Recent or Gallery; null shows the list normally. */
+    public function withLocation(string $list, mixed $with): ?string
+    {
+        $id = PageNavigation::withId($with);
+        if ($id === null) return null;
+        $gallery = $list === 'gallery';
+        $page = RecentPostRepository::pageOf($this->routeServices->pdo(), $id, $gallery ? self::GALLERY_PAGE_SIZE : 50, $gallery);
+        return $page === null ? null : PageNavigation::withLocation($gallery ? '/gallery/' : '/recent/', [], $page, $id);
+    }
+
     /** @return array{items:array,has_next:bool} */
     private function page(int $number, int $limit, bool $imagesOnly): array
     {

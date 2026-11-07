@@ -778,6 +778,11 @@ final class Application
         }
 
         if ($path === '/recent/' || $path === '/recent') {
+            $location = (new \ForumRewrite\Http\RecentPageController($this->routeServices()))->withLocation('recent', $query['with'] ?? null);
+            if ($location !== null) {
+                $this->sendRedirect($location, 'Opening that post in Recent.', 303, activeSection: 'recent');
+                return;
+            }
             $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->board($query['page'] ?? null), 200);
             return;
         }

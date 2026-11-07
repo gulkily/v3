@@ -38,3 +38,23 @@ The maintainer did not answer whether to reuse the `plan/readable_page_urls` dra
 - Estimate details: original scope as planned; uncertainty low; no revision.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Recent `with`
+
+**Original estimate: 0.10**
+**Retrospective: 0.08**
+
+- Changes:
+  - `RecentPostRepository::pageOf` counts eligible posts newer than the target and returns its page, or null when the post is hidden, retracted, an identity post, a scripture expansion or unknown.
+  - `PageNavigation::withLocation` builds `?page=N#post-<ID>`, leaving out page 1.
+  - `RecentPageController::withLocation` serves Recent and Gallery. `Application` redirects with 303 before rendering; an unusable or missing ID shows page 1.
+  - Recent rows get `id="post-<ID>"`, the name post cards already use. `site.css` outlines a targeted `.thread-row` or `.gallery-tile`.
+- Verification:
+  - `./v3 test --smoke RecentPostTest GalleryPageTest`: 443 run, 443 passed. New cases check every post on every 3-item page, five excluded IDs, link building and malformed `with` values, plus the rendered redirect and the fallback for an unknown ID.
+  - `tests/browser/recent.mjs` gains a `with` check: an ID from page 2 lands on `?page=2#post-<ID>` with that row as `:target`. Passed in the same temporary copy as Stage 1, without the baseline-failing nav assertions.
+  - Full suite not run.
+- Notes:
+  - A missing `with` ID shows page 1 rather than an error, per Step 2. On page 1 there is no First page link to show.
+- Estimate details: original scope as planned; uncertainty low; no revision. Smaller than planned because the redirect helper already existed.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*

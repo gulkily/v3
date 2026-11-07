@@ -43,6 +43,8 @@ try {
  await page.getByRole('link',{name:'Next',exact:true}).focus();await page.keyboard.press('Enter');await page.waitForURL(/\?page=2$/);
  assert.ok(await page.locator('.recent-entry').count()>0);assert.ok(await page.locator('.recent-entry').count()<50);
  const cursorUrl=page.url();const ids=await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId));
+ await page.goto(base+'/recent/?with='+encodeURIComponent(ids[0]));await page.waitForURL(url=>url.href.endsWith('?page=2#post-'+encodeURIComponent(ids[0])));
+ assert.equal(await page.locator('.recent-entry:target').getAttribute('data-post-id'),ids[0]);await page.goto(cursorUrl);
  await page.reload();assert.deepEqual(await page.locator('.recent-entry').evaluateAll(rows=>rows.map(row=>row.dataset.postId)),ids);
  const anchored=page.locator('.recent-entry a[href*="#post-"]').first();const anchorId=(await anchored.getAttribute('href')).split('#post-')[1];
  await anchored.click();await page.waitForURL(/#post-/);assert.equal(await page.locator('.post-card:target').getAttribute('data-post-id'),anchorId);

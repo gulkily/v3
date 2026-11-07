@@ -44,6 +44,16 @@ final class RecentPostTest
         assertSame('new-thread',RecentPostRepository::page($pdo)['items'][0]['post_id']);
     }
 
+    public function testWithFindsThePageHoldingAPost(): void
+    {
+        $pdo=$this->database();$number=1;
+        do {$page=RecentPostRepository::page($pdo,$number,3);foreach($page['items'] as $item) assertSame($number,RecentPostRepository::pageOf($pdo,$item['post_id'],3));$number++;}while($page['has_next']);
+        foreach(['hidden','removed','bootstrap','expansion','no-such-post'] as $id) assertSame(null,RecentPostRepository::pageOf($pdo,$id,3));
+        assertSame('/recent/?page=2#post-reply-1',\ForumRewrite\Pagination\PageNavigation::withLocation('/recent/',[],2,'reply-1'));
+        assertSame('/recent/#post-reply-1',\ForumRewrite\Pagination\PageNavigation::withLocation('/recent/',[],1,'reply-1'));
+        foreach ([null,'',['x'],'a b','<x>',str_repeat('a',513)] as $bad) assertSame(null,\ForumRewrite\Pagination\PageNavigation::withId($bad));
+    }
+
     public function testPageNumbersAreReadAsPlainPositiveIntegers(): void
     {
         foreach ([null,'','0','-1','abc','2x','01',['2'],2] as $value) assertSame(1,\ForumRewrite\Pagination\PageNavigation::pageNumber($value));
@@ -92,6 +102,10 @@ final class RecentPostTest
         $past=$render('/recent/?page=9');
         assertStringContains('No posts on this page',$past);assertStringContains('First page',$past);
         assertStringNotContains('position=',$html);
+        assertStringContains('id="post-reply-1"',$html);
+        $redirect=$render('/recent/?with=reply-1');
+        assertStringContains('Opening that post in Recent.',$redirect);assertStringContains('/recent/#post-reply-1',$redirect);
+        assertSame(12,substr_count($render('/recent/?with=no-such-post'),'class="thread-row recent-entry"'));
         $pdo->exec('DELETE FROM posts');assertStringContains('No posts yet', $render('/recent/'));
         unset($pdo,$app);@unlink($file);
     }

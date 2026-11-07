@@ -38,6 +38,20 @@ final class RecentPostRepository
         return ['items' => array_slice($items, 0, $limit), 'has_next' => $hasNext];
     }
 
+    /** The page holding an eligible post, or null when the post is not in this list. */
+    public static function pageOf(PDO $pdo, string $postId, int $limit = 50, bool $imagesOnly = false): ?int
+    {
+        $limit = max(1, min(50, $limit));
+        $target = $pdo->prepare('SELECT created_at FROM posts WHERE post_id = :post_id AND ' . self::eligible($imagesOnly));
+        $target->execute(['post_id' => $postId]);
+        $createdAt = $target->fetchColumn();
+        if ($createdAt === false) return null;
+        $before = $pdo->prepare('SELECT count(*) FROM posts WHERE ' . self::eligible($imagesOnly)
+            . ' AND (posts.created_at, posts.post_id) > (:created_at, :post_id)');
+        $before->execute(['created_at' => $createdAt, 'post_id' => $postId]);
+        return intdiv((int) $before->fetchColumn(), $limit) + 1;
+    }
+
     private static function eligible(bool $imagesOnly): string
     {
         return self::ELIGIBLE . ($imagesOnly ? " AND instr(posts.body, '" . \ForumRewrite\Images\ImageReference::PREFIX . "') > 0" : '');

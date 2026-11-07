@@ -1246,6 +1246,14 @@ pre {
   border-color: var(--active-line);
 }
 
+/* A list row or tile opened with ?with= is the URL's target. */
+.thread-row:target,
+.gallery-tile:target {
+  outline: 2px solid var(--active-line);
+  outline-offset: -2px;
+  scroll-margin-top: 1rem;
+}
+
 .thread-root-card h1 {
   margin-bottom: 1rem;
 }
