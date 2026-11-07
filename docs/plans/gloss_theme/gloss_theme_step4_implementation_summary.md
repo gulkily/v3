@@ -88,3 +88,28 @@ Cycle estimate: 0.95
 - Estimate details: original scope as Step 3 minus Recent and Gallery. No revision; retrospective is a scope assessment, not measured time.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Headings, Bookmarklets and coverage
+
+**Original estimate: 0.06**
+**Retrospective: 0.07**
+
+- Changes:
+  - `public/assets/theme-nav-icons.css`, smooth-line block: group headings Your device (phone), Reading (glasses) and Community (the Users glyph); Bookmarklets buttons +URL (link), Clip (paperclip), Rip (highlighted line) and Tweet (repost arrows, no brand mark). The Messages rule also names the exact `/messages` link, as the pixel-art set does.
+  - `public/assets/tools.css`: the Bookmarklets drag-handle glyph skipped only Word 97 and Chicago; it now also skips `gloss` and `engagify`, so their own glyphs show.
+  - New `tests/NavIconSetsTest.php`, registered in `tests/run.php`: the smooth-line set must name exactly the destinations the pixel-art set names.
+  - `tests/browser/tools_launcher.mjs`: Engagify joins the icon themes, so every tool button, Tools bar link and group heading must have a glyph in it.
+  - `docs/feedback/items/PF-20261104-F13.txt`: dated note.
+- Verification:
+  - Passed: contact sheet of the 7 glyphs inspected.
+  - Passed: `./v3 test --smoke NavIconSetsTest`, 437 run, 432 passed, 5 failed (the same baseline failures). The new test failed on its first run and found the missing exact `/messages` selector, fixed above. A deliberate rename of one smooth-line selector made it fail with both messages, then was reverted.
+  - Passed: `tests/browser/tools_launcher.mjs`, 30 theme and width cases, icons checked in Word 97, Chicago, Midnight and Engagify.
+  - Passed: headless Chrome, Engagify, 1280px and 380px, `/tools/`, `/tools/backup/` and `/tools/bookmarklets/`: no element without a glyph, no sideways scroll, no page errors. Full-page Bookmarklets screenshot inspected.
+  - Full suite not run.
+- Notes:
+  - The empty icon slots noted in Stage 1 are closed: every destination has a smooth-line glyph.
+  - Observed, not changed: the `tools.css` drag-handle rule also covers Midnight, so Midnight's Bookmarklets buttons likely show the drag handle instead of their pixel-art glyphs. This predates this cycle and is outside its scope; left for the maintainer.
+  - `NavIconSetsTest` is not in `tests/smoke.txt`; it runs with `./v3 test --smoke NavIconSetsTest` and in the full suite.
+- Estimate details: original scope as Step 3, plus the `tools.css` fix and a PHP test in place of a one-off script. No revision; retrospective is a scope assessment, not measured time.
+
+*— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
