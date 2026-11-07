@@ -144,6 +144,7 @@ $testFiles = [
     __DIR__ . '/InstagramPagePreviewFetcherTest.php',
     __DIR__ . '/YoutubeOembedTitleFetcherTest.php',
     __DIR__ . '/MediaEmbedBeaconTemplatesTest.php',
+    __DIR__ . '/ThreadRootCardRepeatedTitleTest.php',
     __DIR__ . '/MediaEmbedPreviewControllerTest.php',
     __DIR__ . '/MediaEmbedInlinePlayerScriptTest.php',
     __DIR__ . '/PostRetractionScriptTest.php',
