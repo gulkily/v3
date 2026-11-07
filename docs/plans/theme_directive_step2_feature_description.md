@@ -83,7 +83,9 @@ Concepts touched: [page theme](../concepts/page_theme.md) (extended: a thread ca
 
 2026-11-07T15:13:01Z, `railspike-effort` / `v3/theme_directive`, Step 2 handoff. Step 1 explicitly approved with Revisions 1–2 (Option D). Scope v2 unchanged, plus `theme: none` as a way to clear a theme without retracting. Starting revision: `feat/engagify_theme` at `9276410b`, with page themes built. Reference R1, protocol P2; frozen R1 hashes not re-verified. Single exposed Claude rater. Before rating, the rater read the canonical post record spec, the post format record spec and `EventStatus.php`. Projected total 0.70 → **0.75**, from new understanding: the client-signed subset rejects unknown headers, so the hidden form needs a spec and validator change, and the read model must keep the header's value. No implementation, measured labor or accepted outcome.
 
+Step 2 approved by the maintainer on 2026-11-07 ("approved step 2").
+
 ## Enhancement Requests
 
 Carried from Step 1: setting a theme later by reply (Revision 1) and the visible or hidden choice (Revision 2), both in scope.
-- Clear a thread's theme with `theme: none`. Disposition: proposed in Step 2 as an in-scope refinement; awaiting Approved Step 2.
+- Clear a thread's theme with `theme: none`. Disposition: in-scope refinement; approved with Step 2.
