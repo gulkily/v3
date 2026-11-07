@@ -1,5 +1,11 @@
 # Effort estimation trial ledger
 
+## Cycle v3/theme_directive
+
+2026-11-07T14:41:57Z — v3/theme_directive branch move: planning moved from `plan/engagify_theme` to `plan/theme_directive`, based on `feat/engagify_theme`. [Checkpoint](./theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1/A and **0.40** unchanged; no re-rating. Await Approved Step 1.
+
+2026-11-07T11:45:50Z — v3/theme_directive Step 1 handoff (standing P2 enrollment; split from v3/engagify_theme Option B at the maintainer's request, distinct cycle): [assessment/checkpoint](./theme_directive_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (`theme:` line by the thread's author or an operator, derived on read like `event:`, nothing stored). Assumed start: engagify page themes delivered; planning revision `d379f560`. R1/P2; R1 hashes not re-verified. Single exposed Claude rater, also the parent's rater; pristine intake missing. Projected total **0.40**; option estimates 0.40/0.75/0.55, non-additive. Await Approved Step 1.
+
 ## Cycle v3/engagify_theme
 
 2026-11-07T12:32:39Z — v3/engagify_theme Step 4 local closeout: branch `feat/engagify_theme`, planning `fe15dec` and eight stage commits. [Summary/closeout](./engagify_theme/engagify_theme_step4_implementation_summary.md#closeout). Same v5/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.80 at entry, no revision; retrospective scope assessment 0.80. Stage originals 0.12/0.10/0.14/0.05/0.10/0.12/0.12/0.10; retrospectives 0.10/0.12/0.14/0.04/0.10/0.12/0.12/0.10; non-additive. Smoke plus changed tests 450 run, 449 passed; the one failure also fails on `main`; full suite not run. Production check of the cookie thread pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.
