@@ -45,7 +45,7 @@ final class StandardActivityPaginationTest
         $pdo->exec('DELETE FROM activity');
         $insert = $pdo->prepare("INSERT INTO activity (created_at,kind,record_family,action_key,label,board_tags_json,author_label)
             VALUES (:at,:kind,:family,:key,:key,'[]','guest')");
-        $kinds = ['post_reaction_add' => 45, 'thread' => 3, 'codex_handoff' => 2, 'profile_name_change' => 4];
+        $kinds = ['post_reaction_add' => 45, 'thread' => 3, 'local_event' => 2, 'profile_name_change' => 4];
         $i = 0;
         foreach ($kinds as $kind => $total) {
             for ($n = 0; $n < $total; $n++, $i++) {
@@ -63,7 +63,6 @@ final class StandardActivityPaginationTest
             assertStringContains('<span>' . $label . '</span>', $html);
         }
         assertStringNotContains('<span>Identity Keys</span>', $html);
-        assertStringNotContains('<span>Codex Handoffs</span>', $html);
         assertStringContains('<span>Reactions</span><span class="paned-folder-count">45</span>', $html);
         assertStringContains('<span>Threads</span><span class="paned-folder-count">3</span>', $html);
         assertStringContains('<span>All Activity</span><span class="paned-folder-count">50</span>', $html);
@@ -159,16 +158,16 @@ final class StandardActivityPaginationTest
     public function testSourceLessEventsAreIncludedAndPagedWithoutExpiry(): void
     {
         [$app, $pdo, $service] = $this->environment();
-        $pdo->exec("INSERT INTO activity (created_at,kind,label,board_tags_json,author_label) VALUES ('2026-10-24T00:00:00Z','codex_handoff','Local handoff','[]','guest')");
+        $pdo->exec("INSERT INTO activity (created_at,kind,label,board_tags_json,author_label) VALUES ('2026-10-24T00:00:00Z','local_event','Local event','[]','guest')");
         $first = $service->fetchActivityPage('all');
-        assertSame('Local handoff', $first['items'][0]['label']);
+        assertSame('Local event', $first['items'][0]['label']);
         $next = $this->nextLink($this->render($app, '/activity/'));
         assertTrue(is_string($next));
         $pdo->exec('UPDATE activity SET id=id+1000 WHERE action_key IS NULL');
         $later = $this->render($app, $next);
         assertStringNotContains('role="alert"', $later);
         assertStringContains('record-104', $later);
-        assertStringContains('Local handoff', $this->render($app, '/activity/'));
+        assertStringContains('Local event', $this->render($app, '/activity/'));
     }
 
     public function testPagesSurviveFullRebuildWithDifferentRowIds(): void

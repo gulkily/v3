@@ -45,8 +45,6 @@ Usage:
   ./v3 agent-reply test [--timeout=30]
   ./v3 agent-reply test-local
   ./v3 agent-reply format-readiness [--repository-root=/path/repository] [--json]
-  ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
-  ./v3 codex-handoff test-local
   ./v3 retraction-sweep preview|status|run [--limit=250] [--repository-root=/path/repository]
   ./v3 bake-timestamps preview|run [--repository-root=/path/repository] [--json]
   ./v3 purge-history preview|run [--yes] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--static-html-root=/path/static_html] [--json]
@@ -380,38 +378,6 @@ EOF
         echo "  ./v3 agent-reply test [--timeout=30]" >&2
         echo "  ./v3 agent-reply test-local" >&2
         echo "  ./v3 agent-reply format-readiness [--repository-root=/path/repository] [--json]" >&2
-        exit 1
-        ;;
-    esac
-    ;;
-  codex-handoff)
-    shift
-    SUBCOMMAND="${1:-}"
-    case "${SUBCOMMAND}" in
-      run)
-        shift
-        php "${ROOT}/scripts/run_codex_handoffs.php" "$@"
-        ;;
-      test-local)
-        shift
-        php "${ROOT}/tests/run.php" \
-          CodexHandoffDraftServiceTest \
-          CodexHandoffStoreTest \
-          CodexHandoffRunnerTest \
-          WriteApiSmokeTest::testCodexHandoffApiRequiresApprovedLocalhostAndPreparesDraft \
-          WriteApiSmokeTest::testCodexHandoffApiRejectsNonLocalhostAndSupportsRejectDecision \
-          WriteApiSmokeTest::testCodexHandoffRequiresDevelopmentTagOrThreadLabelInApiAndUi \
-          WriteApiSmokeTest::testCodexHandoffAllowsDevelopmentThreadLabelsOnRootPost \
-          WriteApiSmokeTest::testCodexHandoffReplyAddedThreadLabelShowsRootButtonOnly \
-          WriteApiSmokeTest::testCodexHandoffLifecycleAppearsInActivityAndSurvivesRebuild \
-          WriteApiSmokeTest::testApprovedLocalhostViewerSeesCodexHandoffButtonAndPreviewAfterDraft \
-          WriteApiSmokeTest::testPostAnalysisScriptBindsCodexHandoffActions \
-          "$@"
-        ;;
-      *)
-        echo "Usage:" >&2
-        echo "  ./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]" >&2
-        echo "  ./v3 codex-handoff test-local" >&2
         exit 1
         ;;
     esac

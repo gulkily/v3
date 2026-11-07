@@ -34,7 +34,7 @@ Use this lifecycle for every recipe:
 | Analyze or draft a response for one post | [Agent reply analyze/publish contract](../specs/agent_reply_one_step_analyze_publish_contract_v1.md) |
 | Add an inexpensive advisory moderation signal | [Fastmod](../reference/fast_post_scoring.md) |
 | Run bounded deferred or batch work | [`v3` task-queue commands](../reference/v3_cli.md#manage-the-background-task-queue) |
-| Turn a community request into developer work | [`v3` Codex-handoff commands](../reference/v3_cli.md#run-approved-codex-handoff-requests) |
+| Turn a community request into developer work | [thread to pull request](../agents/thread_to_pr.md) |
 | Configure, audit, or operate LLM-backed work | [production LLM and agent-work guidance](../runbooks/production_deploy.md#llm-provider-config) |
 
 Use a per-post workflow when one post supplies enough context. Use a queued workflow when provider work must not delay publishing or when it examines multiple posts. Use a handoff when the intended result is a developer decision or implementation task rather than a user-facing reply.
@@ -74,10 +74,10 @@ Use a per-post workflow when one post supplies enough context. Use a queued work
 **Use when:** a post proposes a product or technical change that deserves a structured feature request or development review.
 
 - **Trigger and eligibility:** Start from an explicit user request, an appropriate tag, or a conservative proposal classifier. Check for related existing requests before creating a new handoff.
-- **Outcome:** Draft a feature-request post or Codex handoff that preserves the source link, problem, intended benefit, constraints, unanswered questions, and possible duplicates.
+- **Outcome:** Draft a feature-request post or development task that preserves the source link, problem, intended benefit, constraints, unanswered questions, and possible duplicates.
 - **Guard:** Require a developer or moderator to approve the handoff or publication. The workflow must not silently create a roadmap commitment or change the original author’s words.
 - **Operations:** Keep the origin, review decision, and resulting work auditable; expose rejection and retry paths.
-- **Reuse:** [`v3` Codex-handoff commands](../reference/v3_cli.md#run-approved-codex-handoff-requests), the [Railspike workflow](../railspike/RAILSPIKE.md), and [LLM operations guidance](../runbooks/production_deploy.md#llm-provider-config).
+- **Reuse:** [thread to pull request](../agents/thread_to_pr.md), the [Railspike workflow](../railspike/RAILSPIKE.md), and [LLM operations guidance](../runbooks/production_deploy.md#llm-provider-config).
 
 ## Recommended next recipes
 

@@ -935,32 +935,6 @@ Runs the local (non-live) agent-reply test suite: `AgentReplyGenerationTest`,
 
 - no parameters
 
-## Run approved Codex handoff requests
-
-```
-./v3 codex-handoff run [--limit=1] [--dry-run] [--database-path=/path/post_index.sqlite3] [--codex-bin=/path/codex]
-```
-
-Runs approved Codex handoff requests through the local `codex` binary.
-
-- `--limit=...` — maximum number of handoffs to run
-- `--dry-run` — report the approved-handoff count without running anything
-- `--database-path=...` — read-model SQLite file to read handoffs from
-- `--codex-bin=...` — path to the `codex` executable; also overridable via `FORUM_CODEX_EXECUTABLE`
-
-## Run the local Codex handoff test suite
-
-```
-./v3 codex-handoff test-local
-```
-
-Runs the local Codex handoff test suite: `CodexHandoffDraftServiceTest`,
-`CodexHandoffStoreTest`, `CodexHandoffRunnerTest`, and the `WriteApiSmokeTest`
-cases covering the handoff API, approval/rejection flow, development-tag
-requirements, activity lifecycle, and UI bindings.
-
-- no parameters
-
 ## Seed an approved identity (shorthand)
 
 ```

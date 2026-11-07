@@ -478,16 +478,6 @@ final class Application
             return;
         }
 
-        if ($path === '/api/codex_handoff') {
-            $this->postWorkflowApiController()->codexHandoff($method, $query);
-            return;
-        }
-
-        if ($path === '/api/codex_handoff_approval') {
-            $this->postWorkflowApiController()->codexHandoffApproval($method, $query);
-            return;
-        }
-
         if ($path === '/api/apply_thread_tag') {
             $this->tagApiController()->applyThreadTag($method, $query);
             return;
@@ -1510,7 +1500,6 @@ final class Application
             $this->fetchThreadPosts(...),
             $this->llmExchangeRecorder(...),
             $this->resolveViewerProfileFromIdentityHint(...),
-            $this->fetchThread(...),
         );
     }
 
@@ -2291,8 +2280,8 @@ final class Application
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/prepare_post_format', '/api/create_prepared_post_format', '/api/create_identity',
-            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status', '/api/codex_handoff',
-            '/api/codex_handoff_approval', '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
+            '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status',
+            '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
@@ -2567,14 +2556,6 @@ final class Application
             $this->enqueueReadModelRecovery(...),
             $this->sendReadModelCapabilityUnavailable(...),
         );
-    }
-
-    /**
-     * @param array<string, mixed>|null $viewerProfile
-     */
-    private function viewerCanUseCodexHandoff(?array $viewerProfile): bool
-    {
-        return $this->postWorkflowService()->viewerCanUseCodexHandoff($viewerProfile);
     }
 
     /**

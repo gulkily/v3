@@ -83,7 +83,7 @@ The 90-second maximum is enforced even if a larger timeout is configured; the mi
    ./v3 task-queue cron
    ```
 
-4. Install the cron line printed by the last command under the worker identity, loading its private environment first. Keep a **single** normal queue-worker cron entry; do not add the legacy `codex-handoffs` runner for these workflows. The existing worker processes one task per invocation/minute by default. An accepted web action queues immediately; execution starts on the next available worker tick.
+4. Install the cron line printed by the last command under the worker identity, loading its private environment first. Keep a **single** normal queue-worker cron entry. The existing worker processes one task per invocation/minute by default. An accepted web action queues immediately; execution starts on the next available worker tick.
 5. For a controlled initial run, use `./v3 task-queue run --limit=1` under that same identity/environment, or `--task-id=ID` to target the queued assessment. Never run an unlocked parallel custom executor.
 
 The queue's existing exclusive execution lock serializes work. A bounded assessment can delay maintenance by up to its timeout. If that is unacceptable for the host, revisit scheduling in a separately approved change.
@@ -102,7 +102,7 @@ Use a real approved operator browser identity on a 390px-wide phone and a real C
 Local regression commands:
 
 ```bash
-php tests/run.php RailspikeWorkflowTest TaskQueueWorkerTest TaskQueueStoreTest TaskQueueCommandTest CodexHandoffDraftServiceTest CodexHandoffStoreTest CodexHandoffRunnerTest
+php tests/run.php RailspikeWorkflowTest TaskQueueWorkerTest TaskQueueStoreTest TaskQueueCommandTest
 node tests/browser/railspike_workflow_browser.mjs
 ```
 
