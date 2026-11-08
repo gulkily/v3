@@ -59,6 +59,52 @@
   background: #c0c0c0;
 }
 
+/* Give the shared list and account surfaces the same square, raised frame as
+   cards. These containers are not `.card` elements, so the generic theme
+   bevel above does not reach them. */
+:root[data-theme="chicago"] .account-card,
+:root[data-theme="chicago"] .account-group,
+:root[data-theme="chicago"] .account-page > .account-key-advanced,
+:root[data-theme="chicago"] .thread-rows,
+:root[data-theme="chicago"] .board-toolbar,
+:root[data-theme="chicago"] .stack > .board-filter {
+  border: 1px solid #7b7b7b;
+  border-radius: 0;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #7b7b7b;
+}
+
+/* Keep grouped account rows flat inside their window, rather than giving
+   each button-row an independent bevel. */
+:root[data-theme="chicago"] button.account-row {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="chicago"] .account-avatar {
+  border-radius: 0;
+}
+
+/* Account's Advanced disclosure takes the same frame as the rows above it, so
+   give its summary row height and its body the same inset. */
+:root[data-theme="chicago"] .account-page > .account-key-advanced {
+  padding-top: 0;
+}
+
+:root[data-theme="chicago"] .account-page > .account-key-advanced summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 1rem;
+}
+
+:root[data-theme="chicago"] .account-page > .account-key-advanced > div {
+  margin-top: 0;
+  padding: 0.25rem 1rem 1rem;
+}
+
 :root[data-theme="chicago"] .eyebrow {
   display: inline-block;
   margin-bottom: 0.7rem;
@@ -100,4 +146,90 @@
   box-shadow:
     inset 1px 1px 0 0 #a0a0a0,
     inset -1px -1px 0 0 #dfdfdf;
+}
+
+/* One page shell: the page title opens a window directly under the menu bar,
+   as Calendar, About, Tools and threads already do with a titled `.card`.
+   Users and Account title their pages outside any card, so give those titles
+   the same window frame and inset. */
+:root[data-theme="chicago"] .users-page__title,
+:root[data-theme="chicago"] .account-key-header {
+  margin: 0;
+  border: 1px solid #7b7b7b;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #7b7b7b;
+}
+
+:root[data-theme="chicago"] .users-page__title {
+  padding: calc(1rem + 0.67em) 1.1rem;
+}
+
+:root[data-theme="chicago"] .account-key-header {
+  padding: 1rem 1.1rem;
+}
+
+:root[data-theme="chicago"] .account-key-header h1 {
+  margin: 0.67em 0;
+}
+
+/* Messages lists conversations as grouped rows in one window, like Users and
+   Recent, instead of a stack of separate cards. */
+:root[data-theme="chicago"] [data-conversation-list] > [data-role="rows"]:has(> .message-list-row:not([hidden])) {
+  gap: 0;
+  border: 1px solid #7b7b7b;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #7b7b7b;
+}
+
+:root[data-theme="chicago"] [data-conversation-list] .message-list-row {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="chicago"] [data-conversation-list] .message-list-row + .message-list-row {
+  border-top: 1px solid #7b7b7b;
+}
+
+:root[data-theme="chicago"] [data-conversation-list] .message-list-link {
+  padding: 0.6rem 0.9rem;
+}
+
+/* Tag groups are panes inside the Tags window: same grey, etched in, rather
+   than a lighter fill the rest of the theme never uses. */
+:root[data-theme="chicago"] .tags-section-card {
+  background: #c0c0c0;
+}
+
+:root[data-theme="chicago"] .tag-group {
+  border-color: #7b7b7b;
+  background: #c0c0c0;
+  box-shadow:
+    inset -1px -1px 0 0 #ffffff,
+    inset 1px 1px 0 0 #7b7b7b;
+}
+
+/* A page's filter/sort bar hangs off the menu bar: it comes first, shares the
+   menu bar's bottom edge, and insets its controls the way the menu bar does.
+   The stack becomes a column so the bar can lead even where the markup puts
+   the page title or intro first (Users, the visitor's Board). */
+:root[data-theme="chicago"] main > .stack:has(> .board-toolbar) {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Whatever the markup put before the bar now follows it. */
+:root[data-theme="chicago"] main > .stack:has(> .board-toolbar) > :first-child:not(.board-toolbar) {
+  margin-top: 1rem;
+}
+
+:root[data-theme="chicago"] main > .stack > .board-toolbar {
+  order: -1;
+  margin-top: -1px;
+  padding: 0.45rem 0.6rem;
 }
