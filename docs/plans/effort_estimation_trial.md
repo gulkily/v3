@@ -1663,7 +1663,7 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/reply_bare_card` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.05 (retrospective 0.05) | [One-shot record](./reply_bare_card/reply_bare_card_one_shot.md#study-history) | Thread bug report; acceptance pending |
+| `v3/reply_bare_card` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.05 (retrospective 0.05) | [One-shot record](./reply_bare_card/reply_bare_card_one_shot.md#study-history) | Thread bug report; accepted 2026-11-08 |
 
 2026-11-08T17:05Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link). Intake **0.05** after reading the module (no pristine intake), execution entry reaffirmed, retrospective **0.05**. Baseline `d1052b3ff716c55b8d6bb53118d00aa585294b0e`; branch `fix/reply-bare-card`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
@@ -1671,6 +1671,6 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/ctrl_enter_late_signing` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.05; retrospective 0.08) | [One-shot record](./ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md#study-history) | Thread bug report; acceptance pending |
+| `v3/ctrl_enter_late_signing` | One-shot complete; deployed and maintainer-accepted | v1 / R1 / P2 | 0.08 (intake 0.05; retrospective 0.08) | [One-shot record](./ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md#study-history) | Thread bug report; accepted 2026-11-08 |
 
 2026-11-08T16:45Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link). Intake **0.05** after source inspection (no pristine intake); execution entry revised to **0.08** because the bug did not reproduce headlessly and needed diagnostics from the reporter's browser; retrospective **0.08**. Baseline `d1052b3ff716c55b8d6bb53118d00aa585294b0e`, rebased onto `ef72ce2b`; branch `fix/ctrl-enter-late-signing`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

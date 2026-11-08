@@ -7,7 +7,7 @@ Extended estimates: enabled (new-cycle default; one approach, no unit estimates)
 
 **Cycle estimate: 0.08**
 
-Status: technically complete on `fix/ctrl-enter-late-signing`; pushed, not merged or deployed. Next action: maintainer review, merge and deployment.
+Status: complete. Merged in #73 (`1b3de824`), deployed, and accepted by the maintainer on zenmemes.com, 2026-11-08.
 
 ## Request and authorization
 
@@ -54,16 +54,17 @@ Starting revision and branch: `d1052b3ff716c55b8d6bb53118d00aa585294b0e` on `mai
 
 - **Intake, 2026-11-08T16:45Z, 0.05.** Single exposed rater: Claude (claude-opus-5-5). Pristine intake missing: the keyboard handler was read before rating. Scope v1: restore Ctrl+Enter in the board composer. Compared with R1's duplicate preview suppression (0.10).
 - **Execution entry, 2026-11-08T17:05Z, 0.08.** Revised up: the cause could not be reproduced in a fresh, anonymous or simulated approved session and needed diagnostics from the reporter's browser.
-- **Closeout, 2026-11-08.** Projection 0.08 reaffirmed; retrospective scope assessment **0.08**, same single exposed rater. Corrections: none. Additions: none. Delivered scope v1 in full. Maintainer fit and acceptance pending. No active-work measurement collected.
+- **Closeout, 2026-11-08.** Projection 0.08 reaffirmed; retrospective scope assessment **0.08**, same single exposed rater. Corrections: none. Additions: none. Delivered scope v1 in full. Maintainer accepted after verifying on zenmemes.com. No active-work measurement collected.
 
 ## Dated execution history
 
 - 2026-11-08: replayed in headless Chrome locally and against production (fresh, typed immediately, saved key, all 15 themes, simulated approved member, offline); all submitted. Reporter's browser diagnostics located the unbound composer and the late signing load.
 - 2026-11-08: record and feedback item created; fix and test implemented.
+- 2026-11-08: merged in #73 and deployed; the maintainer confirmed Ctrl+Enter works on zenmemes.com.
 
 ## Outcome
 
-Delivered as bounded. Limitations: the exact load interleaving in the reporter's browser was not reproduced headlessly; the fix was checked against its observed state. Production changes only after deployment.
+Delivered as bounded. Limitations: the exact load interleaving in the reporter's browser was not reproduced headlessly; the fix was checked against its observed state.
 
 ## Verification
 
