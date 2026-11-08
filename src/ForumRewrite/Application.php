@@ -728,7 +728,7 @@ final class Application
                     'Documentation unavailable',
                     'Documentation unavailable',
                     'The document could not be rendered. Retry after the operator restores the complete application package.',
-                    'docs',
+                    'tools',
                 ), 503, ['Retry-After' => '60']);
                 return;
             }

@@ -13,6 +13,9 @@ $menuItems = array_values(array_filter($navItems, static fn (array $item): bool 
 $moreItems = array_values(array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? 'main') === 'main' && ($item['phone'] ?? 'bar') === 'more'));
 // Phones: on a page listed in the panel, the More tab takes that page's name.
 $hiddenCurrent = array_values(array_filter([...$moreItems, ...$menuItems], static fn (array $item): bool => $item['section'] === $activeSection))[0] ?? null;
+// Desktop: on a page that lives in the account menu (Account, Invite, own Profile),
+// the You button is the selected destination.
+$menuCurrent = array_values(array_filter($menuItems, static fn (array $item): bool => $item['section'] === $activeSection))[0] ?? null;
 $canPost = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'board') !== [];
 ?>
 <header class="site-header site-header--app">
@@ -22,9 +25,9 @@ $canPost = array_filter($navItems, static fn (array $item): bool => $item['secti
 <?php if ($canPost): ?>
     <a class="new-post-button<?= $activeSection === 'compose' ? ' is-active' : '' ?>" href="/compose/thread" data-tab="compose"><span class="new-post-button__icon" aria-hidden="true">+</span><span class="new-post-button__label">New post</span></a>
 <?php endif; ?>
-    <details class="account-menu" data-role="account-menu" data-tab="account"<?= $hiddenCurrent !== null ? ' data-current="' . $e($hiddenCurrent['section']) . '"' : '' ?>>
+    <details class="account-menu" data-role="account-menu" data-tab="account"<?= $hiddenCurrent !== null ? ' data-current="' . $e($hiddenCurrent['section']) . '"' : '' ?><?= $menuCurrent !== null ? ' data-current-menu="' . $e($menuCurrent['section']) . '"' : '' ?>>
       <?php $hasInbox = in_array('inbox', array_column($navItems, 'section'), true); ?>
-      <summary class="account-menu__trigger" aria-label="Menu" <?= $hasInbox ? 'data-inbox-unread-mirror' : 'data-private-message-unread-mirror' ?>><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span><?php if ($hiddenCurrent !== null): ?><span class="account-menu__label account-menu__label--current"><?= $e($hiddenCurrent['label']) ?></span><?php endif; ?></summary>
+      <summary class="account-menu__trigger" aria-label="Menu"<?= $menuCurrent !== null ? ' aria-current="page"' : '' ?> <?= $hasInbox ? 'data-inbox-unread-mirror' : 'data-private-message-unread-mirror' ?>><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span><?php if ($hiddenCurrent !== null): ?><span class="account-menu__label account-menu__label--current"><?= $e($hiddenCurrent['label']) ?></span><?php endif; ?></summary>
       <div class="account-menu__panel">
 <?php if ($moreItems !== []): ?>
         <nav class="account-menu__links account-menu__more" aria-label="More destinations">
