@@ -147,3 +147,69 @@
     inset 1px 1px 0 0 #a0a0a0,
     inset -1px -1px 0 0 #dfdfdf;
 }
+
+/* One page shell: the page title opens a window directly under the menu bar,
+   as Calendar, About, Tools and threads already do with a titled `.card`.
+   Users and Account title their pages outside any card, so give those titles
+   the same window frame and inset. */
+:root[data-theme="chicago"] .users-page__title,
+:root[data-theme="chicago"] .account-key-header {
+  margin: 0;
+  border: 1px solid #7b7b7b;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #7b7b7b;
+}
+
+:root[data-theme="chicago"] .users-page__title {
+  padding: calc(1rem + 0.67em) 1.1rem;
+}
+
+:root[data-theme="chicago"] .account-key-header {
+  padding: 1rem 1.1rem;
+}
+
+:root[data-theme="chicago"] .account-key-header h1 {
+  margin: 0.67em 0;
+}
+
+/* Messages lists conversations as grouped rows in one window, like Users and
+   Recent, instead of a stack of separate cards. */
+:root[data-theme="chicago"] [data-conversation-list] > [data-role="rows"]:has(> .message-list-row:not([hidden])) {
+  gap: 0;
+  border: 1px solid #7b7b7b;
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px 0 0 #ffffff,
+    inset -1px -1px 0 0 #7b7b7b;
+}
+
+:root[data-theme="chicago"] [data-conversation-list] .message-list-row {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="chicago"] [data-conversation-list] .message-list-row + .message-list-row {
+  border-top: 1px solid #7b7b7b;
+}
+
+:root[data-theme="chicago"] [data-conversation-list] .message-list-link {
+  padding: 0.6rem 0.9rem;
+}
+
+/* Tag groups are panes inside the Tags window: same grey, etched in, rather
+   than a lighter fill the rest of the theme never uses. */
+:root[data-theme="chicago"] .tags-section-card {
+  background: #c0c0c0;
+}
+
+:root[data-theme="chicago"] .tag-group {
+  border-color: #7b7b7b;
+  background: #c0c0c0;
+  box-shadow:
+    inset -1px -1px 0 0 #ffffff,
+    inset 1px 1px 0 0 #7b7b7b;
+}
