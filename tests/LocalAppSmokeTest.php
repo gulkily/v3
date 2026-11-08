@@ -3042,7 +3042,7 @@ PHP;
         assertStringContains('requires Unicode authored text', $featureFlags);
     }
 
-    public function testNegativeRootScoreIsFilteredOnlyFromLikedBoardListings(): void
+    public function testNegativeRootScoreIsHiddenFromPublicListingsButStillReachable(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-negative-liked-fixture-' . bin2hex(random_bytes(6));
         mkdir($repositoryRoot, 0777, true);
@@ -3073,7 +3073,7 @@ PHP;
         assertStringNotContains('href="/threads/root-001"', $likedNewest);
         assertStringNotContains('href="/threads/root-001"', $likedOldest);
         assertStringNotContains('href="/threads/root-001"', $likedTop);
-        assertStringContains('href="/threads/root-001"', $allThreads);
+        assertStringNotContains('href="/threads/root-001"', $allThreads);
         assertStringContains('id="post-root-001"', $thread);
         assertStringContains('id="post-reply-001"', $thread);
         assertStringContains('Score: -100', $post);

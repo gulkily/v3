@@ -27,6 +27,7 @@ final class QdbPage
             in_array('pinned', ThreadRowSupport::decodeStringList((string) $labels), true), 1);
         $base = ' FROM threads JOIN posts ON posts.post_id = threads.root_post_id
             WHERE threads.retracted_at IS NULL
+            AND ' . ScoreVisibility::listedSql() . '
             AND qdb_page_eligible(threads.root_post_id, threads.board_tags_json)';
         $scoreOrder = match ($section) {
             'top' => 'CAST(threads.score_total AS INTEGER) DESC, ',

@@ -22,6 +22,7 @@ final class ThreadKeysetPage
 
         return " FROM threads JOIN posts ON posts.post_id = threads.root_post_id
             WHERE threads.retracted_at IS NULL
+            AND " . ScoreVisibility::listedSql() . "
             AND NOT EXISTS (SELECT 1 FROM json_each($board) WHERE type = 'text' AND value = 'identity' COLLATE BINARY)";
     }
 

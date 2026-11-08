@@ -16,7 +16,7 @@ final class QdbWelcomeSelection
     {
         $statement = $pdo->query('SELECT threads.root_post_id, threads.root_post_created_at, threads.board_tags_json
             FROM threads JOIN posts ON posts.post_id = threads.root_post_id
-            WHERE threads.retracted_at IS NULL
+            WHERE threads.retracted_at IS NULL AND ' . \ForumRewrite\ReadModel\ScoreVisibility::listedSql() . '
             ORDER BY threads.last_activity_at DESC, threads.root_post_id DESC');
         $quoteCount = $newsCount = 0;
         $recent = $news = [];

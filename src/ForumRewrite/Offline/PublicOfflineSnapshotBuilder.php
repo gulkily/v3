@@ -254,7 +254,7 @@ final class PublicOfflineSnapshotBuilder
                     posts.author_profile_slug
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
-             WHERE posts.is_hidden = 0
+             WHERE posts.is_hidden = 0 AND ' . \ForumRewrite\ReadModel\ScoreVisibility::listedSql() . '
              ORDER BY threads.last_activity_at DESC, threads.root_post_id DESC'
         );
         try {

@@ -49,7 +49,7 @@ final class BoardListingQueryTest
         foreach (ReadModelSchema::statements() as $sql) { $pdo->exec($sql); }
         $post = $pdo->prepare('INSERT INTO posts (post_id,created_at,thread_id,body,board_tags_json,sequence_number,post_score_total,is_hidden) VALUES (?,?,?,?,?,?,?,?)');
         $thread = $pdo->prepare('INSERT INTO threads (root_post_id,root_post_created_at,last_activity_at,body_preview,reply_count,last_post_id,board_tags_json,thread_labels_json,score_total,retracted_at) VALUES (?,?,?,?,?,?,?,?,?,?)');
-        for ($i = 0; $i < 130; $i++) {
+        for ($i = 0; $i < 200; $i++) {
             $id = sprintf('thread-%03d', $i);
             $date = '2026-10-' . sprintf('%02d', 1 + ($i % 10));
             $tags = $i === 0 ? '["identity"]' : ($i === 1 ? 'broken' : ($i === 2 ? '"identity"' : '[]'));
