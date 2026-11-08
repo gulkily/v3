@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/reply_bare_card` — [host ledger](../effort_estimation_trial.md#cycle-v3reply_bare_card); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.05**
-Status: planning; next permitted action: implementation on `fix/reply-bare-card`
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -46,7 +46,7 @@ Host `main` at `d1052b3ff716c55b8d6bb53118d00aa585294b0e`; branch `fix/reply-bar
 
 ## Planning commit
 
-Pending (this commit).
+`b442873` (confirmed with Git).
 
 ## Study history
 
@@ -55,5 +55,30 @@ Pending (this commit).
 ## Dated execution history
 
 - 2026-11-08T16:56Z: chronology disclosure: the one-line fix and test assertion were drafted in the working tree while diagnosing, before this record existed. They are held out of this planning commit and land in the completion commit.
+- 2026-11-08T17:05Z: implemented as planned: removed the line in `update()` that cleared and hid the status on acceptance. Added the held-render assertion to `tests/browser/reply_full_card.mjs`; it fails on unchanged code ("pending status stays until the full card") and passes with the fix.
+- 2026-11-08T17:05Z: no matching feedback item existed (searched `docs/feedback/items/` for the thread and for reply rendering); created PF-20261108-B01. PF-20261021-B04 (slow reply feedback) is related but about latency, not the bare intermediate card.
+
+## Study closeout
+
+Intake 0.05; execution entry reaffirmed; **retrospective 0.05**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
+
+## Outcome
+
+Delivered: a sent reply keeps its "Posting…" status from send until the full post replaces it, on the inline composer and the reply page. Render-failure recovery unchanged.
+
+## Verification
+
+- `node tests/browser/reply_full_card.mjs` (Chromium): desktop inline and dedicated pass, including the new assertion and render-only retry without resend. The later phone section fails with "full phone card above re-entry inline light"; it fails identically on unchanged `main`, so it is pre-existing and unrelated.
+- `node tests/browser/reply_continuation.mjs`: times out at line 137 (image compose fields) on both this branch and unchanged `main`; pre-existing, unrelated.
+- `./v3 test --smoke BrowserSigningNormalizationTest`: passes except `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged`, which also fails on unchanged `main`.
+- Full suite not run. Not checked: Firefox, WebKit, a physical phone, production.
+
+## Final review
+
+Diff is one removed line plus a comment in `reply_continuation.js` and one test assertion; no duplication, within scope.
+
+## Commit status
+
+Planning commit `b442873`; completion commit follows on `fix/reply-bare-card`. Merge and deploy are not covered by this cycle's authority.
 
 *— Claude · 2026-11-08 UTC · Model: claude-opus-5-5*

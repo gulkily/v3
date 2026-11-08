@@ -1658,3 +1658,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/calendar_today` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (retrospective 0.08) | [One-shot record](./calendar_today/calendar_today_one_shot.md#study-history) | Thread request; acceptance pending |
 
 2026-11-08T03:44Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link). Intake **0.08** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `d6e068623eb87bbe2bd268c397daaf70a54ad7aa`; branch `feat/calendar-today`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/reply_bare_card
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/reply_bare_card` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.05 (retrospective 0.05) | [One-shot record](./reply_bare_card/reply_bare_card_one_shot.md#study-history) | Thread bug report; acceptance pending |
+
+2026-11-08T17:05Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link). Intake **0.05** after reading the module (no pristine intake), execution entry reaffirmed, retrospective **0.05**. Baseline `d1052b3ff716c55b8d6bb53118d00aa585294b0e`; branch `fix/reply-bare-card`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

@@ -113,7 +113,8 @@
           if (preview && item.imageUrl && preview.getAttribute('src') !== item.imageUrl) {
             URL.revokeObjectURL(preview.src); preview.src = item.imageUrl;
           }
-          status.textContent = ''; status.hidden = true;
+          // Keep the pending status until the full post replaces this card,
+          // so the reply never shows as a bare body without byline or actions.
           const canonical = document.getElementById('post-' + item.result.postId);
           if (canonical && canonical !== card) {
             if (preview) URL.revokeObjectURL(preview.src);
