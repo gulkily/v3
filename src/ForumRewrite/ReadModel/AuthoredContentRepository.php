@@ -30,7 +30,7 @@ final class AuthoredContentRepository
             throw new \InvalidArgumentException('Unknown profile history.');
         }
         $where = "posts.author_identity_id = :identity
-            AND posts.is_hidden = 0 AND posts.retracted_at IS NULL
+            AND posts.is_hidden = 0 AND posts.retracted_at IS NULL AND " . ScoreVisibility::listedSql() . "
             AND COALESCE(json_extract(posts.agent_response_json, '$.type'), '') <> 'scripture_expansion'
             AND NOT EXISTS (SELECT 1 FROM json_each(posts.board_tags_json) WHERE value = 'identity')";
         if ($kind === 'threads') {
@@ -95,6 +95,7 @@ final class AuthoredContentRepository
              JOIN posts ON posts.post_id = threads.root_post_id
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE threads.retracted_at IS NULL
+               AND ' . ScoreVisibility::listedSql() . '
                AND threads.root_post_id IN (
                  SELECT post_id FROM posts
                  WHERE post_id = thread_id AND attribution_counted = 1 AND author_identity_id IN (%s)
@@ -133,6 +134,7 @@ final class AuthoredContentRepository
              WHERE author_identity_id IN (%s)
                AND posts.attribution_counted = 1
                AND posts.is_hidden = 0
+               AND ' . ScoreVisibility::listedSql() . '
                AND posts.retracted_at IS NULL
                AND COALESCE(json_extract(posts.agent_response_json, \'$.type\'), \'\') <> \'scripture_expansion\'
              ORDER BY created_at DESC, sequence_number DESC, post_id DESC',

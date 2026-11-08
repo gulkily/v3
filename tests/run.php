@@ -26,6 +26,7 @@ $testFiles = [
     __DIR__ . '/CommitEvidenceLookupTest.php',
     __DIR__ . '/CommitHistoryReaderTest.php',
     __DIR__ . '/RecentPostTest.php',
+    __DIR__ . '/ScoreVisibilityTest.php',
     __DIR__ . '/FeedbackItemCheckTest.php',
     __DIR__ . '/FastmodScoreTransferTest.php',
     __DIR__ . '/FastmodDerivedTagsTest.php',

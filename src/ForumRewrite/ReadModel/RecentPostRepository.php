@@ -15,10 +15,13 @@ final class RecentPostRepository
             root.post_id AS context_id, substr(root.subject,1,256) AS context_subject, substr(root.body,1,1024) AS context_body, root.body_format AS context_body_format
             FROM posts LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
             LEFT JOIN posts root ON root.post_id = posts.thread_id AND root.is_hidden = 0 AND root.retracted_at IS NULL
+                AND COALESCE(root.post_score_total, 0) >= 0
                 AND NOT EXISTS (SELECT 1 FROM json_each(root.board_tags_json) WHERE value = 'identity')
             ";
 
     private const ELIGIBLE = "posts.is_hidden = 0 AND posts.retracted_at IS NULL
+        AND COALESCE(posts.post_score_total, 0) >= 0
+        AND NOT EXISTS (SELECT 1 FROM posts flagged_root WHERE flagged_root.post_id = posts.thread_id AND COALESCE(flagged_root.post_score_total, 0) < 0)
         AND COALESCE(json_extract(posts.agent_response_json, '$.type'), '') <> 'scripture_expansion'
         AND NOT EXISTS (SELECT 1 FROM json_each(posts.board_tags_json) WHERE value = 'identity')";
 

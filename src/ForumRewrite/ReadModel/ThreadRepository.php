@@ -52,6 +52,7 @@ final class ThreadRepository
              JOIN posts ON posts.post_id = threads.root_post_id
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE threads.retracted_at IS NULL
+               AND ' . ScoreVisibility::listedSql() . '
              ORDER BY last_activity_at DESC, root_post_id DESC';
     }
 
