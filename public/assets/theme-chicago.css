@@ -233,3 +233,17 @@
   margin-top: -1px;
   padding: 0.45rem 0.6rem;
 }
+
+/* A toggle that is already on and cannot be pressed again (Liked, Flagged,
+   Voted): pushed in, with the greyed, etched label Chicago uses for disabled
+   controls. The second selector outranks the Like/Flag bevel above. */
+:root[data-theme="chicago"] button[aria-pressed="true"]:disabled,
+:root[data-theme="chicago"] .post-card-actions button.thread-reaction-button[aria-pressed="true"]:disabled {
+  opacity: 1;
+  color: #7b7b7b;
+  text-shadow: 1px 1px 0 #ffffff;
+  border-color: #7b7b7b #ffffff #ffffff #7b7b7b;
+  box-shadow:
+    inset 1px 1px 0 0 #a0a0a0,
+    inset -1px -1px 0 0 #dfdfdf;
+}
