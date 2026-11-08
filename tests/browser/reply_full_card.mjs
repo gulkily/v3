@@ -62,7 +62,10 @@ try {
   const card=page.locator('[data-reply-operation]').last();await card.waitFor();
   assert.match(await card.textContent(),/END OF COMPLETE REPLY/);
   const operation=await card.getAttribute('data-reply-operation');
-  await page.locator('[data-reply-operation="'+operation+'"][data-reply-state="accepted"]').waitFor();
+  const accepted=page.locator('[data-reply-operation="'+operation+'"][data-reply-state="accepted"]');await accepted.waitFor();
+  // Until the full post arrives, the accepted card still reads as pending, never as a bare body.
+  assert.equal(await accepted.locator('[data-role="pending-reply-status"]').isVisible(),true,'pending status stays until the full card');
+  assert.equal(await accepted.locator('[data-role="pending-reply-status"]').textContent(),'Posting…');
   await body.fill('Newer draft stays here');await body.evaluate(el=>el.setSelectionRange(3,8));
   release();const full=page.locator('[data-reply-operation="'+operation+'"][data-reply-rendered="1"]');await full.waitFor();
   const postId=await full.getAttribute('data-post-id');
