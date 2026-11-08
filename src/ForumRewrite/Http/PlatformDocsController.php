@@ -37,7 +37,7 @@ final class PlatformDocsController
             'platform_docs_index.php',
             ['library' => $library, 'counts' => $counts, 'isResults' => $isResults, 'searchShell' => $searchShell, 'query' => $query, 'page' => $page, 'total' => $total, 'categories' => $categories, 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active())],
             'Platform Docs',
-            'docs',
+            'tools',
             ['/assets/platform_docs.js'],
         );
     }
@@ -80,7 +80,7 @@ final class PlatformDocsController
                 'platformDocsBrand' => ProfilePresentationContent::platformDocs(SiteProfileRegistry::active()),
             ],
             $documentTitle . ' - Platform Docs',
-            'docs',
+            'tools',
             ['/assets/platform_docs.js'],
         );
     }
@@ -88,7 +88,7 @@ final class PlatformDocsController
     public function missing(): string
     {
         return $this->routeServices->renderPageTemplate(
-            'platform_docs_missing.php', [], 'Document not found', 'docs', ['/assets/platform_docs.js'],
+            'platform_docs_missing.php', [], 'Document not found', 'tools', ['/assets/platform_docs.js'],
         );
     }
 

@@ -80,7 +80,7 @@ final class ActivityPageController
                 ),
             ],
             $view === 'security' ? 'Access history' : 'Activity',
-            'activity',
+            'tools',
             ['/assets/openpgp_loader.js','/assets/browser_signing.js','/assets/private_site_auth.js'],
         );
     }

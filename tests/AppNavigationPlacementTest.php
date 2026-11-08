@@ -154,6 +154,8 @@ final class AppNavigationPlacementTest
             // Board is in the bar, so the More tab keeps its own name.
             assertSame(false, str_contains($menu[0], 'data-current'));
             assertSame(false, str_contains($menu[0], 'account-menu__label--current'));
+            assertSame(false, str_contains($menu[0], 'data-current-menu'));
+            assertSame(false, str_contains($menu[0], 'aria-current'));
             assertStringContains('href="/messages" data-member-only data-private-message-unread-mirror', $menu[0]);
             assertStringContains('data-invite-navigation', $menu[0]);
             assertStringContains('data-role="theme-menu"', $menu[0]);
@@ -170,8 +172,27 @@ final class AppNavigationPlacementTest
             $renderer = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true]);
             foreach ([['about', 'About'], ['profiles', 'Users'], ['messages', 'Messages'], ['account', 'Account']] as [$section, $label]) {
                 $html = $renderer->renderLayout($label, '', $section, viewerProfile: self::VIEWERS['approved']);
-                assertStringContains('data-tab="account" data-current="' . $section . '">', $html);
+                assertStringContains('data-tab="account" data-current="' . $section . '"', $html);
                 assertStringContains('account-menu__label--more">More</span><span class="account-menu__label account-menu__label--current">' . $label . '</span></summary>', $html);
+            }
+        });
+    }
+
+    public function testYouButtonIsSelectedOnPagesListedInTheAccountMenu(): void
+    {
+        $this->withSite('zenmemes', function (): void {
+            $renderer = $this->renderer([FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED => true]);
+            foreach (['account', 'invite'] as $section) {
+                $html = $renderer->renderLayout('Page', '', $section, viewerProfile: self::VIEWERS['approved']);
+                assertStringContains('data-current-menu="' . $section . '">', $html);
+                assertStringContains('<summary class="account-menu__trigger" aria-label="Menu" aria-current="page"', $html);
+            }
+            // Bar destinations, including phone-only More ones, leave the You button alone on desktop.
+            foreach (['board', 'about', 'messages', 'tools'] as $section) {
+                $html = $renderer->renderLayout('Page', '', $section, viewerProfile: self::VIEWERS['approved']);
+                preg_match('/<details class="account-menu".*?>/s', $html, $menuTag);
+                assertSame(false, str_contains($menuTag[0], 'data-current-menu'), $section);
+                assertSame(false, str_contains($html, 'aria-current="page"'), $section);
             }
         });
     }

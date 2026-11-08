@@ -122,7 +122,7 @@ final class InstancePageController
 
         if (!is_file($this->databasePath)) {
             $this->routeServices->sendHtml(
-                $this->routeServices->renderMessagePage('Not Found', 'Not Found', 'Read-model database is not available yet.', 'instance'),
+                $this->routeServices->renderMessagePage('Not Found', 'Not Found', 'Read-model database is not available yet.', 'tools'),
                 404
             );
             return;
@@ -141,7 +141,7 @@ final class InstancePageController
         $path = $this->projectRoot . '/public/assets/sqlite_query_catalog.sql';
         if (!is_file($path)) {
             $this->routeServices->sendHtml(
-                $this->routeServices->renderMessagePage('Not Found', 'Not Found', 'SQLite query catalog is not available yet.', 'instance'),
+                $this->routeServices->renderMessagePage('Not Found', 'Not Found', 'SQLite query catalog is not available yet.', 'tools'),
                 404
             );
             return;

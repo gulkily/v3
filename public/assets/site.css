@@ -605,6 +605,18 @@ pre {
   background: var(--panel);
 }
 
+/* Desktop: on a page listed in the account menu (Account, Invite, own Profile) the
+   You button is the current destination, so it takes the selected look. Phones show
+   that page's name on the More tab instead (data-current below). */
+@media (min-width: 640px) {
+  :root .account-menu[data-current-menu] > .account-menu__trigger {
+    border-color: var(--active-line);
+    background: var(--active-bg);
+    color: var(--active-ink);
+    font-weight: 600;
+  }
+}
+
 /* The trigger reads "You" on desktop and "More" on phones; the More list of
    bar destinations exists only for phones. Both are decided in CSS so the
    server HTML is the same at every width. */
