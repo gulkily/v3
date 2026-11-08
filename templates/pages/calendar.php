@@ -16,6 +16,7 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 <?php else: ?>
     <nav class="calendar-nav meta" aria-label="Months">
       <a href="<?= $e($calendarPrevious) ?>" rel="prev">← Earlier</a>
+      <a href="<?= $e($calendarBase) ?>" data-calendar-today hidden>Today</a>
       <a href="<?= $e($calendarNext) ?>" rel="next">Later →</a>
 <?php if ($calendarTag !== null): ?>
       <a href="/calendar">All events</a>
@@ -64,3 +65,22 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 <?php endforeach; ?>
 <?php endif; ?>
 </section>
+<?php if ($calendarEnabled): ?>
+<script>
+  // Before paint, in the viewer's own time zone: mark today, or offer Today when its month is not shown.
+  (function () {
+    var now = new Date();
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var today = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+    var cell = document.querySelector('[data-calendar-day="' + today + '"]');
+    if (cell) {
+      cell.classList.add('calendar-day--today');
+      cell.querySelector('.calendar-day__number').setAttribute('aria-current', 'date');
+      return;
+    }
+    var link = document.querySelector('[data-calendar-today]');
+    link.setAttribute('href', link.getAttribute('href') + '?month=' + today.slice(0, 7));
+    link.hidden = false;
+  })();
+</script>
+<?php endif; ?>

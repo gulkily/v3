@@ -1650,3 +1650,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/board_thread_search` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.30 (intake 0.25; retrospective 0.30) | [One-shot record](./board_thread_search/board_thread_search_one_shot.md#study-history) | Item 1 of the [board search checklist](./board_search_checklist.md); acceptance pending |
 
 2026-11-03: standing P2 enrollment of a one-shot cycle for zenmemes thread-only search. Baseline `446aa34c7fcc4d8691e9dcc0af9c8b71a4b98175`. Claude (claude-opus-5-5) is the single exposed rater, and R1 hashes were verified. The intake of 0.25 followed source inspection, so no pristine intake exists. Execution entry revised it to 0.30 from new understanding: the read-model version contract and the canonical keyset pagination. Closeout reaffirmed 0.30, with a retrospective of 0.30. No measured labor, independent rating or accepted-count increment.
+
+## Cycle v3/calendar_today
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/calendar_today` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (retrospective 0.08) | [One-shot record](./calendar_today/calendar_today_one_shot.md#study-history) | Thread request; acceptance pending |
+
+2026-11-08T03:44Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link). Intake **0.08** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `d6e068623eb87bbe2bd268c397daaf70a54ad7aa`; branch `feat/calendar-today`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

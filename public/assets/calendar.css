@@ -57,6 +57,14 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
   font-family: var(--ui-font);
   font-size: 0.8rem;
 }
+/* Today, marked by the page's script in the viewer's time zone; the ring holds on hover. */
+.calendar-day.calendar-day--today,
+.calendar-day.calendar-day--today:hover {
+  box-shadow: inset 0 0 0 2px var(--active-line);
+}
+.calendar-day--today .calendar-day__number {
+  font-weight: 700;
+}
 /* The whole square opens the day; event titles sit above it and open their threads. */
 .calendar-day__number::after {
   content: "";
