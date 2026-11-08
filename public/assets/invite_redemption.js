@@ -97,10 +97,10 @@
         feedback(status, "Invitation accepted. Verifying member access…", "ok");
         const authenticated = await window.PrivateSiteAuth.authenticate({ navigate: false, force: true });
         if (authenticated.status !== "approved" || authenticated.identityId !== identityId) {
-          throw new Error("Member access could not be verified. Retry or review your account.");
+          throw new Error("Member access could not be verified.");
         }
         const target = destination(finalized.destination);
-        if (inspected.targeted && !target) throw new Error("Invitation destination is unavailable. Your membership is saved; use the board link below.");
+        if (inspected.targeted && !target) throw new Error("Invitation destination is unavailable. Your membership is saved; open the board from the menu.");
         // Keep the bearer in the current page until access succeeds, allowing reload/retry
         // after a lost response. Replace the Lobby entry so Back does not redeem again.
         try { sessionStorage.removeItem("forum_invite_destination"); sessionStorage.removeItem(draftKey); } catch (error) {}
@@ -115,6 +115,15 @@
       }
     }
     form.addEventListener("submit", function (event) { event.preventDefault(); void redeem(true); });
+    // Enter redeems even when no field is shown or focus has drifted to the page itself.
+    (nameField.hidden ? button : nameInput).focus({ preventScroll: true });
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" || event.defaultPrevented || event.isComposing) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && active !== document.documentElement) return;
+      event.preventDefault();
+      form.requestSubmit();
+    });
     nameInput.addEventListener('input', function () {
       try { sessionStorage.setItem(draftKey, nameInput.value); }
       catch (error) { feedback(status, 'Unable to save your name for retry. Allow browser storage and try again.', 'error'); }
