@@ -4096,7 +4096,14 @@
   window.ForumBrowserSigning.prepareOutboxPost = prepareOutboxPost;
   window.ForumBrowserSigning.finalizeOutboxPost = finalizeOutboxPost;
 
-  document.addEventListener("DOMContentLoaded", function () {
+  // Approved members' pages fetch this script later, with the messaging scripts,
+  // after DOMContentLoaded has fired; set up right away then, or the composer
+  // never gets its Ctrl+Enter shortcut.
+  if (document.readyState === "interactive" || document.readyState === "complete") {
     initBrowserSigning(document);
-  });
+  } else {
+    document.addEventListener("DOMContentLoaded", function () {
+      initBrowserSigning(document);
+    });
+  }
 })();

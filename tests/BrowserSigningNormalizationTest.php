@@ -3018,6 +3018,89 @@ NODE;
         assertSame(0, $result['anonymousClicks']);
     }
 
+    // Approved members' pages load browser_signing.js with the messaging scripts,
+    // after DOMContentLoaded; it must still bind the composer and its Ctrl+Enter.
+    public function testLateLoadBindsComposerCtrlEnterWithoutDomContentLoaded(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = { keydownHandler: null, requestSubmitCalls: [], domContentLoadedListeners: 0 };
+
+function makeField(tagName, name, value, type) {
+  return {
+    tagName, name, value, defaultValue: value, dataset: {}, disabled: false, hidden: false,
+    getAttribute(attribute) { return attribute === 'type' ? (type || null) : null; },
+    addEventListener() {}
+  };
+}
+
+const body = Object.assign(makeField('TEXTAREA', 'body', 'Draft body', null), { dataset: { composeFieldLabel: 'Body' } });
+const author = makeField('INPUT', 'author_identity_id', '', 'hidden');
+const primaryButton = { dataset: {}, disabled: false, click() {} };
+const form = {
+  dataset: { composeKind: 'thread' },
+  querySelector(selector) { return selector === 'input[name="author_identity_id"]' ? author : null; },
+  querySelectorAll(selector) {
+    if (selector === 'input[name], textarea[name]') return [author, body];
+    if (selector === 'button[type="submit"], input[type="submit"]') return [primaryButton];
+    return [];
+  },
+  addEventListener(type, handler) { if (type === 'keydown') state.keydownHandler = handler; },
+  requestSubmit(submitter) { state.requestSubmitCalls.push(submitter === primaryButton ? 'primary' : 'other'); },
+  reset() {},
+  submit() {}
+};
+const statusNode = { dataset: {}, textContent: '', hidden: true, querySelector() { return null; } };
+const root = {
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '[data-compose-form]') return form;
+    if (selector === '[data-role="compose-identity-status"]') return statusNode;
+    return null;
+  },
+  querySelectorAll() { return []; }
+};
+
+global.window = { addEventListener() {}, setTimeout(callback) { callback(); } };
+global.localStorage = { getItem() { return null; }, setItem() {}, removeItem() {} };
+global.sessionStorage = { getItem() { return null; }, setItem() {}, removeItem() {} };
+global.document = {
+  readyState: 'complete',
+  // DOMContentLoaded has already fired; a listener added now is never called.
+  addEventListener(type) { if (type === 'DOMContentLoaded') state.domContentLoadedListeners += 1; },
+  querySelector(selector) { return selector.indexOf('[data-compose-root]') !== -1 ? root : null; },
+  createElement() { return { setAttribute() {}, style: {}, addEventListener() {}, appendChild() {}, querySelector() { return null; } }; },
+  createTextNode(text) { return { textContent: text }; },
+  body: { appendChild() {}, removeChild() {} }
+};
+global.navigator = {};
+
+vm.runInThisContext(source);
+let prevented = false;
+if (state.keydownHandler) {
+  state.keydownHandler({ key: 'Enter', ctrlKey: true, metaKey: false, shiftKey: false, altKey: false, target: body, preventDefault() { prevented = true; } });
+}
+
+process.stdout.write(JSON.stringify({
+  bound: root.dataset.browserSigningBound || '',
+  hasKeydownHandler: Boolean(state.keydownHandler),
+  prevented,
+  requestSubmitCalls: state.requestSubmitCalls,
+  domContentLoadedListeners: state.domContentLoadedListeners
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('1', $result['bound']);
+        assertSame(true, $result['hasKeydownHandler']);
+        assertSame(true, $result['prevented']);
+        assertSame(['primary'], $result['requestSubmitCalls']);
+        assertSame(0, $result['domContentLoadedListeners']);
+    }
+
     public function testReplySubmitTransportHelpersCollectFieldsAndParseResponses(): void
     {
         $script = <<<'NODE'

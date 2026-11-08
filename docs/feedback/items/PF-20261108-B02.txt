@@ -1,0 +1,15 @@
+ID: PF-20261108-B02
+Title: Ctrl+Enter does nothing in the board composer for approved members
+Kind: bug
+Workflow: blocked
+Created: 2026-11-08
+Evidence: locally-verified
+
+Request:
+Ctrl+Enter in the board page's compose form stopped submitting. Reported in Chrome on Windows by an approved member.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261108164027-d91d0c9c
+
+Notes:
+2026-11-08: Cause: approved members' pages load browser_signing.js with the messaging scripts (since d9a0b0a1), which can land after DOMContentLoaded; the script only set itself up on that event, so the composer was never bound. Fixed in fix/ctrl-enter-late-signing: the script initializes immediately when loaded after parsing. Checked against the reporter's recorded browser state and a new unit test; the exact interleaving was not reproduced headlessly. Blocked until deployed and checked on zenmemes.com. Record: docs/plans/ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md
