@@ -213,3 +213,23 @@
     inset -1px -1px 0 0 #ffffff,
     inset 1px 1px 0 0 #7b7b7b;
 }
+
+/* A page's filter/sort bar hangs off the menu bar: it comes first, shares the
+   menu bar's bottom edge, and insets its controls the way the menu bar does.
+   The stack becomes a column so the bar can lead even where the markup puts
+   the page title or intro first (Users, the visitor's Board). */
+:root[data-theme="chicago"] main > .stack:has(> .board-toolbar) {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Whatever the markup put before the bar now follows it. */
+:root[data-theme="chicago"] main > .stack:has(> .board-toolbar) > :first-child:not(.board-toolbar) {
+  margin-top: 1rem;
+}
+
+:root[data-theme="chicago"] main > .stack > .board-toolbar {
+  order: -1;
+  margin-top: -1px;
+  padding: 0.45rem 0.6rem;
+}
