@@ -87,6 +87,24 @@
   border-radius: 0;
 }
 
+/* Account's Advanced disclosure takes the same frame as the rows above it, so
+   give its summary row height and its body the same inset. */
+:root[data-theme="chicago"] .account-page > .account-key-advanced {
+  padding-top: 0;
+}
+
+:root[data-theme="chicago"] .account-page > .account-key-advanced summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 1rem;
+}
+
+:root[data-theme="chicago"] .account-page > .account-key-advanced > div {
+  margin-top: 0;
+  padding: 0.25rem 1rem 1rem;
+}
+
 :root[data-theme="chicago"] .eyebrow {
   display: inline-block;
   margin-bottom: 0.7rem;
