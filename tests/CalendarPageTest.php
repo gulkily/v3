@@ -98,6 +98,19 @@ final class CalendarPageTest
         calendarAssertSame([], $this->marks($this->render($application, '/calendar/nothing-tagged', ['month' => '2026-11'])));
     }
 
+    public function testTodayLinkAndMarkAreLeftToTheViewersClock(): void
+    {
+        [, , $application] = $this->environment();
+        $all = $this->render($application, '/calendar', ['month' => '2026-11']);
+        calendarAssertContains('<a href="/calendar" data-calendar-today hidden>Today</a>', $all);
+        calendarAssertContains("cell.classList.add('calendar-day--today')", $all);
+        calendarAssertNotContains('calendar-day--today"', $all);
+        calendarAssertContains('<a href="/calendar/couches" data-calendar-today hidden>Today</a>', $this->render($application, '/calendar/couches', ['month' => '2026-11']));
+
+        [, , $off] = $this->environment(false);
+        calendarAssertNotContains('data-calendar-today', $this->render($off, '/calendar'));
+    }
+
     public function testMarkupIsTheSameForEveryViewer(): void
     {
         [, $service, $application] = $this->environment();
