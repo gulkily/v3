@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stages 1–7 complete (qdb heartbeat pending); Stage 8 local work complete; host acceptance pending deploy.
+Status: Step 4 closeout recorded; host acceptance pending deploy.
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -169,5 +169,23 @@ Status: Step 3 approved on 2026-11-09; Stages 1–7 complete (qdb heartbeat pend
   - Host acceptance: pending until the branch is deployed. Needed on zenmemes.com: page loads during a rebuild; a schema-changing deploy from the phone with the Site data row followed to done; the no-worker replay (stop cron or use a host without it, see "waiting for the task worker" and the `./v3 rebuild` hint, run it, reload). Needed on qdb.us: `./v3 status` heartbeat (Stage 1 gap) and one rebuild with page loads.
 - Notes: this branch has no schema change, so deploying it exercises the check (`Read-Model: current`) but not a queued rebuild; a later schema bump, or `./v3 task-queue enqueue-rebuild`, exercises the rest.
 - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+**Cycle estimate at entry: 0.65**
+**Retrospective scope assessment: 0.75**
+
+- Technical status: Stages 1–7 complete and committed; Stage 8 local work complete. Not complete overall: host acceptance on zenmemes.com and qdb.us, the no-worker recovery replay on a host, and the qdb heartbeat check are pending deploy. Merge and publication are the maintainer's.
+- Commits: planning `331ea1d`; stage commits `6b5f293`, `a88e7b0` (1), `bc38cdf` (2), `5040c32` (3), `79927e6` (4), `f6ce28f` (5), `5a8a994` (6), `5960af3` (7), `5b5b78a` (8). Ten commits for eight stages.
+- Checks:
+  - Smoke set: 441 run, 441 passed. Changed and related test classes: passed sequentially in each stage (largest runs 730/730 and 658/658). Full suite not run.
+  - Parallel runs of `WriteApiSmokeTest` fail intermittently on the base commit and on this branch (shared `/tmp` and `state/private` files); one readonly-database failure seen once here was not reproduced alone. Pending the maintainer's full run.
+  - Local qdb-sized acceptance: passed (Stage 8). Headless Chrome at 390 px for the Deploy page: passed, default theme only.
+  - Host checks: pending, listed in Stage 8.
+- Changed requirement to confirm: with no task worker at all, a page request still rebuilds (by swapping), rather than never rebuilding. On hosts where cron runs, requests never rebuild.
+- Retrospective above the entry estimate: request-time connection reopen, the wait-for-write fix, the no-worker fallback and about twenty test updates for connections held across a swap were not foreseen. Stage retrospectives 0.04/0.08/0.10/0.10/0.18/0.08/0.07/pending, non-additive.
+- Maintainer comfortable-fit judgment and study acceptance: pending.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
