@@ -2101,7 +2101,7 @@ PHP;
         );
         assertFingerprintedAsset($thread, 'openpgp_loader.js');
         assertFingerprintedAsset($thread, 'browser_signing.js');
-        assertFingerprintedAsset($thread, 'thread_url_hints.js');
+        assertFingerprintedAsset($thread, 'url_hints.js');
         assertFingerprintedAsset($thread, 'inline_reply_form.js');
         assertFingerprintedAsset($thread, 'thread_reactions.js');
         assertFingerprintedAsset($thread, 'post_analysis.js');

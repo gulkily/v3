@@ -204,6 +204,8 @@
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php /* After the version checker, which reads its __v reload token first. */ ?>
+  <script src="<?= $e($urlHintsScriptPath) ?>" defer></script>
 <?php if (!$approvedMembersOnlyEnabled): ?>
   <script src="<?= $e($pwaRegistrationScriptPath) ?>" defer></script>
 <?php endif; ?>
