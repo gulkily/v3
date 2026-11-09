@@ -76,3 +76,23 @@ No supported findings.
 ### Uncertain assessments
 
 No supported findings.
+
+## 2026-11-09T05:53:39Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: one commit per stage with its summary kept each change reviewable, and made the Stage 5 check easy: stashing one file showed the grant plans as "unsupported" without it.
+- `implementation_standards.md`, "Replay each reported failure in the relevant user/environment": the two-key replay with real keys and real browser signing found nothing the unit tests missed, but it is the only evidence that B's switches actually unlock. Retain.
+- `implementation_standards.md`, "Inspect existing implementations before creating": reading the import planner showed the catalog change planned in Step 3 was unnecessary. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_before.md`, "Do not add the ledger or summary to the planning commit", combined with `RAILSPIKE.md` "accumulated outcome updates belong in its closeout commit": the ledger stayed modified, uncommitted, across six stages. A host stop hook kept flagging it. Clarify whether ledger rows may join each stage commit.
+
+### Inapplicable instructions
+
+- Documentation-only verification rules: application change.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md`, "Stages should be about <=1 hour": Stage 3 (routes, controller, partial, script, two test files) fit in time but not in the "<=50 lines" guidance from Step 3. It is unclear which bound governs.
