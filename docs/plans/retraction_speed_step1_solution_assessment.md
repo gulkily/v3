@@ -6,6 +6,8 @@ Effort study: `railspike-effort` / `v3/retraction_speed`; [host ledger](./effort
 
 Extended estimates: enabled
 
+Status: Step 1 approved (Option A) on 2026-11-09; Step 2 drafted.
+
 Cycle estimate: 0.25
 
 ## Original Query

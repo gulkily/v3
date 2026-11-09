@@ -14,3 +14,17 @@
 
 **Uncertain assessments**
 - Moving profile names to cycle 3 edits a committed cross-cycle checklist. Railspike says nothing about checklists spanning cycles; recording it as an enhancement disposition seemed closest.
+
+## 2026-11-09T23:30:18Z — Step 2
+
+**Necessary/useful instructions**
+- `step2_feature_description.md`, Shared Component Inventory: listing `SourceLabelRemoval::incrementalContext()` as private made the "move, don't copy" requirement explicit. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- No supported findings.
+
+**Uncertain assessments**
+- No supported findings.
