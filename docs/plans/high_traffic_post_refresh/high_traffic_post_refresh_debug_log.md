@@ -46,3 +46,19 @@
 
 ### Uncertain assessments
 - Stage sizing "≤1 hour or ≤50 lines": Stage 4 is coordination, not code; the rule fits it awkwardly but it was kept as a stage because the replay is required.
+
+## 2026-11-09T23:20:00Z · Step 4
+
+### Necessary/useful instructions
+- `step4_implementation_before.md`, planning commit gate: kept the ledger and summary out of the planning commit cleanly. Retain.
+- `implementation_standards.md`, "Record commands, results, omissions": made the summary say plainly that the signed, prepared and format paths were checked by reading, not by tests. Retain.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Documentation-only checks: application work.
+
+### Uncertain assessments
+- `step4_implementation_do.md`, one commit per stage: Stage 4 is a production replay that cannot run before merge and deploy. A stage that ends in "pending" fits the commit rule awkwardly; a closeout state for deploy-gated stages may be worth defining.
+- Main moved mid-cycle; Railspike says nothing on merging main into a feature branch. The merge was needed to open a clean PR.
