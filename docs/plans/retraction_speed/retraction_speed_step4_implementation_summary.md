@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/retraction_speed`; [host ledger](../effor
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stages 1–2 complete; Stage 3 next.
+Status: Step 4 closeout recorded; zenmemes.com live check pending deploy.
 
 **Cycle estimate: 0.25** (Step 3, reaffirmed at entry)
 
@@ -45,5 +45,32 @@ Status: Step 3 approved on 2026-11-09; Stages 1–2 complete; Stage 3 next.
   - Mutation check: with the operator-removal source path in place of the retraction's, the equality test failed on the activity row, so it covers the retraction-specific fields.
 - Notes: page clearing is the same set `delete-record` uses; no page was found missing in these tests.
 - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Timing, docs and the live check
+
+**Original estimate: 0.07**
+**Retrospective: pending (live check outstanding)**
+
+- Changes: concept entries [post retraction](../../concepts/post_retraction.md) and [incremental source removal](../../concepts/incremental_source_removal.md) updated; the [checklist](../read_model_rebuild_checklist.md) marks this cycle's items, records the measurement and moves profile names to cycle 3.
+- Verification:
+  - Timing on the 30,000-quote local copy (61 MB read model): the targeted removal took 0.24s, a full rebuild with swap 6.99s. Measured through `delete-record`, which runs the same targeted update and page clearing; a signed retraction adds signature checking and its commit. Target under 1 second: passed for the shared path.
+  - Smoke set: 441 run, 441 passed. Full suite not run.
+  - Live check on zenmemes.com: pending deploy. "claude" retracts a test post through `frm.py`; record the response time, the thread placeholder and that an unrelated cached page still exists.
+- Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+**Cycle estimate at entry: 0.25**
+**Retrospective scope assessment: 0.22**
+
+- Technical status: Stages 1–2 complete; Stage 3 local work complete. Not complete overall: the zenmemes.com live check is pending deploy. Merge and publication are the maintainer's.
+- Commits: planning `9c94d3c`; stages `a3a4ab7` (1), `91faa3f` (2), and the Stage 3 commit that adds this section.
+- Checks: smoke set 441/441; all 47 retraction-related test classes 858/858; equality with a full rebuild for four retraction cases, with a mutation check. Full suite not run.
+- Retrospective slightly under the entry estimate: `applyPostRemoval()` needed no change. The three test reroutes and the shared snapshot helper were unplanned but small. Stage retrospectives 0.03/0.12/pending, non-additive.
+- Maintainer comfortable-fit judgment and study acceptance: pending.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
