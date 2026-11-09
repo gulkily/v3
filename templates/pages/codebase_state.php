@@ -151,7 +151,5 @@ $rowCountSources = [
     <p>Text backups are unavailable.</p>
 <?php endif; ?>
   </article>
-  <article class="card tools-nav-card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
+<?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 </section>

@@ -12,7 +12,5 @@
     </ul>
   </article>
 <?= $partial('partials/approval_history.php', ['approvalHistory' => $approvalHistory, 'historyAccountBase' => '/tools/user-access/accounts/', 'historyProfileBase' => '/tools/user-access/profiles/']) ?>
-  <article class="card tools-nav-card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
+<?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 </section>

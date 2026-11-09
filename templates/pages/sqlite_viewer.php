@@ -5,9 +5,7 @@
     <p>SQLite Viewer is unavailable while text backups are disabled.</p>
   </article>
 <?php if (empty($embedded)): ?>
-  <article class="card tools-nav-card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
+<?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 <?php endif; ?>
 </section>
 <?php return; endif; ?>
@@ -79,8 +77,6 @@
   <footer><a href="/tools/sqlite/">Open full viewer</a></footer>
 <?php endif; ?>
 <?php if (empty($embedded)): ?>
-  <article class="card tools-nav-card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
+<?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 <?php endif; ?>
 </section>

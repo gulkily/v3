@@ -44,8 +44,6 @@
     <p><a href="/activity/">All activity</a></p>
   </article>
 <?php if (isset($toolNavOptions)): ?>
-  <article class="card tools-nav-card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
+<?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 <?php endif; ?>
 </section>
