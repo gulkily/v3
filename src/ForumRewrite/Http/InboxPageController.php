@@ -59,7 +59,7 @@ final class InboxPageController
             'viewerProfile' => $viewer,
             'messages' => $this->messages($viewer),
             'sections' => $this->sections($viewer, $failedCatchUp),
-        ], 'Unread', 'inbox'), $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
+        ], 'Unread', 'inbox', ['/assets/inbox_catch_up.js']), $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
     }
 
     /**
