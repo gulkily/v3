@@ -158,18 +158,17 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
     padding: 0 0.15rem 0.2rem;
   }
   .calendar--titles .calendar-day {
-    height: 3.75rem;
-    padding: 0.1rem 0.12rem;
+    height: 3.5rem;
+    padding: 0.1rem 0.08rem;
   }
   .calendar--titles .calendar-day__number {
     display: inline-block;
     min-height: 0;
     font-size: 0.65rem;
   }
+  /* The titles say what is on; the count would only repeat it. */
   .calendar--titles .calendar-day__count {
-    display: inline;
-    margin: 0 0 0 0.2rem;
-    font-size: 0.5rem;
+    display: none;
   }
   .calendar--titles .calendar-day__entries {
     display: block;
@@ -182,8 +181,8 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
     -webkit-line-clamp: 2;
     overflow: hidden;
     overflow-wrap: break-word;
-    font-size: 0.4rem;
-    line-height: 1.1;
+    font-size: 0.3rem;
+    line-height: 1.15;
     margin: 0 0 0.1rem;
   }
   .calendar--titles .calendar-entry a {
