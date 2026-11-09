@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/retraction_speed`; [host ledger](../effor
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stage 1 complete; Stage 2 next.
+Status: Step 3 approved on 2026-11-09; Stages 1–2 complete; Stage 3 next.
 
 **Cycle estimate: 0.25** (Step 3, reaffirmed at entry)
 
@@ -24,6 +24,26 @@ Status: Step 3 approved on 2026-11-09; Stage 1 complete; Stage 2 next.
 - Changes: new `ForumRewrite\Write\RemovalUpdateContext::forPost()`, moved unchanged from the private `SourceLabelRemoval::incrementalContext()`, which now calls it.
 - Verification: `./v3 test --smoke DeleteRecordCommandTest HistoryPurgePlannerTest LocalAppSmokeTest ThreadTitleWithdrawalAndConsumersTest WriteApiSmokeTest`: 666 run, 666 passed. Full suite not run.
 - Notes: no behaviour change.
+- Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Retractions update one post and its pages
+
+**Original estimate: 0.14**
+**Retrospective: 0.12**
+
+- Changes:
+  - `LocalWriteService::finalizePreparedRetraction()` takes `RemovalUpdateContext::forPost()` before the commit. After it, `applyRetractionToOnePost()` runs `IncrementalReadModelUpdater::applyPostRemoval()` with the accepted removal (`AcceptedRemoval::read()`), `AcceptedRetraction::path()` and the removal's label paths (none for a plain retraction), then clears the stale marker. Pages are cleared with `invalidateRemovedPost()`; if that fails, with the full clearing; if both fail, the result is `partial` with `failed_step: artifact_invalidate`, as before.
+  - With no context, or when the targeted update throws, the retraction runs today's full rebuild and full clearing. The repeat-request path (`retractionResult()` for an already retracted post) is unchanged.
+  - `applyPostRemoval()` needed no change: an accepted retraction already maps to the same placeholder as an operator deletion.
+  - The snapshot comparison from `DeleteRecordCommandTest` moved to `tests/Support/ReadModelSnapshot.php`; both test files use it.
+  - New tests in `WriteApiSmokeTest`: `testTargetedRetractionMatchesAFullRebuild` (thread with no replies, thread with a reply, reply in a thread, thread with labels; each confirms the targeted path ran and equals a fresh full rebuild), `testTargetedRetractionClearsOnlyThePagesThatShowedThePost`, `testPageClearingFailureAfterATargetedUpdateIsReportedAsPartial`, `testRetractionFallsBackToAFullRebuildWhenTheTargetedUpdateFails` (a hidden post).
+  - Three existing tests exercised the full-rebuild path (refresh failure, page-clearing failure with retry, and cycle 1's swap test). Retractions no longer take that path by default, so each now marks the read model stale first, which routes them to it.
+- Verification:
+  - Every test class that mentions retraction (47 classes, smoke set included): 858 run, 858 passed. Full suite not run.
+  - Mutation check: with the operator-removal source path in place of the retraction's, the equality test failed on the activity row, so it covers the retraction-specific fields.
+- Notes: page clearing is the same set `delete-record` uses; no page was found missing in these tests.
 - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
