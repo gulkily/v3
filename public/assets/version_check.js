@@ -106,24 +106,14 @@
       return false;
     }
 
+    // url_hints.js runs next; tell it not to touch the URL while this navigation is pending.
+    if (document.documentElement) document.documentElement.setAttribute('data-version-redirect', '');
     window.location.replace(withVersionBypass(currentUrl.toString(), pendingVersion));
     return true;
   }
 
   if (ensurePendingVersionSatisfied()) {
     return;
-  }
-
-  // The thread response has already consumed these one-time navigation hints.
-  // Keep them until the pending-version check above has used the bypass token.
-  if (window.history && typeof window.history.replaceState === 'function') {
-    var threadUrl = new URL(window.location.href, window.location.origin);
-    if (/^\/threads\/[^/]+\/?$/.test(threadUrl.pathname)
-        && (threadUrl.searchParams.has('created_post_id') || threadUrl.searchParams.has('__v'))) {
-      threadUrl.searchParams.delete('created_post_id');
-      threadUrl.searchParams.delete('__v');
-      window.history.replaceState(window.history.state, '', threadUrl.toString());
-    }
   }
 
   function scheduleNextVersionCheck() {

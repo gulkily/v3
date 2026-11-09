@@ -2,35 +2,40 @@
 
 declare(strict_types=1);
 
-final class ThreadUrlHintsTest
+final class UrlHintsTest
 {
-    public function testCreatedPostHintIsRemovedWithoutTheVersionChecker(): void
+    public function testOneTimeHintsAreRemovedWithoutTheVersionChecker(): void
     {
         $result = $this->runScript(<<<'NODE'
 const source = require('fs').readFileSync(process.argv[1], 'utf8');
 const vm = require('vm');
-function load(path) {
+function load(path, redirecting) {
   const replacements = [];
   const state = {saved: 'history'};
   const window = {
     location: {href: 'https://example.test' + path},
     history: {state, replaceState(value, title, url) {replacements.push({value, url});}}
   };
-  vm.runInNewContext(source, {window, URL});
+  const document = {documentElement: {hasAttribute: (name) => redirecting === true && name === 'data-version-redirect'}};
+  vm.runInNewContext(source, {window, document, URL});
   return replacements;
 }
 process.stdout.write(JSON.stringify({
-  created: load('/threads/thread-001?created_post_id=thread-001'),
+  created: load('/threads/thread-001?created_post_id=thread-001&__v=abc'),
   reply: load('/threads/thread-001?page=2&created_post_id=reply-002#post-reply-002'),
+  versioned: load('/tools/user-access/pending/?__v=abc'),
   clean: load('/threads/thread-001#post-reply-002'),
-  forte: load('/forte?selected=thread-001&created_post_id=reply-002')
+  forte: load('/forte?selected=thread-001&created_post_id=reply-002'),
+  redirecting: load('/threads/thread-001?created_post_id=thread-001&__v=abc', true)
 }));
 NODE);
         assertSame('https://example.test/threads/thread-001', $result['created'][0]['url']);
         assertSame(['saved' => 'history'], $result['created'][0]['value']);
         assertSame('https://example.test/threads/thread-001?page=2#post-reply-002', $result['reply'][0]['url']);
+        assertSame('https://example.test/tools/user-access/pending/', $result['versioned'][0]['url']);
         assertSame([], $result['clean']);
         assertSame([], $result['forte']);
+        assertSame([], $result['redirecting']);
     }
 
     /**
@@ -41,7 +46,7 @@ NODE);
         $command = sprintf(
             'node -e %s %s',
             escapeshellarg($script),
-            escapeshellarg(__DIR__ . '/../public/assets/thread_url_hints.js'),
+            escapeshellarg(__DIR__ . '/../public/assets/url_hints.js'),
         );
 
         $output = [];

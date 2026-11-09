@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 final class VersionCheckBehaviorTest
 {
-    public function testThreadNavigationHintsAreConsumedWithoutLosingAnchorOrHistoryState(): void
+    public function testVersionCheckerLeavesUrlCleanupToUrlHints(): void
     {
         $result = $this->runScript(<<<'NODE'
 const source = require('fs').readFileSync(process.argv[1], 'utf8');
@@ -21,11 +21,13 @@ function load(path, pending, current) {
     fetch() {return Promise.resolve({ok: true, text: () => Promise.resolve(current)});},
     setTimeout() {}, addEventListener() {}
   };
-  const document = {addEventListener() {}, querySelector(selector) {
-    return selector === 'meta[name="app-version"]' ? {getAttribute: () => current} : null;
-  }};
+  const flags = [];
+  const document = {addEventListener() {}, documentElement: {setAttribute(name) {flags.push(name);}},
+    querySelector(selector) {
+      return selector === 'meta[name="app-version"]' ? {getAttribute: () => current} : null;
+    }};
   vm.runInNewContext(source, {window, document, URL});
-  return {replacements, redirects, pending: store.forum_pending_app_version || ''};
+  return {replacements, redirects, flags, pending: store.forum_pending_app_version || ''};
 }
 process.stdout.write(JSON.stringify({
   created: load('/threads/thread-001?created_post_id=thread-001&__v=target', '', 'current'),
@@ -35,13 +37,14 @@ process.stdout.write(JSON.stringify({
   forte: load('/forte?selected=thread-001&created_post_id=reply-002', '', 'current')
 }));
 NODE);
-        assertSame('https://example.test/threads/thread-001', $result['created']['replacements'][0]['url']);
-        assertSame(['saved' => 'history'], $result['created']['replacements'][0]['value']);
-        assertSame('https://example.test/threads/thread-001?page=2#post-reply-002', $result['reply']['replacements'][0]['url']);
+        assertSame([], $result['created']['replacements']);
+        assertSame([], $result['reply']['replacements']);
+        assertSame([], $result['created']['flags']);
         assertSame('', $result['reply']['pending']);
         assertSame([], $result['reply']['redirects']);
         assertSame([], $result['stale']['replacements']);
         assertSame(['https://example.test/threads/thread-001?created_post_id=thread-001&__v=target'], $result['stale']['redirects']);
+        assertSame(['data-version-redirect'], $result['stale']['flags']);
         assertSame([], $result['clean']['replacements']);
         assertSame([], $result['forte']['replacements']);
     }
