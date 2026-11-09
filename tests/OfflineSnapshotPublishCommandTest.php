@@ -79,6 +79,8 @@ final class OfflineSnapshotPublishCommandTest
         $pdo->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, signer_fingerprint TEXT, public_key TEXT, is_approved INTEGER)');
         $pdo->exec("INSERT INTO threads VALUES ('root', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', 'Subject', 'Preview', '[]', '[]', 0)");
         $pdo->exec("INSERT INTO posts VALUES ('root', '2026-01-01T00:00:00Z', 'root', NULL, 'Subject', 'Body', '[]', NULL, NULL, 'Author', NULL, 1, 0)");
+        // The read model has post_score_total; public listings hide negative scores (ScoreVisibility).
+        $pdo->exec('ALTER TABLE posts ADD COLUMN post_score_total INTEGER NOT NULL DEFAULT 0');
     }
 
     /** @return array{int,string,string} */
