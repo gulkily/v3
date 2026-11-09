@@ -28,3 +28,17 @@
 
 **Uncertain assessments**
 - No supported findings.
+
+## 2026-11-09T23:32:38Z — Step 3
+
+**Necessary/useful instructions**
+- Stage headings now carry the goal, following the maintainer's request logged in `railspike-dev` `todo.txt`; the Goal bullet stays because the template still requires it.
+
+**Redundant/unnecessary instructions**
+- With the goal in the heading, the Goal bullet repeats it nearly word for word.
+
+**Inapplicable instructions**
+- No supported findings.
+
+**Uncertain assessments**
+- No supported findings.
