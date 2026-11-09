@@ -9,3 +9,8 @@
 - `./v3 feedback check` rejected the item until `Done when:` moved after `Sources:`.
 - `account_key_approval.mjs` times out at the signed-approval "cancelled" feedback on both this branch and `main`; not investigated further.
 - Pre-existing smoke failure: `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged`.
+
+## 2026-11-09T06:31Z — scope v2 closeout
+
+- Smoke tab-link assertions needed the new `data-person-tab` attribute; fixed.
+- Rendering all panels means `#account-keys` is always in the HTML; tests now check visibility instead of presence.

@@ -2,7 +2,7 @@ Cycle: `v3/user_identities_tab`; Mode: one-shot; Record: this file; Index: [plan
 Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/user_identities_tab` — [host ledger](../effort_estimation_trial.md#cycle-v3user_identities_tab); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
-**Cycle estimate: 0.08**
+**Cycle estimate: 0.08 (scope v2: 0.12)**
 Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
@@ -71,9 +71,20 @@ Host `main` at `8f551ffb9494f40204bed66e3c66441315f9e727`; branch `feat/user_ide
 - 2026-11-09T06:10Z: no nav icon change: the tabs are `board-filter` links, not navigation destinations, and Threads/Replies have no icons.
 - 2026-11-09T06:15Z: updated PF-20261104-F72 (`Done when`, Workflow `blocked`, Evidence `locally-verified`, dated note).
 
+## Scope v2 (2026-11-09)
+
+Maintainer, in session after reviewing the PR, 2026-11-09: "You can make the identity cards a little bit taller so that they can fit more information. Right now, it's barely displaying the last activity, and the last active time is only the date period. We also want the tabs to be instant. Right now, they take a second or two to go back to the server." Renewed one-shot authority for both additions on the same unmerged branch.
+
+- 2026-11-09T06:30Z: identity rows now have three lines: key; "Active <relative time> · <status>" using `$relativeTimestamp` (full timestamp in the `<time>` title); and the latest post (subject, else whitespace-collapsed body, up to 240 characters) clamped to two lines. The separate date value column is gone.
+- 2026-11-09T06:30Z: tabs switch in place. All three panels render server-side in `[data-person-panel]` wrappers with only the requested one visible, so first paint is final and no-JavaScript navigation is unchanged. A small inline script (same pattern as `calendar.php`) toggles panels and `aria-current` on plain clicks and uses `pushState`/`popstate`, so each tab keeps its `?tab=` URL and Back/Forward work. Cost: the page HTML now carries all three lists; they were already fully queried on every request.
+- Verification: smoke set plus changed tests 442/443 (same pre-existing `BoardListTest` failure); `users_profile.mjs` passes with new checks (no reload on tab click, Back/Forward restore the tab, no-JavaScript path still passes); `account_key_approval.mjs` passes the identities section and hits the same pre-existing later timeout; screenshots in default, Word97 and Midnight at 390px and 1200px.
+- Study: scope v2 revision, whole-cycle projection 0.12 (from 0.08), reason: two in-session additions.
+
+- 2026-11-09T06:40Z: chronology disclosure: PR #96 was merged at 06:10Z with scope v1 only; the scope v2 commit `49c9ab9f` was pushed to the merged branch afterwards and never reached `main`. Cherry-picked it onto `feat/user_identities_tab_followup` from `main` (`eb153e50`) for a new PR, and added a pre-push PR-state check to `docs/agents/thread_to_pr.md` and `AGENTS.md` so follow-ups don't land on merged branches again. The old branch is left as is.
+
 ## Study closeout
 
-Intake 0.08; execution entry reaffirmed; **retrospective 0.08**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
+Intake 0.08; execution entry reaffirmed; scope v2 revised to 0.12; **retrospective 0.12**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
 
 ## Outcome
 
@@ -94,4 +105,4 @@ Reuses the existing tabs, key rows, `$shortDate`, `$plainText` and the already-l
 
 ## Commit status
 
-Planning commit `f2c58b68`; completion commit pending at the time of writing (this record cannot hold its own hash).
+Planning commit `f2c58b68`; scope v1 completion `9f4db420`; scope v2 commit pending at the time of writing (this record cannot hold its own hash).

@@ -18,3 +18,4 @@ Notes:
 Distinct from integrating the account/profile entry page.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
 2026-11-09: one-shot on feat/user_identities_tab (record docs/plans/user_identities_tab/user_identities_tab_one_shot.md); maintainer added last-active date, latest post and newest-first order in session. Verified locally; awaiting review and deployment.
+2026-11-09: same branch, maintainer follow-up: taller identity rows with relative last-active time, and tabs switch without a page load.
