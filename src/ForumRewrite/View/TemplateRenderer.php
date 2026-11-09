@@ -268,6 +268,7 @@ final class TemplateRenderer
             'inviteNavigationScriptPath' => $this->assetPath('/assets/invite_navigation.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
             'pwaRegistrationScriptPath' => $this->assetPath('/assets/pwa_registration.js'),
+            'urlHintsScriptPath' => $this->assetPath('/assets/url_hints.js'),
             'themes' => $themes,
             'themePalettes' => array_intersect_key(ThemeRegistry::palettes(), array_flip($permittedThemeNames)),
             'explicitThemeNames' => $explicitThemeNames,

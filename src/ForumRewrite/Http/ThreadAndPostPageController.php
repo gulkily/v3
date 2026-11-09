@@ -165,7 +165,6 @@ final class ThreadAndPostPageController
             $title,
             'board',
             $this->identityScripts([
-                '/assets/thread_url_hints.js',
                 '/assets/inline_reply_form.js',
                 '/assets/outbox_store.js',
                 '/assets/outbox_storage.js',

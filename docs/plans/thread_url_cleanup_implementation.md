@@ -23,8 +23,11 @@ Dependencies: No additions or updates.
 Update 2026-11-09: The cleanup only ran when the version-notification flag was on,
 because it lived in version_check.js, so production thread URLs kept both hints.
 Post-submit redirects no longer add __v: created_post_id alone makes the first
-request bypass static and high-traffic caches, so __v was redundant there.
-thread_url_hints.js, loaded on every thread page, now removes created_post_id
-regardless of that flag. version_check.js still removes its own __v reload token
-after using it. Verified with ThreadUrlHintsTest, VersionCheckBehaviorTest, the
-browser-signing redirect cases and the compose/reply redirect smoke test.
+request bypass static and high-traffic caches, so __v was redundant there. All URL
+stripping now lives in url_hints.js, loaded on every page right after the version
+checker whatever the flag state: it removes __v on any page and created_post_id on
+thread pages. version_check.js only reads __v and no longer edits the URL; while it
+is starting a pending-version reload it marks the page (data-version-redirect) so
+url_hints.js leaves the URL alone. Verified with UrlHintsTest, VersionCheckBehaviorTest,
+the browser-signing redirect cases, the compose/reply redirect smoke test, and
+headless Chrome with and without the version checker on the page.
