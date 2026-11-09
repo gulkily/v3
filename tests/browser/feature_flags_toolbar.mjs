@@ -13,7 +13,7 @@ async function setup(context, mode = '', themed = true) {
   });
   const page = await context.newPage();
   await page.goto('http://flags.test/tools/feature-flags/');
-  if (themed) for (const theme of ['word97', 'chicago', 'midnight']) await page.addStyleTag({ url: '/assets/theme-' + theme + '.css' });
+  if (themed) for (const theme of ['word97', 'chicago', 'midnight', 'sticker', 'thermal', 'gloss']) await page.addStyleTag({ url: '/assets/theme-' + theme + '.css' });
   return page;
 }
 try {
@@ -69,9 +69,10 @@ try {
 
   for (const width of [1150, 375]) {
     await page.setViewportSize({ width, height: 800 });
-    for (const theme of ['light', 'dark', 'console', 'word97', 'chicago', 'midnight']) {
+    for (const theme of ['light', 'dark', 'console', 'word97', 'chicago', 'midnight', 'sticker', 'thermal', 'gloss']) {
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; window.scrollTo(0, 0); }, theme);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${theme}/${width} overflow`);
+      assert.equal(await chip('all').evaluate(node => { const style = getComputedStyle(node); return style.color !== style.backgroundColor; }), true, `${theme} selected chip text invisible`);
       const filters = await page.locator('.feature-flags-filters').boundingBox();
       assert(filters.x >= 0 && filters.x + filters.width <= width, `${theme}/${width} chip row overflows page`);
       const chipTops = new Set();
@@ -85,7 +86,7 @@ try {
       const searchBox = await search.boundingBox();
       const firstChip = await chip('all').boundingBox();
       const sameRow = firstChip.y < searchBox.y + searchBox.height;
-      if (width < 1150 || theme === "light") assert.equal(sameRow, width >= 1150, `${theme}/${width} search and chips row layout`);
+      assert.equal(sameRow, width >= 1150, `${theme}/${width} search and chips row layout`);
       await page.locator('.feature-flags-filters').evaluate(node => { node.scrollLeft = 0; });
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.evaluate(() => window.scrollTo(0, document.querySelector('[data-feature-flags-toolbar]').getBoundingClientRect().top + scrollY + 20));
@@ -208,7 +209,7 @@ try {
     }
   }
   console.log('PASS canonical groups/flags from reversed input, stable status/search/empty recovery and 12 real-registry theme/viewport states');
-  console.log('PASS toolbar search/status/counts/empty recovery, keyboard, read-only/no-JS, six themes at 375/1150px and sticky banner');
+  console.log('PASS toolbar search/status/counts/empty recovery, keyboard, read-only/no-JS, nine themes at 375/1150px and sticky banner');
 } finally {
   await browser.close();
 }

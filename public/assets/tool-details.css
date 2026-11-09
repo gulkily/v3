@@ -183,6 +183,8 @@
   flex-wrap: nowrap;
   gap: 0.4rem;
   min-width: 0;
+  /* Room for focus outlines and theme shadows inside the scroll clip. */
+  padding: 3px 5px 5px 3px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -191,6 +193,22 @@
 
 .feature-flags-filters::-webkit-scrollbar {
   display: none;
+}
+
+/* Wide screens: always one row in every theme. Search shrinks first; if a
+   theme's chips still don't fit, they scroll sideways as on phones. */
+@media (min-width: 48rem) {
+  .feature-flags-toolbar {
+    flex-wrap: nowrap;
+  }
+
+  .feature-flags-toolbar input {
+    flex: 1 1 8rem;
+  }
+
+  .feature-flags-filters {
+    flex: 0 1 auto;
+  }
 }
 
 .feature-flags-chip {
