@@ -71,7 +71,7 @@ final class LlmsTxtRenderer
             'python3 frm.py --site https://forum.example reply --thread THREAD_ID --body-file reply.txt',
             '```',
             '',
-            'Replies default to the thread root; add --parent POST_ID for a child reply. First write creates an unencrypted key in a private local keyring; keep ~/.local/state/frm for identity reuse and recovery. Use --signing-key FINGERPRINT for an existing key. Private keys stay local.',
+            'Replies default to the thread root; add --parent POST_ID for a child reply. First write creates an unencrypted key in a private local keyring; keep ~/.local/state/frm for identity reuse and recovery. Use --signing-key FINGERPRINT [--gpg-home PATH] after the thread or reply command for an existing key. Private keys stay local.',
             '',
             'On failure keep the printed Operation directory. Use the printed --resume command to resume saved bytes; check POST_ID only checks publication, not signature validity. Busy retries are bounded (two by default). Prepared legacy writes stop when acceptance cannot be resolved. No automatic protocol switching after a submission.',
             '',
