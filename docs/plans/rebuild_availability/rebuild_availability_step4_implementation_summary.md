@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stages 1–7 complete (qdb heartbeat pending); Stage 8 in progress (docs done locally; host checks pending).
+Status: Step 3 approved on 2026-11-09; Stages 1–7 complete (qdb heartbeat pending); Stage 8 local work complete; host acceptance pending deploy.
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -150,6 +150,24 @@ Status: Step 3 approved on 2026-11-09; Stages 1–7 complete (qdb heartbeat pend
   - `./v3 test --smoke DeployPageTest AppUpdateTest`: 475 run, 475 passed. Full suite not run.
   - Headless Chrome at 390 px, signed-in operator, default theme: queued and running states render inside the facts table with no horizontal overflow. Other themes and the poll in a live browser were not checked; Stage 8 covers the live page on zenmemes.com.
 - Notes: no new navigation destination, so icon mappings are unchanged.
+- Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Docs and acceptance
+
+**Original estimate: 0.10**
+**Retrospective: pending (host acceptance outstanding)**
+
+- Changes:
+  - `docs/runbooks/production_deploy.md`: Deploy from the Site explains the post-deploy check, the Site data row, the "Site Update" page and `./v3 rebuild`; Internal Task Queue explains that requests never rebuild while the worker runs, and lists `check-read-model`.
+  - Concepts: [derived read-model rebuild](../../concepts/read_model_rebuild.md), [application update](../../concepts/application_update.md) and [internal task queue](../../concepts/internal_task_queue.md) updated; new [busy page](../../concepts/busy_page.md). Source links checked to resolve.
+- Verification:
+  - Local acceptance on a qdb-sized copy (30,000 synthetic quotes; 61 MB read model, qdb's is 60 MB). A reader process loaded a thread page every 100 ms for 10 seconds while a full rebuild ran:
+    - queued rebuild (build and swap, 8.8s): 79 loads, 0 busy, median 0.026s, slowest 0.063s; passed.
+    - old in-place rebuild for comparison (5.9s): 36 loads, 2 busy pages, slowest 2.011s. Before Stage 2 those two would have waited up to 60 seconds.
+  - Host acceptance: pending until the branch is deployed. Needed on zenmemes.com: page loads during a rebuild; a schema-changing deploy from the phone with the Site data row followed to done; the no-worker replay (stop cron or use a host without it, see "waiting for the task worker" and the `./v3 rebuild` hint, run it, reload). Needed on qdb.us: `./v3 status` heartbeat (Stage 1 gap) and one rebuild with page loads.
+- Notes: this branch has no schema change, so deploying it exercises the check (`Read-Model: current`) but not a queued rebuild; a later schema bump, or `./v3 task-queue enqueue-rebuild`, exercises the rest.
 - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

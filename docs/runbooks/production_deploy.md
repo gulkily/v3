@@ -239,6 +239,8 @@ A root-approved operator can update the application checkout from **Tools → De
 
 After a check finds new commits, the **Incoming** row shows what a deploy would bring in: the size of the change (files, lines added and removed), and the commits themselves, newest first, up to 20, with merge commits left out. Commits link to the source repository when `FORUM_SOURCE_REPOSITORY_URL` is a GitHub address. When the update also changes a file the server keeps a local edit to, the row names it, because that is when a deploy can stop with `local_changes_conflict`. `./v3 deploy --status` prints the same as `Incoming-*` lines.
 
+After a successful update, the deploy runs `./v3 task-queue check-read-model` with the new code. It reads only the read model's metadata, so the deploy stays as fast as before. When the new code expects a different read-model schema, it queues a rebuild, and the **Site data** row follows it (waiting, rebuilding with its latest progress line, done or failed). Until it finishes, visitors see a short "Site Update" page that reloads every 10 seconds. If the row says the task worker is not running, or the rebuild failed, run `./v3 rebuild` over SSH. The attempt log records `Read-Model: current`, `queued` or `unknown`.
+
 A deploy is pull only: it fetches `origin/main` and fast-forwards. It does not run `./v3 docs publish`, `./v3 build-static` or any other step; run those yourself when the release needs them (see the Safe Deployment Procedure above). With PHP OPcache configured not to check file timestamps, reload PHP after a deploy.
 
 Local edits to tracked files on the server (typically `public/.htaccess`) are kept: the deploy sets them aside with `git stash`, fast-forwards, puts them back and drops the stash, the same as running `git stash`, `git pull`, `git stash pop` by hand. The Deploy page lists those files. Untracked files are never touched. If the update changes the same lines as a local edit, the deploy goes back to the previous commit with the edit intact and reports `local_changes_conflict`; merge that file over SSH.
@@ -470,10 +472,11 @@ Install the cron worker with the current-path reference:
 ./v3 task-queue cron
 ```
 
-Remove any legacy agent-reply cron entry, then install only the line printed by this command. The worker processes one task per minute and exits successfully when another queue worker is active. The default cron-output path is application-private (`state/private/task_queue_cron.log`), so ensure its directory is writable by the cron user before installing the line. Successful site updates enqueue the deduplicated offline-snapshot task. Useful operator commands are:
+Remove any legacy agent-reply cron entry, then install only the line printed by this command. With the worker running, page requests never rebuild the read model: a stale read model keeps serving while a queued rebuild builds a new file and swaps it in, and an old schema shows a "Site Update" page until the rebuild finishes. Without the worker (and without `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`), a page request still rebuilds when it must. The worker processes one task per minute and exits successfully when another queue worker is active. The default cron-output path is application-private (`state/private/task_queue_cron.log`), so ensure its directory is writable by the cron user before installing the line. Successful site updates enqueue the deduplicated offline-snapshot task. Useful operator commands are:
 
 ```bash
 ./v3 task-queue enqueue-rebuild
+./v3 task-queue check-read-model
 ./v3 task-queue enqueue-offline-snapshot
 ./v3 task-queue reset-recovery
 ./v3 task-queue status
