@@ -1046,6 +1046,108 @@ body.paned-reader-body {
   text-decoration: underline;
 }
 
+/* Source file viewer (source_viewer.js): a source link clicked in a content
+   pane opens a readable view in that pane; the pane's own items stay in the
+   DOM, hidden, so Back returns to them unchanged. */
+.paned-content-pane[data-paned-source-viewing] > :not([data-paned-source-viewer]) {
+  display: none !important;
+}
+
+.paned-source-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.3rem 0.75rem;
+  border-bottom: 1px solid var(--paned-chrome-dark);
+}
+
+.paned-window .paned-source-viewer-actions button {
+  width: auto;
+  margin: 0;
+  padding: 0.15rem 0.7rem;
+  background: var(--paned-chrome);
+  color: var(--paned-ink);
+  border: 1px solid;
+  border-color: var(--paned-border-light) var(--paned-border-dark) var(--paned-border-dark) var(--paned-border-light);
+  border-radius: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.paned-source-viewer-actions a {
+  color: var(--paned-link);
+}
+
+.paned-source-viewer .source-viewer-path {
+  overflow-wrap: anywhere;
+}
+
+.paned-window .source-viewer {
+  font-family: inherit;
+}
+
+.source-viewer-fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.2rem 0.75rem;
+  margin: 0 0 0.75rem;
+}
+
+.source-viewer-fields dt {
+  color: var(--paned-ink-soft);
+}
+
+.source-viewer-fields dd {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.source-viewer-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source-viewer-status {
+  color: var(--paned-ink-soft);
+}
+
+.source-viewer-body {
+  margin: 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--paned-chrome-dark);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.paned-window .source-viewer-armor,
+.paned-window .source-viewer-text {
+  margin: 0;
+  padding: 0.5rem;
+  background: var(--paned-chrome-light);
+  border: 1px solid var(--paned-chrome-dark);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 48rem) {
+  .paned-source-viewer-actions {
+    padding: 0.2rem 0.35rem;
+  }
+
+  .source-viewer-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .source-viewer-fields dd {
+    margin-bottom: 0.3rem;
+  }
+}
+
 /* Dark scheme. data-forte-scheme is set before first paint by the standalone
    layout from the viewer's resolved site theme (see standalone_layout.php).
    Keeps the classic windowed chrome: light/dark border tokens are tuned as a
