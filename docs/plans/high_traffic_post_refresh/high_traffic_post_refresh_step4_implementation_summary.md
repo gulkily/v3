@@ -82,3 +82,25 @@ Starting revision: `a2bcc64d` (`main`). No matching item in `docs/feedback/items
 - Estimate details (extended mode only): original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Production replay
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: pending**
+
+- Changes: none in code.
+- Verification:
+  - Pending: deploy, then with the mode on the maintainer posts a thread, Claude replies through `frm.py`, and the maintainer reloads on his phone. Expected: the reply shows, and the thread's cached file time is after the reply.
+  - Pending: render timing on vps22365 (from Stage 3).
+- Notes:
+  - Main moved during the cycle (PRs #104 and #111). Merged into the branch as `99c46fca`; the only conflict was the ledger, where both sides added a cycle section and both were kept. Tests rerun after the merge: `./v3 test --smoke HighTrafficTest HighTrafficPostRefreshTest HighTrafficPublicationTest AgentPostingApiTest LocalWriteServiceTitleDirectiveTest`, 463 run, 463 passed.
+
+## Closeout
+
+- Technical status: Stages 1–3 done and committed; Stage 4 pending deploy. Not merged.
+- Final diff review: changes stay inside the files Step 2 named, plus `tests/run.php` to register the new test. No dependency changes.
+- Retrospective whole-cycle scope assessment: **0.28** (Stages 1–3; Stage 4 pending). Maintainer comfortable-fit judgment: pending.
+- Full suite not run.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
