@@ -104,3 +104,22 @@ Starting revision: `f60d639` (`main`, which includes PR #88).
 - Estimate details (extended mode only): original scope as in Step 3, minus seed-reason parsing, which Stage 1's header replaced; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Imports bring in no operators
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: 0.03**
+
+- Changes:
+  - `ContentImportPlanner.php`: `operator-grants` joins the authority families excluded as "Instance authority, settings, or private data". A grant's `.asc` follows its record, so it is excluded too.
+  - Not changed, unlike the plan: `ArchiveRecordCatalog.php`. The planner excludes authority families before it consults the catalog, and `feature-flag-changes` is likewise absent from the catalog. Adding grants there would change nothing.
+- Verification:
+  - Passed: `ContentImportPlannerTest::testOperatorGrantsAndTheirSeedsAreExcludedAsAuthority`: a granted seed, a grant and its signature are each `excluded` with the authority reason, while ordinary posts still import. Without the planner change the grant plans as `unsupported`; checked by stashing the change and rerunning.
+  - Passed: `./v3 test --smoke ContentImportPlannerTest`, with only the baseline `BoardListTest` failure. Full suite not run.
+  - Not run: a full `import-instance` run. The runner writes only entries the plan marks `import`, so a plan-level test covers "brings in no operators". Recorded as a limit, not a pass.
+- Notes:
+  - Reuse: the existing authority exclusion in `ContentImportPlanner::describe`.
+- Estimate details (extended mode only): original scope as in Step 3; under, because the catalog needed no change.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
