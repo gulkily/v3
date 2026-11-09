@@ -21,6 +21,7 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 <?php if ($calendarTag !== null): ?>
       <a href="/calendar">All events</a>
 <?php endif; ?>
+      <a href="#" role="button" class="calendar-titles-toggle" data-calendar-titles aria-pressed="false" hidden>Show titles</a>
     </nav>
 <?php endif; ?>
   </article>
@@ -67,6 +68,25 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 </section>
 <?php if ($calendarEnabled): ?>
 <script>
+  // A phone shows counts by default; the viewer can switch to tiny titles, remembered in this browser.
+  (function () {
+    var section = document.querySelector('.calendar');
+    var button = document.querySelector('[data-calendar-titles]');
+    var key = 'calendar-titles';
+    var show = function (on) {
+      section.classList.toggle('calendar--titles', on);
+      button.setAttribute('aria-pressed', on ? 'true' : 'false');
+      button.textContent = on ? 'Hide titles' : 'Show titles';
+    };
+    try { show(localStorage.getItem(key) === 'on'); } catch (e) { show(false); }
+    button.hidden = false;
+    button.addEventListener('click', function (event) {
+      event.preventDefault();
+      var on = !section.classList.contains('calendar--titles');
+      show(on);
+      try { if (on) { localStorage.setItem(key, 'on'); } else { localStorage.removeItem(key); } } catch (e) {}
+    });
+  })();
   // Before paint, in the viewer's own time zone: mark today, or offer Today when its month is not shown.
   (function () {
     var now = new Date();

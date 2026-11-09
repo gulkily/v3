@@ -63,9 +63,11 @@ Planning commit: `a1194952` (confirmed with Git before implementation).
 - 2026-11-09: phone media query in `public/assets/calendar.css` changed; phone branch of `tests/browser/calendar.mjs` now expects titles shown inside the square and a tap on a title to open the day.
 - 2026-11-09: after the first screenshots, hid "+N more" at phone size (redundant with the count) and lowered the square to 4.25rem; reran the browser test.
 
+- 2026-11-09: maintainer feedback after the first PR push: "make the text even tinier so that at least one or two words fit on one line" and "make this a toggle so that there is still a default view where it's just numbers." Phone default restored to counts only; a "Show titles" / "Hide titles" link in the month nav (phones only; hidden without JavaScript) adds `calendar--titles` to the page, remembered per browser in `localStorage` (`calendar-titles`). Titles now 0.4rem, so about two words fit per line at 390px. Browser test now checks the default, the toggle, the remembered choice and switching back; desktop has no toggle.
+
 ## Outcome
 
-Delivered as bounded. Each phone-width day square shows its number, its event count, and up to three titles at 0.55rem, two lines each with an ellipsis; a long single word wraps inside the square. Desktop is unchanged. Follow-ups, not started: a week view; whether the existing day page (`/calendar/<date>`) is the day view he wants.
+Delivered as bounded. By default a phone-width day square shows its number and event count, as before. With titles on (a toggle remembered in the browser), it also shows up to three titles at 0.4rem, two lines each with an ellipsis, about two words per line at 390px. Desktop is unchanged. Follow-ups, not started: a week view; whether the existing day page (`/calendar/<date>`) is the day view he wants.
 
 ## Verification
 

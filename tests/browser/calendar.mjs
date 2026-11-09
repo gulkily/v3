@@ -116,18 +116,33 @@ try {
     if (width >= 1024) {
       assert.equal(await viewer.page.locator('[data-calendar-day="2026-11-25"] .calendar-day__more').textContent(), '+2 more');
       assert.equal(await viewer.page.locator('[data-calendar-day="2026-11-25"] li.calendar-entry').first().isVisible(), true);
+      assert.equal(await viewer.page.locator('[data-calendar-titles]').isVisible(), false, 'desktop: no titles toggle');
     } else {
-      // A phone shows each day's count and the first words of its titles in tiny text, inside the square.
-      assert.equal(await viewer.page.locator('[data-calendar-day="2026-11-25"] .calendar-day__count').textContent(), '5');
-      const title = viewer.page.locator('[data-calendar-day="2026-11-25"] li.calendar-entry').first();
-      assert.equal(await title.isVisible(), true, 'phone: titles shown');
-      const [titleBox, squareBox] = [await title.boundingBox(), await viewer.page.locator('[data-calendar-day="2026-11-25"]').boundingBox()];
-      assert.ok(titleBox.y + titleBox.height <= squareBox.y + squareBox.height + 0.5 && titleBox.x + titleBox.width <= squareBox.x + squareBox.width + 0.5, 'phone: title inside its square');
+      // A phone shows each day's count by default; titles are on the day page.
+      const square = viewer.page.locator('[data-calendar-day="2026-11-25"]');
+      const title = square.locator('li.calendar-entry').first();
+      assert.equal(await square.locator('.calendar-day__count').textContent(), '5');
+      assert.equal(await title.isVisible(), false, 'phone: counts only by default');
       assert.equal(await viewer.page.locator('[data-calendar-day="2026-11-29"] .calendar-day__number').isVisible(), true, 'Saturday is on screen');
+      // Show titles: the first words of each, in tiny text, inside the square.
+      const toggle = viewer.page.locator('[data-calendar-titles]');
+      assert.equal(await toggle.textContent(), 'Show titles');
+      await toggle.click();
+      assert.equal(await toggle.getAttribute('aria-pressed'), 'true');
+      assert.equal(await title.isVisible(), true, 'phone: titles shown');
+      const [titleBox, squareBox] = [await title.boundingBox(), await square.boundingBox()];
+      assert.ok(titleBox.y + titleBox.height <= squareBox.y + squareBox.height + 0.5 && titleBox.x + titleBox.width <= squareBox.x + squareBox.width + 0.5, 'phone: title inside its square');
+      assert.equal(await viewer.page.locator('[data-calendar-day="2026-11-29"] .calendar-day__number').isVisible(), true, 'Saturday is on screen with titles');
+      assert.equal(await fitsWidth(viewer.page), true, 'grid page with titles fits a phone');
       // The titles are too small to aim at: a tap on one opens the day.
       await viewer.page.mouse.click(titleBox.x + titleBox.width / 2, titleBox.y + titleBox.height / 2);
       await viewer.page.waitForURL(/\/calendar\/couches\/2026-11-25$/);
-      await viewer.page.goBack();
+      // The choice is remembered, and switches back.
+      await viewer.page.goto(base + '/calendar/couches?month=2026-11');
+      assert.equal(await title.isVisible(), true, 'phone: titles remembered');
+      await toggle.click();
+      assert.equal(await title.isVisible(), false, 'phone: back to counts');
+      assert.equal(await toggle.textContent(), 'Show titles');
     }
     assert.equal(await fitsWidth(viewer.page), true, `grid page fits ${width}px`);
     // Days next to the blank cells before the 1st keep their borders: the 1st's left edge, the second row's top edges.
