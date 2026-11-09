@@ -254,3 +254,11 @@ Study closeout, `railspike-effort` / `v3/engagify_theme`, R1/P2, single exposed 
   - Not replayed: the reported iPhone condition on a real device with the software keyboard open. Headless emulation does not open a keyboard. Pending a production check after deploy.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Follow-up - real password field
+
+2026-11-09: at the maintainer's request, the flagged newsletter box is now a real password field, not a masked email box. It is labeled "Password", with the placeholder "Password" and `autocomplete="new-password"`, so a browser does not fill in a saved password. The announcement post says "Their password has been shared…" and still contains nothing typed. The flag is renamed "Engagify: password newsletter box", and its description is updated. With the flag off, nothing changes.
+
+- Verification: headless Chromium, iPhone 13 emulation, flag on and off. The field label, type, placeholder and autocomplete were checked. Subscribe's post had the right wording and neither typed value. Screenshot inspected. `./v3 test --smoke FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest` passed except the baseline `BoardListTest` failure, and `theme_scripts.cjs` passed. Full suite not run.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

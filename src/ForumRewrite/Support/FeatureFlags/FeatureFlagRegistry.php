@@ -278,8 +278,8 @@ final class FeatureFlagRegistry
             ),
             new FeatureFlagDefinition(
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
-                'Engagify: password-style newsletter box',
-                "In the Engagify theme, the newsletter's email box hides what you type like a password, and Ava's chat panel opens over it. Off by default; Ava then waits until the popup is closed.",
+                'Engagify: password newsletter box',
+                "In the Engagify theme, the newsletter asks for a password instead of an email, and Ava's chat panel opens over the box. Off by default; Ava then waits until the popup is closed.",
                 false,
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
                 siteMutable: true,

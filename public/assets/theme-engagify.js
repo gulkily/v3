@@ -255,23 +255,25 @@
 
   // Newsletter popup with a guilt-trip decline. Subscribing posts a public
   // announcement thread; the address itself is never sent or stored. With the
-  // password-newsletter flag, the box masks what is typed and Ava sits on it.
+  // password-newsletter flag, it asks for a password instead and Ava sits on it.
   NAGS.push(function newsletter(ctx) {
     ctx.later(function () {
       var hidden = flag("engagifyPasswordNewsletter");
       var d = dialog(ctx, "newsletter", "Newsletter");
       var form = ctx.el("form", { class: "engagify-form" });
-      var input = ctx.el("input", { type: hidden ? "password" : "email", id: "engagify-email", autocomplete: "off", placeholder: "you@example.com", required: "" });
+      var input = hidden
+        ? ctx.el("input", { type: "password", id: "engagify-email", autocomplete: "new-password", placeholder: "Password", required: "" })
+        : ctx.el("input", { type: "email", id: "engagify-email", autocomplete: "off", placeholder: "you@example.com", required: "" });
       var subscribe = ctx.el("button", { type: "submit", class: "engagify-button", text: "Subscribe" });
       var error = errorLine(ctx);
-      form.appendChild(ctx.el("label", { for: "engagify-email", text: "Email" }));
+      form.appendChild(ctx.el("label", { for: "engagify-email", text: hidden ? "Password" : "Email" }));
       form.appendChild(input);
       form.appendChild(subscribe);
       form.appendChild(error);
       form.addEventListener("submit", function (event) {
         event.preventDefault();
         submitPost(ctx, subscribe, error, "New newsletter subscriber!",
-          "Someone just joined the hourly ZenMemes newsletter. Their address has been shared with our 847 trusted partners.\n\n(It hasn't. Engagify posted this instead.)",
+          "Someone just joined the hourly ZenMemes newsletter. Their " + (hidden ? "password" : "address") + " has been shared with our 847 trusted partners.\n\n(It hasn't. Engagify posted this instead.)",
           function (link) {
             input.value = "";
             d.close();
