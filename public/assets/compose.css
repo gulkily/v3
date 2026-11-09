@@ -172,12 +172,32 @@
 .compose-disclosure > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .compose-disclosure > summary:focus-visible { outline: 3px solid var(--accent-color, #356bd8); outline-offset: 2px; }
 .compose-disclosure > label { display: block; margin-top: .5rem; }
-/* Options: post format, its help link and the thread theme. */
-.compose-options > .compose-options-check { display: flex; align-items: center; gap: .5rem; }
-.compose-options > .compose-options-check input { width: auto; min-height: 0; margin: 0; }
-.compose-options > .compose-options-link { display: block; margin-top: .5rem; }
-.compose-options > .compose-options-theme { display: flex; align-items: center; gap: .5rem; }
-.compose-options > .compose-options-theme select { width: auto; min-height: 0; margin: 0; }
+/* Options: a settings list. One row per option, name left, control right,
+   hairlines between; on/off is a switch, a choice is a menu. Add options as rows. */
+.compose-options { padding: 0; }
+.compose-options[open] { padding-bottom: 0; }
+.compose-options > summary { list-style: none; padding: 0 .75rem; }
+.compose-options > summary::-webkit-details-marker { display: none; }
+.compose-options > summary::after { content: "\203A"; margin-left: auto; font-size: 1.2em; line-height: 1; transition: transform .15s; }
+.compose-options[open] > summary::after { transform: rotate(90deg); }
+.compose-options > summary [data-role="compose-disclosure-summary"]:not(:empty)::before { content: "\00B7  "; }
+.compose-options-list { border-top: 1px solid var(--line); }
+.compose-options-row { display: flex; align-items: center; gap: .75rem; min-height: 48px; margin: 0; padding: .3rem .75rem; font-weight: normal; }
+.compose-options-row + .compose-options-row { border-top: 1px solid var(--line); }
+.compose-options-name { flex: 1 1 auto; min-width: 0; }
+.compose-options-help { display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; margin-left: .35rem; border: 1px solid var(--line); border-radius: 50%; font-size: .8em; line-height: 1; text-decoration: none; vertical-align: .1em; color: inherit; opacity: .75; }
+.compose-options-help:hover, .compose-options-help:focus-visible { opacity: 1; border-color: var(--active-line, currentColor); }
+.compose-options-row select { flex: 0 1 auto; width: auto; max-width: 60%; min-height: 36px; margin: 0; padding: .3rem 1.9rem .3rem .65rem; font: inherit; color: inherit; border: 1px solid var(--line); border-radius: .5rem; background: var(--input-bg, Canvas) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right .65rem center; appearance: none; -webkit-appearance: none; }
+/* The switch is the checkbox itself, so the form still posts without script. */
+/* Colors come from each theme's text and page colors, which always contrast:
+   off is an outline with a muted knob, on is filled with the text color.
+   :root raises it above themes' generic input rules. */
+:root .compose-options .compose-switch { appearance: none; -webkit-appearance: none; flex: 0 0 auto; position: relative; width: 2.6rem; height: 1.6rem; min-height: 0; margin: 0; padding: 0; border: 2px solid var(--ink-soft, currentColor); border-radius: 999px; background: transparent; box-shadow: none; cursor: pointer; transition: background-color .15s, border-color .15s; }
+:root .compose-options .compose-switch::after { content: ""; position: absolute; top: .15rem; left: .15rem; width: 1rem; height: 1rem; border-radius: 50%; background: var(--ink-soft, currentColor); transition: transform .15s, background-color .15s; }
+:root .compose-options .compose-switch:checked { background: var(--ink, currentColor); border-color: var(--ink, currentColor); }
+:root .compose-options .compose-switch:checked::after { background: var(--page-bg, Canvas); transform: translateX(1rem); }
+.compose-switch:focus-visible, .compose-options-row select:focus-visible { outline: 3px solid var(--accent-color, #356bd8); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { :root .compose-options .compose-switch, :root .compose-options .compose-switch::after, .compose-options > summary::after { transition: none; } }
 
 .compose-form-actions:has(> .compose-action-menu) > button[type="submit"] {
   flex: 1 1 0;

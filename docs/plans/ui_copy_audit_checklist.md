@@ -903,4 +903,5 @@ Verification: See local patch application results in [the implementation record]
 
 Change: the composer's ··· menu holds only actions. Markdown, Formatting help and the theme choice moved out of it into a collapsed "Options" disclosure in the compose form (beside tags and event on New post, its own row under Post on the board, thread and reply composers); its summary shows what is set, e.g. "Markdown · Gloss". Added: "Options". No other wording changed. Record: [compose menu options](compose_menu_options/compose_menu_options_one_shot.md) (PRs #103, #107).
 Verification: see the record; headless Chrome at 390/1100px in default, Gloss and Word97 (plus dark and Chicago for the menu in #103). Other themes and the phone reply panel with Options open unchecked.
+Follow-up 2026-11-09: Options became a settings list (name left, switch or menu right); the "Formatting help" link became a "?" beside Markdown with "Formatting help" as its accessible name and tooltip. No wording added.
 
