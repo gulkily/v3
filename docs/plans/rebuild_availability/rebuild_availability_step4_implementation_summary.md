@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stages 1–5 complete (qdb heartbeat pending); Stage 6 next.
+Status: Step 3 approved on 2026-11-09; Stages 1–6 complete (qdb heartbeat pending); Stage 7 next.
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -115,5 +115,23 @@ Status: Step 3 approved on 2026-11-09; Stages 1–5 complete (qdb heartbeat pend
   - Deviation from Step 2's "page requests never rebuild": with no worker at all (local development, tests, a host without cron), requests still rebuild, because nothing else would. On hosts with cron, requests never rebuild. Asking the maintainer to confirm.
   - Retrospective above original: the wait-for-write fix and twelve test updates were not planned.
 - Estimate details: original scope as in Step 3; no revision before work.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Deploy queues its own rebuild
+
+**Original estimate: 0.10**
+**Retrospective: 0.08**
+
+- Changes:
+  - After a successful fast-forward, `AppUpdate::deploy()` runs `scripts/task_queue.php check-read-model` as a short process of the new code. It reads only the read model's metadata; when the schema is not the one the new code expects, it queues a rebuild through `AutomaticReadModelRebuild` (which starts a detached worker only where cron is not running and launch is enabled). Deploys that change nothing, fail or are refused skip the check.
+  - The attempt log gains `Read-Model: current|queued|unknown`; a queued rebuild is also added to the attempt message. When the check cannot run, the message names `./v3 rebuild`.
+  - New subcommand `./v3 task-queue check-read-model`, listed in its usage text. `AppUpdate` takes an optional check closure for tests, and its process runner now serves both Git and this check.
+- Verification:
+  - New tests: `AppUpdateTest::testDeployChecksTheReadModelWithTheNewCodeAndQueuesARebuild`, `testDeployWithoutChangesSkipsTheReadModelCheck`, `testDeployWithoutTheCheckScriptRecordsUnknown`; `TaskQueueCommandTest::testCheckReadModelQueuesARebuildOnlyForAnOldSchema` (current schema queues nothing; old schema queues one rebuild, repeat runs reuse it).
+  - `./v3 test --smoke AppUpdateTest TaskQueueCommandTest DeployPageTest`: 487 run, 487 passed. Full suite not run.
+  - The real check, run against this checkout's code: 0.04s.
+- Notes: Stage 1 refinement applied. The plan named a detached process for the check; a short synchronous process of the new code is simpler and still adds well under a second. Detached launch stays only as the existing fallback when cron is not running.
+- Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

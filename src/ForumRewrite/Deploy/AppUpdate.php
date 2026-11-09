@@ -39,8 +39,16 @@ final class AppUpdate
     private string $logPath;
     private string $queuedPath;
 
-    public function __construct(private readonly string $appRoot, ?string $stateRoot = null)
+    /** @var (\Closure(): array{status: string, message: string})|null */
+    private ?\Closure $readModelCheck;
+
+    /**
+     * @param (\Closure(): array{status: string, message: string})|null $readModelCheck runs after a
+     *        successful update; defaults to {@see self::checkReadModelWithNewCode()}
+     */
+    public function __construct(private readonly string $appRoot, ?string $stateRoot = null, ?\Closure $readModelCheck = null)
     {
+        $this->readModelCheck = $readModelCheck;
         $stateRoot ??= $appRoot . '/state';
         $this->lockPath = $stateRoot . '/app_update.lock';
         $this->logPath = $stateRoot . '/logs/app_update.log';
@@ -247,6 +255,16 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
     {
         $startedAt = gmdate('Y-m-d\TH:i:s\Z');
         $result = $this->runDeploy($timeoutSeconds);
+        $readModel = null;
+        if ($result['outcome'] === 'deployed') {
+            // The update is in place; the old code cannot know the new read-model schema, so a
+            // short process of the new code checks it and queues a rebuild when it changed.
+            $check = $this->readModelCheck !== null ? ($this->readModelCheck)() : $this->checkReadModelWithNewCode();
+            $readModel = $check['status'];
+            if ($check['message'] !== '') {
+                $result['message'] .= ' ' . $check['message'];
+            }
+        }
         $attempt = [
             'attempt_id' => gmdate('YmdHis') . '-' . bin2hex(random_bytes(4)),
             'outcome' => $result['outcome'],
@@ -256,6 +274,7 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             'new_commit' => $result['new_commit'],
             'mode' => $mode,
             'actor' => $actor,
+            'read_model' => $readModel,
         ];
         $this->appendAttempt($attempt + ['started_at' => $startedAt, 'finished_at' => gmdate('Y-m-d\TH:i:s\Z')]);
 
@@ -281,6 +300,28 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         }
 
         return $fields === [] ? null : $fields;
+    }
+
+    /**
+     * Runs `scripts/task_queue.php check-read-model` with the code just deployed. It reads only
+     * the read model's metadata, so it adds well under a second to a deploy.
+     *
+     * @return array{status: string, message: string} status: current, queued or unknown
+     */
+    private function checkReadModelWithNewCode(): array
+    {
+        $script = $this->appRoot . '/scripts/task_queue.php';
+        if (!is_file($script)) {
+            return ['status' => 'unknown', 'message' => ''];
+        }
+        $run = $this->run([PHP_BINARY, $script, 'check-read-model'], 30);
+        $lines = array_values(array_filter(array_map('trim', explode("\n", $run['out']))));
+        $last = $lines === [] ? '' : $lines[count($lines) - 1];
+        if ($run['code'] === 0 && preg_match('/^Read model: (current|queued)\b/', $last, $m) === 1) {
+            return ['status' => $m[1], 'message' => $m[1] === 'queued' ? $last : ''];
+        }
+
+        return ['status' => 'unknown', 'message' => 'Could not check the read model; if pages show "Site Update", run ./v3 rebuild.'];
     }
 
     public function isBusy(): bool
@@ -466,6 +507,7 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             'attempt_id' => 'Attempt-ID', 'started_at' => 'Started-At', 'finished_at' => 'Finished-At',
             'mode' => 'Mode', 'actor' => 'Actor', 'outcome' => 'Outcome', 'reason' => 'Reason',
             'old_commit' => 'Old-Commit', 'new_commit' => 'New-Commit', 'message' => 'Message',
+            'read_model' => 'Read-Model',
         ];
         $lines = [];
         foreach ($labels as $key => $label) {
@@ -534,6 +576,15 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
      */
     private function git(array $args, int $timeoutSeconds): array
     {
+        return $this->run(['git', '-C', $this->appRoot, ...$args], $timeoutSeconds);
+    }
+
+    /**
+     * @param list<string> $command
+     * @return array{code: int, out: string, err: string}
+     */
+    private function run(array $command, int $timeoutSeconds): array
+    {
         $env = getenv();
         foreach (['GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_NAMESPACE', 'GIT_PREFIX'] as $key) {
             unset($env[$key]);
@@ -543,9 +594,9 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         $env['GIT_MERGE_AUTOEDIT'] = 'no';
         $env['LC_ALL'] = 'C';
         $pipes = [];
-        $process = @proc_open(['git', '-C', $this->appRoot, ...$args], [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null, $env);
+        $process = @proc_open($command, [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $this->appRoot, $env);
         if (!is_resource($process)) {
-            return ['code' => 127, 'out' => '', 'err' => 'Could not start Git.'];
+            return ['code' => 127, 'out' => '', 'err' => 'Could not start ' . $command[0] . '.'];
         }
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);

@@ -44,7 +44,7 @@ try {
         exit(0);
     }
 
-    if (!in_array($command, ['enqueue-retraction-sweep', 'retry-agent-reply', 'enqueue-rebuild', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'reset-recovery', 'run', 'status', 'cron'], true)) {
+    if (!in_array($command, ['enqueue-retraction-sweep', 'retry-agent-reply', 'enqueue-rebuild', 'check-read-model', 'enqueue-fast-score', 'enqueue-offline-snapshot', 'reset-recovery', 'run', 'status', 'cron'], true)) {
         throw new InvalidArgumentException('Unknown task-queue command: ' . ($command === '' ? '(none)' : $command));
     }
 
@@ -93,6 +93,28 @@ try {
             $task['id'],
             $task['status'],
         ));
+        exit(0);
+    }
+
+    if ($command === 'check-read-model') {
+        // Run by a deploy with the new code: queue a rebuild when the read model's schema is
+        // not the one this code expects. Reads metadata only, so it finishes quickly.
+        $metadata = null;
+        if (is_file($databasePath)) {
+            try {
+                $metadata = (new \ForumRewrite\ReadModel\ReadModelConnection($databasePath, 2000))->open()
+                    ->query('SELECT key, value FROM metadata')->fetchAll(PDO::FETCH_KEY_PAIR);
+            } catch (Throwable) {
+                $metadata = null;
+            }
+        }
+        if (is_array($metadata) && \ForumRewrite\ReadModel\ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {
+            fwrite(STDOUT, "Read model: current; no rebuild needed\n");
+            exit(0);
+        }
+        $state = (new \ForumRewrite\TaskQueue\AutomaticReadModelRebuild($projectRoot, $queuePath))
+            ->request(\ForumRewrite\TaskQueue\AutomaticReadModelRebuild::SCHEMA_REASON);
+        fwrite(STDOUT, 'Read model: queued a rebuild for the new schema (' . $state . ")\n");
         exit(0);
     }
 
@@ -584,6 +606,7 @@ function printTaskQueueUsage($stream): void
     fwrite($stream, <<<'TEXT'
 Usage:
   php scripts/task_queue.php enqueue-rebuild [--queue-database-path=/private/path/tasks.sqlite3]
+  php scripts/task_queue.php check-read-model [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-fast-score [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php enqueue-offline-snapshot [--queue-database-path=/private/path/tasks.sqlite3]
   php scripts/task_queue.php reset-recovery [--queue-database-path=/private/path/tasks.sqlite3]
