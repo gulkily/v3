@@ -2190,6 +2190,8 @@ PHP;
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
         // The Tools bar sits below the tool, not above it.
         assertOrdered($toolsBackup, '<h1>Backup</h1>', 'class="nav tools-nav"');
+        assertStringContains('<h2 class="tools-nav-heading"><a href="/tools/">Tools</a></h2>', $toolsBackup);
+        assertOrdered($toolsBackup, 'class="tools-nav-heading"', 'class="nav tools-nav"');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);

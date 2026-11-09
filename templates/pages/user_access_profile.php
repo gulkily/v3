@@ -7,7 +7,5 @@
 <?= $indent($partial('partials/feedback.php', ['notice' => $notice, 'error' => $error]), 2) ?>
   </article>
 <?= $partial('partials/profile_access.php', ['historyAccountBase' => '/tools/user-access/accounts/', 'historyProfileBase' => '/tools/user-access/profiles/']) ?>
-  <article class="card tools-nav-card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
+<?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 </section>

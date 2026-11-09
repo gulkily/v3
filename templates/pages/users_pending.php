@@ -62,8 +62,6 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
     </table>
   </article>
 <?php if (!empty($accessManagement)): ?>
-  <article class="card tools-nav-card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
+<?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 <?php endif; ?>
 </section>

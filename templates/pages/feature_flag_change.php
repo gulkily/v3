@@ -21,7 +21,5 @@
       <p class="meta">This page shows only what the record and repository history state; it does not re-verify the signature.</p>
     </section>
   </article>
-  <article class="card tools-nav-card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
+<?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 </section>
