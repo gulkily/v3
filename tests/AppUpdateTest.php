@@ -479,6 +479,16 @@ final class AppUpdateTest
         );
     }
 
+    public function testStatusLinesIncludeTheReadModelCheck(): void
+    {
+        assertSame(['Latest-Attempt: none'], AppUpdate::latestAttemptLines(null));
+        $base = ['Finished-At' => '2026-11-09T22:50:00Z', 'Outcome' => 'deployed', 'Mode' => 'cli'];
+        assertSame(['Latest-Attempt: 2026-11-09T22:50:00Z deployed (cli)', 'Latest-Read-Model: current'],
+            AppUpdate::latestAttemptLines($base + ['Read-Model' => 'current']));
+        assertSame(['Latest-Attempt: 2026-11-09T22:50:00Z deployed (cli)'],
+            AppUpdate::latestAttemptLines($base + ['Read-Model' => '-']));
+    }
+
     public function testCliHelpAndStatusRun(): void
     {
         $root = dirname(__DIR__);

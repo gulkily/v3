@@ -324,6 +324,26 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         return ['status' => 'unknown', 'message' => 'Could not check the read model; if pages show "Site Update", run ./v3 rebuild.'];
     }
 
+    /**
+     * The `./v3 deploy --status` lines for the latest attempt, including whether that deploy
+     * found the read model current or queued a rebuild.
+     *
+     * @param array<string, string>|null $latest from {@see self::latestAttempt()}
+     * @return list<string>
+     */
+    public static function latestAttemptLines(?array $latest): array
+    {
+        if ($latest === null) {
+            return ['Latest-Attempt: none'];
+        }
+        $lines = ['Latest-Attempt: ' . ($latest['Finished-At'] ?? '-') . ' ' . ($latest['Outcome'] ?? '-') . ' (' . ($latest['Mode'] ?? '-') . ')'];
+        if (($latest['Read-Model'] ?? '-') !== '-') {
+            $lines[] = 'Latest-Read-Model: ' . $latest['Read-Model'];
+        }
+
+        return $lines;
+    }
+
     public function isBusy(): bool
     {
         $lock = $this->acquireLock();
