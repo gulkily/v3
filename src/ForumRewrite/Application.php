@@ -112,6 +112,8 @@ final class Application
         private readonly string $routeSource = 'php-fallback',
         private readonly bool $allowReadModelRebuild = true,
         private readonly bool $requireCurrentReadModel = true,
+        /** Page requests pass a short limit so a locked read model shows the busy page instead of hanging. */
+        private readonly ?int $readerWaitMilliseconds = null,
     ) {
         SignatureCheckCache::useBeside($databasePath);
     }
@@ -1239,8 +1241,12 @@ final class Application
                     $this->applyVerifiedAttributionFlag($metadata);
                     return;
                 }
-            } catch (\Throwable) {
+            } catch (\Throwable $error) {
                 $pdo = null;
+                if (ReadModelConnection::isLocked($error)) {
+                    // A locked file is busy, not broken: show the busy page rather than rebuild.
+                    throw $error;
+                }
                 $rebuildReason = 'metadata_unreadable';
             }
         }
@@ -1651,6 +1657,7 @@ final class Application
                 $this->featureFlags(),
                 $this->resolveViewerProfileFromIdentityHint(...),
                 viewerSessions: $this->viewerSessions(...),
+                readerWaitMilliseconds: $this->readerWaitMilliseconds,
             );
         }
 

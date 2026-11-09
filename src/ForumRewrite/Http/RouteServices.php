@@ -79,6 +79,7 @@ final class RouteServices
         private readonly bool $readModelAccessAllowed = true,
         /** @var (\Closure(): \ForumRewrite\Session\ViewerSessions)|null */
         private readonly ?\Closure $viewerSessions = null,
+        private readonly ?int $readerWaitMilliseconds = null,
     ) {
     }
 
@@ -159,7 +160,7 @@ final class RouteServices
             throw new \LogicException('Documentation rendering must not access the forum read model.');
         }
         return $this->tagReadConnection ??= \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
-            (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
+            (new ReadModelConnection($this->databasePath, $this->readerWaitMilliseconds))->open(), $this->projectRoot, $this->repositoryRoot);
     }
 
     public function withActiveIdentity(string $identityId, callable $callback): mixed

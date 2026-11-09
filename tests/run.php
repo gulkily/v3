@@ -34,6 +34,7 @@ $testFiles = [
     __DIR__ . '/FrmClientTest.php',
     __DIR__ . '/AgentPostingApiTest.php',
     __DIR__ . '/SingleRequestHttpTest.php',
+    __DIR__ . '/ReadModelBusyPageTest.php',
     __DIR__ . '/SingleRequestPostingTest.php',
     __DIR__ . '/SignedPostTransactionTest.php',
     __DIR__ . '/SignedPostIdentityTest.php',

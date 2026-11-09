@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stage 1 complete (qdb heartbeat pending); Stage 2 in progress.
+Status: Step 3 approved on 2026-11-09; Stages 1–2 complete (qdb heartbeat pending); Stage 3 next.
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -30,6 +30,26 @@ Status: Step 3 approved on 2026-11-09; Stage 1 complete (qdb heartbeat pending);
 - Notes:
   - Disk-space risk resolved: a second copy fits easily on both hosts, so Stage 3 proceeds as planned.
   - Detached launch is off on both hosts, but cron runs the worker every minute on zenmemes.com. Queued rebuilds therefore start within about a minute there without any detached launch. Stage 6 should rely on the queue first and use the detached launch only where it is enabled; that is a refinement inside Stage 6's approved goal.
+- Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Busy page within 2 seconds
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - `ReadModelConnection` takes an optional wait limit and sets SQLite's busy timeout from it; `PAGE_REQUEST_WAIT_MILLISECONDS` is 2000. `isLocked()` recognizes a locked-database error, including when wrapped.
+  - `Application` and `RouteServices` pass the limit to the request's read connection. Only `FrontController` sets it, so CLI commands, static builds and writers keep the driver's 60-second default (the Step 3 risk about CLI callers).
+  - `Application::ensureReadModel()` rethrows a locked error instead of treating it as an unreadable file. Before this, a short wait would have triggered a rebuild inside the request.
+  - `FrontController` shows the busy page for a locked read model as well as for an execution-lock timeout. The busy page and the update page now send `Retry-After: 10` and reload after 10 seconds. The high-traffic busy response uses the same helper (it previously sent `Retry-After: 5`).
+  - New `tests/ReadModelBusyPageTest.php`, registered in `tests/run.php`.
+- Verification:
+  - `./v3 test --smoke ReadModelBusyPageTest SingleRequestHttpTest LocalAppSmokeTest`: 443 run, 443 passed. Full suite not run.
+  - The locked-page test took 2.18s and leaves the read-model file unchanged. With the limit raised to 8 seconds, the same test failed at 8.15s, so it measures the limit.
+  - API responses are unchanged: `FrontController` still rethrows API errors, which already return JSON with `Retry-After: 10`.
+- Notes: the busy-page copy comes from the site profile, unchanged.
 - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

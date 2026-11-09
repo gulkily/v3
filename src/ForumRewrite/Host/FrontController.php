@@ -10,6 +10,7 @@ use ForumRewrite\Docs\PlatformDocsCatalog;
 use ForumRewrite\Offline\OfflineSnapshotBootstrap;
 use ForumRewrite\Offline\OfflineSnapshotLocator;
 use ForumRewrite\ProfilePresentationContent;
+use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Statistics\VisitorStatisticsObserver;
@@ -122,9 +123,7 @@ final class FrontController
                 if ($method !== 'HEAD') echo '<!doctype html><title>Not found</title><h1>Not found</h1>';
                 return;
             } catch (Throwable $error) { $highTraffic->report($error); }
-            header('Retry-After: 5');
-            header('Cache-Control: no-store');
-            $this->sendHtml($this->renderBusyError(), 503);
+            $this->sendRetryablePage($this->renderBusyError());
             return;
         }
 
@@ -198,18 +197,20 @@ final class FrontController
                 $this->databasePath,
                 $this->publicRoot,
                 $this->staticHtmlRoot,
+                readerWaitMilliseconds: ReadModelConnection::PAGE_REQUEST_WAIT_MILLISECONDS,
             );
             $application->handle($method, $requestUri);
         } catch (Throwable $throwable) {
             if (\ForumRewrite\Http\ApiErrors::isApi($requestUri)) throw $throwable;
-            if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')) {
-                $this->sendHtml($this->renderBusyError(), 503);
+            if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')
+                || ReadModelConnection::isLocked($throwable)) {
+                $this->sendRetryablePage($this->renderBusyError());
                 return;
             }
 
             $recovery = $this->requestReadModelSchemaRecovery($throwable);
             if ($recovery !== null) {
-                $this->sendHtml($this->renderReadModelRecovery($recovery), 503);
+                $this->sendRetryablePage($this->renderReadModelRecovery($recovery));
                 return;
             }
 
@@ -675,6 +676,7 @@ final class FrontController
         };
 
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            . self::retryRefreshTag()
             . '<title>Site Update</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">'
             . htmlspecialchars(SiteConfig::displayName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
@@ -700,6 +702,7 @@ final class FrontController
         $busyContent = ProfilePresentationContent::busy(SiteProfileRegistry::active());
 
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            . self::retryRefreshTag()
             . '<title>' . htmlspecialchars($busyContent['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
             . '<div class="shell"><header class="site-header"><p class="eyebrow">'
             . htmlspecialchars(SiteConfig::displayName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
@@ -707,6 +710,21 @@ final class FrontController
             . '<main class="main"><section class="stack"><h1>' . htmlspecialchars($busyContent['heading'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</h1>'
             . '<article class="card"><p>' . htmlspecialchars($busyContent['message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
             . '</article></section></main></div></body></html>';
+    }
+
+    /** Seconds a visitor waits before the busy or update page reloads itself. */
+    private const RETRY_SECONDS = 10;
+
+    private static function retryRefreshTag(): string
+    {
+        return '<meta http-equiv="refresh" content="' . self::RETRY_SECONDS . '">';
+    }
+
+    /** Busy and update pages: 503 with Retry-After, so the page and well-behaved clients retry. */
+    private function sendRetryablePage(string $html): void
+    {
+        header('Retry-After: ' . self::RETRY_SECONDS);
+        $this->sendHtml($html, 503);
     }
 
     private function sendHtml(string $html, int $statusCode, bool $publicArtifact = false): void
