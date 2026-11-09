@@ -1202,11 +1202,25 @@ pre {
   flex-direction: column;
   min-width: 0;
 }
-.person-identity__latest {
-  overflow: hidden;
+.person-identity {
+  align-items: flex-start;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+.person-identity.account-row--link::after {
+  align-self: center;
+}
+.person-identity__status {
   font-size: 0.85rem;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+}
+.person-identity__latest {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 0.15rem;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .board-empty {
