@@ -43,9 +43,6 @@ $rowCountSources = [
 ];
 ?>
 <section class="stack">
-  <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
   <article class="card codebase-status-card" data-role="codebase-state">
     <h1>System status</h1>
     <p class="codebase-status" data-status="<?= $e($state['overall_status']) ?>"><?= $e($state['overall_status']) ?></p>
@@ -153,5 +150,8 @@ $rowCountSources = [
 <?php else: ?>
     <p>Text backups are unavailable.</p>
 <?php endif; ?>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

@@ -1,6 +1,5 @@
 <section class="stack">
   <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
     <h1>User Access</h1>
     <p><a href="/tools/user-access/pending/">Pending approvals</a></p>
   </article>
@@ -35,4 +34,7 @@
 <?php endif; ?>
   </article>
 <?php endif; ?>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
+  </article>
 </section>

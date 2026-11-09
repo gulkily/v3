@@ -5,9 +5,6 @@ $flagGroups = $registry->presentationGroups($flags);
 ?>
 <section class="stack">
   <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
-  <article class="card">
     <h1>Feature Flags</h1>
     <p class="feature-flags-notice meta">These settings apply to the whole site for all users as soon as you change them.</p>
 <?php if ($siteError !== null): ?>
@@ -124,5 +121,8 @@ $flagGroups = $registry->presentationGroups($flags);
       </div>
     </section>
 <?php endforeach; ?>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

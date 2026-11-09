@@ -1,22 +1,17 @@
 <?php if (!($textBackupEnabled ?? true)): ?>
 <section class="stack">
-<?php if (empty($embedded)): ?>
-  <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
-<?php endif; ?>
   <article class="card">
     <h1>SQLite Viewer</h1>
     <p>SQLite Viewer is unavailable while text backups are disabled.</p>
   </article>
-</section>
-<?php return; endif; ?>
-<section class="stack" data-sqlite-viewer data-runtime-url="<?= htmlspecialchars((string) ($runtimeUrl ?? '/assets/sql-wasm.wasm'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
 <?php if (empty($embedded)): ?>
-  <article class="card">
+  <article class="card tools-nav-card">
 <?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 <?php endif; ?>
+</section>
+<?php return; endif; ?>
+<section class="stack" data-sqlite-viewer data-runtime-url="<?= htmlspecialchars((string) ($runtimeUrl ?? '/assets/sql-wasm.wasm'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
 <?php if (!empty($embedded)): ?>
   <p class="meta" data-role="sqlite-status" aria-live="polite" hidden></p>
 <?php else: ?>
@@ -82,5 +77,10 @@
 <?php endif; ?>
 <?php if (!empty($embedded)): ?>
   <footer><a href="/tools/sqlite/">Open full viewer</a></footer>
+<?php endif; ?>
+<?php if (empty($embedded)): ?>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
+  </article>
 <?php endif; ?>
 </section>
