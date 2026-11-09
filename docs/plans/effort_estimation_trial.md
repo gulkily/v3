@@ -1682,3 +1682,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/calendar_approved_events` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.06 (intake 0.06; retrospective 0.08) | [One-shot record](./calendar_approved_events/calendar_approved_events_one_shot.md#study-history) | Thread request; per-feature grants split to a separate future cycle; acceptance pending |
 
 2026-11-09T01:15Z: standing P2 enrollment, one-shot authorized in session after the maintainer chose the approval-gated slice. Intake **0.06** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08** because the browser calendar test needed a new approve-then-appear flow for the unapproved browser key. Baseline `fac52df649aed789757c1ae5eb88306362a9945d`; branch `feat/calendar_approved_events`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/calendar_tiny_month
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/calendar_tiny_month` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.10 (retrospective 0.08) | [One-shot record](./calendar_tiny_month/calendar_tiny_month_one_shot.md#study-history) | Voice-memo request; week view left as a follow-up; acceptance pending |
+
+2026-11-09T03:27Z: standing P2 enrollment, one-shot on the maintainer's voice memo read as the thread-to-PR go-ahead. Intake **0.10** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `f5e78b9353c540cefcfd94ee73476fc29fb99c97`; branch `feat/calendar_tiny_month`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
