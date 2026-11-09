@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Human-readable format audit](human_readable_formats_checklist.md) — JSON conversion checklist and boundaries; [retraction text assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md).
 
+[Read-model rebuild checklist](read_model_rebuild_checklist.md) — three cycles so full rebuilds stop stalling pages: `rebuild_availability` (busy page instead of hangs; deploy queues its rebuild), `retraction_speed`, `background_rebuild`.
+
 ## Production feedback
 
 [Retraction simplification handoff](retraction_simplification_handoff.md) — current user direction, canceled sweep diagnostics plan, and coordination with registration and high-traffic work.
