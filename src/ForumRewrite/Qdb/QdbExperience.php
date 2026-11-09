@@ -217,6 +217,9 @@ final class QdbExperience
             'qdbVoteTags' => $this->boardPolicy->voteTags(),
         ], $title, $section, [
             '/assets/lazy_compose_signing.js',
+            '/assets/outbox_store.js',
+            '/assets/outbox_storage.js',
+            '/assets/outbox_sender.js',
             '/assets/thread_reactions.js',
         ]);
     }

@@ -8,9 +8,12 @@
 
   function isOffline(error) {
     var message = String(error && error.message ? error.message : error || "").toLowerCase();
-    return (typeof navigator !== "undefined" && navigator.onLine === false)
+    return Boolean(error && error.retryable)
+      || (typeof navigator !== "undefined" && navigator.onLine === false)
       || message.indexOf("failed to fetch") !== -1
-      || message.indexOf("networkerror") !== -1;
+      || message.indexOf("networkerror") !== -1
+      || message.indexOf("load failed") !== -1
+      || message.indexOf("network connection was lost") !== -1;
   }
 
   function failureState(error) {
@@ -112,10 +115,21 @@
         };
       });
     }
+    var payload = item.payload || {};
+    var reactions = window.ForumThreadReactions;
+    if (reactions && typeof reactions.submitSavedReaction === "function") {
+      if (payload.kind === "thread_tag" && payload.threadId && payload.tag) return reactions.submitSavedReaction("thread", payload.threadId, payload.tag);
+      if (payload.kind === "post_tag" && payload.postId && payload.tag) return reactions.submitSavedReaction("post", payload.postId, payload.tag);
+    }
+    if (payload.kind === "post_tag" && payload.postId && payload.tag) {
+      // Only pages with reaction buttons can sign this; leave it waiting for the next one.
+      var later = new Error("Waiting to be sent from a page with reactions.");
+      later.retryable = true;
+      return Promise.reject(later);
+    }
     if (!window.ForumBrowserSigning || typeof window.ForumBrowserSigning.ensureActionIdentity !== "function") {
       return Promise.reject(new Error("Signing tools are unavailable. Reload while online and try again."));
     }
-    var payload = item.payload || {};
     if (payload.kind !== "thread_tag" || !payload.threadId || !payload.tag) {
       return Promise.reject(new Error("This reaction is incomplete and cannot be sent."));
     }
@@ -149,7 +163,10 @@
       if (sending.action === "reaction") {
         return sendReaction(sending).then(function (result) {
           var integrated = Object.assign({}, sending, { integrationAt: result.integrationAt || sending.integrationAt || new Date().toISOString() });
-          return transitionAndSave(integrated, "accepted", outcome("Reaction accepted by the server.", result));
+          var accepted = window.forumOutbox.transition(integrated, "accepted", outcome("Reaction accepted by the server.", result));
+          // A reaction button's item has done its job once the server confirms it.
+          if (!sending.intent) return window.forumOutboxStorage.remove(sending.id).then(function () { return accepted; });
+          return window.forumOutboxStorage.save(accepted).then(function () { return accepted; });
         });
       }
 
@@ -190,18 +207,25 @@
   }
 
   var processingPromise = null;
+  var staleSendingMs = 120000;
 
   function processQueuedOutbox() {
     if (typeof navigator !== "undefined" && navigator.onLine === false) return Promise.resolve([]);
     if (processingPromise) return processingPromise;
     var process = function () {
       return window.forumOutboxStorage.list().then(function (items) {
+        var staleBefore = Date.now() - staleSendingMs;
         var eligible = items.filter(function (item) {
-          return item.state === "queued" || item.state === "waiting_for_connection";
+          return item.state === "queued" || item.state === "waiting_for_connection"
+            || (item.state === "sending" && Date.parse(item.updatedAt) < staleBefore);
         });
         return eligible.reduce(function (chain, item) {
           return chain.then(function (results) {
-            return send(item).then(function (result) {
+            // A page closed mid-send leaves its item in "sending"; requeue it so it is not stranded.
+            var ready = item.state === "sending"
+              ? transitionAndSave(item, "queued", outcome("Requeued after an interrupted send."))
+              : Promise.resolve(item);
+            return ready.then(send).then(function (result) {
               results.push(result);
               return results;
             });
