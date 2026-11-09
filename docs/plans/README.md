@@ -56,6 +56,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Delete record speed](delete_record_speed/delete_record_speed_step3_development_plan.md) — `./v3 delete-record` inspect and delete under 1s on the qdb host with live status lines and `-q`; label-file index, one-index-read commit, incremental removal instead of a full rebuild; Step 4 in progress.
 
 - [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
+- [Calendar approved events](calendar_approved_events/calendar_approved_events_one_shot.md) — one-shot: the calendar lists only events whose thread author is an approved member; other events stay on their threads.
 - [Calendar today](calendar_today/calendar_today_one_shot.md) — one-shot: the calendar marks today in the viewer's time zone and offers Today when its month is not shown; implemented locally.
 - [Reply bare card](reply_bare_card/reply_bare_card_one_shot.md) — one-shot: a sent reply keeps its "Posting…" status until the full post replaces it, instead of briefly showing as a bare body.
 - [Ctrl+Enter after late signing load](ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md) — one-shot fix: the composer's signing script sets itself up when an approved member's messaging scripts load it after page parse, restoring Ctrl+Enter on the board; merged, deployed and accepted.
