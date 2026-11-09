@@ -126,3 +126,4 @@ Study cycle `v3/zm_helper_diagnostics` joins `railspike-effort` (R1, P2) at Step
 **Retrospective scope assessment: 0.50** (scope v1, R1). Higher than the 0.45 entry projection because of new understanding, not new scope: the anonymous fallback found by the HTTP test and the key-step fixes found by the live skill test. This is a judgment, not measured time. Maintainer comfortable-fit judgment: **pending**.
 
 *— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
+- Rebase note: before pushing, the branch was rebased onto `main` at `1df78e27`. The planning commit `014c35c` is now `b99e469d`, and the six stage commits follow it in the same order (`4e2234ce` … `035c6a83`). Content is unchanged; `tests/frm_client_test.py` passed again after the rebase.
