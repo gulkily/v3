@@ -26,7 +26,7 @@ During a task, run only the smoke set plus the tests for what you changed: `./v3
 
 ## Follow-up changes after a PR
 
-The maintainer often merges a PR within minutes. Before pushing more commits to an existing branch, check that its PR is still open; if it is merged or closed, put the follow-up on a new branch from the current `origin/main` and open a new PR. See [Recovery in thread to pull request](docs/agents/thread_to_pr.md#recovery).
+The maintainer reviews a PR by merging it and trying it in production, so his feedback on a PR is feedback on merged code. Start every follow-up on a new branch from a freshly fetched `origin/main` and open a new PR; before any push to an existing branch, check that its PR is still open. See [Recovery in thread to pull request](docs/agents/thread_to_pr.md#recovery).
 
 ## Todo
 
