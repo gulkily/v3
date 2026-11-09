@@ -1,9 +1,10 @@
 (function () {
-  // One-time navigation hints, already used by the time this runs: created_post_id by the
-  // thread request after a post, __v by the server cache bypass and the version checker,
-  // which loads first. Drop them so the address bar, shared links and reloads stay clean.
+  // One-time navigation hints: created_post_id for the thread request after a post, __v for
+  // the server cache bypass and the version checker, which loads first. They stay in the
+  // address bar on the visit that brought them, so it doesn't flash a shorter URL, and are
+  // dropped once the person reloads.
   if (!window.history || typeof window.history.replaceState !== 'function'
-      || document.documentElement.hasAttribute('data-version-redirect')) {
+      || document.documentElement.hasAttribute('data-version-redirect') || !isReload()) {
     return;
   }
 
@@ -19,5 +20,14 @@
   }
   if (changed) {
     window.history.replaceState(window.history.state, '', url.toString());
+  }
+
+  function isReload() {
+    var performance = window.performance;
+    if (performance && typeof performance.getEntriesByType === 'function') {
+      var entry = performance.getEntriesByType('navigation')[0];
+      if (entry) return entry.type === 'reload';
+    }
+    return Boolean(performance && performance.navigation && performance.navigation.type === 1);
   }
 }());
