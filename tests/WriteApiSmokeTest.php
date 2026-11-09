@@ -446,6 +446,8 @@ CODE;
             $writer->finalizePreparedProfileName($rename + ['author_identity_id' => $memberId,
                 'detached_signature' => $this->signCanonicalRecord($member['home'], $rename['canonical_record'])]);
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            // A full rebuild swaps in a new file; reopen to read it.
+            $pdo = (new ReadModelConnection($db))->open();
             $memberProfile = ProfileRepository::byIdentityId($pdo, $memberId);
             $ownerProfile = ProfileRepository::byIdentityId($pdo, $ownerId);
             assertSame(1, (int) $memberProfile['is_approved']);
@@ -513,9 +515,12 @@ CODE;
             $again = $writer->prepareProfileName(['author_identity_id' => $identity, 'username' => 'final-name']);
             $writer->finalizePreparedProfileName($again + ['author_identity_id' => $identity,
                 'detached_signature' => $this->signCanonicalRecord($key['home'], $again['canonical_record'])]);
+            // A full rebuild swaps in a new file; reopen to read it.
+            $pdo = (new ReadModelConnection($db))->open();
             assertSame('final-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
             file_put_contents($root . '/' . $again['record_path'] . '.asc', 'forged');
             (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            $pdo = (new ReadModelConnection($db))->open();
             assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
 
             assertSame($prepared['canonical_record'], file_get_contents($root . '/' . $prepared['record_path']));
@@ -4929,6 +4934,37 @@ NODE;
         assertSame($head, $this->gitOutput($root, 'rev-parse HEAD'));
         $page = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
         assertStringNotContains('Cleanup recovery prose', $page);
+    }
+
+    public function testRetractionRebuildSwapsInNewFileSoOpenReadersKeepOldData(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'swap-retraction', 'Prose a reader already has open');
+        $reader = new PDO('sqlite:' . $db);
+        $bodyQuery = "SELECT body FROM posts WHERE post_id='" . $author['thread_id'] . "'";
+        assertStringContains('Prose a reader already has open', (string) $reader->query($bodyQuery)->fetchColumn());
+        clearstatcache(true, $db);
+        $inodeBefore = fileinode($db);
+
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = ['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']];
+        $prepared = $writer->prepareRetraction($input);
+        $result = $writer->finalizePreparedRetraction($input + [
+            'prepare_token' => $prepared['prepare_token'], 'record_path' => $prepared['record_path'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ]);
+        assertSame('complete', $result['retraction_status']);
+
+        clearstatcache(true, $db);
+        assertTrue(fileinode($db) !== $inodeBefore, 'the rebuild swapped in a new read-model file');
+        assertStringContains('Prose a reader already has open', (string) $reader->query($bodyQuery)->fetchColumn());
+        assertSame([], glob(dirname($db) . '/.' . basename($db) . '.candidate-*') ?: []);
+        $fresh = new PDO('sqlite:' . $db);
+        assertStringNotContains('Prose a reader already has open', (string) $fresh->query($bodyQuery)->fetchColumn());
+        $page = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
+        assertStringNotContains('Prose a reader already has open', $page);
     }
 
     public function testRetractionArtifactFailureRetriesWithoutAnotherCommit(): void

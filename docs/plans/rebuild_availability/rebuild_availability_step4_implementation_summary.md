@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stages 1–2 complete (qdb heartbeat pending); Stage 3 next.
+Status: Step 3 approved on 2026-11-09; Stages 1–3 complete (qdb heartbeat pending); Stage 4 next.
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -51,5 +51,26 @@ Status: Step 3 approved on 2026-11-09; Stages 1–2 complete (qdb heartbeat pend
   - API responses are unchanged: `FrontController` still rethrows API errors, which already return JSON with `Retry-After: 10`.
 - Notes: the busy-page copy comes from the site profile, unchanged.
 - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Write-time rebuilds build and swap
+
+**Original estimate: 0.08**
+**Retrospective: 0.10**
+
+- Changes:
+  - `LocalWriteService::rebuildReadModel()` builds a new file with `ReadModelCandidateBuilder` and swaps it in with `ReadModelCandidatePromoter::promoteWhileLocked()`. Callers already hold the write lock, so no write lands between build and swap. If the swap is refused (for example a leftover SQLite journal beside the live file), it falls back to the old in-place rebuild.
+  - `ReadModelCandidateBuilder::timings()` returns the build's phase timings, so write results keep reporting them.
+  - `RouteServices::pdo()` reopens its cached connection when the live file was swapped during the request. Without this, a request that writes and then renders would read the old file.
+  - New test `WriteApiSmokeTest::testRetractionRebuildSwapsInNewFileSoOpenReadersKeepOldData`: a reader opened before a retraction still sees the old row, the live file is a new inode, no candidate file is left, and a fresh read and the page show the retraction.
+  - Two existing tests held one connection across a write that rebuilds and expected the new data through it. They now reopen the connection after the rebuild; that expectation is exactly the in-place behaviour this cycle removes.
+- Verification:
+  - `./v3 test --smoke WriteApiSmokeTest ReadModelBusyPageTest`: 650 run; 648 passed and 2 failed before the test fix (both passed on the base commit, so the change caused them); both pass after reopening.
+  - `./v3 test --smoke` with the 12 other test classes that construct `LocalWriteService`: 493 run, 493 passed. With `CanonicalRecordParsersTest LocalAppSmokeTest SingleRequestPostingTest`: 449 run, 449 passed. Full suite not run.
+- Notes:
+  - Behaviour change for any code holding a read-model connection across a full rebuild: it keeps reading the old file. Production request code reaches the read model through `RouteServices::pdo()` (now reopened) or opens fresh connections in `LocalWriteService`.
+  - Retrospective above original: the reopen in `RouteServices` and the two test updates were not planned.
+- Estimate details: original scope as in Step 3; no revision before work.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

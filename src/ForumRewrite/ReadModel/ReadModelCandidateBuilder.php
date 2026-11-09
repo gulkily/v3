@@ -10,6 +10,9 @@ use RuntimeException;
 
 final class ReadModelCandidateBuilder
 {
+    /** @var array<string, float> */
+    private array $timings = [];
+
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly string $liveDatabasePath,
@@ -29,13 +32,15 @@ final class ReadModelCandidateBuilder
             . '.candidate-' . bin2hex(random_bytes(8)) . '.sqlite3';
 
         try {
-            (new ReadModelBuilder(
+            $builder = new ReadModelBuilder(
                 $this->repositoryRoot,
                 $candidatePath,
                 new CanonicalRecordRepository($this->repositoryRoot),
                 $this->rebuildReason,
                 $this->progressReporter,
-            ))->rebuild();
+            );
+            $builder->rebuild();
+            $this->timings = $builder->timings();
             (new RebuildProgress($this->progressReporter))->measure(
                 'Read model: validating candidate',
                 fn () => self::assertValid($this->repositoryRoot, $candidatePath),
@@ -46,6 +51,12 @@ final class ReadModelCandidateBuilder
             @unlink($candidatePath);
             throw $throwable;
         }
+    }
+
+    /** @return array<string, float> phase timings of the last successful build */
+    public function timings(): array
+    {
+        return $this->timings;
     }
 
     public static function assertValid(string $repositoryRoot, string $candidatePath, bool $requireCurrentHead = true): void
