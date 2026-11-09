@@ -66,7 +66,27 @@
     });
   }
 
+  // The menu opens upward; when that would run past the top of the page (the
+  // New post page on a phone, or once Options is expanded) it opens downward.
+  function placeMenu(menu) {
+    var list = menu.querySelector('.compose-action-menu-list');
+    menu.classList.remove('compose-action-menu--below');
+    if (!menu.open || !list || menu.closest('.reply-panel-active')) {
+      return;
+    }
+    if (list.getBoundingClientRect().top + window.scrollY < 0) {
+      menu.classList.add('compose-action-menu--below');
+    }
+  }
+
   function startMenus() {
+    // Capture: toggle does not bubble, and the Options section nests inside the menu.
+    document.addEventListener('toggle', function (event) {
+      var menu = event.target && event.target.closest ? event.target.closest(menuSelector) : null;
+      if (menu) {
+        placeMenu(menu);
+      }
+    }, true);
     document.addEventListener('click', function (event) {
       var target = event.target;
       var menu = target && target.closest ? target.closest(menuSelector) : null;

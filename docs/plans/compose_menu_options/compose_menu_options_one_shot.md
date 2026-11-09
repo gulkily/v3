@@ -5,9 +5,9 @@ Debug mode: enabled ([log](compose_menu_options_debug_log.md); project `.railspi
 Effort study: `railspike-effort` / `v3/compose_menu_options`, standing enrollment under protocol P2, reference R1 ([ledger](../effort_estimation_trial.md))
 Extended estimates: enabled (new-cycle default; no real alternatives or work units, so no unit estimates)
 
-**Cycle estimate: 0.06**
+**Cycle estimate: 0.08**
 
-Status: planning; next action: implement on `feat/compose_menu_options`.
+Status: technically complete on `feat/compose_menu_options`; pushed, not merged or deployed. Next action: maintainer review, merge and deployment.
 
 ## Request and authorization
 
@@ -25,8 +25,9 @@ Application change (UI). The composer's ... menu keeps its actions at the top le
 
 - **Reuse.** Nested native `<details>` inside the existing `templates/partials/composer.php` menu items, the same element the menu itself and `.compose-disclosure` already use. Existing `.compose-action-menu-check` / `.compose-action-menu-link` / `.compose-action-menu-theme` row classes keep their styling; selectors relax from direct-child (`.compose-action-menu-list >`) to descendant where needed.
 - **Menu script.** `public/assets/compose_disclosure.js` closes the menu only on button clicks and outside clicks; the nested summary is inside the menu, so it stays open. Escape still finds the outer toggle first. `public/assets/reply_viewport.js` listens for the outer menu's `toggle`; it switches to a capture listener so the phone reply panel also re-measures when Options opens.
+- **Placement (added during execution).** The menu opens upward from the action row. On the New post page on a phone `main` already ran 11px past the top of the page; with Options open it ran 76px. `compose_disclosure.js` now measures the list on any toggle inside the menu (capture listener) and adds `compose-action-menu--below`, which opens it downward, when it would start above the page. The phone reply panel keeps its own placement and is skipped.
 - **Considered and rejected:** a separate gear button beside the ... toggle (another control on the action row, which is already tight on phones); removing Formatting help (superseded by the maintainer's in-session instruction).
-- No new dependency, route, field or asset file. New copy: the word "Options".
+- No new dependency, route, field or asset file. New copy: the word "Options", with a ▸/▾ marker so the row reads as expandable.
 
 ## Concepts touched
 
@@ -45,12 +46,38 @@ None in the concept inventory.
 
 Starting revision and branch: `ddf8fa550e49626c0fe75bd3d7c76d15712eae29` on `main`; branch `feat/compose_menu_options`.
 
-Planning commit: pending (this record ships in it).
+Planning commit: `c617cd8` (confirmed with `git log`).
 
 ## Study history
 
 - **Intake, 2026-11-09T18:05Z, 0.06.** Single exposed rater: Claude (claude-opus-5-5). Pristine intake missing: the composer template, menu CSS and scripts were read before rating. Scope v1 as above. Compared with R1's duplicate preview suppression (0.10).
+- **Execution entry, 2026-11-09T18:06Z, 0.06 reaffirmed.** No new evidence.
+- **Closeout, 2026-11-09.** Revised to **0.08**; retrospective scope assessment **0.08**, same single exposed rater. Addition: downward menu placement, found in visual verification (the expanded menu ran off the top of the phone page). Delivered scope v1 in full plus that addition. Maintainer fit and acceptance pending. No active-work measurement collected.
 
 ## Dated execution history
 
 - 2026-11-09: record created; scope widened in session from removing the link to moving all settings into an expandable section, keeping the link.
+- 2026-11-09: planning commit `c617cd8`; moved the settings into a nested `<details>` in `templates/partials/composer.php`, relaxed menu CSS, capture `toggle` listener in `reply_viewport.js`; test assertions added.
+- 2026-11-09: headless Chrome showed the expanded menu clipped above the page on phones (pre-existing 11px on `main`, 76px expanded). Addition: downward placement in `compose_disclosure.js` and `compose.css`. Added the ▸/▾ marker.
+
+## Outcome
+
+Delivered as bounded, plus downward placement. Limitations: Options starts collapsed on each page load; production changes only after deployment.
+
+## Verification
+
+- Passed: `./v3 test --smoke WriteApiSmokeTest::testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt`, 442 run, 442 passed.
+- Passed: `node tests/browser/compose_disclosure.mjs`.
+- `node tests/browser/composers.mjs` and `node tests/browser/reply_actions_layout.mjs` fail identically on `main` with this change stashed (pre-existing: a reply-post wait in the first, a missing autoloader for `ThreadTheme` in the second's template harness).
+- Passed, headless Chrome against `./v3 start` on `/compose/thread`, 1100px and 390px, default, dark, Gloss, Word97 and Chicago themes: top-level menu shows only Post anonymously, Save to Outbox, Discard draft and Options; Markdown is hidden until Options opens; opening Options and ticking Markdown keep the menu open; no page errors. List top on a phone: 325px with the menu opened downward (was -11px on `main`, -76px before the placement fix); desktop stays upward at 75px.
+- Not run: the full suite (maintainer runs it). Not checked: the phone reply panel with Options open, the inline board and thread composers in a browser (same partial, covered by the template test), the remaining themes.
+
+## Final review
+
+Diff checked: one template partial, one stylesheet, two existing scripts, one test, plus records. No duplicated components, no new fields or routes, no dependency.
+
+## Commit, merge and publication status
+
+Completion commit: pending (this record ships in it). Pushed to origin; not merged, not deployed.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

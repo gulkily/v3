@@ -1585,6 +1585,14 @@ CODE;
             assertStringContains('<input type="hidden" name="body_format" value="plain">', $page);
             assertStringContains('<input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown', $page);
             assertStringContains('href="/docs/reference/markdown_syntax.md"', $page);
+            // Settings sit under a collapsed Options section after the actions.
+            $options = strpos($page, '<details class="compose-action-menu-options"');
+            assertSame(true, $options !== false);
+            assertSame(true, strpos($page, 'data-action="clear-compose-fields"') < $options);
+            foreach (['data-role="markdown-toggle"', 'href="/docs/reference/markdown_syntax.md"', 'data-role="thread-theme-choice"'] as $setting) {
+                assertSame(true, strpos($page, $setting, $options) > $options);
+                assertSame(true, strpos($page, $setting, $options) < strpos($page, '</details>', $options));
+            }
         }
 
         $_POST = ['body' => "1. not\n2. a list", 'board_tags' => 'general', 'body_format' => 'plain'];
