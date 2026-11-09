@@ -125,8 +125,7 @@ final class ComposeAndAccountKeyController
             $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
             $returnTo = $this->resolveComposeThreadReturnTo((string) ($input['return_to'] ?? ''), (string) $result['thread_id']);
             $location = $returnTo
-                . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
-                . '&__v=' . rawurlencode($result['commit_sha']);
+                . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id']);
             $this->routeServices->sendRedirect(
                 $location,
                 'Created thread ' . $result['thread_id'] . '. Commit ' . $result['commit_sha'] . '.',
@@ -175,7 +174,6 @@ final class ComposeAndAccountKeyController
             $returnTo = $this->resolveComposeReplyReturnTo((string) ($input['return_to'] ?? ''), $result['thread_id']);
             $location = $returnTo
                 . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
-                . '&__v=' . rawurlencode($result['commit_sha'])
                 . '#post-' . rawurlencode($result['post_id']);
             $this->routeServices->sendRedirect(
                 $location,

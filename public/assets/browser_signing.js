@@ -888,7 +888,7 @@
   }
 
   function canonicalReplyUrl(result, returnTo) {
-    const suffix = `created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}`;
+    const suffix = `created_post_id=${encodeURIComponent(result.postId)}`;
     const anchor = `#post-${encodeURIComponent(result.postId)}`;
     if (returnTo) {
       const separator = returnTo.indexOf("?") === -1 ? "?" : "&";
@@ -899,7 +899,7 @@
   }
 
   function canonicalThreadUrl(result, returnTo) {
-    const suffix = `created_post_id=${encodeURIComponent(result.postId)}&__v=${encodeURIComponent(result.commitSha)}`;
+    const suffix = `created_post_id=${encodeURIComponent(result.postId)}`;
     if (returnTo && /^\/forte(?:\?|$)/.test(returnTo)) {
       const separator = returnTo.indexOf("?") === -1 ? "?" : "&";
       return `${returnTo}${separator}selected=${encodeURIComponent(result.threadId)}&${suffix}`;

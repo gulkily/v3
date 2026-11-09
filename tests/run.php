@@ -310,6 +310,7 @@ $testFiles = [
     __DIR__ . '/UnicodeRiskStoreTest.php',
     __DIR__ . '/UnicodeTextPolicyTest.php',
     __DIR__ . '/VersionCheckBehaviorTest.php',
+    __DIR__ . '/ThreadUrlHintsTest.php',
     __DIR__ . '/WebServerRoutingTest.php',
     __DIR__ . '/WriteApiSmokeTest.php',
 ];
