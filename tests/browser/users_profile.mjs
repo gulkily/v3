@@ -88,10 +88,19 @@ try {
   assert.equal(await page.locator('.person-head .chip--approved').textContent(), 'Approved');
   assert.equal(await page.getByRole('button', { name: 'Edit in Account' }).isVisible(), true);
   assert.equal(await page.getByRole('button', { name: 'Message' }).count(), 0);
-  assert.ok(await page.locator('#account-keys a[href^="/profiles/"]').count() >= 1, 'keys listed as identities');
   assert.equal(await page.locator('.starfield.banner[data-seed="browser-inviter"]').count(), 1);
   await page.getByRole('link', { name: 'Replies', exact: true }).click();
   await page.waitForURL(/tab=replies/);
+  // Identities: each key with its last-active date, most recently active first, no page overflow.
+  await page.getByRole('link', { name: 'Identities', exact: true }).click();
+  await page.waitForURL(/tab=identities/);
+  const keyRows = page.locator('#account-keys a.person-identity[href^="/profiles/"]');
+  assert.ok(await keyRows.count() >= 1, 'keys listed as identities');
+  const lastActive = await keyRows.evaluateAll(rows => rows.map(row => row.querySelector('.account-row__value time')?.getAttribute('datetime') || ''));
+  const activeKeys = lastActive.filter(Boolean);
+  assert.deepEqual(activeKeys, [...activeKeys].sort((a, b) => Date.parse(b) - Date.parse(a)), 'newest activity first');
+  assert.deepEqual(lastActive.slice(0, activeKeys.length), activeKeys, 'keys without posts come last');
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
 
   // Waiting: approve in place from Users.
   await page.goto(base + '/users/');

@@ -22,6 +22,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-F60](items/PF-20261104-F60.txt) | Board and Recent image thumbnails | blocked | locally-verified | — | 3 |
 | [PF-20261104-F66](items/PF-20261104-F66.txt) | Apply Word97 repairs to Chicago | blocked | locally-verified | — | 1 |
 | [PF-20261104-F68](items/PF-20261104-F68.txt) | Ctrl+Enter submits from tags | blocked | locally-verified | — | 1 |
+| [PF-20261104-F72](items/PF-20261104-F72.txt) | Identities tab on user page | blocked | locally-verified | — | 1 |
 | [PF-20261104-F78](items/PF-20261104-F78.txt) | Clickable hashtags in post bodies | blocked | locally-verified | — | 1 |
 | [PF-20261105-F01](items/PF-20261105-F01.txt) | Image gallery page | blocked | locally-verified | — | 1 |
 | [PF-20261108-F01](items/PF-20261108-F01.txt) | Calendar marks today and jumps back to it | blocked | locally-verified | — | 1 |
@@ -149,7 +150,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-F69](items/PF-20261104-F69.txt) | Scannable Recent summaries | untriaged | unknown | — | 1 |
 | [PF-20261104-F70](items/PF-20261104-F70.txt) | Promote items from Recent | untriaged | unknown | — | 1 |
 | [PF-20261104-F71](items/PF-20261104-F71.txt) | Optimistic posting UI | untriaged | unknown | — | 1 |
-| [PF-20261104-F72](items/PF-20261104-F72.txt) | Identities tab on user page | untriaged | unknown | — | 1 |
 | [PF-20261104-F73](items/PF-20261104-F73.txt) | Easier styling of individual pages | untriaged | unknown | — | 1 |
 | [PF-20261104-F74](items/PF-20261104-F74.txt) | Simplify theme markup using CSS | untriaged | unknown | — | 2 |
 | [PF-20261104-F75](items/PF-20261104-F75.txt) | Hide maintenance tasks from ordinary readers | untriaged | unknown | — | 1 |

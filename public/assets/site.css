@@ -1197,9 +1197,16 @@ pre {
   flex: 0 0 auto;
   white-space: nowrap;
 }
-.person-identities__title {
-  margin: 0.5rem 0 0;
-  font-size: 1rem;
+.person-identity .account-row__title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.person-identity__latest {
+  overflow: hidden;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .board-empty {
