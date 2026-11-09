@@ -62,5 +62,36 @@ class ClientFailureTest(unittest.TestCase):
                 self.assertEqual('sending', meta['State'])
 
 
+class TroubleReportTest(unittest.TestCase):
+    SECRETS = ['-----BEGIN PGP PRIVATE KEY BLOCK-----\nlQVYBGabc\n-----END PGP PRIVATE KEY BLOCK-----',
+               '/home/agent/.local/state/frm/0e52ffa5bc2361fae2149a02f223cacd/operation-1',
+               '~/.gnupg/private-keys-v1.d', '0e52ffa5bc2361fae2149a02f223cacd',
+               'BA132E21C90EB7E49A74CB86790ED3E31CC14C8E',
+               '-----BEGIN PGP SIGNATURE-----\niHUEABYKAB0']  # unterminated: hides the rest
+
+    def test_report_never_carries_keys_paths_or_tokens(self):
+        error = 'GPG failed: ' + ' and '.join(self.SECRETS)
+        report = frm.trouble_report('reply', '/api/create_signed_post', error, 'failed')
+        for secret in self.SECRETS:
+            for fragment in secret.split('\n'):
+                self.assertNotIn(fragment, report)
+        self.assertIn('Error: GPG failed: [key block]', report)
+        self.assertIn('[path]', report)
+
+    def test_report_has_fixed_fields_and_bounded_error(self):
+        report = frm.trouble_report('thread', '', 'HTTP 503: ' + 'x' * 900, 'failed', 2)
+        names = [line.split(': ', 1)[0] for line in report.split('\n\n', 1)[1].splitlines()]
+        self.assertEqual(['Client', 'Command', 'Route', 'Outcome', 'Busy-Retries', 'Error'], names)
+        self.assertIn('Route: none', report)
+        self.assertIn('Busy-Retries: 2', report)
+        error = next(line for line in report.splitlines() if line.startswith('Error: '))
+        self.assertLessEqual(len(error) - len('Error: '), frm.REPORT_ERROR_LIMIT)
+
+    def test_api_routes_and_urls_survive_scrubbing(self):
+        text = frm.scrub('HTTP 400: Inspect https://forum.example/api/ and /api/create_signed_post')
+        self.assertIn('https://forum.example/api/', text)
+        self.assertIn('/api/create_signed_post', text)
+
+
 if __name__ == '__main__':
     unittest.main()

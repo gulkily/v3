@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Portable forum client. Python 3 standard library, curl and GPG; no packages."""
-FRM_VERSION = "2026-11-07"
+FRM_VERSION = "2026-11-09"
 
 import argparse
 import datetime
@@ -25,6 +25,29 @@ class ClientError(Exception):
     pass
 
 
+# Trouble-report context for this run: last API route tried and busy retries seen.
+TRACE = {'route': '', 'busy': 0}
+REPORT_ERROR_LIMIT = 300
+
+
+def scrub(text):
+    """Remove what a public report must never carry: key blocks, local paths, tokens."""
+    text = re.sub(r'-----BEGIN PGP[\s\S]*?(?:-----END PGP[^\n]*?-----|$)', '[key block]', text)
+    text = re.sub(r'(?<![\w.:/])(?:~|/(?!api/))[^\s\'",;)]*', '[path]', text)
+    text = re.sub(r'\b[0-9A-Fa-f]{24,}\b', '[hex]', text)
+    text = ' '.join(text.split())
+    return text if len(text) <= REPORT_ERROR_LIMIT else text[:REPORT_ERROR_LIMIT - 3] + '...'
+
+
+def trouble_report(command, route, error, outcome, busy_retries=0):
+    """Plain-text report from a fixed field list; never includes drafts, keys or local state."""
+    lines = ['Automatic trouble report from frm.py. Turn off with --no-report.', '',
+             'Client: frm.py ' + FRM_VERSION, 'Command: ' + command,
+             'Route: ' + (route or 'none'), 'Outcome: ' + outcome,
+             'Busy-Retries: ' + str(busy_retries), 'Error: ' + (scrub(error) or 'none')]
+    return '\n'.join(lines) + '\n'
+
+
 def site_url(value):
     url = urlsplit(value)
     if (url.scheme not in ('http', 'https') or not url.hostname or url.username or url.password
@@ -37,6 +60,7 @@ def request(site, route, fields=None, timeout=60):
     """One request. Never forward authored data via redirects. No curl config/cookies."""
     if not shutil.which('curl'):
         raise ClientError('curl is required. Install it using your operating system tools.')
+    TRACE['route'] = route.split('?', 1)[0]
     with tempfile.TemporaryDirectory(prefix='frm-http-') as directory:
         body = Path(directory) / 'response'
         headers = Path(directory) / 'headers'
@@ -189,6 +213,7 @@ def api(site, route, fields, args, operation=None):
                     raise ClientError('Invalid Retry-After. Keep the operation and retry later.')
             if not 0 <= delay <= 60:
                 raise ClientError('Server requested a longer retry delay. Keep the operation and retry after: ' + str(headers.get('retry-after', delay)))
+            TRACE['busy'] += 1
             print('Retry: busy; waiting %s seconds (%s/%s)' % (delay, attempt + 1, args.retries), flush=True)
             time.sleep(delay)
             continue
