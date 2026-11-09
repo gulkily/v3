@@ -145,6 +145,20 @@ class TroubleReportPostingTest(unittest.TestCase):
         self.assertIn('Outcome: rejected', send.call_args[0][2]['body'])
         self.assertEqual('yes', frm.load_meta(operation / 'operation.txt')['Trouble-Reported'])
 
+    def test_screenshot_case_prepare_identity_error_is_readable_and_reported(self):
+        """The reported zm.py crash: prepare_identity answered without prepare_token (KeyError)."""
+        refused = (400, '{"status":"error","error":"Unable to inspect OpenPGP public key. gpg said: no valid OpenPGP data found."}', {})
+        with patch.object(frm, 'request', return_value=refused):
+            with self.assertRaises(frm.ClientError) as caught:
+                frm.api(self.SITE, '/api/prepare_identity', {'public_key': ''}, argparse.Namespace(timeout=1, retries=0))
+        self.assertIn('Unable to inspect OpenPGP public key', str(caught.exception))
+        frm.TRACE['route'] = '/api/prepare_identity'
+        with patch.object(frm, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
+            frm.report_trouble(self.args(), self.SITE, caught.exception)
+        body = send.call_args[0][2]['body']
+        self.assertIn('Route: /api/prepare_identity', body)
+        self.assertIn('Error: HTTP 400: Unable to inspect OpenPGP public key', body)
+
     def test_unregistered_identity_falls_back_to_anonymous(self):
         refused = (400, 'error=author_identity_id does not resolve to a known identity.\n', {})
         with patch.object(frm, 'request', side_effect=[refused, self.OK]) as send:

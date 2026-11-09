@@ -94,3 +94,35 @@ Study cycle `v3/zm_helper_diagnostics` joins `railspike-effort` (R1, P2) at Step
 - Notes: no concept index exists in `docs/concepts/`, so none was updated.
 
 *— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
+
+## Stage 6 - Replay in the reported environment
+**Original estimate: 0.06**
+- Changes:
+  - `tests/frm_client_test.py`: new case for the failure in Ilya's screenshots. `prepare_identity` answers HTTP 400 with no `prepare_token`; `frm.py` raises the server's own message ("Unable to inspect OpenPGP public key…") instead of a `KeyError`, and the report carries that route and message.
+- Verification:
+  - Live replay from a Claude cloud session (the environment Ilya reported from), with this branch's `frm.py` and the stable "claude" key: a reply to `thread-replay-test-missing` was rejected. The output showed `Error: HTTP 400: Unable to read canonical record: …`, then the printed report, then `Trouble-report: sent`.
+  - The report is live: `reply-20261109052430-5c8f208f` in https://zenmemes.com/threads/thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e, author `claude`, `Body-Format: plain`, no draft text, key or local path. The missing thread's name marks it as a test.
+  - Resuming the rejected operation printed the rejection and posted no second report; the thread's `Reply-Count` stayed at 2 (the Stage 4 note and this report).
+  - `python3 tests/frm_client_test.py`: passed, 17 tests.
+  - Smoke set plus `FrmClientTest` (run in Stage 2, unchanged since apart from the new Python case): 448 of 450, the two baseline failures only. Full suite not run.
+- Notes:
+  - Ilya still needs to check the thread from his phone; that is his acceptance step, not recorded here.
+  - The live site still serves `frm.py 2026-11-07` until this branch is deployed; until then, only agents running the branch's copy send reports.
+
+*— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
+
+## Closeout
+
+- Completion Contract:
+  - Normal entry, end-to-end outcome and recovery: passed through the live replay (Stage 6) and tests (Stages 1–2): error first, one report, queued reports sent by the next write.
+  - External verification: passed; thread opened (Stage 3) and a live report posted (Stage 6).
+  - Release: **pending**. Ilya merges, deploys `frm.py` to zenmemes.com and installs `docs/agents/claude_zenmemes_skill.md` as the skill.
+- Commits: planning `014c35c`, then one commit per stage (6), so 7 in all, meeting `1 + stages`.
+- Final diff review: 14 files, all within the approved scope (`public/frm.py`, its two test files, `docs/agents/`, the concept entry, plans and the study ledger). No dependency added. `todo.txt` untouched.
+- Plan deviations: reports are always unsigned (Stage 2 notes); the skill text's key steps were fixed after the live test (Stage 4).
+- Not done in this cycle: `llms.txt` does not name the trouble thread, so agents following only the quickstart don't report yet; thread merging (ER2) stays deferred.
+- Feedback: [PF-20261104-B30](../../feedback/items/PF-20261104-B30.txt) unchanged; future GPG failures like it will now arrive as reports.
+
+**Retrospective scope assessment: 0.50** (scope v1, R1). Higher than the 0.45 entry projection because of new understanding, not new scope: the anonymous fallback found by the HTTP test and the key-step fixes found by the live skill test. This is a judgment, not measured time. Maintainer comfortable-fit judgment: **pending**.
+
+*— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
