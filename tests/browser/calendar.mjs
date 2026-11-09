@@ -42,6 +42,8 @@ async function settled(page) {
 }
 const fitsWidth = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 try {
+  // The fixture repository's committed root-approved operator.
+  const operator = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
   for (let i = 0; i < 60; i++) { try { await fetch(base + '/api/version'); break; } catch { await new Promise(r => setTimeout(r, 100)); } }
 
   // With JavaScript: a draft started on /compose/thread does not change a day page's date or tag.
@@ -72,6 +74,13 @@ try {
   assert.match(record, /Author-Identity-ID: openpgp:/, 'signed by the browser key');
   assert.match(record, /Event-Date: 2026-11-30\nEvent-End-Date: 2026-12-01\n/);
   assert.match(record, /Event-Location: Cambridge\n/);
+  // Only approved members put events on the calendar: the new browser key's event waits for approval.
+  await writer.page.goto(base + '/calendar/couches?month=2026-11');
+  assert.equal(await writer.page.locator(`a[href="/threads/${threadId}"]`).count(), 0, 'unapproved author: not on the calendar');
+  const writerIdentity = /Author-Identity-ID: (openpgp:[0-9a-f]+)/.exec(record)[1];
+  const approved = spawnSync('php', [join(project, 'scripts/inject_approval.php'), 'approve', operator, writerIdentity,
+    join(root, 'repository'), join(root, 'read.sqlite3'), join(root, 'static')], { encoding: 'utf8', env });
+  assert.equal(approved.status, 0, approved.stdout + approved.stderr);
   await writer.page.goto(base + '/calendar/couches?month=2026-11');
   for (const day of ['2026-11-30', '2026-12-01']) {
     assert.equal(await writer.page.locator(`[data-calendar-day="${day}"]`).getAttribute('data-calendar-mark'), 'open');
@@ -89,13 +98,14 @@ try {
   await plain.page.locator('[data-compose-kind="thread"] .compose-form-actions > button[type="submit"]').click();
   await plain.page.waitForLoadState('load');
   await plain.page.getByText('Couch without JavaScript').first().waitFor();
+  // An anonymous post keeps its event on its thread but stays off the calendar.
   await plain.page.goto(base + '/calendar/couches/2026-11-28');
-  await plain.page.getByRole('link', { name: 'Couch without JavaScript' }).waitFor();
+  assert.equal(await plain.page.getByRole('link', { name: 'Couch without JavaScript' }).count(), 0, 'anonymous: not on the calendar');
   await plain.context.close();
 
   // Five events on one day: the cell caps its list and the grid stays inside a phone's width.
   for (let n = 1; n <= 5; n++) {
-    const body = new URLSearchParams({ board_tags: 'couches', subject: `Busy night ${n}`, body: 'x', event_date: '2026-11-25' });
+    const body = new URLSearchParams({ board_tags: 'couches', subject: `Busy night ${n}`, body: 'x', event_date: '2026-11-25', author_identity_id: operator });
     const response = await fetch(base + '/api/create_thread', { method: 'POST', body });
     assert.equal(response.ok, true, await response.text());
   }
@@ -146,8 +156,6 @@ try {
   }
   // Every theme: no page overflow at phone and desktop widths, and empty, open and
   // confirmed days look different from one another.
-  // The fixture repository's committed root-approved operator.
-  const operator = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
   const confirmedDay = '2026-11-30';
   {
     const settle = new URLSearchParams({ thread_id: threadId, parent_id: threadId, body: 'event: confirmed', author_identity_id: operator });

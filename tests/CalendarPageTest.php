@@ -181,7 +181,7 @@ final class CalendarPageTest
 
         // The form as a browser without JavaScript sends it.
         $_POST = ['body' => 'Futon, two nights', 'board_tags' => 'couches', 'subject' => 'Futon', 'event_date' => '2026-11-30',
-            'event_end_date' => '2026-12-01', 'event_location' => 'Somerville', 'author_identity_id' => '', 'return_to' => '', 'body_format' => 'plain'];
+            'event_end_date' => '2026-12-01', 'event_location' => 'Somerville', 'author_identity_id' => self::OPERATOR, 'return_to' => '', 'body_format' => 'plain'];
         try {
             ob_start();
             $application->handle('POST', '/compose/thread');
@@ -210,6 +210,30 @@ final class CalendarPageTest
         calendarAssertContains('event_end_date must not be before event_date.', $refused);
         calendarAssertContains('Keep me', $refused);
         calendarAssertContains('name="event_date" value="2026-11-30"', $refused);
+    }
+
+    public function testOnlyApprovedMembersPutEventsOnTheCalendar(): void
+    {
+        [$root, $service, $application] = $this->environment();
+        $member = $this->event($service, 'couches', 'Member couch', 'Couch', '2026-11-29');
+        $anonymous = $this->event($service, 'couches', 'Anonymous couch', 'Couch', '2026-11-29', null, '');
+
+        foreach (['/calendar' => ['month' => '2026-11'], '/calendar/couches' => ['month' => '2026-11'], '/calendar/2026-11-29' => [], '/calendar/couches/2026-11-29' => []] as $path => $query) {
+            $html = $this->render($application, $path, $query);
+            calendarAssertContains('Member couch', $html);
+            calendarAssertNotContains('Anonymous couch', $html);
+        }
+        // An event kept off the calendar is still saved and shown on its own thread.
+        calendarAssertContains('data-event-block', $this->render($application, '/threads/' . $anonymous));
+
+        // Approval is checked when the calendar is read: it follows the author's approval as it changes.
+        $database = new PDO('sqlite:' . $root . '.sqlite3');
+        $approve = $database->prepare('UPDATE profiles SET is_approved = :approved WHERE identity_id = :id');
+        $approve->execute(['approved' => 0, 'id' => self::OPERATOR]);
+        calendarAssertNotContains('Member couch', $this->render($application, '/calendar/couches', ['month' => '2026-11']));
+        calendarAssertContains('data-event-block', $this->render($application, '/threads/' . $member));
+        $approve->execute(['approved' => 1, 'id' => self::OPERATOR]);
+        calendarAssertContains('Member couch', $this->render($application, '/calendar/couches', ['month' => '2026-11']));
     }
 
     public function testMembersOnlySiteKeepsTheCalendarFromUnapprovedVisitors(): void
@@ -255,11 +279,12 @@ final class CalendarPageTest
         return [$root, $service, $application];
     }
 
-    private function event(LocalWriteService $service, string $tags, string $subject, string $body, string $first, ?string $last = null): string
+    /** Events are authored by the approved fixture operator unless $author says otherwise ('' for anonymous). */
+    private function event(LocalWriteService $service, string $tags, string $subject, string $body, string $first, ?string $last = null, string $author = self::OPERATOR): string
     {
         return (string) $service->createThread([
             'board_tags' => $tags, 'subject' => $subject, 'body' => $body,
-            'event_date' => $first, 'event_end_date' => $last ?? '',
+            'event_date' => $first, 'event_end_date' => $last ?? '', 'author_identity_id' => $author,
         ])['thread_id'];
     }
 
