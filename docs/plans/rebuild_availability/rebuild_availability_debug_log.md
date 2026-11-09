@@ -45,3 +45,21 @@
 
 **Uncertain assessments**
 - The "<=1 page" limit: eight stages with all required fields run past one page. The field list and the page limit seem to pull against each other at this stage count.
+
+## 2026-11-09T20:05:00Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_do.md`, Stage Boundary Protocol: committing each stage with its summary made the Stage 3 and Stage 5 regressions (tests holding connections across a swap) traceable to one commit each. Retain.
+- `implementation_standards.md`, "replay each reported failure in the relevant user/environment": kept host acceptance and the no-worker replay marked pending instead of letting local timings stand in. Retain.
+- Enhancement Requests and "changed scope": the no-worker fallback contradicts a Step 2 requirement; recording it as a deviation to confirm, rather than silently, kept the approval boundary visible. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only verification rules.
+
+**Uncertain assessments**
+- Stage 1 was an operator-only preflight with no code. The rule "at least one commit per stage" produced a docs-only commit for it; that seems right, but the instructions do not say whether a no-code stage needs its own commit.
+- Step 4 entry: the planning drafts had already been pushed to a separate branch for a stop hook. Recreating the planning commit on the feature branch from those drafts satisfied the gate, but the instructions do not cover pre-existing pushed drafts.
+- The ledger checkpoint times written during this cycle were estimates that ran ahead of the clock; the instructions ask for UTC timestamps but no agent can read the clock without a tool call. Suggest saying "take the time from the system, not an estimate".
