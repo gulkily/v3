@@ -12,6 +12,12 @@
 
 2026-11-09T18:15Z (approximate; artifact says 18:25) — v3/rebuild_availability Step 1 handoff (standing P2 enrollment; cycle 1 of the [read-model rebuild checklist](./read_model_rebuild_checklist.md), no parent): [assessment/checkpoint](./rebuild_availability/rebuild_availability_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option B (full rebuilds build a new file and swap it in; short read timeout and busy page; page requests stop rebuilding; deploy queues its rebuild after a schema change). Starting revision `6ff90b5`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because rebuild, lock and deploy code was read before rating. Intake and projected total **0.55**; option estimates 0.50/0.55/0.30, non-additive. Await Approved Step 1.
 
+## Cycle v3/zm_helper_diagnostics
+
+2026-11-09T05:25:01Z — v3/zm_helper_diagnostics Step 4 local closeout: branch `feat/zm_helper_diagnostics`, planning `014c35c` and six stage commits. [Summary/closeout](./zm_helper_diagnostics/zm_helper_diagnostics_step4_implementation_summary.md#closeout). Same scope v1/baseline `70b4860`/R1/P2, single exposed Claude rater. Entry projection 0.45 preserved; **retrospective scope assessment 0.50** (new understanding: anonymous report fallback, skill key-step fixes). Release and maintainer comfortable-fit judgment pending; no accepted outcome.
+
+2026-11-09T05:12:46Z — v3/zm_helper_diagnostics Step 4 entry: Step 3 explicitly approved; branch `feat/zm_helper_diagnostics`, planning `014c35c`. [Summary/entry](./zm_helper_diagnostics/zm_helper_diagnostics_step4_implementation_summary.md#step-4-entry). Joins P2 at this checkpoint; intake and Step 1–3 snapshots missing (drafted outside the repository). Whole-cycle **0.45**, scope v1, baseline `70b4860`, R1, single exposed Claude rater. Stage estimates recorded at entry: S1 0.05, S2 0.12, S3 0.02, S4 0.08, S5 0.05, S6 0.06; not summed. No accepted outcome.
+
 ## Cycle v3/same_username_operator
 
 2026-11-09T05:53:29Z — v3/same_username_operator Step 4 local closeout: branch `feat/same_username_operator`, planning `1ccbadc` and six stage commits. [Summary/closeout](./same_username_operator/same_username_operator_step4_implementation_summary.md#closeout). Scope v2 delivered. Whole-cycle 0.55 at entry, no revision; retrospective scope assessment **0.50**. Stage originals 0.08/0.12/0.12/0.06/0.05/0.07; retrospectives 0.07/0.11/0.13/0.06/0.03/0.09; non-additive. Smoke plus changed tests 481 run, 480 passed; the failure predates the cycle; full suite not run. Two-key local replay passed; production check pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change. Single exposed Claude rater.
@@ -1726,3 +1732,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-09T06:15Z: standing P2 enrollment, one-shot on the maintainer's in-session request for the thread. Intake **0.08** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `8f551ffb9494f40204bed66e3c66441315f9e727`; branch `feat/user_identities_tab`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
 2026-11-09T06:30Z: scope v2 (taller identity rows with relative last-active time; in-place tab switching) authorized in session; revised whole-cycle 0.12, retrospective 0.12. Original 0.08 retained.
+
+## Cycle v3/compose_menu_options
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/compose_menu_options` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.06; retrospective 0.08) | [One-shot record](./compose_menu_options/compose_menu_options_one_shot.md#study-history) | Thread request widened in session; acceptance pending |
+
+2026-11-09T18:05Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link, then widened the request in session). Intake **0.06** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08** because visual checks found the expanded menu running off the top of the phone page and it gained downward placement. Baseline `ddf8fa550e49626c0fe75bd3d7c76d15712eae29`; branch `feat/compose_menu_options`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

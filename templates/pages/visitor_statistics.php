@@ -1,8 +1,5 @@
 <section class="stack">
   <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
-  <article class="card">
     <h1>Visitor Statistics</h1>
     <p class="meta">Page requests, excluding known bots. No browsing history is retained.</p>
 <?php if ($dashboard['status'] === 'unavailable'): ?>
@@ -67,5 +64,8 @@
       <p>No IP addresses, user agents, sessions, public keys, paths, or referrers are retained. UTC hourly totals are kept for up to 90 days.</p>
     </details>
 <?php endif; ?>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

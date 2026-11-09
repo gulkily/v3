@@ -1,4 +1,4 @@
-<div class="nav tools-nav">
+<div class="nav tools-nav" role="navigation" aria-label="Tools">
 <?php foreach ($toolNavOptions as $option): ?>
 <?php if (($textBackupEnabled ?? true) === false && ($imageBackupEnabled ?? true) === false && ($option['key'] ?? '') === 'backup') { continue; } ?>
 <?php if (!empty($option['group_start'])): ?>

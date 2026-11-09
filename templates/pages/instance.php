@@ -1,9 +1,4 @@
 <section class="stack">
-<?php if (isset($toolNavOptions)): ?>
-  <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
-<?php endif; ?>
   <article class="card">
     <h1>Backup</h1>
     <p><strong>Instance:</strong> <?= $e($siteName) ?></p>
@@ -48,4 +43,9 @@
 <?php endif; ?>
     <p><a href="/activity/">All activity</a></p>
   </article>
+<?php if (isset($toolNavOptions)): ?>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
+  </article>
+<?php endif; ?>
 </section>

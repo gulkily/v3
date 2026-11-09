@@ -54,6 +54,7 @@ Find work that landed since the previous run without its item being updated. The
 - Select posts by their `Created-At` header, not file time. Include roots and replies, with or without tags.
 - For terse replies ("also this", "+1"), read the parent and thread to recover what is meant. Label that older context as context, not new feedback.
 - Separate actionable requests about this project from social posts, bootstrap records, automated agent replies, thread markers and feedback about other products.
+- Replies in the [Agent trouble reports](https://zenmemes.com/threads/thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e) thread are feedback, even when `frm.py` wrote them automatically. Group them by `Route` and `Error`: repeated trouble is one outcome with each report as a source. A single automatic report with no clear fix may be skipped as `agent trouble, one-off`.
 - Keep attribution honest: agent-written proposals stay labeled as agent proposals; do not present someone else's suggestion as the maintainer's request.
 
 ## 4. Match against existing items

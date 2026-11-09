@@ -1590,8 +1590,16 @@ CODE;
         foreach (['/compose/thread', '/threads/root-001', '/threads/?view=all'] as $path) {
             $page = $this->renderMethod($application, 'GET', $path);
             assertStringContains('<input type="hidden" name="body_format" value="plain">', $page);
-            assertStringContains('<input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown', $page);
             assertStringContains('href="/docs/reference/markdown_syntax.md"', $page);
+            // Settings sit in the composer's collapsed Options section, not in the ... menu.
+            $options = strpos($page, '<details class="compose-disclosure compose-tool compose-options" data-compose-disclosure="options">');
+            assertSame(true, $options !== false);
+            assertSame(true, strpos($page, '</details>', (int) strpos($page, 'compose-action-menu-list')) < $options);
+            assertStringContains('class="compose-switch" role="switch" name="body_format" value="markdown"', $page);
+            foreach (['data-role="markdown-toggle"', 'href="/docs/reference/markdown_syntax.md"', 'data-role="thread-theme-choice"'] as $setting) {
+                assertSame(true, strpos($page, $setting, $options) > $options);
+                assertSame(true, strpos($page, $setting, $options) < strpos($page, '</details>', $options));
+            }
         }
 
         $_POST = ['body' => "1. not\n2. a list", 'board_tags' => 'general', 'body_format' => 'plain'];

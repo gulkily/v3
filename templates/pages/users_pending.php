@@ -1,7 +1,6 @@
 <section class="stack users-page" data-pending-approvals-root>
 <?php if (!empty($accessManagement)): ?>
   <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
     <h1>Users Awaiting Approval</h1>
     <p><a href="/tools/user-access/">User Access</a></p>
   </article>
@@ -62,4 +61,9 @@ $latestActivityPostId = trim((string) ($profile['latest_activity_post_id'] ?? ''
       </tbody>
     </table>
   </article>
+<?php if (!empty($accessManagement)): ?>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
+  </article>
+<?php endif; ?>
 </section>

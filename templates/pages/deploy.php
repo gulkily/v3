@@ -23,9 +23,6 @@ $queuedAt = ($task['status'] ?? null) === 'queued' ? (string) ($task['requested_
 $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'stale' => 'has not run recently', 'not_observed' => 'never seen', 'failed' => 'last run failed', 'unavailable' => 'unavailable'];
 ?>
 <section class="stack">
-  <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
   <article class="card" data-deploy-root data-deploy-pending="<?= $pending ? '1' : '0' ?>"<?= $queuedAt !== '' ? ' data-deploy-queued-at="' . $e($queuedAt) . '"' : '' ?>>
     <h1>Deploy</h1>
 <?php if (!$s['is_checkout']): ?>
@@ -132,5 +129,8 @@ $summary = implode(' · ', $parts);
 <?php elseif (($deployNotice ?? '') !== ''): ?>
     <p class="meta" role="status"><?= $e($deployNotice) ?></p>
 <?php endif; ?>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

@@ -1,8 +1,5 @@
 <section class="stack">
   <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
-  <article class="card">
     <h1>LLM Exchanges</h1>
     <p class="meta">Private provider conversations.</p>
 <?php if ($exchanges === []): ?>
@@ -33,5 +30,8 @@
       </table>
     </div>
 <?php endif; ?>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

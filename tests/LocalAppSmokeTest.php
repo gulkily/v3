@@ -2188,7 +2188,8 @@ PHP;
             }
         }
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
-        assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
+        // The Tools bar sits below the tool, not above it.
+        assertOrdered($toolsBackup, '<h1>Backup</h1>', 'class="nav tools-nav"');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
@@ -2259,7 +2260,7 @@ PHP;
         assertFingerprintedAsset($operations, 'tool-details.css');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
         // The Tools bar follows the launcher's groups, with a divider between each.
-        $toolsBar = substr($featureFlags, (int) strpos($featureFlags, '<div class="nav tools-nav">'));
+        $toolsBar = substr($featureFlags, (int) strpos($featureFlags, '<div class="nav tools-nav"'));
         $toolsBar = substr($toolsBar, 0, (int) strpos($toolsBar, '</div>'));
         assertSame(3, substr_count($toolsBar, 'tools-nav-divider'));
         $order = ['href="/tools/outbox/"', 'href="/activity/"', 'href="/tools/user-access/"', 'href="/tools/feature-flags/"', 'href="/tools/operations/"'];

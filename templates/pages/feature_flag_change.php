@@ -1,8 +1,5 @@
 <section class="stack">
   <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
-  <article class="card">
     <h1>Feature flag change</h1>
     <p class="feature-flags-notice meta">One recorded change to a site-wide feature flag. <a href="/tools/feature-flags/">Back to Feature Flags</a></p>
     <section class="feature-flag-group">
@@ -23,5 +20,8 @@
 <?= $indent($partial('partials/source_metadata.php', $sourceItem), 3) ?>
       <p class="meta">This page shows only what the record and repository history state; it does not re-verify the signature.</p>
     </section>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

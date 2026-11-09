@@ -1,7 +1,4 @@
 <section class="stack">
-  <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
   <article class="card tool-launcher bookmarklets-page">
     <h1>Bookmarklets</h1>
     <p class="bookmarklets-hint meta">Drag a button to your bookmarks bar, then click it while viewing another page.</p>
@@ -50,5 +47,8 @@ $bookmarkletSections = [
     </ul>
     </section>
 <?php endforeach; ?>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

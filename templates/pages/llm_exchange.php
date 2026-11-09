@@ -82,9 +82,6 @@ $errorJson = json_encode($exchange['error'] ?? [], JSON_PRETTY_PRINT | JSON_UNES
 ?>
 <section class="stack">
   <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
-  <article class="card">
     <h1>LLM Exchange <?= (int) $exchange['id'] ?></h1>
     <p class="meta"><?= $e($exchange['occurred_at']) ?> · <?= $e($exchange['call_type']) ?> · <?= $e($exchange['status']) ?></p>
     <p class="meta">Provider: <?= $e((string) ($exchange['provider'] ?? '')) ?> / <?= $e((string) ($exchange['provider_model'] ?? '')) ?><?php if ($providerRequestId !== ''): ?> · Request ID: <?= $e($providerRequestId) ?><?php endif; ?></p>
@@ -137,5 +134,8 @@ $errorJson = json_encode($exchange['error'] ?? [], JSON_PRETTY_PRINT | JSON_UNES
     <h2>Error</h2>
     <pre><code><?= $e((string) $errorJson) ?></code></pre>
 <?php endif; ?>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>
