@@ -23,6 +23,8 @@ $composerAnonymousLabel = (string) ($composerAnonymousLabel ?? 'Post anonymously
 $composerMenuExtra = (string) ($composerMenuExtra ?? '');
 $composerFormAttributes = (string) ($composerFormAttributes ?? '');
 $composerHiddenFields = (string) ($composerHiddenFields ?? '');
+// Shown on the closed Tags tool as "#general #art"; compose_disclosure.js keeps it current.
+$composerTagsSummary = implode(' ', array_map(static fn (string $tag): string => '#' . ltrim($tag, '#'), preg_split('/[\s,]+/', trim((string) $boardTags), -1, PREG_SPLIT_NO_EMPTY) ?: []));
 $composerTagsOpen = $composerFull && ((string) $boardTags !== 'general' || ($error ?? null) !== null);
 $composerEventSpan = (string) ($eventDate ?? '') !== '' && (string) ($eventEndDate ?? '') !== '' ? $eventDate . ' – ' . $eventEndDate : (string) ($eventDate ?? '');
 $composerEventValues = array_values(array_filter([$composerEventSpan, (string) ($eventTime ?? ''), (string) ($eventLocation ?? '')], static fn (string $value): bool => $value !== ''));
@@ -94,7 +96,7 @@ HTML;
 <?php if ($composerFull): ?>
   <div class="compose-tools">
     <details class="compose-disclosure compose-tool" data-compose-disclosure="tags"<?= $composerTagsOpen ? ' open' : '' ?>>
-      <summary aria-label="Tags"># <span data-role="compose-disclosure-summary"><?= $e($boardTags) ?></span></summary>
+      <summary>Tags <span class="meta" data-role="compose-disclosure-summary"><?= $e($composerTagsSummary) ?></span></summary>
       <label>Tags<input type="text" name="board_tags" autocapitalize="none" value="<?= $e($boardTags) ?>"></label>
 <?= $composerNormalizationStatus('board_tags') ?>
     </details>
