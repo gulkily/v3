@@ -83,6 +83,39 @@ final class PresentationProfileMatrixTest
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());
     }
 
+    public function testVendCrewJobEntryPointsUseTheirOwnCategoriesAndDraftScopes(): void
+    {
+        $application = $this->application();
+        putenv('FORUM_SITE_ID=vendcrew');
+        try {
+            $board = $this->render($application, '/');
+            assertStringContains('Local vending machine jobs', $board);
+            foreach (['on-site-jobs' => 'On-site jobs', 'driving-jobs' => 'Driving jobs'] as $tag => $title) {
+                $tagPath = '/tags/' . $tag . '/';
+                $composePath = '/compose/thread?job=' . $tag;
+                assertStringContains('href="' . $tagPath . '"', $board);
+                assertStringContains('href="' . $composePath . '"', $board);
+
+                $listing = $this->render($application, $tagPath);
+                assertStringContains('<h1>' . $title . '</h1>', $listing);
+                assertStringContains('No listings on this page.', $listing);
+
+                $compose = $this->render($application, $composePath);
+                assertStringContains('action="' . $composePath . '"', $compose);
+                assertStringContains('data-compose-draft-scope="job:' . $tag . '"', $compose);
+                assertStringContains('name="board_tags" autocapitalize="none" value="' . $tag . '"', $compose);
+            }
+
+            putenv('FORUM_SITE_ID=zenmemes');
+            assertStringNotContains('Local vending machine jobs', $this->render($application, '/'));
+            assertStringContains('<h1>New post</h1>', $this->render($application, '/compose/thread?job=on-site-jobs'));
+            $this->render($application, '/tags/on-site-jobs/');
+            assertSame(404, http_response_code());
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
     public function testListingQueryRoutesAndCodebaseCoverage(): void
     {
         $application = $this->application();

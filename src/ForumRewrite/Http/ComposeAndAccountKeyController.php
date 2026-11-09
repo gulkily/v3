@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\ProfilePresentationContent;
 use ForumRewrite\Security\OpenPgpKeyInspector;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\ThreadTitle;
 use RuntimeException;
 
@@ -49,8 +51,9 @@ final class ComposeAndAccountKeyController
      */
     public function composeThread(array $query): string
     {
+        $job = $this->jobCategory($query['job'] ?? null);
         return $this->renderComposeThreadPage(
-            (string) ($query['board_tags'] ?? 'general'),
+            (string) ($query['board_tags'] ?? $job['tag'] ?? 'general'),
             (string) ($query['subject'] ?? ''),
             (string) ($query['body'] ?? ''),
             null,
@@ -59,7 +62,8 @@ final class ComposeAndAccountKeyController
             (string) ($query['event_location'] ?? ''),
             (string) ($query['event_link'] ?? ''),
             (string) ($query['event_time'] ?? ''),
-            (string) ($query['event_end_date'] ?? '')
+            (string) ($query['event_end_date'] ?? ''),
+            $job
         );
     }
 
@@ -116,13 +120,14 @@ final class ComposeAndAccountKeyController
         $timings = [];
         $phaseStartedAt = hrtime(true);
         $input = $this->routeServices->requestData($query);
+        $job = $isQdbQuote ? null : $this->jobCategory($query['job'] ?? null);
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         try {
             $result = $isQdbQuote
                 ? $this->routeServices->writer()->createQuote($input)
                 : $this->routeServices->writer()->createThread($input);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
-            $this->queueComposeDraftClear($this->composeDraftStorageKey('thread'));
+            $this->queueComposeDraftClear($this->composeDraftStorageKey('thread') . ($job === null ? '' : ':job:' . $job['tag']));
             $returnTo = $this->resolveComposeThreadReturnTo((string) ($input['return_to'] ?? ''), (string) $result['thread_id']);
             $location = $returnTo
                 . (str_contains($returnTo, '?') ? '&' : '?') . 'created_post_id=' . rawurlencode($result['post_id'])
@@ -147,7 +152,8 @@ final class ComposeAndAccountKeyController
                         (string) ($input['event_location'] ?? ''),
                         (string) ($input['event_link'] ?? ''),
                         (string) ($input['event_time'] ?? ''),
-                        (string) ($input['event_end_date'] ?? '')
+                        (string) ($input['event_end_date'] ?? ''),
+                        $job
                     ),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
@@ -272,6 +278,17 @@ final class ComposeAndAccountKeyController
         }
     }
 
+    /** @return array{tag:string, title:string, description:string, postLabel:string, details:string}|null */
+    private function jobCategory(mixed $tag): ?array
+    {
+        if (!is_string($tag)) {
+            return null;
+        }
+
+        $category = ProfilePresentationContent::jobCategories(SiteProfileRegistry::active())[$tag] ?? null;
+        return $category === null ? null : ['tag' => $tag] + $category;
+    }
+
     private function renderComposeThreadPage(
         string $boardTags = 'general',
         string $subject = '',
@@ -282,7 +299,8 @@ final class ComposeAndAccountKeyController
         string $eventLocation = '',
         string $eventLink = '',
         string $eventTime = '',
-        string $eventEndDate = ''
+        string $eventEndDate = '',
+        ?array $job = null
     ): string {
         return $this->routeServices->renderPageTemplate('compose_thread.php', [
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
@@ -295,6 +313,7 @@ final class ComposeAndAccountKeyController
             'eventLink' => $eventLink,
             'eventTime' => $eventTime,
             'eventEndDate' => $eventEndDate,
+            'job' => $job,
         ], 'New Post', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
     }
 

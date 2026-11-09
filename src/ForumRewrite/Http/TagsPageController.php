@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\ProfilePresentationContent;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\ReadModel\TagGrouping;
 use ForumRewrite\ReadModel\TagPage;
 use ForumRewrite\Pagination\PageNavigation;
@@ -61,17 +63,19 @@ final class TagsPageController
         $tag = strtolower($tag);
         $number = PageNavigation::pageNumber($page);
         $page = TagPage::page($this->routeServices->pdo(), $tag, $number);
-        if (!$page['exists'] && $number === 1) return null;
+        $jobCategory = ProfilePresentationContent::jobCategories(SiteProfileRegistry::active())[$tag] ?? null;
+        if (!$page['exists'] && $number === 1 && $jobCategory === null) return null;
         $group = ['tag' => $tag, 'threads' => $page['items']];
         $pagination = PageNavigation::numbered('/tags/' . $tag, [], $number, $page['has_next'], $page['items'] === []);
         return $this->routeServices->renderPageTemplate(
             'tag.php',
             [
                 'group' => $group,
+                'jobCategory' => $jobCategory,
                 'pagination' => $pagination,
                 'paginationError' => null,
             ],
-            '#' . $group['tag'] . ' - Tag',
+            $jobCategory['title'] ?? ('#' . $group['tag'] . ' - Tag'),
             'board',
         );
     }

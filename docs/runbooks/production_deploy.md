@@ -104,7 +104,7 @@ combined release until independent publication succeeds.
 
 Six settings tell a deployment which site it is and where its data lives:
 
-- `FORUM_SITE_ID`: the site profile (`zenmemes`, `chouse`, `qdb` or `mitrapclub`); selects branding, default theme and composer copy, not content
+- `FORUM_SITE_ID`: the site profile (`zenmemes`, `chouse`, `qdb`, `mitrapclub` or `vendcrew`); selects site presentation and the default theme
 - `FORUM_REPOSITORY_ROOT`: the canonical repository checkout
 - `FORUM_DATABASE_PATH`: the read-model SQLite database
 - `FORUM_STATIC_HTML_ROOT`: static releases; defaults to `<application-root>/state/static_html` (with a profile suffix for non-ZenMemes profiles)
@@ -153,6 +153,25 @@ curl -s https://qdb.us/ | grep -o '<title>[^<]*</title>'   # QDB's own Welcome p
 Then confirm the next cron run's log (`state/private/task_queue_cron.log`) shows no profile or repository errors. Record the result in the deployment configuration plan.
 
 For local development of another profile, `FORUM_SITE_ID=chouse ./v3 start` still works. Omitting `FORUM_REPOSITORY_ROOT` and `FORUM_DATABASE_PATH` uses the same default local instance state for every profile; only the disposable static HTML cache stays profile-specific.
+
+### VendCrew
+
+Use `FORUM_SITE_ID=vendcrew` in a separate checkout or virtual host. Give it
+its own canonical Git repository, database, static root, and private state.
+For a fresh instance, commit a new `records/instance/public.txt` to the
+canonical repository before rebuilding. Use the [fixture instance record](../../tests/fixtures/parity_minimal_v1/records/instance/public.txt)
+as a format example and supply the new site's operator, contact, retention
+policy, and install date.
+
+Run `./v3 rebuild` with the new instance's settings, then `./v3 start` for a
+local check or configure the Apache virtual host above. The home page links
+to both category pages and their posting forms. Owners set the hourly rate
+in each listing and specify mileage reimbursement for driving jobs. Workers
+reply through the ordinary thread flow. The board and replies are public.
+
+The profile reuses the list board, tag routes, thread composer, and scoped
+draft support. The category links and empty states work before any jobs are
+posted.
 
 ### Content routing and image storage
 

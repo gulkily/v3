@@ -68,6 +68,17 @@ final class SiteProfileRegistry
                 'composerPrompt' => 'Drop a verse, a cypher clip, or an announcement...',
                 'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'mitrapclub', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
+            'vendcrew' => [
+                'name' => 'vendcrew',
+                'displayName' => 'VendCrew',
+                'defaultTheme' => 'gloss',
+                'permittedThemes' => ['auto', 'light', 'dark', 'gloss'],
+                'browserNamespace' => 'vendcrew',
+                'editorialContentKey' => 'vendcrew',
+                'enabledExperienceKeys' => ['forum'],
+                'composerPrompt' => 'What vending work do you need help with?',
+                'presentationSlots' => ['navigation' => 'app', 'boardCard' => 'list', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'vendcrew', 'brandedStylesheet' => 'site'],
+            ],
         ];
 
         self::validate($profiles);

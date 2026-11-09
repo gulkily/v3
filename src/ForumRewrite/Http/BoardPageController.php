@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\PresentationSlotRegistry;
+use ForumRewrite\ProfilePresentationContent;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\ReadModel\ThreadRepository;
 use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Qdb\QdbBoardPolicy;
@@ -60,7 +62,7 @@ final class BoardPageController
         $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['voted' => [], 'flagged' => []];
         $voteCaptionPair = $qdbPolicy?->selectCaptionPair();
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
-        $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
+        $boardCardSlot = PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'boardCard');
         if ($boardCardSlot === 'list' && $qdbPolicy === null) {
             return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, \ForumRewrite\Pagination\PageNavigation::pageNumber($listPage));
         }
@@ -128,6 +130,7 @@ final class BoardPageController
         return $this->routeServices->renderPageTemplate(
             'board_list.php',
             [
+                'jobCategories' => ProfilePresentationContent::jobCategories(SiteProfileRegistry::active()),
                 'listingQuery' => \ForumRewrite\Tools\BoardListingQuery::context($view, $sort),
                 'view' => $view,
                 'sort' => $sort,
@@ -153,7 +156,7 @@ final class BoardPageController
     public function listWithLocation(string $view, string $sort, mixed $with): ?string
     {
         $id = \ForumRewrite\Pagination\PageNavigation::withId($with);
-        if ($id === null || PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard') !== 'list') return null;
+        if ($id === null || PresentationSlotRegistry::resolve(SiteProfileRegistry::active(), 'boardCard') !== 'list') return null;
         $view = BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
         $threads = $this->fetchBoardThreads($view, $sort, null);

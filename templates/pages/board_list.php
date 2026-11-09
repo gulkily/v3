@@ -1,5 +1,26 @@
 <section class="stack board-list">
 <?= $indent($partial('partials/visitor_intro.php', []), 1) ?>
+<?php if ($jobCategories !== []): ?>
+  <article class="card stack">
+    <h1>Local vending machine jobs</h1>
+    <section>
+      <h2>Own 1–10 machines?</h2>
+      <p>Get help with a one-time reset, a service visit, or recurring restocks.</p>
+      <p>Listings and replies are public. Share exact addresses and access details privately.</p>
+      <ul>
+<?php foreach ($jobCategories as $tag => $category): ?>
+        <li><a href="/compose/thread?job=<?= $e($tag) ?>"><?= $e($category['postLabel']) ?></a></li>
+<?php endforeach; ?>
+      </ul>
+    </section>
+<?php foreach ($jobCategories as $tag => $category): ?>
+    <section>
+      <h2><a href="/tags/<?= $e($tag) ?>/"><?= $e($category['title']) ?></a></h2>
+      <p><?= $e($category['description']) ?></p>
+    </section>
+<?php endforeach; ?>
+  </article>
+<?php endif; ?>
 <?= $indent($partial('partials/board_toolbar.php', [
     'viewOptions' => $viewOptions,
     'sortOptions' => $sortOptions,

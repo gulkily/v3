@@ -1,6 +1,12 @@
 <section class="stack thread-list">
   <article class="card">
-    <h1>#<?= $e($group['tag']) ?></h1>
+    <h1><?= $e($jobCategory['title'] ?? '#' . $group['tag']) ?></h1>
+<?php if (isset($jobCategory)): ?>
+    <p><?= $e($jobCategory['description']) ?></p>
+<?php if ($group['threads'] === []): ?>
+    <p>No listings on this page.</p>
+<?php endif; ?>
+<?php endif; ?>
   </article>
 
 <?php if ($paginationError !== null): ?>

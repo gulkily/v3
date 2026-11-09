@@ -13,6 +13,32 @@ namespace ForumRewrite;
  */
 final class ProfilePresentationContent
 {
+    private const VENDING_JOB_CATEGORIES = [
+        'on-site-jobs' => [
+            'title' => 'On-site jobs',
+            'description' => 'Restock, reset, or service machines with supplies already on site.',
+            'postLabel' => 'Post an on-site job',
+            'details' => 'Include the neighborhood, machine, task, date or frequency, estimated hours, and hourly pay.',
+        ],
+        'driving-jobs' => [
+            'title' => 'Driving jobs',
+            'description' => 'Use your vehicle to pick up and deliver stock. Some jobs include restocking.',
+            'postLabel' => 'Post a driving job',
+            'details' => 'Include pickup and delivery neighborhoods, stock and vehicle needs, any on-site work, schedule, estimated hours, hourly pay, and mileage reimbursement.',
+        ],
+    ];
+
+    /**
+     * @param array<string, mixed> $profile
+     * @return array<string, array{title:string, description:string, postLabel:string, details:string}>
+     */
+    public static function jobCategories(array $profile): array
+    {
+        return PresentationSlotRegistry::resolve($profile, 'editorial') === 'vendcrew'
+            ? self::VENDING_JOB_CATEGORIES
+            : [];
+    }
+
     /**
      * @var array<string, array{communityHeading:string, communityParagraphs:list<string>, docsIntro:string, architectureTitle:string, busyTitle:string, busyHeading:string, busyMessage:string, socialLinks:list<array{label:string, url:string}>, introText:string, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}>
      */
@@ -108,6 +134,31 @@ final class ProfilePresentationContent
             'portableParagraphs' => [
                 'The forum data is designed to be backed up, audited, and reconstructed. The <a href="/tools/backup/">Backup</a> page provides downloadable snapshots of the content repository and read-model database.',
                 'For technical users and agents, the <a href="/api/">plain-text API</a> and <a href="/llms.txt">llms.txt</a> describe machine-readable entry points.',
+            ],
+        ],
+        'vendcrew' => [
+            'communityHeading' => 'For owners with 1–10 machines',
+            'communityParagraphs' => [
+                'Post a one-time reset, a service visit, or a recurring restock. Include the neighborhood, the work, the schedule, and the hourly rate.',
+            ],
+            'docsIntro' => '%s runs on V3. These docs describe the platform behind the job board.',
+            'architectureTitle' => '%s public architecture',
+            'busyTitle' => 'Temporarily Busy',
+            'busyHeading' => 'Temporarily Busy',
+            'busyMessage' => 'Try again in a moment.',
+            'socialLinks' => [],
+            'introText' => 'Owners post local vending work. Workers can browse jobs at a machine or jobs that involve transporting stock.',
+            'graphHeading' => 'Jobs at a machine',
+            'graphParagraphs' => [
+                '<a href="/tags/on-site-jobs/">Browse on-site jobs</a> for restocks, resets, and service visits where supplies are already there.',
+            ],
+            'participationHeading' => 'Jobs with a vehicle',
+            'participationParagraphs' => [
+                '<a href="/tags/driving-jobs/">Browse driving jobs</a> for stock pickup and delivery. Check the listing for vehicle needs, pay, and mileage reimbursement.',
+            ],
+            'portableHeading' => 'Contact the owner',
+            'portableParagraphs' => [
+                'Reply to a listing to express interest. Listings and replies are public. Share exact addresses, access instructions, and contact details privately.',
             ],
         ],
         'mitrapclub' => [
