@@ -48,6 +48,13 @@
           if (!stopped) callback();
         }, delay));
       },
+      // Runs callback on the next animation frame, unless stopped first.
+      frame: function (callback) {
+        if (stopped) return;
+        window.requestAnimationFrame(function () {
+          if (!stopped) callback();
+        });
+      },
       // Exit lands on Gloss: the same look without the parody layer.
       exit: function () {
         if (typeof window.forumExitTheme === "function") window.forumExitTheme("gloss");
@@ -228,6 +235,7 @@
     return {
       box: box,
       open: function () {
+        if (ctx.chat) ctx.chat.yield();
         ctx.add(shade);
         ctx.add(box);
         var first = box.querySelector("button, input, textarea");
@@ -240,13 +248,20 @@
     };
   }
 
+  // Site feature flags the server passes to the page.
+  function flag(name) {
+    return Boolean(window.forumBrowserRuntime && window.forumBrowserRuntime[name]);
+  }
+
   // Newsletter popup with a guilt-trip decline. Subscribing posts a public
-  // announcement thread; the address itself is never sent or stored.
+  // announcement thread; the address itself is never sent or stored. With the
+  // password-newsletter flag, the box masks what is typed and Ava sits on it.
   NAGS.push(function newsletter(ctx) {
     ctx.later(function () {
+      var hidden = flag("engagifyPasswordNewsletter");
       var d = dialog(ctx, "newsletter", "Newsletter");
       var form = ctx.el("form", { class: "engagify-form" });
-      var input = ctx.el("input", { type: "email", id: "engagify-email", autocomplete: "off", placeholder: "you@example.com", required: "" });
+      var input = ctx.el("input", { type: hidden ? "password" : "email", id: "engagify-email", autocomplete: "off", placeholder: "you@example.com", required: "" });
       var subscribe = ctx.el("button", { type: "submit", class: "engagify-button", text: "Subscribe" });
       var error = errorLine(ctx);
       form.appendChild(ctx.el("label", { for: "engagify-email", text: "Email" }));
@@ -272,6 +287,7 @@
         ctx.later(function () { rateUs(ctx); }, 2500);
       } }));
       d.open();
+      if (hidden && ctx.chat) ctx.chat.cover(input);
     }, 6000);
   });
 
@@ -395,22 +411,64 @@
     ctx.later(next, 4500);
   });
 
-  // Chat bubble that opens itself.
+  // Chat bubble that opens itself, but not over an open popup. ctx.chat.cover()
+  // is the exception: it parks the panel on top of a field on purpose.
   NAGS.push(function chatBubble(ctx) {
+    var greeting = "Hi there! Can I help you find anything? I can also help you not find anything.";
+    var message = ctx.el("p", { class: "engagify-chat-message", text: greeting });
     var panel = ctx.el("div", { class: "engagify-nag engagify-card engagify-chat", role: "dialog", "aria-label": "Chat", "data-engagify": "chat-panel", hidden: "" }, [
       ctx.el("p", {}, [ctx.el("strong", { text: "Ava from ZenMemes" }), document.createTextNode(" (a script)")]),
-      ctx.el("p", { class: "engagify-chat-message", text: "Hi there! Can I help you find anything? I can also help you not find anything." })
+      message
     ]);
-    var bubble = ctx.el("button", { type: "button", class: "engagify-bubble", "aria-label": "Chat with us", "aria-expanded": "false", "data-engagify": "chat", text: "?", onclick: function () {
-      var open = panel.hidden;
+    var covering = null;
+    function setOpen(open) {
       panel.hidden = !open;
       bubble.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    var bubble = ctx.el("button", { type: "button", class: "engagify-bubble", "aria-label": "Chat with us", "aria-expanded": "false", "data-engagify": "chat", text: "?", onclick: function () {
+      setOpen(panel.hidden);
     } });
     ctx.add(bubble);
     ctx.add(panel);
-    ctx.later(function () {
-      if (panel.hidden) bubble.click();
-    }, 10000);
+
+    function uncover() {
+      covering = null;
+      panel.classList.remove("engagify-chat--covering");
+      panel.style.top = panel.style.left = panel.style.width = "";
+      message.textContent = greeting;
+    }
+    // Follows the field every frame, so scrolling, resizing and the phone
+    // keyboard cannot reveal it. Clicks pass through the panel to the field.
+    function follow() {
+      if (!covering) return;
+      if (!covering.isConnected) { uncover(); return; }
+      if (panel.hidden) setOpen(true);
+      var box = covering.getBoundingClientRect();
+      panel.style.top = Math.round(box.top + box.height / 2 - panel.offsetHeight / 2) + "px";
+      panel.style.left = Math.round(box.left - 8) + "px";
+      panel.style.width = Math.round(box.width + 16) + "px";
+      ctx.frame(follow);
+    }
+    ctx.chat = {
+      // A popup is opening: get out of its way.
+      yield: function () {
+        if (!covering && !panel.hidden) setOpen(false);
+      },
+      cover: function (field) {
+        covering = field;
+        panel.classList.add("engagify-chat--covering");
+        message.textContent = "I'll keep an eye on that for you. Type away!";
+        setOpen(true);
+        follow();
+      }
+    };
+
+    function autoOpen() {
+      if (!panel.hidden) return;
+      if (document.querySelector(".engagify-dialog")) { ctx.later(autoOpen, 3000); return; }
+      setOpen(true);
+    }
+    ctx.later(autoOpen, 10000);
   });
 
   // Paywall fade after the first post. The posts stay in the page and in the

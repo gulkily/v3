@@ -21,6 +21,7 @@ final class FeatureFlagRegistry
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
+    public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
@@ -49,7 +50,8 @@ final class FeatureFlagRegistry
         'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
-            self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED],
+            self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
+            self::ENGAGIFY_PASSWORD_NEWSLETTER],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -271,6 +273,15 @@ final class FeatureFlagRegistry
                 'Show approved members an Unread page of unread messages, replies to their posts and other new posts, with Caught up marks shared across their devices. Unread appears on the bar just before Messages. Disabling keeps stored marks.',
                 false,
                 self::INBOX_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::ENGAGIFY_PASSWORD_NEWSLETTER,
+                'Engagify: password-style newsletter box',
+                "In the Engagify theme, the newsletter's email box hides what you type like a password, and Ava's chat panel opens over it. Off by default; Ava then waits until the popup is closed.",
+                false,
+                self::ENGAGIFY_PASSWORD_NEWSLETTER,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

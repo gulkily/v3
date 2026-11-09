@@ -203,6 +203,9 @@ final class TemplateRenderer
 
         $profile = SiteProfileRegistry::active();
         $browserRuntime = BrowserRuntimeProfile::fromProfile($profile);
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::ENGAGIFY_PASSWORD_NEWSLETTER)) {
+            $browserRuntime['engagifyPasswordNewsletter'] = true;
+        }
         $themes = ThemeRegistry::permitted($profile['permittedThemes']);
         $explicitThemeNames = $this->explicitThemeNames($themes);
         $permittedThemeNames = array_column($themes, 'name');

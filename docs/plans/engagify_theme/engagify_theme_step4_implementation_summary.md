@@ -235,3 +235,22 @@ Study closeout, `railspike-effort` / `v3/engagify_theme`, R1/P2, single exposed 
   - Pending: production check after deploy (posts by approved and unapproved members).
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Follow-up - password-style newsletter flag
+
+2026-11-09: at the maintainer's request (one-shot), a site feature flag makes the newsletter's email box a password field with Ava's chat panel parked on top of it. The maintainer chose a site feature flag over a random variant. The maintainer also reported the overlap happening by accident on an iPhone: Ava's 10-second auto-open landed over the open newsletter popup.
+
+- Changes:
+  - `FeatureFlagRegistry.php`: `FORUM_ENGAGIFY_PASSWORD_NEWSLETTER`, "Engagify: password-style newsletter box", off by default, site-mutable, appended to the Forum experience group. `FeatureFlagEvaluatorTest` lists updated.
+  - `TemplateRenderer.php`: when the flag is on, `browserRuntime.engagifyPasswordNewsletter` is `true` (the existing `window.forumBrowserRuntime` object), so pages are unchanged when it is off. Like other layout-level flags, baked pages pick up a change when they are rebuilt.
+  - `theme-engagify.js`: with the flag on, the email box is `type="password"`, and `ctx.chat.cover(field)` opens Ava over it with a different message. A per-frame follow (new `ctx.frame`, stopped with the theme) keeps the panel on the field through scrolling, resizing and the phone keyboard. Closing Ava with the bubble reopens her. The cover ends when the popup closes.
+  - With the flag off, Ava's auto-open waits while a popup is open, and an open Ava closes when a popup opens. This fixes the accidental overlap.
+  - `theme-gloss.css`: the covering panel lets taps through to the field (`pointer-events: none`) and drops its corner anchoring.
+- Reuse: site flag through the existing registry and the Feature flags page. The flag is exposed through the existing browser runtime object, and the existing chat panel does the covering, so there is no new UI element.
+- Verification:
+  - Passed: headless Chromium against `./v3 start` with the flag on (env), at 1280px and iPhone 13 emulation. The field was password type; Ava's panel fully covered it on open, after typing, after scrolling and after tapping the bubble. A tap at the field's position focused the field. Subscribe posted and ended the cover. No page errors. Screenshot inspected.
+  - Passed: flag off, iPhone SE emulation. The field was email type. A recorder of panel and popup state over about 18 seconds never saw Ava open while a popup was open: she opened at 13s between popups and closed when rate-us opened.
+  - Passed: `./v3 test --smoke FeatureFlagEvaluatorTest ThemeToggleScriptTest ThemeRegistryTest` (only the baseline `BoardListTest` failure), `./v3 test FeatureFlagsBehaviorTest`, and `node tests/browser/theme_scripts.cjs`, `theme_exit.cjs`, `theme_shared_stylesheet.cjs`. Full suite not run.
+  - Not replayed: the reported iPhone condition on a real device with the software keyboard open. Headless emulation does not open a keyboard. Pending a production check after deploy.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
