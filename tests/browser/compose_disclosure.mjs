@@ -8,7 +8,7 @@ try {
   const page = await browser.newPage();
   await page.setContent(`<form data-compose-form>
     <input name="subject" value="">
-    <details data-compose-disclosure="tags"><summary># <span data-role="compose-disclosure-summary">general</span></summary>
+    <details data-compose-disclosure="tags"><summary>Tags <span data-role="compose-disclosure-summary">#general</span></summary>
       <input name="board_tags" value="general">
       <p data-role="compose-field-normalization-status" hidden>warn</p></details>
     <details data-compose-disclosure="event"><summary>Event <span data-role="compose-disclosure-summary"></span></summary>
@@ -22,7 +22,7 @@ try {
   const summary = name => page.$eval(`[data-compose-disclosure="${name}"] [data-role="compose-disclosure-summary"]`, el => el.textContent);
   assert.equal(await open('tags'), false);
   await page.evaluate(() => { const i = document.querySelector('[name=board_tags]'); i.value = 'feature'; i.dispatchEvent(new Event('input', {bubbles:true})); });
-  assert.equal(await summary('tags'), 'feature');
+  assert.equal(await summary('tags'), '#feature');
   await page.evaluate(() => { document.querySelector('[data-role="compose-field-normalization-status"]').hidden = false; });
   await page.waitForFunction(() => document.querySelector('[data-compose-disclosure="tags"]').open);
   assert.equal(await open('event'), false);
@@ -36,7 +36,7 @@ try {
   await page.click('.compose-action-menu > summary');
   await page.click('[data-action="clear-compose-fields"]');
   await page.waitForFunction(() => !document.querySelector('.compose-action-menu').open);
-  await page.waitForFunction(() => document.querySelector('[data-compose-disclosure="tags"] [data-role="compose-disclosure-summary"]').textContent === 'general');
+  await page.waitForFunction(() => document.querySelector('[data-compose-disclosure="tags"] [data-role="compose-disclosure-summary"]').textContent === '#general');
   console.log('compose_disclosure: ok');
 } finally {
   await browser.close();

@@ -9,7 +9,9 @@
   function summaryText(form, kind) {
     var parts = [];
     if (kind === 'tags') {
-      parts = [value(form, 'board_tags')];
+      // "general art" reads as "#general #art", matching the server-rendered summary.
+      parts = [value(form, 'board_tags').split(/[\s,]+/).filter(function (tag) { return tag !== ''; })
+        .map(function (tag) { return '#' + tag.replace(/^#+/, ''); }).join(' ')];
     } else if (kind === 'event') {
       var date = value(form, 'event_date');
       var endDate = value(form, 'event_end_date');
