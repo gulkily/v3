@@ -61,6 +61,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Calendar tiny month](calendar_tiny_month/calendar_tiny_month_one_shot.md) — one-shot: on a phone the month grid shows the first words of each day's events in tiny text, not just a count.
 - [Calendar today](calendar_today/calendar_today_one_shot.md) — one-shot: the calendar marks today in the viewer's time zone and offers Today when its month is not shown; implemented locally.
 - [Reply bare card](reply_bare_card/reply_bare_card_one_shot.md) — one-shot: a sent reply keeps its "Posting…" status until the full post replaces it, instead of briefly showing as a bare body.
+- [User identities tab](user_identities_tab/user_identities_tab_one_shot.md) — one-shot: the person page gets an Identities tab listing each key with its last-active date and latest post, newest first.
 - [Ctrl+Enter after late signing load](ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md) — one-shot fix: the composer's signing script sets itself up when an approved member's messaging scripts load it after page parse, restoring Ctrl+Enter on the board; merged, deployed and accepted.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
