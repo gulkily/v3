@@ -162,12 +162,12 @@ final class HighTrafficTest
     {
         $tmp=sys_get_temp_dir() . '/v3-log-' . bin2hex(random_bytes(6));mkdir($tmp);
         $cache=new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__),$tmp,$tmp . '/db',$tmp . '/public');
-        $cache->limits['lines']=5;
+        $cache->limits['lines']=6;
         $line=static fn ($route) => '127.0.0.1 - - [now] "GET ' . $route . ' HTTP/1.1" 200 100 "-" "browser"' . "\n";
         $log=$tmp . '/access.log';
-        file_put_contents($log,str_repeat($line('/'),10) . $line('/about/') . $line('/threads') . $line('/about/') . $line('/api/version') . $line('/?q=x'));
+        file_put_contents($log,str_repeat($line('/'),10) . $line('/threads/t-1/') . $line('/about/') . $line('/threads') . $line('/about/') . $line('/api/version') . $line('/?q=x'));
         $refresh=new \ForumRewrite\Host\HighTrafficRefresh($cache);
-        assertSame(['/about/','/threads/'],$refresh->popular($log));
+        assertSame(['/about/','/threads/','/threads/t-1'],$refresh->popular($log));
         $cache->limits['read_bytes']=strlen($line('/about/'))*2;
         file_put_contents($log,str_repeat($line('/'),100) . $line('/about/') . $line('/about/'));
         assertSame(['/about/'],$refresh->popular($log));
@@ -177,6 +177,17 @@ final class HighTrafficTest
     {
         assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical('/threads/../'));
         assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical('/?page=2'));
+        // Thread pages are leaves (no slash); containers keep theirs. Either alias maps to the canonical form.
+        assertSame('/threads/abc-1', \ForumRewrite\Host\HighTrafficRoute::canonical('/threads/abc-1'));
+        assertSame(null, \ForumRewrite\Host\HighTrafficRoute::canonical('/threads/abc-1/'));
+        assertSame('/threads/abc-1', \ForumRewrite\Host\HighTrafficRoute::alias('/threads/abc-1/'));
+        assertSame(null, \ForumRewrite\Host\HighTrafficRoute::alias('/threads/abc-1'));
+        assertSame('/threads/', \ForumRewrite\Host\HighTrafficRoute::alias('/threads'));
+        assertSame('/about/', \ForumRewrite\Host\HighTrafficRoute::alias('/about'));
+        assertSame(null, \ForumRewrite\Host\HighTrafficRoute::alias('/threads/abc-1/?x=1'));
+        assertSame(null, \ForumRewrite\Host\HighTrafficRoute::alias('/recent'));
+        assertSame('threads/abc-1/index.html', \ForumRewrite\Host\HighTrafficRoute::file('/threads/abc-1'));
+        assertSame('threads/index.html', \ForumRewrite\Host\HighTrafficRoute::file('/threads/'));
         $root = sys_get_temp_dir() . '/v3-high-traffic-' . bin2hex(random_bytes(6));
         mkdir($root);
         $cmd = [PHP_BINARY, dirname(__DIR__) . '/scripts/high_traffic_render.php', dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $root . '/read.sqlite3', $root . '/assets', '/about/', \ForumRewrite\SiteProfileRegistry::active()['name']];
@@ -205,7 +216,7 @@ final class HighTrafficTest
         assertStringContains('name="v3-generated-at"', $html);
         assertSame(false,is_file($root . '/visits.sqlite3'));
         assertSame(1, preg_match('/content="\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"/', $html));
-        $cmd[6] = '/threads/nonexistent/';
+        $cmd[6] = '/threads/nonexistent';
         [$status] = $run($cmd);
         assertSame(4, $status);
     }

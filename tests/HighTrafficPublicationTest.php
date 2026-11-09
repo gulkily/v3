@@ -73,7 +73,7 @@ final class HighTrafficPublicationTest
             assertStringContains('v3-generated-at', $html);
             assertSame($html, file_get_contents($cache->path('/')));
             assertSame(true, is_file($database), 'Maintenance prepared the ordinary live model.');
-            foreach (['/about/', '/threads/', '/threads/visible/'] as $route) {
+            foreach (['/about/', '/threads/', '/threads/visible'] as $route) {
                 assertStringContains('v3-generated-at', (string) $cache->generate($route));
             }
             $guard = $root . '/no-full-record-hashing.php';
@@ -124,7 +124,7 @@ final class HighTrafficPublicationTest
         $cache->atomic($cache->root . '/state.json', json_encode(['enabled' => true, 'generation' => 'test']));
         $oldPhp = getenv('FORUM_PHP_CLI');
         try {
-            $previous = $cache->generate('/threads/visible/');
+            $previous = $cache->generate('/threads/visible');
             $target = 'reply-20260526032118-654b2b08';
             $path = $root . '/records/posts/' . $target . '.txt';
             $bytes = "Post-ID: $target\nCreated-At: 2026-10-14T11:30:00Z\nBoard-Tags: general\nThread-ID: visible\nParent-ID: visible\n\nReappeared independent source\n";
@@ -144,10 +144,10 @@ final class HighTrafficPublicationTest
                 chmod($wrapper, 0755);
                 putenv('FORUM_PHP_CLI=' . $wrapper);
                 if (in_array($index, [1, 3], true)) {
-                    $this->rejects(fn () => $cache->generate('/threads/visible/', true));
-                    assertSame($previous, file_get_contents($cache->path('/threads/visible/')));
+                    $this->rejects(fn () => $cache->generate('/threads/visible', true));
+                    assertSame($previous, file_get_contents($cache->path('/threads/visible')));
                 } else {
-                    $previous = $cache->generate('/threads/visible/', true);
+                    $previous = $cache->generate('/threads/visible', true);
                     assertStringContains('Independent body', $previous);
                 }
                 assertSame([], glob($cache->root . '/.render-*'));
@@ -155,7 +155,7 @@ final class HighTrafficPublicationTest
                 if ($index === 0) {
                     (new \ForumRewrite\ReadModel\ReadModelStaleMarker($root . '/live.sqlite3'))->mark(['reason' => 'external source changed']);
                     \ForumRewrite\Host\HighTrafficRenderInput::build(HighTrafficPublication::capture($root), $root . '/live.sqlite3');
-                    $previous = $cache->generate('/threads/visible/', true);
+                    $previous = $cache->generate('/threads/visible', true);
                     assertStringContains('Reappeared independent source', $previous);
                 }
                 if ($index === 1) {
@@ -164,7 +164,7 @@ final class HighTrafficPublicationTest
                 }
                 if ($index === 2) file_put_contents($evidence, $originalEvidence);
             }
-            assertStringContains('Reappeared independent source', (string) $cache->generate('/threads/visible/', true));
+            assertStringContains('Reappeared independent source', (string) $cache->generate('/threads/visible', true));
         } finally {
             putenv($oldPhp === false ? 'FORUM_PHP_CLI' : 'FORUM_PHP_CLI=' . $oldPhp);
             \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($cache->root);

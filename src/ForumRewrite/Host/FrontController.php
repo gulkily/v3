@@ -96,9 +96,8 @@ final class FrontController
             http_response_code(204);return;
         }
         if (!$approvedMembersOnly && in_array($method,['GET','HEAD'],true) && empty($_SERVER['HTTP_AUTHORIZATION'])
-            && !str_contains($requestUri,'?') && HighTrafficRoute::canonical($requestUri) === null
-            && HighTrafficRoute::canonical(rtrim($requestUri,'/') . '/') !== null && $highTraffic->enabled()) {
-            header('Location: ' . rtrim($requestUri,'/') . '/',true,301);
+            && ($canonicalRoute = HighTrafficRoute::alias($requestUri)) !== null && $highTraffic->enabled()) {
+            header('Location: ' . $canonicalRoute,true,301);
             header('Cache-Control: no-cache');
             return;
         }

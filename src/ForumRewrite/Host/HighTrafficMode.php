@@ -40,7 +40,11 @@ final class HighTrafficMode
                 $previous=$this->cache->state();
                 if (($previous['enabled'] ?? false) && (($previous['public_root'] ?? $this->cache->publicRoot)!==(realpath($this->cache->publicRoot) ?: $this->cache->publicRoot) || ($previous['profile'] ?? \ForumRewrite\SiteProfileRegistry::active()['name'])!==\ForumRewrite\SiteProfileRegistry::active()['name'])) throw new RuntimeException('Disable high-traffic mode for the previous public root/profile first.');
                 if (FeatureFlagEvaluator::forApplication($this->cache->repositoryRoot,$this->cache->projectRoot)->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)) throw new RuntimeException('Private instances cannot enable high-traffic mode.');
-                if (($this->status()['effective_mode'] ?? '') === 'high-traffic') return $this->status();
+                if (($this->status()['effective_mode'] ?? '') === 'high-traffic') {
+                    // Enabling again refreshes routing written by an older release; cached pages stay.
+                    if (!str_starts_with($current,$this->rules())) $this->cache->atomic($path,$this->rules() . $normal);
+                    return $this->status();
+                }
                 $this->cache->atomic($this->cache->root . '/normal.htaccess',$normal);
                 $this->cache->atomic($this->cache->root . '/normal-context.json',json_encode(['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot],JSON_THROW_ON_ERROR));
                 $this->clearPages();
@@ -123,7 +127,7 @@ RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{HTTP:Authorization} ^$
 RewriteCond %{DOCUMENT_ROOT}/.high-traffic/threads/$1/index.html -f
-RewriteRule ^threads/([a-zA-Z0-9][a-zA-Z0-9_-]{0,127})/$ .high-traffic/threads/$1/index.html [END]
+RewriteRule ^threads/([a-zA-Z0-9][a-zA-Z0-9_-]{0,127})$ .high-traffic/threads/$1/index.html [END]
 </IfModule>
 # END V3 HIGH TRAFFIC
 

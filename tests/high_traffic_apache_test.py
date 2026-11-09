@@ -114,25 +114,32 @@ try:
         assert request(path)[0]==403
     request('/about/?x=1');request('/about/',headers={'Authorization':'Bearer test'})
     assert count()==before+2
-    assert request('/threads/nonexistent/')[0]==404
+    assert request('/threads/nonexistent')[0]==404
     # Real 20-page refresh workload, each page below the one-second fixture budget.
-    logfile.write_text(''.join(f'127.0.0.1 - - [now] "GET /threads/load-{i:02}/ HTTP/1.1" 200 100 "-" "browser"\n' for i in range(20)))
+    logfile.write_text(''.join(f'127.0.0.1 - - [now] "GET /threads/load-{i:02} HTTP/1.1" 200 100 "-" "browser"\n' for i in range(20)))
     started=time.monotonic(); refreshed=json.loads(cli('run',str(logfile)))
     assert refreshed['rendered']==20,refreshed
     refresh_seconds=time.monotonic()-started
     assert refresh_seconds<120,refresh_seconds
-    for i in range(20):assert b'Initial body.' in request(f'/threads/load-{i:02}/')[2]
+    for i in range(20):assert b'Initial body.' in request(f'/threads/load-{i:02}')[2]
+    # Thread pages are leaves: the slashless URL is a warm Apache hit, the slash alias redirects once to it.
+    before=count();status,headers,_=request('/threads/load-00')
+    assert status==200 and headers.get('X-V3-High-Traffic')=='hit' and count()==before,(status,dict(headers))
+    import http.client
+    connection=http.client.HTTPConnection('127.0.0.1',port,timeout=40);connection.request('GET','/threads/load-00/')
+    alias=connection.getresponse();alias.read();connection.close()
+    assert alias.status==301 and alias.getheader('Location')=='/threads/load-00',(alias.status,alias.getheader('Location'))
     # Routine source changes remain cached until cron replaces all twenty pages.
     for i in range(20):
         record=repo/f'records/posts/load-{i:02}.txt';record.write_text(record.read_text().replace('Initial body.','Updated body.'))
         os.utime(cache_pages/f'threads/load-{i:02}/index.html',(1,1))
     subprocess.run(['git','-C',str(repo),'add','.'],check=True);subprocess.run(['git','-C',str(repo),'commit','-qm','Routine edits'],check=True)
-    assert b'Initial body.' in request('/threads/load-00/')[2]
+    assert b'Initial body.' in request('/threads/load-00')[2]
     cli('prepare')
     started=time.monotonic();updated=json.loads(cli('run',str(logfile)))
     assert updated['rendered']==20,updated
     refresh_seconds=max(refresh_seconds,time.monotonic()-started)
-    for i in range(20):assert b'Updated body.' in request(f'/threads/load-{i:02}/')[2]
+    for i in range(20):assert b'Updated body.' in request(f'/threads/load-{i:02}')[2]
     assert refresh_seconds<120,refresh_seconds
     # Failed refresh retains the full old page.
     old=(cache_pages/'about/index.html').read_bytes();os.utime(cache_pages/'about/index.html',(1,1))
@@ -221,10 +228,10 @@ try:
     cli('enable')
     status,_,home=request('/')
     assert status==200 and b'v3-generated-at' in home and b'ABSENT-TARGET-SECRET' not in home
-    status,_,thread=request('/threads/load-00/')
+    status,_,thread=request('/threads/load-00')
     assert status==200 and b'Updated body.' in thread and b'ABSENT-TARGET-SECRET' not in thread
     before=count()
-    for route in ['/', '/threads/load-00/']:
+    for route in ['/', '/threads/load-00']:
         code,headers,body=request(route)
         assert code==200 and headers.get('X-V3-High-Traffic')=='hit' and b'ABSENT-TARGET-SECRET' not in body
     assert count()==before,'absent-target warm hits invoked PHP'
