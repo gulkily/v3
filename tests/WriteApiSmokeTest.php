@@ -31,6 +31,7 @@ use ForumRewrite\TaskQueue\AgentReplyTask;
 use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
 use ForumRewrite\Write\LocalWriteService;
 
+use ForumRewrite\Security\ApprovalPolicy;
 final class WriteApiSmokeTest
 {
     public function testFastmodPanelAndSignedSelectionPersistWithoutContentWrites(): void
@@ -5732,6 +5733,89 @@ NODE;
             $_COOKIE = [];
             $this->deleteTree($signingKey['home']);
         }
+    }
+
+    public function testOperatorGrantWritesSignedRecordAndSeedInOneCommit(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $operatorKey = $this->createSigningKey('ilyag');
+        $targetKey = $this->createSigningKey('ilyag');
+        $memberKey = $this->createSigningKey('member');
+        $pendingKey = $this->createSigningKey('pending');
+        $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+        $operator = $writer->linkIdentity(['public_key' => $operatorKey['public_key']])['identity_id'];
+        $target = $writer->linkIdentity(['public_key' => $targetKey['public_key']]);
+        $member = $writer->linkIdentity(['public_key' => $memberKey['public_key']]);
+        $pending = $writer->linkIdentity(['public_key' => $pendingKey['public_key']]);
+        $this->seedApprovedIdentity($root, $operator);
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+        $this->approveIdentity($writer, $target, $operator);
+        $this->approveIdentity($writer, $member, $operator);
+        $grant = function (string $actor, string $actorHome, string $targetId, ?string $signingHome = null) use (&$writer): array {
+            $prepared = $writer->prepareOperatorGrant(['target_identity_id' => $targetId], $actor);
+            return $writer->finalizePreparedOperatorGrant([
+                'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($signingHome ?? $actorHome, $prepared['canonical_record']),
+            ], $actor);
+        };
+        $grantFiles = static fn (): array => glob($root . '/records/operator-grants/*') ?: [];
+
+        // Refusals write nothing.
+        assertThrowsRuntime(fn () => $writer->prepareOperatorGrant(['target_identity_id' => $pending['identity_id']], $operator), 'Only an approved key can be made an operator.');
+        assertThrowsRuntime(fn () => $writer->prepareOperatorGrant(['target_identity_id' => $target['identity_id']], $member['identity_id']), 'Only an active operator can make another key an operator.');
+        assertThrowsRuntime(fn () => $writer->prepareOperatorGrant(['target_identity_id' => $operator], $operator), 'This key is already an operator.');
+        $head = $this->latestCommitSha($root);
+        try {
+            $grant($operator, $operatorKey['home'], $member['identity_id'], $memberKey['home']);
+            throw new RuntimeException('A grant signed by the wrong key was accepted.');
+        } catch (RuntimeException $error) {
+            assertSame(true, str_starts_with($error->getMessage(), 'Detached signature verification failed'), $error->getMessage());
+        }
+        assertSame($head, $this->latestCommitSha($root));
+        assertSame([], $grantFiles());
+        assertSame(false, ApprovalPolicy::isOperator($root, $member['identity_id']));
+
+        $result = $grant($operator, $operatorKey['home'], $target['identity_id']);
+        $committed = preg_split('/\R/', trim($this->gitOutput($root, 'show --name-only --format= HEAD')));
+        sort($committed);
+        $expected = [$result['record_path'], $result['record_path'] . '.asc', $result['seed_path']];
+        sort($expected);
+        assertSame($expected, $committed);
+        $record = (new CanonicalRecordRepository($root))->loadOperatorGrant($result['record_path']);
+        assertSame([$operator, $target['identity_id'], 'ilyag'], [$record->operatorIdentityId, $record->targetIdentityId, $record->targetUsername]);
+        $seed = (new CanonicalRecordRepository($root))->loadApprovalSeed($result['seed_path']);
+        assertSame($result['record_id'], $seed->operatorGrantId);
+        assertSame(true, ApprovalPolicy::isActiveOperator($root, $target['identity_id']));
+        assertThrowsRuntime(fn () => $writer->prepareOperatorGrant(['target_identity_id' => $target['identity_id']], $operator), 'This key is already an operator.');
+
+        // A granted operator can grant in turn.
+        $grant($target['identity_id'], $targetKey['home'], $member['identity_id']);
+        assertSame(true, ApprovalPolicy::isOperator($root, $member['identity_id']));
+
+        // A full rebuild from records agrees with the incremental refresh.
+        $profiles = static fn (string $path): array => (new ReadModelConnection($path))->open()
+            ->query('SELECT identity_id, is_approved, approved_by_label FROM profiles ORDER BY identity_id')->fetchAll(\PDO::FETCH_NUM);
+        $incremental = $profiles($database);
+        $rebuiltPath = sys_get_temp_dir() . '/forum-rewrite-operator-grant-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        (new ReadModelBuilder($root, $rebuiltPath, new CanonicalRecordRepository($root)))->rebuild();
+        assertSame($incremental, $profiles($rebuiltPath));
+        unlink($rebuiltPath);
+        assertSame(2, count(glob($root . '/records/operator-grants/*.txt') ?: []));
+
+        // Retiring a granted key ends its operator power, including granting.
+        $this->approveIdentity($writer, $pending, $operator);
+        $retirement = $writer->prepareKeyRetirement(['actor_identity_id' => $operator, 'target_identity_id' => $target['identity_id']]);
+        $writer->finalizePreparedKeyRetirement($retirement + ['detached_signature' => $this->signCanonicalRecord($operatorKey['home'], $retirement['canonical_record'])]);
+        assertSame(false, ApprovalPolicy::isActiveOperator($root, $target['identity_id']));
+        try {
+            $writer->prepareOperatorGrant(['target_identity_id' => $pending['identity_id']], $target['identity_id']);
+            throw new RuntimeException('A retired key prepared an operator grant.');
+        } catch (RuntimeException $error) {
+            assertSame(false, $error->getMessage() === 'A retired key prepared an operator grant.', $error->getMessage());
+        }
+        assertSame(2, count(glob($root . '/records/operator-grants/*.txt') ?: []));
     }
 
     public function testVerifiedTotalsAgreeAcrossRebuildIncrementalToggleCutoffMoveAndEnvironment(): void

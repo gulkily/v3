@@ -9,6 +9,7 @@ use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\AcceptedRetraction;
 use ForumRewrite\Canonical\AttributionCutoffRecordParser;
 use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
+use ForumRewrite\Canonical\OperatorGrantRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InvitationRecordParser;
 use ForumRewrite\Canonical\LegacyReactionHeaders;
@@ -2673,6 +2674,143 @@ class LocalWriteService
         });
     }
 
+    /**
+     * Prepare an operator's request to make another approved key an operator.
+     * Authority comes from the approval seed that finalize writes; the signed
+     * grant record is evidence of who asked.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareOperatorGrant(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            $targetIdentityId = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
+            $targetUsername = $this->assertOperatorGrantAllowed($operatorIdentityId, $targetIdentityId);
+
+            $recordId = $this->generateRecordId('operator-grant');
+            $canonicalRecord = $this->buildOperatorGrantRecord($recordId, $this->canonicalTimestampNow(), $operatorIdentityId, $targetIdentityId, $targetUsername);
+            $recordPath = CanonicalPathResolver::operatorGrant($recordId);
+            $prepared = $this->storePreparedPost($recordPath, $canonicalRecord, [
+                'kind' => 'operator-grant', 'record_id' => $recordId,
+                'operator_identity_id' => $operatorIdentityId, 'target_identity_id' => $targetIdentityId,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok', 'record_id' => $recordId, 'record_path' => $recordPath,
+                'canonical_record' => $canonicalRecord, 'target_username' => $targetUsername,
+            ]);
+        });
+    }
+
+    /**
+     * Verify the operator's signature and commit the grant, its signature and
+     * the target's approval seed together.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedOperatorGrant(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'operator-grant') {
+                throw new RuntimeException('Prepared record is not an operator grant.');
+            }
+            if (strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared operator grant has expired.');
+            }
+            $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+            if ($operatorIdentityId !== (string) ($prepared['operator_identity_id'] ?? '')) {
+                throw new RuntimeException('Prepared operator grant operator identity mismatch.');
+            }
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || hash('sha256', $canonicalRecord) !== (string) ($prepared['canonical_sha256'] ?? '')) {
+                throw new RuntimeException('Prepared operator grant canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $recordId = $this->requirePreparedMatch($input, $prepared, 'record_id');
+            $grant = (new OperatorGrantRecordParser())->parse($canonicalRecord);
+            if ($grant->recordId !== $recordId
+                || CanonicalPathResolver::operatorGrant($grant->recordId) !== $recordPath
+                || $grant->operatorIdentityId !== $operatorIdentityId
+                || $grant->targetIdentityId !== (string) ($prepared['target_identity_id'] ?? '')) {
+                throw new RuntimeException('Prepared operator grant does not match its canonical record.');
+            }
+            // Re-check inside this lock: the operator may have been retired, or
+            // the target granted or retired, since the page was shown.
+            $this->assertOperatorGrantAllowed($operatorIdentityId, $grant->targetIdentityId);
+            if (is_file($this->repositoryRoot . '/' . $recordPath) || is_file($this->repositoryRoot . '/' . $recordPath . '.asc')) {
+                throw new RuntimeException('Operator grant record already exists.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($operatorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+            $this->assertApprovalSeedReadModelReady(null);
+
+            $seedPath = CanonicalPathResolver::approvalSeed(substr($grant->targetIdentityId, 8));
+            $seed = "Approved-Identity-ID: {$grant->targetIdentityId}\n"
+                . "Seed-Reason: Granted by {$operatorIdentityId}\n"
+                . "Operator-Grant-ID: {$grant->recordId}\n\n"
+                . "Made an operator with the Make root button.\n";
+            (new \ForumRewrite\Canonical\ApprovalSeedRecordParser())->parse($seed);
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            $this->writeFile($seedPath, $seed);
+            $commitResult = $this->commitCanonicalWrite(
+                [$recordPath, $recordPath . '.asc', $seedPath],
+                'Grant operator ' . $grant->targetIdentityId . ' by ' . $operatorIdentityId
+            );
+            $commitSha = $commitResult['commit_sha'];
+            try {
+                $this->incrementalReadModelUpdater()->applyApprovalSeedWrite($commitSha);
+            } catch (\Throwable $error) {
+                $this->staleMarker()->mark(['reason' => 'operator_grant_refresh_failed', 'commit_sha' => $commitSha, 'message' => $error->getMessage()]);
+                throw new RuntimeException('Operator grant committed as ' . $commitSha . ', but the read model refresh failed: '
+                    . $error->getMessage() . ' Repair with ./v3 rebuild.', 0, $error);
+            }
+            $this->invalidator()->invalidateApprovalSeed();
+            $this->deletePreparedPost($prepareToken);
+
+            return [
+                'status' => 'ok', 'record_id' => $grant->recordId, 'record_path' => $recordPath,
+                'seed_path' => $seedPath, 'target_identity_id' => $grant->targetIdentityId, 'commit_sha' => $commitSha,
+            ];
+        });
+    }
+
+    /** Returns the target's username when the grant is allowed; throws otherwise. */
+    private function assertOperatorGrantAllowed(string $operatorIdentityId, string $targetIdentityId): string
+    {
+        if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isActiveOperator($this->repositoryRoot, $operatorIdentityId)) {
+            throw new RuntimeException('Only an active operator can make another key an operator.');
+        }
+        if ($targetIdentityId === $operatorIdentityId) {
+            throw new RuntimeException('This key is already an operator.');
+        }
+        if (!$this->isApprovedIdentity($targetIdentityId)) {
+            throw new RuntimeException('Only an approved key can be made an operator.');
+        }
+        if (ApprovalPolicy::isOperator($this->repositoryRoot, $targetIdentityId)) {
+            throw new RuntimeException('This key is already an operator.');
+        }
+        $stmt = $this->readModelPdo()->prepare('SELECT username_token FROM profiles WHERE identity_id = :identity_id');
+        $stmt->execute(['identity_id' => $targetIdentityId]);
+        $username = (string) $stmt->fetchColumn();
+        if ($username === '') {
+            throw new RuntimeException('Operator grant target has no username.');
+        }
+
+        return $username;
+    }
+
     public function prepareFeatureFlagChange(array $input, string $operatorIdentityId): array
     {
         return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
@@ -4183,6 +4321,18 @@ class LocalWriteService
         }
 
         (new SiteFeatureFlagsRecordParser())->parse($contents);
+
+        return $contents;
+    }
+
+    private function buildOperatorGrantRecord(string $recordId, string $createdAt, string $operatorIdentityId, string $targetIdentityId, string $targetUsername): string
+    {
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Operator-Identity-ID: {$operatorIdentityId}\n"
+            . "Target-Identity-ID: {$targetIdentityId}\n"
+            . "Target-Username: {$targetUsername}\n\n";
+        (new OperatorGrantRecordParser())->parse($contents);
 
         return $contents;
     }

@@ -35,3 +35,26 @@ Starting revision: `f60d639` (`main`, which includes PR #88).
 - Estimate details (extended mode only): original scope as in Step 3; uncertainty low; no revision. The seed header added a few lines and replaced reason parsing planned for Stage 4.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Prepare and finalize a grant
+
+**Original estimate: 0.12**
+
+**Retrospective stage-work assessment: 0.11**
+
+- Changes:
+  - `LocalWriteService::prepareOperatorGrant(input, operatorIdentityId)` and `finalizePreparedOperatorGrant(input, operatorIdentityId)`, copied from the flag change pair.
+  - Shared `assertOperatorGrantAllowed()` runs in both, so finalize re-checks inside the write lock. The operator must be approved, unretired and seeded; the target must be approved, unretired, not the operator and not seeded. It returns the target's `username_token`, which goes into `Target-Username`.
+  - Finalize verifies the detached signature against the operator's key, checks the read model is current, and commits the grant, its `.asc` and the seed in one commit. The seed has `Seed-Reason: Granted by <operator>` and `Operator-Grant-ID`.
+  - After the commit, `applyApprovalSeedWrite` refreshes the read model, as `./v3 approval seed` does. On refresh failure, the stale marker is set and the error names the commit and `./v3 rebuild`.
+  - `buildOperatorGrantRecord()` builds and self-parses the record.
+- Verification:
+  - Passed: `WriteApiSmokeTest::testOperatorGrantWritesSignedRecordAndSeedInOneCommit`. Rejections: unapproved target, non-operator actor, self-target, and a grant signed by the wrong key (commit and files unchanged). Success: HEAD holds exactly the record, `.asc` and seed; record headers; seed `Operator-Grant-ID`; target is an active operator; a second grant is refused. A granted key grants in turn. A full rebuild gives the same profiles rows as the incremental refresh. Retiring a granted key ends its operator status and its grant attempt fails, with no new record.
+  - Passed: mutation check. Removing the "already an operator" check made the test fail.
+  - Passed: `./v3 test --smoke` plus the test above, `CanonicalRecordParsersTest`, `ApprovalSeedCommandTest`, `RootApprovalPageTest`, `ApprovalPolicyTest`: 463 run, 462 passed. The failure is the baseline `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged`, failing since before this cycle. Full suite not run.
+- Notes:
+  - Reuse: `prepareFeatureFlagChange`/`finalizePreparedFeatureFlagChange` structure, `storePreparedPost`, `signatureVerifier`, `commitCanonicalWrite`, `assertApprovalSeedReadModelReady`, `incrementalReadModelUpdater()->applyApprovalSeedWrite`, `invalidateApprovalSeed`, `KeyRetirement` through `isApprovedIdentity`.
+  - Tests live in `WriteApiSmokeTest` beside the flag change tests, to reuse its signing helpers.
+- Estimate details (extended mode only): original scope as in Step 3; no revision. The retired case needed the key retirement API, which already existed.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
