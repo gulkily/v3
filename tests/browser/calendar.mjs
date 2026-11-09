@@ -130,6 +130,7 @@ try {
       await toggle.click();
       assert.equal(await toggle.getAttribute('aria-pressed'), 'true');
       assert.equal(await title.isVisible(), true, 'phone: titles shown');
+      assert.equal(await square.locator('.calendar-day__count').isVisible(), false, 'phone: no count beside titles');
       const [titleBox, squareBox] = [await title.boundingBox(), await square.boundingBox()];
       assert.ok(titleBox.y + titleBox.height <= squareBox.y + squareBox.height + 0.5 && titleBox.x + titleBox.width <= squareBox.x + squareBox.width + 0.5, 'phone: title inside its square');
       assert.equal(await viewer.page.locator('[data-calendar-day="2026-11-29"] .calendar-day__number').isVisible(), true, 'Saturday is on screen with titles');
