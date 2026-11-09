@@ -49,9 +49,14 @@ final class PrivateMessageReleaseIsolationTest
                 // Shared pages may carry only the hidden member-only Messages link and the
                 // script list the client loads for remembered members (viewer_nav_prepaint);
                 // with those two removed, no other messaging markup or asset may remain.
+                // adaptive_nav (a3dfb3f9) also repeats the same member-only Messages link in the
+                // More menu and adds an empty data-private-message-unread-mirror marker that only
+                // tells the client where to copy the count; neither carries data.
                 $html = (string) preg_replace(
                     ['#<a [^>]*href="/messages" data-member-only data-private-message-unread aria-label="Messages" aria-describedby="private-message-unread-status">Messages<span id="private-message-unread-status" hidden>Unread status loading</span></a>#',
-                        '#,"privateMessaging":\[[^\]]*\]#'],
+                        '#,"privateMessaging":\[[^\]]*\]#',
+                        '# data-private-message-unread-mirror(?=[ >])#',
+                        '#<a data-more="messages" class="nav-link" href="/messages" data-member-only>Messages</a>#'],
                     '',
                     (string) file_get_contents($path),
                 );

@@ -46,7 +46,7 @@ final class BoardListTest
         assertStringContains('href="/threads/board-list-060"', $first);
         assertStringNotContains('href="/threads/board-list-010"', $first);
         assertStringNotContains('New Post', $this->markup($first));
-        assertStringNotContains('rel="prev"', $first);
+        assertStringNotContains('rel="prev"', $this->markup($first)); // inline CSS selects .nav-link[rel="prev"]
         preg_match('/rel="next" href="([^"]+)">Show older threads</', $first, $next);
         assertTrue(isset($next[1]), 'Expected a Show older threads link.');
 
@@ -55,7 +55,7 @@ final class BoardListTest
         assertStringContains('href="/threads/board-list-010"', $second);
         assertStringContains('href="/threads/root-001"', $second);
         assertStringNotContains('href="/threads/board-list-060"', $second);
-        assertStringNotContains('rel="next"', $second);
+        assertStringNotContains('rel="next"', $this->markup($second));
         preg_match('/rel="prev" href="([^"]+)">Newer threads</', $second, $previous);
         assertTrue(isset($previous[1]), 'Expected a Newer threads link.');
 

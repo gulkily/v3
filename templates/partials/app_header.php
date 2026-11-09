@@ -27,7 +27,8 @@ $canPost = array_filter($navItems, static fn (array $item): bool => $item['secti
 <?php endif; ?>
     <details class="account-menu" data-role="account-menu" data-tab="account"<?= $hiddenCurrent !== null ? ' data-current="' . $e($hiddenCurrent['section']) . '"' : '' ?><?= $menuCurrent !== null ? ' data-current-menu="' . $e($menuCurrent['section']) . '"' : '' ?>>
       <?php $hasInbox = in_array('inbox', array_column($navItems, 'section'), true); ?>
-      <summary class="account-menu__trigger" aria-label="Menu"<?= $menuCurrent !== null ? ' aria-current="page"' : '' ?> <?= $hasInbox ? 'data-inbox-unread-mirror' : 'data-private-message-unread-mirror' ?>><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span><?php if ($hiddenCurrent !== null): ?><span class="account-menu__label account-menu__label--current"><?= $e($hiddenCurrent['label']) ?></span><?php endif; ?></summary>
+      <?php $hasMessages = in_array('messages', array_column($navItems, 'section'), true); ?>
+      <summary class="account-menu__trigger" aria-label="Menu"<?= $menuCurrent !== null ? ' aria-current="page"' : '' ?><?= $hasInbox ? ' data-inbox-unread-mirror' : ($hasMessages ? ' data-private-message-unread-mirror' : '') ?>><span class="account-menu__icon" aria-hidden="true"></span><span class="account-menu__label account-menu__label--you">You</span><span class="account-menu__label account-menu__label--more">More</span><?php if ($hiddenCurrent !== null): ?><span class="account-menu__label account-menu__label--current"><?= $e($hiddenCurrent['label']) ?></span><?php endif; ?></summary>
       <div class="account-menu__panel">
 <?php if ($moreItems !== []): ?>
         <nav class="account-menu__links account-menu__more" aria-label="More destinations">
