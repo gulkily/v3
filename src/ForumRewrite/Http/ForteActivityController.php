@@ -268,7 +268,7 @@ final class ForteActivityController
             ],
             'Activity - Forte',
             'paned-reader-body',
-            ['/assets/toolbar_identity_status.js', '/assets/paned_activity_reader.js'],
+            ['/assets/toolbar_identity_status.js', '/assets/paned_activity_reader.js', '/assets/source_viewer.js'],
             ['/assets/forte.css', '/assets/activity.css', '/assets/access-history.css'],
         );
     }

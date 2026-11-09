@@ -69,7 +69,7 @@ final class ForteUserDirectoryController
             ],
             'Users - Forte',
             'paned-reader-body',
-            ['/assets/toolbar_identity_status.js', '/assets/paned_users_reader.js'],
+            ['/assets/toolbar_identity_status.js', '/assets/paned_users_reader.js', '/assets/source_viewer.js'],
             ['/assets/forte.css'],
         );
     }
