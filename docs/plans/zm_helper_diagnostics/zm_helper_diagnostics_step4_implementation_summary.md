@@ -28,3 +28,23 @@ Study cycle `v3/zm_helper_diagnostics` joins `railspike-effort` (R1, P2) at Step
 - Notes: reports carry no body, subject, token, key or path by construction; the server's error text is the only free-form field, and it is scrubbed.
 
 *— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
+
+## Stage 2 - Post reports, once per operation
+**Original estimate: 0.12**
+- Changes:
+  - `public/frm.py`: new `--report-thread` (default `FRM_REPORT_THREAD`) and `--no-report` on `thread` and `reply`.
+  - New `report_trouble(args, site, error)`, called after every write. It prints the error first, then the report, then posts any queued reports and this one. It catches all of its own errors.
+  - New `post_trouble_report(site, thread_id, body, identity_id, timeout)`. It sends an unsigned `create_reply` with `body_format=plain`, naming the agent's identity when known. If the server refuses an unregistered identity, it retries once anonymously.
+  - Once per operation: the operation's `operation.txt` records `Trouble-Reported: yes`, so a resume doesn't report again.
+  - A report that can't be posted stays as `trouble-pending-*.txt` in the state directory; the next write posts it.
+  - A write that succeeds after busy retries is reported with outcome `accepted after busy retries`.
+  - New `state_directory(args, site)`, shared with `write_post`.
+- Verification:
+  - `python3 tests/frm_client_test.py`: passed, 16 tests. New cases: error before report and unsigned post; identity named and one report per operation; anonymous fallback; queue then send; busy-retry success; `--no-report` and missing thread; reporting never raises.
+  - `./v3 test --smoke FrmClientTest`: 448 of 450 passed. New `FrmClientTest::testFailedWritePostsOneRedactedTroubleReport` passed against a real test server: a reply to a missing thread is rejected, one report lands, it carries no draft, path or key, and a resume posts nothing more. The same two baseline failures as Stage 1. Full suite not run.
+- Notes:
+  - **Plan deviation:** Step 3 said reports would be signed when an identity exists. They are always unsigned replies instead. Signing would run a second write inside the failed one, through the same lock and the "unresolved operation" guard, and would fail whenever GPG is the problem. Reports still name the identity when the server accepts it.
+  - The HTTP test found that the server refuses to name an unregistered identity. That is the common case for setup failures, so the anonymous retry was added.
+  - An unknown network outcome can, rarely, post a report twice: unsigned replies have no exact-retry guarantee. Accepted for reports.
+
+*— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*

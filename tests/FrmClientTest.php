@@ -210,6 +210,31 @@ final class FrmClientTest
         }
     }
 
+    public function testFailedWritePostsOneRedactedTroubleReport(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+        try {
+            $context=stream_context_create(['http'=>['method'=>'POST','ignore_errors'=>true,'header'=>"Content-Type: application/x-www-form-urlencoded\r\n",'content'=>http_build_query(['subject'=>'Agent trouble reports','body'=>"Reports land here.\n"]),'timeout'=>40]]);
+            $created=file_get_contents($server->url.'/api/create_thread',false,$context);
+            preg_match('/^thread_id=(\S+)$/m',(string)$created,$match); $thread=$match[1]??''; assertTrue($thread!=='',(string)$created);
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            file_put_contents($root.'/body.txt',"Secret draft text.\n");
+            $state=self::stateDir($root,'report');
+            $write=['--site',$server->url,'--state-dir',$state,'reply','--thread','thread-missing','--body-file',$root.'/body.txt','--report-thread',$thread];
+            [$code,$out]=self::run($script,$write); assertSame(2,$code,$out);
+            assertTrue(str_contains($out,'Trouble-report: sent '.$server->url.'/threads/'.$thread),$out);
+            assertTrue(strpos($out,'Error: ')<strpos($out,'Trouble-report:'),$out);
+            assertTrue(preg_match('/\(post (\S+)\)/',$out,$posted)===1,$out);
+            $report=file_get_contents($server->url.'/api/get_post?post_id='.rawurlencode($posted[1]));
+            assertStringContains('Command: reply',$report); assertStringContains('Outcome: ',$report);
+            foreach (['Secret draft text',$root,$state,'BEGIN PGP'] as $secret) assertStringNotContains($secret,$report);
+            $operation=glob($state.'/*/operation-*')[0];
+            [$code,$out]=self::run($script,['--site',$server->url,'--state-dir',$state,'reply','--resume',$operation,'--report-thread',$thread]);
+            assertStringNotContains('Trouble-report: sent',$out);
+            \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+        } finally {$server->close();}
+    }
+
     public function testDownloadedReaderAndPublicDelivery(): void
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();

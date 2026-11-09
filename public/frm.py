@@ -25,8 +25,8 @@ class ClientError(Exception):
     pass
 
 
-# Trouble-report context for this run: last API route tried and busy retries seen.
-TRACE = {'route': '', 'busy': 0}
+# Trouble-report context for this run: last API route, busy retries, operation and identity.
+TRACE = {'route': '', 'busy': 0, 'operation': None, 'identity': ''}
 REPORT_ERROR_LIMIT = 300
 
 
@@ -280,6 +280,7 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
         save_meta(operation / 'operation.txt', meta)
     else:
         meta = saved_meta
+    TRACE['operation'] = operation; TRACE['identity'] = author
     print('Operation: ' + str(operation), flush=True)
     print('Identity-ID: ' + author, flush=True)
     try:
@@ -475,9 +476,99 @@ def resume_post(operation, meta, args):
     return new_post(args, meta['Site'], operation.parent, operation, meta, key)
 
 
+def state_directory(args, site):
+    if getattr(args, 'resume', None):
+        return Path(args.resume).expanduser().resolve().parent
+    return Path(args.state_dir).expanduser().resolve() / hashlib.sha256(site.encode()).hexdigest()
+
+
+def post_trouble_report(site, thread_id, body, identity_id, timeout):
+    """Unsigned reply, so a broken key or registration can still be reported."""
+    fields = {'thread_id': thread_id, 'parent_id': thread_id, 'body': body, 'body_format': 'plain'}
+    if identity_id:
+        fields['author_identity_id'] = identity_id
+    while True:
+        status, text, _ = request(site, '/api/create_reply', fields, timeout)
+        values = dict(line.split('=', 1) for line in text.splitlines() if '=' in line)
+        if status == 200 and values.get('status') == 'ok' and values.get('post_id'):
+            return values['post_id']
+        if status == 400 and 'author_identity_id' in fields:
+            del fields['author_identity_id']  # unregistered identity: report anonymously instead
+            continue
+        raise ClientError('HTTP %s: %s' % (status, values.get('error') or 'unexpected reply response'))
+
+
+def report_trouble(args, site, error=None):
+    """After a write: post queued reports, then this run's report. Never raises."""
+    try:
+        _report_trouble(args, site, error)
+    except Exception as problem:  # a report must never hide or replace the write's own outcome
+        print('Trouble-report: not sent (' + type(problem).__name__ + ').', file=sys.stderr)
+
+
+def _report_trouble(args, site, error):
+    if getattr(args, 'no_report', False):
+        return
+    operation = TRACE['operation']
+    try:
+        meta = load_meta(operation / 'operation.txt') if operation else {}
+    except (OSError, ValueError):
+        meta = {}
+    if error is None and not TRACE['busy']:
+        outcome = None
+    elif error is None:
+        outcome = 'accepted after busy retries'
+    elif meta.get('State') == 'rejected':
+        outcome = 'rejected'
+    elif meta and meta.get('State') != 'accepted':
+        outcome = 'unresolved'
+    else:
+        outcome = 'failed'
+    if outcome and meta.get('Trouble-Reported') == 'yes':
+        outcome = None
+    thread_id = args.report_thread
+    if not thread_id:
+        if outcome:
+            print('Trouble-report: not sent; no --report-thread or FRM_REPORT_THREAD set.', file=sys.stderr)
+        return
+    try:
+        state = state_directory(args, site)
+        state.mkdir(mode=0o700, parents=True, exist_ok=True)
+    except OSError as problem:
+        print('Trouble-report: not sent; state directory unavailable: ' + str(problem), file=sys.stderr)
+        return
+    identity_id = TRACE['identity']
+    if not identity_id and (state / 'identity.txt').exists():
+        try:
+            identity_id = 'openpgp:' + load_meta(state / 'identity.txt')['Fingerprint'].lower()
+        except (OSError, ValueError, KeyError):
+            identity_id = ''
+    queued = sorted(state.glob('trouble-pending-*.txt'))
+    if outcome:
+        report = trouble_report(args.command, TRACE['route'], str(error or ''), outcome, TRACE['busy'])
+        print('Trouble-report:\n' + ''.join('  ' + line + '\n' for line in report.splitlines()), end='', file=sys.stderr)
+        if operation and meta:
+            meta['Trouble-Reported'] = 'yes'
+            try:
+                save_meta(operation / 'operation.txt', meta)
+            except OSError:
+                pass
+        pending = state / ('trouble-pending-' + secrets.token_hex(8) + '.txt')
+        pending.write_bytes(report.encode('utf-8'))
+        queued.append(pending)
+    for file in queued:
+        try:
+            post_id = post_trouble_report(site, thread_id, file.read_text(encoding='utf-8'), identity_id, args.timeout)
+        except (ClientError, OSError, ValueError) as problem:
+            print('Trouble-report: not sent (' + str(problem) + '); saved for the next write: ' + str(file), file=sys.stderr)
+            return
+        file.unlink()
+        print('Trouble-report: sent ' + site + '/threads/' + thread_id + ' (post ' + post_id + ')', file=sys.stderr)
+
+
 def write_post(args, site):
     operation = Path(args.resume).expanduser().resolve() if args.resume else None
-    state = operation.parent if operation else Path(args.state_dir).expanduser().resolve() / hashlib.sha256(site.encode()).hexdigest()
+    state = state_directory(args, site)
     state.mkdir(mode=0o700, parents=True, exist_ok=True)
     lock = state / 'writing.lock'
     try:
@@ -486,7 +577,9 @@ def write_post(args, site):
         raise ClientError('Another write may be running. If no frm process is active, remove the empty lock directory: ' + str(lock))
     try:
         if operation:
+            TRACE['operation'] = operation
             meta = load_meta(operation / 'operation.txt')
+            TRACE['identity'] = meta.get('Identity-ID', '')
             if meta['Site'] != site or meta['Kind'] != args.command:
                 raise ClientError('Resume must use the saved site and command. ' + recovery_command(operation, meta))
             try:
@@ -505,7 +598,7 @@ def write_post(args, site):
 
 
 def parser():
-    p = argparse.ArgumentParser(description=__doc__, epilog='Generated keys are unencrypted in a private state directory; keep it for identity reuse and recovery. Existing keys use GPG/pinentry. No unsigned fallback or member-session automation. check verifies publication only. Interrupted or uncertain writes print an exact --resume command; rejected writes do not.')
+    p = argparse.ArgumentParser(description=__doc__, epilog='Generated keys are unencrypted in a private state directory; keep it for identity reuse and recovery. Existing keys use GPG/pinentry. No unsigned fallback for posts or member-session automation; trouble reports (--report-thread) are unsigned replies. check verifies publication only. Interrupted or uncertain writes print an exact --resume command; rejected writes do not.')
     p.add_argument('--version', action='version', version='frm.py ' + FRM_VERSION)
     p.add_argument('--site', required=True, help='Explicit http(s) instance URL')
     p.add_argument('--timeout', type=int, default=60, help='Per-request timeout in seconds (default: 60)')
@@ -527,12 +620,15 @@ def parser():
         q.add_argument('--name', default='frm-agent', help='User ID for generated unencrypted local key (default: frm-agent)')
         q.add_argument('--signing-key', help='Reuse one existing primary secret key; GPG/pinentry handles its passphrase')
         q.add_argument('--gpg-home', help='Keyring for --signing-key; otherwise GNUPGHOME/default GPG home')
+        q.add_argument('--report-thread', default=os.environ.get('FRM_REPORT_THREAD', ''), help='Thread for automatic trouble reports (default: FRM_REPORT_THREAD); reports are printed and carry no draft, key or path')
+        q.add_argument('--no-report', action='store_true', help='Never post trouble reports')
     return p
 
 
 def main():
     os.umask(0o077)
     args = parser().parse_args()
+    site = None
     try:
         site = site_url(args.site)
         if not 0 <= args.retries <= 5:
@@ -546,7 +642,9 @@ def main():
                 raise ClientError('New writes require --body-file; replies also require --thread.')
             if (args.command == 'thread' and (args.thread or args.parent)) or (args.command == 'reply' and args.subject):
                 raise ClientError('Use subject for threads, thread/parent for replies.')
-            return write_post(args, site)
+            result = write_post(args, site)
+            report_trouble(args, site)
+            return result
         if args.command == 'index':
             status, text, _ = request(site, '/api/list_index', timeout=args.timeout)
             if status != 200:
@@ -568,6 +666,8 @@ def main():
         print('Error: ' + str(error), file=sys.stderr)
         if args.command == 'check':
             print('Status: unknown', file=sys.stderr)
+        if args.command in ('thread', 'reply') and site:
+            report_trouble(args, site, error)
         return 2
 
 
