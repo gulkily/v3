@@ -54,6 +54,7 @@ final class RouteServices
     private ?\ForumRewrite\Session\ViewerSessions $fallbackViewerSessions = null;
 
     private ?PDO $tagReadConnection = null;
+    private int|false|null $tagReadConnectionInode = null;
     private bool $viewerProfileResolved = false;
     private ?array $resolvedViewerProfile = null;
     private bool $lenientViewerProfileResolved = false;
@@ -79,6 +80,7 @@ final class RouteServices
         private readonly bool $readModelAccessAllowed = true,
         /** @var (\Closure(): \ForumRewrite\Session\ViewerSessions)|null */
         private readonly ?\Closure $viewerSessions = null,
+        private readonly ?int $readerWaitMilliseconds = null,
     ) {
     }
 
@@ -158,8 +160,17 @@ final class RouteServices
         if (!$this->readModelAccessAllowed) {
             throw new \LogicException('Documentation rendering must not access the forum read model.');
         }
-        return $this->tagReadConnection ??= \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
-            (new ReadModelConnection($this->databasePath))->open(), $this->projectRoot, $this->repositoryRoot);
+        // A full rebuild swaps in a new file; a connection opened earlier in this request
+        // would keep reading the old one, so reopen when the file changed underneath it.
+        clearstatcache(true, $this->databasePath);
+        $inode = @fileinode($this->databasePath);
+        if ($this->tagReadConnection !== null && $inode === $this->tagReadConnectionInode) {
+            return $this->tagReadConnection;
+        }
+        $this->tagReadConnectionInode = $inode;
+
+        return $this->tagReadConnection = \ForumRewrite\Scoring\FastmodMetaRead::forApplication(
+            (new ReadModelConnection($this->databasePath, $this->readerWaitMilliseconds))->open(), $this->projectRoot, $this->repositoryRoot);
     }
 
     public function withActiveIdentity(string $identityId, callable $callback): mixed

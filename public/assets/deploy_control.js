@@ -42,8 +42,15 @@
       try { data = await post('status'); } catch { continue; }
       if (data.status !== 'ok') { say(data.error); break; }
       const task = data.state.task_status;
-      if (task !== 'queued' && task !== 'running' && !data.state.busy) { window.location.reload(); return; }
-      say(task === 'running' || data.state.busy ? 'Deploying…' : `Queued; waiting for the task worker…${waited()}`);
+      const rebuild = data.state.rebuild_status;
+      const deploying = task === 'queued' || task === 'running' || data.state.busy;
+      const rebuilding = rebuild === 'queued' || rebuild === 'running';
+      if (!deploying && !rebuilding) { window.location.reload(); return; }
+      if (deploying) {
+        say(task === 'running' || data.state.busy ? 'Deploying…' : `Queued; waiting for the task worker…${waited()}`);
+      } else {
+        say(rebuild === 'running' ? `Rebuilding site data… ${data.state.rebuild_progress || ''}`.trim() : 'Site data rebuild waiting for the task worker…');
+      }
     }
     polling = false;
   };
@@ -71,6 +78,11 @@
       return;
     }
     if (result.outcome === 'refused' || result.outcome === 'failed') { say(result.message); return; }
+    if (data.state && (data.state.rebuild_status === 'queued' || data.state.rebuild_status === 'running')) {
+      say(result.message);
+      poll();
+      return;
+    }
     window.location.reload();
   });
 

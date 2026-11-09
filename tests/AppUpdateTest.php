@@ -29,6 +29,53 @@ final class AppUpdateTest
         assertSame($new, $latest['New-Commit']);
     }
 
+    public function testDeployChecksTheReadModelWithTheNewCodeAndQueuesARebuild(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $this->pushCommit($seed, 'schema bump');
+        $checks = 0;
+        $check = static function () use (&$checks): array {
+            $checks++;
+            return ['status' => 'queued', 'message' => 'Read model: queued a rebuild for the new schema (updating)'];
+        };
+
+        $started = microtime(true);
+        $result = (new AppUpdate($app, null, $check))->deploy('cli', AppUpdate::MODE_CLI);
+
+        assertSame('deployed', $result['outcome']);
+        assertSame(1, $checks);
+        assertStringContains('queued a rebuild for the new schema', $result['message']);
+        assertSame('queued', (new AppUpdate($app))->latestAttempt()['Read-Model']);
+        assertTrue(microtime(true) - $started < 30.0);
+    }
+
+    public function testDeployWithoutChangesSkipsTheReadModelCheck(): void
+    {
+        [$app] = $this->fixture();
+        $checks = 0;
+        $check = static function () use (&$checks): array {
+            $checks++;
+            return ['status' => 'current', 'message' => ''];
+        };
+
+        $result = (new AppUpdate($app, null, $check))->deploy('cli', AppUpdate::MODE_CLI);
+
+        assertSame('up_to_date', $result['outcome']);
+        assertSame(0, $checks);
+        assertSame('-', (new AppUpdate($app))->latestAttempt()['Read-Model']);
+    }
+
+    public function testDeployWithoutTheCheckScriptRecordsUnknown(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $this->pushCommit($seed, 'second');
+
+        $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+
+        assertSame('deployed', $result['outcome']);
+        assertSame('unknown', (new AppUpdate($app))->latestAttempt()['Read-Model']);
+    }
+
     public function testDeployReportsUpToDateWithoutChanges(): void
     {
         [$app] = $this->fixture();

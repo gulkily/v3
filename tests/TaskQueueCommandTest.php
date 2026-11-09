@@ -143,6 +143,34 @@ final class TaskQueueCommandTest
         assertSame([], $runs[0]['task_outcomes']);
     }
 
+    public function testCheckReadModelQueuesARebuildOnlyForAnOldSchema(): void
+    {
+        $queuePath = sys_get_temp_dir() . '/forum-task-queue-check-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $databasePath = sys_get_temp_dir() . '/forum-task-queue-check-model-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $repository = __DIR__ . '/fixtures/parity_minimal_v1';
+        $command = './v3 task-queue check-read-model --queue-database-path=' . escapeshellarg($queuePath)
+            . ' --database-path=' . escapeshellarg($databasePath);
+        try {
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($repository, $databasePath, new \ForumRewrite\Canonical\CanonicalRecordRepository($repository)))->rebuild();
+            [$currentCode, $currentOutput] = $this->runCommand(dirname(__DIR__), $command);
+            (new \PDO('sqlite:' . $databasePath))->exec("UPDATE metadata SET value = '1' WHERE key = 'schema_version'");
+            [$oldCode, $oldOutput] = $this->runCommand(dirname(__DIR__), $command);
+            [, $againOutput] = $this->runCommand(dirname(__DIR__), $command);
+            $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore(new \PDO('sqlite:' . $queuePath));
+            $counts = $store->counts();
+        } finally {
+            @unlink($queuePath);
+            @unlink($databasePath);
+        }
+
+        assertSame(0, $currentCode);
+        assertStringContains('Read model: current', $currentOutput);
+        assertSame(0, $oldCode);
+        assertStringContains('Read model: queued a rebuild for the new schema', $oldOutput);
+        assertStringContains('Read model: queued', $againOutput);
+        assertSame(1, $counts['queued']);
+    }
+
     public function testRebuildWorkerRecordsPrivateProgressCheckpoints(): void
     {
         $queuePath = sys_get_temp_dir() . '/forum-task-queue-progress-' . bin2hex(random_bytes(6)) . '.sqlite3';

@@ -173,6 +173,8 @@ PHP;
             ob_start();
             try { (new Application(dirname(__DIR__), $fixture->repository, $db))->handle('GET', '/activity/'); }
             finally { ob_end_clean(); }
+            // The startup rebuild swapped in a new file; reopen to read it.
+            $pdo = new PDO('sqlite:' . $db);
             assertSame((int) $pdo->query('SELECT COUNT(*) FROM activity')->fetchColumn(), (int) $pdo->query("SELECT total FROM activity_counts WHERE view='all'")->fetchColumn());
             foreach (ActivityService::KIND_VIEWS as $view => $kind) {
                 $stmt = $pdo->prepare('SELECT (SELECT COUNT(*) FROM activity WHERE kind = ?), (SELECT total FROM activity_counts WHERE view = ?)');

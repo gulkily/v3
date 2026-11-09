@@ -31,6 +31,8 @@ use ForumRewrite\SiteConfig;
 use ForumRewrite\TagScore;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
+use ForumRewrite\ReadModel\ReadModelCandidateBuilder;
+use ForumRewrite\ReadModel\ReadModelCandidatePromoter;
 use ForumRewrite\ReadModel\ReadModelConnection;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
@@ -3037,8 +3039,24 @@ class LocalWriteService
     /**
      * @return array<string, float>
      */
+    /**
+     * Builds a new read model beside the live one and swaps it in, so readers keep the old
+     * file until the new one is complete. Callers hold the write lock, so no write can land
+     * between the build and the swap. If the swap is refused (for example a leftover SQLite
+     * journal), it falls back to rebuilding in place, as before.
+     */
     protected function rebuildReadModel(): array
     {
+        $candidates = new ReadModelCandidateBuilder($this->repositoryRoot, $this->databasePath, 'write_refresh');
+        $candidatePath = $candidates->build();
+        try {
+            (new ReadModelCandidatePromoter($this->repositoryRoot, $this->databasePath))->promoteWhileLocked($candidatePath);
+
+            return $candidates->timings();
+        } catch (\Throwable) {
+            @unlink($candidatePath);
+        }
+
         $builder = new ReadModelBuilder(
             $this->repositoryRoot,
             $this->databasePath,

@@ -66,6 +66,8 @@ final class QdbWelcomeSelectionTest
             $pdo->exec("UPDATE posts SET body='STALE WELCOME BODY'; UPDATE threads SET board_tags_json='[\"news\"]'");
             $fresh = new Application(dirname(__DIR__), __DIR__.'/fixtures/parity_minimal_v1', $database);
             $html = $render($fresh);
+            // The startup rebuild swapped in a new file; reopen to read it.
+            $pdo = new PDO('sqlite:'.$database);
             assertStringNotContains('STALE WELCOME BODY',$html);
             assertSame(ReadModelMetadata::SCHEMA_VERSION,$pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
             // Ordinary route and template, after rebuilding, consume selected news bodies.

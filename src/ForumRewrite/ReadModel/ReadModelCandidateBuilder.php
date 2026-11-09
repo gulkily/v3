@@ -10,6 +10,9 @@ use RuntimeException;
 
 final class ReadModelCandidateBuilder
 {
+    /** @var array<string, float> */
+    private array $timings = [];
+
     public function __construct(
         private readonly string $repositoryRoot,
         private readonly string $liveDatabasePath,
@@ -29,13 +32,15 @@ final class ReadModelCandidateBuilder
             . '.candidate-' . bin2hex(random_bytes(8)) . '.sqlite3';
 
         try {
-            (new ReadModelBuilder(
+            $builder = new ReadModelBuilder(
                 $this->repositoryRoot,
                 $candidatePath,
                 new CanonicalRecordRepository($this->repositoryRoot),
                 $this->rebuildReason,
                 $this->progressReporter,
-            ))->rebuild();
+            );
+            $builder->rebuild();
+            $this->timings = $builder->timings();
             (new RebuildProgress($this->progressReporter))->measure(
                 'Read model: validating candidate',
                 fn () => self::assertValid($this->repositoryRoot, $candidatePath),
@@ -48,15 +53,23 @@ final class ReadModelCandidateBuilder
         }
     }
 
+    /** @return array<string, float> phase timings of the last successful build */
+    public function timings(): array
+    {
+        return $this->timings;
+    }
+
     public static function assertValid(string $repositoryRoot, string $candidatePath, bool $requireCurrentHead = true): void
     {
         $pdo = (new ReadModelConnection($candidatePath))->open();
         $metadata = $pdo->query('SELECT key, value FROM metadata')->fetchAll(PDO::FETCH_KEY_PAIR);
         $expectedHead = $requireCurrentHead ? ReadModelMetadata::repositoryHead($repositoryRoot) : null;
         if (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
-            || ($metadata['repository_root'] ?? null) !== $repositoryRoot
-            || ($requireCurrentHead && ($metadata['repository_head'] ?? null) !== $expectedHead)) {
+            || ($metadata['repository_root'] ?? null) !== $repositoryRoot) {
             throw new RuntimeException('Read-model candidate metadata does not match the current repository.');
+        }
+        if ($requireCurrentHead && ($metadata['repository_head'] ?? null) !== $expectedHead) {
+            throw new ReadModelCandidateBehindHead('Read-model candidate metadata does not match the current repository.');
         }
 
         $integrity = $pdo->query('PRAGMA quick_check')->fetchColumn();

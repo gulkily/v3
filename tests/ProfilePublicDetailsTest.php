@@ -80,6 +80,8 @@ final class ProfilePublicDetailsTest
             $pdo->exec("UPDATE profiles SET public_key='stale-key', post_count=999");
             $app = new Application(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $database);
             $html = $this->render($app, '/profiles/' . $profile['profile_slug']);
+            // The startup rebuild swapped in a new file; reopen to read it.
+            $pdo = new PDO('sqlite:' . $database, null, null, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
             assertSame(200, http_response_code());
             assertStringNotContains('stale-key', $html);
             assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
