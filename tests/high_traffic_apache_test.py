@@ -129,6 +129,13 @@ try:
     connection=http.client.HTTPConnection('127.0.0.1',port,timeout=40);connection.request('GET','/threads/load-00/')
     alias=connection.getresponse();alias.read();connection.close()
     assert alias.status==301 and alias.getheader('Location')=='/threads/load-00',(alias.status,alias.getheader('Location'))
+    # Enabling again rewrites routing left by an older release and keeps the cached pages.
+    rules=(public/'.htaccess').read_text();current='^threads/([a-zA-Z0-9][a-zA-Z0-9_-]{0,127})$'
+    assert current in rules
+    (public/'.htaccess').write_text(rules.replace(current,'^threads/([a-zA-Z0-9][a-zA-Z0-9_-]{0,127})/$'))
+    cli('enable')
+    assert current in (public/'.htaccess').read_text() and (cache_pages/'threads/load-00/index.html').is_file()
+    assert request('/threads/load-00')[1].get('X-V3-High-Traffic')=='hit'
     # Routine source changes remain cached until cron replaces all twenty pages.
     for i in range(20):
         record=repo/f'records/posts/load-{i:02}.txt';record.write_text(record.read_text().replace('Initial body.','Updated body.'))
