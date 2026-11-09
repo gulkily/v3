@@ -218,6 +218,21 @@ final class RouteServices
         return \ForumRewrite\Security\AttributionCutoff::resolve($this->repositoryRoot);
     }
 
+    /**
+     * Root-approved means an approved profile whose key has a current approval
+     * seed. Never compare approved_by_label: it is the approver's username,
+     * and anyone can choose the username "root".
+     *
+     * @param array<string, mixed>|null $profile
+     */
+    public function profileIsActiveOperator(?array $profile): bool
+    {
+        $id = (string) ($profile['identity_id'] ?? '');
+        return $id !== ''
+            && ((int) ($profile['is_approved'] ?? 0)) === 1
+            && \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->repositoryRoot, $id);
+    }
+
     public function securityReviewAllowed(): bool
     {
         $id = $this->viewerSessions()->identityId();

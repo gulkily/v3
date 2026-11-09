@@ -372,8 +372,6 @@ final class ToolsPageController
      */
     private function viewerCanManageFeatureFlags(?array $viewerProfile): bool
     {
-        return $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
-            && (string) ($viewerProfile['approved_by_label'] ?? '') === 'root';
+        return $this->routeServices->profileIsActiveOperator($viewerProfile);
     }
 }

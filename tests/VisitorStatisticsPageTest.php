@@ -71,6 +71,27 @@ try {
         throw new RuntimeException('Identity-hint-only request was not denied.');
     }
 
+    // A member approved by someone who chose the username "root" is not root-approved.
+    $pdo = new PDO('sqlite:' . $databasePath);
+    $spoofed = 'openpgp:' . str_repeat('ab', 20);
+    $row = $pdo->query("SELECT * FROM profiles WHERE identity_id = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'")->fetch(PDO::FETCH_ASSOC);
+    $row = array_merge($row, ['identity_id' => $spoofed, 'profile_slug' => 'openpgp-' . str_repeat('ab', 20),
+        'username' => 'mallory', 'username_token' => 'mallory', 'is_approved' => 1,
+        'approved_by_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', 'approved_by_label' => 'root']);
+    $pdo->prepare('INSERT INTO profiles (' . implode(', ', array_keys($row)) . ') VALUES (' . implode(', ', array_fill(0, count($row), '?')) . ')')
+        ->execute(array_values($row));
+    $pdo = null;
+    $_COOKIE = [];
+    TestViewerSession::signIn($spoofed);
+    $application = new Application($argv[1], $argv[2], $databasePath);
+    ob_start();
+    $application->handle('GET', '/tools/visitor-statistics/');
+    $spoofedPage = (string) ob_get_clean();
+    TestViewerSession::reset();
+    if (!str_contains($spoofedPage, 'server-authenticated root-approved identity')) {
+        throw new RuntimeException('An approver label of "root" granted root-approved access.');
+    }
+
     $split = (new VisitorStatisticsStore(new PDO('sqlite:' . $statsPath)))
         ->summaryForHours(new DateTimeImmutable('now'), 24)['totals'];
     if ($split['anonymous_visits'] !== 1 || $split['authenticated_visits'] !== 2) {

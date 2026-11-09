@@ -2083,11 +2083,7 @@ final class Application
 
     private function viewerCanInspectVisitorStatistics(): bool
     {
-        $profile = $this->authenticatedViewerProfile();
-
-        return $profile !== null
-            && ((int) ($profile['is_approved'] ?? 0)) === 1
-            && (string) ($profile['approved_by_label'] ?? '') === 'root';
+        return $this->routeServices()->profileIsActiveOperator($this->authenticatedViewerProfile());
     }
 
     /** @return array{status:string,windows:array<int, array{visits:int,clients:int,authenticated_users:int}>} */
