@@ -245,15 +245,55 @@
     return viewer;
   }
 
-  function openInPane(pane, origin, href) {
+  // Each file opened in the viewer is a browser history entry (same URL,
+  // with the open stack in history.state), so the browser's Back and the
+  // viewer's Back move through the same steps. history.state is the source of
+  // truth: popstate re-syncs the pane from it after the pane's own reader has
+  // restored its selection.
+  var HISTORY_KEY = "forteSourceViewer";
+
+  function historyStack() {
+    var entry = history.state;
+    return entry && typeof entry === "object" && Array.isArray(entry[HISTORY_KEY]) ? entry[HISTORY_KEY] : null;
+  }
+
+  function historyEntry(stack) {
+    var entry = {};
+    if (history.state && typeof history.state === "object") {
+      Object.keys(history.state).forEach(function (key) {
+        entry[key] = history.state[key];
+      });
+    }
+    if (stack) {
+      entry[HISTORY_KEY] = stack;
+    } else {
+      delete entry[HISTORY_KEY];
+    }
+    return entry;
+  }
+
+  function visibleItem(pane) {
+    var items = pane.querySelectorAll(".paned-content-post:not([data-paned-source-viewer])");
+    for (var index = 0; index < items.length; index += 1) {
+      if (!items[index].hidden) {
+        return items[index];
+      }
+    }
+    return null;
+  }
+
+  function showStack(pane, origin, stack) {
     if (state && state.pane === pane) {
-      state.stack.push(href);
+      if (state.stack.join("\n") === stack.join("\n")) {
+        return;
+      }
+      state.stack = stack.slice();
       showCurrent();
       return;
     }
     closeViewer();
     var viewer = buildViewer();
-    state = { pane: pane, origin: origin, stack: [href], scrollTop: pane.scrollTop, viewer: viewer, observer: null };
+    state = { pane: pane, origin: origin, stack: stack.slice(), scrollTop: pane.scrollTop, viewer: viewer, observer: null };
     pane.setAttribute("data-paned-source-viewing", "");
     pane.insertBefore(viewer, pane.firstChild);
     // The reader that owns the pane may swap or hide the item the link came
@@ -268,15 +308,50 @@
     viewer.querySelector("[data-paned-source-back]").focus({ preventScroll: true });
   }
 
+  function openFromLink(pane, origin, href) {
+    var stack = (state && state.pane === pane ? state.stack : []).concat([href]);
+    history.pushState(historyEntry(stack), "", location.href);
+    showStack(pane, origin, stack);
+  }
+
+  function syncFromHistory() {
+    var stack = historyStack();
+    if (!stack || stack.length === 0) {
+      closeViewer();
+      return;
+    }
+    var pane = state ? state.pane : document.querySelector(".paned-content-pane");
+    if (!pane) {
+      return;
+    }
+    var origin = state && state.origin && state.origin.isConnected && !state.origin.hidden ? state.origin : visibleItem(pane);
+    showStack(pane, origin, stack);
+  }
+
+  // Leave history to step back through when the viewer's entries are live;
+  // otherwise (opened before a reload dropped them) just close.
+  function stepBack(steps) {
+    if (historyStack()) {
+      history.go(-steps);
+    } else {
+      closeViewer();
+    }
+  }
+
+  window.addEventListener("popstate", function () {
+    window.setTimeout(syncFromHistory, 0);
+  });
+
+  // A reload starts with the pane's normal content; drop this entry's viewer
+  // state so Back from here doesn't reopen what the reload closed.
+  if (historyStack()) {
+    history.replaceState(historyEntry(null), "", location.href);
+  }
+
   document.addEventListener("click", function (event) {
     if (event.target.closest && event.target.closest("[data-paned-source-back]")) {
       if (state) {
-        state.stack.pop();
-        if (state.stack.length === 0) {
-          closeViewer();
-        } else {
-          showCurrent();
-        }
+        stepBack(1);
       }
       return;
     }
@@ -293,12 +368,12 @@
     }
     event.preventDefault();
     var origin = link.closest("[data-paned-source-viewer]") ? (state && state.origin) : link.closest(".paned-content-post");
-    openInPane(pane, origin, sourceUrl(link.getAttribute("href")).pathname);
+    openFromLink(pane, origin, sourceUrl(link.getAttribute("href")).pathname);
   });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && state && !document.querySelector("dialog[open]")) {
-      closeViewer();
+      stepBack(state.stack.length);
     }
   });
 })();
