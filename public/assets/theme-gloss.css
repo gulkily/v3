@@ -494,6 +494,19 @@
   box-shadow: 0 12px 32px rgba(30, 27, 46, 0.3);
 }
 
+:root[data-theme="engagify"] .engagify-toast a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+:root[data-theme="engagify"] .engagify-nag .engagify-error {
+  flex: 1 0 100%;
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
 /* Dialogs: centered over a dimmed page. The shade ignores clicks, so the
    header and theme menu stay usable behind it. */
 :root[data-theme="engagify"] .engagify-shade {

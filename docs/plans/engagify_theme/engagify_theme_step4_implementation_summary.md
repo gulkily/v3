@@ -217,3 +217,21 @@ Study closeout, `railspike-effort` / `v3/engagify_theme`, R1/P2, single exposed 
 - Verification: `node --check public/assets/theme-engagify.js`; no remaining `exitButton` references. The maintainer reviewed the result in the browser. No automated browser check was run for this change; full suite not run.
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+## Follow-up - text boxes post
+
+2026-11-09: at the maintainer's request (one-shot), Engagify's text boxes create real posts instead of discarding their text.
+
+- Changes:
+  - `theme-engagify.js`: the "What went wrong?" box (button renamed from "Send to /dev/null" to "Send privately") posts the typed text as a public thread titled "Private feedback". Empty text keeps the old "remind me later" behavior.
+  - The newsletter Subscribe posts an announcement thread, "New newsletter subscriber!". The typed email address is never sent or stored; posting it publicly would leak readers' addresses.
+  - The success toast links to the new thread. A failure keeps the dialog and the typed text and shows the server's error under the button.
+  - `theme-gloss.css`: toast link and error line styles.
+- Reuse: posting goes through `ForumBrowserSigning.prepareOutboxPost` / `finalizeOutboxPost` (the Outbox's signed thread path, which also creates a guest identity when needed). On pages that did not load signing, the script loads `openpgpLoader` and `browserSigning` from `window.__forumAssetPaths`, as `lazy_compose_signing.js` does. No new endpoint.
+- Verification:
+  - Passed: headless Chromium against `./v3 start`, fresh browser, 1280px. Newsletter Subscribe created a thread whose page contains the announcement and not the typed address; "Not really" then feedback text created a "Private feedback" thread with that text; both toasts linked to the new threads; no page errors.
+  - Passed: failure path at 380px. Text with an emoji (rejected by the local ASCII-only instance) left the dialog open with the text kept, the button restored and the error shown in red. Screenshots inspected.
+  - Passed: `node tests/browser/theme_scripts.cjs`, `theme_exit.cjs`, `theme_shared_stylesheet.cjs`; `./v3 test --smoke ThemeToggleScriptTest ThemeRegistryTest`, with only the baseline `BoardListTest` failure. Full suite not run.
+  - Pending: production check after deploy (posts by approved and unapproved members).
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

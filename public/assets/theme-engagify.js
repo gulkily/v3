@@ -82,10 +82,81 @@
     }));
   });
 
-  // A small toast, used by nags to answer clicks.
-  function toast(ctx, text) {
+  // A small toast, used by nags to answer clicks. An optional link (a posted
+  // thread) keeps it on screen longer.
+  function toast(ctx, text, link) {
     var node = ctx.add(ctx.el("div", { class: "engagify-nag engagify-toast", role: "status", "data-engagify": "toast", text: text }));
-    ctx.later(function () { ctx.remove(node); }, 4000);
+    if (link) {
+      node.appendChild(document.createTextNode(" "));
+      node.appendChild(ctx.el("a", { href: link.href, text: link.text }));
+    }
+    ctx.later(function () { ctx.remove(node); }, link ? 8000 : 4000);
+  }
+
+  // Text boxes really post: each one creates a thread through the same signed
+  // path the Outbox uses. Pages that did not load signing get it on demand.
+  var signingLoad = null;
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
+      var script = document.createElement("script");
+      script.src = src;
+      script.onload = function () { resolve(); };
+      script.onerror = function () { reject(new Error("Unable to load " + src)); };
+      document.head.appendChild(script);
+    });
+  }
+
+  function signing() {
+    var ready = function () {
+      var api = window.ForumBrowserSigning;
+      if (api && typeof api.prepareOutboxPost === "function") return api;
+      throw new Error("Posting is unavailable on this page.");
+    };
+    if (window.ForumBrowserSigning && window.ForumBrowserSigning.prepareOutboxPost) return Promise.resolve(ready());
+    if (!signingLoad) {
+      var paths = window.__forumAssetPaths || {};
+      if (!paths.openpgpLoader || !paths.browserSigning) return Promise.reject(new Error("Posting is unavailable on this page."));
+      signingLoad = loadScript(paths.openpgpLoader)
+        .then(function () { return loadScript(paths.browserSigning); })
+        .catch(function (error) { signingLoad = null; throw error; });
+    }
+    return signingLoad.then(ready);
+  }
+
+  function postThread(subject, body) {
+    return signing().then(function (api) {
+      return api.prepareOutboxPost("thread", { subject: subject, body: body, boardTags: "general" }).then(function (prepared) {
+        if (!prepared.ok) throw new Error(prepared.error || "Unable to post.");
+        return api.finalizeOutboxPost(prepared.fields, prepared.prepared);
+      });
+    }).then(function (result) {
+      if (!result || !result.ok) throw new Error((result && result.error) || "Unable to post.");
+      var id = result.threadId || result.postId;
+      return { href: "/threads/" + encodeURIComponent(id), text: "View post" };
+    });
+  }
+
+  // Runs a post from a dialog: the button shows progress, and a failure keeps
+  // the dialog and the typed text so the reader can try again.
+  function submitPost(ctx, button, error, subject, body, done) {
+    var label = button.textContent;
+    button.disabled = true;
+    button.textContent = "Posting…";
+    error.hidden = true;
+    postThread(subject, body).then(function (link) {
+      done(link);
+    }, function (failure) {
+      button.disabled = false;
+      button.textContent = label;
+      error.textContent = failure && failure.message ? failure.message : "Unable to post.";
+      error.hidden = false;
+    });
+  }
+
+  function errorLine(ctx) {
+    return ctx.el("p", { class: "engagify-error", role: "alert", "data-engagify": "post-error", hidden: "" });
   }
 
   // "Open in app": a bar at the top that pushes the page down, for an app
@@ -169,21 +240,29 @@
     };
   }
 
-  // Newsletter popup with a guilt-trip decline. Nothing is sent or stored.
+  // Newsletter popup with a guilt-trip decline. Subscribing posts a public
+  // announcement thread; the address itself is never sent or stored.
   NAGS.push(function newsletter(ctx) {
     ctx.later(function () {
       var d = dialog(ctx, "newsletter", "Newsletter");
       var form = ctx.el("form", { class: "engagify-form" });
-      var input = ctx.el("input", { type: "email", id: "engagify-email", autocomplete: "off", placeholder: "you@example.com" });
+      var input = ctx.el("input", { type: "email", id: "engagify-email", autocomplete: "off", placeholder: "you@example.com", required: "" });
+      var subscribe = ctx.el("button", { type: "submit", class: "engagify-button", text: "Subscribe" });
+      var error = errorLine(ctx);
       form.appendChild(ctx.el("label", { for: "engagify-email", text: "Email" }));
       form.appendChild(input);
-      form.appendChild(ctx.el("button", { type: "submit", class: "engagify-button", text: "Subscribe" }));
+      form.appendChild(subscribe);
+      form.appendChild(error);
       form.addEventListener("submit", function (event) {
         event.preventDefault();
-        input.value = "";
-        d.close();
-        toast(ctx, "Check your inbox! (We didn't send anything.)");
-        ctx.later(function () { rateUs(ctx); }, 2500);
+        submitPost(ctx, subscribe, error, "New newsletter subscriber!",
+          "Someone just joined the hourly ZenMemes newsletter. Their address has been shared with our 847 trusted partners.\n\n(It hasn't. Engagify posted this instead.)",
+          function (link) {
+            input.value = "";
+            d.close();
+            toast(ctx, "Subscribed! We announced it publicly.", link);
+            ctx.later(function () { rateUs(ctx); }, 2500);
+          });
       });
       d.box.appendChild(ctx.el("h2", { text: "Don't miss a single meme" }));
       d.box.appendChild(ctx.el("p", { text: "Join 0 subscribers who get the best of ZenMemes in their inbox every hour." }));
@@ -211,17 +290,27 @@
       var focus = d.box.querySelector("[data-engagify-focus]") || d.box.querySelector("button");
       if (focus && d.box.parentNode) focus.focus();
     }
+    // "Private" feedback is posted as a public thread.
     function privateBox() {
       var text = ctx.el("textarea", { id: "engagify-feedback", rows: "3", placeholder: "Please be gentle", "data-engagify-focus": "" });
+      var error = errorLine(ctx);
+      var send = ctx.el("button", { type: "button", class: "engagify-button", text: "Send privately", onclick: function () {
+        var body = text.value.trim();
+        if (!body) { later(); return; }
+        submitPost(ctx, send, error, "Private feedback", body, function (link) {
+          text.value = "";
+          d.close();
+          toast(ctx, "Thanks! Your private feedback is now public.", link);
+          ctx.later(function () { rateUs(ctx); }, 20000);
+        });
+      } });
       show([
         ctx.el("h2", { text: "Oh no! We're so sorry." }),
         ctx.el("p", { text: "Instead of posting that publicly, why not tell us privately? We read every message." }),
         ctx.el("label", { for: "engagify-feedback", text: "What went wrong?" }),
         text,
-        ctx.el("button", { type: "button", class: "engagify-button", text: "Send to /dev/null", onclick: function () {
-          text.value = "";
-          later();
-        } })
+        send,
+        error
       ]);
     }
     function fiveStars() {
