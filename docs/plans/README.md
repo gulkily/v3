@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Markdown work checklist](markdown_work_checklist.md) — relevance-sorted completed work, acceptance, follow-ups and optional compatibility decisions.
 
+[ZenMemes helper diagnostics](zm_helper_diagnostics/zm_helper_diagnostics_step3_development_plan.md) — Claude posts through `frm.py` like other agents, and failed writes post a short trouble report to one standing thread.
+
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
 
 [Board thumbnails one-shot](board_thumbnails/board_thumbnails_one_shot.md) — image posts show a small thumbnail on the board and on Recent.
