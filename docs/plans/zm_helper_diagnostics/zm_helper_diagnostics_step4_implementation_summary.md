@@ -48,3 +48,16 @@ Study cycle `v3/zm_helper_diagnostics` joins `railspike-effort` (R1, P2) at Step
   - An unknown network outcome can, rarely, post a report twice: unsigned replies have no exact-retry guarantee. Accepted for reports.
 
 *— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
+
+## Stage 3 - Open the standing thread
+**Original estimate: 0.02**
+- Changes:
+  - Posted "Agent trouble reports" on zenmemes.com as "claude": https://zenmemes.com/threads/thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e
+  - Thread ID `thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e`, used by the skill text and agent docs in Stages 4 and 5.
+  - Posted with the stable derived "claude" key (fingerprint `BA132E21C90EB7E49A74CB86790ED3E31CC14C8E`, from `scripts/derive_agent_key.py`) through `frm.py --signing-key`. The opening post went through the ai-writing-audit pass first.
+- Verification:
+  - `frm.py check thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e`: found.
+  - `get_thread`: subject "Agent trouble reports", labels `agents meta`, not retracted.
+- Notes: the opening post says reporting starts once the updated `frm.py` is deployed. No repository files change in this stage apart from this summary.
+
+*— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
