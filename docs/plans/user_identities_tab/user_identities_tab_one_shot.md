@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/user_identities_tab` — [host ledger](../effort_estimation_trial.md#cycle-v3user_identities_tab); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.08**
-Status: planned; next permitted action: implement on `feat/user_identities_tab`
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -57,7 +57,7 @@ Host `main` at `8f551ffb9494f40204bed66e3c66441315f9e727`; branch `feat/user_ide
 
 ## Planning commit
 
-Pending (this record's first commit).
+`f2c58b68` (confirmed with Git).
 
 ## Study history
 
@@ -67,3 +67,31 @@ Pending (this record's first commit).
 ## Dated execution history
 
 - 2026-11-09T05:59Z: found existing item PF-20261104-F72 (Workflow `untriaged`); no open branch for it on origin.
+- 2026-11-09T06:10Z: implemented as planned. `ProfilePageController::identitiesByLatestPost` pairs each key with its first (newest) row from `visiblePosts` by `author_profile_slug` and sorts; `personTab` accepts `identities`. `username.php` adds the tab and moves `#account-keys` into it; each row shows status and the plain first line of the latest post (subject when present) under the key, and the short date (or "No posts") as its value. Removed the `Identities` heading and its rules in `site.css`, `theme-word97.css` and `theme-midnight.css`, and its entry in `Word97ThemeCoverageTest`. Added `.person-identity` layout rules (two-line title, ellipsis on the latest line).
+- 2026-11-09T06:10Z: no nav icon change: the tabs are `board-filter` links, not navigation destinations, and Threads/Replies have no icons.
+- 2026-11-09T06:15Z: updated PF-20261104-F72 (`Done when`, Workflow `blocked`, Evidence `locally-verified`, dated note).
+
+## Study closeout
+
+Intake 0.08; execution entry reaffirmed; **retrospective 0.08**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
+
+## Outcome
+
+Delivered: `/user/{name}` has Threads, Replies and Identities tabs. The key list appears only on Identities; each key shows its status, the first line of its latest visible post and the date it was last active, most recently active first, with keys that have no visible posts last. Excluded as recorded: non-post activity (reactions, flags, approvals).
+
+## Verification
+
+- `./v3 test --smoke LocalAppSmokeTest::testApplicationRendersCoreRoutes Word97ThemeCoverageTest`: 441 of 442 pass; the one failure, `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged`, is pre-existing on `main` (recorded in earlier cycles).
+- `php tests/run.php PersonIdentityOrderTest` (new): newest-first order, quiet keys last in original order, latest post per key. Passes.
+- `node tests/browser/users_profile.mjs` (Chrome): passes, including the new Identities tab checks (order, quiet keys last, no horizontal overflow at 390px).
+- `node tests/browser/account_key_approval.mjs`: passes the updated Identities tab section, then times out later at the signed-approval "cancelled" feedback; the same timeout happens on unchanged `main`, so it is pre-existing and unrelated.
+- Screenshots of `/user/{name}?tab=identities` with one key and one post: default, Word97 and Midnight at 390px and 1200px. Row reads well; the latest-post line truncates on phones.
+- Full suite not run. Not checked: other themes (Gloss, Chicago, Engagify and the rest), several keys with mixed activity in a browser (covered by the unit test only), Firefox/WebKit, a physical phone, production.
+
+## Final review
+
+Reuses the existing tabs, key rows, `$shortDate`, `$plainText` and the already-loaded post list; no new query, dependency or schema change. Within the recorded scope.
+
+## Commit status
+
+Planning commit `f2c58b68`; completion commit pending at the time of writing (this record cannot hold its own hash).

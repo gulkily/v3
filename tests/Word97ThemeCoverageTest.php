@@ -49,7 +49,6 @@ final class Word97ThemeCoverageTest
             '.account-group',
             '.account-row--link::after',
             '.account-avatar',
-            '.person-identities__title',
             '.account-key-header',
             'select',
         ];

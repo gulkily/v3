@@ -350,8 +350,7 @@
   font-family: var(--body-font);
 }
 
-:root[data-theme="word97"] .section-label,
-:root[data-theme="word97"] .person-identities__title {
+:root[data-theme="word97"] .section-label {
   position: relative;
   z-index: 1;
   height: 1.75rem;
@@ -367,8 +366,7 @@
   text-transform: none;
 }
 
-:root[data-theme="word97"] .section-label + .thread-rows,
-:root[data-theme="word97"] .person-identities__title + .account-group {
+:root[data-theme="word97"] .section-label + .thread-rows {
   margin-top: 0;
   padding-top: 1.75rem;
 }

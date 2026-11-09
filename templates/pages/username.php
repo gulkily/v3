@@ -1,6 +1,6 @@
 <?php
 // One page per person: name, counts and status, Message (or Edit in Account on your own page),
-// Threads | Replies, then each key as an identity.
+// Threads | Replies | Identities (each key, most recently active first).
 $personTab = (string) ($personTab ?? 'threads');
 $isOwnPage = (bool) ($isOwnPage ?? false);
 $viewerIsOperator = (bool) ($viewerIsOperator ?? false);
@@ -43,6 +43,7 @@ $firstLine = static function (string $body): string {
   <nav class="board-filter" aria-label="<?= $e($personName) ?>’s posts">
     <a class="nav-link<?= $personTab === 'threads' ? ' is-active' : '' ?>" href="/user/<?= $e($usernameToken) ?>"<?= $personTab === 'threads' ? ' aria-current="page"' : '' ?>>Threads</a>
     <a class="nav-link<?= $personTab === 'replies' ? ' is-active' : '' ?>" href="/user/<?= $e($usernameToken) ?>?tab=replies"<?= $personTab === 'replies' ? ' aria-current="page"' : '' ?>>Replies</a>
+    <a class="nav-link<?= $personTab === 'identities' ? ' is-active' : '' ?>" href="/user/<?= $e($usernameToken) ?>?tab=identities"<?= $personTab === 'identities' ? ' aria-current="page"' : '' ?>>Identities</a>
   </nav>
 <?php if ($personTab === 'threads'): ?>
 <?php if ($approvedThreads === []): ?>
@@ -54,6 +55,13 @@ $firstLine = static function (string $body): string {
 <?php endforeach; ?>
   </div>
 <?php endif; ?>
+<?php elseif ($personTab === 'identities'): ?>
+  <div class="account-group" id="account-keys">
+<?php foreach ($identityRows as $profile): ?>
+<?php $approvedBy = trim((string) ($profile['approved_by_label'] ?? '')); $latest = $profile['latest_post']; ?>
+    <a class="account-row account-row--link person-identity" data-tone="neutral" href="/profiles/<?= $e($profile['profile_slug']) ?>"><span class="account-row__title"><span class="account-key-fingerprint-value" title="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug((string) $profile['profile_slug'])) ?></span><span class="meta person-identity__latest"><?= !empty($profile['retired_at']) ? 'Retired' : ($approvedBy !== '' ? 'Approved by ' . $e($approvedBy) : 'Approved') ?><?php if ($latest !== null): ?> · <?= $e($firstLine($plainText($latest, trim((string) ($latest['subject'] ?? '')) !== '' ? (string) $latest['subject'] : (string) ($latest['body'] ?? '')))) ?><?php endif; ?></span></span><span class="account-row__value"><?= $latest !== null ? $shortDate((string) $latest['created_at']) : 'No posts' ?></span></a>
+<?php endforeach; ?>
+  </div>
 <?php else: ?>
 <?php if ($approvedReplies === []): ?>
   <p class="meta">No replies.</p>
@@ -69,13 +77,6 @@ $firstLine = static function (string $body): string {
 <?php endif; ?>
 <?php endif; ?>
 
-  <h2 class="person-identities__title">Identities</h2>
-  <div class="account-group" id="account-keys">
-<?php foreach ($historicalProfiles as $profile): ?>
-<?php $approvedBy = trim((string) ($profile['approved_by_label'] ?? '')); ?>
-    <a class="account-row account-row--link" data-tone="neutral" href="/profiles/<?= $e($profile['profile_slug']) ?>"><span class="account-row__title account-key-fingerprint-value" title="<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug((string) $profile['profile_slug'])) ?></span><span class="account-row__value"><?= !empty($profile['retired_at']) ? 'Retired' : ($approvedBy !== '' ? 'Approved by ' . $e($approvedBy) : 'Approved') ?></span></a>
-<?php endforeach; ?>
-  </div>
 <?php endif; ?>
 <?php if ($viewerIsOperator): ?>
   <p class="meta"><a href="/tools/user-access/accounts/<?= $e($usernameToken) ?><?= $historyOffset > 0 ? '?key_offset=' . $historyOffset : '' ?>#account-keys">Manage access</a></p>

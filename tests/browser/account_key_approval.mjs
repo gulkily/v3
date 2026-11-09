@@ -60,7 +60,10 @@ try {
     await page.locator('main a[href="/user/browser-inviter"]').click();
     assert.equal(await page.locator('.account-key-history,[data-signed-approval-form]').count(), 0);
     if (process.env.USER_ACCESS_SCREENSHOT_DIR && width === 390) await page.screenshot({ path: join(process.env.USER_ACCESS_SCREENSHOT_DIR, 'member.png'), fullPage: true });
-    // The person page lists each key under Identities; operators get Manage access for the key history.
+    // The person page lists each key on its Identities tab; operators get Manage access for the key history.
+    assert.equal(await page.locator('#account-keys').count(), 0);
+    await page.getByRole('link', { name: 'Identities', exact: true }).click();
+    await page.waitForURL(/tab=identities/);
     assert.ok(await page.locator('#account-keys a[href^="/profiles/"]').count() >= 1);
     await page.getByRole('link', { name: 'Manage access', exact: true }).click();
     await page.getByRole('heading', { name: 'Account key history', exact: true }).waitFor();

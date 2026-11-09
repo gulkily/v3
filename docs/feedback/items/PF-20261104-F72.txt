@@ -1,9 +1,9 @@
 ID: PF-20261104-F72
 Title: Identities tab on user page
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 User page should have Threads, Replies and Identities tabs; move identities into its tab rather than leaving them at the bottom.
@@ -11,6 +11,10 @@ User page should have Threads, Replies and Identities tabs; move identities into
 Sources:
 - https://zenmemes.com/posts/thread-20261103193401-0e0f7d33
 
+Done when:
+/user/{name} has Threads, Replies and Identities tabs; the key list appears only on the Identities tab, each key showing its last-active date and latest post, most recently active first.
+
 Notes:
 Distinct from integrating the account/profile entry page.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-09: one-shot on feat/user_identities_tab (record docs/plans/user_identities_tab/user_identities_tab_one_shot.md); maintainer added last-active date, latest post and newest-first order in session. Verified locally; awaiting review and deployment.
