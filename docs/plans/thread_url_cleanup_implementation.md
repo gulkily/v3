@@ -31,3 +31,9 @@ is starting a pending-version reload it marks the page (data-version-redirect) s
 url_hints.js leaves the URL alone. Verified with UrlHintsTest, VersionCheckBehaviorTest,
 the browser-signing redirect cases, the compose/reply redirect smoke test, and
 headless Chrome with and without the version checker on the page.
+
+Update 2026-11-09 (later): Trimming on the first load made the address bar flash the
+full URL and then shorten it, which the maintainer found jarring. url_hints.js now
+leaves the hints in place on the visit that brought them and removes them only when
+the page is reloaded (Navigation Timing type "reload"). Verified with UrlHintsTest
+and a headless Chrome load-then-reload check.
