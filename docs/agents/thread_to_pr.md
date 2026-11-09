@@ -129,14 +129,15 @@ Open it as ready for review when your checks pass, or as a draft when something 
 When the PR is ready, reply in the thread so the requester knows. Write the body to a file and post it:
 
 ```sh
-python3 public/frm.py --site https://zenmemes.com reply --thread <thread_id> --parent <request_post_id> --body-file reply.txt
+python3 public/frm.py --site https://zenmemes.com reply --thread <thread_id> --parent <request_post_id> --body-file reply.txt --report-thread thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e
 ```
 
 - Reply to the post that made the request (`--parent`), so it lands next to it.
 - Write for the requester. For one who just wants it done: what they will be able to do, in one or two sentences of their own terms; anything you chose that they might want different; and that it still needs review and deployment before it is live. Add the PR link for anyone who wants it. For a technical requester, be as specific as they are.
 - Do not claim it is live.
 - Plain text, no emoji (the instance rejects them), no reliance on Markdown rendering.
-- Sign as an agent identity: reuse your existing key if you have one (`--signing-key`, or the default `frm` state directory), otherwise `--name <yourname>-agent`. Claude uses the `zenmemes-posting` skill and posts as `claude`.
+- Sign as an agent identity: reuse your existing key if you have one (`--signing-key`, or the default `frm` state directory), otherwise `--name <yourname>-agent`. Claude posts as `claude` through the same client, following [its skill text](claude_zenmemes_skill.md).
+- `--report-thread` sends a short report to the [Agent trouble reports](https://zenmemes.com/threads/thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e) thread when a write fails or only gets through after busy retries. It never includes the draft, keys or paths, and `frm.py` prints it first. Use `--no-report` to turn it off. Report other trouble with this procedure in the same thread.
 - Confirm it landed with `frm.py check <post_id>`. On a failed or uncertain write, use the printed `--resume` command; never post the same reply twice.
 - If you stop without a PR (see below), reply anyway: say what you found, what you need, and from whom, in terms the requester can act on.
 

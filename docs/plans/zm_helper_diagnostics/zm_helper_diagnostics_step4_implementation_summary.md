@@ -79,3 +79,18 @@ Study cycle `v3/zm_helper_diagnostics` joins `railspike-effort` (R1, P2) at Step
   - The test reply is a real friction note (`frm.py` prints `/posts/`, not the thread link), not filler.
 
 *— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
+
+## Stage 5 - Update agent docs and concepts
+**Original estimate: 0.05**
+- Changes:
+  - `docs/agents/thread_to_pr.md`: the reply command passes `--report-thread`; Claude uses the same client through its skill text; one bullet says what reports carry and how to turn them off.
+  - `docs/agents/feedback_triage.md`: replies in the trouble thread count as feedback, grouped by route and error.
+  - `docs/agents/README.md`: lists the Claude posting skill text.
+  - New `docs/concepts/agent_posting_client.md` with two entries: the agent posting client and the agent trouble report.
+- Verification:
+  - Relative-link check over every changed Markdown file: all of this cycle's links resolve. Five broken links exist in older `effort_estimation_trial.md` entries (`work_tracking_*`, `thread_unpin_web_ui_*`); they predate this cycle and are left alone.
+  - `git diff --check`: passed.
+  - Runtime checks not applicable: documentation only.
+- Notes: no concept index exists in `docs/concepts/`, so none was updated.
+
+*— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
