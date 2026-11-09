@@ -1709,6 +1709,8 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/user_identities_tab` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (retrospective 0.08) | [One-shot record](./user_identities_tab/user_identities_tab_one_shot.md#study-history) | Thread request plus in-session addition (last active, latest post, newest first); acceptance pending |
+| `v3/user_identities_tab` | One-shot technically complete; maintainer acceptance pending | v2 / R1 / P2 | 0.12 (intake 0.08; retrospective 0.12) | [One-shot record](./user_identities_tab/user_identities_tab_one_shot.md#study-history) | Thread request plus in-session addition (last active, latest post, newest first); acceptance pending |
 
 2026-11-09T06:15Z: standing P2 enrollment, one-shot on the maintainer's in-session request for the thread. Intake **0.08** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `8f551ffb9494f40204bed66e3c66441315f9e727`; branch `feat/user_identities_tab`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+2026-11-09T06:30Z: scope v2 (taller identity rows with relative last-active time; in-place tab switching) authorized in session; revised whole-cycle 0.12, retrospective 0.12. Original 0.08 retained.
