@@ -1405,11 +1405,24 @@ pre {
   transition: opacity 0.15s ease;
 }
 
-/* Unlike the action row in content-interactions.css, this reveal stays on
-   touch devices too: tapping or scrolling a card on iOS shows the permalink. */
-.post-card:hover .post-card-permalink,
 .post-card:focus-within .post-card-permalink {
   opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .post-card:hover .post-card-permalink {
+    opacity: 1;
+  }
+}
+
+/* On touch screens a tap puts the whole card in :hover. If that revealed the
+   permalink, iOS Safari would treat a tap on Like (or any link in the card) as
+   a hover and fire it only on the second tap. So the reveal skips hovers that
+   come from a link or button; tapping or scrolling elsewhere still shows it. */
+@media (hover: none), (pointer: coarse), (pointer: none) {
+  .post-card:hover:not(:has(a:hover, button:hover)) .post-card-permalink {
+    opacity: 1;
+  }
 }
 
 .board-subsection {
