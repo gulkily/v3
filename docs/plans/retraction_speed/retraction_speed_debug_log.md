@@ -42,3 +42,18 @@
 
 **Uncertain assessments**
 - No supported findings.
+
+## 2026-11-09T23:57:47Z — Step 4
+
+**Necessary/useful instructions**
+- `implementation_standards.md`, verification depth: the mutation check (wrong source path) showed the equality test covers the retraction-specific activity row; without it, a passing first run said little. Retain.
+- "Search for shared logic before adding": the snapshot comparison already existed privately in `DeleteRecordCommandTest`; moving it to `tests/Support` avoided a second copy. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- No supported findings.
+
+**Uncertain assessments**
+- The closeout section was written in the same commit as Stage 3 and named its own commit before it existed; corrected here. The after-phase checklist could say to record commit hashes only after committing.

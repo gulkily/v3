@@ -68,7 +68,7 @@ Status: Step 4 closeout recorded; zenmemes.com live check pending deploy.
 **Retrospective scope assessment: 0.22**
 
 - Technical status: Stages 1–2 complete; Stage 3 local work complete. Not complete overall: the zenmemes.com live check is pending deploy. Merge and publication are the maintainer's.
-- Commits: planning `9c94d3c`; stages `a3a4ab7` (1), `91faa3f` (2), and the Stage 3 commit that adds this section.
+- Commits: planning `9c94d3c`; stages `22fee09` (1), `91faa3f` (2), `1b7f0af` (3).
 - Checks: smoke set 441/441; all 47 retraction-related test classes 858/858; equality with a full rebuild for four retraction cases, with a mutation check. Full suite not run.
 - Retrospective slightly under the entry estimate: `applyPostRemoval()` needed no change. The three test reroutes and the shared snapshot helper were unplanned but small. Stage retrospectives 0.03/0.12/pending, non-additive.
 - Maintainer comfortable-fit judgment and study acceptance: pending.
