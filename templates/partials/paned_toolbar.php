@@ -45,10 +45,32 @@ $viewerStatusLabel = $viewerLoggedIn ? $viewerDisplayName : 'Guest';
     <span>Next</span>
   </button>
   <span class="paned-toolbar-sep"></span>
-  <button type="button" class="paned-toolbar-btn" disabled>
+  <button type="button" class="paned-toolbar-btn paned-toolbar-refresh" disabled>
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8 a5 5 0 1 1 1.6 3.6" fill="none" stroke="currentColor"/><path d="M3 11 v-3 h3" fill="none" stroke="currentColor"/></svg>
     <span>Refresh</span>
   </button>
+  <span class="paned-toolbar-sep paned-toolbar-zoom"></span>
+  <button type="button" class="paned-toolbar-btn paned-toolbar-zoom" data-paned-zoom="-1" aria-label="Smaller" title="Smaller">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor"/><line x1="10.2" y1="10.2" x2="14" y2="14" stroke="currentColor"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor"/></svg>
+  </button>
+  <button type="button" class="paned-toolbar-btn paned-toolbar-zoom" data-paned-zoom="1" aria-label="Larger" title="Larger">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor"/><line x1="10.2" y1="10.2" x2="14" y2="14" stroke="currentColor"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor"/><line x1="7" y1="5" x2="7" y2="9" stroke="currentColor"/></svg>
+  </button>
+  <script>
+    // Phone text zoom (forte.css scales the phone layout by --forte-zoom; the
+    // standalone layout restores the saved value before first paint).
+    (function (toolbar) {
+      var root = document.documentElement;
+      toolbar.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-paned-zoom]');
+        if (!button) { return; }
+        var current = parseFloat(root.style.getPropertyValue('--forte-zoom')) || 1;
+        var next = Math.round(Math.min(2.5, Math.max(0.6, current + 0.1 * Number(button.getAttribute('data-paned-zoom')))) * 10) / 10;
+        root.style.setProperty('--forte-zoom', String(next));
+        try { localStorage.setItem('forte-zoom', String(next)); } catch (error) {}
+      });
+    })(document.currentScript.parentElement);
+  </script>
   <span class="paned-toolbar-sep"></span>
   <a href="/forte" class="paned-toolbar-btn"<?= $activeView === 'board' ? ' aria-current="page"' : '' ?>>
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor"/><line x1="2" y1="6" x2="14" y2="6" stroke="currentColor"/></svg>

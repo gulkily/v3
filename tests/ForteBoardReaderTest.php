@@ -78,6 +78,33 @@ NODE),
         ], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
     }
 
+    public function testStandaloneLayoutRestoresSavedPhoneZoomBeforePaint(): void
+    {
+        $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
+        $html = $renderer->renderStandalonePage('message.php', ['heading' => 'Test', 'message' => 'Test'], 'Title');
+        preg_match('/<script>\s*\/\/ Phone text zoom[\s\S]*?<\/script>/', $html, $match);
+        assertSame(1, count($match));
+
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg(<<<'NODE'
+const source = process.argv[1].replace(/<\/?script>/g, "");
+function restore(stored) {
+  let zoom = null;
+  global.localStorage = { getItem() { if (stored === undefined) throw new Error("blocked"); return stored; } };
+  global.document = { documentElement: { style: { setProperty(name, value) { if (name === "--forte-zoom") zoom = value; } } } };
+  eval(source);
+  return zoom;
+}
+console.log(JSON.stringify([restore("1.3"), restore(null), restore("abc"), restore("9"), restore(undefined)]));
+NODE),
+            escapeshellarg($match[0]),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        assertSame(0, $exitCode, implode("\n", $output));
+        assertSame(['1.3', null, null, null, null], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
+    }
+
     public function testSelectingThreadFetchesItsDetailPane(): void
     {
         $result = $this->runScript('paned_board_reader.js', <<<'NODE'

@@ -24,6 +24,16 @@
     })();
   </script>
   <script>
+    // Phone text zoom chosen with the Forte toolbar's Smaller/Larger buttons (forte.css).
+    (function () {
+      var zoom = NaN;
+      try { zoom = parseFloat(localStorage.getItem('forte-zoom')); } catch (error) {}
+      if (zoom >= 0.6 && zoom <= 2.5) {
+        document.documentElement.style.setProperty('--forte-zoom', String(zoom));
+      }
+    })();
+  </script>
+  <script>
     window.__forumAssetPaths = <?= json_encode($browserRuntimeAssetPaths, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
   </script>
   <link rel="stylesheet" href="<?= $e($siteCssPath) ?>">
