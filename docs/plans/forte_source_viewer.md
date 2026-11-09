@@ -18,6 +18,24 @@ Request (maintainer, 2026-11-08): when Forte links to a text file, show a readab
 - The pane's own items stay in the DOM and are only hidden while the viewer is open. The viewer closes when the owning reader hides or replaces the item the link came from, for example when another row is selected. The readers themselves are untouched.
 - Loaded on Forte Board, Activity and Users.
 
+## Browser history (2026-11-08)
+
+The maintainer reported that the browser's Back from the viewer went back two pages: the viewer added no history entries, so Back left the view the viewer was opened from.
+
+- Each opened file is now a history entry at the same URL, with the stack of open files in `history.state`. The key is `forteSourceViewer`, and it is merged into any existing state.
+- The viewer's Back button calls `history.back()`. Escape goes back the full stack depth. Both browser Back and Forward re-sync the pane from `history.state`.
+- The `popstate` sync runs after the pane's reader has restored its own selection, so a reopened viewer attaches to the restored item.
+- A reload starts without the viewer and drops that entry's viewer state. Back after a reload therefore takes one extra step on the same view. This was accepted rather than adding a new server route or URL parameter.
+- Verified in headless Chrome at iPhone size, after arriving from another page:
+  - Open a file, then browser Back returns to the item. Forward reopens the file.
+  - Opening a commit, then a key from it: Back steps key → commit → item.
+  - The in-page Back stays in step with history, and Forward reopens the viewer.
+  - Escape from depth 2 returns to the item.
+  - Selecting another row while the viewer is open, then Back, returns to the viewer on the earlier item.
+  - Leaving the page takes a single Back.
+  - No console errors.
+- Not replayed on a real iPhone (Safari swipe-back included).
+
 ## Follow-up
 
 - Use `ForumSourceViewer.render` for text-file links elsewhere on the site, such as the main activity page, post pages and approval pages. That needs a host element on those pages, since they have no pane.

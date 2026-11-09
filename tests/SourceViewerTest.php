@@ -11,7 +11,8 @@ final class SourceViewerTest
     {
         $script = <<<'NODE'
 const fs = require("fs");
-global.window = { location: { href: "https://forum.test/forte/activity/", origin: "https://forum.test" } };
+global.window = { location: { href: "https://forum.test/forte/activity/", origin: "https://forum.test" }, addEventListener() {} };
+global.history = { state: null };
 global.document = { addEventListener() {} };
 eval(fs.readFileSync(process.argv[1], "utf8"));
 const viewer = window.ForumSourceViewer;
