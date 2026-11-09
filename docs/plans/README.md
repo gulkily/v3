@@ -65,7 +65,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Reply bare card](reply_bare_card/reply_bare_card_one_shot.md) — one-shot: a sent reply keeps its "Posting…" status until the full post replaces it, instead of briefly showing as a bare body.
 - [User identities tab](user_identities_tab/user_identities_tab_one_shot.md) — one-shot: the person page gets an Identities tab listing each key with its last-active date and latest post, newest first.
 - [Ctrl+Enter after late signing load](ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md) — one-shot fix: the composer's signing script sets itself up when an approved member's messaging scripts load it after page parse, restoring Ctrl+Enter on the board; merged, deployed and accepted.
-- [Compose menu options](compose_menu_options/compose_menu_options_one_shot.md) — one-shot: the composer's ... menu keeps actions on top and folds Markdown, Formatting help and the theme choice into a collapsed Options row.
+- [Compose menu options](compose_menu_options/compose_menu_options_one_shot.md) — one-shot: the composer's ... menu holds only actions; Markdown, Formatting help and the theme choice moved to a collapsed Options section in the compose form.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
