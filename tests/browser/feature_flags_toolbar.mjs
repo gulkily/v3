@@ -72,10 +72,22 @@ try {
     for (const theme of ['light', 'dark', 'console', 'word97', 'chicago', 'midnight']) {
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; window.scrollTo(0, 0); }, theme);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${theme}/${width} overflow`);
+      const filters = await page.locator('.feature-flags-filters').boundingBox();
+      assert(filters.x >= 0 && filters.x + filters.width <= width, `${theme}/${width} chip row overflows page`);
+      const chipTops = new Set();
       for (const button of await page.locator('[data-flag-filter]').all()) {
+        await button.scrollIntoViewIfNeeded();
         const bounds = await button.boundingBox();
-        assert(bounds.x >= 0 && bounds.x + bounds.width <= width, `${theme}/${width} clipped chip`);
+        assert(bounds.x >= 0 && bounds.x + bounds.width <= width, `${theme}/${width} chip unreachable`);
+        chipTops.add(Math.round(bounds.y));
       }
+      assert.equal(chipTops.size, 1, `${theme}/${width} chips wrap onto several rows`);
+      const searchBox = await search.boundingBox();
+      const firstChip = await chip('all').boundingBox();
+      const sameRow = firstChip.y < searchBox.y + searchBox.height;
+      if (width < 1150 || theme === "light") assert.equal(sameRow, width >= 1150, `${theme}/${width} search and chips row layout`);
+      await page.locator('.feature-flags-filters').evaluate(node => { node.scrollLeft = 0; });
+      await page.evaluate(() => window.scrollTo(0, 0));
       await page.evaluate(() => window.scrollTo(0, document.querySelector('[data-feature-flags-toolbar]').getBoundingClientRect().top + scrollY + 20));
       assert(Math.abs((await page.locator('[data-feature-flags-toolbar]').boundingBox()).y) < 1);
       await page.evaluate(() => { document.querySelector('.app-version-banner').hidden = false; });
