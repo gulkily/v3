@@ -4,7 +4,11 @@ $short = static fn (?string $sha): string => $sha === null ? 'unavailable' : sub
 $latest = $s['latest'];
 $task = $s['task'];
 $workerQuiet = in_array($s['worker'], ['stale', 'not_observed', 'failed', 'unavailable'], true);
-$pending = $s['busy'] || in_array($task['status'] ?? null, ['queued', 'running'], true);
+$rebuild = $s['rebuild'] ?? null;
+$rebuilding = in_array($rebuild['status'] ?? null, ['queued', 'running'], true);
+$pending = $s['busy'] || $rebuilding || in_array($task['status'] ?? null, ['queued', 'running'], true);
+// Show the read model only while a rebuild is pending or after the last deploy queued one.
+$showRebuild = $rebuilding || (($latest['Read-Model'] ?? '') === 'queued' && $rebuild !== null);
 if ($s['behind'] === null) {
     $behind = 'unknown';
 } elseif ($s['behind'] === 0) {
@@ -81,6 +85,22 @@ $summary = implode(' · ', $parts);
           <th scope="row">Task worker</th>
           <td><?= $e($workerLabels[$s['worker']] ?? $s['worker']) ?></td>
         </tr>
+<?php if ($showRebuild): ?>
+        <tr>
+          <th scope="row">Site data</th>
+          <td data-deploy-field="rebuild">
+<?php if (($rebuild['status'] ?? '') === 'running'): ?>
+            rebuilding<?php if (($rebuild['progress'] ?? null) !== null): ?> <span class="meta"><?= $e($rebuild['progress']) ?></span><?php endif; ?>
+<?php elseif (($rebuild['status'] ?? '') === 'queued'): ?>
+            rebuild waiting for the task worker<?php if ($workerQuiet): ?><br><span class="meta">The worker is not running; run <code>./v3 rebuild</code> over SSH.</span><?php endif; ?>
+<?php elseif (($rebuild['status'] ?? '') === 'failed'): ?>
+            rebuild failed<br><span class="meta">Run <code>./v3 rebuild</code> over SSH.</span>
+<?php else: ?>
+            rebuilt after the last deploy
+<?php endif; ?>
+          </td>
+        </tr>
+<?php endif; ?>
         <tr>
           <th scope="row">Last deploy</th>
           <td data-deploy-field="latest">

@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stages 1–6 complete (qdb heartbeat pending); Stage 7 next.
+Status: Step 3 approved on 2026-11-09; Stages 1–7 complete (qdb heartbeat pending); Stage 8 in progress (docs done locally; host checks pending).
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -132,6 +132,24 @@ Status: Step 3 approved on 2026-11-09; Stages 1–6 complete (qdb heartbeat pend
   - `./v3 test --smoke AppUpdateTest TaskQueueCommandTest DeployPageTest`: 487 run, 487 passed. Full suite not run.
   - The real check, run against this checkout's code: 0.04s.
 - Notes: Stage 1 refinement applied. The plan named a detached process for the check; a short synchronous process of the new code is simpler and still adds well under a second. Detached launch stays only as the existing fallback when cron is not running.
+- Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Deploy page follows the rebuild
+
+**Original estimate: 0.07**
+**Retrospective: 0.07**
+
+- Changes:
+  - `DeployController` state includes the latest read-model rebuild task and its newest progress line; the JSON status adds `rebuild_status` and `rebuild_progress`.
+  - `templates/pages/deploy.php` shows a "Site data" row while a rebuild is queued or running, or after the last deploy queued one: "rebuild waiting for the task worker", "rebuilding" with the progress line, "rebuild failed", or "rebuilt after the last deploy". When the worker is not running, or the rebuild failed, the row names `./v3 rebuild` over SSH. The row is hidden otherwise.
+  - A pending rebuild marks the page pending, so `deploy_control.js` keeps polling every 5 seconds, shows the rebuild's state, and reloads when it finishes. Deploy now keeps polling when its result shows a rebuild queued.
+  - New test `DeployPageTest::testPageFollowsAQueuedReadModelRebuild`: no row without a rebuild; queued with a stale worker shows the manual command; running shows the progress line; both mark the page pending.
+- Verification:
+  - `./v3 test --smoke DeployPageTest AppUpdateTest`: 475 run, 475 passed. Full suite not run.
+  - Headless Chrome at 390 px, signed-in operator, default theme: queued and running states render inside the facts table with no horizontal overflow. Other themes and the poll in a live browser were not checked; Stage 8 covers the live page on zenmemes.com.
+- Notes: no new navigation destination, so icon mappings are unchanged.
 - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
