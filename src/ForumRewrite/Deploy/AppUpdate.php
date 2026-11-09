@@ -314,7 +314,7 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         if (!is_file($script)) {
             return ['status' => 'unknown', 'message' => ''];
         }
-        $run = $this->run([PHP_BINARY, $script, 'check-read-model'], 30);
+        $run = $this->run([\ForumRewrite\Support\PhpCli::binary(), $script, 'check-read-model'], 30);
         $lines = array_values(array_filter(array_map('trim', explode("\n", $run['out']))));
         $last = $lines === [] ? '' : $lines[count($lines) - 1];
         if ($run['code'] === 0 && preg_match('/^Read model: (current|queued)\b/', $last, $m) === 1) {

@@ -76,6 +76,30 @@ final class AppUpdateTest
         assertSame('unknown', (new AppUpdate($app))->latestAttempt()['Read-Model']);
     }
 
+    /** Under the web server PHP_BINARY is php-fpm or php-cgi; the check runs the CLI PHP instead. */
+    public function testReadModelCheckRunsTheCommandLinePhp(): void
+    {
+        [$app, $seed] = $this->fixture();
+        mkdir($seed . '/scripts');
+        file_put_contents($seed . '/scripts/task_queue.php', "<?php echo \"Read model: current\\n\";\n");
+        $this->pushCommit($seed, 'second');
+        $marker = dirname($app) . '/php-cli-used';
+        $wrapper = dirname($app) . '/php-cli';
+        file_put_contents($wrapper, "#!/bin/sh\ntouch " . escapeshellarg($marker) . "\nexec " . escapeshellarg(PHP_BINARY) . " \"\$@\"\n");
+        chmod($wrapper, 0755);
+        $old = getenv('FORUM_PHP_CLI');
+        putenv('FORUM_PHP_CLI=' . $wrapper);
+        try {
+            $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+        } finally {
+            putenv($old === false ? 'FORUM_PHP_CLI' : 'FORUM_PHP_CLI=' . $old);
+        }
+
+        assertSame('deployed', $result['outcome']);
+        assertTrue(is_file($marker), 'the read-model check ran through FORUM_PHP_CLI');
+        assertSame('current', (new AppUpdate($app))->latestAttempt()['Read-Model']);
+    }
+
     public function testDeployReportsUpToDateWithoutChanges(): void
     {
         [$app] = $this->fixture();
