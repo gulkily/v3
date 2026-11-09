@@ -82,3 +82,25 @@ Starting revision: `f60d639` (`main`, which includes PR #88).
 - Estimate details (extended mode only): original scope as in Step 3; no revision. Slightly over: the charset bug in the test fixture and the asset hash cost two extra runs.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Show who granted root
+
+**Original estimate: 0.06**
+
+**Retrospective stage-work assessment: 0.06**
+
+- Changes:
+  - `RootApprovalPageController`: when the seed has `Operator-Grant-ID`, it loads that grant. It uses the grant only if the file exists, parses, and targets the same key.
+  - `root_approval.php`: for a granted seed, "Granted by: <operator username, linked> · <time>" replaces "Recorded reason", which would repeat the grantor. "Signed operator grant" links the grant beside "Raw seed record". The "Authorizer: not recorded" note shows only for seeds without a grant.
+  - `ActivityService`: the file role "operator grant record", and the grant's signer resolves to its operator, as for flag changes.
+- Verification:
+  - Passed: `RootApprovalPageTest::testGrantedSeedNamesItsGrantorAndLinksTheSignedGrant`: missing grant falls back to the reason; a matching grant shows the grantor, the link and no "Authorizer" note; a grant naming another key falls back.
+  - Passed: `WriteApiSmokeTest::testOperatorGrantRoutesAndAccessPageButton` now checks the grant commit's manifest: "operator grant record", a detached signature signed by the operator, and the "approval seed record".
+  - Passed: `./v3 test --smoke` plus `RootApprovalPageTest`, `ActivityItemLinkTest` and both grant tests: 455 run, 454 passed, the baseline `BoardListTest` failure only. Full suite not run.
+  - Inapplicable: `ActivityItemLinkTest` needs no new case. Grants create no activity item kind; they appear as commit files.
+- Notes:
+  - Reuse: `CanonicalRecordRepository::loadOperatorGrant`, `sourcePathHref`, `ProfileRepository::byIdentityId`, the template's `$timestamp` helper.
+  - The source commit route answers in plain text; the roles show in `activityCommitManifest`, which the activity view uses.
+- Estimate details (extended mode only): original scope as in Step 3, minus seed-reason parsing, which Stage 1's header replaced; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

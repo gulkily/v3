@@ -5855,8 +5855,17 @@ NODE;
                 'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
                 'detached_signature' => $this->signCanonicalRecord($operatorKey['home'], $prepared['canonical_record']),
             ];
-            assertSame('ok', $json('POST', '/api/finalize_operator_grant')['status']);
+            $finalized = $json('POST', '/api/finalize_operator_grant');
+            assertSame('ok', $finalized['status']);
             $_POST = [];
+            $activity = new \ForumRewrite\Activity\ActivityService(static fn (): \PDO => (new ReadModelConnection($database))->open(), $root, $database);
+            $files = [];
+            foreach ($activity->activityCommitManifest($finalized['commit_sha']) ?? [] as $file) {
+                $files[$file['path']] = [$file['role'], $file['signature_signer_identity'] ?? ''];
+            }
+            assertSame(['operator grant record', ''], $files[$prepared['record_path']] ?? null);
+            assertSame(['detached signature', $operator], $files[$prepared['record_path'] . '.asc'] ?? null);
+            assertSame('approval seed record', $files['records/approval-seeds/' . $target['profile_slug'] . '.txt'][0] ?? null);
             assertSame(true, ApprovalPolicy::isActiveOperator($root, $target['identity_id']));
             assertSame(false, str_contains($this->renderMethod($application, 'GET', $targetPage), 'data-operator-grant '));
         } finally {

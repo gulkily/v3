@@ -83,6 +83,34 @@ final class RootApprovalPageTest
         });
     }
 
+    public function testGrantedSeedNamesItsGrantorAndLinksTheSignedGrant(): void
+    {
+        $this->fixture(function ($workspace, $root, $db): void {
+            $operator = 'openpgp:' . str_repeat('b', 40);
+            $grantPath = 'records/operator-grants/operator-grant-20261109060000-ab12cd34.txt';
+            $workspace->put($root . '/' . self::SOURCE, "Approved-Identity-ID: " . self::ID . "\nSeed-Reason: Granted by {$operator}\nOperator-Grant-ID: operator-grant-20261109060000-ab12cd34\n\nMade an operator with the Make root button.\n");
+            $grant = static fn (string $target): string => "Record-ID: operator-grant-20261109060000-ab12cd34\nCreated-At: 2026-11-09T06:00:00Z\nOperator-Identity-ID: {$operator}\nTarget-Identity-ID: {$target}\nTarget-Username: ilyag\n\n";
+
+            $html = $this->render($root, $db, self::URL);
+            assertSame(200, http_response_code());
+            assertStringContains('Recorded reason:', $html);
+            assertStringNotContains('Granted by:</strong>', $html);
+
+            $workspace->put($root . '/' . $grantPath, $grant(self::ID));
+            $html = $this->render($root, $db, self::URL);
+            assertStringContains('<strong>Granted by:</strong> ' . $operator, $html);
+            assertStringContains('>Signed operator grant</a>', $html);
+            assertStringContains($grantPath, $html);
+            assertStringNotContains('Recorded reason:', $html);
+            assertStringNotContains('Authorizer: not recorded.', $html);
+
+            $workspace->put($root . '/' . $grantPath, $grant('openpgp:' . str_repeat('c', 40)));
+            $html = $this->render($root, $db, self::URL);
+            assertStringContains('Recorded reason:', $html);
+            assertStringNotContains('Signed operator grant', $html);
+        });
+    }
+
     public function testPrivateSeedPageUsesTheSameAccessBoundaryAsRawSource(): void
     {
         $this->fixture(function ($workspace, $root, $db): void {
