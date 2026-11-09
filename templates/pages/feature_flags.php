@@ -14,7 +14,7 @@ $flagGroups = $registry->presentationGroups($flags);
     <div class="feedback feedback-error"><?= $e($siteError) ?></div>
 <?php endif; ?>
     <div class="feature-flags-toolbar" data-feature-flags-toolbar hidden>
-      <input id="feature-flags-search" type="search" placeholder="Name, key, or description" aria-label="Search flags" aria-keyshortcuts="/">
+      <input id="feature-flags-search" type="search" placeholder="Search flags" aria-label="Search flags" aria-keyshortcuts="/">
       <div class="feature-flags-filters" role="group" aria-label="Filter flags by status">
 <?php foreach (['all' => 'All', 'enabled' => 'Enabled', 'disabled' => 'Disabled', 'overridden' => 'Overridden', 'locked' => 'Locked'] as $status => $label): ?>
         <button type="button" class="feature-flags-chip" data-flag-filter="<?= $e($status) ?>" aria-pressed="<?= $status === 'all' ? 'true' : 'false' ?>"><?= $e($label) ?> <span data-flag-filter-count>0</span></button>
