@@ -159,12 +159,15 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
   }
   .calendar--titles .calendar-day {
     height: 3.5rem;
-    padding: 0.1rem 0.08rem;
+    /* Clear of the today ring (2px) on the left; number and titles share one left edge. */
+    padding: 0.3rem 0.06rem 0.1rem 0.3rem;
   }
   .calendar--titles .calendar-day__number {
-    display: inline-block;
+    /* A block, so the cell's own line height does not push it down. */
+    display: block;
     min-height: 0;
     font-size: 0.65rem;
+    line-height: 1;
   }
   /* The titles say what is on; the count would only repeat it. */
   .calendar--titles .calendar-day__count {
