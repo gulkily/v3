@@ -1216,46 +1216,99 @@ final class Application
         $this->notFound();
     }
 
+    /**
+     * Makes sure this request can read a usable read model without rebuilding it here when a
+     * worker can do it instead:
+     * - missing file: build it here (there is nothing older to show);
+     * - stale marker or behind HEAD, same schema: show the existing data and queue a rebuild;
+     * - wrong schema, wrong root or unreadable: queue a rebuild and show the update page.
+     * With no worker available (no fresh cron heartbeat and no detached launch), the request
+     * rebuilds as before, by building a new file and swapping it in.
+     */
     private function ensureReadModel(): void
     {
-        $rebuildReason = 'missing_database';
-        if ($this->staleMarker()->exists()) {
-            $rebuildReason = 'stale_marker';
+        if (!is_file($this->databasePath)) {
+            $this->rebuildReadModelInRequest('missing_database');
+            return;
         }
 
-        if (is_file($this->databasePath) && $rebuildReason !== 'stale_marker') {
-            $pdo = null;
-            try {
-                $pdo = $this->pdo();
-                $metadata = $this->readMetadata($pdo);
-                $pdo = null;
-
-                $currentRepositoryHead = $this->requireCurrentReadModel ? ReadModelMetadata::repositoryHead($this->repositoryRoot) : null;
-                if (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) {
-                    $rebuildReason = 'repository_root_mismatch';
-                } elseif (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {
-                    $rebuildReason = 'schema_identity_mismatch';
-                } elseif ($this->requireCurrentReadModel && ($metadata['repository_head'] ?? null) !== $currentRepositoryHead) {
-                    $rebuildReason = 'repository_head_mismatch';
-                } else {
-                    $this->applyVerifiedAttributionFlag($metadata);
-                    return;
-                }
-            } catch (\Throwable $error) {
-                $pdo = null;
-                if (ReadModelConnection::isLocked($error)) {
-                    // A locked file is busy, not broken: show the busy page rather than rebuild.
-                    throw $error;
-                }
-                $rebuildReason = 'metadata_unreadable';
+        $metadata = null;
+        try {
+            $metadata = $this->readMetadata($this->pdo());
+        } catch (\Throwable $error) {
+            if (ReadModelConnection::isLocked($error)) {
+                // A locked file is busy, not broken: show the busy page rather than rebuild.
+                throw $error;
             }
         }
 
-        if (!$this->allowReadModelRebuild) {
-            throw new \RuntimeException('High-traffic read model needs maintenance (' . $rebuildReason . '). Run ./v3 high-traffic prepare with the configured repository/database and retry refresh. Page rendering does not rebuild read models.');
+        if ($metadata === null) {
+            $reason = 'metadata_unreadable';
+        } elseif (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) {
+            $reason = 'repository_root_mismatch';
+        } elseif (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {
+            $reason = 'schema_identity_mismatch';
+        } elseif ($this->staleMarker()->exists()) {
+            $reason = 'stale_marker';
+        } elseif ($this->requireCurrentReadModel
+            && ($metadata['repository_head'] ?? null) !== ReadModelMetadata::repositoryHead($this->repositoryRoot)) {
+            $reason = 'repository_head_mismatch';
+        } else {
+            $this->applyVerifiedAttributionFlag($metadata);
+            return;
         }
 
-        $this->executionLock()->withExclusiveLock(function () use ($rebuildReason): void {
+        if (!$this->allowReadModelRebuild) {
+            throw new \RuntimeException('High-traffic read model needs maintenance (' . $reason . '). Run ./v3 high-traffic prepare with the configured repository/database and retry refresh. Page rendering does not rebuild read models.');
+        }
+
+        $readable = in_array($reason, ['stale_marker', 'repository_head_mismatch'], true);
+        if ($reason === 'repository_head_mismatch' && $this->caughtUpAfterWrite()) {
+            // A write had committed and was still updating the read model; it has finished.
+            $this->applyVerifiedAttributionFlag($metadata);
+            return;
+        }
+
+        $automatic = new \ForumRewrite\TaskQueue\AutomaticReadModelRebuild($this->projectRoot);
+        if (!$automatic->workerAvailable()) {
+            $this->rebuildReadModelInRequest($reason);
+            return;
+        }
+
+        $state = $automatic->request($readable
+            ? \ForumRewrite\TaskQueue\AutomaticReadModelRebuild::STALE_REASON
+            : \ForumRewrite\TaskQueue\AutomaticReadModelRebuild::SCHEMA_REASON);
+        if ($readable) {
+            $this->applyVerifiedAttributionFlag($metadata);
+            return;
+        }
+
+        throw new \ForumRewrite\ReadModel\ReadModelUnavailable($state, $reason);
+    }
+
+    /**
+     * Waits for any write in progress (the normal lock wait) and reports whether the read model
+     * then matches the repository. Usually true: the write commits first and updates the read
+     * model before releasing the lock.
+     */
+    private function caughtUpAfterWrite(): bool
+    {
+        return $this->executionLock()->withExclusiveLock(function (): bool {
+            try {
+                $metadata = $this->readMetadata($this->pdo());
+            } catch (\Throwable) {
+                return false;
+            }
+
+            return ($metadata['repository_head'] ?? null) === ReadModelMetadata::repositoryHead($this->repositoryRoot)
+                && !$this->staleMarker()->exists();
+        });
+    }
+
+    /** Fallback when no worker can rebuild: build a new file here and swap it in. */
+    private function rebuildReadModelInRequest(string $reason): void
+    {
+        $this->executionLock()->withExclusiveLock(function () use ($reason): void {
             if (is_file($this->databasePath)) {
                 try {
                     $metadata = $this->readMetadata($this->pdo());
@@ -1271,13 +1324,22 @@ final class Application
                 }
             }
 
-            $builder = new ReadModelBuilder(
+            $candidates = new \ForumRewrite\ReadModel\ReadModelCandidateBuilder($this->repositoryRoot, $this->databasePath, $reason);
+            $candidatePath = $candidates->build();
+            try {
+                (new \ForumRewrite\ReadModel\ReadModelCandidatePromoter($this->repositoryRoot, $this->databasePath))->promoteWhileLocked($candidatePath);
+                return;
+            } catch (\Throwable) {
+                @unlink($candidatePath);
+            }
+
+            // The swap was refused (for example a leftover SQLite journal): rebuild in place.
+            (new ReadModelBuilder(
                 $this->repositoryRoot,
                 $this->databasePath,
                 new CanonicalRecordRepository($this->repositoryRoot),
-                $rebuildReason,
-            );
-            $builder->rebuild();
+                $reason,
+            ))->rebuild();
             $this->staleMarker()->clear();
         });
     }

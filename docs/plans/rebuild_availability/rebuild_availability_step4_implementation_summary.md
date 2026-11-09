@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stages 1–4 complete (qdb heartbeat pending); Stage 5 next.
+Status: Step 3 approved on 2026-11-09; Stages 1–5 complete (qdb heartbeat pending); Stage 6 next.
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -90,5 +90,30 @@ Status: Step 3 approved on 2026-11-09; Stages 1–4 complete (qdb heartbeat pend
   - The first run failed `TaskQueueCommandTest::testRebuildWorkerRecordsPrivateProgressCheckpoints`: its last progress line came from the promoter and did not start with `Read model:`. The final progress line above fixed it and makes `./v3 task-queue status` end on a clear message.
 - Notes: under the locked build, writes wait up to 5 seconds and then get the busy response, as before this cycle; it only happens after two misses.
 - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Page requests hand rebuilds to the queue
+
+**Original estimate: 0.14**
+**Retrospective: 0.18**
+
+- Changes:
+  - New `AutomaticReadModelRebuild` (task queue): `workerAvailable()` is true when the cron heartbeat is fresh or detached launch is enabled; `request($reason)` queues one rebuild and starts a detached worker when cron is not running. It replaces the queue-and-launch code that lived in `FrontController::requestReadModelSchemaRecovery()`, which now delegates to it. Reasons: `read_model_stale` (new) and `read_model_schema` (existing).
+  - `Application::ensureReadModel()` now decides per case:
+    - missing file: build in the request (nothing older to show);
+    - stale marker or behind `HEAD`, same schema: show the existing data and queue a rebuild;
+    - behind `HEAD`: first wait for any write in progress (the normal lock wait); a write commits before it updates the read model, so this is usually already caught up;
+    - old schema, other root or unreadable: queue a rebuild and throw the new `ReadModelUnavailable`, which `FrontController` shows as the update page (503, `Retry-After: 10`, reload);
+    - no worker available (no fresh heartbeat, no detached launch): rebuild in the request as before, but by building a new file and swapping it in.
+  - New `tests/ReadModelRequestRebuildTest.php` (five cases above), registered in `tests/run.php`.
+  - Twelve existing startup tests held a connection opened before the startup rebuild and read the new schema through it. They now reopen after the request, as two older tests already did.
+- Verification:
+  - `./v3 test --smoke` with every test class that mentions `schema_version`, the stale marker, `FrontController`, `repository_head` or the task queue (54 classes, `WriteApiSmokeTest` run separately): 730 run, 730 passed. `WriteApiSmokeTest` with this cycle's new test classes: 658 run, 658 passed. Full suite not run.
+  - Parallel runs (`--jobs=4`) of `WriteApiSmokeTest` fail intermittently both on the Stage 4 commit and here; parallel processes share `/tmp` lock and signature-cache files and the checkout's `state/private`. An early version of this stage skipped waiting when another process held the lock; under the shared `/tmp` lock that served stale data and failed operator tests every parallel run, so it now waits instead. After that change, two parallel runs gave one pass and one failure (`testReadableSignedExpansionOfLegacyInitialPreservesHistoricalBytes`, "attempt to write a readonly database"); that test passed three times alone. Recorded for the maintainer's full run.
+- Notes:
+  - Deviation from Step 2's "page requests never rebuild": with no worker at all (local development, tests, a host without cron), requests still rebuild, because nothing else would. On hosts with cron, requests never rebuild. Asking the maintainer to confirm.
+  - Retrospective above original: the wait-for-write fix and twelve test updates were not planned.
+- Estimate details: original scope as in Step 3; no revision before work.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

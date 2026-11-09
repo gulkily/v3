@@ -509,6 +509,8 @@ CODE;
             $pdo->exec("UPDATE metadata SET value = '19' WHERE key = 'schema_version'");
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
             assertStringContains('chosen-name', $this->renderMethod($app, 'GET', '/profiles/openpgp-' . substr($identity, 8)));
+            // The startup rebuild swapped in a new file; reopen to read it.
+            $pdo = (new ReadModelConnection($db))->open();
             assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
             $writer->linkIdentity(['public_key' => $other['public_key']]);
             assertSame('chosen-name', ProfileRepository::byIdentityId($pdo, $identity)['username']);
@@ -4552,6 +4554,8 @@ NODE;
         $pdo->exec("UPDATE posts SET body='stale prose' WHERE post_id='" . $author['thread_id'] . "'");
         $fresh = new Application(dirname(__DIR__), $root, $db, $artifacts);
         $page = $this->renderMethod($fresh, 'GET', '/threads/' . $author['thread_id']);
+        // The startup rebuild swapped in a new file; reopen to read it.
+        $pdo = new PDO('sqlite:' . $db);
         assertStringNotContains('stale prose', $page);
         assertSame(\ForumRewrite\ReadModel\ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
         $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
@@ -6438,6 +6442,8 @@ NODE;
         $pdo->exec("UPDATE metadata SET value='23' WHERE key='schema_version'");
         $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
         assertStringContains('Labels added: like', $this->renderMethod($app, 'GET', '/activity/'));
+        // The startup rebuild swapped in a new file; reopen to read it.
+        $pdo = new PDO('sqlite:' . $database);
         assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
         assertSame(2, (int) $pdo->query('SELECT COUNT(*) FROM activity WHERE ' . $where)->fetchColumn());
         $output = [];

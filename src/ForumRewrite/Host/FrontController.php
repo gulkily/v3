@@ -17,10 +17,7 @@ use ForumRewrite\Statistics\VisitorStatisticsObserver;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ExecutionLock;
-use ForumRewrite\TaskQueue\DetachedTaskQueueLauncher;
-use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
-use ForumRewrite\TaskQueue\TaskQueueDatabaseConfig;
-use PDO;
+use ForumRewrite\TaskQueue\AutomaticReadModelRebuild;
 use RuntimeException;
 use Throwable;
 
@@ -267,54 +264,14 @@ final class FrontController
 
     private function requestReadModelSchemaRecovery(Throwable $throwable): ?string
     {
+        if ($throwable instanceof \ForumRewrite\ReadModel\ReadModelUnavailable) {
+            return $throwable->state;
+        }
         if (!str_contains($throwable->getMessage(), 'no such column: threads.vote_count')) {
             return null;
         }
 
-        try {
-            $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
-            $queueDirectory = dirname($queuePath);
-            if (!is_dir($queueDirectory) && !mkdir($queueDirectory, 0777, true) && !is_dir($queueDirectory)) {
-                return 'maintenance';
-            }
-
-            $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
-            $request = $store->requestAutomaticRebuild(SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON);
-            if ($request['status'] === 'blocked') {
-                return 'maintenance';
-            }
-
-            if ($store->executorHeartbeatStatus()['status'] === 'fresh') {
-                return 'updating';
-            }
-
-            $taskId = (int) $request['task']['id'];
-            $existingLaunch = $store->automaticRecoveryLaunchStatus(
-                SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON,
-                $taskId,
-            );
-            if ($existingLaunch === 'launched') {
-                return 'rebuilding';
-            }
-            if ($existingLaunch !== null) {
-                return 'maintenance';
-            }
-
-            $launchId = $store->reserveAutomaticRecoveryLaunch(
-                SqliteTaskQueueStore::READ_MODEL_SCHEMA_RECOVERY_REASON,
-                $taskId,
-            );
-            if ($launchId === null) {
-                return 'maintenance';
-            }
-
-            $launchStatus = (new DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchQueuedWorker();
-            $store->completeAutomaticRecoveryLaunch($launchId, $launchStatus);
-
-            return $launchStatus === 'launched' ? 'rebuilding' : 'maintenance';
-        } catch (Throwable) {
-            return 'maintenance';
-        }
+        return (new AutomaticReadModelRebuild($this->projectRoot))->request(AutomaticReadModelRebuild::SCHEMA_REASON);
     }
 
     private function resolveFingerprintedAssetPath(string $method, string $requestUri): ?string

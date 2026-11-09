@@ -147,6 +147,8 @@ final class BoardSearchTest
             $pdo->exec("UPDATE metadata SET value = '46' WHERE key = 'schema_version'");
             $fresh = new Application(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $database);
             $html = $this->render($fresh, '/search?q=hello');
+            // The startup rebuild swapped in a new file; reopen to read it.
+            $pdo = new PDO('sqlite:' . $database);
             assertStringContains('href="/threads/root-001"', $html);
             assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
             assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM threads WHERE root_post_id LIKE 'paged-%'")->fetchColumn());

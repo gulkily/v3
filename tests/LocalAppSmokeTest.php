@@ -105,6 +105,8 @@ final class LocalAppSmokeTest
             $pdo->exec('ALTER TABLE profiles DROP COLUMN bootstrap_username_token');
             $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
             $this->render($app, '/users/');
+            // The startup rebuild swapped in a new file; reopen to read it.
+            $pdo = new PDO('sqlite:' . $database);
             assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
             assertSame(0, (int) $pdo->query("SELECT COUNT(*) FROM profiles WHERE bootstrap_username_token='' OR retired_at IS NOT NULL")->fetchColumn());
         } finally { foreach (glob($database . '*') ?: [] as $file) @unlink($file); }
@@ -258,6 +260,8 @@ final class LocalAppSmokeTest
             $pdo->exec("UPDATE activity SET label='stale activity'");
             $app = new Application(dirname(__DIR__), $this->repositoryRoot, $database);
             $html = $this->render($app, '/activity/');
+            // The startup rebuild swapped in a new file; reopen to read it.
+            $pdo = new PDO('sqlite:' . $database);
             assertStringContains('Hello world', $html);
             assertStringNotContains('stale activity', $html);
             assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
