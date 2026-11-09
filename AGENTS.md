@@ -24,6 +24,10 @@ Favor removing UI text over rewriting or relocating it. Rely on an intuitive, ex
 
 During a task, run only the smoke set plus the tests for what you changed: `./v3 test --smoke FooTest Bar::testX` (bare `./v3 test` is the smoke set alone). Do not run or wait for the full suite (`./v3 fulltest` or `./v3 test --all`); the maintainer runs it periodically. Report what you ran and say the full suite was not run. See [Tests in CONTRIBUTING.md](CONTRIBUTING.md#tests).
 
+## Follow-up changes after a PR
+
+The maintainer often merges a PR within minutes. Before pushing more commits to an existing branch, check that its PR is still open; if it is merged or closed, put the follow-up on a new branch from the current `origin/main` and open a new PR. See [Recovery in thread to pull request](docs/agents/thread_to_pr.md#recovery).
+
 ## Todo
 
 Do not modify `todo.txt` unless the user explicitly requests an edit to that file. Record task progress and follow-up work in the relevant planning or implementation documents instead.

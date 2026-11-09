@@ -157,5 +157,6 @@ Everything else, including judgment calls on scope and design, is yours to make 
 ## Recovery
 
 - A wrong change is fixed with new commits on the branch, not by force-pushing over a PR someone may be reviewing.
+- Before every push to an existing branch, check whether its PR is still open: `gh api "repos/gulkily/v3/pulls?head=gulkily:<branch>&state=all" --jq '.[0] | {state, merged_at}'`. The maintainer often merges within minutes, and GitHub accepts pushes to a merged PR's branch without any warning, so a follow-up pushed there never reaches `main`. If the PR is merged or closed, cut a new branch from the current `origin/main` (cherry-pick any commits already made), open a new PR that links the old one, and say so in the record.
 - If the push or PR call fails, keep the branch locally, report the exact error, and post the thread reply only once the PR exists (or post the stop reply).
 - If the site is unreachable, finish the PR, then retry the reply later with `--resume`; mention in the PR that the thread reply is pending.

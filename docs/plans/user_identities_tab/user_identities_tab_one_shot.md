@@ -80,6 +80,8 @@ Maintainer, in session after reviewing the PR, 2026-11-09: "You can make the ide
 - Verification: smoke set plus changed tests 442/443 (same pre-existing `BoardListTest` failure); `users_profile.mjs` passes with new checks (no reload on tab click, Back/Forward restore the tab, no-JavaScript path still passes); `account_key_approval.mjs` passes the identities section and hits the same pre-existing later timeout; screenshots in default, Word97 and Midnight at 390px and 1200px.
 - Study: scope v2 revision, whole-cycle projection 0.12 (from 0.08), reason: two in-session additions.
 
+- 2026-11-09T06:40Z: chronology disclosure: PR #96 was merged at 06:10Z with scope v1 only; the scope v2 commit `49c9ab9f` was pushed to the merged branch afterwards and never reached `main`. Cherry-picked it onto `feat/user_identities_tab_followup` from `main` (`eb153e50`) for a new PR, and added a pre-push PR-state check to `docs/agents/thread_to_pr.md` and `AGENTS.md` so follow-ups don't land on merged branches again. The old branch is left as is.
+
 ## Study closeout
 
 Intake 0.08; execution entry reaffirmed; scope v2 revised to 0.12; **retrospective 0.12**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
