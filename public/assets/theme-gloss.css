@@ -692,6 +692,14 @@
   z-index: 24;
 }
 
+/* Password-newsletter flag: the panel sits on the email box (placed by
+   script) and lets taps through to it. */
+:root[data-theme="engagify"] .engagify-chat.engagify-chat--covering {
+  right: auto;
+  bottom: auto;
+  pointer-events: none;
+}
+
 :root[data-theme="engagify"] .engagify-chat-message {
   padding: 0.6rem 0.8rem;
   border-radius: 0.8rem 0.8rem 0.8rem 0.2rem;
