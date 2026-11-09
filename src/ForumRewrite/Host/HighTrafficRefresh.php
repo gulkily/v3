@@ -29,8 +29,7 @@ final class HighTrafficRefresh
             $end=$separator===false ? 0 : $separator;
             if (strlen($line)>$this->cache->limits['line_bytes']) continue;
             if (!preg_match('~"GET ([^ ]+) HTTP/[0-9.]+" [23][0-9]{2} ~',$line,$m)) continue;
-            $route=HighTrafficRoute::canonical($m[1]);
-            if ($route===null && !str_contains($m[1],'?')) $route=HighTrafficRoute::canonical(rtrim($m[1],'/') . '/');
+            $route=HighTrafficRoute::canonical($m[1]) ?? HighTrafficRoute::alias($m[1]);
             if ($route!==null) $counts[$route]=($counts[$route] ?? 0)+1;
         }
         arsort($counts,SORT_NUMERIC);
