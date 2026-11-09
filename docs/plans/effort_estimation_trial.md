@@ -1,5 +1,11 @@
 # Effort estimation trial ledger
 
+## Cycle v3/rebuild_availability
+
+2026-11-09T18:40:00Z — v3/rebuild_availability Step 2 handoff: user explicitly approved Step 1 (Option B). [Description/checkpoint](./rebuild_availability_step2_feature_description.md#study-checkpoint): full rebuilds build and swap; 2 s read limit with busy page; requests never rebuild; two-step deploy; no lost writes. Projected total 0.55 → **0.60** (new understanding: writes during a build, generalized automatic rebuild request). Same R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-09T18:25:00Z — v3/rebuild_availability Step 1 handoff (standing P2 enrollment; cycle 1 of the [read-model rebuild checklist](./read_model_rebuild_checklist.md), no parent): [assessment/checkpoint](./rebuild_availability_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option B (full rebuilds build a new file and swap it in; short read timeout and busy page; page requests stop rebuilding; deploy queues its rebuild after a schema change). Starting revision `6ff90b5`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because rebuild, lock and deploy code was read before rating. Intake and projected total **0.55**; option estimates 0.50/0.55/0.30, non-additive. Await Approved Step 1. Committed and pushed to branch `plans/rebuild_availability` at the session stop hook's request; no approval implied.
+
 ## Cycle v3/same_username_operator
 
 2026-11-09T05:53:29Z — v3/same_username_operator Step 4 local closeout: branch `feat/same_username_operator`, planning `1ccbadc` and six stage commits. [Summary/closeout](./same_username_operator/same_username_operator_step4_implementation_summary.md#closeout). Scope v2 delivered. Whole-cycle 0.55 at entry, no revision; retrospective scope assessment **0.50**. Stage originals 0.08/0.12/0.12/0.06/0.05/0.07; retrospectives 0.07/0.11/0.13/0.06/0.03/0.09; non-additive. Smoke plus changed tests 481 run, 480 passed; the failure predates the cycle; full suite not run. Two-key local replay passed; production check pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change. Single exposed Claude rater.
