@@ -1401,20 +1401,15 @@ pre {
   font-family: var(--ui-font);
   font-size: 0.95rem;
   line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
-/* Hover-only reveal, limited to devices that really hover (see the note in
-   content-interactions.css about iOS swallowing the first tap). */
-@media (hover: hover) and (pointer: fine) {
-  .post-card-permalink {
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .post-card:hover .post-card-permalink,
-  .post-card:focus-within .post-card-permalink {
-    opacity: 1;
-  }
+/* Unlike the action row in content-interactions.css, this reveal stays on
+   touch devices too: tapping or scrolling a card on iOS shows the permalink. */
+.post-card:hover .post-card-permalink,
+.post-card:focus-within .post-card-permalink {
+  opacity: 1;
 }
 
 .board-subsection {
