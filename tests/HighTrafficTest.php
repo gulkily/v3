@@ -53,6 +53,89 @@ final class HighTrafficTest
         }
     }
 
+    public function testAfterPostRefreshesTheThreadPageOrQueuesIt(): void
+    {
+        $tmp = sys_get_temp_dir() . '/v3-afterpost-' . bin2hex(random_bytes(6));
+        mkdir($tmp . '/repo', 0755, true);
+        exec('cp -R ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1/records') . ' ' . escapeshellarg($tmp . '/repo/records'));
+        $cache = new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__), $tmp . '/repo', $tmp . '/read.sqlite3', $tmp . '/public');
+        $cache->initialize();
+        mkdir($tmp . '/public');
+        symlink($cache->root . '/pages', $tmp . '/public/.high-traffic');
+        $cache->atomic($cache->root . '/state.json', json_encode(['enabled'=>true,'generation'=>'test']));
+        \ForumRewrite\Host\HighTrafficRenderInput::build(\ForumRewrite\Host\HighTrafficPublication::capture($tmp . '/repo'), $tmp . '/read.sqlite3');
+        $route = '/threads/root-001/';
+        $refresh = new \ForumRewrite\Host\HighTrafficRefresh($cache);
+        try {
+            // Not cached yet: the first reader generates it, as before.
+            assertSame('skipped', $refresh->afterPost('root-001'));
+            assertSame(false, is_file($cache->path($route)));
+            assertSame('skipped', $refresh->afterPost('../etc'));
+
+            // Cached: rendered fresh and swapped in.
+            $cache->atomic($cache->path($route), 'old HTML');
+            assertSame('refreshed', $refresh->afterPost('root-001'));
+            assertStringContains('v3-generated-at', (string)file_get_contents($cache->path($route)));
+            assertSame([], $refresh->hints());
+
+            // Page lock busy (an older render running): old page stays, route queued.
+            $cache->atomic($cache->path($route), 'old HTML');
+            $cache->limits['wait_ms'] = 20;
+            $page = fopen($cache->root . '/locks/' . substr(hash('sha256', $route), 0, 3) . '.lock', 'c');
+            flock($page, LOCK_EX);
+            $beforeWrite = microtime(true);
+            assertSame('queued', $refresh->afterPost('root-001'));
+            flock($page, LOCK_UN); fclose($page);
+            assertSame('old HTML', file_get_contents($cache->path($route)));
+
+            // The cached file looks fresh, but the write hint stays due.
+            assertTrue($cache->fresh($route));
+            assertSame([$route], $refresh->hints());
+            assertSame(false, $refresh->hint($route), 'a browser hint does not replace a queued one');
+            assertSame([$route], $refresh->hints());
+
+            // A render that started before the write does not consume its hint; a later one does.
+            $refresh->forget($route, $beforeWrite);
+            assertSame([$route], $refresh->hints());
+            $refresh->forget($route, microtime(true));
+            assertSame([], $refresh->hints());
+
+            // Mode off: nothing is touched.
+            $cache->atomic($cache->path($route), 'old HTML');
+            unlink($tmp . '/public/.high-traffic');
+            assertSame('inactive', $refresh->afterPost('root-001'));
+            assertSame('old HTML', file_get_contents($cache->path($route)));
+        } finally {
+            exec('rm -rf ' . escapeshellarg($cache->root) . ' ' . escapeshellarg($tmp));
+        }
+    }
+
+    public function testCronRendersAWriteHintedRouteEvenWhenFresh(): void
+    {
+        $tmp = sys_get_temp_dir() . '/v3-writehint-' . bin2hex(random_bytes(6));
+        mkdir($tmp . '/repo', 0755, true);
+        exec('cp -R ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1/records') . ' ' . escapeshellarg($tmp . '/repo/records'));
+        $cache = new \ForumRewrite\Host\HighTrafficCache(dirname(__DIR__), $tmp . '/repo', $tmp . '/read.sqlite3', $tmp . '/public');
+        $cache->initialize();
+        mkdir($tmp . '/public');
+        symlink($cache->root . '/pages', $tmp . '/public/.high-traffic');
+        $cache->atomic($cache->root . '/state.json', json_encode(['enabled'=>true,'generation'=>'test']));
+        \ForumRewrite\Host\HighTrafficRenderInput::build(\ForumRewrite\Host\HighTrafficPublication::capture($tmp . '/repo'), $tmp . '/read.sqlite3');
+        file_put_contents($tmp . '/access.log', '');
+        $route = '/threads/root-001/';
+        $refresh = new \ForumRewrite\Host\HighTrafficRefresh($cache);
+        try {
+            $cache->atomic($cache->path($route), 'old HTML');
+            assertTrue($refresh->hint($route, microtime(true)));
+            $report = $refresh->run($tmp . '/access.log');
+            assertSame(1, $report['rendered']);
+            assertStringContains('v3-generated-at', (string)file_get_contents($cache->path($route)));
+            assertSame([], $refresh->hints());
+        } finally {
+            exec('rm -rf ' . escapeshellarg($cache->root) . ' ' . escapeshellarg($tmp));
+        }
+    }
+
     public function testRefreshCliReportsTheSpecificRefusal(): void
     {
         $tmp = sys_get_temp_dir() . '/v3-refusal-' . bin2hex(random_bytes(6));
