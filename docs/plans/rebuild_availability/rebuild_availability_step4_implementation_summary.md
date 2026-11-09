@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stage 1 waiting on host output from the maintainer.
+Status: Step 3 approved on 2026-11-09; Stage 1 complete (qdb heartbeat pending); Stage 2 in progress.
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -21,13 +21,15 @@ Status: Step 3 approved on 2026-11-09; Stage 1 waiting on host output from the m
 ## Stage 1 - Host preflight
 
 **Original estimate: 0.04**
+**Retrospective: 0.04**
 
 - Changes: none in code.
-- Verification: pending. The maintainer runs, on each host from `~/v3`:
-  - `./v3 status` (read-model status, schema, executor heartbeat, automatic recovery and database path)
-  - `du -h` on the database path that `./v3 status` reports (default `state/cache/post_index.sqlite3`) and `df -h` on its directory
-  - a search of the web server environment (for example `public/.htaccess`) for `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`, since the launcher reads it from the environment, not from private config
-- Notes: Stage 3 needs room for a second copy of the read model on each host. If qdb lacks it, the plan falls back to fail fast only on that host, after asking the maintainer.
-- Estimate details: original scope as in Step 3; no revision; retrospective pending.
+- Verification (operator output pasted 2026-11-09, about 19:07 UTC; host names left out on request):
+  - zenmemes.com: read model ready, schema 53/53, no stale marker, no rebuild task; task executor fresh (cron ran within the last minute); automatic recovery idle. Read model 12M at the default path; 83G free. No `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED` in the searched files. Passed.
+  - qdb.us: read model 60M at the default path; 4.7T free. The flag search printed nothing. The `./v3 status` line did not run in the pasted session, so the executor heartbeat there is pending; Stage 8 rechecks it.
+- Notes:
+  - Disk-space risk resolved: a second copy fits easily on both hosts, so Stage 3 proceeds as planned.
+  - Detached launch is off on both hosts, but cron runs the worker every minute on zenmemes.com. Queued rebuilds therefore start within about a minute there without any detached launch. Stage 6 should rely on the queue first and use the detached launch only where it is enabled; that is a refinement inside Stage 6's approved goal.
+- Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
