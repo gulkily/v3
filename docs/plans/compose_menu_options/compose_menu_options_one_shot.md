@@ -81,3 +81,14 @@ Diff checked: one template partial, one stylesheet, two existing scripts, one te
 Completion commit: pending (this record ships in it). Pushed to origin; not merged, not deployed.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Follow-up: Options moves out of the menu (2026-11-09)
+
+Request, 2026-11-09 after PR #103 merged, in session: "Please move from the menu to the dialog", clarified as "everything that is in the new options thing that you created under the menu, I meant for that to be another expandable thing in the compose dialog". Branch `feat/compose_options_section` from `origin/main` `b62f35c`.
+
+- Options is now a `compose-disclosure` (the Tags/Event component) holding the Markdown box, Formatting help and the theme choice. On the full New post composer it sits in the tools row after Tags and Event; on the board, thread and reply composers it is its own row below the action row (those composers have no tools row, and `LocalAppSmokeTest` keeps it that way). Inline composers keep it hidden until expanded, like their other rows.
+- Its summary shows what is set, e.g. "Markdown · Gloss", through the existing disclosure summary script (new `options` kind, plus a `change` listener).
+- The ... menu is back to actions only. The menu's downward placement stays; its nested-Options code and CSS are removed, and `reply_viewport.js` is back to a plain toggle listener.
+- Verification: `./v3 test --smoke WriteApiSmokeTest::testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt LocalAppSmokeTest` (442 passed; the two named tests also run alone, 166 passed). `tests/browser/compose_disclosure.mjs` and `tests/browser/calendar.mjs` ok. Headless Chrome on New post, board and a thread's reply composer at 1100px and 390px in default, Gloss and Word97: no settings left in the menu, Options collapsed by default, ticking Markdown and picking a theme updates the summary, no page errors. Full suite not run; phone reply panel with Options open not checked.
+- Effort: follow-up revision, no new estimate.
+

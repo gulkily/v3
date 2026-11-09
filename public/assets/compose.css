@@ -172,6 +172,12 @@
 .compose-disclosure > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .compose-disclosure > summary:focus-visible { outline: 3px solid var(--accent-color, #356bd8); outline-offset: 2px; }
 .compose-disclosure > label { display: block; margin-top: .5rem; }
+/* Options: post format, its help link and the thread theme. */
+.compose-options > .compose-options-check { display: flex; align-items: center; gap: .5rem; }
+.compose-options > .compose-options-check input { width: auto; min-height: 0; margin: 0; }
+.compose-options > .compose-options-link { display: block; margin-top: .5rem; }
+.compose-options > .compose-options-theme { display: flex; align-items: center; gap: .5rem; }
+.compose-options > .compose-options-theme select { width: auto; min-height: 0; margin: 0; }
 
 .compose-form-actions:has(> .compose-action-menu) > button[type="submit"] {
   flex: 1 1 0;
@@ -187,18 +193,6 @@
 .compose-action-menu--below .compose-action-menu-list { top: calc(100% + .25rem); bottom: auto; }
 .compose-action-menu-list > button { width: 100%; min-height: 44px; margin: 0; text-align: left; white-space: nowrap; }
 .compose-action-menu-list > button { padding: .6rem .9rem; font-size: inherit; }
-/* Settings (post format, its help link, theme) fold under Options below the actions. */
-.compose-action-menu-options { border-top: 1px solid var(--line); margin-top: .1rem; padding-top: .25rem; }
-.compose-action-menu-options > summary { display: flex; align-items: center; gap: .5rem; min-height: 44px; padding: .6rem .9rem; cursor: pointer; white-space: nowrap; user-select: none; }
-.compose-action-menu-options > summary::-webkit-details-marker { display: none; }
-.compose-action-menu-options > summary::after { content: "\25B8"; margin-left: auto; }
-.compose-action-menu-options[open] > summary::after { content: "\25BE"; }
-.compose-action-menu-options > summary:focus-visible { outline: 3px solid var(--accent-color, #356bd8); outline-offset: -3px; }
-.compose-action-menu-options > .compose-action-menu-check,
-.compose-action-menu-options > .compose-action-menu-link { display: flex; align-items: center; gap: .5rem; min-height: 44px; margin: 0; padding: .6rem .9rem; white-space: nowrap; font: inherit; color: inherit; }
-.compose-action-menu-options > .compose-action-menu-check input { width: auto; min-height: 0; margin: 0; }
-/* The thread theme choice: a label and a compact select on one row. */
-.compose-action-menu-options > .compose-action-menu-theme select { width: auto; min-height: 0; margin: 0 0 0 auto; padding: .2rem .4rem; font: inherit; }
 
 /* Phones: the full composer (New post page, paned New Thread dialog) starts at the
    compact form's body height, so it and Post fit above the on-screen keyboard.
