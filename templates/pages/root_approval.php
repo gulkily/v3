@@ -5,7 +5,11 @@
 <?php if ($profile !== null): ?>
     <p>Current account: <a href="/user/<?= $e($profile['username_token']) ?>#account-keys"><?= $e($profile['username']) ?></a></p>
 <?php endif; ?>
+<?php if ($grant === null): ?>
     <p><strong>Recorded reason:</strong> <?= $e($seed->seedReason) ?></p>
+<?php else: ?>
+    <p><strong>Granted by:</strong> <?php if ($grantOperator !== null): ?><a href="/profiles/<?= $e($grantOperator['profile_slug']) ?>" title="<?= $e($grant->operatorIdentityId) ?>"><?= $e($grantOperator['username']) ?></a><?php else: ?><?= $e($grant->operatorIdentityId) ?><?php endif; ?> · <?= $timestamp($grant->createdAt) ?></p>
+<?php endif; ?>
 <?php if (trim($seed->body) !== ''): ?>
     <div class="body"><?= nl2br($e($seed->body)) ?></div>
 <?php endif; ?>
@@ -13,6 +17,9 @@
   <article class="card">
     <h2>Source evidence</h2>
     <p><a href="<?= $e($sourceHref) ?>">Raw seed record</a></p>
+<?php if ($grant !== null): ?>
+    <p><a href="<?= $e($grantHref) ?>">Signed operator grant</a></p>
+<?php endif; ?>
 <?php if ($matchingCommit !== ''): ?>
 <?= $partial('partials/source_metadata.php', ['source_path' => $sourcePath, 'source_path_href' => $committedSourceHref,
     'source_commit_sha' => $matchingCommit, 'source_commit_href' => $commitHref]) ?>
@@ -22,7 +29,9 @@
     <p class="meta">A committed version of the current seed could not be verified. The raw seed record above shows the current contents.</p>
 <?php endif; ?>
     <h3>Repository history</h3>
+<?php if ($grant === null): ?>
     <p class="meta">Authorizer: not recorded. Acceptance time: not recorded. Repository commit dates describe file history.</p>
+<?php endif; ?>
 <?php if ($repositoryHistory === []): ?>
     <p class="meta">Repository history is unavailable for this seed.</p>
 <?php else: ?>

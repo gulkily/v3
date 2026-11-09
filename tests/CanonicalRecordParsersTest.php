@@ -7,6 +7,8 @@ use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\AttributionCutoffRecordParser;
 use ForumRewrite\Canonical\FeatureFlagChangeRecordParser;
+use ForumRewrite\Canonical\OperatorGrantRecordParser;
+use ForumRewrite\Canonical\SourcePathValidator;
 use ForumRewrite\Canonical\ApprovalSeedRecordParser;
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
 use ForumRewrite\Canonical\InstancePublicRecordParser;
@@ -715,6 +717,42 @@ final class CanonicalRecordParsersTest
             static fn () => (new FeatureFlagChangeRecordParser())->parse("Record-ID: feature-flag-change-001\nCreated-At: 2026-10-09T12:00:00Z\nFlag-Key: FORUM_APP_VERSION_NOTIFICATION\nValue: no\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n"),
             'Feature-flag change Value must be true or false.'
         );
+    }
+
+    public function testParsesAndRejectsOperatorGrantRecords(): void
+    {
+        $valid = "Record-ID: operator-grant-20261109060000-ab12cd34\nCreated-At: 2026-11-09T06:00:00Z\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\nTarget-Identity-ID: openpgp:1fc2edb074108568ad28fec8748e323e033d32b4\nTarget-Username: ilyag\n\n";
+        $record = (new OperatorGrantRecordParser())->parse($valid);
+        assertSame('operator-grant-20261109060000-ab12cd34', $record->recordId);
+        assertSame('2026-11-09T06:00:00Z', $record->createdAt);
+        assertSame('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $record->operatorIdentityId);
+        assertSame('openpgp:1fc2edb074108568ad28fec8748e323e033d32b4', $record->targetIdentityId);
+        assertSame('ilyag', $record->targetUsername);
+        assertSame('records/operator-grants/operator-grant-20261109060000-ab12cd34.txt', CanonicalPathResolver::operatorGrant($record->recordId));
+        assertTrue(SourcePathValidator::isValidCanonicalRecordPath('records/operator-grants/operator-grant-20261109060000-ab12cd34.txt'));
+        assertTrue(SourcePathValidator::isValidCanonicalDetachedSignaturePath('records/operator-grants/operator-grant-20261109060000-ab12cd34.txt.asc'));
+        assertSame(false, SourcePathValidator::isValidCanonicalRecordPath('records/operator-grants/notes.txt'));
+
+        $cases = [
+            [str_replace('operator-grant-2026', 'grant-2026', $valid), 'Operator grant Record-ID is invalid.'],
+            [str_replace("Target-Username: ilyag\n", '', $valid), 'Missing required operator grant header: Target-Username'],
+            [str_replace('2026-11-09T06:00:00Z', '2026-11-31T06:00:00Z', $valid), 'Operator grant Created-At must be a valid RFC 3339 UTC timestamp.'],
+            [str_replace('1fc2edb074108568ad28fec8748e323e033d32b4', '1FC2EDB074108568AD28FEC8748E323E033D32B4', $valid), 'Operator grant Target-Identity-ID must use the retained lowercase OpenPGP identity form.'],
+            [str_replace('1fc2edb074108568ad28fec8748e323e033d32b4', '0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $valid), 'Operator grant cannot target its own operator.'],
+            [$valid . "body\n", 'Operator grant record body must be empty.'],
+        ];
+        foreach ($cases as [$contents, $message]) {
+            assertThrows(static fn () => (new OperatorGrantRecordParser())->parse($contents), $message);
+        }
+
+        $seed = (new ApprovalSeedRecordParser())->parse("Approved-Identity-ID: openpgp:1fc2edb074108568ad28fec8748e323e033d32b4\nSeed-Reason: Granted by openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\nOperator-Grant-ID: operator-grant-20261109060000-ab12cd34\n\nGranted from the Make root button.\n");
+        assertSame('operator-grant-20261109060000-ab12cd34', $seed->operatorGrantId);
+        assertThrows(
+            static fn () => (new ApprovalSeedRecordParser())->parse("Approved-Identity-ID: openpgp:1fc2edb074108568ad28fec8748e323e033d32b4\nSeed-Reason: x\nOperator-Grant-ID: ../escape\n\n"),
+            'Operator-Grant-ID is invalid.'
+        );
+        $repository = new CanonicalRecordRepository(__DIR__ . '/fixtures/parity_minimal_v1');
+        assertNullValue($repository->loadApprovalSeed('records/approval-seeds/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt')->operatorGrantId);
     }
 
     public function testParsesAndRejectsAttributionCutoffRecords(): void

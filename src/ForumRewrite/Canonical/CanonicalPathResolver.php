@@ -80,6 +80,11 @@ final class CanonicalPathResolver
         return 'records/feature-flag-changes/' . $recordId . '.txt';
     }
 
+    public static function operatorGrant(string $recordId): string
+    {
+        return 'records/operator-grants/' . $recordId . '.txt';
+    }
+
     public static function attributionCutoff(string $recordId): string
     {
         return 'records/attribution-cutoffs/' . $recordId . '.txt';

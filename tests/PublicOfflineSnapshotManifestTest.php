@@ -74,5 +74,7 @@ final class PublicOfflineSnapshotManifestTest
             $thread->execute([$id, $time, $time, 'Subject ' . $number, 'Preview', 0, $id, '[]', '[]', 0]);
             $post->execute([$id, $time, $id, null, 'Subject ' . $number, 'Body ' . $number, '[]', 'thread', null, 'Anon', null, 1, 0]);
         }
+        // The read model has post_score_total; public listings hide negative scores (ScoreVisibility).
+        $pdo->exec('ALTER TABLE posts ADD COLUMN post_score_total INTEGER NOT NULL DEFAULT 0');
     }
 }

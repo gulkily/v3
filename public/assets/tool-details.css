@@ -159,26 +159,63 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: 0.75rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
 
+/* Search and chips share one row when there is room; on narrow screens the
+   chips drop to a single sideways-scrolling row instead of wrapping. */
 .feature-flags-toolbar input {
-  width: 100%;
+  flex: 1 1 14rem;
+  width: auto;
   min-width: 0;
+  margin: 0;
 }
 
 .feature-flags-filters {
   display: flex;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
   gap: 0.4rem;
-  margin-top: 0.65rem;
+  min-width: 0;
+  /* Room for focus outlines and theme shadows inside the scroll clip. */
+  padding: 3px 5px 5px 3px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.feature-flags-filters::-webkit-scrollbar {
+  display: none;
+}
+
+/* Wide screens: always one row in every theme. Search shrinks first; if a
+   theme's chips still don't fit, they scroll sideways as on phones. */
+@media (min-width: 48rem) {
+  .feature-flags-toolbar {
+    flex-wrap: nowrap;
+  }
+
+  .feature-flags-toolbar input {
+    flex: 1 1 8rem;
+  }
+
+  .feature-flags-filters {
+    flex: 0 1 auto;
+  }
 }
 
 .feature-flags-chip {
+  flex: none;
   width: auto;
   margin: 0;
+  white-space: nowrap;
   padding: 0.4rem 0.65rem;
   font-size: 0.85rem;
   border-radius: 999px;

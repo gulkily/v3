@@ -27,6 +27,7 @@
     <p class="meta" data-role="signed-approval-feedback" hidden></p>
 <?php endif; ?>
 <?= $partial('partials/key_retirement.php') ?>
+<?= $partial('partials/operator_grant.php') ?>
     <details class="account-key-advanced">
       <summary>Advanced / technical details</summary>
       <div class="stack">

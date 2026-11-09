@@ -6,6 +6,20 @@
 
 2026-11-09T05:12:46Z — v3/zm_helper_diagnostics Step 4 entry: Step 3 explicitly approved; branch `feat/zm_helper_diagnostics`, planning `014c35c`. [Summary/entry](./zm_helper_diagnostics/zm_helper_diagnostics_step4_implementation_summary.md#step-4-entry). Joins P2 at this checkpoint; intake and Step 1–3 snapshots missing (drafted outside the repository). Whole-cycle **0.45**, scope v1, baseline `70b4860`, R1, single exposed Claude rater. Stage estimates recorded at entry: S1 0.05, S2 0.12, S3 0.02, S4 0.08, S5 0.05, S6 0.06; not summed. No accepted outcome.
 
+## Cycle v3/same_username_operator
+
+2026-11-09T05:53:29Z — v3/same_username_operator Step 4 local closeout: branch `feat/same_username_operator`, planning `1ccbadc` and six stage commits. [Summary/closeout](./same_username_operator/same_username_operator_step4_implementation_summary.md#closeout). Scope v2 delivered. Whole-cycle 0.55 at entry, no revision; retrospective scope assessment **0.50**. Stage originals 0.08/0.12/0.12/0.06/0.05/0.07; retrospectives 0.07/0.11/0.13/0.06/0.03/0.09; non-additive. Smoke plus changed tests 481 run, 480 passed; the failure predates the cycle; full suite not run. Two-key local replay passed; production check pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change. Single exposed Claude rater.
+
+2026-11-09T05:26:37Z — v3/same_username_operator Step 4 entry: Step 3 explicitly approved; branch `feat/same_username_operator`, planning `1ccbadc`. [Summary](./same_username_operator/same_username_operator_step4_implementation_summary.md#step-4-entry). Whole-cycle **0.55** reaffirmed; stage originals 0.08/0.12/0.12/0.06/0.05/0.07, non-additive. Same R1/P2, single exposed Claude rater.
+
+2026-11-09T05:18:38Z — v3/same_username_operator Step 3 handoff: user approved Step 2 (scope v2, with the import revision). [Plan/checkpoint](./same_username_operator/same_username_operator_step3_development_plan.md#study-checkpoint) six stages: record type, write path, button, grantor display, import exclusion, docs and replay. Projected total 0.45 → **0.55** (new understanding: path validator, loader, activity, route lists, before-paint visibility). Stage work 0.08/0.12/0.12/0.06/0.05/0.07, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.
+
+2026-11-09T05:13:13Z — v3/same_username_operator Step 1 Revision 1 and Step 2 rewrite: before approving Step 2, the maintainer chose a "Make root" button (Option E) over the automatic same-name grant. [Step 1 checkpoint](./same_username_operator/same_username_operator_step1_solution_assessment.md#study-checkpoint), [Step 2 checkpoint](./same_username_operator/same_username_operator_step2_feature_description.md#study-checkpoint). Scope v2; projected total 0.40 → **0.45** (changed scope). Same baseline/R1/P2, single exposed Claude rater. Await Approved Step 2; planning uncommitted.
+
+2026-11-09T05:05:56Z — v3/same_username_operator Step 2 handoff: user approved Step 1 (Option B) after clarifying "Approved step 3". [Description/checkpoint](./same_username_operator/same_username_operator_step2_feature_description.md#study-checkpoint): an operator's approval of a same-name key also writes an approval seed, behind an off-by-default flag, on both approval paths. Projected total **0.40** reaffirmed. Same baseline/R1/P2, single exposed Claude rater. Await Approved Step 2; planning uncommitted.
+
+2026-11-09T03:52:58Z — v3/same_username_operator Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./same_username_operator/same_username_operator_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option B (an operator's approval of a same-name key also writes an approval seed, behind a site flag). Starting revision `bc4bfd6b`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because approval code was read and PR #88 written before rating. Intake and projected total **0.40**; option estimates 0.75/0.40/0.05/0.45, non-additive. Await Approved Step 1; planning uncommitted.
+
 ## Cycle v3/gloss_theme
 
 2026-11-07T14:32:27Z — v3/gloss_theme Step 4 local closeout: branch `feat/engagify_theme`, planning `b1551c6a6` and eight stage commits. [Summary/closeout](./gloss_theme/gloss_theme_step4_implementation_summary.md#closeout). Same v6/baseline/R1/P2, single exposed Claude rater. Whole-cycle 0.95 at entry, no revision; retrospective scope assessment 0.90. Stage originals 0.08/0.10/0.10/0.06/0.08/0.18/0.08/0.10; retrospectives 0.07/0.10/0.08/0.07/0.06/0.16/0.08/0.10; non-additive. Smoke plus changed tests 467 run, 462 passed; the 5 failures predate the cycle; full suite not run. Production check pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change.
@@ -1696,3 +1710,21 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/calendar_tiny_month` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.10 (retrospective 0.08) | [One-shot record](./calendar_tiny_month/calendar_tiny_month_one_shot.md#study-history) | Voice-memo request; week view left as a follow-up; acceptance pending |
 
 2026-11-09T03:27Z: standing P2 enrollment, one-shot on the maintainer's voice memo read as the thread-to-PR go-ahead. Intake **0.10** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `f5e78b9353c540cefcfd94ee73476fc29fb99c97`; branch `feat/calendar_tiny_month`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/user_identities_tab
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/user_identities_tab` | One-shot technically complete; maintainer acceptance pending | v2 / R1 / P2 | 0.12 (intake 0.08; retrospective 0.12) | [One-shot record](./user_identities_tab/user_identities_tab_one_shot.md#study-history) | Thread request plus in-session addition (last active, latest post, newest first); acceptance pending |
+
+2026-11-09T06:15Z: standing P2 enrollment, one-shot on the maintainer's in-session request for the thread. Intake **0.08** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `8f551ffb9494f40204bed66e3c66441315f9e727`; branch `feat/user_identities_tab`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+2026-11-09T06:30Z: scope v2 (taller identity rows with relative last-active time; in-place tab switching) authorized in session; revised whole-cycle 0.12, retrospective 0.12. Original 0.08 retained.
+
+## Cycle v3/compose_menu_options
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/compose_menu_options` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.06; retrospective 0.08) | [One-shot record](./compose_menu_options/compose_menu_options_one_shot.md#study-history) | Thread request widened in session; acceptance pending |
+
+2026-11-09T18:05Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link, then widened the request in session). Intake **0.06** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08** because visual checks found the expanded menu running off the top of the phone page and it gained downward placement. Baseline `ddf8fa550e49626c0fe75bd3d7c76d15712eae29`; branch `feat/compose_menu_options`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

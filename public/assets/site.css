@@ -1197,9 +1197,30 @@ pre {
   flex: 0 0 auto;
   white-space: nowrap;
 }
-.person-identities__title {
-  margin: 0.5rem 0 0;
-  font-size: 1rem;
+.person-identity .account-row__title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.person-identity {
+  align-items: flex-start;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+.person-identity.account-row--link::after {
+  align-self: center;
+}
+.person-identity__status {
+  font-size: 0.85rem;
+}
+.person-identity__latest {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 0.15rem;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .board-empty {
@@ -1384,9 +1405,24 @@ pre {
   transition: opacity 0.15s ease;
 }
 
-.post-card:hover .post-card-permalink,
 .post-card:focus-within .post-card-permalink {
   opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .post-card:hover .post-card-permalink {
+    opacity: 1;
+  }
+}
+
+/* On touch screens a tap puts the whole card in :hover. If that revealed the
+   permalink, iOS Safari would treat a tap on Like (or any link in the card) as
+   a hover and fire it only on the second tap. So the reveal skips hovers that
+   come from a link or button; tapping or scrolling elsewhere still shows it. */
+@media (hover: none), (pointer: coarse), (pointer: none) {
+  .post-card:hover:not(:has(a:hover, button:hover)) .post-card-permalink {
+    opacity: 1;
+  }
 }
 
 .board-subsection {

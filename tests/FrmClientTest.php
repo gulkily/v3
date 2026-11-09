@@ -76,10 +76,11 @@ final class FrmClientTest
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
         try {
             $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
-            $body="  Cafe\u{0301}\r\nx→\n";file_put_contents($root.'/body.txt',$body);
+            // A no-break space is still rejected; arrows were accepted in c90eea84.
+            $body="  Cafe\u{0301}\r\nx\u{00A0}\n";file_put_contents($root.'/body.txt',$body);
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             $write=['thread','--subject','Correction','--body-file',$root.'/body.txt'];
-            [$code,$out]=self::run($script,array_merge($base,$write)); assertSame(2,$code,$out);assertStringContains('U+2192 at body index 10',$out);
+            [$code,$out]=self::run($script,array_merge($base,$write)); assertSame(2,$code,$out);assertStringContains('U+00A0 at body index 10',$out);
             $operation=glob(self::stateDir($root,'client').'/*/operation-*')[0];assertSame($body,file_get_contents($operation.'/original-body.txt'));
             file_put_contents($root.'/body.txt',"Café accepted.\n");
             [$code,$out]=self::run($script,array_merge($base,$write));assertSame(0,$code,$out);

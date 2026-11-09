@@ -88,10 +88,32 @@ try {
   assert.equal(await page.locator('.person-head .chip--approved').textContent(), 'Approved');
   assert.equal(await page.getByRole('button', { name: 'Edit in Account' }).isVisible(), true);
   assert.equal(await page.getByRole('button', { name: 'Message' }).count(), 0);
-  assert.ok(await page.locator('#account-keys a[href^="/profiles/"]').count() >= 1, 'keys listed as identities');
   assert.equal(await page.locator('.starfield.banner[data-seed="browser-inviter"]').count(), 1);
+  // Tabs switch in place (no reload), keep their own URLs, and Back returns to the previous tab.
+  await page.evaluate(() => { window.__samePersonPage = true; });
   await page.getByRole('link', { name: 'Replies', exact: true }).click();
   await page.waitForURL(/tab=replies/);
+  assert.equal(await page.evaluate(() => window.__samePersonPage), true, 'Replies opened without a reload');
+  assert.equal(await page.locator('[data-person-panel="replies"]').isVisible(), true);
+  assert.equal(await page.locator('[data-person-panel="threads"]').isVisible(), false);
+  await page.goBack();
+  await page.waitForURL(url => !url.search.includes('tab='));
+  assert.equal(await page.locator('[data-person-panel="threads"]').isVisible(), true);
+  assert.equal(await page.locator('nav[data-person-tabs] a[aria-current="page"]').textContent(), 'Threads');
+  await page.goForward();
+  await page.waitForURL(/tab=replies/);
+  assert.equal(await page.locator('[data-person-panel="replies"]').isVisible(), true);
+  // Identities: each key with its last-active date, most recently active first, no page overflow.
+  await page.getByRole('link', { name: 'Identities', exact: true }).click();
+  await page.waitForURL(/tab=identities/);
+  assert.equal(await page.evaluate(() => window.__samePersonPage), true, 'Identities opened without a reload');
+  const keyRows = page.locator('#account-keys a.person-identity[href^="/profiles/"]');
+  assert.ok(await keyRows.count() >= 1, 'keys listed as identities');
+  const lastActive = await keyRows.evaluateAll(rows => rows.map(row => row.querySelector('.person-identity__status time')?.getAttribute('datetime') || ''));
+  const activeKeys = lastActive.filter(Boolean);
+  assert.deepEqual(activeKeys, [...activeKeys].sort((a, b) => Date.parse(b) - Date.parse(a)), 'newest activity first');
+  assert.deepEqual(lastActive.slice(0, activeKeys.length), activeKeys, 'keys without posts come last');
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
 
   // Waiting: approve in place from Users.
   await page.goto(base + '/users/');

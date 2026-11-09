@@ -2026,6 +2026,7 @@ PHP;
         $visitorStatistics = $this->render($application, '/tools/visitor-statistics/');
         $profile = $this->render($application, '/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
         $username = $this->render($application, '/user/guest');
+        $usernameIdentities = $this->render($application, '/user/guest?tab=identities');
         $_COOKIE = ['identity_hint' => 'guest'];
         $users = $this->render($application, '/users/');
         $tags = $this->render($application, '/tags/');
@@ -2183,7 +2184,8 @@ PHP;
             }
         }
         assertStringContains('class="nav-link is-active" href="/tools/backup/"', $toolsBackup);
-        assertOrdered($toolsBackup, 'tools-nav', '<h1>Backup</h1>');
+        // The Tools bar sits below the tool, not above it.
+        assertOrdered($toolsBackup, '<h1>Backup</h1>', 'class="nav tools-nav"');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $toolsBackup);
         assertStringNotContains('Contact:', $instance);
         assertStringNotContains('Retention:', $instance);
@@ -2254,7 +2256,7 @@ PHP;
         assertFingerprintedAsset($operations, 'tool-details.css');
         assertStringNotContains('class="nav-link" href="/tools/">Tools</a>', $featureFlags);
         // The Tools bar follows the launcher's groups, with a divider between each.
-        $toolsBar = substr($featureFlags, (int) strpos($featureFlags, '<div class="nav tools-nav">'));
+        $toolsBar = substr($featureFlags, (int) strpos($featureFlags, '<div class="nav tools-nav"'));
         $toolsBar = substr($toolsBar, 0, (int) strpos($toolsBar, '</div>'));
         assertSame(3, substr_count($toolsBar, 'tools-nav-divider'));
         $order = ['href="/tools/outbox/"', 'href="/activity/"', 'href="/tools/user-access/"', 'href="/tools/feature-flags/"', 'href="/tools/operations/"'];
@@ -2290,7 +2292,14 @@ PHP;
         assertStringContains('<h1 class="account-name">guest</h1>', $username);
         assertStringNotContains('Approved Profiles', $username);
         assertStringContains('<span class="chip chip--approved">Approved</span>', $username);
-        assertStringContains('<h2 class="person-identities__title">Identities</h2>', $username);
+        assertStringContains('href="/user/guest?tab=identities" data-person-tab="identities">Identities</a>', $username);
+        assertStringContains('<div data-person-panel="identities" hidden>', $username);
+        assertStringContains('<div data-person-panel="threads">', $username);
+        assertStringContains('href="/user/guest?tab=identities" data-person-tab="identities" aria-current="page">Identities</a>', $usernameIdentities);
+        assertStringContains('<div data-person-panel="identities">', $usernameIdentities);
+        assertStringContains('<div data-person-panel="threads" hidden>', $usernameIdentities);
+        assertStringContains('href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954"', $usernameIdentities);
+        assertStringContains('<span class="meta person-identity__status">Active <time datetime=', $usernameIdentities);
         assertStringContains('<div class="starfield banner" data-seed="guest" aria-hidden="true"></div>', $username);
         assertStringNotContains('Combined threads:', $username);
         assertStringContains('Users', $users);

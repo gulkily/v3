@@ -1,8 +1,5 @@
 <section class="stack">
   <article class="card">
-<?= $indent($partial('partials/tools_nav.php'), 2) ?>
-  </article>
-  <article class="card">
     <h1>Operations</h1>
     <div class="feature-flag-list">
       <div class="feature-flag-row"<?= $canManageOperations ? ' data-high-traffic-control' : '' ?>>
@@ -30,5 +27,8 @@
 <?php endif; ?>
       </div>
     </div>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

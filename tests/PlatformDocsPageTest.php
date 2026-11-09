@@ -123,7 +123,8 @@ final class PlatformDocsPageTest
         $html = $this->render('/docs/plans/backlog/feature-flags-redesign.html');
         assertStringContains('&lt;html', strtolower($html));
         assertStringContains('/docs/_download/docs/plans/backlog/feature-flags-redesign.html', $html);
-        assertSame(1, substr_count(strtolower($html), '<html'));
+        // Count real tags only: the inlined critical CSS mentions <html data-nav-slots> in a comment.
+        assertSame(1, substr_count(strtolower((string) preg_replace('#<style\b.*?</style>#is', '', $html)), '<html'));
         $example = $this->render('/docs/examples/secrets.php.example');
         assertStringContains('replace-with-real-key', $example);
         assertStringContains('&lt;?php', $example);

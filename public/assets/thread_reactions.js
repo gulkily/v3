@@ -740,16 +740,154 @@
     return { canonical_record: record, detached_signature: await signing.signCanonicalRecord(record) };
   }
 
+  const reactionFetchTimeoutMs = 20000;
+  const outboxRetryDelaysMs = [15000, 30000, 60000, 120000, 300000];
+  let outboxRetryTimer = null;
+  let outboxRetryAttempt = 0;
+
+  function retryableReactionError(message, technicalDetails) {
+    const error = new Error(message);
+    error.retryable = true;
+    error.technicalDetails = technicalDetails || "";
+    return error;
+  }
+
+  function outboxAvailable() {
+    return typeof window !== "undefined" && window.forumOutbox && window.forumOutboxStorage
+      && typeof window.forumOutboxStorage.save === "function";
+  }
+
+  function outboxPayload(kind, target, tag) {
+    return kind === "thread"
+      ? { kind: "thread_tag", threadId: target, tag }
+      : { kind: "post_tag", postId: target, tag };
+  }
+
+  function samePendingReaction(item, payload) {
+    const other = item && item.payload ? item.payload : {};
+    return item && item.action === "reaction" && !item.intent
+      && ["accepted", "cancelled"].indexOf(item.state) === -1
+      && other.kind === payload.kind && other.tag === payload.tag
+      && (other.threadId || "") === (payload.threadId || "") && (other.postId || "") === (payload.postId || "");
+  }
+
+  function reactionSummary(kind, target, tag) {
+    const label = tag ? tag.charAt(0).toUpperCase() + tag.slice(1) : "Reaction";
+    let title = "";
+    try {
+      title = kind === "thread"
+        ? String((document.querySelector("h1") || {}).textContent || "").trim()
+        : "";
+    } catch (ignored) { /* Summary text is only a convenience. */ }
+    return `${label} ${title || `${kind} ${target}`}`.slice(0, 160);
+  }
+
+  // Saved before identity setup or any request, so a reaction is never lost to a failed load.
+  async function enqueueReaction(kind, target, tag) {
+    if (!outboxAvailable()) return null;
+    try {
+      const payload = outboxPayload(kind, target, tag);
+      const existing = (await window.forumOutboxStorage.list()).find((item) => samePendingReaction(item, payload));
+      const now = new Date().toISOString();
+      const item = window.forumOutbox.createItem(Object.assign({}, existing || {
+        id: window.forumOutbox.createIntentId("reaction"),
+        action: "reaction",
+        createdAt: now,
+        target: { kind, id: target },
+        summary: reactionSummary(kind, target, tag),
+        payload,
+        actionAt: now,
+      }, { state: "sending", updatedAt: now, outcome: null }));
+      await window.forumOutboxStorage.save(item);
+      return item;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function reactionFailureState(error) {
+    if (error && error.retryable) return "waiting_for_connection";
+    const sender = window.forumOutboxSender;
+    return sender && typeof sender.failureState === "function" ? sender.failureState(error) : "rejected";
+  }
+
+  // Removed only once the server confirmed the reaction; otherwise kept with what went wrong.
+  async function settleReaction(item, error) {
+    if (!item || !outboxAvailable()) return;
+    try {
+      if (!error) {
+        await window.forumOutboxStorage.remove(item.id);
+        return;
+      }
+      const message = error instanceof Error ? error.message : String(error || "Unable to apply tag.");
+      await window.forumOutboxStorage.save(window.forumOutbox.transition(item, reactionFailureState(error), { message }));
+      if (error.retryable) scheduleOutboxRetry();
+    } catch (ignored) { /* The Outbox page still shows the item as sending and recovers it later. */ }
+  }
+
+  function processOutbox() {
+    const sender = window.forumOutboxSender;
+    if (!sender || typeof sender.processQueuedOutbox !== "function") return Promise.resolve([]);
+    return sender.processQueuedOutbox().catch(() => []);
+  }
+
+  function scheduleOutboxRetry() {
+    if (outboxRetryTimer || typeof setTimeout !== "function") return;
+    const delay = outboxRetryDelaysMs[Math.min(outboxRetryAttempt, outboxRetryDelaysMs.length - 1)];
+    outboxRetryAttempt += 1;
+    outboxRetryTimer = setTimeout(async () => {
+      outboxRetryTimer = null;
+      const results = await processOutbox();
+      if (results.some((item) => item && item.state === "waiting_for_connection")) {
+        scheduleOutboxRetry();
+      } else {
+        outboxRetryAttempt = 0;
+      }
+    }, delay);
+  }
+
+  // Used by the Outbox sender to resend a saved reaction with this page's signing path.
+  async function submitSavedReaction(kind, target, tag) {
+    await ensureReactionIdentity(null, null, null);
+    const result = await submitReaction(kind, target, tag);
+    if (!result.text.includes("status=ok")) {
+      throw new Error(parseResponseValue(result.text, "error") || "Unable to apply tag.");
+    }
+    return {
+      threadId: parseResponseValue(result.text, "thread_id"),
+      postId: parseResponseValue(result.text, "post_id"),
+      commitSha: parseResponseValue(result.text, "commit_sha"),
+    };
+  }
+
   async function submitReaction(kind, target, tag) {
     const fields = { [kind === "thread" ? "thread_id" : "post_id"]: target, tag,
       ...await signedReactionFields(kind, target, tag) };
     const send = async () => {
-      const response = await fetch(kind === "thread" ? "/api/apply_thread_tag" : "/api/apply_post_tag", {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-        body: new URLSearchParams(fields).toString(),
-      });
-      return { text: await response.text(), serverTiming: parseServerTimingHeader(
+      const controller = typeof AbortController === "function" ? new AbortController() : null;
+      const timer = controller ? setTimeout(() => controller.abort(), reactionFetchTimeoutMs) : null;
+      let response;
+      let text;
+      try {
+        response = await fetch(kind === "thread" ? "/api/apply_thread_tag" : "/api/apply_post_tag", {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+          body: new URLSearchParams(fields).toString(),
+          signal: controller ? controller.signal : undefined,
+        });
+        text = await response.text();
+      } catch (error) {
+        // Safari reports every network-level failure as "Load failed"; say what happened instead.
+        throw retryableReactionError(
+          error && error.name === "AbortError" ? "The server took too long to answer." : "Couldn't reach the server.",
+          error && error.message ? `${error.name || "Error"}: ${error.message}` : "");
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+      if (response.status === 503 || response.status === 502 || response.status === 504) {
+        throw retryableReactionError("The server is busy.", `HTTP ${response.status}`);
+      }
+      return { text, serverTiming: parseServerTimingHeader(
         response.headers && typeof response.headers.get === "function" ? response.headers.get("Server-Timing") : "") };
     };
     let result = await send();
@@ -886,7 +1024,9 @@
 
       button.disabled = true;
 
+      let outboxItem = null;
       try {
+        outboxItem = outboxAvailable() ? await enqueueReaction("thread", threadId, tag) : null;
         await ensureReactionIdentity(root, feedbackNode, timing);
         setOptimisticThreadReactionState(button, scoreNode, tag, appliedLabel, previousState);
         setFeedback(feedbackNode, "Saving tag...", "ok");
@@ -900,6 +1040,7 @@
           const errorMessage = parseResponseValue(text, "error") || "Unable to apply tag.";
           throw new Error(errorMessage);
         }
+        if (outboxItem) await settleReaction(outboxItem, null);
 
         const scoreTotal = parseResponseValue(text, "score_total");
         const voteCount = parseResponseValue(text, "vote_count");
@@ -933,9 +1074,19 @@
           : `Already ${appliedLabel.toLowerCase()}.`;
         setFeedback(feedbackNode, confirmationMessage, "ok");
       } catch (error) {
-        restoreThreadReactionState(button, scoreNode, previousState);
+        if (outboxItem) await settleReaction(outboxItem, error);
+        const queued = Boolean(outboxItem && error && error.retryable);
+        if (queued) {
+          // Still saved and retried from the Outbox, so the button keeps showing it as applied.
+          setConfirmedReactionButton(button, appliedLabel);
+        } else {
+          restoreThreadReactionState(button, scoreNode, previousState);
+        }
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const feedback = feedbackFromError(error, "Unable to apply tag.");
+        if (queued) {
+          feedback.message = `${feedback.message} Saved in your Outbox; it will be sent automatically.`;
+        }
         setFeedback(
           feedbackNode,
           feedback.message,
@@ -989,7 +1140,9 @@
 
       button.disabled = true;
 
+      let outboxItem = null;
       try {
+        outboxItem = outboxAvailable() ? await enqueueReaction("post", postId, tag) : null;
         await ensureReactionIdentity(root, feedbackNode, timing);
         setOptimisticPostReactionState(button, appliedLabel);
         setFeedback(feedbackNode, "Saving tag...", "ok");
@@ -1003,6 +1156,7 @@
           const errorMessage = parseResponseValue(text, "error") || "Unable to apply tag.";
           throw new Error(errorMessage);
         }
+        if (outboxItem) await settleReaction(outboxItem, null);
 
         const wroteRecord = parseResponseValue(text, "wrote_record") === "yes";
         const isHidden = parseResponseValue(text, "is_hidden") === "yes";
@@ -1030,9 +1184,19 @@
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
       } catch (error) {
-        restorePostReactionState(root, button, previousState);
+        if (outboxItem) await settleReaction(outboxItem, error);
+        const queued = Boolean(outboxItem && error && error.retryable);
+        if (queued) {
+          // Still saved and retried from the Outbox, so the button keeps showing it as applied.
+          setConfirmedReactionButton(button, appliedLabel);
+        } else {
+          restorePostReactionState(root, button, previousState);
+        }
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
         const feedback = feedbackFromError(error, "Unable to apply tag.");
+        if (queued) {
+          feedback.message = `${feedback.message} Saved in your Outbox; it will be sent automatically.`;
+        }
         setFeedback(
           feedbackNode,
           feedback.message,
@@ -1075,11 +1239,16 @@
   }
 
   if (typeof window !== "undefined") {
-    window.ForumThreadReactions = { bindWithin: bindWithin, hydrateRememberedReactions: hydrateRememberedReactions, reactionRecord: reactionRecord };
+    window.ForumThreadReactions = { bindWithin: bindWithin, hydrateRememberedReactions: hydrateRememberedReactions, reactionRecord: reactionRecord, submitSavedReaction: submitSavedReaction };
+    if (typeof window.addEventListener === "function") window.addEventListener("online", () => { processOutbox(); });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
     hydrateRememberedReactions(document);
     bindWithin(document);
+    // Reactions left in the Outbox by an earlier failed load are sent once this page is up.
+    processOutbox().then((results) => {
+      if (results.some((item) => item && item.state === "waiting_for_connection")) scheduleOutboxRetry();
+    });
   });
 })();

@@ -41,7 +41,20 @@ final class RootApprovalPageController
         $committed = $latestSha !== '' ? $provenance->contentsAt($latestSha, $path) : null;
         $current = @file_get_contents($this->repositoryRoot . '/' . $path);
         $matchingCommit = $committed !== null && $current !== false && $committed === $current ? $latestSha : '';
+        $grant = null;
+        $grantPath = $seed->operatorGrantId !== null ? CanonicalPathResolver::operatorGrant($seed->operatorGrantId) : '';
+        if ($grantPath !== '' && SourcePathValidator::currentPathExists($this->repositoryRoot, $grantPath)) {
+            try {
+                $loaded = (new CanonicalRecordRepository($this->repositoryRoot))->loadOperatorGrant($grantPath);
+                $grant = $loaded->targetIdentityId === $seed->approvedIdentityId ? $loaded : null;
+            } catch (CanonicalRecordParseException) {
+                $grant = null;
+            }
+        }
         $this->services->sendHtml($this->services->renderPageTemplate('root_approval.php', [
+            'grant' => $grant,
+            'grantHref' => $grant !== null ? $this->services->activityService()->sourcePathHref($grantPath, '') : '',
+            'grantOperator' => $grant !== null ? ProfileRepository::byIdentityId($this->services->pdo(), $grant->operatorIdentityId) : null,
             'seed' => $seed,
             'keySlug' => $keySlug,
             'profile' => ProfileRepository::byIdentityId($this->services->pdo(), $seed->approvedIdentityId),

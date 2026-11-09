@@ -188,6 +188,8 @@ final class PublicOfflineSnapshotBuilderTest
         $post->execute(['thread-hidden', '2027-01-01T00:00:00Z', 'thread-hidden', null, 'Hidden', '', '["general"]', null, 'unapproved-unselected', 'Hidden', null, 999, 1]);
         $thread->execute(['thread-bootstrap', '2027-01-02T00:00:00Z', '2027-01-02T00:00:00Z', 'Bootstrap', '', 0, 'thread-bootstrap', '["identity"]', '[]', 0]);
         $post->execute(['thread-bootstrap', '2027-01-02T00:00:00Z', 'thread-bootstrap', null, 'Bootstrap', '', '["identity"]', null, 'unapproved-unselected', 'Bootstrap', null, 1000, 0]);
+        // The read model has post_score_total; public listings hide negative scores (ScoreVisibility).
+        $pdo->exec('ALTER TABLE posts ADD COLUMN post_score_total INTEGER NOT NULL DEFAULT 0');
     }
 }
 

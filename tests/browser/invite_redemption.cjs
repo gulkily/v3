@@ -4,9 +4,9 @@ const vm = require('node:vm');
 const { webcrypto } = require('node:crypto');
 const source = fs.readFileSync(require('node:path').resolve(__dirname, '../../public/assets/invite_redemption.js'), 'utf8');
 async function run({ targeted = true, failure = '', token = 'a'.repeat(32) } = {}) {
-  const calls = [], readiness = [], navigations = [], auth = [];
-  const status = { dataset: {} }, button = { addEventListener(_, fn) { this.click = fn; } };
-  const nameInput = { value: 'reader', addEventListener() {} };
+  const calls = [], readiness = [], navigations = [], auth = [], focused = [];
+  const status = { dataset: {} }, button = { addEventListener(_, fn) { this.click = fn; }, focus() { focused.push('button'); } };
+  const nameInput = { value: 'reader', addEventListener() {}, focus() { focused.push('name'); } };
   const form = { addEventListener(_, fn) { button.click = () => fn({ preventDefault() {} }); } };
   const root = { querySelector(s) {
     if (s.includes('feedback')) return status;
@@ -37,7 +37,7 @@ async function run({ targeted = true, failure = '', token = 'a'.repeat(32) } = {
   vm.runInNewContext(source, sandbox);
   const flush = async () => { for (let n = 0; n < 20; n++) await new Promise(resolve => setImmediate(resolve)); };
   ready(); await flush();
-  return { calls, readiness, navigations, auth, button, status, flush };
+  return { calls, readiness, navigations, auth, focused, button, status, flush };
 }
 (async () => {
   const auto = await run();
@@ -48,6 +48,7 @@ async function run({ targeted = true, failure = '', token = 'a'.repeat(32) } = {
   assert.equal(auto.auth[0].force, true);
   const manual = await run({ targeted: false });
   assert.equal(manual.readiness.length, 0);
+  assert.deepEqual(manual.focused, ['name']); // Enter redeems from the name field (ad16745d)
   manual.button.click(); await manual.flush();
   assert.equal(manual.readiness.length, 1);
   assert.equal(manual.readiness[0].temporaryName, 'reader');

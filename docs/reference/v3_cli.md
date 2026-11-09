@@ -943,6 +943,8 @@ Runs the local (non-live) agent-reply test suite: `AgentReplyGenerationTest`,
 
 Shorthand alias for `./v3 approval seed` (see below for parameter details).
 
+An operator can also make an approved key an operator from the browser: Tools → User Access → the key's page → **Make root**. It signs a grant and writes the same kind of seed; see the [operator grant spec](../specs/operator_grant_record_v1.md). Imported instances still start with no operators, so use `./v3 approve` for the first one.
+
 ## Seed an approved identity
 
 ```

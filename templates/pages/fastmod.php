@@ -1,5 +1,4 @@
 <section class="stack">
-  <article class="card"><?= $partial('partials/tools_nav.php') ?></article>
   <article class="card">
     <h1>Fastmod</h1>
     <p><a href="/tools/feature-flags/#flag-FASTMOD_AUTOMATIC_TAGGING_ENABLED">Feature Flags</a></p>
@@ -26,5 +25,8 @@
 <?php endif; ?>
     </form>
 <?php endif; ?>
+  </article>
+  <article class="card tools-nav-card">
+<?= $indent($partial('partials/tools_nav.php'), 2) ?>
   </article>
 </section>

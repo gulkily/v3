@@ -1,0 +1,20 @@
+ID: PF-20261109-F01
+Title: Composer settings fold into an expandable section of the ... menu
+Kind: feature
+Workflow: blocked
+Created: 2026-11-09
+Evidence: locally-verified
+
+Request:
+The composer's ... menu lists actions and settings together; the settings (Markdown, theme, Formatting help) should move into something expandable so the menu shows actions first.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261108235455-97e8f62c
+
+Done when:
+On the new post, inline thread and reply composers, the ... menu shows only actions (Attach image, Post/Reply anonymously, Save to Outbox, Remove timestamps where offered, Discard draft), and the composer itself has a collapsed Options section; opening it shows the Markdown box, Formatting help link and the theme choice, and posting still honours them.
+
+Notes:
+2026-11-09: one-shot on feat/compose_menu_options (record docs/plans/compose_menu_options/compose_menu_options_one_shot.md). The thread title asked to remove Formatting help; the maintainer then asked in session to move all settings into an expandable section and to move the link rather than remove it.
+2026-11-09: implemented on feat/compose_menu_options with the menu opening downward when there is no room above; verified locally; awaiting review and deployment.
+2026-11-09: maintainer asked for Options in the compose form rather than the menu; moved on feat/compose_options_section; verified locally; awaiting review and deployment.

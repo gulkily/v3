@@ -85,6 +85,9 @@ final class ProfilePageController
             && (string) ($viewerProfile['username_token'] ?? '') !== ''
             && (string) $viewerProfile['username_token'] !== $usernameToken;
 
+        $approvedPosts = AuthoredContentRepository::visiblePosts($pdo, $approvedIdentityIds);
+        $tab = (string) ($query['tab'] ?? '');
+
         return $this->routeServices->renderPageTemplate(
             'username.php',
             [
@@ -96,17 +99,56 @@ final class ProfilePageController
                 'approvedThreadCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, true),
                 'approvedPostCount' => AuthoredContentRepository::countVisible($pdo, $approvedIdentityIds, false),
                 'approvedThreads' => AuthoredContentRepository::visibleThreads($pdo, $approvedIdentityIds),
-                'approvedPosts' => AuthoredContentRepository::visiblePosts($pdo, $approvedIdentityIds),
+                'approvedPosts' => $approvedPosts,
+                'identityRows' => self::identitiesByLatestPost($historicalProfiles, $approvedPosts),
                 'viewerProfile' => $viewerProfile,
                 'canPrivateMessage' => $canPrivateMessage,
-                // The person page: Threads or Replies, "Edit in Account" on your own page, "Manage access" for operators.
-                'personTab' => ($query['tab'] ?? '') === 'replies' ? 'replies' : 'threads',
+                // The person page: Threads, Replies or Identities, "Edit in Account" on your own page, "Manage access" for operators.
+                'personTab' => in_array($tab, ['replies', 'identities'], true) ? $tab : 'threads',
                 'isOwnPage' => $viewerProfile !== null && (string) ($viewerProfile['username_token'] ?? '') === $usernameToken,
                 'viewerIsOperator' => $this->routeServices->securityReviewAllowed(),
             ],
             $usernameToken,
             'profiles',
         );
+    }
+
+    /**
+     * Each key with its latest visible post (`latest_post`, or null), most recently active first.
+     * Keys with no visible posts keep their existing order after the active ones.
+     *
+     * @param array<int, array<string, mixed>> $profiles
+     * @param array<int, array<string, mixed>> $posts Visible posts, newest first.
+     * @return array<int, array<string, mixed>>
+     */
+    private static function identitiesByLatestPost(array $profiles, array $posts): array
+    {
+        $latestBySlug = [];
+        foreach ($posts as $post) {
+            $slug = (string) ($post['author_profile_slug'] ?? '');
+            if ($slug !== '' && !isset($latestBySlug[$slug])) {
+                $latestBySlug[$slug] = $post;
+            }
+        }
+
+        $rows = [];
+        foreach ($profiles as $index => $profile) {
+            $profile['latest_post'] = $latestBySlug[(string) $profile['profile_slug']] ?? null;
+            $rows[] = [$index, $profile];
+        }
+        usort($rows, static function (array $a, array $b): int {
+            $aAt = (string) ($a[1]['latest_post']['created_at'] ?? '');
+            $bAt = (string) ($b[1]['latest_post']['created_at'] ?? '');
+            if ($aAt !== $bAt) {
+                if ($aAt === '' || $bAt === '') {
+                    return $aAt === '' ? 1 : -1;
+                }
+                return strtotime($bAt) <=> strtotime($aAt) ?: strcmp($bAt, $aAt);
+            }
+            return $a[0] <=> $b[0];
+        });
+
+        return array_map(static fn (array $row): array => $row[1], $rows);
     }
 
     /**

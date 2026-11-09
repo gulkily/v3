@@ -255,7 +255,8 @@
 
   // Newsletter popup with a guilt-trip decline. Subscribing posts a public
   // announcement thread; the address itself is never sent or stored. With the
-  // password-newsletter flag, the box masks what is typed and Ava sits on it.
+  // password-newsletter flag, the box masks what is typed and Ava sits on it
+  // once it is focused.
   NAGS.push(function newsletter(ctx) {
     ctx.later(function () {
       var hidden = flag("engagifyPasswordNewsletter");
@@ -287,7 +288,12 @@
         ctx.later(function () { rateUs(ctx); }, 2500);
       } }));
       d.open();
-      if (hidden && ctx.chat) ctx.chat.cover(input);
+      if (hidden && ctx.chat) {
+        // Ava waits until the box is focused. The dialog's own autofocus would
+        // count, so it starts on Subscribe instead.
+        subscribe.focus();
+        input.addEventListener("focus", function () { ctx.chat.cover(input); }, { once: true });
+      }
     }, 6000);
   });
 

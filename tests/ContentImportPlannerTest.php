@@ -155,6 +155,24 @@ final class ContentImportPlannerTest
         }
     }
 
+    public function testOperatorGrantsAndTheirSeedsAreExcludedAsAuthority(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source', true);
+        $target = $w->repository('target');
+        $grant = 'records/operator-grants/operator-grant-20261109060000-ab12cd34.txt';
+        $seed = 'records/approval-seeds/openpgp-' . str_repeat('b', 40) . '.txt';
+        $w->put($source . '/' . $grant, "Record-ID: operator-grant-20261109060000-ab12cd34\nCreated-At: 2026-11-09T06:00:00Z\nOperator-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\nTarget-Identity-ID: openpgp:" . str_repeat('b', 40) . "\nTarget-Username: ilyag\n\n");
+        $w->put($source . '/' . $grant . '.asc', "-----BEGIN PGP SIGNATURE-----\n\nAAAA\n-----END PGP SIGNATURE-----\n");
+        $w->put($source . '/' . $seed, "Approved-Identity-ID: openpgp:" . str_repeat('b', 40) . "\nSeed-Reason: Granted by openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\nOperator-Grant-ID: operator-grant-20261109060000-ab12cd34\n\nMade an operator with the Make root button.\n");
+        $plan = (new ContentImportPlanner())->plan($source, $target);
+        foreach ([$grant, $grant . '.asc', $seed] as $path) {
+            assertSame('excluded', $plan[$path]['state'], $path);
+            assertSame('Instance authority, settings, or private data', $plan[$path]['reason'], $path);
+        }
+        assertSame('import', $plan['records/posts/root-001.txt']['state']);
+    }
+
     public function testUnsignedAndForgedPostRetractionsAreRejected(): void
     {
         $w = new ImportTestWorkspace();

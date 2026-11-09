@@ -608,7 +608,6 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
 }
 
 :root[data-theme="midnight"] .section-label,
-:root[data-theme="midnight"] .person-identities__title,
 :root[data-theme="midnight"] .account-key-header {
   position: relative;
   z-index: 1;
@@ -633,8 +632,7 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
   line-height: 1.75rem;
 }
 
-:root[data-theme="midnight"] .section-label + .thread-rows,
-:root[data-theme="midnight"] .person-identities__title + .account-group {
+:root[data-theme="midnight"] .section-label + .thread-rows {
   margin-top: 0;
   padding-top: 1.75rem;
 }

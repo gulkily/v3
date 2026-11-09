@@ -166,6 +166,9 @@ final class ThreadAndPostPageController
             'board',
             $this->identityScripts([
                 '/assets/inline_reply_form.js',
+                '/assets/outbox_store.js',
+                '/assets/outbox_storage.js',
+                '/assets/outbox_sender.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
@@ -265,6 +268,9 @@ final class ThreadAndPostPageController
             'Post ' . $post['post_id'],
             'board',
             $this->identityScripts([
+                '/assets/outbox_store.js',
+                '/assets/outbox_storage.js',
+                '/assets/outbox_sender.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',

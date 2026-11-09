@@ -1138,6 +1138,7 @@ final class ActivityService
             str_starts_with($path, 'records/post-retraction-acceptances/') => 'post retraction acceptance',
             str_starts_with($path, 'records/post-removals/') => 'post removal acceptance',
             str_starts_with($path, 'records/feature-flag-changes/') => 'feature flag change record',
+            str_starts_with($path, 'records/operator-grants/') => 'operator grant record',
             str_starts_with($path, 'records/history-rewrites/') => 'history rewrite record',
             str_starts_with($path, 'records/profile-names/') => 'profile name record',
             str_starts_with($path, 'records/identity/') => 'identity record',
@@ -1238,6 +1239,9 @@ final class ActivityService
             }
             if (str_starts_with($recordPath, 'records/feature-flag-changes/')) {
                 return $repository->loadFeatureFlagChange($recordPath)->operatorIdentityId;
+            }
+            if (str_starts_with($recordPath, 'records/operator-grants/')) {
+                return $repository->loadOperatorGrant($recordPath)->operatorIdentityId;
             }
         } catch (RuntimeException) {
             return null;

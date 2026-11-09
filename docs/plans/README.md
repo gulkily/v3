@@ -28,6 +28,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Human-readable format audit](human_readable_formats_checklist.md) — JSON conversion checklist and boundaries; [retraction text assessment](retraction_text_format/retraction_text_format_step1_solution_assessment.md).
 
+[Read-model rebuild checklist](read_model_rebuild_checklist.md) — three cycles so full rebuilds stop stalling pages: `rebuild_availability` (busy page instead of hangs; deploy queues its rebuild), `retraction_speed`, `background_rebuild`.
+
 ## Production feedback
 
 [Retraction simplification handoff](retraction_simplification_handoff.md) — current user direction, canceled sweep diagnostics plan, and coordination with registration and high-traffic work.
@@ -48,6 +50,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Engagify theme](engagify_theme/engagify_theme_step3_development_plan.md) — theme scripts, page themes in the site profile, and Engagify, a selectable parody theme of dark patterns that is the cookie notice thread's page theme; implemented locally, deploy check pending.
 - [Personal inbox](personal_inbox/personal_inbox_step3_development_plan.md) — one Inbox page for unread messages, replies to my posts and other new posts, with per-username caught-up marks behind `FORUM_INBOX_ENABLED`; Step 4 in progress.
 - [Gloss theme](gloss_theme/gloss_theme_step3_development_plan.md) — Gloss, a selectable theme with Engagify's look and no nags, sharing one stylesheet with Engagify; a new hand-drawn icon set for both; Exit from Engagify lands on Gloss; the cycle button skips Engagify; planned.
+- [Make root button](same_username_operator/same_username_operator_step3_development_plan.md) — a signed "Make root" button on a key's User Access page makes an approved key an operator by writing an approval seed in the same commit as the signed grant; imports skip grants; planned.
 - [Readable page URLs](readable_page_urls/readable_page_urls_step3_development_plan.md) — `?page=N` on every paged list and `?with=<ID>` to open the page holding a post, replacing base64 position tokens; "URLs are interface" rule; Step 4 in progress.
 - [Pre-existing test failures](preexisting_test_failures/preexisting_test_failures_one_shot.md) — one-shot: the 15 tests failing on `main` in cloud workspaces (GPG socket length, running as root, missing whiptail, four tests behind deliberate changes).
 - [Fast default tests: outliers](fast_default_tests_outliers/fast_default_tests_outliers_one_shot.md) — one-shot: removes avoidable waste from the three slowest test classes (docs snapshot reuse, checkout Git wait, isolated test Git config); split from the parked [fast default tests Step 1](fast_default_tests_step1_solution_assessment.md).
@@ -62,7 +65,9 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Calendar tiny month](calendar_tiny_month/calendar_tiny_month_one_shot.md) — one-shot: on a phone the month grid shows the first words of each day's events in tiny text, not just a count.
 - [Calendar today](calendar_today/calendar_today_one_shot.md) — one-shot: the calendar marks today in the viewer's time zone and offers Today when its month is not shown; implemented locally.
 - [Reply bare card](reply_bare_card/reply_bare_card_one_shot.md) — one-shot: a sent reply keeps its "Posting…" status until the full post replaces it, instead of briefly showing as a bare body.
+- [User identities tab](user_identities_tab/user_identities_tab_one_shot.md) — one-shot: the person page gets an Identities tab listing each key with its last-active date and latest post, newest first.
 - [Ctrl+Enter after late signing load](ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md) — one-shot fix: the composer's signing script sets itself up when an approved member's messaging scripts load it after page parse, restoring Ctrl+Enter on the board; merged, deployed and accepted.
+- [Compose menu options](compose_menu_options/compose_menu_options_one_shot.md) — one-shot: the composer's ... menu holds only actions; Markdown, Formatting help and the theme choice moved to a collapsed Options section in the compose form.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
