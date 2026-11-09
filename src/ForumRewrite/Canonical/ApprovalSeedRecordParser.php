@@ -25,6 +25,11 @@ final class ApprovalSeedRecordParser
             throw new CanonicalRecordParseException('Approved-Identity-ID must use the retained lowercase OpenPGP identity form.');
         }
 
-        return new ApprovalSeedRecord($approvedIdentityId, $seedReason, $record->body);
+        $operatorGrantId = $record->headers['Operator-Grant-ID'] ?? null;
+        if ($operatorGrantId !== null && preg_match('/^operator-grant-[A-Za-z0-9][A-Za-z0-9._-]*$/D', $operatorGrantId) !== 1) {
+            throw new CanonicalRecordParseException('Operator-Grant-ID is invalid.');
+        }
+
+        return new ApprovalSeedRecord($approvedIdentityId, $seedReason, $record->body, $operatorGrantId);
     }
 }

@@ -55,6 +55,7 @@ final class SourcePathValidator
             || preg_match('#^records/post-retractions/post-retraction-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-retraction-acceptances/post-retraction-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/feature-flag-changes/feature-flag-change-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
+            || preg_match('#^records/operator-grants/operator-grant-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/attribution-cutoffs/attribution-cutoff-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/history-rewrites/history-rewrite-\d{8}T\d{6}Z(?:-[1-9]\d*)?\.txt$#', $relativePath) === 1
             || preg_match('#^records/profile-names/profile-name-[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1

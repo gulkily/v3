@@ -22,6 +22,7 @@ final class CanonicalRecordRepository
         private readonly PostReactionRecordParser $postReactionParser = new PostReactionRecordParser(),
         private readonly PostRetractionRecordParser $postRetractionParser = new PostRetractionRecordParser(),
         private readonly FeatureFlagChangeRecordParser $featureFlagChangeParser = new FeatureFlagChangeRecordParser(),
+        private readonly OperatorGrantRecordParser $operatorGrantParser = new OperatorGrantRecordParser(),
         private readonly AttributionCutoffRecordParser $attributionCutoffParser = new AttributionCutoffRecordParser(),
         private readonly InstancePublicRecordParser $instanceParser = new InstancePublicRecordParser(),
         private readonly SiteFeatureFlagsRecordParser $featureFlagsParser = new SiteFeatureFlagsRecordParser(),
@@ -286,6 +287,17 @@ final class CanonicalRecordRepository
         $request = $this->postRetractionParser->parse($accepted['signed_request']);
         return new PostRetractionRecord($request->recordId, $request->createdAt, $request->postId, $request->operation,
             $request->authorIdentityId, $request->actorIdentityId, $request->classification, true, $accepted['attribution']);
+    }
+
+    public function loadOperatorGrant(string $relativePath): OperatorGrantRecord
+    {
+        $this->assertPathIsWithinFamily($relativePath, 'records/operator-grants/');
+        $record = $this->operatorGrantParser->parse($this->read($relativePath));
+        if ($relativePath !== CanonicalPathResolver::operatorGrant($record->recordId)) {
+            throw new CanonicalRecordParseException('Operator grant record path must match Record-ID.');
+        }
+
+        return $record;
     }
 
     public function loadFeatureFlagChange(string $relativePath): FeatureFlagChangeRecord
