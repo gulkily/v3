@@ -58,3 +58,27 @@ Starting revision: `f60d639` (`main`, which includes PR #88).
 - Estimate details (extended mode only): original scope as in Step 3; no revision. The retired case needed the key retirement API, which already existed.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - The "Make root" button
+
+**Original estimate: 0.12**
+
+**Retrospective stage-work assessment: 0.13**
+
+- Changes:
+  - Routes `/api/prepare_operator_grant` and `/api/finalize_operator_grant` in `Application.php`, in the known API path list, and in `ApiRouteCatalog` as operator routes.
+  - `ToolsPageController::operatorGrantApi()`: POST only; the viewer must pass `RouteServices::profileIsActiveOperator` (PR #88); then it calls the Stage 2 writer methods, which re-check everything.
+  - `ApprovalPolicy::operatorGrantActors(root, profile)`: active operator fingerprints, or none when the profile is not an approved, unretired, non-operator key.
+  - New partial `templates/partials/operator_grant.php`, included in `profile_access.php` after key retirement. Like `key_retirement.php`, it decides visibility before paint from the actors list and the browser's stored key.
+  - New `public/assets/operator_grant.js`, modeled on `key_retirement.js`: "Make root…" prepares, the confirmation reads "Make <username> (<8 hex>…) a root operator? This key will be able to do everything root can.", then "Make root" signs with `ForumBrowserSigning.signCanonicalRecord` and finalizes. A failed finalize keeps the signed request for a retry and says to reload to check the outcome. Success reloads.
+- Verification:
+  - Passed: `WriteApiSmokeTest::testOperatorGrantRoutesAndAccessPageButton`. GET is refused; no viewer and a member viewer get 403. The operator sees the partial, its fingerprint in the actors list and the hashed `operator_grant` script on the target's page, and no partial on its own page. A grant through both routes succeeds, and the partial is gone from the target's page afterwards.
+  - Passed: new `tests/browser/operator_grant.mjs`, desktop and 390px. It renders the real partial with PHP, checks hidden for a non-operator key and no markup with no actors, shown before paint for an operator, the confirmation text, cancel, a failed finalize with retry resending the same signed request, one signature in total, and a reload. Run as `node --import <hook> tests/browser/operator_grant.mjs`; the hook maps `playwright-core` to `/opt/node-tools`, because this checkout has no `node_modules`.
+  - Passed: `ApiRouteCatalogTest`; `./v3 test --smoke` plus the changed tests: 443 run, 442 passed, the baseline `BoardListTest` failure only. Full suite not run.
+  - Moved to Stage 6: the real-key headless run on `./v3 start`. It is the same scenario as Stage 6's two-key replay, so it runs once there.
+- Notes:
+  - Reuse: `key_retirement.php` and `key_retirement.js` patterns, the flag change API handler shape, `ForumBrowserSigning`, `identityScripts`.
+  - Asset URLs carry a content hash (`/assets/operator_grant.<hash>.js`), so the page test matches the pattern.
+- Estimate details (extended mode only): original scope as in Step 3; no revision. Slightly over: the charset bug in the test fixture and the asset hash cost two extra runs.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*

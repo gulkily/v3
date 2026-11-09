@@ -38,6 +38,33 @@ final class ApprovalPolicy
         return self::isOperator($repositoryRoot, $identityId) && KeyRetirement::read($repositoryRoot, $identityId) === null;
     }
 
+    /**
+     * Fingerprints of active operators who may grant operator status to this
+     * profile, for the page to decide before paint. Empty when the profile is
+     * not an approved, unretired, non-operator key.
+     *
+     * @param array<string, mixed> $profile
+     * @return list<string>
+     */
+    public static function operatorGrantActors(string $repositoryRoot, array $profile): array
+    {
+        $target = (string) ($profile['identity_id'] ?? '');
+        if ((int) ($profile['is_approved'] ?? 0) !== 1 || !empty($profile['retired_at'])
+            || preg_match('/^openpgp:[a-f0-9]{40}$/D', $target) !== 1 || self::isOperator($repositoryRoot, $target)) {
+            return [];
+        }
+        $actors = [];
+        foreach (glob($repositoryRoot . '/records/approval-seeds/openpgp-*.txt') ?: [] as $path) {
+            $fingerprint = substr(basename($path, '.txt'), strlen('openpgp-'));
+            if (self::isActiveOperator($repositoryRoot, 'openpgp:' . $fingerprint)) {
+                $actors[] = $fingerprint;
+            }
+        }
+        sort($actors);
+
+        return $actors;
+    }
+
     /** This is also the prepared authorization context; do not include presentation-only state. */
     public function evaluate(string $actorId, string $targetId): array
     {

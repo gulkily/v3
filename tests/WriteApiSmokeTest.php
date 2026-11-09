@@ -5818,6 +5818,53 @@ NODE;
         assertSame(2, count(glob($root . '/records/operator-grants/*.txt') ?: []));
     }
 
+    public function testOperatorGrantRoutesAndAccessPageButton(): void
+    {
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $operatorKey = $this->createSigningKey('ilyag');
+        $targetKey = $this->createSigningKey('ilyag');
+        $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+        $operator = $writer->linkIdentity(['public_key' => $operatorKey['public_key']])['identity_id'];
+        $target = $writer->linkIdentity(['public_key' => $targetKey['public_key']]);
+        $this->seedApprovedIdentity($root, $operator);
+        (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+        $this->approveIdentity(new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root)), $target, $operator);
+        $application = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $json = fn (string $method, string $path): array => json_decode($this->renderMethod($application, $method, $path), true, 512, JSON_THROW_ON_ERROR);
+        $targetPage = '/tools/user-access/profiles/' . $target['profile_slug'] . '/';
+        try {
+            $_COOKIE = [];
+            assertSame('method not allowed', $json('GET', '/api/prepare_operator_grant')['error']);
+            assertSame('Making a key an operator requires a root-approved identity.', $json('POST', '/api/prepare_operator_grant')['error']);
+            $_COOKIE = ['identity_hint' => $target['identity_id']];
+            $_POST = ['target_identity_id' => $operator];
+            assertSame('Making a key an operator requires a root-approved identity.', $json('POST', '/api/prepare_operator_grant')['error']);
+
+            $_COOKIE = ['identity_hint' => $operator];
+            $page = $this->renderMethod($application, 'GET', $targetPage);
+            assertStringContains('data-operator-grant data-target-identity-id="' . $target['identity_id'] . '"', $page);
+            assertStringContains('"' . substr($operator, 8) . '"', $page);
+            assertSame(1, preg_match('#/assets/operator_grant\.[a-f0-9]+\.js#', $page));
+            assertSame(false, str_contains($this->renderMethod($application, 'GET', '/tools/user-access/profiles/openpgp-' . substr($operator, 8) . '/'), 'data-operator-grant '));
+
+            $_POST = ['target_identity_id' => $target['identity_id']];
+            $prepared = $json('POST', '/api/prepare_operator_grant');
+            assertSame(['ok', 'ilyag'], [$prepared['status'], $prepared['target_username']]);
+            $_POST = [
+                'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'],
+                'record_path' => $prepared['record_path'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->signCanonicalRecord($operatorKey['home'], $prepared['canonical_record']),
+            ];
+            assertSame('ok', $json('POST', '/api/finalize_operator_grant')['status']);
+            $_POST = [];
+            assertSame(true, ApprovalPolicy::isActiveOperator($root, $target['identity_id']));
+            assertSame(false, str_contains($this->renderMethod($application, 'GET', $targetPage), 'data-operator-grant '));
+        } finally {
+            $_POST = [];
+            $_COOKIE = [];
+        }
+    }
+
     public function testVerifiedTotalsAgreeAcrossRebuildIncrementalToggleCutoffMoveAndEnvironment(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();
