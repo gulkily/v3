@@ -19,3 +19,12 @@ version checker, not a live posting flow. No theme or layout changes. Browsers
 without JavaScript or the History API retain the existing URL behavior.
 
 Dependencies: No additions or updates.
+
+Update 2026-11-09: The cleanup only ran when the version-notification flag was on,
+because it lived in version_check.js, so production thread URLs kept both hints.
+Post-submit redirects no longer add __v: created_post_id alone makes the first
+request bypass static and high-traffic caches, so __v was redundant there.
+thread_url_hints.js, loaded on every thread page, now removes created_post_id
+regardless of that flag. version_check.js still removes its own __v reload token
+after using it. Verified with ThreadUrlHintsTest, VersionCheckBehaviorTest, the
+browser-signing redirect cases and the compose/reply redirect smoke test.

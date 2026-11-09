@@ -4810,7 +4810,7 @@ NODE;
         assertSame(0, $result['optimistic']['formSubmitted']);
         assertSame(false, $result['optimistic']['draftExists']);
         assertSame('forum_compose_draft:thread', $result['optimistic']['recentlyClearedDraft']);
-        assertSame('/threads/thread-001?created_post_id=thread-001&__v=def999', $result['assignedUrl']);
+        assertSame('/threads/thread-001?created_post_id=thread-001', $result['assignedUrl']);
         assertSame(['forum_compose_draft:thread'], $result['removeCalls']);
         assertSame(0, $result['finalFormSubmitted']);
         assertSame(
@@ -5364,7 +5364,7 @@ NODE;
         assertSame(2, $result['finalFinalizeFetchCount']);
         assertSame(3, $result['finalPreventDefaultCount']);
         assertSame(1, $result['finalPendingCount']);
-        assertSame('/threads/thread-001?created_post_id=thread-001&__v=def999', $result['assignedUrl']);
+        assertSame('/threads/thread-001?created_post_id=thread-001', $result['assignedUrl']);
     }
 
     public function testInlineReplySubmitRendersPendingCardBeforeApiResponseAndNavigatesOnSuccess(): void
@@ -5680,7 +5680,7 @@ NODE;
         assertSame(0, $result['optimistic']['formSubmitted']);
         assertSame(false, $result['optimistic']['draftExists']);
         assertSame('forum_compose_draft:reply:root-001:root-001', $result['optimistic']['recentlyClearedDraft']);
-        assertSame('/threads/root-001?created_post_id=reply-002&__v=abc999#post-reply-002', $result['assignedUrl']);
+        assertSame('/threads/root-001?created_post_id=reply-002#post-reply-002', $result['assignedUrl']);
         assertSame(['forum_compose_draft:reply:root-001:root-001'], $result['removeCalls']);
         assertSame(0, $result['finalFormSubmitted']);
         assertSame(
@@ -6218,7 +6218,7 @@ NODE;
         assertSame(2, $result['finalPrepareFetchCount']);
         assertSame(2, $result['finalFinalizeFetchCount']);
         assertSame(3, $result['finalPreventDefaultCount']);
-        assertSame('/threads/root-001?created_post_id=reply-002&__v=abc999#post-reply-002', $result['assignedUrl']);
+        assertSame('/threads/root-001?created_post_id=reply-002#post-reply-002', $result['assignedUrl']);
     }
 
     public function testThreadReactionBootstrapsIdentityBeforeApplyingLike(): void
