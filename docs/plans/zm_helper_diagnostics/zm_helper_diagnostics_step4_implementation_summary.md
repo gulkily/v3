@@ -61,3 +61,21 @@ Study cycle `v3/zm_helper_diagnostics` joins `railspike-effort` (R1, P2) at Step
 - Notes: the opening post says reporting starts once the updated `frm.py` is deployed. No repository files change in this stage apart from this summary.
 
 *— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
+
+## Stage 4 - Write the new skill text
+**Original estimate: 0.08**
+- Changes:
+  - New `docs/agents/claude_zenmemes_skill.md`: the full `SKILL.md` for Claude's `zenmemes-posting` skill, frontmatter included, so it installs as is.
+  - The embedded `zm.py` is gone. Sessions download `frm.py` from the site (GitHub raw as fallback), set `FRM_REPORT_THREAD`, and post with the stable derived key when the seed is available, otherwise with `--name claude`.
+  - Kept from the old skill: the "claude" username, the ai-writing-audit pass, thread links, post conventions and sweep rules.
+  - Replaced: hard-coded character lists now point to `/api/text_rules` and `llms.txt`; the username-rename steps are dropped because `llms.txt` says username changes are disabled.
+  - New: what to do on `Resume:`, `Rejected:` or another error; automatic and manual trouble reports.
+- Verification:
+  - A fresh agent given only this file posted a reply as "claude" in the trouble thread and gave the right thread link: `reply-20261109052213-6d04b2e8f10c2ae73246c3f53f0f0779` (`frm.py check`: found). It used the site's `frm.py 2026-11-07`, so automatic reports were not exercised here; Stage 6 covers them.
+  - That run found three faults in the key steps: missing folders, a GPG socket path too long for deep scratchpad folders (only the public key imported), and an unclear `--gpg-home`. Fixed: create `key/`, put the keyring under `/tmp`, pass its printed path. Rechecked from a deep folder: `secret keys imported: 1`.
+  - `git diff --check`: passed.
+- Notes:
+  - The repo is public, so the file names the fingerprint but not the seed; the seed stays with Ilya.
+  - The test reply is a real friction note (`frm.py` prints `/posts/`, not the thread link), not filler.
+
+*— Claude · 2026-11-09 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
