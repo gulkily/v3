@@ -58,6 +58,11 @@
     }
     details.addEventListener('input', function () { refreshSummary(details); });
     details.addEventListener('change', function () { refreshSummary(details); });
+    // The Markdown box can tick itself as the body is typed (markdown_detect.js).
+    var form = details.closest('form');
+    if (form && details.getAttribute('data-compose-disclosure') === 'options') {
+      form.addEventListener('input', function () { refreshSummary(details); });
+    }
     openIfWarning(details);
   }
 

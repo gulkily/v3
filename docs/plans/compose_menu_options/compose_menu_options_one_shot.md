@@ -92,3 +92,13 @@ Request, 2026-11-09 after PR #103 merged, in session: "Please move from the menu
 - Verification: `./v3 test --smoke WriteApiSmokeTest::testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt LocalAppSmokeTest` (442 passed; the two named tests also run alone, 166 passed). `tests/browser/compose_disclosure.mjs` and `tests/browser/calendar.mjs` ok. Headless Chrome on New post, board and a thread's reply composer at 1100px and 390px in default, Gloss and Word97: no settings left in the menu, Options collapsed by default, ticking Markdown and picking a theme updates the summary, no page errors. Full suite not run; phone reply panel with Options open not checked.
 - Effort: follow-up revision, no new estimate.
 
+## Follow-up: Options as a settings list (2026-11-09)
+
+Request, in session with a screenshot of the Options panel: "let's design something better, with anticipation for a few more options in the future". Three mocked directions (settings list, chips, grouped list); the maintainer chose the settings list ("i agree with A"). Branch `feat/compose_options_list` from `origin/main` `d0cd655`.
+
+- One row per option with hairlines between: name on the left, control on the right. Markdown is a switch (still the same `body_format` checkbox, `role="switch"`), with Formatting help as a small "?" beside its name. The theme choice is a styled menu. Labels are no longer bold.
+- Collapsed: "Options · Markdown · Gloss"; the summary also follows the Markdown box when `markdown_detect.js` ticks it as the body is typed.
+- Switch colors come from each theme's text and page colors (outlined when off, filled when on) with `:root` specificity above the themes' generic input rules; the first version used `--active-line` and lost its "on" state in Word97, Midnight and Arena.
+- Rule for future options: one row each; on/off is a switch, a choice is a menu; a hint line only when the name can't explain itself; group headings once there are about five rows.
+- Verification: `./v3 test --smoke WriteApiSmokeTest::testComposersOfferTheMarkdownBoxAndTheUnsignedFormPathHonoursIt LocalAppSmokeTest`, 442 passed. `tests/browser/compose_disclosure.mjs` and `tests/browser/calendar.mjs` ok. Headless Chrome on New post (1100px and 390px) and a thread's reply composer (390px) in default, dark, Gloss, Word97, Chicago, Midnight, Console, LCD, Arena and Forge: no overflow, no page errors, summary follows auto-detect and the theme choice; on and off states reviewed. Full suite not run; phone reply panel with Options open and remaining themes unchecked.
+
