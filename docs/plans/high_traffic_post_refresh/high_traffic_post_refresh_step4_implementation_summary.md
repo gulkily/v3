@@ -38,3 +38,26 @@ Starting revision: `a2bcc64d` (`main`). No matching item in `docs/feedback/items
 - Estimate details (extended mode only): original scope as in Step 3; no revision. The locked `forget` was not in the plan but sits inside this stage's race risk.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Refresh on every post write
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.08**
+
+- Changes:
+  - `LocalWriteService::withTimedWriteLock` takes `refreshThreadPage`. When set, and the write returned `ok` with a thread ID, it calls the refresh after the write lock is released. Its time goes into `timings` as `high_traffic_refresh`, only when the mode is on.
+  - Set on `createThreadForAuthoringMode`, `createReply` (agent replies too), `createPreparedPost`, `createSignedPost` (the `frm.py` and API path) and `createPreparedPostFormat`. Tags, likes, retractions and `setThreadSubjectIfEmpty` are unchanged.
+  - `HighTrafficSafety::afterPost(repository, database, threadId)`: builds the cache the same way `beforeWrite` does, returns `inactive` without a state file, and never throws.
+  - New `tests/HighTrafficPostRefreshTest.php`, registered in `tests/run.php`.
+- Verification:
+  - Passed: `./v3 test HighTrafficPostRefreshTest`, 3 run, 3 passed. A reply replaces the cached thread page with one containing the reply; a tag write leaves it alone; a new thread has no cached page and is skipped; a held page lock leaves the post saved and the route queued; mode off leaves the cache and timings untouched.
+  - Passed: `./v3 test --smoke HighTrafficTest HighTrafficPostRefreshTest HighTrafficPublicationTest AgentPostingApiTest LocalWriteServiceTitleDirectiveTest`, 463 run, 463 passed.
+  - Passed: `./v3 test AgentPostingApiTest LocalWriteServiceTitleDirectiveTest`, 11 run, 11 passed.
+  - Not tested directly: the signed, prepared and format paths. They share the same flag and result shape (`status`, `thread_id`), checked by reading each return. The Stage 4 replay covers the signed path through `frm.py`.
+  - Full suite not run.
+- Notes:
+  - One flag on the shared lock wrapper instead of a call in each method, so a new post path needs one argument.
+- Estimate details (extended mode only): original scope as in Step 3; no revision. Smaller than expected because every post path already returned `thread_id`.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
