@@ -173,6 +173,8 @@ final class QdbPageTest
             $pdo->exec("UPDATE posts SET body='STALE QDB BODY'");
             $fresh = new Application(dirname(__DIR__), __DIR__.'/fixtures/parity_minimal_v1', $database);
             $html = $render($fresh);
+            // The startup rebuild swapped in a new file; reopen to read it.
+            $pdo = new PDO('sqlite:'.$database);
             assertStringNotContains('STALE QDB BODY', $html);
             assertSame(ReadModelMetadata::SCHEMA_VERSION, $pdo->query("SELECT value FROM metadata WHERE key='schema_version'")->fetchColumn());
             assertSame($originalBody, $pdo->query("SELECT body FROM posts WHERE post_id='root-001'")->fetchColumn());

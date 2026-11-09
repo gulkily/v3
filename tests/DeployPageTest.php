@@ -119,6 +119,62 @@ PHP;
         assertSame(0, $exitCode, implode("\n", $output));
     }
 
+    public function testPageFollowsAQueuedReadModelRebuild(): void
+    {
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
+
+use ForumRewrite\Application;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+
+$databasePath = sys_get_temp_dir() . '/deploy-rebuild-' . bin2hex(random_bytes(6)) . '.sqlite3';
+$queuePath = sys_get_temp_dir() . '/deploy-rebuild-queue-' . bin2hex(random_bytes(6)) . '.sqlite3';
+putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
+$render = static function (Application $app, string $path): string {
+    ob_start();
+    $app->handle('GET', $path);
+    return (string) ob_get_clean();
+};
+try {
+    $_COOKIE = [];
+    TestViewerSession::signIn($argv[3]);
+    $app = new Application($argv[1], $argv[2], $databasePath);
+    $render($app, '/threads/');
+    $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+    $page = $render($app, '/tools/deploy/');
+    if (str_contains($page, 'Site data')) throw new RuntimeException('No rebuild: the row stays hidden.');
+
+    $task = $store->enqueue(SqliteTaskQueueStore::REBUILD_READ_MODEL, 'read-model');
+    $page = $render($app, '/tools/deploy/');
+    foreach (['Site data', 'rebuild waiting for the task worker', 'run <code>./v3 rebuild</code> over SSH', 'data-deploy-pending="1"'] as $needle) {
+        if (!str_contains($page, $needle)) throw new RuntimeException('Queued rebuild page missing: ' . $needle);
+    }
+
+    $store->claimNext();
+    $store->recordTaskProgress((int) $task['id'], 'Read model: index posts...');
+    $page = $render($app, '/tools/deploy/');
+    foreach (['rebuilding', 'Read model: index posts...', 'data-deploy-pending="1"'] as $needle) {
+        if (!str_contains($page, $needle)) throw new RuntimeException('Running rebuild page missing: ' . $needle);
+    }
+} finally {
+    TestViewerSession::reset();
+    @unlink($databasePath);
+    @unlink($queuePath);
+}
+PHP;
+        $command = sprintf(
+            'php -r %s %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(dirname(__DIR__)),
+            escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1'),
+            escapeshellarg(self::OPERATOR),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+
+        assertSame(0, $exitCode, implode("\n", $output));
+    }
+
     public function testActionsRequireSameOriginOperatorSession(): void
     {
         $same = ['HTTP_SEC_FETCH_SITE' => 'same-origin', 'HTTP_ORIGIN' => 'http://forum.test'];

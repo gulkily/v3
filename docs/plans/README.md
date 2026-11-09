@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Markdown work checklist](markdown_work_checklist.md) — relevance-sorted completed work, acceptance, follow-ups and optional compatibility decisions.
 
+[ZenMemes helper diagnostics](zm_helper_diagnostics/zm_helper_diagnostics_step3_development_plan.md) — Claude posts through `frm.py` like other agents, and failed writes post a short trouble report to one standing thread.
+
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
 
 [Board thumbnails one-shot](board_thumbnails/board_thumbnails_one_shot.md) — image posts show a small thumbnail on the board and on Recent.
@@ -58,6 +60,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Work tracking](work_tracking/work_tracking_step3_development_plan.md) — superseded 2026-11-04; code removed, restarting from feedback data as [feedback work restart](feedback_work_restart/feedback_work_restart_step1_solution_assessment.md).
 - [Feedback work restart](feedback_work_restart/feedback_work_restart_step3_development_plan.md) — feedback items as `Key: value` files in `docs/feedback/items/`, `./v3 feedback check|index`, triage procedure in `docs/agents/`; Step 4 in progress.
 - [Delete record speed](delete_record_speed/delete_record_speed_step3_development_plan.md) — `./v3 delete-record` inspect and delete under 1s on the qdb host with live status lines and `-q`; label-file index, one-index-read commit, incremental removal instead of a full rebuild; Step 4 in progress.
+- [Rebuild availability](rebuild_availability/rebuild_availability_step3_development_plan.md) — cycle 1 of the [read-model rebuild checklist](read_model_rebuild_checklist.md): full rebuilds build a new file and swap it in, pages fail fast to the busy page, requests never rebuild, and deploy queues its own rebuild after a schema change; Step 4 in progress.
 
 - [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
 - [Calendar approved events](calendar_approved_events/calendar_approved_events_one_shot.md) — one-shot: the calendar lists only events whose thread author is an approved member; other events stay on their threads.

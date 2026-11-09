@@ -132,6 +132,8 @@ final class DeployController
             'busy' => $state['busy'],
             'worker' => $state['worker'],
             'task_status' => $state['task']['status'] ?? null,
+            'rebuild_status' => $state['rebuild']['status'] ?? null,
+            'rebuild_progress' => $state['rebuild']['progress'] ?? null,
             'latest' => $state['latest'],
         ];
     }
@@ -166,6 +168,7 @@ final class DeployController
         $state['worker'] = 'not_observed';
         $state['worker_last_completed_at'] = null;
         $state['task'] = null;
+        $state['rebuild'] = null;
         $store = $this->existingStore();
         if ($store !== null) {
             try {
@@ -173,6 +176,7 @@ final class DeployController
                 $state['worker'] = $heartbeat['status'];
                 $state['worker_last_completed_at'] = $heartbeat['last_completed_at'];
                 $state['task'] = $store->latestByType(SqliteTaskQueueStore::APP_UPDATE);
+                $state['rebuild'] = $this->rebuildState($store);
             } catch (\Throwable) {
                 $state['worker'] = 'unavailable';
             }
@@ -194,6 +198,29 @@ final class DeployController
         }
 
         return preg_replace('/\.git$/', '', $url);
+    }
+
+    /**
+     * The latest read-model rebuild task, with its newest progress line, so the page can follow
+     * a rebuild a deploy queued.
+     *
+     * @return array{status: string, progress: ?string, requested_at: ?string}|null
+     */
+    private function rebuildState(SqliteTaskQueueStore $store): ?array
+    {
+        $task = $store->latestByType(SqliteTaskQueueStore::REBUILD_READ_MODEL);
+        if ($task === null) {
+            return null;
+        }
+        $progress = null;
+        foreach ($store->recentTaskProgress(50) as $event) {
+            if ((int) $event['task_id'] === (int) $task['id']) {
+                $progress = (string) $event['message'];
+                break;
+            }
+        }
+
+        return ['status' => (string) $task['status'], 'progress' => $progress, 'requested_at' => $task['requested_at'] ?? null];
     }
 
     private function existingStore(): ?SqliteTaskQueueStore
