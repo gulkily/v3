@@ -86,6 +86,15 @@ and on refresh failure; there is no deliberate expiration gap. A missed/overload
 cron can exceed the freshness target, and less popular pages have no hard
 freshness guarantee.
 
+A new thread, reply, agent reply or post format change refreshes its own thread
+page right away, if that page is cached. The page is rendered after the write
+lock is released and swapped over the old file, so the poster's redirect shows
+the post. If the render cannot run (the page is already rendering, no generator
+slot is free, or it fails), the post still saves and the route is queued with
+the write time. The next cron run renders it even if the file looks fresh. The
+board and `/threads/` keep the refresh-marker path above. Post timings report the
+refresh as `high_traffic_refresh`.
+
 ```bash
 ./v3 high-traffic refresh /about/
 ./v3 high-traffic purge

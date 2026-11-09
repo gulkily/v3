@@ -164,7 +164,7 @@ class LocalWriteService
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
-        });
+        }, true);
     }
 
     /**
@@ -272,7 +272,7 @@ class LocalWriteService
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
-        });
+        }, true);
     }
 
     /**
@@ -528,7 +528,7 @@ class LocalWriteService
                 'commit_sha' => $commitSha,
                 'timings' => $timings,
             ];
-        });
+        }, true);
     }
 
     /** Accept exact client-signed text, with optional atomic first-use bootstrap. */
@@ -596,7 +596,7 @@ class LocalWriteService
                 $result['recovery'] = 'Post is committed. Resend the same signed bundle to retry refresh; do not generate a new post ID.';
             }
             return $result;
-        });
+        }, true);
     }
 
     private function assertImageAuthor(string $body, string $identity): ?array
@@ -1018,7 +1018,7 @@ class LocalWriteService
                 'failed_step' => $failedStep,
                 'timings' => ['total' => $this->elapsedMilliseconds($totalStartedAt)],
             ];
-        });
+        }, true);
     }
 
     private function latestPostFormatCreatedAt(string $postId): ?string
@@ -3919,7 +3919,11 @@ class LocalWriteService
      * @param callable(): array<string, mixed> $callback
      * @return array<string, mixed>
      */
-    private function withTimedWriteLock(callable $callback): array
+    /**
+     * @param bool $refreshThreadPage true for writes that add or change a post: once the
+     *        lock is released, high-traffic mode re-renders that post's thread page.
+     */
+    private function withTimedWriteLock(callable $callback, bool $refreshThreadPage = false): array
     {
         $locked = $this->executionLock()->withExclusiveLockTimed(function () use ($callback): array {
             (new SignedPostTransaction($this->repositoryRoot))->recover();
@@ -3937,6 +3941,14 @@ class LocalWriteService
         $timings = isset($result['timings']) && is_array($result['timings'])
             ? $result['timings']
             : [];
+        if ($refreshThreadPage && ($result['status'] ?? null) === 'ok' && is_string($result['thread_id'] ?? null)) {
+            // After the lock: the read model has the post, and other writers are not held up.
+            $refreshStartedAt = hrtime(true);
+            $outcome = \ForumRewrite\Host\HighTrafficSafety::afterPost($this->repositoryRoot, $this->databasePath, $result['thread_id']);
+            if ($outcome !== 'inactive') {
+                $timings['high_traffic_refresh'] = $this->elapsedMilliseconds($refreshStartedAt);
+            }
+        }
         $result['timings'] = array_merge($locked['timings'], $timings);
 
         return $result;

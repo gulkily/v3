@@ -50,7 +50,9 @@ final class HighTrafficRefresh
             catch (\Throwable $e) { $this->cache->report($e);$report['status']='partial';$report['log_error']=$e->getMessage(); }
             $dirty=is_file($this->cache->root . '/dirty');
             $popular=array_values(array_filter($popular,fn (string $route): bool => $dirty || !$this->cache->fresh($route)));
-            $low=array_values(array_filter($this->hints(),fn (string $route): bool => $dirty || !$this->cache->fresh($route)));
+            // hints() already drops browser hints for fresh pages; a write hint stays due until a render that started after the write.
+            $low=$this->hints();
+            $due=array_flip($low);
             $maximum=$this->cache->limits['renders'];
             $reserved=min(5,count($low),$maximum);
             $routes=array_values(array_unique(array_merge(array_slice($popular,0,$maximum-$reserved),array_slice($low,0,$reserved))));
@@ -61,11 +63,12 @@ final class HighTrafficRefresh
             foreach ($routes as $route) {
                 $remaining=$this->cache->limits['run_seconds']-(microtime(true)-$start);
                 if ($remaining<1 || $attempts>=$maximum || !$this->cache->enabled()) break;
-                if (!$dirty && $this->cache->fresh($route)) { $report['skipped']++;continue; }
+                if (!$dirty && !isset($due[$route]) && $this->cache->fresh($route)) { $report['skipped']++;continue; }
                 $attempts++;
                 $this->cache->limits['render_seconds']=max(1,min(30,(int)$remaining));
                 try {
-                    if ($this->cache->generate($route,true)!==null) { $report['rendered']++;$this->forget($route); }
+                    $renderStarted=microtime(true);
+                    if ($this->cache->generate($route,true)!==null) { $report['rendered']++;$this->forget($route,$renderStarted); }
                     else $report['skipped']++;
                 } catch (\Throwable $e) { $this->cache->report($e);$report['failed']++;$report['status']='partial'; }
             }
@@ -76,17 +79,55 @@ final class HighTrafficRefresh
             return $report;
         } finally { flock($lock,LOCK_UN);fclose($lock); }
     }
-    public function hint(string $route): bool
+    /**
+     * Queue a cached route for the next cron run. A browser hint ($changedAt null) is
+     * dropped while the page is fresh. A write hint carries the write time and stays
+     * due until a render that started after it, however fresh the cached file looks.
+     */
+    public function hint(string $route, ?float $changedAt = null): bool
     {
         if (HighTrafficRoute::canonical($route)===null || !$this->cache->enabled()) return false;
-        return $this->cache->locked(function () use ($route): bool {
-            if (!$this->cache->enabled() || !is_file($this->cache->path($route)) || $this->cache->fresh($route)) return false;
+        return $this->cache->locked(function () use ($route,$changedAt): bool {
+            if (!$this->cache->enabled() || !is_file($this->cache->path($route))) return false;
+            if ($changedAt===null && $this->cache->fresh($route)) return false;
             $path=$this->cache->root . '/hints/' . hash('sha256',$route) . '.json';
-            if (is_file($path)) return false;
-            if (count(glob($this->cache->root . '/hints/*.json') ?: []) >= $this->cache->limits['queue']) return false;
-            $this->cache->atomic($path,json_encode(['route'=>$route,'queued_at'=>time()],JSON_THROW_ON_ERROR));
+            $existing=is_file($path) ? json_decode((string)file_get_contents($path),true) : null;
+            if (is_file($path)) {
+                if ($changedAt===null) return false;
+                $changedAt=max($changedAt,(float)(is_array($existing) ? ($existing['changed_at'] ?? 0) : 0));
+            } elseif (count(glob($this->cache->root . '/hints/*.json') ?: []) >= $this->cache->limits['queue']) return false;
+            $entry=['route'=>$route,'queued_at'=>time()];
+            if ($changedAt!==null) $entry['changed_at']=$changedAt;
+            $this->cache->atomic($path,json_encode($entry,JSON_THROW_ON_ERROR));
             return true;
         });
+    }
+    /**
+     * After a post is written: render its thread page and swap it in, or queue it for
+     * cron. Never throws; returns refreshed, queued, skipped (page not cached or not
+     * eligible) or inactive (mode off).
+     */
+    public function afterPost(string $threadId): string
+    {
+        try {
+            $route=HighTrafficRoute::canonical('/threads/' . $threadId . '/');
+            if ($route===null) return 'skipped';
+            if (!$this->cache->enabled()) return 'inactive';
+            if (!is_file($this->cache->path($route))) return 'skipped';
+            $changedAt=microtime(true);
+            try {
+                if ($this->cache->generate($route,true)!==null) { $this->forget($route,$changedAt); return 'refreshed'; }
+            } catch (\Throwable $error) { $this->cache->report($error); }
+            // State lock contention is brief; retry the queue a few times before giving up.
+            for ($attempt=0;$attempt<5;$attempt++) {
+                try { return $this->hint($route,$changedAt) ? 'queued' : 'skipped'; }
+                catch (\Throwable $error) { if ($attempt===4) throw $error; usleep(20000); }
+            }
+            return 'skipped';
+        } catch (\Throwable $error) {
+            try { $this->cache->report($error); } catch (\Throwable) {}
+            return 'skipped';
+        }
     }
     public function hints(): array
     {
@@ -94,16 +135,31 @@ final class HighTrafficRefresh
         foreach (array_slice(glob($this->cache->root . '/hints/*.json') ?: [],0,$this->cache->limits['queue']) as $file) {
             $entry=json_decode((string)file_get_contents($file),true);
             if (is_array($entry) && HighTrafficRoute::canonical($entry['route'] ?? '')!==null) {
-                if ($this->cache->fresh($entry['route'])) { @unlink($file);continue; }
+                if (isset($entry['changed_at'])) {
+                    if (!is_file($this->cache->path($entry['route']))) { @unlink($file);continue; }
+                } elseif ($this->cache->fresh($entry['route'])) { @unlink($file);continue; }
                 $routes[]=$entry['route'];
             }
         }
         return $routes;
     }
-    public function forget(string $route): void
+    /** Drop a route's hint after a render; a write hint newer than that render's start stays queued. */
+    public function forget(string $route, ?float $renderStarted = null): void
     {
         $path=$this->cache->root . '/hints/' . hash('sha256',$route) . '.json';
-        if (is_file($path)) @unlink($path);
+        if (!is_file($path)) return;
+        // Under the state lock, so a write hint queued during the render is never lost.
+        // A busy lock leaves the hint: one extra render is harmless.
+        try {
+            $this->cache->locked(function () use ($path,$renderStarted): void {
+                if (!is_file($path)) return;
+                if ($renderStarted!==null) {
+                    $entry=json_decode((string)file_get_contents($path),true);
+                    if (is_array($entry) && isset($entry['changed_at']) && (float)$entry['changed_at']>$renderStarted) return;
+                }
+                @unlink($path);
+            });
+        } catch (\RuntimeException) {}
     }
     private function cleanup(): void
     {

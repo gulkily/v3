@@ -42,6 +42,22 @@ final class HighTrafficSafety
             $cache->atomic($cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR));
         });
     }
+    /**
+     * After a post is committed: refresh its cached thread page, or queue it for cron.
+     * Never throws. Returns HighTrafficRefresh::afterPost's outcome.
+     */
+    public static function afterPost(string $repository, string $database, string $threadId): string
+    {
+        try {
+            $project = dirname(__DIR__,3);
+            $cache = new HighTrafficCache($project,$repository,$database,\ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT', $project) ?: $project . '/public');
+            if (!is_file($cache->root . '/state.json')) return 'inactive';
+            return (new HighTrafficRefresh($cache))->afterPost($threadId);
+        } catch (\Throwable $error) {
+            error_log('High-traffic mode: post refresh failed: ' . $error->getMessage());
+            return 'skipped';
+        }
+    }
     public static function detach(string $publicRoot): void
     {
         $link = $publicRoot . '/.high-traffic';

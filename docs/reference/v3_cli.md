@@ -1183,7 +1183,7 @@ Scripture writer override: `SCRIPTURE_RESPONSE_MODEL` is blank by default (inher
 `./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/]`
 switches and manages instance-local Apache HTML caching. Run
 `./v3 high-traffic run /path/to/access.log` every minute for popularity-driven
-atomic refresh. See [host setup, limits, verification and recovery](../runbooks/high_traffic_mode.md).
+atomic refresh; a new post also refreshes its own cached thread page at once. See [host setup, limits, verification and recovery](../runbooks/high_traffic_mode.md).
 Automatic traffic/load activation is deferred.
 
 CLI output is readable by default; use `--json` for automation.
