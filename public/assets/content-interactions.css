@@ -136,23 +136,31 @@
   transition: opacity 0.15s ease;
   pointer-events: none;
 }
-.meta-deferred:hover::before,
+/* Hover-revealed UI is limited to devices that really hover. On touch screens
+   (iOS Safari in particular) a :hover rule that reveals content turns the first
+   tap into a hover, so the tapped button only fires on the second tap. Touch
+   devices get these elements shown all the time instead. */
 .meta-deferred:focus-within::before {
   opacity: 1;
 }
-.post-card:has(+ .continuation) > .post-card-actions {
-  max-height: 0;
-  margin-top: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-.post-card:has(+ .continuation):hover > .post-card-actions,
-.post-card:has(+ .continuation):focus-within > .post-card-actions {
-  max-height: none;
-  margin-top: 1rem;
-  overflow: visible;
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .meta-deferred:hover::before {
+    opacity: 1;
+  }
+  .post-card:has(+ .continuation) > .post-card-actions {
+    max-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .post-card:has(+ .continuation):hover > .post-card-actions,
+  .post-card:has(+ .continuation):focus-within > .post-card-actions {
+    max-height: none;
+    margin-top: 1rem;
+    overflow: visible;
+    opacity: 1;
+  }
 }
 @media (max-width: 640px) {
   .agent-response-mode-menu {
