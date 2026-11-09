@@ -1,5 +1,15 @@
 # Effort estimation trial ledger
 
+## Cycle v3/high_traffic_post_refresh
+
+2026-11-09T23:00:00Z — v3/high_traffic_post_refresh Step 4 entry: Step 3 explicitly approved; branch `feat/high_traffic_post_refresh`, planning `a9754ccc`. [Summary](./high_traffic_post_refresh/high_traffic_post_refresh_step4_implementation_summary.md#step-4-entry). Whole-cycle **0.30** reaffirmed; stage originals 0.10/0.10/0.05/0.05, non-additive. Same R1/P2, single exposed Claude rater.
+
+2026-11-09T22:56:44Z — v3/high_traffic_post_refresh Step 3 handoff: user approved Step 2. [Plan/checkpoint](./high_traffic_post_refresh/high_traffic_post_refresh_step3_development_plan.md#study-checkpoint) four stages: refresh-or-queue call with write-stamped hints, wiring into post writes, docs and production timing, production replay. Projected total **0.30** reaffirmed. Stage work 0.10/0.10/0.05/0.05, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.
+
+2026-11-09T22:45:28Z — v3/high_traffic_post_refresh Step 2 handoff: user approved Step 1 (Option A, Option C fallback). [Description/snapshot](./high_traffic_post_refresh/high_traffic_post_refresh_step2_feature_description.md#study-snapshots): after any post write, the thread page is re-rendered and swapped in; board and `/threads/` stay on cron. Projected total **0.30** reaffirmed. Same R1/P2, single exposed Claude rater. Await Approved Step 2; planning uncommitted.
+
+2026-11-09T22:40:51Z — v3/high_traffic_post_refresh Step 1 handoff (standing P2 enrollment, no parent): [assessment/snapshot](./high_traffic_post_refresh/high_traffic_post_refresh_step1_solution_assessment.md#study-snapshots). Scope v1, recommended Option A (re-render the thread page after each post; board and `/threads/` stay on cron) with Option C as fallback. Starting revision `a2bcc64d`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because high-traffic code was read before rating. Intake and projected total **0.30**; option estimates 0.30/0.20/0.15, non-additive. Await Approved Step 1; planning uncommitted.
+
 ## Cycle v3/same_username_operator
 
 2026-11-09T05:53:29Z — v3/same_username_operator Step 4 local closeout: branch `feat/same_username_operator`, planning `1ccbadc` and six stage commits. [Summary/closeout](./same_username_operator/same_username_operator_step4_implementation_summary.md#closeout). Scope v2 delivered. Whole-cycle 0.55 at entry, no revision; retrospective scope assessment **0.50**. Stage originals 0.08/0.12/0.12/0.06/0.05/0.07; retrospectives 0.07/0.11/0.13/0.06/0.03/0.09; non-additive. Smoke plus changed tests 481 run, 480 passed; the failure predates the cycle; full suite not run. Two-key local replay passed; production check pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change. Single exposed Claude rater.

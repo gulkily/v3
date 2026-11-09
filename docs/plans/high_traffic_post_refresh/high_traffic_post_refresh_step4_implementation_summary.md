@@ -61,3 +61,24 @@ Starting revision: `a2bcc64d` (`main`). No matching item in `docs/feedback/items
 - Estimate details (extended mode only): original scope as in Step 3; no revision. Smaller than expected because every post path already returned `thread_id`.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Docs and render timing
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: 0.04**
+
+- Changes:
+  - `docs/runbooks/high_traffic_mode.md` (Refresh): a paragraph on post refresh, the queued fallback, and the `high_traffic_refresh` timing.
+  - `docs/concepts/static_publication.md`: the high-traffic note now says a new post re-renders its thread page, while the board and `/threads/` follow cron.
+  - `docs/reference/v3_cli.md`: one clause in the high-traffic section.
+  - `docs/plans/effort_estimation_trial.md`: this cycle's Step 1–3 handoff entries and the Step 4 entry.
+- Verification:
+  - Passed: `git diff --check`; the new runbook anchor `#refresh` exists.
+  - Local render times in the tests: 0.1–0.3 s for the fixture thread.
+  - Pending: the maintainer's timing of `./v3 high-traffic refresh /threads/<id>/` on the longest thread on vps22365. If it is over about two seconds, move the render after the response, as Step 3 planned, before merging.
+- Notes:
+  - The fixture thread is tiny, so local times say little about production.
+- Estimate details (extended mode only): original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
