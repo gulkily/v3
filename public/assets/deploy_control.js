@@ -16,8 +16,12 @@
       headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'ForumDeploy' },
       body: JSON.stringify({ action }),
     });
-    const data = await response.json().catch(() => ({ status: 'error', error: `Unexpected response (${response.status}).` }));
-    return response.ok ? data : { status: 'error', error: data.error || `Request failed (${response.status}).` };
+    const data = await response.json().catch(() => null);
+    if (response.ok && data) return data;
+    // A deploy swaps code and site data under the server, so a busy or
+    // gateway reply now usually means "try again shortly", not a failure.
+    const transient = [502, 503, 504].includes(response.status);
+    return { status: 'error', transient, error: (data && data.error) || `Request failed (${response.status}).` };
   };
 
   // How long a queued deploy has waited, so the delay is visible rather than
@@ -40,6 +44,7 @@
       await new Promise((resolve) => setTimeout(resolve, 5000));
       let data;
       try { data = await post('status'); } catch { continue; }
+      if (data.transient) { say('Server busy; checking again…'); continue; }
       if (data.status !== 'ok') { say(data.error); break; }
       const task = data.state.task_status;
       const rebuild = data.state.rebuild_status;
@@ -60,15 +65,18 @@
     const action = (event.submitter && event.submitter.value) || 'queue';
     setBusy(true);
     say(action === 'check' ? 'Checking GitHub…' : action === 'now' ? 'Deploying…' : 'Queuing…');
+    // The deploy may have run even when its reply was lost; follow the status instead.
+    const followStatus = () => { say('Checking whether the deploy ran…'); poll(); };
     let data;
     try {
       data = await post(action);
     } catch {
       setBusy(false);
-      say('The connection dropped. The deploy may still have run; reload to see the latest result.');
+      if (action === 'check') say('The connection dropped; try again.'); else followStatus();
       return;
     }
     setBusy(false);
+    if (data.transient && action !== 'check') { followStatus(); return; }
     if (data.status !== 'ok') { say(data.error || 'Request refused.'); return; }
     const result = data.result;
     if (result.outcome === 'queued') {
