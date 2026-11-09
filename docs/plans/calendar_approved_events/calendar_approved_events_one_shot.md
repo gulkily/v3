@@ -84,7 +84,7 @@ Diff limited to `CalendarQuery.php`, the two calendar tests, this record and ind
 
 ## Commit, merge and publication status
 
-Planning commit `3f595fd`; completion commit pending at time of writing (reference added in the PR). Pushed for review; not merged or deployed.
+Planning commit `3f595fd`; completion commit `028c998c` (implementation, record, item, ledger). Pushed as `feat/calendar_approved_events`; [PR #79](https://github.com/gulkily/v3/pull/79) open; thread reply `reply-20261109012024-ad9ee1fe`. Not merged or deployed.
 
 ## Attribution
 
