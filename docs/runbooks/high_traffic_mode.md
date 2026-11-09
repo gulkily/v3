@@ -50,8 +50,12 @@ managed; do not replace it with a directory. Cache files live outside the public
 root. Their direct storage URLs are blocked.
 
 Initially eligible canonical routes are `/`, `/threads/`, `/about/`, and
-`/threads/{visible-thread-id}/`. Existing aliases redirect to canonical paths
-while the mode is active. The first miss generates within global/per-page limits.
+`/threads/{visible-thread-id}`. Containers end in a slash; a thread page does not,
+matching every internal link, so ordinary navigation never redirects. An alias
+differing only by a trailing slash redirects once to its canonical path while the
+mode is active. Running `./v3 high-traffic enable` while the mode is already on
+rewrites routing written by an older release and keeps cached pages; do this after
+deploying a release that changes the routing rules. The first miss generates within global/per-page limits.
 Open an eligible page twice, including with a session cookie, and verify a warm
 response contains `X-V3-High-Traffic: hit` and revalidating Cache-Control. HEAD must
 return no body. Confirm the second HTML request avoids PHP in the host's PHP
