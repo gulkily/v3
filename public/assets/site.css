@@ -103,6 +103,22 @@ button {
   background: var(--input-bg);
 }
 
+/* iOS Safari gives date/time inputs an intrinsic width that ignores width: 100%,
+   so they overflow narrow containers and center their value. Drop the native
+   appearance so they size like text inputs, and keep the value left-aligned. */
+input:is([type="date"], [type="time"], [type="datetime-local"], [type="month"], [type="week"]) {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  min-height: calc(1.5em + 1.3rem + 2px);
+}
+
+input::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 button {
   appearance: none;
   -webkit-appearance: none;
