@@ -23,9 +23,10 @@ try {
   const chip = status => page.locator(`[data-flag-filter="${status}"]`);
   const visible = () => page.locator('[data-feature-flag-row]:visible').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
   const counts = () => page.locator('[data-flag-filter-count]').allTextContents();
-  assert.deepEqual(await counts(), ['4', '3', '1', '2']);
+  assert.deepEqual(await counts(), ['4', '3', '1', '1', '2']);
   for (const [status, expected] of [
     ['enabled', ['TEST_ALPHA', 'TEST_BETA', 'TEST_DELTA']],
+    ['disabled', ['TEST_GAMMA']],
     ['overridden', ['TEST_ALPHA']], ['locked', ['TEST_GAMMA', 'TEST_DELTA']],
   ]) {
     await chip(status).click();
@@ -37,7 +38,7 @@ try {
   for (const query of ['  ALPHA  ', 'test_alpha', 'apricot']) {
     await search.fill(query);
     assert.deepEqual(await visible(), ['TEST_ALPHA']);
-    assert.deepEqual(await counts(), ['1', '1', '1', '0']);
+    assert.deepEqual(await counts(), ['1', '1', '0', '1', '0']);
     assert.equal(await page.locator('.feature-flag-group:visible').count(), 1);
   }
   await chip('locked').click();
@@ -46,7 +47,7 @@ try {
   assert.equal(await page.locator('.feature-flag-group:visible').count(), 0);
   await search.fill('shared');
   assert.deepEqual(await visible(), ['TEST_GAMMA', 'TEST_DELTA']);
-  assert.deepEqual(await counts(), ['3', '2', '0', '2']);
+  assert.deepEqual(await counts(), ['3', '2', '1', '0', '2']);
   await search.fill(''); await chip('all').click();
   assert.equal((await visible()).length, 4);
   assert.equal(await page.locator('[data-feature-flags-results]').innerText(), '4 of 4 flags shown');
@@ -112,25 +113,25 @@ try {
   const beta = page.locator('[data-flag-key="TEST_BETA"]');
   const settled = () => page.waitForFunction(() => !document.querySelector('[data-flag-key="TEST_BETA"] .switch').disabled);
   await beta.getByRole('switch').click(); await settled();
-  assert.deepEqual(await counts(), ['4', '2', '2', '2']);
+  assert.deepEqual(await counts(), ['4', '2', '2', '2', '2']);
   assert.equal(await beta.locator('.feature-flag-reset-form').isVisible(), true, 'New override exposes reset without reload');
   assert.equal(await beta.locator('[data-role="feature-flag-status"]').isVisible(), false, 'Changed switch communicates success without a notice');
   await chip('overridden').click();
   await beta.getByRole('button', { name: 'Reset to default' }).click(); await settled();
   assert.deepEqual(await visible(), ['TEST_ALPHA']);
-  assert.deepEqual(await counts(), ['4', '3', '1', '2']);
+  assert.deepEqual(await counts(), ['4', '3', '1', '1', '2']);
   assert.equal(await search.evaluate(node => node === document.activeElement), true, 'Disappearing reset row recovers focus');
   await chip('enabled').click();
   await alpha.getByRole('switch').click();
   await page.waitForFunction(() => !document.querySelector('[data-flag-key="TEST_ALPHA"] .switch').disabled);
   assert.deepEqual(await visible(), ['TEST_BETA', 'TEST_DELTA']);
-  assert.deepEqual(await counts(), ['4', '2', '0', '2']);
+  assert.deepEqual(await counts(), ['4', '2', '2', '0', '2']);
   assert.equal(await search.evaluate(node => node === document.activeElement), true, 'Disappearing toggled row recovers focus');
   failSave = true;
   await beta.getByRole('switch').click(); await settled();
   assert.equal(await beta.getByRole('switch').getAttribute('aria-checked'), 'true');
   assert.match(await beta.locator('[data-role="feature-flag-status"]').innerText(), /Rejected fixture save/);
-  assert.deepEqual(await counts(), ['4', '2', '0', '2']);
+  assert.deepEqual(await counts(), ['4', '2', '2', '0', '2']);
   assert.equal(await beta.getByRole('switch').evaluate(node => node === document.activeElement), true);
   failSave = false; holdSave = true;
   await beta.getByRole('switch').click();
@@ -139,7 +140,7 @@ try {
   await search.fill('beta');
   releaseSave(); await settled();
   assert.deepEqual(await visible(), []);
-  assert.deepEqual(await counts(), ['1', '0', '1', '0']);
+  assert.deepEqual(await counts(), ['1', '0', '1', '1', '0']);
   assert.equal(await search.evaluate(node => node === document.activeElement), true, 'Pending saves do not steal focus');
   await search.fill(''); await chip('all').click();
   releaseSave = null;
@@ -172,7 +173,7 @@ try {
   assert.deepEqual(await canonical.locator('.feature-flag-group-heading').allTextContents(), expectedGroups);
   const canonicalKeys = await canonical.locator('[data-flag-key]').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
   const visibleKeys = () => canonical.locator('[data-flag-key]:visible').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
-  for (const status of ['enabled', 'overridden', 'locked', 'all']) {
+  for (const status of ['enabled', 'disabled', 'overridden', 'locked', 'all']) {
     await canonical.locator(`[data-flag-filter="${status}"]`).click();
     const visible = await visibleKeys();
     assert.deepEqual(visible, canonicalKeys.filter(key => visible.includes(key)));
