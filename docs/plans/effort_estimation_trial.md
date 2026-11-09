@@ -1674,3 +1674,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/ctrl_enter_late_signing` | One-shot complete; deployed and maintainer-accepted | v1 / R1 / P2 | 0.08 (intake 0.05; retrospective 0.08) | [One-shot record](./ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md#study-history) | Thread bug report; accepted 2026-11-08 |
 
 2026-11-08T16:45Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link). Intake **0.05** after source inspection (no pristine intake); execution entry revised to **0.08** because the bug did not reproduce headlessly and needed diagnostics from the reporter's browser; retrospective **0.08**. Baseline `d1052b3ff716c55b8d6bb53118d00aa585294b0e`, rebased onto `ef72ce2b`; branch `fix/ctrl-enter-late-signing`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/calendar_approved_events
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/calendar_approved_events` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.06 (intake 0.06; retrospective 0.08) | [One-shot record](./calendar_approved_events/calendar_approved_events_one_shot.md#study-history) | Thread request; per-feature grants split to a separate future cycle; acceptance pending |
+
+2026-11-09T01:15Z: standing P2 enrollment, one-shot authorized in session after the maintainer chose the approval-gated slice. Intake **0.06** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08** because the browser calendar test needed a new approve-then-appear flow for the unapproved browser key. Baseline `fac52df649aed789757c1ae5eb88306362a9945d`; branch `feat/calendar_approved_events`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

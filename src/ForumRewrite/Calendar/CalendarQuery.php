@@ -11,9 +11,18 @@ use PDO;
  * Listed event threads whose span touches a date range, optionally limited to one tag.
  * A tag matches a board tag or a label, as /tags/<tag> counts them. Rows carry the
  * board row fields the title and author helpers read.
+ *
+ * Only approved members put events on the calendar: the thread's author must be approved
+ * (approved when retired, for retired keys) and the post must count toward that author, so
+ * an unverified post naming an approved identity stays off. Other events still show on
+ * their thread. Checked here at read time, so it covers every write and sync path and
+ * follows approval as it changes.
  */
 final class CalendarQuery
 {
+    private const AUTHOR_IS_APPROVED_SQL = 'COALESCE((SELECT CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END
+                        FROM profiles WHERE profiles.identity_id = posts.author_identity_id), 0)';
+
     /** @return list<array<string, mixed>> ordered by first day, then creation */
     public static function eventsBetween(PDO $pdo, string $from, string $to, ?string $tag = null): array
     {
@@ -21,10 +30,11 @@ final class CalendarQuery
                     threads.event_date, threads.event_end_date, threads.event_time, threads.event_location,
                     posts.author_label, posts.author_profile_slug, posts.attribution_counted, posts.body_format,
                     (SELECT profiles.username_token FROM profiles WHERE profiles.identity_id = posts.author_identity_id) AS author_username_token,
-                    COALESCE((SELECT CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END
-                        FROM profiles WHERE profiles.identity_id = posts.author_identity_id), 0) AS author_is_approved'
+                    ' . self::AUTHOR_IS_APPROVED_SQL . ' AS author_is_approved'
             . ThreadKeysetPage::listedRootsSql()
-            . ' AND threads.event_date IS NOT NULL
+            . ' AND posts.attribution_counted = 1
+                AND ' . self::AUTHOR_IS_APPROVED_SQL . ' = 1
+                AND threads.event_date IS NOT NULL
                 AND threads.event_date <= :to
                 AND COALESCE(threads.event_end_date, threads.event_date) >= :from';
         $parameters = ['from' => $from, 'to' => $to];

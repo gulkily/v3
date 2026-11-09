@@ -1,0 +1,18 @@
+ID: PF-20261108-F02
+Title: Only approved members put events on the calendar
+Kind: feature
+Workflow: blocked
+Created: 2026-11-08
+Evidence: locally-verified
+
+Request:
+Adding items that show up on the calendar is its own permission, separate from posting.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261109001832-f640d603
+
+Done when:
+/calendar, tag calendars and day pages list an event only when its thread's author is an approved member whose post counts toward them; other events still show on their own thread, and approving the author later puts the event on the calendar.
+
+Notes:
+2026-11-08: one-shot on feat/calendar_approved_events (record docs/plans/calendar_approved_events/calendar_approved_events_one_shot.md); first slice uses member approval as the permission. A separate per-feature grant is a follow-up: https://zenmemes.com/threads/thread-20261109011357-ce8c5503. Verified locally; awaiting review and deployment.
