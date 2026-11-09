@@ -10,12 +10,12 @@
 
     function refresh() {
       var query = search.value.trim().toLowerCase();
-      var counts = { all: 0, enabled: 0, overridden: 0, locked: 0 };
+      var counts = { all: 0, enabled: 0, disabled: 0, overridden: 0, locked: 0 };
       var visible = 0;
       rows.forEach(function (row) {
         var enabled = row.querySelector('[role="switch"]').getAttribute('aria-checked') === 'true';
         var matches = {
-          all: true, enabled: enabled,
+          all: true, enabled: enabled, disabled: !enabled,
           overridden: row.dataset.flagDefault !== String(enabled),
           locked: row.dataset.flagLocked === 'true'
         };
