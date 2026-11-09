@@ -7,7 +7,7 @@
     draft: ["queued", "cancelled"],
     queued: ["waiting_for_connection", "sending", "cancelled", "needs_attention"],
     waiting_for_connection: ["queued", "sending", "cancelled"],
-    sending: ["queued", "accepted", "rejected", "conflicted", "needs_attention"],
+    sending: ["queued", "waiting_for_connection", "accepted", "rejected", "conflicted", "needs_attention"],
     accepted: [],
     rejected: ["draft", "cancelled"],
     conflicted: ["draft", "cancelled"],
