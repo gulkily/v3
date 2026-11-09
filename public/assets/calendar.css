@@ -116,50 +116,77 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
   margin: 0 0 0.5rem;
 }
 
-/* A phone shows the month in tiny text: the number of events and the first words of each.
-   The titles are too small to aim at, so a tap anywhere opens the day's page. */
+/* The phone toggle between counts and tiny titles, a link like its neighbours;
+   desktop always shows titles. */
+.calendar-titles-toggle {
+  display: none;
+}
+
+/* A phone shows the month: each day links to its page, with the number of events.
+   With titles on, each square also shows the first words of its events in tiny text;
+   they are too small to aim at, so a tap anywhere still opens the day's page. */
 @media (max-width: 40rem) {
+  .calendar-titles-toggle:not([hidden]) {
+    display: inline;
+  }
   .calendar-grid {
     min-width: 0;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
-  .calendar-grid th {
-    padding: 0 0.15rem 0.2rem;
-  }
   .calendar-day {
-    height: 4.25rem;
-    padding: 0.15rem;
+    height: 3rem;
+    padding: 0.2rem;
   }
   .calendar-day__number {
-    font-size: 0.7rem;
+    display: block;
+    min-height: 2.4rem;
     text-decoration: none;
   }
   .calendar-day__count {
-    display: inline;
-    margin-left: 0.25rem;
-    font-size: 0.55rem;
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
     color: var(--ink-soft);
   }
-  .calendar-day__entries {
-    margin-top: 0.1rem;
-    pointer-events: none;
-  }
-  /* The count beside the number already says how many there are. */
+  .calendar-day__entries,
   .calendar-day__more {
     display: none;
   }
-  .calendar-entry {
+
+  .calendar--titles .calendar-grid th {
+    padding: 0 0.15rem 0.2rem;
+  }
+  .calendar--titles .calendar-day {
+    height: 3.75rem;
+    padding: 0.1rem 0.12rem;
+  }
+  .calendar--titles .calendar-day__number {
+    display: inline-block;
+    min-height: 0;
+    font-size: 0.65rem;
+  }
+  .calendar--titles .calendar-day__count {
+    display: inline;
+    margin: 0 0 0 0.2rem;
+    font-size: 0.5rem;
+  }
+  .calendar--titles .calendar-day__entries {
+    display: block;
+    margin-top: 0.05rem;
+    pointer-events: none;
+  }
+  .calendar--titles .calendar-entry {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     overflow: hidden;
     overflow-wrap: break-word;
-    font-size: 0.55rem;
-    line-height: 1.15;
-    margin: 0 0 0.15rem;
+    font-size: 0.4rem;
+    line-height: 1.1;
+    margin: 0 0 0.1rem;
   }
-  .calendar-entry a {
+  .calendar--titles .calendar-entry a {
     text-decoration: none;
   }
 }
