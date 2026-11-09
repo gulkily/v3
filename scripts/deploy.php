@@ -64,8 +64,9 @@ $printState = static function (array $state): void {
 if ($mode === 'status') {
     $state = $update->inspect();
     $printState($state);
-    $latest = $state['latest'];
-    echo 'Latest-Attempt: ' . ($latest === null ? 'none' : ($latest['Finished-At'] ?? '-') . ' ' . ($latest['Outcome'] ?? '-') . ' (' . ($latest['Mode'] ?? '-') . ')') . "\n";
+    foreach (AppUpdate::latestAttemptLines($state['latest']) as $line) {
+        echo $line . "\n";
+    }
     exit(0);
 }
 
