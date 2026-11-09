@@ -25,8 +25,7 @@ final class UserAccessController
         $allowed = $this->services->securityReviewAllowed();
         $viewer = ($this->viewer)();
         $canResume = !$allowed && $this->services->viewerSessions()->identityId() === ''
-            && $viewer !== null && (int) ($viewer['is_approved'] ?? 0) === 1
-            && ($viewer['approved_by_label'] ?? '') === 'root';
+            && $this->services->profileIsActiveOperator($viewer);
         $history = $allowed ? $this->services->activityService()->fetchActivityRows('security', 'date', 'desc', limit: 5) : ['items' => [], 'has_more' => false];
         $items = [];
         foreach ($history['items'] as $row) {
