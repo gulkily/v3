@@ -118,8 +118,7 @@
       document.addEventListener('focusin', schedule);
       panel.addEventListener('focusout', schedule);
       panel.addEventListener('input', schedule);
-      // Capture: the nested Options section's toggle does not bubble.
-      if (menu) menu.addEventListener('toggle', schedule, true);
+      if (menu) menu.addEventListener('toggle', schedule);
       new MutationObserver(schedule).observe(panel, {
         subtree: true, childList: true, characterData: true,
         attributes: true, attributeFilter: ['hidden', 'data-kind', 'open']

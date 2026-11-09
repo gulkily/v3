@@ -14,6 +14,10 @@
       var date = value(form, 'event_date');
       var endDate = value(form, 'event_end_date');
       parts = [date !== '' && endDate !== '' ? date + ' \u2013 ' + endDate : date, value(form, 'event_time'), value(form, 'event_location')];
+    } else if (kind === 'options') {
+      var markdown = form.querySelector('[data-role="markdown-toggle"]');
+      var theme = form.querySelector('[data-role="thread-theme-choice"]');
+      parts = [markdown && markdown.checked ? 'Markdown' : '', theme && theme.value !== '' && theme.selectedIndex >= 0 ? theme.options[theme.selectedIndex].text : ''];
     }
     return parts.filter(function (part) { return part !== ''; }).join(' · ');
   }
@@ -53,6 +57,7 @@
         .observe(details, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
     }
     details.addEventListener('input', function () { refreshSummary(details); });
+    details.addEventListener('change', function () { refreshSummary(details); });
     openIfWarning(details);
   }
 
@@ -67,7 +72,7 @@
   }
 
   // The menu opens upward; when that would run past the top of the page (the
-  // New post page on a phone, or once Options is expanded) it opens downward.
+  // New post page on a phone) it opens downward.
   function placeMenu(menu) {
     var list = menu.querySelector('.compose-action-menu-list');
     menu.classList.remove('compose-action-menu--below');
@@ -80,7 +85,7 @@
   }
 
   function startMenus() {
-    // Capture: toggle does not bubble, and the Options section nests inside the menu.
+    // Capture: toggle does not bubble.
     document.addEventListener('toggle', function (event) {
       var menu = event.target && event.target.closest ? event.target.closest(menuSelector) : null;
       if (menu) {

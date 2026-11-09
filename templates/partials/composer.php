@@ -1,6 +1,7 @@
 <?php
 /**
  * The one composer: body, then Post and the ··· menu, then Title and tools (full new post only).
+ * Options (post format and theme) is a tool on the full composer and its own row on the others.
  * The body comes first so that on a phone it and Post fit above the keyboard; the optional Title and tags follow.
  * Attach image stays in the menu: it appears only once the browser knows the viewer may attach images,
  * and in the menu that never shifts the page.
@@ -40,6 +41,25 @@ $composerNormalizationStatus = static fn (string $field): string => <<<HTML
 
 HTML;
 ?>
+<?php ob_start(); ?>
+    <details class="compose-disclosure compose-tool compose-options" data-compose-disclosure="options">
+      <summary>Options <span class="meta" data-role="compose-disclosure-summary"></span></summary>
+      <input type="hidden" name="body_format" value="plain">
+      <label class="compose-options-check"><input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown</label>
+      <a class="compose-options-link" href="/docs/reference/markdown_syntax.md" target="_blank" rel="noopener">Formatting help</a>
+      <label class="compose-options-theme"<?= $composerIsThread ? '' : ' title="Counts only from the thread\'s author or an operator"' ?>><?= $composerIsThread ? 'Theme' : 'Thread theme' ?>
+        <select name="theme" data-role="thread-theme-choice">
+          <option value=""><?= $composerIsThread ? 'Site default' : 'Unchanged' ?></option>
+<?php foreach (\ForumRewrite\View\ThreadTheme::choices() as $composerThemeChoice): ?>
+          <option value="<?= $e($composerThemeChoice['name']) ?>"><?= $e($composerThemeChoice['label']) ?></option>
+<?php endforeach; ?>
+<?php if (!$composerIsThread): ?>
+          <option value="none">Clear thread theme</option>
+<?php endif; ?>
+        </select>
+      </label>
+    </details>
+<?php $composerOptions = (string) ob_get_clean(); ?>
 <form method="post"<?= $composerAction !== '' ? ' action="' . $e($composerAction) . '"' : '' ?> class="<?= $e($composerFormClass) ?>" data-compose-form data-compose-kind="<?= $e($composerKind) ?>"<?= $composerFormAttributes ?>>
   <textarea name="body" data-compose-field-label="Body" rows="<?= $e($composerBodyRows) ?>" placeholder="<?= $e($composerBodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
 <?= $composerNormalizationStatus('body') ?>
@@ -59,23 +79,6 @@ HTML;
         <button type="button" data-action="save-compose-outbox" disabled>Save to Outbox</button>
 <?= $composerMenuExtra ?>
         <button type="button" class="compose-clear-button" data-action="clear-compose-fields">Discard draft</button>
-        <details class="compose-action-menu-options" data-role="compose-menu-options">
-          <summary>Options</summary>
-          <input type="hidden" name="body_format" value="plain">
-          <label class="compose-action-menu-check"><input type="checkbox" name="body_format" value="markdown" data-role="markdown-toggle"> Markdown</label>
-          <a class="compose-action-menu-link" href="/docs/reference/markdown_syntax.md" target="_blank" rel="noopener">Formatting help</a>
-          <label class="compose-action-menu-check compose-action-menu-theme"<?= $composerIsThread ? '' : ' title="Counts only from the thread\'s author or an operator"' ?>><?= $composerIsThread ? 'Theme' : 'Thread theme' ?>
-            <select name="theme" data-role="thread-theme-choice">
-              <option value=""><?= $composerIsThread ? 'Site default' : 'Unchanged' ?></option>
-<?php foreach (\ForumRewrite\View\ThreadTheme::choices() as $composerThemeChoice): ?>
-              <option value="<?= $e($composerThemeChoice['name']) ?>"><?= $e($composerThemeChoice['label']) ?></option>
-<?php endforeach; ?>
-<?php if (!$composerIsThread): ?>
-              <option value="none">Clear thread theme</option>
-<?php endif; ?>
-            </select>
-          </label>
-        </details>
 <?php $composerMenuItems = (string) ob_get_clean(); ?>
 <?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $composerMenuItems]) ?>
   </div>
@@ -100,7 +103,10 @@ HTML;
       <label>Link<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>
     </details>
 <?php endif; ?>
+<?= $composerOptions ?>
   </div>
+<?php else: ?>
+<?= $composerOptions ?>
 <?php endif; ?>
 <?= $composerHiddenFields ?>
 </form>
