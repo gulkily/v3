@@ -6,6 +6,8 @@ Problem: some writes (retraction, profile name, key retirement, and others) do a
 
 ## 1. `rebuild_availability`: pages stay up during a rebuild
 
+[Plans](rebuild_availability/rebuild_availability_step3_development_plan.md); Step 1 chose build-and-swap over WAL.
+
 - [ ] Readers never wait on a full rebuild: WAL mode or build-and-swap, chosen in this cycle's Step 1
 - [ ] Read connections get a short timeout (1-2 s); "database is locked" shows the busy page (503, `Retry-After`, auto-refresh)
 - [ ] Page requests never rebuild or wait on the write lock; if a rebuild is queued or running, show the busy page immediately
