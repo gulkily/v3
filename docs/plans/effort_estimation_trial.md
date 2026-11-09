@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/retraction_speed
+
+2026-11-09T23:27:06Z — v3/retraction_speed Step 1 handoff (standing P2 enrollment; cycle 2 of the [read-model rebuild checklist](./read_model_rebuild_checklist.md), no parent): [assessment/checkpoint](./retraction_speed_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (retractions reuse `applyPostRemoval` and `invalidateRemovedPost` with full-rebuild fallback; profile names move to cycle 3). Starting revision `f046bd8`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing. Intake and projected total **0.25**; option estimates 0.25/0.65/0.30, non-additive. Await Approved Step 1.
+
 ## Cycle v3/rebuild_availability
 
 2026-11-09T20:04:47Z — v3/rebuild_availability Step 4 local closeout: branch `feat/rebuild-availability`, planning `331ea1d` and nine stage commits. [Summary/closeout](./rebuild_availability/rebuild_availability_step4_implementation_summary.md#closeout). Whole-cycle 0.65 at entry, no revision; retrospective scope assessment **0.75** (unforeseen: request connection reopen, wait-for-write fix, no-worker fallback, test updates for connections held across a swap). Stage originals 0.04/0.08/0.08/0.12/0.14/0.10/0.07/0.10; retrospectives 0.04/0.08/0.10/0.10/0.18/0.08/0.07/pending; non-additive. Smoke 441/441; changed tests passed sequentially; full suite not run; parallel flakiness predates the cycle. Local qdb-sized acceptance passed; host acceptance pending deploy. Maintainer comfortable-fit and acceptance pending; no measured labor or accepted-count change. Single exposed Claude rater.
