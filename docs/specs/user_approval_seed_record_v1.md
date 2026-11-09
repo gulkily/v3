@@ -6,7 +6,7 @@ This document defines the canonical seed record used to bootstrap the first appr
 
 - One ASCII text file represents one explicitly seeded approved identity.
 - Canonical approval seed files live in `records/approval-seeds/`.
-- These records exist only to bootstrap initial trust without depending on git history.
+- These records bootstrap initial trust without depending on git history. An existing operator can also write one through an [operator grant](operator_grant_record_v1.md).
 - Later user approvals are recorded as canonical reply posts on bootstrap threads.
 
 ## File Naming
@@ -32,6 +32,10 @@ Key: Value
 - `Approved-Identity-ID`: canonical identity ID, using the form `openpgp:<lowercase-fingerprint>`
 - `Seed-Reason`: short operator-readable reason for the seed
 
+## Optional Headers
+
+- `Operator-Grant-ID`: the `Record-ID` of the [operator grant](operator_grant_record_v1.md) that wrote this seed. Seeds written by `./v3 approval seed` omit it.
+
 ## Body Rules
 
 - The body is plain ASCII text.
@@ -43,7 +47,7 @@ Key: Value
 - `Approved-Identity-ID` must use the retained identity form `openpgp:<lowercase-fingerprint>`.
 - The filename fingerprint must match the fingerprint encoded in `Approved-Identity-ID`.
 - Seed records are additive in V1.
-- Seed records do not replace approval replies; they only bootstrap initial trust roots.
+- Seed records do not replace approval replies; they mark operators, the site's trust roots.
 
 ## Example
 

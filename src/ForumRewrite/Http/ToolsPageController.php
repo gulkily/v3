@@ -261,6 +261,35 @@ final class ToolsPageController
     }
 
     /**
+     * Make an approved key an operator. Prepare and finalize both re-check
+     * authority in the writer; finalize also verifies the operator's signature.
+     *
+     * @param array<string, mixed> $query
+     */
+    public function operatorGrantApi(string $method, array $query, bool $finalize): void
+    {
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+        if (!$this->routeServices->profileIsActiveOperator($viewerProfile)) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Making a key an operator requires a root-approved identity.'], 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        try {
+            $operatorIdentityId = (string) ($viewerProfile['identity_id'] ?? '');
+            $input = $this->routeServices->requestData($query);
+            $result = $finalize
+                ? $this->routeServices->writer()->finalizePreparedOperatorGrant($input, $operatorIdentityId)
+                : $this->routeServices->writer()->prepareOperatorGrant($input, $operatorIdentityId);
+            $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
+        }
+    }
+
+    /**
      * @param array<string, mixed> $query
      */
     public function attributionCutoffApi(string $method, array $query, bool $finalize): void

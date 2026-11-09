@@ -528,6 +528,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/prepare_operator_grant' || $path === '/api/finalize_operator_grant') {
+            $this->toolsPageController()->operatorGrantApi($method, $query, $path === '/api/finalize_operator_grant');
+            return;
+        }
+
         if ($path === '/api/prepare_attribution_cutoff' || $path === '/api/finalize_attribution_cutoff') {
             $this->toolsPageController()->attributionCutoffApi($method, $query, $path === '/api/finalize_attribution_cutoff');
             return;
@@ -1434,6 +1439,7 @@ final class Application
             [
                 'accessManagement' => $accessManagement,
                 'retirementActors' => $accessManagement ? (new \ForumRewrite\Security\KeyRetirementPolicy($this->pdo(),$this->repositoryRoot))->presentationActors($profile) : [],
+                'operatorGrantActors' => $accessManagement ? \ForumRewrite\Security\ApprovalPolicy::operatorGrantActors($this->repositoryRoot, $profile) : [],
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
                 'profileHistory' => $accessManagement ? [] : \ForumRewrite\Http\ProfileHistoryView::build($this->pdo(), $profile, $query),
@@ -1450,7 +1456,7 @@ final class Application
             ],
             $pageTitleLabel . ' - Profile',
             $accessManagement ? 'tools' : 'profiles',
-            array_merge($accessManagement ? $this->identityScripts(['/assets/key_retirement.js']) : ['/assets/public_key.js'], $accessManagement && $canApprove
+            array_merge($accessManagement ? $this->identityScripts(['/assets/key_retirement.js', '/assets/operator_grant.js']) : ['/assets/public_key.js'], $accessManagement && $canApprove
                 ? $this->identityScripts(['/assets/pending_approvals.js'])
                 : ($canPrivateMessage
                     ? $this->identityScripts(['/assets/private_messages.js', '/assets/private_message_compose.js'])
@@ -2288,7 +2294,7 @@ final class Application
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/link_identity', '/api/approve_user',
+            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
