@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](../e
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-09; Stages 1–3 complete (qdb heartbeat pending); Stage 4 next.
+Status: Step 3 approved on 2026-11-09; Stages 1–4 complete (qdb heartbeat pending); Stage 5 next.
 
 **Cycle estimate: 0.65** (Step 3, reaffirmed at entry)
 
@@ -72,5 +72,23 @@ Status: Step 3 approved on 2026-11-09; Stages 1–3 complete (qdb heartbeat pend
   - Behaviour change for any code holding a read-model connection across a full rebuild: it keeps reading the old file. Production request code reaches the read model through `RouteServices::pdo()` (now reopened) or opens fresh connections in `LocalWriteService`.
   - Retrospective above original: the reopen in `RouteServices` and the two test updates were not planned.
 - Estimate details: original scope as in Step 3; no revision before work.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Queued rebuilds lose no writes
+
+**Original estimate: 0.12**
+**Retrospective: 0.10**
+
+- Changes:
+  - `ReadModelRebuildTaskHandler` builds a new file without the write lock, then takes the lock and swaps it in. When commits landed during the build, the new file is behind `HEAD` and is not swapped in; it builds again. After two misses (`UNLOCKED_ATTEMPTS`) it builds once under the lock, which always finishes. It ends with the progress line `Read model: rebuild complete; new file in use`.
+  - The lock wait is now the normal 5-second limit instead of 0, so a brief write no longer fails the rebuild task outright.
+  - New `ReadModelCandidateBehindHead` exception, thrown by `ReadModelCandidateBuilder::assertValid()` only when the file is behind `HEAD`. Other validation failures keep the plain `RuntimeException` and message, so existing callers (`./v3 rebuild`, imports) behave as before.
+  - New `tests/ReadModelRebuildTaskHandlerTest.php`, registered in `tests/run.php`: a commit during one build is present after the swap (one retry); commits during every unlocked build end with the locked build; a reader during the build reads the old file without waiting.
+- Verification:
+  - `./v3 test --smoke ReadModelRebuildTaskHandlerTest TaskQueueWorkerTest TaskQueueCommandTest ReadModelCandidateBuilderTest StatusCommandTest`: 467 run, 467 passed. Full suite not run.
+  - The first run failed `TaskQueueCommandTest::testRebuildWorkerRecordsPrivateProgressCheckpoints`: its last progress line came from the promoter and did not start with `Read model:`. The final progress line above fixed it and makes `./v3 task-queue status` end on a clear message.
+- Notes: under the locked build, writes wait up to 5 seconds and then get the busy response, as before this cycle; it only happens after two misses.
+- Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
