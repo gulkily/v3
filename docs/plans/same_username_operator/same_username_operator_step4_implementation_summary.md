@@ -123,3 +123,39 @@ Starting revision: `f60d639` (`main`, which includes PR #88).
 - Estimate details (extended mode only): original scope as in Step 3; under, because the catalog needed no change.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Documentation and replay
+
+**Original estimate: 0.07**
+
+**Retrospective stage-work assessment: 0.09**
+
+- Changes:
+  - New concept `docs/concepts/operator_grant.md`: "Signed operator grant" and "Seed as the only authority".
+  - `docs/reference/v3_cli.md`: under `./v3 approve`, the **Make root** button, the grant spec, and that imported instances still need `./v3 approve` for the first operator.
+- Verification:
+  - Passed: known-user replay on `./v3 start` against a copy of `state/local_repository` (`FORUM_REPOSITORY_ROOT`, `FORUM_DATABASE_PATH`, `FORUM_STATIC_HTML_ROOT`), with real ed25519 keys made by the site's OpenPGP.js bundle and real browser signing. Key A was seeded with `./v3 approve`, and A approved key B with `./v3 approval approve`. The site names linked keys "guest", so both keys shared one username, matching the maintainer's case. Before: B's Feature flags page was read-only, with 0 enabled controls; A had 168. On B's User Access page at 390px, A saw "Make root…"; the confirmation read "Make guest (8ccbe9d6…) a root operator? This key will be able to do everything root can."; "Make root" reloaded the page without the button. After: B had 168 enabled controls. The commit "Grant operator … by …" held exactly the seed, the grant and its `.asc`. `./v3 rebuild` kept B's 168 enabled controls. B saw no button on A's page. The root approval page showed "Granted by: guest · Nov 9, 2026 at 05:50 UTC" and "Signed operator grant". No page errors. Screenshots inspected.
+  - Passed: themes. On a third approved key's page, the button showed in Word97, Midnight, Chicago and Gloss at 390px, matching the Retire button. Screenshots inspected.
+  - Passed: final `./v3 test --smoke` plus `CanonicalRecordParsersTest`, both grant tests, `RootApprovalPageTest`, `ContentImportPlannerTest`, `ApiRouteCatalogTest`, `ApprovalPolicyTest`, `ApprovalSeedCommandTest`, `UserAccessTest`, `VisitorStatisticsPageTest`: 481 run, 480 passed. The one failure is the baseline `BoardListTest::testPinnedThreadsComeFirstAndLatestThreadsArePaged`, failing before this cycle. `tests/browser/operator_grant.mjs` passed again. `git diff --check` clean. Full suite not run.
+  - Pending: production. The maintainer deploys, then grants `openpgp-1fc2edb074108568ad28fec8748e323e033d32b4` on zenmemes.com from his seeded key and checks its Feature flags switches on his phone.
+- Notes:
+  - Final diff review: 34 files. No duplicated helpers. Each new piece follows an existing pattern: the flag change record set, the key retirement partial and script, the seed refresh. No debug output or scratch paths in committed files.
+  - The replay keys and data stayed in the scratch area; nothing from them is in the repository.
+- Estimate details (extended mode only): original scope as in Step 3, plus the Stage 3 real-key run moved here and a theme check; gpg-agent could not start here, so the keys came from OpenPGP.js.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+2026-11-09T05:53:29Z, `railspike-effort` / `v3/same_username_operator`, Step 4 closeout.
+
+- Delivered scope: v2 (Option E) as approved: a signed "Make root" button on User Access key pages; grant and seed in one commit; grantor shown on the root approval page; grants excluded from import; spec, concept and CLI docs. No feature flag.
+- Revisions: starting `f60d639`; planning `1ccbadc`; stages `88b9e20`, `382e4ce`, `de3e02c`, `939b5f5`, `3f44c86`, and this Stage 6 commit. Six stages planned, six completed; no splits.
+- Deviations from Step 3, all recorded in their stages: `ArchiveRecordCatalog.php` unchanged (not needed); seeds name their grant in a new `Operator-Grant-ID` header instead of in the reason text; the real-key browser run moved from Stage 3 to Stage 6.
+- Corrective work: test fixture charset, hashed asset name, commit manifest API. No new requests during Step 4.
+- Projection: **0.55** at entry, no revision.
+- **Retrospective scope assessment: 0.50**, single exposed Claude rater, not independent. Stage retrospectives 0.07/0.11/0.13/0.06/0.03/0.09, non-additive.
+- Verification: as recorded per stage. Production deploy check pending. Full suite not run.
+- Maintainer comfortable-fit judgment: pending. Study acceptance: pending. No measured labor.
+
+*— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
