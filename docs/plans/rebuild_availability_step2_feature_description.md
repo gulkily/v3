@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/rebuild_availability`; [host ledger](./ef
 
 Extended estimates: enabled
 
-Status: Step 1 approved (Option B) on 2026-11-09; Step 2 drafted; implementation unapproved.
+Status: Step 2 approved on 2026-11-09; Step 3 drafted; implementation unapproved.
 
 **Cycle estimate: 0.60** (revised; Step 1 0.55)
 

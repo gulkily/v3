@@ -30,3 +30,18 @@
 
 **Uncertain assessments**
 - The stop hook requires pushing drafts, while Railspike keeps Steps 1-3 uncommitted. Pushing to a non-main planning branch and stating "not approval" seemed the least conflicting path; Railspike does not address hooks.
+
+## 2026-11-09T18:55:00Z — Step 3
+
+**Necessary/useful instructions**
+- `step3_development_plan_do.md`, "replays each reported failure": the no-worker recovery became an explicit replay in Stage 8. Retain.
+- "Stages should be about <=1 hour": splitting worker swap (Stage 4) from request behavior (Stage 5) kept the mid-build write risk isolated and testable. Retain.
+
+**Redundant/unnecessary instructions**
+- `step3_development_plan_before.md` asks to confirm Step 2 is approved and to keep plans uncommitted; the second conflicts with the session stop hook every turn. Suggest Railspike say how to handle an environment that requires pushes.
+
+**Inapplicable instructions**
+- Documentation-only stage rules.
+
+**Uncertain assessments**
+- The "<=1 page" limit: eight stages with all required fields run past one page. The field list and the page limit seem to pull against each other at this stage count.
