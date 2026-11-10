@@ -227,3 +227,70 @@
 .sqlite-dialog pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .sqlite-dialog p { overflow-wrap: anywhere; }
 .sqlite-dialog .sqlite-query-bottom > * { max-width: 100%; min-width: 0; }
+
+/* Phone query dialog: dense text so a result table fits the screen, the way
+   the Forte phone layout does. Every size inside the viewer follows one base
+   size (8px at zoom 1); Smaller/Larger in the dialog header adjust
+   --query-zoom between 0.6 and 2.5. The header keeps its normal size so Close
+   and the zoom buttons stay easy to tap. */
+.sqlite-dialog-zoom {
+  display: none;
+  flex: 0 0 auto;
+  gap: 0.25rem;
+}
+.sqlite-dialog-zoom button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 2.25rem;
+  padding: 0.25rem 0.4rem;
+}
+@media (max-width: 48rem) {
+  .sqlite-dialog {
+    width: calc(100vw - 0.5rem);
+    max-height: calc(100dvh - 0.5rem);
+    padding: 0.4rem;
+  }
+  .sqlite-dialog-header { gap: 0.4rem; }
+  .sqlite-dialog-header h2 { font-size: 1rem; margin: 0; }
+  .sqlite-dialog-header button {
+    margin: 0;
+    padding: 0.3rem 0.6rem;
+  }
+  .sqlite-dialog-zoom { display: inline-flex; }
+  .sqlite-dialog [data-sqlite-viewer] {
+    font-size: calc(8px * var(--query-zoom, 1));
+    line-height: 1.3;
+    gap: 0.6em;
+  }
+  .sqlite-dialog [data-sqlite-viewer] *,
+  /* Outranks theme rules such as :root[data-theme="thermal"] .meta. */
+  dialog.sqlite-dialog [data-sqlite-viewer] .meta {
+    font-size: inherit;
+    line-height: inherit;
+  }
+  /* About a dozen lines of SQL, so results start on the first screen. */
+  .sqlite-dialog [data-sqlite-viewer] textarea {
+    height: 16em;
+  }
+  .sqlite-dialog [data-sqlite-viewer] .card {
+    margin: 0;
+    padding: 0.6em;
+  }
+  .sqlite-dialog [data-sqlite-viewer] h3 { font-weight: bold; }
+  .sqlite-dialog [data-sqlite-viewer] p { margin: 0.4em 0; }
+  .sqlite-dialog [data-sqlite-viewer] button,
+  .sqlite-dialog [data-sqlite-viewer] select,
+  .sqlite-dialog [data-sqlite-viewer] textarea {
+    padding: 0.3em 0.5em;
+    min-height: 0;
+  }
+  .sqlite-dialog .sqlite-result-scroll th,
+  .sqlite-dialog .sqlite-result-scroll td {
+    padding: 0.25em 0.45em;
+  }
+  .sqlite-dialog .sqlite-cell-toggle {
+    max-width: min(28em, 70vw);
+  }
+}
