@@ -224,10 +224,18 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
      *
      * @return array<string, mixed>
      */
-    public function check(int $timeoutSeconds = 60): array
+    public function check(int $timeoutSeconds = 60, ?int $maxAgeSeconds = null): array
     {
         if (!$this->isCheckout()) {
             return ['outcome' => 'refused', 'reason' => 'not_a_checkout', 'message' => 'The application directory is not a Git checkout.', 'state' => $this->inspect()];
+        }
+        // A caller that checks often (the header prompt on every page) accepts a recent fetch,
+        // so most page loads read local Git state instead of contacting GitHub.
+        if ($maxAgeSeconds !== null) {
+            $fetchedAt = $this->lastFetchTimestamp();
+            if ($fetchedAt !== null && time() - $fetchedAt < $maxAgeSeconds) {
+                return ['outcome' => 'checked', 'reason' => 'recent', 'message' => 'Checked recently.', 'state' => $this->inspect()];
+            }
         }
         $lock = $this->acquireLock();
         if ($lock === null) {
@@ -502,13 +510,21 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
 
     private function lastFetchTime(): ?string
     {
+        $mtime = $this->lastFetchTimestamp();
+
+        return $mtime === null ? null : gmdate('Y-m-d\TH:i:s\Z', $mtime);
+    }
+
+    private function lastFetchTimestamp(): ?int
+    {
         $gitDir = $this->gitValue(['rev-parse', '--absolute-git-dir']);
         if ($gitDir === null) {
             return null;
         }
+        clearstatcache(true, $gitDir . '/FETCH_HEAD');
         $mtime = @filemtime($gitDir . '/FETCH_HEAD');
 
-        return $mtime === false ? null : gmdate('Y-m-d\TH:i:s\Z', $mtime);
+        return $mtime === false ? null : $mtime;
     }
 
     /**

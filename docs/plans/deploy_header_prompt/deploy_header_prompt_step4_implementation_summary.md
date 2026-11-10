@@ -1,0 +1,109 @@
+> **Feature plan:** [Step 1](./deploy_header_prompt_step1_solution_assessment.md) · [Step 2](./deploy_header_prompt_step2_feature_description.md) · [Step 3](./deploy_header_prompt_step3_development_plan.md) · [Step 4](./deploy_header_prompt_step4_implementation_summary.md)
+
+Debug mode: enabled
+Effort study: `railspike-effort` / `v3/deploy_header_prompt` ([ledger](../effort_estimation_trial.md), standing enrollment under protocol P2)
+Extended estimates: enabled
+
+Cycle estimate: 0.24
+
+# Step 4: Implementation Summary — Deploy prompt in the page header
+
+Branch: `feat/deploy-header-prompt`. Planning commit: `886d81ee`.
+
+Step 4 entry projection: 0.24, reaffirmed unchanged from Step 3 (Claude, 2026-11-10 UTC, exposure: Step 3 score seen). Stage estimates below are copied from Step 3, not new ratings.
+
+## Stage 1 - Flag and check interval
+
+**Original estimate: 0.06**
+**Retrospective stage work: 0.05**
+
+- Changes:
+  - `FeatureFlagRegistry.php`: new `FORUM_DEPLOY_HEADER_PROMPT_ENABLED` ("Deploy prompt"), off by default, site mutable, EXPERIENCE group after Unread.
+  - `AppUpdate.php`: `check()` takes an optional maximum age. A fetch newer than that returns outcome `checked`, reason `recent`, without contacting GitHub. The time comes from `FETCH_HEAD`, so no new state is stored.
+  - `DeployController.php`: `check` reads an optional `max_age`, clamped to 60–86400 seconds. Without it, Check for updates still always fetches.
+- Verification:
+  - Passed: `./v3 test --smoke AppUpdateTest DeployPageTest FeatureFlagEvaluatorTest`, 480/480.
+  - New tests: a recent fetch is reused; the forced check still fetches; an hour-old fetch is refreshed.
+  - Not run: full suite (maintainer runs it).
+  - Not covered: the `max_age` clamp through the HTTP endpoint; Stage 2's browser test exercises that path.
+- Notes:
+  - Reuse: the existing `check` action and lock; no new endpoint.
+  - Workspace note: the shared workspace dropped untracked plan files once before the planning commit. The plans were rewritten from their approved text; the Step 1 debug entry is restored in this commit with a revision note.
+- Estimate details: original scope unchanged; no revisions.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Remember the operator and reveal the button
+
+**Original estimate: 0.07**
+**Retrospective stage work: 0.09**
+
+- Changes:
+  - `deploy_control.js`: remembers this browser (`forum_deploy_prompt` in local storage) after Deploy now ends `deployed` or `up_to_date`, or a deploy started from the page finishes `deployed`. Check for updates alone does not.
+  - New `deploy_prompt.js`: in a remembered browser, waits three seconds, sends `check` with `max_age` 600 and gives up after fifteen seconds. Reveals the button when `behind` is above zero. A 403 forgets the browser. Does nothing on Tools → Deploy.
+  - `app_header.php`: a hidden Deploy now button and status line by the site name, only with the flag on. Server HTML stays the same for every viewer.
+  - `TemplateRenderer.php` and `layout.php`: load the script only with the flag on and the app header.
+  - `site.css`: `.deploy-prompt` styles from shared theme variables. Phones keep it on the site name's row; wider screens put it under the name.
+  - `tests/Support/app_layout_fixture.php`: a fifth argument turns the flag on.
+- Verification:
+  - Passed: `node tests/browser/deploy_prompt.mjs`. It covers flag off (no script, no request), a never-deployed browser (no request), the three-second delay, the request body, behind and up-to-date replies, a 403 forgetting the browser, and the tab bar unchanged on phones.
+  - Passed: every theme (Word 97, Chicago, Midnight, Gloss, Gloss Dark, Engagify) at 390 and 1100 wide. The button is usable, inside the header, and the destinations stay on one row. Screenshots reviewed for all twelve.
+  - Passed: `./v3 test --smoke AppNavigationPlacementTest NavIconSetsTest DeployPageTest FeatureFlagEvaluatorTest`, 449/449.
+  - Passed: header regressions `inbox_unread.mjs`, `nav_slots.mjs`, `viewer_nav_prepaint.mjs`; `git diff --check`.
+  - Not run: full suite.
+- Notes:
+  - Placement refinement (in scope, under the Stage 2 crowding mitigation): the plan placed the button beside New post. On phones that slot is in the bottom tab bar, and on desktop it wrapped Tools to a second row in Chicago and Gloss. The button now sits by the site name instead and does not reuse `.new-post-button`.
+  - On wider screens the destinations shift right by about 20px when the button appears in Chicago, Gloss and Engagify. This is a post-paint change for a real state change, which `AGENTS.md` allows.
+  - Navigation icons: not applicable; Deploy now is an action, not a navigation destination.
+  - Engagify's parody popups cover its header in screenshots; the geometry checks still pass there.
+- Estimate details: original scope unchanged; the placement rework is new understanding, not changed scope.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Deploy from the header
+
+**Original estimate: 0.05**
+**Retrospective stage work: 0.04**
+
+- Changes:
+  - `deploy_prompt.js`: tapping Deploy now disables the button, shows Deploying… and sends `now` with a 150-second limit, matching the server's own limit.
+  - Outcome `deployed` or `up_to_date` reloads the page.
+  - A failed or refused deploy, a 403, a 502–504 reply or a dropped connection shows a message with an Open Deploy link and re-enables the button. A 403 also forgets the browser.
+- Verification:
+  - Passed: `node tests/browser/deploy_prompt.mjs`, extended with success (reload), failure, 503, 403 and a dropped connection. Each case checks the message, the link to `/tools/deploy/`, the re-enabled button and a single `now` request.
+  - Passed: `./v3 test --smoke DeployPageTest` and `git diff --check`.
+  - Attempt log: the header sends the same `now` request as Tools → Deploy, so `DeployPageTest` and `AppUpdateTest` already cover one log line per deploy. No new PHP test was added.
+  - Not run: full suite.
+- Notes:
+  - Duplicate taps: the button is disabled while a deploy runs, and the server's deploy lock refuses a second one.
+  - A lost reply is not followed in the header; the link sends the operator to Tools → Deploy, which already does that.
+- Estimate details: original scope unchanged; no revisions.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Docs and production replay
+
+**Original estimate: 0.04**
+**Retrospective stage work: 0.04 (production replay pending)**
+
+- Changes:
+  - `docs/runbooks/production_deploy.md`: new "Deploy now in the header" subsection.
+  - `docs/concepts/application_update.md`: the header prompt, the check interval and the new source paths.
+  - `docs/plans/effort_estimation_trial.md`: ledger row and closeout line.
+- Verification:
+  - Passed: concept source paths resolve; `git diff --check`.
+  - Passed: final diff review of `cdec8702..HEAD`. One new script, no new dependency, no schema change. `playwright-core` was installed from the existing `package.json` for the browser check only.
+  - Pending (maintainer, production, iPhone): turn the flag on, deploy once from Tools → Deploy, merge a later commit, open the board, wait for Deploy now and tap it. Then lock the phone mid-deploy and confirm Open Deploy leads to a page that follows the deploy. A desktop pass does not satisfy this.
+  - Not run: full suite.
+- Notes:
+  - Feedback: no matching item in `docs/feedback/items/`, so no `Feedback:` trailer.
+- Estimate details: original scope unchanged.
+
+## Cycle closeout
+
+- Delivered scope: v2 (Option A plus the site feature flag). Stages 1–4 complete; commits listed in the PR.
+- Retrospective cycle assessment: **0.22**, single exposed rater; not a measured actual. Stage 2's placement rework added work; Stage 3 needed less.
+- Maintainer comfortable-fit judgment: pending.
+- Release status: blocked on the production iPhone replay and acceptance.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*

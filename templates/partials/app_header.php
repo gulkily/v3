@@ -3,7 +3,9 @@
  * Header for the `app` navigation slot: main destinations in one nav (top
  * bar on desktop, tab bar on phones), one New post, and an account menu that
  * holds the remaining destinations and the theme controls. The account menu
- * is a native disclosure, so it opens without JavaScript.
+ * is a native disclosure, so it opens without JavaScript. With the deploy prompt
+ * flag on, a hidden Deploy now sits by the site name, outside the phone tab bar;
+ * deploy_prompt.js reveals it for an operator's browser when updates are waiting.
  *
  * @var list<array<string, mixed>> $navItems
  */
@@ -19,7 +21,7 @@ $menuCurrent = array_values(array_filter($menuItems, static fn (array $item): bo
 $canPost = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'board') !== [];
 ?>
 <header class="site-header site-header--app">
-  <p class="eyebrow"><a class="site-brand" href="/"><span class="site-brand__mark" aria-hidden="true"></span><?= $e($siteName) ?></a></p>
+  <p class="eyebrow"><a class="site-brand" href="/"><span class="site-brand__mark" aria-hidden="true"></span><?= $e($siteName) ?></a><?php if ($deployPromptEnabled ?? false): ?><span class="deploy-prompt" data-deploy-prompt hidden><button type="button" class="deploy-prompt__button" data-deploy-prompt-button>Deploy now</button><span class="deploy-prompt__status" data-deploy-prompt-status role="status" aria-live="polite"></span></span><?php endif; ?></p>
   <div class="site-header-actions">
 <?= $indent($partial('partials/nav.php'), 2) ?>
 <?php if ($canPost): ?>

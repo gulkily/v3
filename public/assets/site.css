@@ -580,6 +580,53 @@ pre {
   color: var(--active-ink);
 }
 
+/* Deploy now, by the site name: deploy_prompt.js reveals it for an operator's
+   browser. It sits outside .site-header-actions, so the phone tab bar keeps its tabs. */
+.deploy-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.75rem;
+  vertical-align: middle;
+}
+
+.deploy-prompt[hidden] {
+  display: none;
+}
+
+/* Wider screens: under the site name, so the destinations beside it neither shift nor wrap. */
+@media (min-width: 640px) {
+  .deploy-prompt {
+    display: flex;
+    width: max-content;
+    margin: 0.3rem 0 0;
+  }
+}
+
+:root .deploy-prompt__button {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--active-line, var(--line));
+  background: var(--active-bg, var(--input-bg));
+  color: var(--active-ink, var(--ink));
+  font: 600 0.85rem/1.2 var(--ui-font);
+  cursor: pointer;
+}
+
+.deploy-prompt__button:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.deploy-prompt__status {
+  font: 0.8rem/1.2 var(--ui-font);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.deploy-prompt__status:empty {
+  display: none;
+}
+
 .new-post-button__icon {
   font-size: 1.1em;
   line-height: 1;

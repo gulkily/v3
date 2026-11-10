@@ -9,6 +9,9 @@
   const buttons = Array.from(form.querySelectorAll('button'));
   const say = (text) => { status.textContent = text; status.hidden = text === ''; };
   const setBusy = (on) => buttons.forEach((button) => { button.disabled = on; });
+  // A deploy from this page turns on the header prompt in this browser (deploy_prompt.js).
+  let startedHere = false;
+  const remember = () => { try { window.localStorage.setItem('forum_deploy_prompt', '1'); } catch { /* storage unavailable */ } };
   const post = async (action) => {
     const response = await fetch('/tools/deploy/', {
       method: 'POST',
@@ -50,7 +53,11 @@
       const rebuild = data.state.rebuild_status;
       const deploying = task === 'queued' || task === 'running' || data.state.busy;
       const rebuilding = rebuild === 'queued' || rebuild === 'running';
-      if (!deploying && !rebuilding) { window.location.reload(); return; }
+      if (!deploying && !rebuilding) {
+        if (startedHere && data.state.latest && data.state.latest.Outcome === 'deployed') remember();
+        window.location.reload();
+        return;
+      }
       if (deploying) {
         say(task === 'running' || data.state.busy ? 'Deploying…' : `Queued; waiting for the task worker…${waited()}`);
       } else {
@@ -63,6 +70,7 @@
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const action = (event.submitter && event.submitter.value) || 'queue';
+    if (action !== 'check') startedHere = true;
     setBusy(true);
     say(action === 'check' ? 'Checking GitHub…' : action === 'now' ? 'Deploying…' : 'Queuing…');
     // The deploy may have run even when its reply was lost; follow the status instead.
@@ -86,6 +94,7 @@
       return;
     }
     if (result.outcome === 'refused' || result.outcome === 'failed') { say(result.message); return; }
+    if (result.outcome === 'deployed' || result.outcome === 'up_to_date') remember();
     if (data.state && (data.state.rebuild_status === 'queued' || data.state.rebuild_status === 'running')) {
       say(result.message);
       poll();

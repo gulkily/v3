@@ -141,6 +141,38 @@ final class AppUpdateTest
         assertSame($head, $this->head($app));
     }
 
+    public function testCheckWithMaxAgeReusesARecentFetch(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $update = new AppUpdate($app);
+        $update->check();
+        $this->pushCommit($seed, 'after the first check');
+
+        $recent = $update->check(60, 600);
+        assertSame('checked', $recent['outcome']);
+        assertSame('recent', $recent['reason']);
+        assertSame(0, $recent['state']['behind']);
+
+        // The Deploy page's button passes no maximum age and always fetches.
+        $forced = $update->check(60);
+        assertSame(null, $forced['reason']);
+        assertSame(1, $forced['state']['behind']);
+    }
+
+    public function testCheckWithMaxAgeFetchesWhenTheLastFetchIsOld(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $update = new AppUpdate($app);
+        $update->check();
+        $this->pushCommit($seed, 'after an old check');
+        touch($app . '/.git/FETCH_HEAD', time() - 3600);
+
+        $result = $update->check(60, 600);
+
+        assertSame(null, $result['reason']);
+        assertSame(1, $result['state']['behind']);
+    }
+
     public function testInspectListsIncomingCommitsAndSizeAfterACheck(): void
     {
         [$app, $seed] = $this->fixture();

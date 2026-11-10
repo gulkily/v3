@@ -47,7 +47,8 @@ final class DeployController
     }
 
     /**
-     * POST /tools/deploy/ with `action` = status | check | queue | now.
+     * POST /tools/deploy/ with `action` = status | check | queue | now. `check` takes an optional
+     * `max_age` in seconds: a fetch newer than that is reused instead of contacting GitHub.
      * The page script sends JSON with `X-Requested-With: ForumDeploy` and gets
      * JSON back; a plain form post (no script) gets the page with a notice.
      */
@@ -69,7 +70,7 @@ final class DeployController
 
         $result = match ($action) {
             'status' => ['outcome' => 'status', 'message' => ''],
-            'check' => $this->update->check(self::INSTANT_TIMEOUT_SECONDS),
+            'check' => $this->update->check(self::INSTANT_TIMEOUT_SECONDS, self::maxAge($input['max_age'] ?? null)),
             'queue' => $this->queue($actor),
             'now' => $this->deployNow($actor),
             default => null,
@@ -100,6 +101,19 @@ final class DeployController
     }
 
     private const INSTANT_TIMEOUT_SECONDS = 60;
+
+    /** Shortest and longest fetch age a `check` may accept; without `max_age` it always fetches. */
+    private const MIN_MAX_AGE_SECONDS = 60;
+    private const MAX_MAX_AGE_SECONDS = 86400;
+
+    private static function maxAge(mixed $value): ?int
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        return max(self::MIN_MAX_AGE_SECONDS, min(self::MAX_MAX_AGE_SECONDS, (int) $value));
+    }
 
     /**
      * @return array<string, mixed>

@@ -1779,3 +1779,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/compose_menu_options` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.06; retrospective 0.08) | [One-shot record](./compose_menu_options/compose_menu_options_one_shot.md#study-history) | Thread request widened in session; acceptance pending |
 
 2026-11-09T18:05Z: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link, then widened the request in session). Intake **0.06** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.08** because visual checks found the expanded menu running off the top of the phone page and it gained downward placement. Baseline `ddf8fa550e49626c0fe75bd3d7c76d15712eae29`; branch `feat/compose_menu_options`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/deploy_header_prompt
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/deploy_header_prompt` | Staged Step 4 technically complete; production replay and maintainer acceptance pending | v2 / R1 / P2 | 0.24 (intake 0.20; Step 2 0.22; retrospective 0.22) | [Step 1](./deploy_header_prompt/deploy_header_prompt_step1_solution_assessment.md#study-snapshot), [Step 2](./deploy_header_prompt/deploy_header_prompt_step2_feature_description.md#study-snapshot), [Step 3](./deploy_header_prompt/deploy_header_prompt_step3_development_plan.md#study-snapshot), [Step 4](./deploy_header_prompt/deploy_header_prompt_step4_implementation_summary.md#cycle-closeout) | Maintainer request in session; feature flag added at Step 1 approval; acceptance pending |
+
+2026-11-10T09:55Z: standing P2 enrollment, staged cycle with extended estimates. Intake **0.20** after source inspection (no pristine intake), Step 2 **0.22** (feature flag), Step 3 **0.24**, Step 4 entry reaffirmed, retrospective **0.22**. Baseline `cdec8702408a82a254633c5107d4b909ef493250`; branch `feat/deploy-header-prompt`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

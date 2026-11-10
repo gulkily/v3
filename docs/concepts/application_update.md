@@ -6,4 +6,6 @@ Sources: [routine](../../src/ForumRewrite/Deploy/AppUpdate.php), [page and actio
 
 After a successful update, a short process of the new code (`./v3 task-queue check-read-model`) compares the read model's schema and queues a rebuild when it changed; the attempt log records `Read-Model:` and the page's Site data row follows the rebuild to completion, naming `./v3 rebuild` when no worker runs it.
 
-Boundaries: pull only (no docs publish or static build); only session-authenticated root-approved operators and same-origin requests; opening the page reads local Git state and never fetches.
+With the Deploy prompt site flag on (`FORUM_DEPLOY_HEADER_PROMPT_ENABLED`), a browser that has deployed from the page remembers it. Later pages check a few seconds after load, accepting a fetch up to ten minutes old (`check` with `max_age`, judged by `FETCH_HEAD`), and reveal Deploy now by the site name when the checkout is behind ([header script](../../public/assets/deploy_prompt.js), [browser check](../../tests/browser/deploy_prompt.mjs)). The button runs the same `now` action; a refusal makes that browser stop checking.
+
+Boundaries: pull only (no docs publish or static build); only session-authenticated root-approved operators and same-origin requests; opening the page reads local Git state and never fetches; the header prompt fetches at most once per ten minutes.
