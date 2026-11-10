@@ -8,6 +8,7 @@ use ForumRewrite\Llm\OpenAiCompatibleStructuredChatProvider;
 use ForumRewrite\Llm\LlmExchangeRecorder;
 use ForumRewrite\Llm\StructuredChatCompletionDecoder;
 use ForumRewrite\Llm\StructuredChatProvider;
+use RuntimeException;
 
 final class DedalusPostAnalyzer implements PostAnalyzer
 {

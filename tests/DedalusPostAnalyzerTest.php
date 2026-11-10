@@ -112,6 +112,30 @@ final class DedalusPostAnalyzerTest
         }
     }
 
+    public function testMissingOrEmptySystemPromptThrowsRuntimeException(): void
+    {
+        $method = new \ReflectionMethod(DedalusPostAnalyzer::class, 'systemPrompt');
+        $method->setAccessible(true);
+        $missing = sys_get_temp_dir() . '/dedalus-prompt-missing-' . bin2hex(random_bytes(6));
+        $empty = tempnam(sys_get_temp_dir(), 'dedalus-prompt-empty-');
+        assertSame(true, is_string($empty));
+        file_put_contents($empty, "  \n");
+
+        try {
+            foreach ([$missing => 'could not be read', $empty => 'is empty'] as $path => $expected) {
+                $analyzer = new DedalusPostAnalyzer('test-key', 'https://example.invalid', 'test-model', 60, $path);
+                try {
+                    $method->invoke($analyzer);
+                    throw new \LogicException('Expected RuntimeException for ' . $path);
+                } catch (\RuntimeException $exception) {
+                    assertSame(true, str_contains($exception->getMessage(), $expected));
+                }
+            }
+        } finally {
+            @unlink($empty);
+        }
+    }
+
     public function testSystemPromptGuidesUseOfRelatedContent(): void
     {
         $analyzer = new DedalusPostAnalyzer('test-key');
