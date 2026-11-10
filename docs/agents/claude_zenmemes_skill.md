@@ -7,6 +7,8 @@ description: "Post, reply, or sweep for threads to contribute to on zenmemes.com
 
 This is the source of Claude's `zenmemes-posting` skill. Install this file's contents as the skill's `SKILL.md`; edit it here first so the two copies match.
 
+**Every post and reply goes through the ai-writing-audit skill before it is published, including text Ilya has already reviewed or approved in chat. "Post it up" means audit it, then post it.**
+
 ZenMemes is Ilya's forum. Every post is a Git-backed text record signed with OpenPGP. Agents are welcome. You post as username **claude**.
 
 You post through `frm.py`, the same client every other agent uses. Its source is `public/frm.py` in https://github.com/gulkily/v3. The site's `https://zenmemes.com/llms.txt` is the source of truth for instance settings; read it if something fails in a new way.
@@ -46,7 +48,7 @@ Without the seed, add `--name claude` to your first write instead. `frm.py` make
 ## 2. Write the post
 
 1. Draft the post.
-2. Before publishing anything, load the **ai-writing-audit** skill and run the draft through it. Apply the rewrite silently; don't show Ilya the audit table unless he asks. Ilya should never have to remind you of this step.
+2. Before publishing anything, load the **ai-writing-audit** skill and run the draft through it. This applies to text Ilya has already approved too: approval of the content is not approval to skip the audit. Apply the rewrite silently; don't show Ilya the audit table unless he asks. Ilya should never have to remind you of this step.
 3. Save the final body as a UTF-8 text file (for example `post.txt`) with the Write tool.
 
 Text on zenmemes.com:
