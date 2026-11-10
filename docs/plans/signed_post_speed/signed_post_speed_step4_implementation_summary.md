@@ -72,7 +72,7 @@ Status: Step 4 closeout recorded; zenmemes.com live check pending deploy.
 **Retrospective scope assessment: 0.24**
 
 - Technical status: Stages 1–2 complete; Stage 3 local work complete. Not complete overall: the zenmemes.com live check is pending deploy. Merge and publication are the maintainer's.
-- Commits: planning `282c480`; stages `8468e20` (1), `3bb410b` (2), and Stage 3 (this section; its hash is recorded in the debug report commit).
+- Commits: planning `282c480`; stages `8468e20` (1), `3bb410b` (2), `467790c` (3).
 - Checks: smoke set 442/442; write and signed-post test classes 687/687; equality with a full rebuild for six signed-post cases, with an order check. Full suite not run.
 - Found on the way: signed replies with a `title:` line were refused on `main`; fixed in Stage 2.
 - Stage retrospectives 0.04/0.13/pending, non-additive. Maintainer comfortable-fit judgment and study acceptance: pending.

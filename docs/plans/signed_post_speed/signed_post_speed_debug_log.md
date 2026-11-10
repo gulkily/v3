@@ -42,3 +42,18 @@
 
 **Uncertain assessments**
 - No supported findings.
+
+## 2026-11-10T07:20:21Z — Step 4
+
+**Necessary/useful instructions**
+- Writing the equality tests before changing the route surfaced an unrelated bug at once: signed bundles refused title records. Retain "tests first" for risky stages.
+- Recording measured timings with their odd runs (a cold first run, a stale marker left by my own script) kept the summary honest about the new-key case. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- No supported findings.
+
+**Uncertain assessments**
+- The closeout again could not name its own commit; this cycle fills it in the debug-report commit, as the previous one did. A standing rule would help.
