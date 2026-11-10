@@ -43,6 +43,18 @@
   - Manual: `./v3 start`, downloaded `repository.tar.gz` once, then checked iPhone 13 emulation (390 px). Collapsed and expanded both render; scrollWidth equals viewport width; tar.gz shows 4.1 KiB, zip shows "built on request", SQLite shows 244.0 KiB.
 - Notes: archive rows show a description instead of a command, since their size comes from the cache metadata rather than one shell call.
 
+## Follow-up - Plain card and archive size commands (after #136 merged)
+
+- Request (maintainer review): it's its own card, so make it a regular card instead of collapsible; for cached files that don't always have a size, still list the command that would give their size.
+- Changes:
+  - Sizes is now a regular `<article class="card">` with an `<h2>`; the `<details>` CSS is removed.
+  - `ImageBackup::cachedArchive(string $kind): array{path: ?string, bytes: ?int}` names the current revision's cache slot even before it is built (`cachedBytes()` now wraps it). It uses new static `ArchiveCache::slot()`, which `key()` now delegates to, and `ArchiveCache::DIRECTORY`.
+  - Archive rows show `stat -c %s state/cache/archive-exports/<slot>/archive.tar.gz` (or `.zip`). If the slot can't be computed, e.g. records have uncommitted changes, they fall back to `.../archive-exports/*/archive.<ext>`. The SQLite download row shows its `stat` command instead of "same file as Read-model database".
+- Verification:
+  - `./v3 test ArchiveExportTest ByteSizeTest LocalAppSmokeTest AssetFingerprintTest`: 182 run, 182 passed. Full suite not run.
+  - New assertions: the unbuilt slot path equals where `export()` then writes the archive, and the page names a 64-hex slot for the unbuilt tar.gz.
+  - Manual: iPhone 13 width, plain card, no horizontal scroll.
+
 ## Stage 4 - Deploy check and thread reply
 
 - Status: pending merge and deploy. After deploy: expand Sizes on zenmemes.com, compare the database row with `ls -l` on the server, then reply as `claude` in [the request thread](https://zenmemes.com/threads/thread-20261103063011-37a33e13).

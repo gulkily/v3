@@ -16,18 +16,34 @@ final class ImageBackup
     }
 
     /**
-     * Size of the cached tar.gz/zip for the current revision, or null when it
-     * has not been built (downloads build on request). Never builds, and never
-     * creates archive storage just to look.
+     * The cache slot for the current revision's tar.gz/zip: its path relative
+     * to the database directory (null when identity cannot be computed, e.g.
+     * uncommitted records) and its size (null until built; downloads build on
+     * request). Never builds, and never creates archive storage just to look.
+     *
+     * @return array{path: ?string, bytes: ?int}
      */
+    public function cachedArchive(string $kind): array
+    {
+        if (!in_array($kind, ['tar.gz', 'zip'], true)) return ['path' => null, 'bytes' => null];
+        try {
+            $identity = $this->identity(null, $kind);
+        } catch (\Throwable) {
+            return ['path' => null, 'bytes' => null];
+        }
+        $relative = ArchiveCache::DIRECTORY . '/' . ArchiveCache::slot($identity, $kind) . '/archive.' . $kind;
+        if (!is_dir(dirname($this->databasePath) . '/' . ArchiveCache::DIRECTORY)) return ['path' => $relative, 'bytes' => null];
+        try {
+            $bytes = (new ArchiveCache(dirname($this->databasePath), $this->repositoryRoot))->peekBytes($identity, $kind);
+        } catch (\Throwable) {
+            $bytes = null;
+        }
+        return ['path' => $relative, 'bytes' => $bytes];
+    }
+
     public function cachedBytes(string $kind): ?int
     {
-        if (!in_array($kind, ['tar.gz', 'zip'], true) || !is_dir(dirname($this->databasePath) . '/archive-exports')) return null;
-        try {
-            return (new ArchiveCache(dirname($this->databasePath), $this->repositoryRoot))->peekBytes($this->identity(null, $kind), $kind);
-        } catch (\Throwable) {
-            return null;
-        }
+        return $this->cachedArchive($kind)['bytes'];
     }
 
     public function export(string $kind, ?string $expectedRevision = null, string $imageFormat = 'zip'): array

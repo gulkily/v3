@@ -84,12 +84,15 @@ final class ArchiveExportTest
 
         // Nothing built yet, and looking must not create archive storage.
         assertSame(null, $backup->cachedBytes('tar.gz'));
+        $unbuilt = $backup->cachedArchive('tar.gz');
+        assertTrue(is_string($unbuilt['path']), 'the slot is named before anything is built');
         assertSame(false, is_dir($w->root . '/archive-exports'));
 
         $built = $backup->export('tar.gz');
         fclose($built['stream']);
         clearstatcache();
         assertSame(filesize($built['path']), $backup->cachedBytes('tar.gz'));
+        assertSame(realpath($w->root . '/' . $unbuilt['path']), realpath($built['path']), 'named slot is where the build lands');
         assertSame(null, $backup->cachedBytes('zip'), 'other formats are not built yet');
         assertSame(null, $backup->cachedBytes('images'), 'only content archives are sized');
 

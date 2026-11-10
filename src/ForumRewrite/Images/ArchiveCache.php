@@ -10,11 +10,12 @@ final class ArchiveCache
 {
     public const MAX_BYTES = 2 * 1024 * 1024 * 1024;
     public const MAX_ENTRIES = 6;
+    public const DIRECTORY = 'archive-exports';
     public readonly string $root;
 
     public function __construct(string $directory, string $repository, private readonly int $maxBytes = self::MAX_BYTES, private readonly int $maxEntries = self::MAX_ENTRIES)
     {
-        $candidate = rtrim($directory, '/') . '/archive-exports';
+        $candidate = rtrim($directory, '/') . '/' . self::DIRECTORY;
         for ($path = $candidate; $path !== '/' && $path !== '.'; $path = dirname($path)) {
             if (is_link($path)) throw new RuntimeException('Unsafe archive storage.');
         }
@@ -102,6 +103,12 @@ final class ArchiveCache
     }
 
     public function key(string $identity, string $kind): string
+    {
+        return self::slot($identity, $kind);
+    }
+
+    /** Directory name of a cache entry; static so callers can name it without creating storage. */
+    public static function slot(string $identity, string $kind): string
     {
         return hash('sha256', $identity . ':' . $kind);
     }
