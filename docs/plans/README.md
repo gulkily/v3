@@ -16,6 +16,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [frm.py image attachments one-shot](frm_image/frm_image_one_shot.md) — `thread` and `reply` take `--image` and `--image-description` to publish one screenshot with a post.
 
+[Consistent page titles one-shot](page_header_consistency/page_header_consistency_one_shot.md) — main-nav pages show no visible title (the active nav item names the page); other pages keep the title as their first card's heading, with no blank line above it.
+
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
 [Codebase page sizes](codebase_sizes/codebase_sizes_step3_development_plan.md) — `/tools/codebase/` shows a collapsed Sizes card (database, repositories, downloads) and download sizes next to each link.
