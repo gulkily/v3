@@ -27,10 +27,10 @@
     }
   };
 
-  // Accepts a fetch from the last ten minutes, so most page loads never reach GitHub.
+  // Accepts a fetch from the last three minutes, so most page loads never reach GitHub.
   const check = async () => {
     let response;
-    try { response = await send({ action: 'check', max_age: 600 }, 15000); } catch { return; }
+    try { response = await send({ action: 'check', max_age: 180 }, 15000); } catch { return; }
     if (response.status === 403) { forget(); return; }
     const data = await response.json().catch(() => null);
     if (!response.ok || !data || data.status !== 'ok') return;

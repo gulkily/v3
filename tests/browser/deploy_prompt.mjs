@@ -73,7 +73,7 @@ for (const width of [390, 1100]) {
   await page.waitForTimeout(1500);
   assert.equal(calls.length, 0, `${width}: the check waits after load`);
   await page.waitForFunction(() => !document.querySelector('[data-deploy-prompt]').hidden, null, { timeout: 6000 });
-  assert.deepEqual(calls, [{ action: 'check', max_age: 600 }]);
+  assert.deepEqual(calls, [{ action: 'check', max_age: 180 }]);
   assert.equal(await visible(page), true, `${width}: Deploy now shows`);
   assert.equal(await tabs(page, width), before, `${width}: revealing the button moves no tab`);
   await page.close();
