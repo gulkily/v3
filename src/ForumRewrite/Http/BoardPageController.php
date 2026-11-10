@@ -6,7 +6,6 @@ namespace ForumRewrite\Http;
 
 use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\ReadModel\ThreadRepository;
-use ForumRewrite\ReadModel\ViewerTagLookup;
 use ForumRewrite\Qdb\QdbBoardPolicy;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ThreadTitle;
@@ -177,53 +176,6 @@ final class BoardPageController
     }
 
     /**
-     * QDB welcome page: the qdb profile's own "/", replacing the generic
-     * board default-view render with a short intro + the real quote count
-     * + links to the other classic pages.
-     */
-    public function welcome(): string
-    {
-        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
-        $recentThreads = array_slice($threads, 0, 5);
-
-        return $this->routeServices->renderPageTemplate(
-            'qdb_welcome.php',
-            [
-                'qdbQuoteCount' => count($threads),
-                'recentThreads' => $recentThreads,
-            ],
-            'Welcome',
-            'welcome',
-        );
-    }
-
-    /**
-     * QDB classic URL: /random, /?random. A fresh shuffled page of quotes
-     * each time, not a redirect to a single one. Only meaningful for the
-     * qdb site profile.
-     */
-    public function random(int $count = 10): string
-    {
-        $threads = ThreadRepository::fetchThreads($this->routeServices->pdo());
-        shuffle($threads);
-        $threads = array_slice($threads, 0, $count);
-        $viewerReactionState = $this->viewerReactionStateForThreads($threads, true);
-
-        return $this->routeServices->renderPageTemplate(
-            'qdb_random.php',
-            [
-                'threads' => $threads,
-                'viewerVotedThreadIds' => $viewerReactionState['voted'],
-                'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
-                'qdbVoteTags' => ['upvote', 'downvote'],
-            ],
-            'Random',
-            'random',
-            ['/assets/lazy_compose_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_sender.js', '/assets/thread_reactions.js'],
-        );
-    }
-
-    /**
      * Board search (`/search?q=`) over top-level threads for non-QDB
      * profiles; QDB keeps its own classic search in QdbExperience.
      */
@@ -255,35 +207,6 @@ final class BoardPageController
         if ($id === null || $term === '') return null;
         $page = \ForumRewrite\ReadModel\ThreadSearchPage::pageOf($this->routeServices->pdo(), $term, $id);
         return $page === null ? null : \ForumRewrite\Pagination\PageNavigation::withLocation('/search', ['q' => $term], $page, $id);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $threads
-     * @return array{voted: array<string, true>, flagged: array<string, true>}
-     */
-    private function viewerReactionStateForThreads(array $threads, bool $isQdbInstance): array
-    {
-        $empty = ['voted' => [], 'flagged' => []];
-        if (!$isQdbInstance) {
-            return $empty;
-        }
-
-        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
-        if ($viewerProfile === null) {
-            return $empty;
-        }
-
-        $viewerIdentityId = (string) $viewerProfile['identity_id'];
-        $rootPostIds = array_column($threads, 'root_post_id');
-
-        $pdo = $this->routeServices->pdo();
-        $voted = ViewerTagLookup::threadTags($pdo, $rootPostIds, 'upvote', $viewerIdentityId);
-        $voted += ViewerTagLookup::threadTags($pdo, $rootPostIds, 'downvote', $viewerIdentityId);
-
-        return [
-            'voted' => $voted,
-            'flagged' => ViewerTagLookup::postTags($pdo, $rootPostIds, 'flag', $viewerIdentityId),
-        ];
     }
 
     public function rss(?QdbBoardPolicy $qdbPolicy = null): string
