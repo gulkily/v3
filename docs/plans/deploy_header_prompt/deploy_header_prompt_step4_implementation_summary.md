@@ -80,3 +80,30 @@ Step 4 entry projection: 0.24, reaffirmed unchanged from Step 3 (Claude, 2026-11
 - Estimate details: original scope unchanged; no revisions.
 
 *— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Docs and production replay
+
+**Original estimate: 0.04**
+**Retrospective stage work: 0.04 (production replay pending)**
+
+- Changes:
+  - `docs/runbooks/production_deploy.md`: new "Deploy now in the header" subsection.
+  - `docs/concepts/application_update.md`: the header prompt, the check interval and the new source paths.
+  - `docs/plans/effort_estimation_trial.md`: ledger row and closeout line.
+- Verification:
+  - Passed: concept source paths resolve; `git diff --check`.
+  - Passed: final diff review of `cdec8702..HEAD`. One new script, no new dependency, no schema change. `playwright-core` was installed from the existing `package.json` for the browser check only.
+  - Pending (maintainer, production, iPhone): turn the flag on, deploy once from Tools → Deploy, merge a later commit, open the board, wait for Deploy now and tap it. Then lock the phone mid-deploy and confirm Open Deploy leads to a page that follows the deploy. A desktop pass does not satisfy this.
+  - Not run: full suite.
+- Notes:
+  - Feedback: no matching item in `docs/feedback/items/`, so no `Feedback:` trailer.
+- Estimate details: original scope unchanged.
+
+## Cycle closeout
+
+- Delivered scope: v2 (Option A plus the site feature flag). Stages 1–4 complete; commits listed in the PR.
+- Retrospective cycle assessment: **0.22**, single exposed rater; not a measured actual. Stage 2's placement rework added work; Stage 3 needed less.
+- Maintainer comfortable-fit judgment: pending.
+- Release status: blocked on the production iPhone replay and acceptance.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
