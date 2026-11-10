@@ -96,10 +96,15 @@
   white-space: nowrap;
 }
 
-/* Keep theme button chrome from changing the height of text-only cells. */
+/* Keep theme button chrome off text-only cells: no height change, no fill
+   (button[type="button"] would otherwise paint --button-alt-bg), and no pill
+   corners that clip the text once a value is expanded. */
 :root[data-theme] [data-sqlite-viewer] .sqlite-result-scroll button.sqlite-cell-toggle {
   border: 0;
+  border-radius: 0;
   box-shadow: none;
+  background: transparent;
+  font-weight: inherit;
   line-height: inherit;
 }
 
