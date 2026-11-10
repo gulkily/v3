@@ -59,3 +59,24 @@ Step 4 entry projection: 0.24, reaffirmed unchanged from Step 3 (Claude, 2026-11
 - Estimate details: original scope unchanged; the placement rework is new understanding, not changed scope.
 
 *— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Deploy from the header
+
+**Original estimate: 0.05**
+**Retrospective stage work: 0.04**
+
+- Changes:
+  - `deploy_prompt.js`: tapping Deploy now disables the button, shows Deploying… and sends `now` with a 150-second limit, matching the server's own limit.
+  - Outcome `deployed` or `up_to_date` reloads the page.
+  - A failed or refused deploy, a 403, a 502–504 reply or a dropped connection shows a message with an Open Deploy link and re-enables the button. A 403 also forgets the browser.
+- Verification:
+  - Passed: `node tests/browser/deploy_prompt.mjs`, extended with success (reload), failure, 503, 403 and a dropped connection. Each case checks the message, the link to `/tools/deploy/`, the re-enabled button and a single `now` request.
+  - Passed: `./v3 test --smoke DeployPageTest` and `git diff --check`.
+  - Attempt log: the header sends the same `now` request as Tools → Deploy, so `DeployPageTest` and `AppUpdateTest` already cover one log line per deploy. No new PHP test was added.
+  - Not run: full suite.
+- Notes:
+  - Duplicate taps: the button is disabled while a deploy runs, and the server's deploy lock refuses a second one.
+  - A lost reply is not followed in the header; the link sends the operator to Tools → Deploy, which already does that.
+- Estimate details: original scope unchanged; no revisions.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*

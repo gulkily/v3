@@ -94,6 +94,35 @@ for (const width of [390, 1100]) {
   assert.equal(await page.evaluate(() => localStorage.getItem('forum_deploy_prompt')), null, 'a refusal forgets the browser');
   await page.close();
 }
+// Deploy from the header: success reloads; failures keep the page and point to Tools → Deploy.
+const deployReplies = {
+  deployed: [() => [200, { status: 'ok', action: 'now', result: { outcome: 'deployed', message: 'Updated to abc.' }, state: { behind: 0 } }], null],
+  failed: [() => [200, { status: 'ok', action: 'now', result: { outcome: 'failed', message: 'Could not fetch from GitHub: timeout.' }, state: { behind: 2 } }], 'Could not fetch from GitHub: timeout. Open Deploy'],
+  busy: [() => [503, { status: 'error', transient: true }], 'The server is busy; the deploy may still have run. Open Deploy'],
+  refused: [() => [403, { status: 'error', error: 'Deploying requires a signed-in root-approved operator.' }], 'Deploying requires a signed-in root-approved operator. Open Deploy'],
+  dropped: ['abort', 'The connection dropped; the deploy may still have run. Open Deploy'],
+};
+for (const [name, [nowReply, expected]] of Object.entries(deployReplies)) {
+  let loads = 0;
+  const { page, calls } = await open({ html: htmlOn, remembered: true, reply: (body) => body.action === 'check' ? behind(2)() : nowReply() });
+  if (nowReply === 'abort') await page.route('http://app.test/tools/deploy/', async route => JSON.parse(route.request().postData()).action === 'now' ? route.abort('connectionreset') : route.fallback());
+  page.on('framenavigated', frame => { if (frame === page.mainFrame()) loads++; });
+  await page.waitForFunction(() => !document.querySelector('[data-deploy-prompt]').hidden, null, { timeout: 6000 });
+  const before = loads;
+  await page.click('[data-deploy-prompt-button]');
+  if (expected === null) {
+    await page.waitForFunction(() => document.readyState === 'complete' && performance.getEntriesByType('navigation')[0]?.type === 'reload', null, { timeout: 6000 });
+    assert.ok(loads > before, `${name}: the page reloads on the new commit`);
+  } else {
+    await page.waitForFunction(() => document.querySelector('[data-deploy-prompt-status]').textContent.includes('Open Deploy'), null, { timeout: 6000 });
+    assert.equal(await page.textContent('[data-deploy-prompt-status]'), expected, `${name}: message and link`);
+    assert.equal(await page.getAttribute('[data-deploy-prompt-status] a', 'href'), '/tools/deploy/');
+    assert.equal(await page.isDisabled('[data-deploy-prompt-button]'), false, `${name}: the button can be tried again`);
+    if (name === 'refused') assert.equal(await page.evaluate(() => localStorage.getItem('forum_deploy_prompt')), null, 'a refused deploy forgets the browser');
+  }
+  if (nowReply !== 'abort') assert.deepEqual(calls.map(c => c.action), expected === null ? ['check', 'now', 'check'].slice(0, calls.length) : ['check', 'now'], `${name}: one deploy request`);
+  await page.close();
+}
 // Every theme, phone and desktop: the button fits beside the site name.
 for (const theme of ['word97', 'chicago', 'midnight', 'gloss', 'glossdark', 'engagify']) {
   for (const width of [390, 1100]) {
