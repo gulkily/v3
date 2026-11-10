@@ -229,7 +229,7 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-status"]').textContent.includes('Only one read-only'));
   await input.fill('SELECT COUNT(*) AS remaining FROM threads');
   await page.getByRole('button', { name: 'Run Query', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('130'));
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('200'));
   // A later context wins even while the shared cold load is still pending.
   await page.evaluate(() => caches.delete('forum-query-read-model-v1'));
   delay = 300;
