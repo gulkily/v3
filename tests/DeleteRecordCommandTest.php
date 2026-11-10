@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/Support/ReadModelSnapshot.php';
+
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\LabelRemoval;
@@ -259,15 +261,10 @@ final class DeleteRecordCommandTest
                 assertSame('ok', $result['status']);
                 $thread = str_starts_with($id, 'reply-') ? 'root-001' : $id;
                 assertSame([$name, true, false], [$name, in_array('Updating read model for thread ' . $thread, $lines, true), in_array('Rebuilding read model', $lines, true)], implode(' | ', $lines));
-                $targeted = $this->snapshot($database);
+                $targeted = ReadModelSnapshot::take($database);
                 $this->rebuild($root, $database);
-                $rebuilt = $this->snapshot($database);
-                $differences = [];
-                foreach (array_unique(array_merge(array_keys($rebuilt), array_keys($targeted))) as $table) {
-                    foreach (array_diff($rebuilt[$table] ?? [], $targeted[$table] ?? []) as $row) $differences[] = "{$table} rebuild: {$row}";
-                    foreach (array_diff($targeted[$table] ?? [], $rebuilt[$table] ?? []) as $row) $differences[] = "{$table} targeted: {$row}";
-                }
-                assertSame([], $differences, $name);
+                $rebuilt = ReadModelSnapshot::take($database);
+                assertSame([], ReadModelSnapshot::differences($rebuilt, $targeted), $name);
             } finally {
                 $this->remove($project);
                 if ($site !== null) putenv($priorSite === false ? 'FORUM_SITE_ID' : 'FORUM_SITE_ID=' . $priorSite);
@@ -364,38 +361,6 @@ final class DeleteRecordCommandTest
         LabelRemoval::git($root, ['commit', '-qm', 'Label fixture ' . $recordId]);
 
         return trim(LabelRemoval::git($root, ['rev-parse', 'HEAD']));
-    }
-
-    /**
-     * Read-model rows a rebuild and a targeted update must agree on. Left out: per-build
-     * values (metadata, random revisions, autoincrement IDs, global sequence numbers) and
-     * the commits table and its count, which incremental writes never maintain.
-     *
-     * @return array<string, list<string>>
-     */
-    private function snapshot(string $database): array
-    {
-        $pdo = new PDO('sqlite:' . $database);
-        $skipTables = ['metadata', 'commits', 'history_keys_revision', 'activity_local_state'];
-        $skipColumns = ['posts' => ['sequence_number'], 'activity' => ['id']];
-        $snapshot = [];
-        foreach ($pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN) as $table) {
-            if (in_array($table, $skipTables, true)) continue;
-            $rows = [];
-            foreach ($pdo->query('SELECT * FROM "' . $table . '"')->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                if ($table === 'activity_counts' && $row['view'] === 'commits') continue;
-                foreach ($skipColumns[$table] ?? [] as $column) unset($row[$column]);
-                $rows[] = json_encode($row);
-            }
-            sort($rows);
-            $snapshot[$table] = $rows;
-        }
-        // Sequence numbers are global and differ between builds; the order inside a thread must not.
-        $order = [];
-        foreach ($pdo->query('SELECT thread_id, post_id FROM posts ORDER BY thread_id, sequence_number')->fetchAll(PDO::FETCH_NUM) as [$thread, $post]) $order[$thread][] = $post;
-        $snapshot['thread order'] = array_map(static fn (string $thread, array $posts): string => $thread . ': ' . implode(' ', $posts), array_keys($order), $order);
-
-        return $snapshot;
     }
 
     /** @return array{string,string,string,string} */

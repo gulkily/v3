@@ -859,21 +859,37 @@ class LocalWriteService
                 if (is_file($this->repositoryRoot . '/' . $candidate)) { $sourceHash = hash_file('sha256', $this->repositoryRoot . '/' . $candidate); break; }
             }
             $accepted = AcceptedRetraction::prepare($post, $acceptedRequest, $canonicalRecord, $signature, $attribution, $sourceHash);
+            // Decided before the commit: the targeted update needs a read model current at this HEAD.
+            $updateContext = RemovalUpdateContext::forPost($this->repositoryRoot, $this->databasePath, $postId);
             $commitSha = RetractionDeletion::commit($this->repositoryRoot, $accepted);
             $recordPath = AcceptedRetraction::requestPath($postId);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
             $this->deletePreparedPost($prepareToken);
 
             $failedStep = null;
-            try {
-                $timings = array_merge($timings, $this->refreshDerivedStateAfterCommit($commitSha));
-            } catch (RuntimeException) {
-                $failedStep = 'read_model_refresh';
-            }
-            try {
-                $this->invalidateRetractedPostArtifacts();
-            } catch (\Throwable) {
-                $failedStep ??= 'artifact_invalidate';
+            $targetedTimings = $updateContext === null ? null : $this->applyRetractionToOnePost($postId, $commitSha);
+            if ($targetedTimings !== null) {
+                $timings = array_merge($timings, $targetedTimings);
+                try {
+                    $this->invalidator()->invalidateRemovedPost($updateContext['thread_id'], $postId, $updateContext['tags'], $updateContext['profile_slug']);
+                } catch (\Throwable) {
+                    try {
+                        $this->invalidateRetractedPostArtifacts();
+                    } catch (\Throwable) {
+                        $failedStep = 'artifact_invalidate';
+                    }
+                }
+            } else {
+                try {
+                    $timings = array_merge($timings, $this->refreshDerivedStateAfterCommit($commitSha));
+                } catch (RuntimeException) {
+                    $failedStep = 'read_model_refresh';
+                }
+                try {
+                    $this->invalidateRetractedPostArtifacts();
+                } catch (\Throwable) {
+                    $failedStep ??= 'artifact_invalidate';
+                }
             }
 
             return $this->retractionResult($postId, $threadId, $recordPath, $failedStep, $timings, hrtime(true) - $totalStartedAt, false, $commitSha);
@@ -1134,6 +1150,30 @@ class LocalWriteService
      * A retracted post can appear in tag, profile, listing, and snapshot artifacts as well as
      * its own pages, so every generated presentation file is retired, not just the thread's.
      */
+    /**
+     * Updates the read model for the retracted post only, the same way `delete-record` does
+     * for an operator deletion: a full rebuild produces the same placeholder. Returns null when
+     * that fails, so the caller falls back to a full rebuild.
+     *
+     * @return array<string, float>|null
+     */
+    private function applyRetractionToOnePost(string $postId, string $commitSha): ?array
+    {
+        try {
+            $removal = \ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $postId);
+            if ($removal === null) {
+                return null;
+            }
+            $timings = (new IncrementalReadModelUpdater($this->databasePath, $this->repositoryRoot))
+                ->applyPostRemoval($removal, AcceptedRetraction::path($postId), array_keys($removal['labels'] ?? []), $commitSha);
+        } catch (\Throwable) {
+            return null;
+        }
+        $this->staleMarker()->clear();
+
+        return $timings;
+    }
+
     private function invalidateRetractedPostArtifacts(): void
     {
         $this->invalidator()->invalidateAllGeneratedPresentation();

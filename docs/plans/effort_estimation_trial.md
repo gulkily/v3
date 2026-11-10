@@ -1,5 +1,17 @@
 # Effort estimation trial ledger
 
+## Cycle v3/retraction_speed
+
+2026-11-09T23:56:44Z — v3/retraction_speed Step 4 local closeout: branch `feat/retraction-speed`, planning `9c94d3c` and three stage commits. [Summary/closeout](./retraction_speed/retraction_speed_step4_implementation_summary.md#closeout). Whole-cycle 0.25 at entry, no revision; retrospective scope assessment **0.22** (`applyPostRemoval()` needed no change). Stage originals 0.04/0.14/0.07; retrospectives 0.03/0.12/pending; non-additive. Smoke 441/441; retraction-related classes 858/858; full suite not run. Local timing 0.24s targeted vs 6.99s full rebuild; zenmemes.com live check pending deploy. Maintainer comfortable-fit and acceptance pending. Single exposed Claude rater.
+
+2026-11-09T23:40:20Z — v3/retraction_speed Step 4 entry: Step 3 explicitly approved; branch `feat/retraction-speed` from `0822944`, planning `9c94d3c`. [Summary](./retraction_speed/retraction_speed_step4_implementation_summary.md#step-4-entry). Whole-cycle **0.25** reaffirmed; stage originals 0.04/0.14/0.07, non-additive. Same R1/P2, single exposed Claude rater.
+
+2026-11-09T23:32:38Z — v3/retraction_speed Step 3 handoff: user explicitly approved Step 2. [Plan/checkpoint](./retraction_speed/retraction_speed_step3_development_plan.md#study-checkpoint) three stages: shared removal context check, targeted retraction update with fallback, timing/docs/live check. Projected total **0.25** reaffirmed; stage work 0.04/0.14/0.07, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3.
+
+2026-11-09T23:30:18Z — v3/retraction_speed Step 2 handoff: user explicitly approved Step 1 (Option A). [Description/checkpoint](./retraction_speed/retraction_speed_step2_feature_description.md#study-checkpoint): targeted update and page clearing for retractions, equality with a full rebuild, safe fallback; profile names moved to cycle 3. Projected total **0.25** reaffirmed. Same R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-09T23:27:06Z — v3/retraction_speed Step 1 handoff (standing P2 enrollment; cycle 2 of the [read-model rebuild checklist](./read_model_rebuild_checklist.md), no parent): [assessment/checkpoint](./retraction_speed/retraction_speed_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (retractions reuse `applyPostRemoval` and `invalidateRemovedPost` with full-rebuild fallback; profile names move to cycle 3). Starting revision `f046bd8`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing. Intake and projected total **0.25**; option estimates 0.25/0.65/0.30, non-additive. Await Approved Step 1.
+
 ## Cycle v3/high_traffic_post_refresh
 
 2026-11-09T23:20:00Z — v3/high_traffic_post_refresh Step 4 local closeout: branch `feat/high_traffic_post_refresh`, planning `a9754ccc` and three stage commits; Stage 4 (production replay) pending deploy. [Summary/closeout](./high_traffic_post_refresh/high_traffic_post_refresh_step4_implementation_summary.md#closeout). Scope v1. Whole-cycle 0.30 at entry, no revision; retrospective scope assessment **0.28** for Stages 1–3. Stage originals 0.10/0.10/0.05/0.05; retrospectives 0.10/0.08/0.04/pending; non-additive. Smoke plus changed tests 463 run, 463 passed; full suite not run. Maintainer comfortable-fit and acceptance pending. Single exposed Claude rater.

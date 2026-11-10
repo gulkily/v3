@@ -15,12 +15,15 @@ Problem: some writes (retraction, profile name, key retirement, and others) do a
 - [ ] Deploy page shows rebuild progress after the deploy result
 - [ ] Applies to Deploy now, queued Deploy, and `./v3 deploy` (shared `AppUpdate::runDeploy`)
 
-## 2. `retraction_speed`: no full rebuild for retractions or profile names
+## 2. `retraction_speed`: no full rebuild for retractions
 
-- [ ] Retraction updates the read model incrementally (`applyPostRetraction` or similar; tombstone, not removal), falling back to a full rebuild
-- [ ] Retraction invalidates only affected pages (thread, listing boards, author profile, recent/activity feeds), not every static page
-- [ ] Profile-name change gets the same treatment
-- [ ] Measure on a qdb-sized repo: retraction under 1 s
+[Plans](retraction_speed/retraction_speed_step3_development_plan.md); Step 1 found retractions already map to `delete-record`'s placeholder, so they reuse its targeted update.
+
+- [x] Retraction updates the read model for one post (`applyPostRemoval`, shared with `delete-record`), falling back to a full rebuild
+- [x] Retraction clears only the pages that showed the post, not every static page
+- [x] Measure on a qdb-sized repo: the targeted removal took 0.24s locally, against 7.0s for a full rebuild
+- [ ] Live check on zenmemes.com after deploy
+- Profile-name changes moved to cycle 3 (usernames are copied widely and claimed first-come, so an in-place update is risky for a rare action).
 
 ## 3. `background_rebuild`: full rebuilds leave the request path
 
@@ -29,4 +32,5 @@ Problem: some writes (retraction, profile name, key retirement, and others) do a
 - [ ] Stale-marker recovery runs in the background, not in the next visitor's write
 - [ ] Key retirement rebuilds only when stale (it currently rebuilds 2-3 times per operation)
 - [ ] Attribution-cutoff and feature-flag writes use the background path
+- [ ] Profile-name changes use the background path (moved from cycle 2)
 - [ ] The stale state is visible on the System status page

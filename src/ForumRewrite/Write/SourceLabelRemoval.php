@@ -28,7 +28,7 @@ final class SourceLabelRemoval
                     self::accept($root, $pending['record']);
                 }
                 // Decided before the commit: the targeted update needs a read model current at this HEAD.
-                $context = $repair ? null : self::incrementalContext($root, $database, $id);
+                $context = $repair ? null : RemovalUpdateContext::forPost($root, $database, $id);
                 $record = LabelRemoval::prepare($root, $id, $repair && LabelOwnership::hasSource($root, $id) ? 'resolve' : 'delete', $labels, $progress, $repair ? null : $database);
                 if (!$repair) $record['operation'] = 'delete';
                 $say('Committing removal (' . count($record['labels']) . ' label file(s))');
@@ -114,37 +114,6 @@ final class SourceLabelRemoval
         self::commitPaths($root, $paths, $inHead, 'Accept source label cleanup ' . $id);
         LabelRemoval::read($root, $id);
         if (!unlink($journal)) throw new RuntimeException('Removal accepted; cannot retire journal. Retry the same command.');
-    }
-
-    /**
-     * What the targeted update needs, or null when only a rebuild is safe: no read model, a
-     * stale marker, another schema, or a model built for a different HEAD than the current one.
-     *
-     * @return array{thread_id:string,tags:list<string>,profile_slug:?string}|null
-     */
-    private static function incrementalContext(string $root, string $database, string $id): ?array
-    {
-        if (!is_file($database) || (new \ForumRewrite\ReadModel\ReadModelStaleMarker($database))->exists()) return null;
-        try {
-            $pdo = new \PDO('sqlite:' . $database, null, null, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
-            $metadata = $pdo->query('SELECT key, value FROM metadata')->fetchAll(\PDO::FETCH_KEY_PAIR);
-            if (!\ForumRewrite\ReadModel\ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
-                || ($metadata['repository_head'] ?? null) !== \ForumRewrite\ReadModel\ReadModelMetadata::repositoryHead($root)) return null;
-            $post = $pdo->prepare('SELECT thread_id, author_profile_slug FROM posts WHERE post_id = ?');
-            $post->execute([$id]);
-            $row = $post->fetch(\PDO::FETCH_ASSOC);
-            if (!is_array($row)) return null;
-            $thread = $pdo->prepare('SELECT board_tags_json, thread_labels_json FROM threads WHERE root_post_id = ?');
-            $thread->execute([$row['thread_id']]);
-            $tags = [];
-            foreach ((array) $thread->fetch(\PDO::FETCH_ASSOC) as $json) {
-                $decoded = json_decode((string) $json, true);
-                if (is_array($decoded)) $tags = array_merge($tags, array_filter($decoded, 'is_string'));
-            }
-            return ['thread_id' => (string) $row['thread_id'], 'tags' => array_values(array_unique($tags)), 'profile_slug' => $row['author_profile_slug'] !== null ? (string) $row['author_profile_slug'] : null];
-        } catch (\PDOException) {
-            return null;
-        }
     }
 
     /** @return array<string, string> path => blob ID, for the given paths present in HEAD */

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/Support/ReadModelSnapshot.php';
+
 require __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/Support/TestViewerSession.php';
 
@@ -4959,6 +4961,8 @@ NODE;
         clearstatcache(true, $db);
         $inodeBefore = fileinode($db);
 
+        // A stale read model sends the retraction down the full-rebuild path this test covers.
+        (new \ForumRewrite\ReadModel\ReadModelStaleMarker($db))->mark(['reason' => 'test']);
         $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
         $input = ['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']];
         $prepared = $writer->prepareRetraction($input);
@@ -4979,6 +4983,113 @@ NODE;
         assertStringNotContains('Prose a reader already has open', $page);
     }
 
+    public function testTargetedRetractionMatchesAFullRebuild(): void
+    {
+        $scenarios = [
+            'thread with no replies' => static fn (self $t, Application $app, array $author, string $root): string => $author['thread_id'],
+            'thread with a reply' => static function (self $t, Application $app, array $author, string $root): string {
+                $t->createAuthoredReply($app, $author, $author['thread_id'], 'A reply that stays');
+                return $author['thread_id'];
+            },
+            'reply in a thread' => static function (self $t, Application $app, array $author, string $root): string {
+                $t->createAuthoredReply($app, $author, $author['thread_id'], 'An earlier reply');
+                return $t->createAuthoredReply($app, $author, $author['thread_id'], 'The reply to retract');
+            },
+            'thread with labels' => static function (self $t, Application $app, array $author, string $root): string {
+                file_put_contents($root . '/records/thread-labels/thread-label-20260601000009-retract1.txt',
+                    "Record-ID: thread-label-20260601000009-retract1\nCreated-At: 2026-06-01T00:00:09Z\nThread-ID: {$author['thread_id']}\nOperation: add\nLabels: upvote\nAuthor-Identity-ID: {$author['identity_id']}\n\n");
+                \ForumRewrite\Canonical\LabelRemoval::git($root, ['add', 'records']);
+                \ForumRewrite\Canonical\LabelRemoval::git($root, ['commit', '-qm', 'Label fixture']);
+                return $author['thread_id'];
+            },
+        ];
+        foreach ($scenarios as $name => $setup) {
+            [$root, $db, $artifacts] = $this->createTempEnvironment();
+            $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $author = $this->createAuthoredThread($app, 'targeted-retraction', 'Prose to retract in ' . $name);
+            $postId = $setup($this, $app, $author, $root);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+
+            $result = $this->retractWithLocalWriter($root, $db, $artifacts, $author, $postId);
+
+            assertSame('complete', $result['retraction_status'], $name);
+            assertTrue(isset($result['timings']['write_placeholder_post']), $name . ': used the targeted update');
+            $targeted = ReadModelSnapshot::take($db);
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame([], ReadModelSnapshot::differences(ReadModelSnapshot::take($db), $targeted), $name);
+        }
+    }
+
+    public function testTargetedRetractionClearsOnlyThePagesThatShowedThePost(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'cached-retraction', 'Prose on a cached page');
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        @mkdir($artifacts . '/threads', 0777, true);
+        file_put_contents($artifacts . '/threads/' . $author['thread_id'] . '.html', 'cached thread');
+        file_put_contents($artifacts . '/threads/unrelated-thread.html', 'cached unrelated');
+
+        $result = $this->retractWithLocalWriter($root, $db, $artifacts, $author, $author['thread_id']);
+
+        assertSame('complete', $result['retraction_status']);
+        assertTrue(!is_file($artifacts . '/threads/' . $author['thread_id'] . '.html'), 'the retracted thread page is cleared');
+        assertTrue(is_file($artifacts . '/threads/unrelated-thread.html'), 'an unrelated cached page stays');
+    }
+
+    public function testPageClearingFailureAfterATargetedUpdateIsReportedAsPartial(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'clearing-retraction', 'Prose behind a broken release pointer');
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        @mkdir($artifacts . '/threads', 0777, true);
+        file_put_contents($artifacts . '/threads/unrelated-thread.html', 'cached unrelated');
+        // Both the targeted and the full clearing refuse a release pointer that is not a symlink.
+        mkdir($artifacts . '/current');
+
+        $result = $this->retractWithLocalWriter($root, $db, $artifacts, $author, $author['thread_id']);
+
+        assertTrue(isset($result['timings']['write_placeholder_post']), 'the read model was still updated in place');
+        assertSame('partial', $result['retraction_status']);
+        assertSame('artifact_invalidate', $result['failed_step']);
+        $body = (new PDO('sqlite:' . $db))->query("SELECT body FROM posts WHERE post_id='" . $author['thread_id'] . "'")->fetchColumn();
+        assertSame('', $body);
+    }
+
+    public function testRetractionFallsBackToAFullRebuildWhenTheTargetedUpdateFails(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'fallback-retraction', 'Prose behind a hidden flag');
+        (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        // The targeted update refuses hidden posts; the retraction must still complete.
+        (new PDO('sqlite:' . $db))->prepare('UPDATE posts SET is_hidden = 1 WHERE post_id = ?')->execute([$author['thread_id']]);
+
+        $result = $this->retractWithLocalWriter($root, $db, $artifacts, $author, $author['thread_id']);
+
+        assertSame('complete', $result['retraction_status']);
+        assertTrue(!isset($result['timings']['write_placeholder_post']), 'fell back to a full rebuild');
+        $body = (new PDO('sqlite:' . $db))->query("SELECT body, retracted_at FROM posts WHERE post_id='" . $author['thread_id'] . "'")->fetch(PDO::FETCH_ASSOC);
+        assertSame('', $body['body']);
+        assertTrue($body['retracted_at'] !== null);
+        assertSame(false, (new \ForumRewrite\ReadModel\ReadModelStaleMarker($db))->exists());
+    }
+
+    /** @param array{identity_id: string, home: string} $author @return array<string, mixed> */
+    private function retractWithLocalWriter(string $root, string $db, string $artifacts, array $author, string $postId): array
+    {
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = ['author_identity_id' => $author['identity_id'], 'post_id' => $postId];
+        $prepared = $writer->prepareRetraction($input);
+
+        return $writer->finalizePreparedRetraction($input + [
+            'prepare_token' => $prepared['prepare_token'], 'record_path' => $prepared['record_path'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record']),
+        ]);
+    }
+
     public function testRetractionArtifactFailureRetriesWithoutAnotherCommit(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -4986,6 +5097,8 @@ NODE;
         $author = $this->createAuthoredThread($app, 'artifact-retraction', 'Artifact recovery prose');
         $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
         $prepared = $writer->prepareRetraction(['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']]);
+        // A stale read model sends the retraction down the full-rebuild path this test covers.
+        (new \ForumRewrite\ReadModel\ReadModelStaleMarker($db))->mark(['reason' => 'test']);
         symlink($root, $artifacts . '/threads');
         file_put_contents($artifacts . '/threads.html', 'Artifact recovery prose');
         $result = $writer->finalizePreparedRetraction([
@@ -5024,6 +5137,8 @@ NODE;
             }
         };
 
+        // A stale read model sends the retraction down the full-rebuild path this test covers.
+        (new \ForumRewrite\ReadModel\ReadModelStaleMarker($databasePath))->mark(['reason' => 'test']);
         $prepared = $service->prepareRetraction(['author_identity_id' => $author['identity_id'], 'post_id' => $author['thread_id']]);
         $partial = $service->finalizePreparedRetraction([
             'prepare_token' => $prepared['prepare_token'],
