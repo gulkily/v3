@@ -295,6 +295,8 @@ final class TemplateRenderer
             'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
+            'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
+            'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
         ]);
     }
 

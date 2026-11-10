@@ -196,6 +196,9 @@
 <?php if (($inboxUnreadScriptPath ?? null) !== null): ?>
   <script src="<?= $e($inboxUnreadScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php if ($navigationSlot === 'app' && ($deployPromptScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($deployPromptScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($navigationSlot === 'app'): ?>
   <script src="<?= $e($accountMenuScriptPath) ?>" defer></script>
   <script src="<?= $e($tabBarScrollScriptPath) ?>" defer></script>

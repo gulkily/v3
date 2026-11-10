@@ -32,3 +32,30 @@ Step 4 entry projection: 0.24, reaffirmed unchanged from Step 3 (Claude, 2026-11
 - Estimate details: original scope unchanged; no revisions.
 
 *— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Remember the operator and reveal the button
+
+**Original estimate: 0.07**
+**Retrospective stage work: 0.09**
+
+- Changes:
+  - `deploy_control.js`: remembers this browser (`forum_deploy_prompt` in local storage) after Deploy now ends `deployed` or `up_to_date`, or a deploy started from the page finishes `deployed`. Check for updates alone does not.
+  - New `deploy_prompt.js`: in a remembered browser, waits three seconds, sends `check` with `max_age` 600 and gives up after fifteen seconds. Reveals the button when `behind` is above zero. A 403 forgets the browser. Does nothing on Tools → Deploy.
+  - `app_header.php`: a hidden Deploy now button and status line by the site name, only with the flag on. Server HTML stays the same for every viewer.
+  - `TemplateRenderer.php` and `layout.php`: load the script only with the flag on and the app header.
+  - `site.css`: `.deploy-prompt` styles from shared theme variables. Phones keep it on the site name's row; wider screens put it under the name.
+  - `tests/Support/app_layout_fixture.php`: a fifth argument turns the flag on.
+- Verification:
+  - Passed: `node tests/browser/deploy_prompt.mjs`. It covers flag off (no script, no request), a never-deployed browser (no request), the three-second delay, the request body, behind and up-to-date replies, a 403 forgetting the browser, and the tab bar unchanged on phones.
+  - Passed: every theme (Word 97, Chicago, Midnight, Gloss, Gloss Dark, Engagify) at 390 and 1100 wide. The button is usable, inside the header, and the destinations stay on one row. Screenshots reviewed for all twelve.
+  - Passed: `./v3 test --smoke AppNavigationPlacementTest NavIconSetsTest DeployPageTest FeatureFlagEvaluatorTest`, 449/449.
+  - Passed: header regressions `inbox_unread.mjs`, `nav_slots.mjs`, `viewer_nav_prepaint.mjs`; `git diff --check`.
+  - Not run: full suite.
+- Notes:
+  - Placement refinement (in scope, under the Stage 2 crowding mitigation): the plan placed the button beside New post. On phones that slot is in the bottom tab bar, and on desktop it wrapped Tools to a second row in Chicago and Gloss. The button now sits by the site name instead and does not reuse `.new-post-button`.
+  - On wider screens the destinations shift right by about 20px when the button appears in Chicago, Gloss and Engagify. This is a post-paint change for a real state change, which `AGENTS.md` allows.
+  - Navigation icons: not applicable; Deploy now is an action, not a navigation destination.
+  - Engagify's parody popups cover its header in screenshots; the geometry checks still pass there.
+- Estimate details: original scope unchanged; the placement rework is new understanding, not changed scope.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
