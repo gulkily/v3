@@ -141,9 +141,24 @@ try {
     await page.locator('[data-query-dialog][open]').waitFor();
     assert.equal(await page.locator('.sqlite-dialog-header').evaluate(el => {
       const title = el.querySelector('h2').getBoundingClientRect();
-      const close = el.querySelector('button').getBoundingClientRect();
+      const close = el.querySelector('[data-close-query]').getBoundingClientRect();
       return close.width < 120 && title.width > close.width && title.height < 100;
     }), true, 'shared site styles keep the close button compact and the title readable');
+    // Phones get dense text plus Smaller/Larger buttons; desktop browsers zoom on their own.
+    const viewerText = () => page.locator('[data-query-dialog] [data-sqlite-viewer]').evaluate(el => getComputedStyle(el).fontSize);
+    if (width === 1280) {
+      assert.equal(await page.locator('[data-query-zoom="1"]').isVisible(), false, 'zoom buttons are phone-only');
+    } else {
+      await page.evaluate(() => { localStorage.removeItem('query-zoom'); document.querySelector('[data-query-dialog]').style.removeProperty('--query-zoom'); });
+      assert.equal(await viewerText(), '8px', 'phone query text starts dense');
+      await page.getByRole('button', { name: 'Larger', exact: true }).click();
+      await page.getByRole('button', { name: 'Larger', exact: true }).click();
+      assert.equal(await viewerText(), '9.6px');
+      assert.equal(await page.evaluate(() => localStorage.getItem('query-zoom')), '1.2');
+      for (let i = 0; i < 12; i++) { await page.getByRole('button', { name: 'Smaller', exact: true }).click(); }
+      assert.equal(await viewerText(), '4.8px', 'Smaller stops at 0.6');
+      await page.evaluate(() => { localStorage.removeItem('query-zoom'); document.querySelector('[data-query-dialog]').style.removeProperty('--query-zoom'); });
+    }
     for (let i = 0; i < 20; i++) {
       await page.keyboard.press('Tab');
       assert.equal(await page.evaluate(() => document.querySelector('[data-query-dialog]').contains(document.activeElement) || document.activeElement === document.body), true);
