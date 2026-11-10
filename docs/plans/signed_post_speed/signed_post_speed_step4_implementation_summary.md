@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/signed_post_speed`; [host ledger](../effo
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-10; Stages 1–2 complete; Stage 3 next.
+Status: Step 4 closeout recorded; zenmemes.com live check pending deploy.
 
 **Cycle estimate: 0.25** (Step 3, reaffirmed at entry)
 
@@ -49,5 +49,32 @@ Status: Step 3 approved on 2026-11-10; Stages 1–2 complete; Stage 3 next.
   - Order check: running the post update before the identity link makes the post update fail (no profile yet) and fall back, which the equality test catches.
 - Notes: the double-counting worry from the code comment did not materialize in any of the six cases.
 - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Timing, docs and the live check
+
+**Original estimate: 0.06**
+**Retrospective: pending (live check outstanding)**
+
+- Changes: new concept entry [signed post bundle](../../concepts/signed_post_bundle.md); the [rebuild triggers checklist](../rebuild_triggers_checklist.md) ticks agent posts and logged fallbacks, and adds one item found here (linking a new identity reads every post).
+- Verification:
+  - Timing on the 30,000-quote local copy (61 MB read model), through `createSignedPost()` with real signatures: known-key reply 0.46s, replay 0.18s, new-key thread about 1.0s (three runs: 1.03s, 1.01s; the first run of the session took 3.5s, and one run took 9.3s because a timing script of mine had left a stale marker, which correctly forced a full rebuild). A full rebuild on the same copy takes about 7s. Target under 1 second: met for known keys; a new key is at about 1 second, because `applyIdentityLink()` reads all 30,000 posts.
+  - Smoke set: 442 run, 442 passed. Full suite not run.
+  - Live check on zenmemes.com: pending deploy. "claude" posts a thread and a reply through `frm.py` and records the times and that both appear.
+- Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+**Cycle estimate at entry: 0.25**
+**Retrospective scope assessment: 0.24**
+
+- Technical status: Stages 1–2 complete; Stage 3 local work complete. Not complete overall: the zenmemes.com live check is pending deploy. Merge and publication are the maintainer's.
+- Commits: planning `282c480`; stages `8468e20` (1), `3bb410b` (2), and Stage 3 (this section; its hash is recorded in the debug report commit).
+- Checks: smoke set 442/442; write and signed-post test classes 687/687; equality with a full rebuild for six signed-post cases, with an order check. Full suite not run.
+- Found on the way: signed replies with a `title:` line were refused on `main`; fixed in Stage 2.
+- Stage retrospectives 0.04/0.13/pending, non-additive. Maintainer comfortable-fit judgment and study acceptance: pending.
 
 *— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
