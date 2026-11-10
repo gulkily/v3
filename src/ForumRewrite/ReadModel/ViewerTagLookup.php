@@ -65,17 +65,6 @@ final class ViewerTagLookup
     }
 
     /**
-     * Clear the per-connection memo. Not required under the per-request-process
-     * model, but available for long-lived processes and tests.
-     */
-    public static function resetMemo(): void
-    {
-        self::$memo = [];
-        self::$connectionIds = null;
-        self::$nextConnectionId = 1;
-    }
-
-    /**
      * @param array<int, mixed> $targetIds
      * @return array<string, true>
      */
