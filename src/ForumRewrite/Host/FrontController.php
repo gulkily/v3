@@ -198,18 +198,30 @@ final class FrontController
             $application->handle($method, $requestUri);
         } catch (Throwable $throwable) {
             if (\ForumRewrite\Http\ApiErrors::isApi($requestUri)) throw $throwable;
+            // The Deploy page script reads only JSON; an HTML page here shows as "Unexpected response (503)".
+            $deployScript = \ForumRewrite\Http\DeployController::isScriptRequest($method, $requestUri);
             if (str_starts_with($throwable->getMessage(), 'Timed out waiting for execution lock: ')
                 || ReadModelConnection::isLocked($throwable)) {
-                $this->sendRetryablePage($this->renderBusyError());
+                $deployScript
+                    ? $this->sendRetryableJson(['status' => 'busy', 'code' => 'busy', 'error' => 'The site is busy.'])
+                    : $this->sendRetryablePage($this->renderBusyError());
                 return;
             }
 
             $recovery = $this->requestReadModelSchemaRecovery($throwable);
             if ($recovery !== null) {
-                $this->sendRetryablePage($this->renderReadModelRecovery($recovery));
+                $deployScript
+                    ? $this->sendRetryableJson(['status' => 'busy', 'code' => 'read_model_' . $recovery, 'error' => 'Site data is updating.'])
+                    : $this->sendRetryablePage($this->renderReadModelRecovery($recovery));
                 return;
             }
 
+            error_log('Page request failed (' . $method . ' ' . (parse_url($requestUri, PHP_URL_PATH) ?: '/') . '): '
+                . get_class($throwable) . ': ' . $throwable->getMessage() . ' at ' . $throwable->getFile() . ':' . $throwable->getLine());
+            if ($deployScript) {
+                $this->sendJson(['status' => 'error', 'code' => 'temporarily_unavailable', 'error' => 'The server hit an error; see the PHP error log.'], 503);
+                return;
+            }
             $this->sendHtml($this->renderUnexpectedError(), 503);
         }
     }
@@ -681,6 +693,22 @@ final class FrontController
     {
         header('Retry-After: ' . self::RETRY_SECONDS);
         $this->sendHtml($html, 503);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function sendRetryableJson(array $payload): void
+    {
+        header('Retry-After: ' . self::RETRY_SECONDS);
+        $this->sendJson($payload + ['retry_after' => self::RETRY_SECONDS], 503);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function sendJson(array $payload, int $statusCode): void
+    {
+        header('Cache-Control: no-store');
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($statusCode);
+        echo json_encode($payload, JSON_THROW_ON_ERROR);
     }
 
     private function sendHtml(string $html, int $statusCode, bool $publicArtifact = false): void

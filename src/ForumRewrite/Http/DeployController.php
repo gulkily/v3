@@ -53,7 +53,7 @@ final class DeployController
      */
     public function submit(array $query): void
     {
-        $wantsJson = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'ForumDeploy';
+        $wantsJson = self::scriptHeaderPresent();
         $headers = ['Cache-Control: no-store'];
         if (!$this->sameOrigin()) {
             $this->respond($wantsJson, 403, ['status' => 'error', 'error' => 'Same-origin request required.'], $headers);
@@ -80,6 +80,23 @@ final class DeployController
         }
         unset($result['state']);
         $this->respond($wantsJson, 200, ['status' => 'ok', 'action' => $action, 'result' => $result, 'state' => $this->publicState()], $headers);
+    }
+
+    /**
+     * A request from the page script, which reads only JSON. The front controller uses this to
+     * answer failures that happen before this controller runs (busy, site data updating) in
+     * JSON too, rather than with the visitor's HTML page.
+     */
+    public static function isScriptRequest(string $method, string $requestUri): bool
+    {
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+
+        return $method === 'POST' && ($path === '/tools/deploy/' || $path === '/tools/deploy') && self::scriptHeaderPresent();
+    }
+
+    private static function scriptHeaderPresent(): bool
+    {
+        return ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'ForumDeploy';
     }
 
     private const INSTANT_TIMEOUT_SECONDS = 60;
