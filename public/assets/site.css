@@ -1582,6 +1582,9 @@ pre {
    sets the group's display (both are phone-only), because site.css loads asynchronously and
    can arrive after page stylesheets such as sqlite.css. The [type] keeps these metrics ahead of header button rules
    whatever the load order. The Forte toolbar keeps its own toolbar button look. */
+/* Quick repeated taps on Smaller/Larger must not trigger the browser's double-tap zoom.
+   On every zoom button, including the Forte toolbar's, which isn't in a .zoom-buttons group. */
+.zoom-button { touch-action: manipulation; }
 .zoom-buttons { flex: 0 0 auto; gap: 0.25rem; }
 .zoom-buttons button[type="button"] {
   display: inline-flex;

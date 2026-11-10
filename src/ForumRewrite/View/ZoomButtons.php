@@ -9,7 +9,8 @@ namespace ForumRewrite\View;
  * .zoom-buttons group (site.css). Used by the Query viewer, the Forte toolbar and tables
  * in Markdown posts, so all three look and read the same. Each place keeps its own data
  * attribute and script; the stepping code is shared separately (ZenMemes thread
- * thread-20261110231618-168b822f).
+ * thread-20261110231618-168b822f). Every button carries .zoom-button so quick repeated taps
+ * aren't read as a browser double-tap zoom (site.css).
  */
 final class ZoomButtons
 {
@@ -34,7 +35,7 @@ final class ZoomButtons
             throw new \InvalidArgumentException('Zoom direction must be "smaller" or "larger".');
         }
         $label = $direction === 'smaller' ? 'Smaller' : 'Larger';
-        return '<button type="button"' . ($class !== '' ? ' class="' . self::escape($class) . '"' : '')
+        return '<button type="button" class="zoom-button' . ($class !== '' ? ' ' . self::escape($class) : '') . '"'
             . ' ' . self::attributeName($attribute) . '="' . self::escape($value) . '"'
             . ' aria-label="' . $label . '" title="' . $label . '">'
             . ($direction === 'smaller' ? self::ICON_SMALLER : self::ICON_LARGER) . '</button>';
@@ -53,7 +54,7 @@ final class ZoomButtons
         }
         $name = self::attributeName($attribute);
         $fit = isset($values['fit'])
-            ? '<button type="button" ' . $name . '="' . self::escape($values['fit']) . '" title="Fit to screen">Fit</button>'
+            ? '<button type="button" class="zoom-button" ' . $name . '="' . self::escape($values['fit']) . '" title="Fit to screen">Fit</button>'
             : '';
         return '<' . $tag . ' class="zoom-buttons' . ($class !== '' ? ' ' . self::escape($class) : '') . '"'
             . ' role="group" aria-label="Text size">'
