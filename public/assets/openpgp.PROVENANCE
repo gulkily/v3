@@ -28,6 +28,7 @@ Selection: openpgp_loader.js loads exactly one bundle per page, v5 only when
 window.isSecureContext === false. TemplateRenderer publishes both paths in
 window.__forumAssetPaths (openpgpV6, openpgpV5).
 Live check: ./v3 openpgp smoke
+Overview: docs/reference/openpgp.md
 Background: docs/plans/http_openpgp_failure_fix_plan_v1.md
 
 Updating: replace the file from the new package's dist/, update the version,
