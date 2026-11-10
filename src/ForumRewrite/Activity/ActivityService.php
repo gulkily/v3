@@ -884,32 +884,6 @@ final class ActivityService
         return $this->sourceCommitFileManifestCache[$commitSha] = self::parseCommitFiles($output);
     }
 
-    /** Index-time batching avoids a process per event/commit during full rebuilds. */
-    public function primeCommitEvidence(array $commits): void
-    {
-        if (!is_dir($this->repositoryRoot . '/.git')) return;
-        $commits = array_values(array_filter(array_unique($commits), SourcePathValidator::isValidCommitSha(...)));
-        if ($commits === []) return;
-        $input = tempnam(sys_get_temp_dir(), 'activity-commits-');
-        if ($input === false) throw new RuntimeException('Cannot prepare Activity commit indexing.');
-        try {
-            if (file_put_contents($input, implode("\n", $commits) . "\n") === false) throw new RuntimeException('Cannot write Activity commit indexing input.');
-            $output = []; $code = 0;
-            exec('git -C ' . escapeshellarg($this->repositoryRoot) . ' diff-tree --stdin --root --name-status -r -M < ' . escapeshellarg($input) . ' 2>/dev/null', $output, $code);
-            // Preserve per-commit missing-history/error handling if a batch fails.
-            if ($code !== 0) return;
-            $groups = array_fill_keys($commits, []);
-            $current = null;
-            foreach ($output as $line) {
-                if (isset($groups[$line])) { $current = $line; continue; }
-                if ($current !== null) $groups[$current][] = $line;
-            }
-            foreach ($groups as $sha => $lines) {
-                $this->sourceCommitFileManifestCache[$sha] = self::parseCommitFiles($lines);
-            }
-        } finally { @unlink($input); }
-    }
-
     /** @internal Shared with the operation-local streaming evidence loader. */
     public static function parseCommitFiles(array $output): array
     {

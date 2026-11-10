@@ -13,8 +13,6 @@ use PDO;
  */
 final class ThreadSearchPage
 {
-    public const SIZE = ThreadKeysetPage::SIZE;
-
     /** @return array{items:array,has_next:bool} */
     public static function page(PDO $pdo, string $term, int $page = 1): array
     {

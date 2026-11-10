@@ -9,8 +9,6 @@ use PDO;
 /** Select membership and page numbers before loading any thread bodies. */
 final class TagPage
 {
-    public const SIZE = ThreadKeysetPage::SIZE;
-
     /** @return array{items:array,has_next:bool,exists:bool} */
     public static function page(PDO $pdo, string $tag, int $page = 1): array
     {

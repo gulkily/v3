@@ -30,10 +30,4 @@ final class HighTrafficRenderInput
         if (!is_file($liveDatabase)) throw new RuntimeException('Read model missing; run ./v3 high-traffic prepare, then retry refresh. Page rendering does not rebuild read models.');
         return $liveDatabase;
     }
-
-    /** Legacy private model location, retained only for upgrade cleanup. */
-    public static function sharedPath(string $liveDatabase): string
-    {
-        return $liveDatabase . '.high-traffic.sqlite3';
-    }
 }

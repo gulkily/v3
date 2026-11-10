@@ -151,11 +151,4 @@ final class ProfileRepository
 
         return $stmt->fetchAll();
     }
-
-    public static function hasPendingDirectoryProfiles(PDO $pdo): bool
-    {
-        $stmt = $pdo->query('SELECT 1 FROM profiles WHERE is_approved = 0 AND retired_at IS NULL LIMIT 1');
-
-        return $stmt->fetchColumn() !== false;
-    }
 }

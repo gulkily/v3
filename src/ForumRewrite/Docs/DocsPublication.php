@@ -292,16 +292,6 @@ final class DocsPublication
         }
     }
 
-    public function assertPublicationInputs(string $root): void
-    {
-        $manifest = json_decode($this->read($root, self::MANIFEST), true, flags: JSON_THROW_ON_ERROR);
-        if (!is_array($manifest) || ($manifest['format'] ?? null) !== self::FORMAT
-            || !is_string($manifest['input'] ?? null) || !is_string($manifest['version'] ?? null)) {
-            throw new RuntimeException('Invalid documentation publication evidence; rebuild and retry.');
-        }
-        $this->assertInputs($manifest['input'], $manifest['version']);
-    }
-
     private function file(string $root, string $relative): string
     {
         $base = realpath($root);

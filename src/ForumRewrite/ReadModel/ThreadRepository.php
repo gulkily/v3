@@ -86,36 +86,6 @@ final class ThreadRepository
     }
 
     /**
-     * Every non-root, visible post across every thread, grouped by
-     * thread_id - one query for building reply trees across many threads at
-     * once instead of one query per thread.
-     *
-     * @return array<string, array<int, array<string, mixed>>>
-     */
-    public static function allReplyPostsByThreadId(PDO $pdo): array
-    {
-        $rows = $pdo->query(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
-                    posts.created_at, posts.board_tags_json,
-                    posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
-                    COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
-                    profiles.public_key AS author_public_key
-             FROM posts
-             LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
-             WHERE posts.thread_id != posts.post_id
-               AND posts.is_hidden = 0
-             ORDER BY posts.thread_id ASC, posts.sequence_number ASC'
-        )->fetchAll();
-
-        $postsByThreadId = [];
-        foreach ($rows as $row) {
-            $postsByThreadId[(string) $row['thread_id']][] = $row;
-        }
-
-        return $postsByThreadId;
-    }
-
-    /**
      * Visible non-root posts for one thread, in the same row shape and order
      * used by allReplyPostsByThreadId().
      *

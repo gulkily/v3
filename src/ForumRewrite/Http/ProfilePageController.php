@@ -276,16 +276,4 @@ final class ProfilePageController
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
-
-    /**
-     * @param string[] $extra
-     * @return string[]
-     */
-    private function identityScripts(array $extra = []): array
-    {
-        return array_merge([
-            '/assets/openpgp_loader.js',
-            '/assets/browser_signing.js',
-        ], $extra);
-    }
 }

@@ -166,10 +166,4 @@ final class VerifiedAttribution
         $pdo->exec('UPDATE activity SET attribution_counted = ' . ($enabled ? 'attribution_verified' : '1'));
         $pdo->prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')->execute([self::METADATA_ENABLED, $enabled ? '1' : '0']);
     }
-
-    /** Effective profile link for a post naming a profile. */
-    public static function effectiveProfileSlug(?string $profileSlug, bool $verified, bool $enabled): ?string
-    {
-        return $enabled && !$verified ? null : $profileSlug;
-    }
 }
