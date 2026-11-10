@@ -1,6 +1,6 @@
 <section class="stack">
+  <h1 class="visually-hidden">Tools</h1>
   <article class="card tool-launcher tools-launcher-page">
-    <h1>Tools</h1>
 <?php foreach ($toolGroups as $groupKey => $groupLabel): ?>
 <?php $groupTools = array_values(array_filter($toolPages, static fn (array $tool): bool => $tool['group'] === $groupKey && !(($textBackupEnabled ?? true) === false && ($imageBackupEnabled ?? true) === false && $tool['key'] === 'backup'))); ?>
 <?php if ($groupTools === []) { continue; } ?>

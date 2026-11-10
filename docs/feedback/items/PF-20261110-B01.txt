@@ -1,0 +1,19 @@
+ID: PF-20261110-B01
+Title: Page titles are inconsistent across pages
+Kind: bug
+Workflow: blocked
+Created: 2026-11-10
+Evidence: locally-verified
+
+Request:
+Page headers look different on every page: some pages have no title, some put it on the page background, some put it inside a card with an extra blank line above it. The About title has a stray filled square. Board and Recent look right with no title at all.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261110165756-f4ce2a5b
+
+Done when:
+Pages in the main navigation show no visible title (the active nav item names the page). Pages outside the main navigation show one title, styled the same way everywhere. No card has a blank line above its first heading, and the About title has no stray square.
+
+Notes:
+2026-11-10: one-shot started on feat/page-header-consistency (record docs/plans/page_header_consistency/page_header_consistency_one_shot.md).
+2026-11-10: built and verified locally in headless Chrome (Light, Gloss, Word 97; phone and desktop); PR open on feat/page-header-consistency, awaiting review and deployment. Account's title and the other thread suggestions are follow-ups in the record.

@@ -149,10 +149,9 @@
 }
 
 /* One page shell: the page title opens a window directly under the menu bar,
-   as Calendar, About, Tools and threads already do with a titled `.card`.
-   Users and Account title their pages outside any card, so give those titles
-   the same window frame and inset. */
-:root[data-theme="chicago"] .users-page__title,
+   as threads and tool pages already do with a titled `.card`. Account titles
+   its page outside any card, so give that title the same window frame and
+   inset. */
 :root[data-theme="chicago"] .account-key-header {
   margin: 0;
   border: 1px solid #7b7b7b;
@@ -160,10 +159,6 @@
   box-shadow:
     inset 1px 1px 0 0 #ffffff,
     inset -1px -1px 0 0 #7b7b7b;
-}
-
-:root[data-theme="chicago"] .users-page__title {
-  padding: calc(1rem + 0.67em) 1.1rem;
 }
 
 :root[data-theme="chicago"] .account-key-header {

@@ -44,7 +44,6 @@ final class Word97ThemeCoverageTest
             '.section-label + .thread-rows',
             '.chip',
             // Users and person pages.
-            '.users-page__title',
             '.account-card',
             '.account-group',
             '.account-row--link::after',

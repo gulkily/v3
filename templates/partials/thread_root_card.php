@@ -37,6 +37,13 @@ $postBodyFirstLineAsTitle = trim($plainText($post, $postBodyFirstLine));
 $postBodyDisplay = ($postBodyFirstLine !== '' && $postBodyFirstLineAsTitle === trim($title) && !$hasMediaEmbed($postBodyFirstLine))
     ? preg_replace('/^(?:\r\n|\r|\n)+/', '', $postBodyFirstLineSegments[1] ?? '')
     : $postBody;
+// With no subject, the title is an excerpt of the body. When that excerpt is not the body's whole first line (it is cut
+// short, or joins several lines), the body below repeats it, so the heading stays for the outline but is not shown.
+$titleRepeatsBody = trim((string) ($thread['subject'] ?? '')) === ''
+    && !$isRetracted
+    && trim($postBody) !== ''
+    && $postBodyDisplay === $postBody
+    && !in_array($title, ['Untitled', 'Image'], true);
 $bareMediaEmbedWarmBeacon = '';
 if (($mediaEmbedsEnabled ?? false) && $title === 'Untitled') {
     $bareMediaEmbedMatch = \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch(
@@ -95,7 +102,7 @@ if (!$metaVisible) {
   <p class="quote-card-body"><?= $br($plainText($post, $postBody)) ?></p>
 <?php endif; ?>
 <?php else: ?>
-  <h1><?= $e($title) ?></h1>
+  <h1<?= $titleRepeatsBody ? ' class="visually-hidden"' : '' ?>><?= $e($title) ?></h1>
 <?php if (($eventState ?? null) !== null): ?>
   <p class="meta event-state" data-event-state="<?= $e($eventState) ?>">Event: <?= $e($eventState) ?></p>
 <?php endif; ?>

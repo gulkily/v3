@@ -467,6 +467,13 @@ pre {
   overflow-wrap: anywhere;
 }
 
+/* The card's padding is the space above its first line; a heading's default
+   top margin would add a blank line on top of it. */
+.card > :first-child,
+.card > .visually-hidden:first-child + * {
+  margin-top: 0;
+}
+
 /* App shell (`navigation` slot `app`): one row with the wordmark, the main
    destinations, New post and the account menu. Scoped so other sites keep
    today's header. The phone tab bar reuses the same nav. */
@@ -1202,9 +1209,6 @@ pre {
 
 /* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
    only page-specific layout lives here. */
-.users-page__title {
-  margin: 0;
-}
 /* A search field inside the board toolbar. Users filters the list already on the page, so its field is script-only;
    board search submits a native form and stays visible. */
 .board-toolbar__search {

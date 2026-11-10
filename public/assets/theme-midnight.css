@@ -650,21 +650,6 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
   padding-top: 1.25rem;
 }
 
-/* The Users heading repeats the pressed toolbar button; it stays for assistive
-   technology only. (The tabs under it are member-only, so it cannot be their title bar.) */
-:root[data-theme="midnight"] .users-page__title {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-:root[data-theme="midnight"] .users-page__title + * {
-  margin-top: 0;
-}
-
 /* Status chips are flat form fields, not pills. */
 :root[data-theme="midnight"] .chip {
   padding: 0 0.35rem;

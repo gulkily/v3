@@ -10,7 +10,7 @@ Extended estimates: disabled (no real alternatives or work units; see Approach)
 
 **Cycle estimate: 0.40 (intake)**
 
-Status: planning committed; next permitted action: implementation.
+Status: implemented and verified locally; PR open, awaiting maintainer review, merge and deploy.
 
 ## Original request
 
@@ -68,7 +68,7 @@ Smoke set plus tests for the touched pages. Render the affected pages locally at
 
 Starting revisions and branch: `feat/page-header-consistency` from `b50af911`.
 
-Planning commit: pending.
+Planning commit: `4dd650c` (confirmed with Git before implementation).
 
 ## Dated execution history
 
@@ -79,3 +79,24 @@ Planning commit: pending.
 
 - 2026-11-10 intake: **0.40** whole-cycle projection, scope v1, R1, P2. Prior exposure: thread screenshots and a list of template file names only. Claude single exposed rater. No measured labor.
 - 2026-11-10 execution entry: **0.40 reaffirmed**, scope v2 (non-nav title treatment kept in-card; Account deferred; Messages unwrapped). Same rater, R1, P2.
+- 2026-11-10 closeout: scope v2 delivered, no corrections after implementation. Retrospective scope assessment 0.40. Maintainer acceptance pending.
+- 2026-11-10: implementation. Hidden `<h1>` outside the card on Calendar (visible `#tag` heading kept for tag calendars), Users and its Waiting tab, Messages, About and the Tools launcher. `.card > :first-child` (and the element after a hidden first heading) loses its top margin in `site.css`. Calendar's Earlier/Later navigation moved into the first month card. Messages list unwrapped like Recent; its empty state uses Recent's `.board-empty`. This also makes an existing Chicago rule (`[data-conversation-list] > [data-role="rows"]`) match again; it had stopped matching when the list was put in a card. Thread root card hides an excerpt title that the body repeats. Removed now-unused `.users-page__title` rules from `site.css` and the Word 97, Midnight and Chicago themes (Word 97 and Midnight had already hidden that heading for the same reason), the dead About `h1` icon rules, and the selector from `Word97ThemeCoverageTest`.
+- 2026-11-10: three heading assertions updated to the hidden heading (thread excerpt title, Messages, About).
+
+## Outcome
+
+Delivered scope v2 as recorded. Follow-ups, not started: Account's title on the page background; Unread's combined empty state; Search's empty page; hidden headings for Board, Recent and Search; the nav wrapping onto two rows.
+
+## Verification
+
+- `./v3 test --smoke CalendarPageTest InboxPageTest PrivateMessageListTest PrivateMessagePageControllerTest ThreadRootCardRepeatedTitleTest ThreadTitleTest ToolsRegistryTest UsersDirectorySortTest Word97ThemeCoverageTest ProfilePresentationContentTest WriteApiSmokeTest LocalAppSmokeTest NavIconSetsTest`: 704 run, 3 failed on the old heading markup; after updating them, rerun of the three plus the smoke set: 448 passed.
+- Local render in headless Chrome at 760px of Board, Recent, Calendar (events off and on), Users, Search, About, Tools, Account and a fixture thread in Light, Gloss and Word 97; Calendar also at 390px. A subjectless long thread posted locally as guest shows the body once, no visible heading; a titled thread keeps its heading.
+- Not verified: Unread, Messages and Invites with an approved identity (local guest sees the access notice, which renders correctly); Midnight and Chicago rendering; the browser test suites; the full suite (not run, per `AGENTS.md`).
+
+## Final review
+
+Diff checked for scope (12 templates and stylesheets, three tests, this record, the index and the item) and for leftover `.users-page__title` and About `h1` references (none). No new components or dependencies.
+
+Commit/merge/publication status: planning commit `4dd650c`; completion commit pending at writing; PR open after push.
+
+Attribution: Claude (claude-opus-5-5), 2026-11-10 UTC.

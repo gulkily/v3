@@ -9,11 +9,23 @@
 $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 ?>
 <section class="stack calendar">
+<?php if ($calendarTag === null): ?>
+  <h1 class="visually-hidden">Calendar</h1>
+<?php endif; ?>
+<?php if (!$calendarEnabled || $calendarTag !== null): ?>
   <article class="card">
-    <h1><?= $calendarTag === null ? 'Calendar' : '#' . $e($calendarTag) ?></h1>
+<?php if ($calendarTag !== null): ?>
+    <h1>#<?= $e($calendarTag) ?></h1>
+<?php endif; ?>
 <?php if (!$calendarEnabled): ?>
     <p>Events are off on this site. <a href="/tools/feature-flags/#flag-FORUM_EVENT_SUPPORT_ENABLED">Feature Flags</a></p>
-<?php else: ?>
+<?php endif; ?>
+  </article>
+<?php endif; ?>
+<?php if ($calendarEnabled): ?>
+<?php foreach ($calendarMonths as $monthIndex => $month): ?>
+  <article class="card calendar-month">
+<?php if ($monthIndex === array_key_first($calendarMonths)): ?>
     <nav class="calendar-nav meta" aria-label="Months">
       <a href="<?= $e($calendarPrevious) ?>" rel="prev">← Earlier</a>
       <a href="<?= $e($calendarBase) ?>" data-calendar-today hidden>Today</a>
@@ -24,10 +36,6 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       <a href="#" role="button" class="calendar-titles-toggle" data-calendar-titles aria-pressed="false" hidden>Show titles</a>
     </nav>
 <?php endif; ?>
-  </article>
-<?php if ($calendarEnabled): ?>
-<?php foreach ($calendarMonths as $month): ?>
-  <article class="card calendar-month">
     <div class="calendar-scroll">
       <table class="calendar-grid">
         <caption><?= $e($month['label']) ?></caption>

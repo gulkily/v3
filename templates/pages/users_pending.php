@@ -5,7 +5,7 @@
     <p><a href="/tools/user-access/">User Access</a></p>
   </article>
 <?php else: ?>
-  <h1 class="users-page__title">Users</h1>
+  <h1 class="visually-hidden">Users</h1>
 <?= $indent($partial('partials/users_tabs.php', ['usersTab' => 'waiting', 'pendingCount' => count($profiles)]), 1) ?>
 <?php endif; ?>
   <article class="card" data-role="pending-approvals-feedback" hidden></article>
