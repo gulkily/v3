@@ -15,6 +15,21 @@ final class ImageBackup
         return $this->git(['rev-parse', 'HEAD']);
     }
 
+    /**
+     * Size of the cached tar.gz/zip for the current revision, or null when it
+     * has not been built (downloads build on request). Never builds, and never
+     * creates archive storage just to look.
+     */
+    public function cachedBytes(string $kind): ?int
+    {
+        if (!in_array($kind, ['tar.gz', 'zip'], true) || !is_dir(dirname($this->databasePath) . '/archive-exports')) return null;
+        try {
+            return (new ArchiveCache(dirname($this->databasePath), $this->repositoryRoot))->peekBytes($this->identity(null, $kind), $kind);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     public function export(string $kind, ?string $expectedRevision = null, string $imageFormat = 'zip'): array
     {
         if (!in_array($kind, ['images', 'tar.gz', 'zip'], true)) throw new RuntimeException('Unsupported backup format.');

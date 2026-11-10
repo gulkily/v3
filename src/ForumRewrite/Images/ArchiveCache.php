@@ -136,6 +136,27 @@ final class ArchiveCache
         }
     }
 
+    /**
+     * Size of a published archive for display only: reads metadata, never
+     * hashes, locks or opens the archive. A caller about to serve the file
+     * must still use open(), which verifies the content.
+     */
+    public function peekBytes(string $identity, string $kind): ?int
+    {
+        $dir = $this->root . '/' . $this->key($identity, $kind);
+        $extension = $kind === 'images.zip' ? 'zip' : ($kind === 'images' ? 'tar' : $kind);
+        $path = $dir . '/archive.' . $extension;
+        $metadata = $dir . '/metadata';
+        if (is_link($dir) || is_link($path) || is_link($metadata) || !is_file($path) || !is_file($metadata)
+            || filesize($metadata) > 4096) return null;
+        $raw = @file_get_contents($metadata);
+        $meta = $raw === false ? null : json_decode($raw, true);
+        $size = @filesize($path);
+        if (!is_array($meta) || ($meta['identity'] ?? null) !== $identity || ($meta['kind'] ?? null) !== $kind
+            || !is_int($meta['bytes'] ?? null) || $size === false || $meta['bytes'] !== $size) return null;
+        return $size;
+    }
+
     /** Caller holds the build lock and has revalidated identity under the writer lock. */
     public function publish(array $built, string $identity, string $kind): array
     {

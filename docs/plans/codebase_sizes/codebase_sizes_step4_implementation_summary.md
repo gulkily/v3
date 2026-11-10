@@ -19,4 +19,16 @@
   - First draft ran git through `BoundedProcess`, which reads 64 KiB per 10 ms poll: 665 ms for the same `ls-tree`. A large content repo would hit the budget and show "unavailable". Switched to coreutils `timeout -s KILL 2` with a blocking read and a 64 MiB output cap; `BoundedProcess` left unchanged.
   - With no `timeout` binary or no `proc_open`, probes return null and the row reads "unavailable".
 
+## Stage 2 - Last-built archive sizes
+
+- Changes:
+  - `ArchiveCache::peekBytes(string $identity, string $kind): ?int`: the same symlink and metadata-size guards as `open()`, plus matching identity, kind and byte count. It never opens, hashes or locks the archive.
+  - `ImageBackup::cachedBytes(string $kind): ?int`, for `tar.gz` and `zip` only. It reuses the private `identity()`, returns null when `archive-exports/` doesn't exist (so it never creates storage just to look), and returns null on any error, such as uncommitted records.
+  - `CodebaseStateController::downloads()` adds `bytes` and `on_request` to each download; the SQLite download uses `ByteSize::file()`.
+  - New `ArchiveExportTest::testCachedBytesReportsOnlyAVerifiedBuildForTheCurrentRevision`: not built yet, no storage created, built size matches, other format null, tampered metadata null, new commit null.
+- Verification:
+  - `./v3 test ArchiveExportTest ByteSizeTest LocalAppSmokeTest`: 180 run, 180 passed.
+  - Timing on a 5,000-record scratch repo: `cachedBytes('tar.gz')` 22 ms, `trackedTree(records)` 47 ms.
+- Notes: the page now computes the archive identity twice per render (tar.gz and zip). That measured cheap, and it is the same cheap identity the download hit path already uses.
+
 *— Claude (Opus 5.5) · 2026-11-10 UTC*

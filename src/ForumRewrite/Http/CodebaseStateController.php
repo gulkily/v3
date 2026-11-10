@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Images\ImageBackup;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
@@ -158,11 +159,24 @@ final class CodebaseStateController
                 'row_counts' => $rowCounts,
             ],
             'sizes' => $this->sizes(),
-            'downloads' => [
-                ['href' => '/downloads/repository.tar.gz', 'label' => 'Content repository (.tar.gz)'],
-                ['href' => '/downloads/repository.zip', 'label' => 'Content repository (.zip)'],
-                ['href' => '/downloads/read_model.sqlite3', 'label' => 'SQLite index database'],
-            ],
+            'downloads' => $this->downloads(),
+        ];
+    }
+
+    /**
+     * Archives are built on request, so their size is the cached build for
+     * the current revision when one exists (null shows "built on request").
+     *
+     * @return list<array{href: string, label: string, bytes: ?int, on_request: bool}>
+     */
+    private function downloads(): array
+    {
+        $backup = new ImageBackup($this->repositoryRoot, $this->databasePath, $this->projectRoot);
+
+        return [
+            ['href' => '/downloads/repository.tar.gz', 'label' => 'Content repository (.tar.gz)', 'bytes' => $backup->cachedBytes('tar.gz'), 'on_request' => true],
+            ['href' => '/downloads/repository.zip', 'label' => 'Content repository (.zip)', 'bytes' => $backup->cachedBytes('zip'), 'on_request' => true],
+            ['href' => '/downloads/read_model.sqlite3', 'label' => 'SQLite index database', 'bytes' => ByteSize::file($this->databasePath), 'on_request' => false],
         ];
     }
 
