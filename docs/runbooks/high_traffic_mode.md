@@ -25,9 +25,13 @@ served public root when it differs from the application's `public/`. The rendere
 uses `PHP_BINDIR/php`; set `FORUM_PHP_CLI` to the absolute CLI PHP executable if
 needed. Never point it at an HTTP handler or untrusted executable.
 
-Back up custom hosting configuration. The writer prepends a managed section and
-preserves the normal rules, requiring the existing front-controller layout. It
-refuses damaged markers or an unsupported layout. The generated rules have local
+The shipped `public/.htaccess` already starts with the managed high-traffic
+section. Its rules only match when the `.high-traffic` symlink exists, so enabling
+and disabling switch the symlink and leave the tracked file unedited. When the
+served root's `.htaccess` lacks the current section (a separate document root, or
+routing written by an older release), enabling prepends it and preserves the normal
+rules, requiring the existing front-controller layout. Back up custom hosting
+configuration first. The writer refuses damaged markers or an unsupported layout. The generated rules have local
 Apache test coverage; the operator must verify this host's modules, override
 policy and request behavior. An Apache configuration syntax check alone may not
 validate `.htaccess`.
@@ -153,9 +157,11 @@ local acceptance evidence, not a production throughput guarantee.
 ./v3 high-traffic restore
 ```
 
-Disable removes the serving pointer before restoring normal PHP routing and
-fences work already rendering. Restore reinstalls the saved normal `.htaccess`
-for its original public root; it can recover damaged mode state or managed rules.
+Disable removes the serving pointer, which returns every request to normal PHP
+routing, and fences work already rendering. The managed rules stay in `.htaccess`
+and match nothing while the pointer is absent. Restore reinstalls the managed
+section followed by the saved normal `.htaccess` for its original public root; it
+can recover damaged mode state or managed rules.
 The CLI must use that same repository/public-root configuration. If no saved
 routing exists, restore the application's normal `public/.htaccess` from the
 matching package while preserving reviewed host-specific rules, and ensure the
