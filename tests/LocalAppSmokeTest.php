@@ -2589,7 +2589,8 @@ PHP;
         assertStringContains('<h1>Just the title</h1>', $titleEmpty);
         assertStringContains('<div class="body"></div>', $titleEmpty);
 
-        assertStringMatches('/<h1>[^<]*\.\.\.<\/h1>/', $noSubjectLong);
+        // The excerpt title would repeat the body's opening, so it stays only for the outline.
+        assertStringMatches('/<h1 class="visually-hidden">[^<]*\.\.\.<\/h1>/', $noSubjectLong);
         assertStringContains('This is a fairly long single-line post body that exceeds the eighty character excerpt limit used for titles when no subject is provided at all.', $noSubjectLong);
 
         assertStringContains('<h1>On Accessibility</h1>', $titleMatchBlankLine);

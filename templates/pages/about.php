@@ -1,7 +1,7 @@
 <section class="stack">
+  <h1 class="visually-hidden"><?= $e($aboutContent['title']) ?></h1>
   <article class="card about-sections">
     <section class="about-section" data-about-section="intro">
-      <h1><?= $e($aboutContent['title']) ?></h1>
 <?php if ($aboutContent['description'] !== ''): ?>
       <p data-site-description><?= $e($aboutContent['description']) ?></p>
 <?php endif; ?>

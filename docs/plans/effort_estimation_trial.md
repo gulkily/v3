@@ -539,6 +539,7 @@ Maintainer request: “I want every future railspike to be part of the same data
 
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Relationship / acceptance |
 | --- | --- | --- | --- | --- | --- |
+| `v3/page_header_consistency` | Locally complete; acceptance pending | v2 / R1 / P2 | 0.40 | [One-shot record](./page_header_consistency/page_header_consistency_one_shot.md#study-history) | New cycle; acceptance pending |
 | `v3/image_backup_zip` | Locally complete; maintainer acceptance pending | v1 / R1 / P2 | 0.40 | [Intake and Step 2](./image_backup_zip/image_backup_zip_step2_feature_description.md#study-snapshots-and-approval); [Step 3](./image_backup_zip/image_backup_zip_step3_development_plan.md#checkpoint-and-approval) | Format/recovery follow-up to archive README and Backup UI; acceptance pending |
 
 2026-10-26T00:56:13Z: image ZIP Step 2 approved. Step 3 **0.40 whole-cycle projection reaffirmed**, same scope v1/original baseline/R1/P2, verified R1 hashes and Codex single exposed rater. Extended stage-work originals: S1 0.18 bounded ZIP recovery, S2 0.12 ZIP export/routes, S3 0.08 ordinary-flow verification/docs; independent annotations, not summed. Reuse existing PHP ZIP support with no dependency addition. No implementation, measurement or accepted outcome; awaiting Approved Step 3.

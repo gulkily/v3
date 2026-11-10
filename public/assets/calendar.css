@@ -192,3 +192,6 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
     text-decoration: none;
   }
 }
+.calendar-nav + .calendar-scroll {
+  margin-top: 0.75rem;
+}

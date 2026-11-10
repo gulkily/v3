@@ -105,7 +105,7 @@ final class PrivateMessagePageControllerTest
             $store->storeEnvelope('list-2', '2026-10-09T13:00:00Z', 'bob', 'alice', 'sender', 'secret envelope');
             $viewer = $this->viewer('alice-key', 'alice');
             $html = $this->renderMailbox($databasePath, $store, $viewer, 'conversations');
-            assertStringContains('<h1>Messages</h1>', $html);
+            assertStringContains('<h1 class="visually-hidden">Messages</h1>', $html);
             assertStringContains('data-approved-identity="' . $viewer['identity_id'] . '"', $html);
             assertSame(1, substr_count($html, 'data-counterpart="bob"'));
             assertStringContains('href="/messages/conversation/bob"', $html);

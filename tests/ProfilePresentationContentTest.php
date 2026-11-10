@@ -48,7 +48,7 @@ final class ProfilePresentationContentTest
                 $about = $this->render('/about/');
                 $docs = $this->render('/docs/');
 
-                assertStringContains('<h1>About ' . $profile['displayName'] . '</h1>', $about);
+                assertStringContains('<h1 class="visually-hidden">About ' . $profile['displayName'] . '</h1>', $about);
                 assertStringContains('<h1>' . $profile['displayName'] . ' Platform Docs</h1>', $docs);
                 assertStringContains('<ol class="docs-flow" aria-label="' . htmlspecialchars($profile['displayName'], ENT_QUOTES) . ' public architecture">', $docs);
                 assertSame($profileId === 'chouse', str_contains($about, 'Hackable by design'));

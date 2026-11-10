@@ -1,6 +1,6 @@
 <?php $memberCount = count($users); ?>
 <section class="stack users-page" data-users-directory>
-  <h1 class="users-page__title">Users</h1>
+  <h1 class="visually-hidden">Users</h1>
   <div class="board-toolbar">
 <?= $indent($partial('partials/users_tabs.php', ['usersTab' => 'members', 'pendingCount' => $pendingCount, 'memberOnly' => true]), 2) ?>
 <?php if ($users !== []): ?>
