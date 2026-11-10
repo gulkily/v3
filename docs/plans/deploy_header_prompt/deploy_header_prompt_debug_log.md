@@ -1,4 +1,24 @@
+# Railspike debug log — deploy_header_prompt
 
+## 2026-11-10 08:15 UTC — Step 1
+
+### Necessary/useful instructions
+- `RAILSPIKE.md` › Choose the execution mode: the request describes a goal but does not authorize bounded execution, so the staged path was correct. Retain.
+- `step1_solution_assessment.md` › `## Understood Intent`: needed to record the two readings of "with a timeout". Retain.
+- `AGENTS.md` › UI copy (first-paint rule): decided which options are viable, since a header button for operators cannot be in shared server HTML. Retain; a host rule, not Railspike.
+
+### Redundant/unnecessary instructions
+- `RAILSPIKE.md` › Experimental Effort Estimation, intake checkpoint: intake and Step 1 snapshots coincide when inspection precedes the first artifact. Suggest clarifying that one combined snapshot is acceptable.
+
+### Inapplicable instructions
+- Step 1 context-reset reminder: no prior discussion in this conversation.
+
+### Uncertain assessments
+- Ledger timing: unclear whether an uncommitted ledger row should be written at Step 1 or held for the planning commit. Held as pending.
+
+## 2026-11-10 09:25 UTC — Revision (log integrity)
+
+Revision: the Step 1 entry above was restored after the workspace lost it before the planning commit; its text is unchanged. The planning commit contains only the Step 2 and Step 3 entries.
 ## 2026-11-10 08:25 UTC — Step 2
 
 ### Necessary/useful instructions
