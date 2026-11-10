@@ -23,7 +23,7 @@ final class SiteProfileRegistry
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
                 'defaultTheme' => 'auto',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'gloss', 'engagify'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'gloss', 'glossdark', 'engagify'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],

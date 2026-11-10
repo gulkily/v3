@@ -80,9 +80,11 @@ itself borrow. In the shared file, write shared rules for both names
 (`:root:is([data-theme="gloss"], [data-theme="engagify"]) .card`) and the
 borrower's extra rules for its name alone. Start the file with a `Theme:` line
 for each name. `theme_toggle.js` tracks loaded stylesheets by path, so
-switching between the two never fetches the file twice. Gloss and Engagify
-are the worked example: `theme-gloss.css` holds Gloss's look and, below it,
-Engagify's parody layer.
+switching between them never fetches the file twice. Gloss, Gloss Dark and
+Engagify are the worked example: `theme-gloss.css` holds Gloss's look, then
+Gloss Dark's colours (variables, palettes and icon inversion only), then
+Engagify's parody layer. A dark version of a light theme can borrow this way
+and set only its colours.
 
 `'cycle' => false` keeps a theme in the menu but out of the cycle button, for
 themes a reader should only choose on purpose, such as Engagify. The menu
@@ -162,11 +164,13 @@ Everything is inline `data:image/svg+xml;utf8,...` URIs in the CSS
   background, harmless elsewhere. Key icons off *stable attributes*, not
   position: `href` for links, data attributes (`data-bookmarklet-kind`)
   when hrefs collide.
-- **Smooth-line icons (Gloss and Engagify):** the second navigation icon set in
+- **Smooth-line icons (Gloss, Gloss Dark and Engagify):** the second navigation icon set in
   `theme-nav-icons.css`: `viewBox='0 0 16 16'`, 1.5px round strokes in
   `#6d28d9` with a `#ede9fe` fill, no crispEdges. Both sets share the sizing
   rules and key glyphs to the same selectors; `NavIconSetsTest` fails when a
-  destination is in one set and not the other.
+  destination is in one set and not the other. Gloss Dark shows the same
+  glyphs through `filter: invert(1) hue-rotate(180deg)`, which keeps the hue
+  but makes the stroke light and the fill dark.
 - **Theme-neutral glyphs (all themes):** draw smooth shapes (no
   crispEdges), apply via `mask` + `background-color: currentColor` so the
   glyph inherits each theme's ink automatically:

@@ -6,14 +6,14 @@ require __DIR__ . '/../autoload.php';
 
 /**
  * theme-nav-icons.css carries two icon sets keyed to the same links: pixel
- * art (word97, chicago, midnight) and smooth lines (gloss, engagify). A
+ * art (word97, chicago, midnight) and smooth lines (gloss, glossdark, engagify). A
  * destination added to one set and not the other leaves an empty icon slot,
- * because the sizing rules cover all five themes.
+ * because the sizing rules cover all six themes.
  */
 final class NavIconSetsTest
 {
     private const PIXEL = ':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"])';
-    private const SMOOTH = ':root:is([data-theme="gloss"], [data-theme="engagify"])';
+    private const SMOOTH = ':root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"])';
 
     public function testSmoothLineSetCoversEveryPixelArtDestination(): void
     {

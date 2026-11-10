@@ -1,12 +1,14 @@
 /* Theme: gloss */
+/* Theme: glossdark (shares this stylesheet; see the dark colours below) */
 /* Theme: engagify (shares this stylesheet; see the parody layer below) */
 /*
  * Gloss: a soft lavender page, white rounded cards, pill buttons, a violet
- * accent and a sans-serif face. Engagify is Gloss plus a parody layer: a
- * gradient wash, a "NEW" badge in the theme menu and the nags drawn by
- * theme-engagify.js. ThemeRegistry gives engagify this stylesheet, so a fix
- * to the shared look reaches both themes. Write shared rules for both theme
- * names and parody rules for engagify only.
+ * accent and a sans-serif face. Gloss Dark is the same look in dark colours.
+ * Engagify is Gloss plus a parody layer: a gradient wash, a "NEW" badge in
+ * the theme menu and the nags drawn by theme-engagify.js. ThemeRegistry gives
+ * glossdark and engagify this stylesheet, so a fix to the shared look reaches
+ * all three themes. Write shared rules for all three theme names, colours for
+ * glossdark only and parody rules for engagify only.
  */
 :root[data-theme="gloss"],
 :root[data-theme="engagify"],
@@ -49,25 +51,25 @@
 
 /* Shared look. */
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .card {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .card {
   border-radius: 1rem;
   /* Cards are not controls, so a soft border is enough; inputs keep --line. */
   border-color: var(--gloss-edge);
   box-shadow: var(--gloss-shadow);
 }
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) input,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) textarea {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) input,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) textarea {
   border-radius: 0.75rem;
 }
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
   border-radius: 999px;
   border-color: var(--gloss-control-edge);
   font-weight: 600;
 }
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) a {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) a {
   color: var(--gloss-accent);
 }
 
@@ -78,10 +80,10 @@
      visible on a white card (3:1);
    - dividers and small inner boxes: the pale edge, 8px where rounded. */
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-rows,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-menu__panel,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .board-sort__menu,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-action-menu-list {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .thread-rows,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .account-menu__panel,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .board-sort__menu,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .compose-action-menu-list {
   border-color: var(--gloss-edge);
   border-radius: 1rem;
   box-shadow: var(--gloss-shadow);
@@ -90,75 +92,75 @@
 /* Only the thread list clips, to round its rows' corners. Menus must not
    clip: the theme picker and its palette popovers open inside the account
    menu. */
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-rows {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .thread-rows {
   overflow: hidden;
 }
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .tag-group,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .bookmarklet-group,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-card,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-group,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-key-advanced,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-disclosure {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .tag-group,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .bookmarklet-group,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .account-card,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .account-group,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .account-key-advanced,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .compose-disclosure {
   border-color: var(--gloss-edge);
   border-radius: 1rem;
 }
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-row + .thread-row,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .about-section + .about-section,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-row {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .thread-row + .thread-row,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .about-section + .about-section,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .account-row {
   border-color: var(--gloss-edge);
 }
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .calendar-day {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .calendar-day {
   border-color: var(--gloss-edge);
 }
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) pre,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .thread-row__thumb,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .bookmarklet-feedback {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) pre,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .thread-row__thumb,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .bookmarklet-feedback {
   border-color: var(--gloss-edge);
   border-radius: 0.5rem;
 }
 
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .new-post-button,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .account-menu__trigger,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .tool-launcher-button,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .compose-action-menu-toggle {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .nav-link,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .new-post-button,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .account-menu__trigger,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .tool-launcher-button,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .compose-action-menu-toggle {
   border-radius: 999px;
   border-color: var(--gloss-control-edge);
 }
 
 /* The app shell's New post rule and the theme switcher set their own edge;
    status chips keep their status colour. */
-:root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .new-post-button:not(.is-active),
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .theme-menu,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .chip:not(.chip--pending):not(.chip--approved) {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .new-post-button:not(.is-active),
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .theme-menu,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .chip:not(.chip--pending):not(.chip--approved) {
   border-color: var(--gloss-control-edge);
 }
 
 /* Current and active links keep their stronger violet edge. */
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link.is-active,
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .nav-link[aria-current="page"] {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .nav-link.is-active,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .nav-link[aria-current="page"] {
   border-color: var(--active-line);
 }
 
 /* Phone tab bar: tall tabs read better as rounded rectangles than pills. */
 @media (max-width: 639px) {
-  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link,
-  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .new-post-button,
-  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .account-menu__trigger {
+  :root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link,
+  :root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .new-post-button,
+  :root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .account-menu__trigger {
     border-radius: 0.75rem;
   }
 
-  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
-  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .account-menu[open] > .account-menu__trigger {
+  :root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .account-menu[open] > .account-menu__trigger {
     border-color: var(--active-line);
   }
 
   /* The More tab renamed after the current page draws its selected look here. */
-  :root:is([data-theme="gloss"], [data-theme="engagify"]) [data-shell="app"] .account-menu__label--current::before {
+  :root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .account-menu__label--current::before {
     border-color: var(--active-line);
     border-radius: 0.75rem;
   }
@@ -237,6 +239,127 @@
 :root[data-theme="gloss"][data-gloss-palette="rose"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
 :root[data-theme="gloss"][data-gloss-palette="rose"] .account-menu__icon {
   filter: hue-rotate(82deg);
+}
+
+/* Gloss Dark: Gloss's shapes on a deep violet page. Colours only; the shared
+   look above gives the shapes. The navigation icons are drawn for a light
+   page, so here they are inverted and turned back to their hue: the stroke
+   becomes light and the fill dark. */
+:root[data-theme="glossdark"],
+.theme-menu__option[data-theme-option="glossdark"] {
+  color-scheme: dark;
+  --page-bg: #13111c;
+  --body-background: #13111c;
+  --ink: #ece9f6;
+  --ink-soft: #a9a3c0;
+  --line: #6e6790;
+  --panel: #1d1a2a;
+  --input-bg: #171523;
+  --button-bg: #2a2442;
+  --button-alt-bg: #2f2135;
+  --feedback-ok-bg: #0f2a22;
+  --feedback-error-bg: #33161b;
+  --status-error: #fca5a5;
+  --status-ok: #6ee7b7;
+  --status-warning: #fcd34d;
+  --active-bg: #3a2a6a;
+  --active-ink: #ede9fe;
+  --active-line: #a78bfa;
+  --active-ring: rgba(167, 139, 250, 0.3);
+  --body-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --ui-font: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --gloss-accent: #c4b5fd;
+  --gloss-edge: #2c2840;
+  --gloss-control-edge: #5b4b99;
+  --gloss-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.theme-swatch[data-theme="glossdark"] {
+  background:
+    radial-gradient(circle at 70% 30%, #c4b5fd 0 18%, transparent 19%),
+    #1d1a2a;
+  border-color: #7c3aed;
+}
+
+:root[data-theme="glossdark"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="glossdark"] .account-menu__icon {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Gloss Dark colour picker: the same choices as Gloss, in dark colours. */
+:root[data-theme="glossdark"] .theme-menu { margin-left: 2.5rem; }
+:root[data-theme="glossdark"] [data-role="glossdark-palette"] { display: block; }
+:root[data-theme="glossdark"] .lcd-palette__chip { --lcd-chip: var(--gloss-accent); border-radius: 999px; }
+:root[data-theme="glossdark"] [data-palette-theme="glossdark"][data-palette-chip="violet"] { --lcd-chip: #a78bfa; }
+:root[data-theme="glossdark"] [data-palette-theme="glossdark"][data-palette-chip="blue"] { --lcd-chip: #60a5fa; }
+:root[data-theme="glossdark"] [data-palette-theme="glossdark"][data-palette-chip="teal"] { --lcd-chip: #2dd4bf; }
+:root[data-theme="glossdark"] [data-palette-theme="glossdark"][data-palette-chip="rose"] { --lcd-chip: #fb7185; }
+
+:root[data-theme="glossdark"][data-glossdark-palette="blue"] {
+  --page-bg: #10141d;
+  --body-background: #10141d;
+  --line: #66779a;
+  --panel: #19202c;
+  --input-bg: #141a25;
+  --button-bg: #1f2b45;
+  --button-alt-bg: #1c2540;
+  --active-bg: #1c3260;
+  --active-ink: #dbeafe;
+  --active-line: #60a5fa;
+  --active-ring: rgba(96, 165, 250, 0.3);
+  --gloss-accent: #93c5fd;
+  --gloss-edge: #263044;
+  --gloss-control-edge: #3b5b99;
+}
+
+:root[data-theme="glossdark"][data-glossdark-palette="blue"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="glossdark"][data-glossdark-palette="blue"] .account-menu__icon {
+  filter: invert(1) hue-rotate(141deg);
+}
+
+:root[data-theme="glossdark"][data-glossdark-palette="teal"] {
+  --page-bg: #0f1716;
+  --body-background: #0f1716;
+  --line: #5f817c;
+  --panel: #172221;
+  --input-bg: #121c1b;
+  --button-bg: #183330;
+  --button-alt-bg: #15302d;
+  --active-bg: #0f3b38;
+  --active-ink: #ccfbf1;
+  --active-line: #2dd4bf;
+  --active-ring: rgba(45, 212, 191, 0.28);
+  --gloss-accent: #5eead4;
+  --gloss-edge: #22332f;
+  --gloss-control-edge: #2f7a70;
+}
+
+:root[data-theme="glossdark"][data-glossdark-palette="teal"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="glossdark"][data-glossdark-palette="teal"] .account-menu__icon {
+  filter: invert(1) hue-rotate(92deg);
+}
+
+:root[data-theme="glossdark"][data-glossdark-palette="rose"] {
+  --page-bg: #1a1114;
+  --body-background: #1a1114;
+  --line: #92707a;
+  --panel: #261a1e;
+  --input-bg: #201518;
+  --button-bg: #3a1f28;
+  --button-alt-bg: #3a1d2e;
+  --active-bg: #561529;
+  --active-ink: #ffe4e6;
+  --active-line: #fb7185;
+  --active-ring: rgba(251, 113, 133, 0.28);
+  --gloss-accent: #fda4af;
+  --gloss-edge: #3a2830;
+  --gloss-control-edge: #9b3b55;
+}
+
+:root[data-theme="glossdark"][data-glossdark-palette="rose"] :is(.nav-link, .new-post-button, .tool-launcher-button, .tool-launcher-group-heading)::before,
+:root[data-theme="glossdark"][data-glossdark-palette="rose"] .account-menu__icon {
+  filter: invert(1) hue-rotate(262deg);
 }
 
 /* Engagify parody layer: everything below applies to engagify only. */
@@ -762,6 +885,6 @@
 }
 
 /* A list inside a module needs no shadow of its own. */
-:root:is([data-theme="gloss"], [data-theme="engagify"]) .card > .thread-rows {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) .card > .thread-rows {
   box-shadow: none;
 }
