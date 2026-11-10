@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/signed_post_speed`; [host ledger](./effor
 
 Extended estimates: enabled
 
-Status: Step 1 approved (Option A) on 2026-11-10; Step 2 drafted; implementation unapproved.
+Status: Step 2 approved on 2026-11-10; Step 3 drafted; implementation unapproved.
 
 **Cycle estimate: 0.25** (reaffirmed)
 

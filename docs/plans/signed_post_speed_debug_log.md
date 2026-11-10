@@ -28,3 +28,17 @@
 
 **Uncertain assessments**
 - No supported findings.
+
+## 2026-11-10T06:59:58Z — Step 3
+
+**Necessary/useful instructions**
+- "Resolve each material risk before dependent work": the double-counting check opens Stage 2, ahead of the route change. Retain.
+
+**Redundant/unnecessary instructions**
+- The Goal bullet repeats the stage heading (as noted in the previous cycle).
+
+**Inapplicable instructions**
+- No supported findings.
+
+**Uncertain assessments**
+- No supported findings.
