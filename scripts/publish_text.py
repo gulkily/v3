@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Publish a UTF-8 text file through an instance's write API."""
+"""Publish a UTF-8 text file through an instance's write API.
+
+One of three versions (publish_text.py, .php, .pl) with the same options and output, kept on purpose; see docs/reference/multi_language_scripts.md.
+"""
 
 import argparse
 import json

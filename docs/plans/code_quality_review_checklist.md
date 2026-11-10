@@ -56,7 +56,7 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 
 ### 1.4 Scripts (`scripts/`, 66 files)
 - [~] Scripts not mentioned by `./v3`, docs, or other code: `markdown_list_corpus_audit.py`, `markdown_task_corpus_audit.py` (one-off audits?). Waiting on a keep/remove decision.
-- [~] Triplicated implementations: `publish_text.{php,pl,py}` and `stress_probe.{php,pl,py}` — intentional multi-language examples, or leftovers? Keep one, or document why all three exist. Waiting on a decision.
+- [x] Triplicated implementations: `publish_text.{php,pl,py}` and `stress_probe.{php,pl,py}`. Intentional and will grow; documented in `docs/reference/multi_language_scripts.md`, with a pointer in each file's header.
 - [ ] One-shot migrations/backfills that have already run everywhere: `backfill_unicode_risk.php`, `bake_legacy_timestamps.php`, `inject_approval.php`, the four `qdb_archive_import_*` scripts.
 - [ ] Probes/benchmarks still worth keeping: `benchmark_profile_registration.php`, `markdown_render_probe.php`, `qdb_capacity_probe.js`.
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Small, stepped read-load probe for a v3 site. Python 3.7+, standard library only.
 PHP and Perl versions with the same options and output: stress_probe.php, stress_probe.pl.
+Intentional multi-language set; see docs/reference/multi_language_scripts.md.
 
 Nothing is sent unless --confirm repeats the target's host name exactly; without it the
 script prints the plan and exits. Each step runs a fixed number of concurrent readers for

@@ -11,6 +11,8 @@ and print the same plan, output and record:
 | `php scripts/stress_probe.php` | PHP 8.1+ with the curl extension |
 | `perl scripts/stress_probe.pl` | Perl 5.20+, core modules; HTTPS also needs IO::Socket::SSL (Debian/Ubuntu: `libio-socket-ssl-perl`) |
 
+The three versions are kept on purpose; see [multi-language scripts](../reference/multi_language_scripts.md).
+
 Network error names come from each runtime, so they read differently; everything
 else matches. The examples below use the Python script.
 

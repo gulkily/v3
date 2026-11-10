@@ -3,6 +3,7 @@
 # needs IO::Socket::SSL (Debian/Ubuntu: libio-socket-ssl-perl), as for any HTTP::Tiny use.
 # Same options, output, record format and exit codes as stress_probe.py and stress_probe.php;
 # see that script or docs/runbooks/server_stress_probe.md for the full description.
+# Intentional multi-language set; see docs/reference/multi_language_scripts.md.
 #
 #   perl scripts/stress_probe.pl https://zenmemes.com                       # show the plan
 #   perl scripts/stress_probe.pl https://zenmemes.com --confirm zenmemes.com
