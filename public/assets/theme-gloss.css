@@ -63,7 +63,7 @@
   border-radius: 0.75rem;
 }
 
-:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]) {
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]):not(.sqlite-cell-toggle) {
   border-radius: 999px;
   border-color: var(--gloss-control-edge);
   font-weight: 600;
