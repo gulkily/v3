@@ -21,3 +21,4 @@ repository.tar.gz
 
 # Local testing approval opt-in
 /.test-self-approval
+public/.high-traffic

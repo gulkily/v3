@@ -26,4 +26,12 @@ final class WebServerRoutingTest
         assertStringNotContains('%{ENV:FORUM_APPROVED_MEMBERS_ONLY}', $rewrite);
         assertStringNotContains('RewriteRule ^.* .static/current', $rewrite);
     }
+
+    public function testShippedRoutingCarriesHighTrafficRulesSoTheModeNeverEditsIt(): void
+    {
+        $rewrite = (string) file_get_contents(__DIR__ . '/../public/.htaccess');
+
+        assertTrue(str_starts_with($rewrite, \ForumRewrite\Host\HighTrafficMode::routingRules()));
+        assertStringContains('public/.high-traffic', (string) file_get_contents(__DIR__ . '/../.gitignore'));
+    }
 }

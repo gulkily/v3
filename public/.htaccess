@@ -1,3 +1,25 @@
+# BEGIN V3 HIGH TRAFFIC
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{THE_REQUEST} \s/+\.high-traffic(?:[/\s?]) [NC]
+RewriteRule ^\.high-traffic(?:/|$) - [F,END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic/index.html -f
+RewriteRule ^$ .high-traffic/index.html [END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic/$1/index.html -f
+RewriteRule ^(threads|about)/$ .high-traffic/$1/index.html [END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic/threads/$1/index.html -f
+RewriteRule ^threads/([a-zA-Z0-9][a-zA-Z0-9_-]{0,127})$ .high-traffic/threads/$1/index.html [END]
+</IfModule>
+# END V3 HIGH TRAFFIC
 DirectoryIndex index.php index.html
 
 <IfModule mod_rewrite.c>

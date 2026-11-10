@@ -42,7 +42,7 @@ final class HighTrafficMode
                 if (FeatureFlagEvaluator::forApplication($this->cache->repositoryRoot,$this->cache->projectRoot)->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)) throw new RuntimeException('Private instances cannot enable high-traffic mode.');
                 if (($this->status()['effective_mode'] ?? '') === 'high-traffic') {
                     // Enabling again refreshes routing written by an older release; cached pages stay.
-                    if (!str_starts_with($current,$this->rules())) $this->cache->atomic($path,$this->rules() . $normal);
+                    if (!str_starts_with($current,self::routingRules())) $this->cache->atomic($path,self::routingRules() . $normal);
                     return $this->status();
                 }
                 $this->cache->atomic($this->cache->root . '/normal.htaccess',$normal);
@@ -52,11 +52,16 @@ final class HighTrafficMode
                 $link=$this->cache->publicRoot . '/.high-traffic';
                 HighTrafficSafety::detach($this->cache->publicRoot);
                 if (!symlink($this->cache->root . '/pages',$link)) throw new RuntimeException('Cannot expose the high-traffic cache.');
-                try { $this->cache->atomic($path,$this->rules() . $normal); }
-                catch (\Throwable $error) { HighTrafficSafety::detach($this->cache->publicRoot);throw $error; }
+                // The shipped public/.htaccess already carries these rules, so this only
+                // writes for a separate document root or routing left by an older release.
+                if (!str_starts_with($current,self::routingRules())) {
+                    try { $this->cache->atomic($path,self::routingRules() . $normal); }
+                    catch (\Throwable $error) { HighTrafficSafety::detach($this->cache->publicRoot);throw $error; }
+                }
             } else {
+                // The rules stay in place; without the symlink every condition fails and
+                // requests fall through to the front controller.
                 HighTrafficSafety::detach($this->cache->publicRoot);
-                $this->cache->atomic($path,$normal);
             }
             $state=['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot,'profile'=>\ForumRewrite\SiteProfileRegistry::active()['name'],'enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c')];
             try { $this->cache->atomic($this->cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR)); }
@@ -73,7 +78,7 @@ final class HighTrafficMode
             $context=json_decode((string)file_get_contents($this->cache->root . '/normal-context.json'),true,512,JSON_THROW_ON_ERROR);
             if (($context['public_root'] ?? null)!==(realpath($this->cache->publicRoot) ?: $this->cache->publicRoot)) throw new RuntimeException('Restore requires the original public root.');
             HighTrafficSafety::detach($this->cache->publicRoot);
-            $this->cache->atomic($this->cache->publicRoot . '/.htaccess',(string)file_get_contents($saved));
+            $this->cache->atomic($this->cache->publicRoot . '/.htaccess',self::routingRules() . (string)file_get_contents($saved));
             $this->cache->atomic($this->cache->root . '/state.json',json_encode(['enabled'=>false,'generation'=>bin2hex(random_bytes(16)),'reason'=>'CLI routing recovery'],JSON_THROW_ON_ERROR));
             return $this->status();
         }));
@@ -104,7 +109,11 @@ final class HighTrafficMode
         if ($end===false) throw new RuntimeException('Invalid routing markers.');
         return substr($current,$end+strlen(self::END)+1);
     }
-    private function rules(): string
+    /**
+     * Routing shipped at the top of public/.htaccess. The rules are inert until the
+     * `.high-traffic` symlink exists, so the symlink alone switches the mode.
+     */
+    public static function routingRules(): string
     {
         // All targets are fixed or constrained ASCII route backreferences. END prevents front-controller re-entry.
         return self::BEGIN . <<<'RULES'
