@@ -1,9 +1,78 @@
 <?php
 require_once __DIR__.'/SignedPostIdentityTest.php';
+require_once __DIR__.'/Support/ReadModelSnapshot.php';
 use ForumRewrite\Write\{LocalWriteService,SignedPostTransaction};
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 final class SingleRequestPostingTest
 {
+    /** A signed post updates the read model in place, and the result equals a full rebuild. */
+    public function testSignedPostsMatchAFullRebuild(): void
+    {
+        $cases = [
+            'new identity thread' => ['new' => true, 'reply' => false, 'body' => "Hello\n"],
+            'new identity reply' => ['new' => true, 'reply' => true, 'body' => "Hello\n"],
+            'known identity thread' => ['new' => false, 'reply' => false, 'body' => "Hello again\n"],
+            'known identity reply' => ['new' => false, 'reply' => true, 'body' => "Hello again\n"],
+            'thread with labels in its body' => ['new' => false, 'reply' => false, 'body' => "Tagged #upvote\n"],
+            'reply with a title directive' => ['new' => false, 'reply' => 'own', 'body' => "title: A better title\n\nRetitled\n"],
+        ];
+        foreach ($cases as $name => $case) {
+            [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $input = SignedPostIdentityTest::bundle();
+            // A thread by someone else gives new-identity replies a target.
+            $target = $writer->createThread(['board_tags' => 'general', 'subject' => 'Target', 'body' => 'Reply here']);
+            $own = $case['new'] ? null : $writer->createSignedPost($input);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+
+            $replyTo = $case['reply'] === 'own' ? $own['post_id'] : ($case['reply'] ? $target['thread_id'] : null);
+            $record = $this->signedRecord($input, $replyTo, $case['body']);
+            $bundle = ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)] + $input;
+            if (!$case['new']) unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']);
+            $result = $writer->createSignedPost($bundle);
+
+            assertSame('ok', $result['status'], $name);
+            assertSame(false, isset($result['refresh_pending']), $name);
+            assertSame(true, $result['read_model_update'] === 'targeted', $name . ': updated in place');
+            $targeted = ReadModelSnapshot::take($db);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame([], ReadModelSnapshot::differences(ReadModelSnapshot::take($db), $targeted), $name);
+            $written = trim((new \ForumRewrite\Write\SignedPostTransaction($root))->git(['show', '--name-only', '--format=', 'HEAD']));
+            if (str_contains($name, 'labels')) assertStringContains('records/thread-labels/', $written, $name . ': label record written');
+            if (str_contains($name, 'title')) assertStringContains('subject', $written, $name . ': title record written');
+        }
+    }
+
+    public function testReplayWithACurrentReadModelDoesNotRefresh(): void
+    {
+        [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = SignedPostIdentityTest::bundle();
+        $writer->createSignedPost($input);
+        clearstatcache(true, $db);
+        $inode = fileinode($db);
+
+        $replay = $writer->createSignedPost($input);
+
+        assertSame(true, $replay['replayed']);
+        assertSame('current', $replay['read_model_update']);
+        clearstatcache(true, $db);
+        assertSame($inode, fileinode($db), 'no rebuild swapped in a new file');
+    }
+
+    private function signedRecord(array $input, ?string $threadId, string $body): string
+    {
+        preg_match('/^Author-Identity-ID: (.+)$/m', $input['canonical_record'], $author);
+        $time = gmdate('Y-m-d\TH:i:s\Z');
+        $id = ($threadId === null ? 'thread-' : 'reply-') . gmdate('YmdHis') . '-' . bin2hex(random_bytes(16));
+        $headers = "Post-ID: {$id}\nCreated-At: {$time}\nBoard-Tags: general\n";
+        if ($threadId !== null) $headers .= "Thread-ID: {$threadId}\nParent-ID: {$threadId}\n";
+        $headers .= "Author-Identity-ID: {$author[1]}\n";
+        if ($threadId === null) $headers .= "Subject: Signed thread\n";
+
+        return $headers . "\n" . $body;
+    }
+
     public function testFirstPostAndReplayKeepSeparateBootstrap(): void
     {
         [$root,$db,$artifacts]=SignedPostIdentityTest::helper('createTempEnvironment');
@@ -37,6 +106,8 @@ final class SingleRequestPostingTest
         $broken=new class($root,$db,$artifacts,new CanonicalRecordRepository($root)) extends LocalWriteService {
             protected function rebuildReadModel(): array { throw new RuntimeException('injected refresh failure'); }
         };
+        // A stale read model sends the write down the full-rebuild path, where the failure is injected.
+        (new \ForumRewrite\ReadModel\ReadModelStaleMarker($db))->mark(['reason'=>'test']);
         $result=$broken->createSignedPost($input); assertSame(true,$result['refresh_pending']); assertSame('ok',$result['status']);
         assertSame(false,isset($writer->createSignedPost($input)['refresh_pending']));
     }

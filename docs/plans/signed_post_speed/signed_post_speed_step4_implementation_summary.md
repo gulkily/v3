@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/signed_post_speed`; [host ledger](../effo
 
 Extended estimates: enabled
 
-Status: Step 3 approved on 2026-11-10; Stage 1 complete; Stage 2 next.
+Status: Step 3 approved on 2026-11-10; Stages 1–2 complete; Stage 3 next.
 
 **Cycle estimate: 0.25** (Step 3, reaffirmed at entry)
 
@@ -28,6 +28,26 @@ Status: Step 3 approved on 2026-11-10; Stage 1 complete; Stage 2 next.
   - New test `WriteApiSmokeTest::testFallbacksToAFullRebuildAreLogged`: a write with a stale marker and a write whose update throws each log exactly one line with the reason.
 - Verification: `./v3 test --smoke WriteApiSmokeTest SingleRequestPostingTest`: 662 run, 662 passed. Full suite not run.
 - Notes: fallback lines now also appear in test runs, where many tests deliberately force fallbacks.
+- Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Signed posts update in place
+
+**Original estimate: 0.15**
+**Retrospective: 0.13**
+
+- Changes:
+  - `createSignedPost()` calls the new `refreshAfterSignedPost()` instead of a full rebuild. For a new identity it runs `synchronizeIdentityDerivedState()` first (its link adds the bootstrap post); then `synchronizePostDerivedState()` with flags for the label and title records actually written. If the identity step itself fell back to a full rebuild, that rebuild already contains the post, so the post step is skipped instead of adding the post twice.
+  - A replay changes nothing when the read model is current at `HEAD` and has the post (`RemovalUpdateContext::forPost()`); otherwise it rebuilds as before.
+  - The response gains `read_model_update`: `targeted`, `rebuilt` or `current`. `refresh_pending`, page clearing and the rest of the response are unchanged.
+  - Bug found and fixed: `SignedPostTransaction` refused `records/thread-subjects/` paths, so on `main` a signed reply containing a `title:` line failed with "Unsafe signed post path". It is now allowed, like the two-request route.
+  - New tests in `SingleRequestPostingTest`: `testSignedPostsMatchAFullRebuild` (a thread and a reply from a new identity and from a known one, a thread with a label in its body, a reply with a title directive; each updated in place and equal to a fresh full rebuild, and the label and title records confirmed written) and `testReplayWithACurrentReadModelDoesNotRefresh`.
+  - `testReplyReusesIdentityAndRefreshFailureIsAccepted` injects a failure into the full rebuild; it now marks the read model stale first so the write takes that path.
+- Verification:
+  - `./v3 test --smoke WriteApiSmokeTest AgentPostingApiTest FrmClientTest LlmsTxtRendererTest SignedPostBundleValidatorTest SignedPostIdentityTest SignedPostTransactionTest SingleRequestHttpTest SingleRequestPostingTest`: 687 run, 687 passed. Full suite not run.
+  - Order check: running the post update before the identity link makes the post update fail (no profile yet) and fall back, which the equality test catches.
+- Notes: the double-counting worry from the code comment did not materialize in any of the six cases.
 - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-10 UTC · Model: claude-opus-5-5*

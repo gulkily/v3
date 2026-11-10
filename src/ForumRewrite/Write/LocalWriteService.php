@@ -548,6 +548,8 @@ class LocalWriteService
             if (($removal['operation'] ?? null) === 'delete') throw new RuntimeException('Post was removed; replay cannot restore it.', 410);
             $committed = $tx->git(['show', 'HEAD:' . $path], true);
             $replayed = $committed !== null;
+            $hasLabels = false;
+            $hasSubject = false;
             if ($replayed) {
                 if ($committed !== $input['canonical_record'] || !$bundle['known'] || $tx->git(['show','HEAD:' . $path . '.asc'], true) === null) {
                     throw new RuntimeException('Post ID conflicts with existing content.', 409);
@@ -571,10 +573,14 @@ class LocalWriteService
                 if ($labels !== []) {
                     [$labelPath,$labelBytes] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
                     $files[$labelPath] = $labelBytes;
+                    $hasLabels = true;
                 }
                 if ($post->isReply()) {
                     $subjectRecord = $this->titleDirectiveRecord($post->threadId, $post->postId, $input['canonical_record'], $post->body, $post->authorIdentityId, $post->createdAt);
-                    if ($subjectRecord !== null) $files[$subjectRecord[0]] = $subjectRecord[1];
+                    if ($subjectRecord !== null) {
+                        $files[$subjectRecord[0]] = $subjectRecord[1];
+                        $hasSubject = true;
+                    }
                 }
                 $commit = $tx->accept($files);
             }
@@ -584,9 +590,7 @@ class LocalWriteService
                 'signature_path'=>$path . '.asc', 'commit_sha'=>$commit, 'replayed'=>$replayed,
                 'fastmod_new_post'=>!$replayed];
             try {
-                // A single rebuild sees both registration and post, without double counting.
-                // Use current HEAD on retries, not the historical acceptance commit.
-                $this->refreshDerivedStateAfterCommit(trim($tx->git(['rev-parse','HEAD'])));
+                $result['read_model_update'] = $this->refreshAfterSignedPost($post, $bundle, $replayed, $commit, $hasLabels, $hasSubject, $tx);
                 $this->invalidator()->invalidateIdentityLink($result['profile_slug'],$bundle['identity']->bootstrapByThread,$bundle['identity']->bootstrapByPost);
                 if ($post->isReply()) $this->invalidator()->invalidateReply($post->threadId,$post->postId);
                 else $this->invalidator()->invalidateBoardThread($post->postId);
@@ -597,6 +601,35 @@ class LocalWriteService
             }
             return $result;
         }, true);
+    }
+
+    /**
+     * Updates the read model for a signed post in place, the way the two-request route does:
+     * a new identity first (its link adds the bootstrap post), then the post with its labels
+     * and title. If the identity step had to rebuild, that rebuild already contains the post,
+     * so the post step is skipped rather than counted twice. A replay changes nothing when the
+     * read model is current at HEAD; otherwise it rebuilds, using HEAD rather than the
+     * historical acceptance commit.
+     *
+     * @param array{known: bool, identity_path: string} $bundle
+     * @return 'targeted'|'rebuilt'|'current'
+     */
+    private function refreshAfterSignedPost(PostRecord $post, array $bundle, bool $replayed, string $commit, bool $hasLabels, bool $hasSubject, SignedPostTransaction $tx): string
+    {
+        if ($replayed) {
+            if (RemovalUpdateContext::forPost($this->repositoryRoot, $this->databasePath, $post->postId) !== null) {
+                return 'current';
+            }
+            $this->refreshDerivedStateAfterCommit(trim($tx->git(['rev-parse', 'HEAD'])));
+            return 'rebuilt';
+        }
+
+        $rebuilt = static fn (array $timings): bool => array_filter(array_keys($timings), static fn (string $key): bool => str_starts_with($key, 'read_model_rebuild')) !== [];
+        if (!$bundle['known'] && $rebuilt($this->synchronizeIdentityDerivedState($bundle['identity_path'], $commit))) {
+            return 'rebuilt';
+        }
+
+        return $rebuilt($this->synchronizePostDerivedState($post, $commit, $hasLabels, $hasSubject)) ? 'rebuilt' : 'targeted';
     }
 
     private function assertImageAuthor(string $body, string $identity): ?array
