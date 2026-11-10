@@ -14,3 +14,17 @@
 
 **Uncertain assessments**
 - No supported findings.
+
+## 2026-11-10T01:08:55Z — Step 2
+
+**Necessary/useful instructions**
+- Concept lookup before naming: no concept covers `create_signed_post`, so *signed post bundle* stays proposed rather than assumed. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- No supported findings.
+
+**Uncertain assessments**
+- No supported findings.

@@ -2,6 +2,8 @@
 
 ## Cycle v3/signed_post_speed
 
+2026-11-10T01:08:55Z — v3/signed_post_speed Step 2 handoff: user explicitly approved Step 1 (Option A). [Description/checkpoint](./signed_post_speed_step2_feature_description.md#study-checkpoint): targeted updates for signed posts (identity first, then post, labels, title), equality with a full rebuild for eight cases, cheap replays, logged fallbacks. Projected total **0.25** reaffirmed. Same R1/P2, single exposed Claude rater. Await Approved Step 2.
+
 2026-11-10T00:25:58Z — v3/signed_post_speed Step 1 handoff (standing P2 enrollment; first item of the [rebuild triggers checklist](./rebuild_triggers_checklist.md), no parent): [assessment/checkpoint](./signed_post_speed_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (signed bundle reuses identity and post targeted updates; replay skips a current read model; fallbacks log why). Starting revision `60ff7fd`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing. Intake and projected total **0.25**; option estimates 0.25/0.10/0.30, non-additive. Await Approved Step 1.
 
 ## Cycle v3/retraction_speed
