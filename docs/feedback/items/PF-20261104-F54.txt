@@ -1,9 +1,9 @@
 ID: PF-20261104-F54
 Title: Shared Tools navigation on tool pages
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 The shown menu should also be on System State and other Tools pages. Options: expandable at the top and/or full menu at the bottom after scrolling; bottom version would help demos.
@@ -12,6 +12,10 @@ Sources:
 - https://zenmemes.com/posts/thread-20261103062812-321f286b
 - https://zenmemes.com/posts/reply-20261103062851-e2d0f8a2
 
+Done when:
+Every /tools/* page shows the Tools bar once, at the bottom under a "Tools" card heading that matches the site's other card headings, in production.
+
 Notes:
 Attachment unavailable; identify canonical menu before later implementation. No navigation destination added now.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-09: maintainer chose the bottom-only version. Bar moved by #109 and titled by #114 (both deployed; live check in docs/plans/tools_nav_bottom/tools_nav_bottom_one_shot.md). Plain-heading fix on feat/tools-nav-bottom, locally verified; done after it is deployed.

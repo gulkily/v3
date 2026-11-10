@@ -1771,18 +1771,3 @@ pre {
 .scripture-expansion summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .scripture-expansion .body { margin-block-start: 0.6rem; overflow-wrap: anywhere; }
 .agent-reply-feedback { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
-
-.tools-nav-heading {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-}
-
-.tools-nav-heading a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.tools-nav-heading a:hover,
-.tools-nav-heading a:focus-visible {
-  text-decoration: underline;
-}
