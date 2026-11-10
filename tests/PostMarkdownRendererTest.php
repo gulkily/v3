@@ -26,7 +26,7 @@ final class PostMarkdownRendererTest
     {
         $source = "| A | B | C | D |\n| --- | --- | --- | --- |\n| 1 | 2 | 3 | 4 |";
         $post = PublicMarkdownRenderer::renderPost($source);
-        assertStringContains('<div class="post-table"><div class="post-table-zoom" role="group" aria-label="Text size">', $post);
+        assertStringContains('<div class="post-table"><div class="zoom-buttons post-table-zoom" role="group" aria-label="Text size">', $post);
         assertStringContains('data-table-zoom="out"', $post);
         assertStringContains('data-table-zoom="fit"', $post);
         assertStringContains('data-table-zoom="in"', $post);

@@ -50,12 +50,8 @@ $viewerStatusLabel = $viewerLoggedIn ? $viewerDisplayName : 'Guest';
     <span>Refresh</span>
   </button>
   <span class="paned-toolbar-sep paned-toolbar-zoom"></span>
-  <button type="button" class="paned-toolbar-btn paned-toolbar-zoom" data-paned-zoom="-1" aria-label="Smaller" title="Smaller">
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor"/><line x1="10.2" y1="10.2" x2="14" y2="14" stroke="currentColor"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor"/></svg>
-  </button>
-  <button type="button" class="paned-toolbar-btn paned-toolbar-zoom" data-paned-zoom="1" aria-label="Larger" title="Larger">
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor"/><line x1="10.2" y1="10.2" x2="14" y2="14" stroke="currentColor"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor"/><line x1="7" y1="5" x2="7" y2="9" stroke="currentColor"/></svg>
-  </button>
+  <?= \ForumRewrite\View\ZoomButtons::button('smaller', 'data-paned-zoom', '-1', 'paned-toolbar-btn paned-toolbar-zoom') ?>
+  <?= \ForumRewrite\View\ZoomButtons::button('larger', 'data-paned-zoom', '1', 'paned-toolbar-btn paned-toolbar-zoom') ?>
   <script>
     // Phone text zoom (forte.css scales the phone layout by --forte-zoom; the
     // standalone layout restores the saved value before first paint).

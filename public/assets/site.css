@@ -1578,6 +1578,21 @@ pre {
 .post-markdown th, .post-markdown td { overflow-wrap: break-word; word-break: normal; hyphens: auto; vertical-align: top; }
 .post-markdown .post-table { margin: 0 0 0.75em; }
 .post-markdown .post-table .docs-table-scroll { margin: 0; }
+/* Smaller/Larger text-size buttons (ZoomButtons.php): Query viewer, post tables. Each place
+   sets the group's display (both are phone-only), because site.css loads asynchronously and
+   can arrive after page stylesheets such as sqlite.css. The [type] keeps these metrics ahead of header button rules
+   whatever the load order. The Forte toolbar keeps its own toolbar button look. */
+.zoom-buttons { flex: 0 0 auto; gap: 0.25rem; }
+.zoom-buttons button[type="button"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 2.25rem;
+  margin: 0;
+  padding: 0.25rem 0.4rem;
+}
 .post-table-zoom { display: none; }
 .post-table-cols-2 { --table-cols: 2; }
 .post-table-cols-3 { --table-cols: 3; }
@@ -1592,9 +1607,7 @@ pre {
    table, and layout.php restores the saved value before paint. Pinching outside tables still
    zooms the page. */
 @media (max-width: 639px) {
-  .post-table-zoom { display: flex; justify-content: flex-end; gap: 0.25rem; margin-bottom: 0.25rem; }
-  /* Matches .sqlite-dialog-zoom button (sqlite.css). */
-  .post-table-zoom button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: auto; min-width: 2.25rem; margin: 0; padding: 0.25rem 0.4rem; }
+  .post-table-zoom { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
   .post-table .docs-table-scroll { container-type: inline-size; touch-action: pan-x pan-y; }
   .post-table table {
     -webkit-text-size-adjust: 100%;

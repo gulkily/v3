@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Docs;
 
+use ForumRewrite\View\ZoomButtons;
+
 final class PublicMarkdownRenderer
 {
     /** True while rendering an untrusted post body rather than a project document. */
@@ -360,11 +362,8 @@ final class PublicMarkdownRenderer
         // controls (table_zoom.js); documentation pages keep their plain scrolling table.
         $columns = min(count($rows[0]), 8);
         $html = self::$postMode
-            // Same icons, labels and sizing as the Query viewer and Forte zoom buttons.
-            ? '<div class="post-table"><div class="post-table-zoom" role="group" aria-label="Text size">'
-                . '<button type="button" data-table-zoom="out" aria-label="Smaller" title="Smaller"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor"/><line x1="10.2" y1="10.2" x2="14" y2="14" stroke="currentColor"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor"/></svg></button>'
-                . '<button type="button" data-table-zoom="fit" title="Fit to screen">Fit</button>'
-                . '<button type="button" data-table-zoom="in" aria-label="Larger" title="Larger"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor"/><line x1="10.2" y1="10.2" x2="14" y2="14" stroke="currentColor"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor"/><line x1="7" y1="5" x2="7" y2="9" stroke="currentColor"/></svg></button></div>'
+            ? '<div class="post-table">'
+                . ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'larger' => 'in'])
                 . '<div class="docs-table-scroll post-table-cols-' . $columns . '" tabindex="0" role="region" aria-label="Table">'
             : '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table">';
         $html .= '<table><thead>' . $renderRow($rows[0], 'th') . '</thead><tbody>';
