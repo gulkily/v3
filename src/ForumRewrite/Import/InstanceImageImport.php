@@ -110,7 +110,7 @@ final class InstanceImageImport
                 foreach ($items as $item) {
                     $ok = false;
                     try { $ok = ImageStore::inspect($item['source'], $item['reference']['description']) === ImageReference::validate($item['reference']); }
-                    catch (RuntimeException) {}
+                    catch (RuntimeException) { /* unreadable or invalid image: counted as a mismatch below */ }
                     if ($ok) { $result['added']++; } else { $this->reason($result, 'source image does not match its post'); }
                 }
                 return $result;

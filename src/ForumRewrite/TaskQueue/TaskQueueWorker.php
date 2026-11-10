@@ -237,6 +237,7 @@ final class TaskQueueWorker
             try {
                 ($this->onTaskThrowable)($id, $throwable);
             } catch (Throwable) {
+                // A failing observer must not change how the task itself is recorded.
             }
         }
     }

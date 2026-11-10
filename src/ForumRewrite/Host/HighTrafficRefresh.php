@@ -124,7 +124,7 @@ final class HighTrafficRefresh
             }
             return 'skipped';
         } catch (\Throwable $error) {
-            try { $this->cache->report($error); } catch (\Throwable) {}
+            try { $this->cache->report($error); } catch (\Throwable) { /* reporting is best-effort; afterPost() never throws */ }
             return 'skipped';
         }
     }
@@ -158,7 +158,9 @@ final class HighTrafficRefresh
                 }
                 @unlink($path);
             });
-        } catch (\RuntimeException) {}
+        } catch (\RuntimeException) {
+            // Busy lock: the hint stays (see above).
+        }
     }
     private function cleanup(): void
     {

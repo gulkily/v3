@@ -75,7 +75,10 @@ final class SiteProfileRegistry
         return $profiles;
     }
 
-    /** @param null|array<string, array<string, mixed>> $profiles */
+    /**
+     * @internal Test hook: replaces the loaded profiles; null restores the real ones.
+     * @param null|array<string, array<string, mixed>> $profiles
+     */
     public static function setProfilesForTesting(?array $profiles): void
     {
         if ($profiles !== null) {

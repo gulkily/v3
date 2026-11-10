@@ -37,7 +37,7 @@ final class MediaEmbedRenderer
             [$before, $after] = explode($line, $body, 2);
             $available = false;
             if ($imagesEnabled && $this->imageStore !== null) {
-                try { $this->imageStore->resolve($image); $available = true; } catch (\RuntimeException) {}
+                try { $this->imageStore->resolve($image); $available = true; } catch (\RuntimeException) { /* missing image: render the unavailable placeholder */ }
             }
             $description = $this->escape($image['description']);
             $html = '<span class="post-image" data-image-reference="' . $image['sha256'] . '">';

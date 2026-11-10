@@ -137,6 +137,33 @@ final class ThemeRegistryTest
         }
     }
 
+    /**
+     * Theme assets are loaded by names built from the registry, so a plain
+     * search never finds them. This keeps every file accounted for, so a
+     * dead-code pass can trust that a theme file on disk is in use.
+     */
+    public function testEveryThemeAssetOnDiskBelongsToTheRegistry(): void
+    {
+        $publicRoot = dirname(__DIR__) . '/public';
+        // Shared by several themes and loaded directly by TemplateRenderer.
+        $sharedAssets = ['/assets/theme-nav-icons.css'];
+        $known = array_merge(
+            array_values(ThemeRegistry::stylesheetPaths()),
+            array_values(ThemeRegistry::scriptPaths()),
+            $sharedAssets,
+        );
+
+        $unknown = [];
+        foreach (glob($publicRoot . '/assets/theme-*.{css,js}', GLOB_BRACE) ?: [] as $file) {
+            $path = '/assets/' . basename($file);
+            if (!in_array($path, $known, true)) {
+                $unknown[] = $path;
+            }
+        }
+
+        assertSame([], $unknown);
+    }
+
     public function testSystemDarkColorsAreInTheCriticalBlock(): void
     {
         // Auto/System theme sets no data-theme, so its dark colors come only from
