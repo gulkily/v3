@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
+require __DIR__ . '/lib/record_files.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -377,55 +378,6 @@ function candidateRecordPaths(string $target): array
     return array_values(array_unique($paths));
 }
 
-function assertCanonicalRecordPath(string $relativePath): void
-{
-    if (!str_starts_with($relativePath, 'records/')) {
-        fwrite(STDERR, "Record path must be under records/: {$relativePath}\n");
-        exit(1);
-    }
-
-    if (str_contains($relativePath, '..') || str_starts_with($relativePath, '/') || str_ends_with($relativePath, '/')) {
-        fwrite(STDERR, "Invalid record path: {$relativePath}\n");
-        exit(1);
-    }
-
-    if (!preg_match('/\.(txt|asc)$/', $relativePath)) {
-        fwrite(STDERR, "Record path must end in .txt or .asc: {$relativePath}\n");
-        exit(1);
-    }
-}
-
-/**
- * @return list<string>
- */
-function recordFiles(string $repositoryRoot): array
-{
-    $recordsRoot = $repositoryRoot . '/records';
-    if (!is_dir($recordsRoot)) {
-        return [];
-    }
-
-    $paths = [];
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($recordsRoot, FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($iterator as $item) {
-        if (!$item->isFile()) {
-            continue;
-        }
-
-        $path = $item->getPathname();
-        if (!preg_match('/\.(txt|asc)$/', $path)) {
-            continue;
-        }
-
-        $paths[] = repositoryRelativePath($repositoryRoot, $path);
-    }
-    sort($paths);
-
-    return $paths;
-}
-
 function readHistoricalRecord(string $repositoryRoot, string $relativePath): ?string
 {
     if (!is_dir($repositoryRoot . '/.git')) {
@@ -724,60 +676,6 @@ function printField(string $key, string $value): void
 function nullable(?string $value): string
 {
     return $value === null || $value === '' ? '(none)' : $value;
-}
-
-function repositoryRelativePath(string $repositoryRoot, string $path): string
-{
-    $prefix = rtrim($repositoryRoot, '/') . '/';
-    if (str_starts_with($path, $prefix)) {
-        return substr($path, strlen($prefix));
-    }
-
-    return ltrim($path, '/');
-}
-
-/**
- * @return list<string>
- */
-function postRecordPaths(string $repositoryRoot): array
-{
-    $paths = [];
-    $postsRoot = $repositoryRoot . '/records/posts';
-    if (!is_dir($postsRoot)) {
-        return [];
-    }
-
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($postsRoot, FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($iterator as $item) {
-        if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
-            continue;
-        }
-
-        $paths[] = repositoryRelativePath($repositoryRoot, $item->getPathname());
-    }
-
-    sort($paths);
-
-    return $paths;
-}
-
-function existingPostPath(string $repositoryRoot, string $postId): ?string
-{
-    foreach (CanonicalPathResolver::postCandidates($postId) as $relativePath) {
-        if (is_file($repositoryRoot . '/' . $relativePath)) {
-            return $relativePath;
-        }
-    }
-
-    foreach (postRecordPaths($repositoryRoot) as $relativePath) {
-        if (basename($relativePath) === $postId . '.txt') {
-            return $relativePath;
-        }
-    }
-
-    return null;
 }
 
 function normalizePath(string $path): string

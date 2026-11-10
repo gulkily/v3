@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
+require __DIR__ . '/lib/record_files.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -421,60 +422,6 @@ function removeStaleStaticArtifacts(string $artifactRoot, string $threadId, arra
     sort($removed);
 
     return $removed;
-}
-
-function repositoryRelativePath(string $repositoryRoot, string $path): string
-{
-    $prefix = rtrim($repositoryRoot, '/') . '/';
-    if (!str_starts_with($path, $prefix)) {
-        throw new RuntimeException('Path is outside repository root: ' . $path);
-    }
-
-    return substr($path, strlen($prefix));
-}
-
-/**
- * @return list<string>
- */
-function postRecordPaths(string $repositoryRoot): array
-{
-    $paths = [];
-    $postsRoot = $repositoryRoot . '/records/posts';
-    if (!is_dir($postsRoot)) {
-        return [];
-    }
-
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($postsRoot, FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($iterator as $item) {
-        if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
-            continue;
-        }
-
-        $paths[] = repositoryRelativePath($repositoryRoot, $item->getPathname());
-    }
-
-    sort($paths);
-
-    return $paths;
-}
-
-function existingPostPath(string $repositoryRoot, string $postId): ?string
-{
-    foreach (CanonicalPathResolver::postCandidates($postId) as $relativePath) {
-        if (is_file($repositoryRoot . '/' . $relativePath)) {
-            return $relativePath;
-        }
-    }
-
-    foreach (postRecordPaths($repositoryRoot) as $relativePath) {
-        if (basename($relativePath) === $postId . '.txt') {
-            return $relativePath;
-        }
-    }
-
-    return null;
 }
 
 function sourceCommit(string $repositoryRoot): ?string

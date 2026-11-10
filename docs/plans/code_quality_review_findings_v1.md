@@ -96,11 +96,11 @@ Worth merging:
 
 Smaller, lower priority:
 
-- `scripts/delete_record.php` ↔ `thread_attributes.php` ↔ `archive_thread.php`: argument parsing and git helpers (55 and 48 lines).
+- `scripts/delete_record.php` ↔ `thread_attributes.php` ↔ `archive_thread.php`: record-file helpers (55 and 48 lines). **Done:** moved, unchanged, to `scripts/lib/record_files.php`, along with the copies in `import_repository_archive.php` and `audit_post_signatures.php`.
 - `public/assets/paned_board_reader.js` ↔ `paned_users_reader.js` ↔ `paned_activity_reader.js`: pane navigation (46 and 23 lines).
 - `Agent/SqliteAgentReplyGenerationStore.php` ↔ `Analysis/SqlitePostAnalysisStore.php`: store boilerplate (34 lines).
 - Repeats within a single file: `TagApiController` (thread vs post tag, 28+28), `WritePostAndIdentityApiController` (3 × ~20), `ProfilePresentationContent` (30).
-- `theme_toggle.js` ↔ `thread_density_toggle.js` (31 lines).
+- `theme_toggle.js` ↔ `thread_density_toggle.js` (31 lines). **Keep:** sharing ~30 lines of menu keyboard handling would add an asset and a load-order dependency to every page, which costs more than the duplication.
 
 ## 6. Size
 

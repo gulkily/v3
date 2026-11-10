@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
+require __DIR__ . '/lib/record_files.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -169,32 +170,6 @@ function normalizePath(string $path): string
 {
     $real = realpath($path);
     return $real !== false ? $real : rtrim($path, '/');
-}
-
-/**
- * @return list<string>
- */
-function postRecordPaths(string $repositoryRoot): array
-{
-    $paths = [];
-    $postsRoot = $repositoryRoot . '/records/posts';
-    if (!is_dir($postsRoot)) {
-        return [];
-    }
-
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($postsRoot, FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($iterator as $item) {
-        if (!$item->isFile() || !str_ends_with($item->getFilename(), '.txt')) {
-            continue;
-        }
-
-        $paths[] = str_replace('\\', '/', substr($item->getPathname(), strlen($repositoryRoot) + 1));
-    }
-
-    sort($paths);
-    return $paths;
 }
 
 function postIdFromPath(string $relativePath): string

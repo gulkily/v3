@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
+require __DIR__ . '/lib/record_files.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -204,55 +205,6 @@ function resolveRecordPath(string $repositoryRoot, string $target): string
     return $matches[0];
 }
 
-function assertCanonicalRecordPath(string $relativePath): void
-{
-    if (!str_starts_with($relativePath, 'records/')) {
-        fwrite(STDERR, "Record path must be under records/: {$relativePath}\n");
-        exit(1);
-    }
-
-    if (str_contains($relativePath, '..') || str_starts_with($relativePath, '/') || str_ends_with($relativePath, '/')) {
-        fwrite(STDERR, "Invalid record path: {$relativePath}\n");
-        exit(1);
-    }
-
-    if (!preg_match('/\.(txt|asc)$/', $relativePath)) {
-        fwrite(STDERR, "Record path must end in .txt or .asc: {$relativePath}\n");
-        exit(1);
-    }
-}
-
-/**
- * @return list<string>
- */
-function recordFiles(string $repositoryRoot): array
-{
-    $recordsRoot = $repositoryRoot . '/records';
-    if (!is_dir($recordsRoot)) {
-        return [];
-    }
-
-    $paths = [];
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($recordsRoot, FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($iterator as $item) {
-        if (!$item->isFile()) {
-            continue;
-        }
-
-        $path = $item->getPathname();
-        if (!preg_match('/\.(txt|asc)$/', $path)) {
-            continue;
-        }
-
-        $paths[] = repositoryRelativePath($repositoryRoot, $path);
-    }
-    sort($paths);
-
-    return $paths;
-}
-
 /**
  * @return array<string,string>
  */
@@ -302,16 +254,6 @@ function loadRecordMetadata(string $repositoryRoot, string $relativePath): array
     return [
         'Record-Type' => 'canonical-record',
     ];
-}
-
-function repositoryRelativePath(string $repositoryRoot, string $path): string
-{
-    $prefix = rtrim($repositoryRoot, '/') . '/';
-    if (str_starts_with($path, $prefix)) {
-        return substr($path, strlen($prefix));
-    }
-
-    return ltrim($path, '/');
 }
 
 function normalizePath(string $path): string
