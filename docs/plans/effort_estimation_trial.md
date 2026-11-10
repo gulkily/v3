@@ -1,5 +1,17 @@
 # Effort estimation trial ledger
 
+## Cycle v3/signed_post_speed
+
+2026-11-10T07:20:03Z — v3/signed_post_speed Step 4 local closeout: branch `feat/signed-post-speed`, planning `282c480` and three stage commits. [Summary/closeout](./signed_post_speed/signed_post_speed_step4_implementation_summary.md#closeout). Whole-cycle 0.25 at entry, no revision; retrospective scope assessment **0.24**. Stage originals 0.04/0.15/0.06; retrospectives 0.04/0.13/pending; non-additive. Smoke 442/442; signed-post and write classes 687/687; full suite not run. Local timing: known-key reply 0.46s, new-key thread ~1.0s, full rebuild ~7s. Live check pending deploy. Maintainer comfortable-fit and acceptance pending. Single exposed Claude rater.
+
+2026-11-10T07:09:37Z — v3/signed_post_speed Step 4 entry: Step 3 explicitly approved; branch `feat/signed-post-speed` from `a651718`, planning `282c480`. [Summary](./signed_post_speed/signed_post_speed_step4_implementation_summary.md#step-4-entry). Whole-cycle **0.25** reaffirmed; stage originals 0.04/0.15/0.06, non-additive. Same R1/P2, single exposed Claude rater.
+
+2026-11-10T06:59:58Z — v3/signed_post_speed Step 3 handoff: user explicitly approved Step 2. [Plan/checkpoint](./signed_post_speed/signed_post_speed_step3_development_plan.md#study-checkpoint) three stages: logged fallbacks, signed posts update in place, timing/docs/live check. Projected total **0.25** reaffirmed; stage work 0.04/0.15/0.06, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3.
+
+2026-11-10T01:08:55Z — v3/signed_post_speed Step 2 handoff: user explicitly approved Step 1 (Option A). [Description/checkpoint](./signed_post_speed/signed_post_speed_step2_feature_description.md#study-checkpoint): targeted updates for signed posts (identity first, then post, labels, title), equality with a full rebuild for eight cases, cheap replays, logged fallbacks. Projected total **0.25** reaffirmed. Same R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-10T00:25:58Z — v3/signed_post_speed Step 1 handoff (standing P2 enrollment; first item of the [rebuild triggers checklist](./rebuild_triggers_checklist.md), no parent): [assessment/checkpoint](./signed_post_speed/signed_post_speed_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (signed bundle reuses identity and post targeted updates; replay skips a current read model; fallbacks log why). Starting revision `60ff7fd`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing. Intake and projected total **0.25**; option estimates 0.25/0.10/0.30, non-additive. Await Approved Step 1.
+
 ## Cycle v3/retraction_speed
 
 2026-11-10T00:06:59Z — v3/retraction_speed accepted outcome: merged as #119 (`8a189ab`); the maintainer retracted a post on the live site and reported it "worked very quickly" (qualitative, no timing). Stage 3 retrospective 0.07; retrospective scope assessment stays 0.22. Maintainer comfortable-fit judgment not stated.

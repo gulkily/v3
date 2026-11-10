@@ -22,7 +22,7 @@ final class SignedPostTransaction
     }
     private function safePath(string $path): string
     {
-        if (!preg_match('#^records/(posts|identity|public-keys|thread-labels|profile-names|key-retirements|key-retirement-acceptances)/[A-Za-z0-9/_.-]+$#D',$path) || str_contains($path,'..')) throw new RuntimeException('Unsafe signed post path.');
+        if (!preg_match('#^records/(posts|identity|public-keys|thread-labels|thread-subjects|profile-names|key-retirements|key-retirement-acceptances)/[A-Za-z0-9/_.-]+$#D',$path) || str_contains($path,'..')) throw new RuntimeException('Unsafe signed post path.');
         $full=$this->root;
         foreach(explode('/',$path) as $part) { $full.='/'.$part; if(is_link($full)) throw new RuntimeException('Signed post path contains a symlink.'); }
         return $full;

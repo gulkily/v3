@@ -548,6 +548,8 @@ class LocalWriteService
             if (($removal['operation'] ?? null) === 'delete') throw new RuntimeException('Post was removed; replay cannot restore it.', 410);
             $committed = $tx->git(['show', 'HEAD:' . $path], true);
             $replayed = $committed !== null;
+            $hasLabels = false;
+            $hasSubject = false;
             if ($replayed) {
                 if ($committed !== $input['canonical_record'] || !$bundle['known'] || $tx->git(['show','HEAD:' . $path . '.asc'], true) === null) {
                     throw new RuntimeException('Post ID conflicts with existing content.', 409);
@@ -571,10 +573,14 @@ class LocalWriteService
                 if ($labels !== []) {
                     [$labelPath,$labelBytes] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
                     $files[$labelPath] = $labelBytes;
+                    $hasLabels = true;
                 }
                 if ($post->isReply()) {
                     $subjectRecord = $this->titleDirectiveRecord($post->threadId, $post->postId, $input['canonical_record'], $post->body, $post->authorIdentityId, $post->createdAt);
-                    if ($subjectRecord !== null) $files[$subjectRecord[0]] = $subjectRecord[1];
+                    if ($subjectRecord !== null) {
+                        $files[$subjectRecord[0]] = $subjectRecord[1];
+                        $hasSubject = true;
+                    }
                 }
                 $commit = $tx->accept($files);
             }
@@ -584,9 +590,7 @@ class LocalWriteService
                 'signature_path'=>$path . '.asc', 'commit_sha'=>$commit, 'replayed'=>$replayed,
                 'fastmod_new_post'=>!$replayed];
             try {
-                // A single rebuild sees both registration and post, without double counting.
-                // Use current HEAD on retries, not the historical acceptance commit.
-                $this->refreshDerivedStateAfterCommit(trim($tx->git(['rev-parse','HEAD'])));
+                $result['read_model_update'] = $this->refreshAfterSignedPost($post, $bundle, $replayed, $commit, $hasLabels, $hasSubject, $tx);
                 $this->invalidator()->invalidateIdentityLink($result['profile_slug'],$bundle['identity']->bootstrapByThread,$bundle['identity']->bootstrapByPost);
                 if ($post->isReply()) $this->invalidator()->invalidateReply($post->threadId,$post->postId);
                 else $this->invalidator()->invalidateBoardThread($post->postId);
@@ -597,6 +601,35 @@ class LocalWriteService
             }
             return $result;
         }, true);
+    }
+
+    /**
+     * Updates the read model for a signed post in place, the way the two-request route does:
+     * a new identity first (its link adds the bootstrap post), then the post with its labels
+     * and title. If the identity step had to rebuild, that rebuild already contains the post,
+     * so the post step is skipped rather than counted twice. A replay changes nothing when the
+     * read model is current at HEAD; otherwise it rebuilds, using HEAD rather than the
+     * historical acceptance commit.
+     *
+     * @param array{known: bool, identity_path: string} $bundle
+     * @return 'targeted'|'rebuilt'|'current'
+     */
+    private function refreshAfterSignedPost(PostRecord $post, array $bundle, bool $replayed, string $commit, bool $hasLabels, bool $hasSubject, SignedPostTransaction $tx): string
+    {
+        if ($replayed) {
+            if (RemovalUpdateContext::forPost($this->repositoryRoot, $this->databasePath, $post->postId) !== null) {
+                return 'current';
+            }
+            $this->refreshDerivedStateAfterCommit(trim($tx->git(['rev-parse', 'HEAD'])));
+            return 'rebuilt';
+        }
+
+        $rebuilt = static fn (array $timings): bool => array_filter(array_keys($timings), static fn (string $key): bool => str_starts_with($key, 'read_model_rebuild')) !== [];
+        if (!$bundle['known'] && $rebuilt($this->synchronizeIdentityDerivedState($bundle['identity_path'], $commit))) {
+            return 'rebuilt';
+        }
+
+        return $rebuilt($this->synchronizePostDerivedState($post, $commit, $hasLabels, $hasSubject)) ? 'rebuilt' : 'targeted';
     }
 
     private function assertImageAuthor(string $body, string $identity): ?array
@@ -867,6 +900,9 @@ class LocalWriteService
             $this->deletePreparedPost($prepareToken);
 
             $failedStep = null;
+            if ($updateContext === null) {
+                $this->logRebuildFallback('retraction update', $this->readModelNotCurrentReason() ?? 'read model behind HEAD or post not in it');
+            }
             $targetedTimings = $updateContext === null ? null : $this->applyRetractionToOnePost($postId, $commitSha);
             if ($targetedTimings !== null) {
                 $timings = array_merge($timings, $targetedTimings);
@@ -1162,11 +1198,13 @@ class LocalWriteService
         try {
             $removal = \ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $postId);
             if ($removal === null) {
+                $this->logRebuildFallback('retraction update', 'no accepted removal record');
                 return null;
             }
             $timings = (new IncrementalReadModelUpdater($this->databasePath, $this->repositoryRoot))
                 ->applyPostRemoval($removal, AcceptedRetraction::path($postId), array_keys($removal['labels'] ?? []), $commitSha);
-        } catch (\Throwable) {
+        } catch (\Throwable $error) {
+            $this->logRebuildFallback('retraction update', $error->getMessage());
             return null;
         }
         $this->staleMarker()->clear();
@@ -3138,6 +3176,7 @@ class LocalWriteService
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('post update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -3172,6 +3211,7 @@ class LocalWriteService
 
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('post update', $throwable->getMessage());
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
@@ -3215,6 +3255,7 @@ class LocalWriteService
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('thread label update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -3230,6 +3271,7 @@ class LocalWriteService
             $incrementalTimings = $this->incrementalReadModelUpdater()->applyThreadLabelWrite($threadId, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('thread label update', $throwable->getMessage());
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
@@ -3269,6 +3311,7 @@ class LocalWriteService
     private function synchronizeThreadSubjectDerivedState(string $threadId, string $commitSha): void
     {
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('thread title update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $this->refreshDerivedStateAfterCommit($commitSha);
 
             return;
@@ -3278,6 +3321,7 @@ class LocalWriteService
             $this->incrementalReadModelUpdater()->applyThreadSubjectWrite($threadId, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('thread title update', $throwable->getMessage());
             try {
                 $this->refreshDerivedStateAfterCommit($commitSha);
             } catch (\Throwable $fallbackThrowable) {
@@ -3302,6 +3346,7 @@ class LocalWriteService
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('post reaction update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -3317,6 +3362,7 @@ class LocalWriteService
             $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('post reaction update', $throwable->getMessage());
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
@@ -3361,6 +3407,7 @@ class LocalWriteService
         $phaseStartedAt = hrtime(true);
         $this->identityUpdateMetrics = ['path' => 'incremental'];
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('identity link update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $this->identityUpdateMetrics = ['path' => 'full_rebuild', 'fallback_reason' => 'incremental_unavailable'];
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
@@ -3382,6 +3429,7 @@ class LocalWriteService
             $this->identityUpdateMetrics += $updater->identityUpdateMetrics();
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('identity link update', $throwable->getMessage());
             $this->identityUpdateMetrics = ['path' => 'full_rebuild', 'fallback_reason' => 'incremental_update_failed'] + ($updater?->identityUpdateMetrics() ?? []);
             $fallbackStartedAt = hrtime(true);
             try {
@@ -3426,6 +3474,7 @@ class LocalWriteService
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('approval update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_approval_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -3441,6 +3490,7 @@ class LocalWriteService
             $incrementalTimings = $this->incrementalReadModelUpdater()->applyApprovalWrite($record, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('approval update', $throwable->getMessage());
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
@@ -3475,6 +3525,31 @@ class LocalWriteService
         }
 
         return $timings;
+    }
+
+    /**
+     * One log line whenever a targeted update gives way to a full rebuild, so each cause can
+     * be found and fixed (see docs/plans/rebuild_triggers_checklist.md).
+     */
+    private function logRebuildFallback(string $update, string $reason): void
+    {
+        error_log('Read model: ' . $update . ' fell back to a full rebuild: ' . $reason);
+    }
+
+    /** Why the read model cannot take a targeted update, or null when it can. */
+    private function readModelNotCurrentReason(): ?string
+    {
+        if (!is_file($this->databasePath)) return 'no read model';
+        if ($this->staleMarker()->exists()) return 'stale marker present';
+        try {
+            $metadata = (new ReadModelConnection($this->databasePath))->open()->query('SELECT key, value FROM metadata')->fetchAll(\PDO::FETCH_KEY_PAIR);
+        } catch (\Throwable $error) {
+            return 'metadata unreadable: ' . $error->getMessage();
+        }
+        if (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) return 'schema differs';
+        if (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) return 'repository root differs';
+
+        return null;
     }
 
     protected function canIncrementallyUpdateReadModel(): bool
