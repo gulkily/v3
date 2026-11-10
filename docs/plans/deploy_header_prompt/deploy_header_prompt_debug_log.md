@@ -49,3 +49,20 @@ Revision: the Step 1 entry above was restored after the workspace lost it before
 
 ### Uncertain assessments
 - Stage sizing "<=50 lines": Stage 2 spans a template, a script, CSS and a browser test; it may exceed 50 lines while staying under an hour.
+
+## 2026-11-10 10:00 UTC — Step 4
+
+### Necessary/useful instructions
+- `step4_implementation_do.md` › Stage Boundary Protocol: one commit per stage kept a clean record when the plan's header placement had to change in Stage 2. Retain.
+- `implementation_standards.md` › replay each reported failure in the named environment: kept the iPhone replay marked pending instead of counting desktop browser checks. Retain.
+- `RAILSPIKE.md` › Enhancement Requests, in-scope refinement: covered moving the button from beside New post to the site name without a replan. Retain.
+
+### Redundant/unnecessary instructions
+- `step4_implementation_before.md` and `step4_implementation_do.md` › effort-estimation paragraphs repeat the same copy-not-rerate rule. Suggest one shared pointer.
+
+### Inapplicable instructions
+- Documentation-only verification rules: application change.
+- Follow-up cycle branch reuse: new branch.
+
+### Uncertain assessments
+- Step 3 named a reuse (`.new-post-button`) that Stage 2 then rejected. Unclear whether a reversed reuse decision needs renewed approval or only a recorded refinement; recorded as a refinement.
