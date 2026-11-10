@@ -51,7 +51,7 @@ if ($textBackupEnabled ?? true) {
         $sizeRows['Download: ' . $download['label']] = [
             'bytes' => $download['bytes'],
             'missing' => $download['on_request'] ? 'built on request' : 'unavailable',
-            'source' => $download['on_request'] ? 'last cached build for the current revision' : 'same file as Read-model database',
+            'source' => $download['source'],
         ];
     }
 }
@@ -153,8 +153,8 @@ if ($textBackupEnabled ?? true) {
       </tbody>
     </table>
   </article>
-  <details class="card codebase-sizes" data-role="codebase-sizes">
-    <summary><h2>Sizes</h2></summary>
+  <article class="card" data-role="codebase-sizes">
+    <h2>Sizes</h2>
     <table class="codebase-facts">
       <tbody>
 <?php foreach ($sizeRows as $label => $row): ?>
@@ -168,7 +168,7 @@ if ($textBackupEnabled ?? true) {
 <?php endforeach; ?>
       </tbody>
     </table>
-  </details>
+  </article>
   <article class="card" data-role="codebase-state">
 <?php if ($textBackupEnabled ?? true): ?>
     <h2>Downloads</h2>

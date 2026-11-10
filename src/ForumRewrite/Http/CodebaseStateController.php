@@ -166,18 +166,36 @@ final class CodebaseStateController
     /**
      * Archives are built on request, so their size is the cached build for
      * the current revision when one exists (null shows "built on request").
+     * The source still names the command for that cache slot, so anyone can
+     * check it once the archive has been built.
      *
-     * @return list<array{href: string, label: string, bytes: ?int, on_request: bool}>
+     * @return list<array{href: string, label: string, bytes: ?int, on_request: bool, source: string}>
      */
     private function downloads(): array
     {
         $backup = new ImageBackup($this->repositoryRoot, $this->databasePath, $this->projectRoot);
-
-        return [
-            ['href' => '/downloads/repository.tar.gz', 'label' => 'Content repository (.tar.gz)', 'bytes' => $backup->cachedBytes('tar.gz'), 'on_request' => true],
-            ['href' => '/downloads/repository.zip', 'label' => 'Content repository (.zip)', 'bytes' => $backup->cachedBytes('zip'), 'on_request' => true],
-            ['href' => '/downloads/read_model.sqlite3', 'label' => 'SQLite index database', 'bytes' => ByteSize::file($this->databasePath), 'on_request' => false],
+        $downloads = [];
+        foreach (['tar.gz' => 'Content repository (.tar.gz)', 'zip' => 'Content repository (.zip)'] as $kind => $label) {
+            $cached = $backup->cachedArchive($kind);
+            $downloads[] = [
+                'href' => '/downloads/repository.' . $kind,
+                'label' => $label,
+                'bytes' => $cached['bytes'],
+                'on_request' => true,
+                'source' => $cached['path'] !== null
+                    ? 'stat -c %s state/cache/' . $cached['path']
+                    : 'stat -c %s state/cache/' . \ForumRewrite\Images\ArchiveCache::DIRECTORY . '/*/archive.' . $kind,
+            ];
+        }
+        $downloads[] = [
+            'href' => '/downloads/read_model.sqlite3',
+            'label' => 'SQLite index database',
+            'bytes' => ByteSize::file($this->databasePath),
+            'on_request' => false,
+            'source' => 'stat -c %s state/cache/' . basename($this->databasePath),
         ];
+
+        return $downloads;
     }
 
     /**
