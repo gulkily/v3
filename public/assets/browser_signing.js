@@ -431,6 +431,8 @@
     });
   }
 
+  const anonymousComposeAttempts = new WeakMap();
+
   function serializeComposeDraft(form) {
     const fields = {};
     composeDraftFields(form).forEach(function (field) {
@@ -440,6 +442,7 @@
     return {
       fields: fields,
       savedAt: Date.now(),
+      anonymousAttempt: anonymousComposeAttempts.get(form),
     };
   }
 
@@ -530,6 +533,7 @@
       return false;
     }
 
+    if (draft.anonymousAttempt) anonymousComposeAttempts.set(form, draft.anonymousAttempt);
     let restoredAny = false;
     composeDraftFields(form).forEach(function (field) {
       if (!Object.prototype.hasOwnProperty.call(draft.fields, field.name)) {
@@ -546,6 +550,15 @@
     });
 
     return restoredAny;
+  }
+
+  function isBackForwardNavigation() {
+    try {
+      const entry = window.performance.getEntriesByType("navigation")[0];
+      return Boolean(entry) && entry.type === "back_forward";
+    } catch (error) {
+      return false;
+    }
   }
 
   function hasExplicitComposePrefill(fields) {
@@ -3508,10 +3521,10 @@
       }
     }
 
-    function restoreComposeUiState() {
+    function restoreComposeUiState({ persistDraft = true } = {}) {
       submitInFlight = false;
       setSubmitButtonsDisabled(false);
-      normalizeComposeFields({ removeUnsupported: false });
+      normalizeComposeFields({ removeUnsupported: false, persistDraft });
     }
 
     function resetComposeFormToServerState() {
@@ -3519,7 +3532,19 @@
       clearComposeDraft(form);
     }
 
+    function resetPublishedComposeForm() {
+      anonymousComposeAttempts.delete(form);
+      form.reset();
+      // A prefilled form can have the published text as its default value.
+      composeDraftFields(form).forEach(function (field) {
+        if (field.name === "subject" || field.name === "body") field.value = "";
+      });
+      if (window.ForumImageUpload) window.ForumImageUpload.clear(form);
+      delete form.__pendingImagePost;
+    }
+
     function clearComposeFields() {
+      anonymousComposeAttempts.delete(form);
       if (window.ForumImageUpload) window.ForumImageUpload.clear(form);
       const imageField = form.querySelector('[name="image"]');
       if (imageField) imageField.value = "";
@@ -3564,6 +3589,60 @@
         statusNode.dataset.kind = "";
       }
       renderTechnicalStatus(statusNode, "");
+    }
+
+    function anonymousComposeFields() {
+      const fields = collectSignedSubmitFields(form);
+      delete fields.author_identity_id;
+      return JSON.stringify(fields);
+    }
+
+    function attachAnonymousComposeAttempt() {
+      if (!(isThreadComposeForm(form) || isReplyComposeForm(form)) || isQuoteComposeForm(form)
+          || !window.crypto || typeof window.crypto.getRandomValues !== "function") return;
+      const fields = anonymousComposeFields();
+      let attempt = anonymousComposeAttempts.get(form);
+      if (!attempt || attempt.fields !== fields) {
+        const bytes = window.crypto.getRandomValues(new Uint8Array(16));
+        attempt = { fields, id: Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("") };
+        anonymousComposeAttempts.set(form, attempt);
+      }
+      let input = form.querySelector('[name="compose_attempt"]');
+      if (!input) {
+        input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "compose_attempt";
+        form.appendChild(input);
+      }
+      input.value = attempt.id;
+      saveComposeDraft(form);
+    }
+
+    async function reconcileAnonymousComposeAttempt() {
+      const attempt = anonymousComposeAttempts.get(form);
+      if (!attempt || !/^[a-f0-9]{32}$/.test(attempt.id) || attempt.fields !== anonymousComposeFields()) return;
+      const fields = JSON.stringify(serializeComposeDraft(form).fields);
+      const postId = (isReplyComposeForm(form) ? "reply-" : "thread-") + attempt.id;
+      try {
+        const response = await fetch("/api/get_post?post_id=" + encodeURIComponent(postId), { cache: "no-store" });
+        if (!response.ok) return;
+        const record = await response.text();
+        if (!record.split("\n").includes("Post-ID: " + postId)) return;
+        // Clear only text the server holds; a post that differs leaves the draft for a fresh send.
+        const sameText = (text) => text.replace(/\r\n?/g, "\n").trim().normalize("NFC");
+        const separator = record.indexOf("\n\n");
+        if (separator < 0 || sameText(record.slice(separator + 2)) !== sameText(composeFormFieldValue(form, "body"))) return;
+        if (submitInFlight || anonymousComposeAttempts.get(form) !== attempt
+            || attempt.fields !== anonymousComposeFields()
+            || JSON.stringify(serializeComposeDraft(form).fields) !== fields) return;
+        const saved = loadComposeDraft(form);
+        if (saved?.anonymousAttempt?.id !== attempt.id || JSON.stringify(saved.fields) !== fields) return;
+        clearComposeDraft(form);
+        resetPublishedComposeForm();
+        restoreComposeUiState({ persistDraft: false });
+      } catch (error) {
+        // A failed lookup leaves the draft available for a retry.
+      }
     }
 
     function isAnonymousComposeSubmitter(submitter) {
@@ -3612,6 +3691,7 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
+        publishedInThisForm = true;
         navigateToCanonicalReply(result);
         return true;
       } catch (error) {
@@ -3666,6 +3746,7 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
+        publishedInThisForm = true;
         navigateToCanonicalThread(result, composeFormFieldValue(form, "return_to"));
         return true;
       } catch (error) {
@@ -3693,6 +3774,7 @@
 
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
+        publishedInThisForm = true;
         navigateToCanonicalReply(result, composeFormFieldValue(form, "return_to"));
         return true;
       } catch (error) {
@@ -3745,11 +3827,21 @@
       void syncIdentityHint(preferredIdentityHint()).catch(function () {});
     }
 
+    let publishedInThisForm = false;
+
     if (root.dataset.composeSubmitted === "1") {
       resetComposeFormToServerState();
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     } else if (shouldHonorRecentlyClearedDraft()) {
-      resetComposeFormToServerState();
+      // A link opened after publishing carries new text; Back to one carries the published text.
+      if (hasExplicitComposePrefill(textFields) && !isBackForwardNavigation()) {
+        resetComposeFormToServerState();
+      } else {
+        resetPublishedComposeForm();
+        restoreComposeDraft(form);
+        // The browser restores typed text after this runs, so pageshow has to clear it again.
+        publishedInThisForm = isBackForwardNavigation();
+      }
       clearRecentlyClearedComposeDraftKey();
       normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
     } else if (hasExplicitComposePrefill(textFields)) {
@@ -3759,12 +3851,19 @@
       normalizeComposeFields({ removeUnsupported: false });
     }
 
+    // The server refused this attempt's ID for good; keep the text and send it under a fresh ID next time.
+    if (root.dataset.composeAttemptRetired !== undefined) {
+      anonymousComposeAttempts.delete(form);
+      saveComposeDraft(form);
+    }
+
     textFields.forEach(function (field) {
+      // Saving during a submit would bring the published text back after Back.
       field.addEventListener("input", function () {
-        normalizeComposeFields({ removeUnsupported: false });
+        normalizeComposeFields({ removeUnsupported: false, persistDraft: !submitInFlight });
       });
       field.addEventListener("change", function () {
-        saveComposeDraft(form);
+        if (!submitInFlight) saveComposeDraft(form);
       });
     });
 
@@ -3963,6 +4062,7 @@
         }
         if (isAnonymousComposeSubmitter(submitter)) {
           clearComposeAuthorIdentity(form);
+          attachAnonymousComposeAttempt();
           setStatus(statusNode, "Sending anonymous post...", "ok");
           markFirstFeedback(timing);
           completeActionTiming(timing, "submit");
@@ -3995,6 +4095,7 @@
           if (!result.ok) throw new Error(result.error);
           clearComposeDraftForPendingSubmit(form);
           completeActionTiming(timing, "ok");
+          publishedInThisForm = true;
           if (isReplyComposeForm(form)) navigateToCanonicalReply(result, composeFormFieldValue(form, "return_to"));
           else navigateToCanonicalThread(result, composeFormFieldValue(form, "return_to"));
           return;
@@ -4041,22 +4142,26 @@
       }
     });
 
-    window.addEventListener("pageshow", function () {
+    window.addEventListener("pageshow", function (event) {
       clearPendingComposeArtifacts(root, form);
       clearTransientComposeStatus();
       refreshComposeIdentityFromStorage();
 
-      if (shouldHonorRecentlyClearedDraft()) {
-        resetComposeFormToServerState();
+      if (publishedInThisForm || shouldHonorRecentlyClearedDraft()) {
+        publishedInThisForm = false;
+        resetPublishedComposeForm();
         refreshComposeIdentityFromStorage();
-        clearRecentlyClearedComposeDraftKey();
-        normalizeComposeFields({ removeUnsupported: false, persistDraft: false });
+        if (shouldHonorRecentlyClearedDraft()) clearRecentlyClearedComposeDraftKey();
+        restoreComposeDraft(form);
+        restoreComposeUiState({ persistDraft: false });
         return;
       }
 
       restoreComposeUiState();
+      if (event && event.persisted) void reconcileAnonymousComposeAttempt();
     });
 
+    void reconcileAnonymousComposeAttempt();
     return true;
   }
 

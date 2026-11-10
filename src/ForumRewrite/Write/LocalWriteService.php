@@ -129,10 +129,19 @@ class LocalWriteService
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
 
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
+            $attemptId = !$isQdbQuote && $authorIdentityId === null ? $this->composeAttemptPostId('thread', $input) : null;
+            if ($attemptId !== null) {
+                $postId = $attemptId;
+                $createdAt = $this->composeAttemptCreatedAt($postId) ?? $createdAt;
+            }
             $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input));
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            $recordPath = $attemptId !== null ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
+            if ($attemptId !== null && ($replay = $this->replayComposeAttempt($record, $recordPath, $contents)) !== null) {
+                $this->invalidator()->invalidateBoardThread($postId);
+                return $replay;
+            }
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
             $phaseStartedAt = hrtime(true);
@@ -191,10 +200,14 @@ class LocalWriteService
 
             $this->assertReplyTarget($threadId, $parentId);
 
+            $attemptId = $authorIdentityId === null && $agentResponse === null && $signer === null ? $this->composeAttemptPostId('reply', $input) : null;
+            if ($attemptId !== null) {
+                $createdAt = $this->composeAttemptCreatedAt($attemptId) ?? $createdAt;
+            }
             $postId = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
-                ? \ForumRewrite\Canonical\AgentResponseMetadata::expansionId($parentId) : $this->generateRecordId('reply');
+                ? \ForumRewrite\Canonical\AgentResponseMetadata::expansionId($parentId) : ($attemptId ?? $this->generateRecordId('reply'));
             $existingPath = CanonicalPathResolver::post($postId);
-            if (is_file($this->repositoryRoot . '/' . $existingPath)) {
+            if ($attemptId === null && is_file($this->repositoryRoot . '/' . $existingPath)) {
                 $existing = $this->canonicalRepository->loadPost($existingPath);
                 if (($existing->agentResponse['expansion_of'] ?? null) !== $parentId || $existing->authorIdentityId !== $authorIdentityId) {
                     throw new RuntimeException('Expansion publication identity conflict.');
@@ -212,8 +225,12 @@ class LocalWriteService
             $contents = $this->buildReplyPostRecord($postId, $createdAt, $boardTags, $threadId, $parentId, $body, $authorIdentityId, $agentResponse, $this->normalizeBodyFormat($input, PostRecord::FORMAT_MARKDOWN), $this->normalizeTheme($input));
 
             $record = (new PostRecordParser())->parse($contents);
-            $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION
+            $recordPath = ($agentResponse['type'] ?? '') === \ForumRewrite\Canonical\AgentResponseMetadata::EXPANSION || $attemptId !== null
                 ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
+            if ($attemptId !== null && ($replay = $this->replayComposeAttempt($record, $recordPath, $contents)) !== null) {
+                $this->invalidator()->invalidateReply($threadId, $postId);
+                return $replay;
+            }
             $threadLabels = $this->extractThreadLabelsFromBody($body);
             $labelRecordPath = null;
             $signature = null;
@@ -4101,6 +4118,100 @@ class LocalWriteService
         }
 
         return QdbQuoteNumbers::mint(gmdate('YmdHis'), QdbQuoteNumbers::nextAvailable($this->readModelPdo()));
+    }
+
+    /**
+     * A retried anonymous submission keeps one post ID, so a lost response cannot publish twice.
+     * The ID holds no date: the server alone decides when a post was created.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function composeAttemptPostId(string $prefix, array $input): ?string
+    {
+        $attempt = $input['compose_attempt'] ?? null;
+        if ($attempt === null) {
+            return null;
+        }
+        if (!is_string($attempt) || preg_match('/^[a-f0-9]{32}$/D', $attempt) !== 1) {
+            throw new ComposeAttemptRetired('Invalid compose attempt.', is_string($attempt) ? $attempt : '');
+        }
+        $postId = $prefix . '-' . $attempt;
+        if ((\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete'
+            || (\ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete') {
+            throw new ComposeAttemptRetired('An earlier send of this post was removed. Post again to publish it as a new post.', $attempt);
+        }
+
+        return $postId;
+    }
+
+    /** An earlier try's time keeps the retried record byte-identical. */
+    private function composeAttemptCreatedAt(string $postId): ?string
+    {
+        $path = $this->repositoryRoot . '/' . CanonicalPathResolver::post($postId);
+        if (!is_file($path)) {
+            return null;
+        }
+        try {
+            return (new PostRecordParser())->parse((string) file_get_contents($path))->createdAt;
+        } catch (RuntimeException) {
+            return null;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null the published result, or null when the record still has to be committed
+     */
+    private function replayComposeAttempt(PostRecord $record, string $recordPath, string $contents): ?array
+    {
+        $path = $this->repositoryRoot . '/' . $recordPath;
+        if (!is_file($path)) {
+            return null;
+        }
+        // A commit that failed or died leaves the file behind; committing it now finishes that try.
+        $committed = trim($this->runGitCommand(['status', '--porcelain', '--', $recordPath], 'Unable to inspect compose submission')) === '';
+        if (!$committed && $this->composeAttemptCreatedAt($record->postId) === null) {
+            return null;
+        }
+        if (rtrim((string) file_get_contents($path), "\n") !== rtrim($contents, "\n")) {
+            // Never stuck: the browser drops this ID and the next send publishes under a fresh one.
+            throw new ComposeAttemptRetired(
+                'This post does not match its earlier send. Post again to publish it as a new post.',
+                substr($record->postId, strpos($record->postId, '-') + 1)
+            );
+        }
+        if (!$committed) {
+            return null;
+        }
+
+        $head = trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read publication head'));
+        $repair = $this->staleMarker()->exists() || !$this->readModelHasPost($record->postId);
+        if ($repair) {
+            $this->refreshDerivedStateAfterCommit($head);
+        }
+
+        return [
+            'status' => 'ok',
+            'post_id' => $record->postId,
+            'thread_id' => $record->threadId ?? $record->postId,
+            'commit_sha' => $head,
+            // Only a repair can mean the first request died before enqueueing the post.
+            'fastmod_new_post' => $repair,
+        ];
+    }
+
+    private function readModelHasPost(string $postId): bool
+    {
+        if (!is_file($this->databasePath)) {
+            return false;
+        }
+        try {
+            $query = $this->readModelPdo()->prepare('SELECT 1 FROM posts WHERE post_id = ?');
+            $query->execute([$postId]);
+
+            return $query->fetchColumn() !== false;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function assertQdbQuoteAuthoring(): void
