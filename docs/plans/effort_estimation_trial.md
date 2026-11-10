@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/signed_post_speed
+
+2026-11-10T00:25:58Z — v3/signed_post_speed Step 1 handoff (standing P2 enrollment; first item of the [rebuild triggers checklist](./rebuild_triggers_checklist.md), no parent): [assessment/checkpoint](./signed_post_speed_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (signed bundle reuses identity and post targeted updates; replay skips a current read model; fallbacks log why). Starting revision `60ff7fd`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing. Intake and projected total **0.25**; option estimates 0.25/0.10/0.30, non-additive. Await Approved Step 1.
+
 ## Cycle v3/retraction_speed
 
 2026-11-10T00:06:59Z — v3/retraction_speed accepted outcome: merged as #119 (`8a189ab`); the maintainer retracted a post on the live site and reported it "worked very quickly" (qualitative, no timing). Stage 3 retrospective 0.07; retrospective scope assessment stays 0.22. Maintainer comfortable-fit judgment not stated.
