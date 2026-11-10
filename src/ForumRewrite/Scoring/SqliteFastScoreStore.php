@@ -534,16 +534,6 @@ final class SqliteFastScoreStore implements FastScoreStore
         $stmt->execute(['updated_at' => $now]);
     }
 
-    /** @return array<string, int> */
-    public function workCounts(): array
-    {
-        $counts = [];
-        foreach ($this->pdo->query('SELECT state, COUNT(*) AS count FROM fast_score_work GROUP BY state')->fetchAll() as $row) {
-            $counts[(string) $row['state']] = (int) $row['count'];
-        }
-        return $counts;
-    }
-
     /** @return array{regular:array<string,int>,backfill:array<string,int>} */
     public function actionableWorkCountsByOrigin(): array
     {

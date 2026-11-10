@@ -74,29 +74,4 @@ final class FastScoringConfig
     {
         return trim((string) $value);
     }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function headers(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $headers = [];
-        foreach ($value as $name => $headerValue) {
-            if (!is_string($name)) {
-                continue;
-            }
-
-            $name = trim($name);
-            $headerValue = trim((string) $headerValue);
-            if ($name !== '' && $headerValue !== '') {
-                $headers[$name] = $headerValue;
-            }
-        }
-
-        return $headers;
-    }
 }

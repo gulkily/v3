@@ -209,11 +209,6 @@ final class CommitMap
         return self::DIRECTORY . '/history-rewrite-' . $stamp . ($part > 1 ? '-' . $part : '') . '.txt';
     }
 
-    public static function isRecordPath(string $relativePath): bool
-    {
-        return preg_match(self::PATH, $relativePath) === 1;
-    }
-
     private static function sha(string $value): bool
     {
         return preg_match('/^[0-9a-f]{40}$/D', $value) === 1;
