@@ -135,6 +135,44 @@ final class PrivateConfigCommandTest
         }
     }
 
+    public function testRefreshTemplateShowsOptionalSettingsAsCommentsUnlessSet(): void
+    {
+        $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
+        mkdir(dirname($secretsPath), 0700, true);
+        file_put_contents($secretsPath, "<?php\n\nreturn ['FORUM_SITE_ID' => 'qdb'];\n");
+
+        try {
+            $this->runCommand(dirname(__DIR__), './v3 private-config refresh-template --path=' . escapeshellarg($secretsPath));
+            $contents = (string) file_get_contents($secretsPath);
+            $config = require $secretsPath;
+
+            assertSame('qdb', $config['FORUM_SITE_ID']);
+            assertStringNotContains("// 'FORUM_SITE_ID'", $contents);
+            assertStringContains("    // 'FORUM_DATABASE_PATH' => '/home/forum/state/read_model.sqlite3',\n", $contents);
+            assertStringContains("    // 'FAST_SCORING_RUBRICS' => ['moderation', 'meta'],\n", $contents);
+            assertFalse(array_key_exists('FORUM_DATABASE_PATH', $config));
+
+            $this->runCommand(dirname(__DIR__), './v3 private-config refresh-template --path=' . escapeshellarg($secretsPath));
+            assertSame($contents, (string) file_get_contents($secretsPath));
+        } finally {
+            @unlink($secretsPath);
+            @unlink($secretsPath . '.lock');
+            @rmdir(dirname($secretsPath));
+        }
+    }
+
+    public function testEverySchemaKeyIsInTheTemplateAsALiveOrCommentedLineOrDeliberatelyOmitted(): void
+    {
+        $schema = \ForumRewrite\Support\PrivateConfigSchema::class;
+        $covered = array_keys($schema::templateDefaults());
+        foreach ($schema::optionalTemplateExamples() as $group) {
+            $covered = [...$covered, ...array_keys($group['examples'])];
+        }
+        $covered = [...$covered, ...$schema::keysOmittedFromTemplate()];
+
+        assertSame([], array_values(array_diff($schema::environmentKeys(), $covered)));
+    }
+
     public function testGeneratedAndRefreshedConfigIncludesEverySchemaTemplateSetting(): void
     {
         $secretsPath = sys_get_temp_dir() . '/forum-rewrite-private-config-' . bin2hex(random_bytes(6)) . '/secrets.php';
