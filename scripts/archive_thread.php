@@ -342,9 +342,8 @@ function commitArchiveRemoval(string $repositoryRoot, string $threadId, array $c
         return null;
     }
 
-    $pathspec = implode(' ', array_map('escapeshellarg', $trackedPaths));
-    runGit($repositoryRoot, 'add -u -- ' . $pathspec);
-    runGit($repositoryRoot, 'commit --only -m ' . escapeshellarg('Archive thread ' . $threadId) . ' -- ' . $pathspec);
+    runGit($repositoryRoot, ['add', '-u', '--', ...$trackedPaths]);
+    runGit($repositoryRoot, ['commit', '--only', '-m', 'Archive thread ' . $threadId, '--', ...$trackedPaths]);
 
     return sourceCommit($repositoryRoot);
 }
@@ -362,13 +361,15 @@ function isGitTracked(string $repositoryRoot, string $relativePath): bool
     return $exitCode === 0;
 }
 
-function runGit(string $repositoryRoot, string $arguments): string
+/** @param list<string> $arguments git arguments; each is shell-escaped */
+function runGit(string $repositoryRoot, array $arguments): string
 {
     $output = [];
     $exitCode = 0;
-    exec('git -C ' . escapeshellarg($repositoryRoot) . ' ' . $arguments . ' 2>&1', $output, $exitCode);
+    $command = ['git', '-C', $repositoryRoot, ...$arguments];
+    exec(implode(' ', array_map('escapeshellarg', $command)) . ' 2>&1', $output, $exitCode);
     if ($exitCode !== 0) {
-        throw new RuntimeException('Git command failed: git ' . $arguments . "\n" . implode("\n", $output));
+        throw new RuntimeException('Git command failed: git ' . implode(' ', $arguments) . "\n" . implode("\n", $output));
     }
 
     return implode("\n", $output);
