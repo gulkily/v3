@@ -19,7 +19,7 @@ final class HighTrafficPostRefreshTest
         [$repository, $database, $public, $cache, $restore] = $this->environment();
         try {
             $service = $this->service($repository, $database, $public);
-            $route = '/threads/root-001/';
+            $route = '/threads/root-001';
             $cache->atomic($cache->path($route), 'old HTML');
 
             $result = $service->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => 'Fresh reply for the cache test.']);
@@ -44,7 +44,7 @@ final class HighTrafficPostRefreshTest
             // A new thread has no cached page yet: nothing to refresh, first reader generates it.
             $thread = $service->createThread(['board_tags' => 'general', 'subject' => 'Cache test thread', 'body' => 'Opening post.']);
             assertSame('ok', $thread['status']);
-            $route = '/threads/' . $thread['thread_id'] . '/';
+            $route = '/threads/' . $thread['thread_id'];
             assertSame(false, is_file($cache->path($route)));
 
             // A render that cannot run (page lock held) leaves the post saved and the route queued.
@@ -70,7 +70,7 @@ final class HighTrafficPostRefreshTest
         [$repository, $database, $public, $cache, $restore] = $this->environment();
         try {
             unlink($public . '/.high-traffic');
-            $route = '/threads/root-001/';
+            $route = '/threads/root-001';
             $cache->atomic($cache->path($route), 'old HTML');
             $result = $this->service($repository, $database, $public)->createReply(['thread_id' => 'root-001', 'parent_id' => 'root-001', 'body' => 'Reply with the mode off.']);
             assertSame('ok', $result['status']);

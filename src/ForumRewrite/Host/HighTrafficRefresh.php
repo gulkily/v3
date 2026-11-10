@@ -109,7 +109,7 @@ final class HighTrafficRefresh
     public function afterPost(string $threadId): string
     {
         try {
-            $route=HighTrafficRoute::canonical('/threads/' . $threadId . '/');
+            $route=HighTrafficRoute::canonical('/threads/' . $threadId);
             if ($route===null) return 'skipped';
             if (!$this->cache->enabled()) return 'inactive';
             if (!is_file($this->cache->path($route))) return 'skipped';
