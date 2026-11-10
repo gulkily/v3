@@ -90,6 +90,84 @@ final class PrivateConfigSchema
         return $defaults;
     }
 
+    /**
+     * Optional file settings that refresh-template shows as commented-out examples
+     * when the file does not set them. Values set in the file are kept as live lines.
+     *
+     * @return list<array{comment:string,examples:array<string,mixed>}>
+     */
+    public static function optionalTemplateExamples(): array
+    {
+        return [
+            [
+                'comment' => 'Deployment identity and instance paths. Omit for the built-in defaults; an environment variable still overrides.',
+                'examples' => [
+                    'FORUM_SITE_ID' => 'qdb',
+                    'FORUM_REPOSITORY_ROOT' => '/home/forum/repository',
+                    'FORUM_DATABASE_PATH' => '/home/forum/state/read_model.sqlite3',
+                    'FORUM_STATIC_HTML_ROOT' => '/home/forum/state/static_html',
+                    'FORUM_PUBLIC_ARTIFACT_ROOT' => '/home/forum/public_html',
+                    'FORUM_IMAGE_ROOT' => '/home/forum/images',
+                ],
+            ],
+            [
+                'comment' => 'Private database locations. Omit to keep them under state/private/.',
+                'examples' => [
+                    'LLM_EXCHANGE_DATABASE_PATH' => '/home/forum/private/llm_exchanges.sqlite3',
+                    'VISITOR_STATISTICS_DATABASE_PATH' => '/home/forum/private/visitor_statistics.sqlite3',
+                    'PRIVATE_MESSAGE_DATABASE_PATH' => '/home/forum/private/messages.sqlite3',
+                    'PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH' => '/home/forum/private/message_history_sync.sqlite3',
+                    'VIEWER_SESSION_DATABASE_PATH' => '/home/forum/private/viewer_sessions.sqlite3',
+                ],
+            ],
+            [
+                'comment' => 'Fastmod overrides. Each falls back to the matching LLM_* value; pricing enables cost reports.',
+                'examples' => [
+                    'FAST_SCORING_LLM_PROVIDER' => 'openrouter',
+                    'FAST_SCORING_LLM_API_KEY' => 'replace-with-real-key',
+                    'FAST_SCORING_LLM_API_BASE_URL' => 'https://openrouter.ai/api',
+                    'FAST_SCORING_LLM_TIMEOUT_SECONDS' => 60,
+                    'FAST_SCORING_LLM_EXTRA_HEADERS' => [],
+                    'FAST_SCORING_INPUT_USD_PER_MILLION' => 0.05,
+                    'FAST_SCORING_OUTPUT_USD_PER_MILLION' => 0.40,
+                    'FAST_SCORING_RUBRICS' => ['moderation', 'meta'],
+                ],
+            ],
+            [
+                'comment' => 'Operational tuning.',
+                'examples' => [
+                    'FORUM_EXECUTION_LOCK_TIMEOUT_SECONDS' => 5,
+                    'SCRIPTURE_RESPONSE_TIMING_ENABLED' => true,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Schema keys deliberately absent from the template: site feature flags are
+     * changed in Tools, and DEDALUS_* names are legacy fallbacks for LLM_* settings.
+     *
+     * @return list<string>
+     */
+    public static function keysOmittedFromTemplate(): array
+    {
+        return [
+            'FORUM_LIST_THUMBNAILS_ENABLED',
+            'FORUM_IMAGE_GALLERY_ENABLED',
+            'FORUM_TAG_LINKS_ENABLED',
+            'FORUM_STATIC_PROFILE_PAGES_ENABLED',
+            'FORUM_IMAGE_BACKUP_ENABLED',
+            'FORUM_TEXT_BACKUP_ENABLED',
+            'FASTMOD_AUTOMATIC_TAGGING_ENABLED',
+            'DEDALUS_API_KEY',
+            'DEDALUS_API_BASE_URL',
+            'DEDALUS_MODEL',
+            'DEDALUS_TIMEOUT_SECONDS',
+            'DEDALUS_POST_ANALYSIS_PROMPT_PATH',
+            'DEDALUS_ANALYSIS_MODE',
+        ];
+    }
+
     /** @return list<string> */
     public static function environmentKeys(): array
     {

@@ -417,6 +417,19 @@ function renderPrivateConfigFile(array $config, array $existing, bool $includeCo
         }
     }
 
+    if ($includeComments) {
+        foreach (\ForumRewrite\Support\PrivateConfigSchema::optionalTemplateExamples() as $group) {
+            $unset = array_diff_key($group['examples'], $existing);
+            if ($unset === []) {
+                continue;
+            }
+            $contents .= "\n    // " . $group['comment'] . "\n";
+            foreach ($unset as $key => $example) {
+                $contents .= '    // ' . var_export($key, true) . ' => ' . renderExampleValue($example) . ",\n";
+            }
+        }
+    }
+
     $contents .= "];\n";
     if ($includeComments) {
         $contents .= "\n// Provider examples. Copy the relevant values into the returned array above.\n"
@@ -470,6 +483,15 @@ function printUpdateReminder(string $path): void
 function renderConfigLine(string $key, mixed $value): string
 {
     return '    ' . var_export($key, true) . ' => ' . var_export($value, true) . ",\n";
+}
+
+/** One-line PHP literal for a commented-out example. */
+function renderExampleValue(mixed $value): string
+{
+    if (is_array($value)) {
+        return '[' . implode(', ', array_map('renderExampleValue', $value)) . ']';
+    }
+    return var_export($value, true);
 }
 
 function printUsage(): void
