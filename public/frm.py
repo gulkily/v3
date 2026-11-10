@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Portable forum client. Python 3 standard library, curl and GPG; no packages."""
-FRM_VERSION = "2026-11-09"
+FRM_VERSION = "2026-11-10"
 
 import argparse
 import datetime
@@ -18,7 +18,7 @@ import sys
 import tempfile
 import time
 from email.utils import parsedate_to_datetime
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import quote, urlencode, urlsplit
 
 
 class ClientError(Exception):
@@ -56,8 +56,10 @@ def site_url(value):
     return value.rstrip('/')
 
 
-def request(site, route, fields=None, timeout=60):
-    """One request. Never forward authored data via redirects. No curl config/cookies."""
+def request(site, route, fields=None, timeout=60, files=None):
+    """One request. Never forward authored data via redirects. No curl config/cookies.
+
+    files maps a form field to (path, content type) and sends the request as multipart."""
     if not shutil.which('curl'):
         raise ClientError('curl is required. Install it using your operating system tools.')
     TRACE['route'] = route.split('?', 1)[0]
@@ -68,7 +70,15 @@ def request(site, route, fields=None, timeout=60):
                    '--proto', '=http,https', '--output', str(body), '--dump-header', str(headers),
                    '--write-out', '%{http_code}']
         data = None
-        if fields is not None:
+        if files:
+            # Field values go through files so curl never reads @ or < at the start of authored text.
+            for index, (name, value) in enumerate((fields or {}).items()):
+                part = Path(directory) / ('field-%d' % index)
+                part.write_bytes(value.encode('utf-8'))
+                command += ['--form', '%s=<%s' % (name, part)]
+            for name, (path, kind) in files.items():
+                command += ['--form', '%s=@%s;type=%s' % (name, path, kind)]
+        elif fields is not None:
             command += ['--data-binary', '@-', '--header', 'Content-Type: application/x-www-form-urlencoded']
             data = urlencode(fields).encode('utf-8')
         result = subprocess.run(command + [site + route], input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -191,9 +201,9 @@ def sign(operation, key, source, target):
     gpg_run(key['Home'], arguments)
 
 
-def api(site, route, fields, args, operation=None):
+def api(site, route, fields, args, operation=None, files=None):
     for attempt in range(args.retries + 1):
-        status, text, headers = request(site, route, fields, args.timeout)
+        status, text, headers = request(site, route, fields, args.timeout, files)
         try:
             result = json.loads(text)
         except ValueError:
@@ -248,7 +258,10 @@ def payload_from(operation, meta):
 def submit(operation, meta, args):
     meta['State'] = 'sending'
     save_meta(operation / 'operation.txt', meta)
-    result = api(meta['Site'], meta['Route'], payload_from(operation, meta), args, operation)
+    files = None
+    if meta.get('Image') and meta['Route'] == '/api/create_prepared_post':
+        files = {'image': (operation / meta['Image'], IMAGE_TYPES[meta['Image'].rsplit('.', 1)[1]])}
+    result = api(meta['Site'], meta['Route'], payload_from(operation, meta), args, operation, files)
     expected = meta.get('Post-ID')
     if expected and result.get('post_id') != expected:
         raise ClientError('Unexpected publication ID. Keep this operation and check its saved Post-ID.')
@@ -266,6 +279,13 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
     if not original.strip(' \t\r\n\0\x0b'):
         raise ClientError('Body is required.')
     protocol = saved_meta['Protocol'] if saved_meta else discover(site, args.timeout)
+    image = None
+    if not saved_meta and getattr(args, 'image', None):
+        if re.search(r'(?m)^Image-v1:', original):
+            raise ClientError('Remove the Image-v1 line from the body; --image adds it.')
+        image = image_reference(args.image, args.image_description or '')
+        # Only the prepared publish accepts the image file.
+        protocol = 'prepared'
     key = saved_key or identity(args, directory)
     fingerprint = key['Fingerprint']
     author = 'openpgp:' + fingerprint.lower()
@@ -277,6 +297,10 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
         save_meta(operation / 'key.txt', key)
         meta = {'Site': site, 'Protocol': protocol, 'Kind': args.command, 'State': 'preparing', 'Identity-ID': author,
                 'Thread-ID': args.thread or '', 'Parent-ID': args.parent or args.thread or ''}
+        if image:
+            # The operation keeps its own copy, so a resume sends the bytes that were signed.
+            shutil.copyfile(args.image, operation / ('image.' + image[0]))
+            meta.update({'Image': 'image.' + image[0], 'Image-Line': image[1]})
         save_meta(operation / 'operation.txt', meta)
     else:
         meta = saved_meta
@@ -340,6 +364,54 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
         raise error
 
 
+IMAGE_TYPES = {'png': 'image/png', 'jpg': 'image/jpeg'}
+IMAGE_MAX_BYTES = 5 * 1024 * 1024
+IMAGE_MAX_SIDE = 4096
+
+
+def image_size(data, kind):
+    """Pixel width and height from a PNG IHDR or a JPEG start-of-frame segment."""
+    if kind == 'png':
+        if len(data) < 24 or data[12:16] != b'IHDR':
+            raise ClientError('Image is not a readable PNG.')
+        return int.from_bytes(data[16:20], 'big'), int.from_bytes(data[20:24], 'big')
+    position = 2
+    while position + 4 <= len(data):
+        if data[position] != 0xFF:
+            raise ClientError('Image is not a readable JPEG.')
+        marker = data[position + 1]
+        if marker == 0xFF:
+            position += 1
+            continue
+        if marker in (0xD8, 0x01) or 0xD0 <= marker <= 0xD7:
+            position += 2
+            continue
+        length = int.from_bytes(data[position + 2:position + 4], 'big')
+        if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF) and position + 9 <= len(data):
+            return int.from_bytes(data[position + 7:position + 9], 'big'), int.from_bytes(data[position + 5:position + 7], 'big')
+        position += 2 + length
+    raise ClientError('Image is not a readable JPEG.')
+
+
+def image_reference(path, description):
+    """Check one PNG/JPEG against the server's limits; return (type, signed Image-v1 line)."""
+    data = Path(path).read_bytes()
+    kind = 'png' if data.startswith(b'\x89PNG\r\n\x1a\n') else 'jpg' if data.startswith(b'\xff\xd8\xff') else None
+    if kind is None:
+        raise ClientError('Images must be PNG or JPEG.')
+    if len(data) > IMAGE_MAX_BYTES:
+        raise ClientError('Images are limited to 5 MiB.')
+    width, height = image_size(data, kind)
+    if not (0 < width <= IMAGE_MAX_SIDE and 0 < height <= IMAGE_MAX_SIDE):
+        raise ClientError('Images are limited to %d pixels per side.' % IMAGE_MAX_SIDE)
+    if len(description.encode('utf-8')) > 500 or re.search('[\x00-\x1f\x7f]', description):
+        raise ClientError('Image descriptions must be at most 500 bytes and contain no control characters.')
+    line = 'Image-v1: %s %s %d %d %d' % (hashlib.sha256(data).hexdigest(), kind, len(data), width, height)
+    if description:
+        line += ' ' + quote(description, safe='')
+    return kind, line
+
+
 def board_tags(value):
     value = ' '.join(value.split())
     if not re.fullmatch(r'[a-z0-9-]+(?: [a-z0-9-]+)*', value) or 'identity' in value.split():
@@ -363,6 +435,8 @@ def prepared_post(operation, meta, args, key, public, body):
         meta['State'] = 'registered'; save_meta(operation / 'operation.txt', meta)
     elif status != 200 or ('Identity-ID: ' + author) not in text.splitlines():
         raise ClientError('Cannot resolve existing registration. Check instance access and the saved identity.')
+    if meta.get('Image-Line'):
+        body = body.rstrip() + '\n\n' + meta['Image-Line']
     fields = {'author_identity_id': author, 'body': body}
     if args.command == 'thread':
         fields['subject'] = args.subject
@@ -617,6 +691,8 @@ def parser():
         q.add_argument('--thread')
         q.add_argument('--parent')
         q.add_argument('--tags', default='general', type=board_tags, help='Space-separated lowercase board tags (default: general)')
+        q.add_argument('--image', help='Attach one PNG or JPEG (at most 5 MiB and 4096 pixels per side); needs an approved key on an instance with images enabled')
+        q.add_argument('--image-description', default='', help='Short description of the image (alt text, at most 500 bytes)')
         q.add_argument('--name', default='frm-agent', help='User ID for generated unencrypted local key (default: frm-agent)')
         q.add_argument('--signing-key', help='Reuse one existing primary secret key; GPG/pinentry handles its passphrase')
         q.add_argument('--gpg-home', help='Keyring for --signing-key; otherwise GNUPGHOME/default GPG home')
@@ -636,12 +712,14 @@ def main():
         if args.timeout <= 0:
             raise ClientError('--timeout must be positive.')
         if args.command in ('thread', 'reply'):
-            if args.resume and any((args.body_file, args.subject, args.thread, args.parent, args.signing_key, args.gpg_home)):
+            if args.resume and any((args.body_file, args.subject, args.thread, args.parent, args.signing_key, args.gpg_home, args.image, args.image_description)):
                 raise ClientError('--resume uses saved inputs; do not combine it with new content or key options.')
             if not args.resume and (not args.body_file or (args.command == 'reply' and not args.thread)):
                 raise ClientError('New writes require --body-file; replies also require --thread.')
             if (args.command == 'thread' and (args.thread or args.parent)) or (args.command == 'reply' and args.subject):
                 raise ClientError('Use subject for threads, thread/parent for replies.')
+            if args.image_description and not args.image:
+                raise ClientError('--image-description needs --image.')
             result = write_post(args, site)
             report_trouble(args, site)
             return result

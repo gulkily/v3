@@ -236,6 +236,37 @@ final class FrmClientTest
         } finally {$server->close();}
     }
 
+    public function testImageAttachmentNeedsApprovalThenPublishesTheSignedBytes(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_IMAGE_CONTENT_ENABLED'=>'true']);
+        try {
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            file_put_contents($root.'/pixel.png',ImageContentTest::png());
+            file_put_contents($root.'/body.txt',"Screenshot attached.\n");
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'image'),'--retries','0'];
+            $image=['--no-report','--image',$root.'/pixel.png','--image-description','One white pixel (test)'];
+            // Unapproved key: the server refuses the image, so nothing is published and the draft is kept.
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Picture','--body-file',$root.'/body.txt'],$image));
+            assertSame(2,$code,$out); assertStringContains('Rejected:',$out);
+            preg_match('/Identity-ID: (openpgp:[0-9a-f]{40})/',$out,$m); $identity=$m[1];
+            $seed=\ForumRewrite\Canonical\CanonicalPathResolver::approvalSeed(substr($identity,8));
+            @mkdir(dirname($repo.'/'.$seed),0777,true);
+            file_put_contents($repo.'/'.$seed,"Approved-Identity-ID: {$identity}\nSeed-Reason: frm image test\n\n");
+            $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$tx->git(['add',$seed]);$tx->git(['commit','-qm','Approve frm image author']);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($repo,$db,new \ForumRewrite\Canonical\CanonicalRecordRepository($repo)))->rebuild();
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Picture','--body-file',$root.'/body.txt'],$image));
+            assertSame(0,$code,$out); assertStringContains('Status: accepted',$out);
+            preg_match('/Post-ID: (\S+)/',$out,$m); $post=file_get_contents($server->url.'/api/get_post?post_id='.$m[1]);
+            $hash=hash('sha256',ImageContentTest::png());
+            assertStringContains("Screenshot attached.\n\nImage-v1: {$hash} png ".strlen(ImageContentTest::png()).' 1 1 One%20white%20pixel%20%28test%29',$post);
+            assertSame(ImageContentTest::png(),file_get_contents($server->url.'/images/'.$hash.'.png'));
+            // A body that already carries a reference is refused before anything is sent.
+            file_put_contents($root.'/twice.txt',"Two.\n\nImage-v1: {$hash} png 1 1 1\n");
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Twice','--body-file',$root.'/twice.txt'],$image));
+            assertSame(2,$code,$out); assertStringContains('--image adds it',$out);
+            foreach (glob(self::stateDir($root,'image').'/*/keyring') as $home) \ForumRewrite\Security\GpgHomeCleaner::dispose($home);
+        } finally {$server->close();}
+    }
     public function testDownloadedReaderAndPublicDelivery(): void
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();

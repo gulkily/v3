@@ -14,6 +14,67 @@ frm = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(frm)
 
 
+def png(width, height):
+    import struct, zlib
+    def chunk(kind, data):
+        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+    rows = b''.join(b'\x00' + b'\xff\xff\xff' * width for _ in range(height))
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(rows)) + chunk(b'IEND', b''))
+
+
+def jpeg_header(width, height):
+    """Start of a baseline JPEG: SOI, an APP0 segment, then SOF0 with the size."""
+    app0 = b'\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00'
+    sof0 = b'\xff\xc0\x00\x11\x08' + height.to_bytes(2, 'big') + width.to_bytes(2, 'big') + b'\x03' + b'\x01\x11\x00\x02\x11\x01\x03\x11\x01'
+    return b'\xff\xd8' + app0 + sof0 + b'\xff\xd9'
+
+
+class ImageAttachmentTest(unittest.TestCase):
+    def reference(self, data, description=''):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'image'
+            path.write_bytes(data)
+            return frm.image_reference(path, description)
+
+    def test_png_and_jpeg_lines_match_the_browser_format(self):
+        import hashlib
+        data = png(3, 2)
+        kind, line = self.reference(data, "Tools card (live) it's fine!*")
+        self.assertEqual('png', kind)
+        self.assertEqual('Image-v1: %s png %d 3 2 Tools%%20card%%20%%28live%%29%%20it%%27s%%20fine%%21%%2A' % (hashlib.sha256(data).hexdigest(), len(data)), line)
+        kind, line = self.reference(jpeg_header(640, 480))
+        self.assertEqual('jpg', kind)
+        self.assertRegex(line, r'^Image-v1: [0-9a-f]{64} jpg \d+ 640 480$')
+
+    def test_server_limits_are_checked_before_any_request(self):
+        for data, description, message in [(b'GIF89a....', '', 'PNG or JPEG'), (png(4097, 1), '', '4096'),
+                                           (png(1, 1), 'x' * 501, '500 bytes'), (png(1, 1), 'tab\there', 'control'),
+                                           (b'\xff\xd8\xff\xe0\x00\x02', '', 'readable JPEG')]:
+            with self.assertRaisesRegex(frm.ClientError, message):
+                self.reference(data, description)
+        with patch.object(frm, 'IMAGE_MAX_BYTES', 10), self.assertRaisesRegex(frm.ClientError, '5 MiB'):
+            self.reference(png(1, 1))
+
+    def test_multipart_sends_fields_from_files_and_the_image(self):
+        seen = {}
+        def fake_run(command, input=None, stdout=None, stderr=None):
+            seen['command'] = command
+            seen['parts'] = {}
+            for index, item in enumerate(command):
+                if item == '--form':
+                    name, value = command[index + 1].split('=', 1)
+                    seen['parts'][name] = Path(value[1:]).read_text() if value.startswith('<') else value
+            Path(command[command.index('--output') + 1]).write_text('{"status":"ok","post_id":"thread-1"}')
+            Path(command[command.index('--dump-header') + 1]).write_text('')
+            return argparse.Namespace(returncode=0, stdout=b'200', stderr=b'')
+        with patch.object(frm.subprocess, 'run', side_effect=fake_run), patch.object(frm.shutil, 'which', return_value='/usr/bin/curl'):
+            frm.request('https://forum.example', '/api/create_prepared_post', {'canonical_record': '@not-a-file\n<nor this'}, 5, {'image': ('/tmp/x.png', 'image/png')})
+        self.assertNotIn('--data-binary', seen['command'])
+        self.assertEqual('@not-a-file\n<nor this', seen['parts']['canonical_record'])
+        self.assertEqual('@/tmp/x.png;type=image/png', seen['parts']['image'])
+
+
 class ClientFailureTest(unittest.TestCase):
     def test_unrecognized_discovery_never_selects_legacy(self):
         for response in [(200, '<html>lobby</html>', {}), (503, '{"status":"busy"}', {}),
