@@ -14,6 +14,156 @@ frm = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(frm)
 
 
+def png(width, height):
+    import struct, zlib
+    def chunk(kind, data):
+        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+    rows = b''.join(b'\x00' + b'\xff\xff\xff' * width for _ in range(height))
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(rows)) + chunk(b'IEND', b''))
+
+
+def jpeg_header(width, height):
+    """Header-only baseline JPEG: SOI, APP0, SOF0 with the size, a start of scan and EOI."""
+    app0 = b'\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00'
+    sof0 = b'\xff\xc0\x00\x11\x08' + height.to_bytes(2, 'big') + width.to_bytes(2, 'big') + b'\x03' + b'\x01\x11\x00\x02\x11\x01\x03\x11\x01'
+    sos = b'\xff\xda\x00\x0c\x03\x01\x00\x02\x11\x03\x11\x00\x3f\x00'
+    return b'\xff\xd8' + app0 + sof0 + sos + b'\x00' + b'\xff\xd9'
+
+
+def png_chunk(kind, data):
+    import struct, zlib
+    return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+
+
+def with_text_chunk(data):
+    """Insert a tEXt metadata chunk after IHDR."""
+    return data[:33] + png_chunk(b'tEXt', b'Comment\x00secret place') + data[33:]
+
+
+def exif_app1(orientation):
+    """APP1 segment with a little-endian EXIF IFD holding one Orientation entry."""
+    tiff = b'II*\x00\x08\x00\x00\x00' + b'\x01\x00' + b'\x12\x01\x03\x00\x01\x00\x00\x00' + orientation.to_bytes(2, 'little') + b'\x00\x00' + b'\x00\x00\x00\x00'
+    body = b'Exif\x00\x00' + tiff
+    return b'\xff\xe1' + (len(body) + 2).to_bytes(2, 'big') + body
+
+
+def with_app1(jpeg, orientation):
+    return jpeg[:2] + exif_app1(orientation) + jpeg[2:]
+
+
+class ImageAttachmentTest(unittest.TestCase):
+    """Without Pillow: already-prepared PNG/JPEG only, metadata removed. With Pillow: like image_prepare.js."""
+
+    def prepare(self, data, use_pillow=False):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'image'
+            path.write_bytes(data)
+            if use_pillow:
+                return frm.prepare_image(path)
+            with patch.object(frm, 'pillow', return_value=None):
+                return frm.prepare_image(path)
+
+    def test_reference_line_matches_the_browser_format(self):
+        import hashlib
+        data = png(3, 2)
+        line = frm.image_reference(data, 'png', (3, 2), "Tools card (live) it's fine!*")
+        self.assertEqual('Image-v1: %s png %d 3 2 Tools%%20card%%20%%28live%%29%%20it%%27s%%20fine%%21%%2A' % (hashlib.sha256(data).hexdigest(), len(data)), line)
+        for description in ('x' * 501, 'tab\there'):
+            with self.assertRaisesRegex(frm.ClientError, '500 bytes'):
+                frm.image_reference(data, 'png', (3, 2), description)
+
+    def test_without_pillow_png_metadata_is_removed_and_pixels_kept(self):
+        data = with_text_chunk(png(3, 2))
+        prepared, kind, size, note = self.prepare(data)
+        self.assertEqual(('png', (3, 2)), (kind, size))
+        self.assertNotIn(b'tEXt', prepared)
+        self.assertNotIn(b'secret place', prepared)
+        self.assertEqual(png(3, 2), prepared)
+        self.assertIn('Pillow not installed', note)
+
+    def test_without_pillow_jpeg_exif_is_removed_and_rotated_photos_refused(self):
+        jpeg = jpeg_header(640, 480)
+        prepared, kind, size, _ = self.prepare(with_app1(jpeg, 1))
+        self.assertEqual(('jpg', (640, 480), jpeg), (kind, size, prepared))
+        with self.assertRaisesRegex(frm.ClientError, 'stored rotated'):
+            self.prepare(with_app1(jpeg, 6))
+
+    def test_without_pillow_limits_name_pillow_as_the_fix(self):
+        for data, message in [(b'GIF89a' + b'\x00' * 20, 'PNG or JPEG only'), (png(2049, 1), '2048 pixels per side \\(this one is 2049 x 1\\)'),
+                              (b'\xff\xd8\xff\xe0\x00\x02', 'readable JPEG'), (b'', '32 MiB')]:
+            with self.assertRaisesRegex(frm.ClientError, message):
+                self.prepare(data)
+        with patch.object(frm, 'IMAGE_MAX_BYTES', 10), self.assertRaisesRegex(frm.ClientError, '5 MiB'):
+            self.prepare(png(2, 2))
+
+
+@unittest.skipUnless(frm.pillow(), 'Pillow not installed')
+class PillowImagePrepareTest(unittest.TestCase):
+    def prepare(self, data):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'image'
+            path.write_bytes(data)
+            return frm.prepare_image(path)
+
+    def encode(self, image, fmt, **options):
+        import io
+        out = io.BytesIO()
+        image.save(out, fmt, **options)
+        return out.getvalue()
+
+    def test_large_png_is_resized_to_2048_and_stays_png(self):
+        from PIL import Image
+        prepared, kind, size, note = self.prepare(self.encode(Image.new('RGB', (3000, 1000), 'white'), 'PNG'))
+        self.assertEqual(('png', (2048, 682)), (kind, size))
+        self.assertEqual((2048, 682), Image.open(__import__('io').BytesIO(prepared)).size)
+        self.assertIn('Pillow', note)
+
+    def test_rotated_jpeg_is_turned_upright_and_loses_exif(self):
+        from PIL import Image
+        exif = Image.Exif()
+        exif[0x0112] = 6
+        prepared, kind, size, _ = self.prepare(self.encode(Image.new('RGB', (400, 300), 'red'), 'JPEG', exif=exif.tobytes()))
+        self.assertEqual(('jpg', (300, 400)), (kind, size))
+        self.assertNotIn(b'Exif', prepared)
+
+    def test_other_formats_become_png_and_alpha_survives(self):
+        from PIL import Image
+        prepared, kind, size, _ = self.prepare(self.encode(Image.new('RGBA', (20, 10), (0, 0, 0, 0)), 'WEBP', lossless=True))
+        self.assertEqual(('png', (20, 10)), (kind, size))
+        self.assertEqual('RGBA', Image.open(__import__('io').BytesIO(prepared)).mode)
+
+    def test_shrinks_by_steps_until_under_the_byte_limit(self):
+        from PIL import Image
+        import random
+        noise = Image.frombytes('RGB', (300, 300), random.Random(1).randbytes(300 * 300 * 3))
+        with patch.object(frm, 'IMAGE_MAX_BYTES', 120000):
+            prepared, kind, size, _ = self.prepare(self.encode(noise, 'PNG'))
+        self.assertLessEqual(len(prepared), 120000)
+        self.assertLess(size[0], 300)
+        self.assertIn(size[0], [int(300 * 0.8 ** step) for step in range(1, 8)])
+
+
+class ImageRequestTest(unittest.TestCase):
+    def test_multipart_sends_fields_from_files_and_the_image(self):
+        seen = {}
+        def fake_run(command, input=None, stdout=None, stderr=None):
+            seen['command'] = command
+            seen['parts'] = {}
+            for index, item in enumerate(command):
+                if item == '--form':
+                    name, value = command[index + 1].split('=', 1)
+                    seen['parts'][name] = Path(value[1:]).read_text() if value.startswith('<') else value
+            Path(command[command.index('--output') + 1]).write_text('{"status":"ok","post_id":"thread-1"}')
+            Path(command[command.index('--dump-header') + 1]).write_text('')
+            return argparse.Namespace(returncode=0, stdout=b'200', stderr=b'')
+        with patch.object(frm.subprocess, 'run', side_effect=fake_run), patch.object(frm.shutil, 'which', return_value='/usr/bin/curl'):
+            frm.request('https://forum.example', '/api/create_prepared_post', {'canonical_record': '@not-a-file\n<nor this'}, 5, {'image': ('/tmp/x.png', 'image/png')})
+        self.assertNotIn('--data-binary', seen['command'])
+        self.assertEqual('@not-a-file\n<nor this', seen['parts']['canonical_record'])
+        self.assertEqual('@/tmp/x.png;type=image/png', seen['parts']['image'])
+
+
 class ClientFailureTest(unittest.TestCase):
     def test_unrecognized_discovery_never_selects_legacy(self):
         for response in [(200, '<html>lobby</html>', {}), (503, '{"status":"busy"}', {}),

@@ -21,9 +21,9 @@ final class FrmClientTest
         }
         return $dir;
     }
-    public static function run(string $script, array $args): array
+    public static function run(string $script, array $args, string $python='python3'): array
     {
-        $cmd='python3 '.escapeshellarg($script).' '.implode(' ',array_map('escapeshellarg',$args));
+        $cmd=$python.' '.escapeshellarg($script).' '.implode(' ',array_map('escapeshellarg',$args));
         exec($cmd.' 2>&1',$output,$code); return [$code,implode("\n",$output)];
     }
     public function testLostResponseResumeWithoutDuplicateForBothProtocols(): void
@@ -236,6 +236,47 @@ final class FrmClientTest
         } finally {$server->close();}
     }
 
+    public function testImageAttachmentNeedsApprovalThenPublishesTheSignedBytes(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_IMAGE_CONTENT_ENABLED'=>'true']);
+        try {
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            file_put_contents($root.'/pixel.png',ImageContentTest::png());
+            file_put_contents($root.'/body.txt',"Screenshot attached.\n");
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'image'),'--retries','0'];
+            $image=['--no-report','--image',$root.'/pixel.png','--image-description','One white pixel (test)'];
+            // Unapproved key: the server refuses the image, so nothing is published and the draft is kept.
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Picture','--body-file',$root.'/body.txt'],$image));
+            assertSame(2,$code,$out); assertStringContains('Rejected:',$out);
+            preg_match('/Identity-ID: (openpgp:[0-9a-f]{40})/',$out,$m); $identity=$m[1];
+            $seed=\ForumRewrite\Canonical\CanonicalPathResolver::approvalSeed(substr($identity,8));
+            @mkdir(dirname($repo.'/'.$seed),0777,true);
+            file_put_contents($repo.'/'.$seed,"Approved-Identity-ID: {$identity}\nSeed-Reason: frm image test\n\n");
+            $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$tx->git(['add',$seed]);$tx->git(['commit','-qm','Approve frm image author']);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($repo,$db,new \ForumRewrite\Canonical\CanonicalRecordRepository($repo)))->rebuild();
+            // python3 -S hides site-packages, so this is the standard-library path: the prepared PNG goes as is.
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Picture','--body-file',$root.'/body.txt'],$image),'python3 -S');
+            assertSame(0,$code,$out); assertStringContains('Status: accepted',$out); assertStringContains('Pillow not installed',$out);
+            preg_match('/Post-ID: (\S+)/',$out,$m); $post=file_get_contents($server->url.'/api/get_post?post_id='.$m[1]);
+            $hash=hash('sha256',ImageContentTest::png());
+            assertStringContains("Screenshot attached.\n\nImage-v1: {$hash} png ".strlen(ImageContentTest::png()).' 1 1 One%20white%20pixel%20%28test%29',$post);
+            assertSame(ImageContentTest::png(),file_get_contents($server->url.'/images/'.$hash.'.png'));
+            // With Pillow, a large image is prepared like the browser composer before upload.
+            exec('python3 -c '.escapeshellarg('import sys; from PIL import Image; Image.new("RGB",(2500,1200),"white").save(sys.argv[1])').' '.escapeshellarg($root.'/wide.png').' 2>&1',$o,$pillow);
+            if ($pillow===0) {
+                $wide=array_merge($base,['reply','--thread',$m[1],'--body-file',$root.'/body.txt','--no-report','--image',$root.'/wide.png','--image-description','Wide']);
+                [$code,$out]=self::run($script,$wide);
+                assertSame(0,$code,$out); assertStringContains('Image: 2048 x 983 PNG',$out);
+                preg_match('/Post-ID: (\S+)/',$out,$r); preg_match('/Image-v1: ([0-9a-f]{64}) png \d+ 2048 983 Wide/',file_get_contents($server->url.'/api/get_post?post_id='.$r[1]),$ref);
+                assertSame([2048,983],array_slice(getimagesizefromstring(file_get_contents($server->url.'/images/'.$ref[1].'.png')),0,2));
+            }
+            // A body that already carries a reference is refused before anything is sent.
+            file_put_contents($root.'/twice.txt',"Two.\n\nImage-v1: {$hash} png 1 1 1\n");
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Twice','--body-file',$root.'/twice.txt'],$image));
+            assertSame(2,$code,$out); assertStringContains('--image adds it',$out);
+            foreach (glob(self::stateDir($root,'image').'/*/keyring') as $home) \ForumRewrite\Security\GpgHomeCleaner::dispose($home);
+        } finally {$server->close();}
+    }
     public function testDownloadedReaderAndPublicDelivery(): void
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
