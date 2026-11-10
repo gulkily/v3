@@ -75,6 +75,37 @@ final class ArchiveExportTest
         fclose($afterCommit['stream']);
     }
 
+    public function testCachedBytesReportsOnlyAVerifiedBuildForTheCurrentRevision(): void
+    {
+        $w = new ImportTestWorkspace();
+        $root = $w->repository('source');
+        $w->put($root . '/records/posts/one.txt', $w->post('one')); $w->git($root);
+        $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
+
+        // Nothing built yet, and looking must not create archive storage.
+        assertSame(null, $backup->cachedBytes('tar.gz'));
+        assertSame(false, is_dir($w->root . '/archive-exports'));
+
+        $built = $backup->export('tar.gz');
+        fclose($built['stream']);
+        clearstatcache();
+        assertSame(filesize($built['path']), $backup->cachedBytes('tar.gz'));
+        assertSame(null, $backup->cachedBytes('zip'), 'other formats are not built yet');
+        assertSame(null, $backup->cachedBytes('images'), 'only content archives are sized');
+
+        // Mismatched metadata is not trusted.
+        $metadata = dirname($built['path']) . '/metadata';
+        $original = file_get_contents($metadata);
+        $meta = json_decode($original, true); $meta['bytes']++;
+        file_put_contents($metadata, json_encode($meta));
+        assertSame(null, $backup->cachedBytes('tar.gz'));
+        file_put_contents($metadata, $original);
+
+        // A new commit means the cached build is for an old revision.
+        $w->put($root . '/records/posts/two.txt', $w->post('two')); $w->git($root);
+        assertSame(null, $backup->cachedBytes('tar.gz'));
+    }
+
     public function testWarmArchivesReuseAndCorruptionRebuildsWithoutDeletingReaders(): void
     {
         $w = new ImportTestWorkspace();

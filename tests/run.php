@@ -53,6 +53,7 @@ $testFiles = [
     __DIR__ . '/CanonicalTextBoundsTest.php',
     __DIR__ . '/BoundedProcessTest.php',
     __DIR__ . '/ArchiveExportTest.php',
+    __DIR__ . '/ByteSizeTest.php',
     __DIR__ . '/RetractionMaintenanceTest.php',
     __DIR__ . '/AcceptedRetractionTest.php',
     __DIR__ . '/CommitMapTest.php',

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Images\ImageBackup;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\SiteConfig;
+use ForumRewrite\Support\ByteSize;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\OperatorStatusCollector;
 use ForumRewrite\Tools\ToolsPageSupport;
@@ -156,10 +158,54 @@ final class CodebaseStateController
                 'stale_commit_sha' => $readModel['stale_commit_sha'],
                 'row_counts' => $rowCounts,
             ],
-            'downloads' => [
-                ['href' => '/downloads/repository.tar.gz', 'label' => 'Content repository (.tar.gz)'],
-                ['href' => '/downloads/repository.zip', 'label' => 'Content repository (.zip)'],
-                ['href' => '/downloads/read_model.sqlite3', 'label' => 'SQLite index database'],
+            'sizes' => $this->sizes(),
+            'downloads' => $this->downloads(),
+        ];
+    }
+
+    /**
+     * Archives are built on request, so their size is the cached build for
+     * the current revision when one exists (null shows "built on request").
+     *
+     * @return list<array{href: string, label: string, bytes: ?int, on_request: bool}>
+     */
+    private function downloads(): array
+    {
+        $backup = new ImageBackup($this->repositoryRoot, $this->databasePath, $this->projectRoot);
+
+        return [
+            ['href' => '/downloads/repository.tar.gz', 'label' => 'Content repository (.tar.gz)', 'bytes' => $backup->cachedBytes('tar.gz'), 'on_request' => true],
+            ['href' => '/downloads/repository.zip', 'label' => 'Content repository (.zip)', 'bytes' => $backup->cachedBytes('zip'), 'on_request' => true],
+            ['href' => '/downloads/read_model.sqlite3', 'label' => 'SQLite index database', 'bytes' => ByteSize::file($this->databasePath), 'on_request' => false],
+        ];
+    }
+
+    /**
+     * Sources use the same relative state/... labels as the rest of the page
+     * so no absolute deploy path is printed.
+     *
+     * @return array<string, array{bytes: ?int, source: string}>
+     */
+    private function sizes(): array
+    {
+        $database = 'state/cache/' . basename($this->databasePath);
+
+        return [
+            'Read-model database' => [
+                'bytes' => ByteSize::file($this->databasePath),
+                'source' => 'stat -c %s ' . $database,
+            ],
+            'Content records (committed)' => [
+                'bytes' => ByteSize::trackedTree($this->repositoryRoot, 'records'),
+                'source' => 'git -C state/local_repository ls-tree -r -l HEAD -- records',
+            ],
+            'Content repository Git store' => [
+                'bytes' => ByteSize::gitStore($this->repositoryRoot),
+                'source' => 'git -C state/local_repository count-objects -v',
+            ],
+            'App checkout Git store' => [
+                'bytes' => ByteSize::gitStore($this->projectRoot),
+                'source' => 'git count-objects -v',
             ],
         ];
     }
