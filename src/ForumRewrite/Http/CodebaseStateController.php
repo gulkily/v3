@@ -124,12 +124,12 @@ final class CodebaseStateController
 
         return [
             'overall_status' => $overallStatus,
-            'app_version' => $this->codebaseGitValue('rev-parse --verify HEAD'),
+            'app_version' => $this->codebaseGitValue(['rev-parse', '--verify', 'HEAD']),
             'codebase' => [
-                'Commit' => $this->codebaseGitValue('rev-parse --verify HEAD'),
-                'Branch' => $this->codebaseGitValue('symbolic-ref --quiet --short HEAD', 'detached or unavailable'),
-                'Latest commit' => $this->codebaseGitValue('log -1 --format=%cI%x20%s'),
-                'Working tree' => $this->codebaseGitValue('status --porcelain --untracked-files=normal', 'unavailable', 'clean', true),
+                'Commit' => $this->codebaseGitValue(['rev-parse', '--verify', 'HEAD']),
+                'Branch' => $this->codebaseGitValue(['symbolic-ref', '--quiet', '--short', 'HEAD'], 'detached or unavailable'),
+                'Latest commit' => $this->codebaseGitValue(['log', '-1', '--format=%cI%x20%s']),
+                'Working tree' => $this->codebaseGitValue(['status', '--porcelain', '--untracked-files=normal'], 'unavailable', 'clean', true),
             ],
             'repository' => [
                 'root_label' => basename($this->repositoryRoot),
@@ -228,7 +228,8 @@ final class CodebaseStateController
         ];
     }
 
-    private function codebaseGitValue(string $arguments, string $fallback = 'unavailable', string $empty = 'unavailable', bool $status = false): string
+    /** @param list<string> $arguments git arguments; each is shell-escaped */
+    private function codebaseGitValue(array $arguments, string $fallback = 'unavailable', string $empty = 'unavailable', bool $status = false): string
     {
         // A .git file is valid for linked worktrees and submodules. Do not
         // accidentally report an enclosing repository for a source-only deploy.
@@ -237,7 +238,8 @@ final class CodebaseStateController
         }
         $output = [];
         $exitCode = 0;
-        exec('git --no-optional-locks -C ' . escapeshellarg($this->projectRoot) . ' ' . $arguments . ' 2>/dev/null', $output, $exitCode);
+        $command = ['git', '--no-optional-locks', '-C', $this->projectRoot, ...$arguments];
+        exec(implode(' ', array_map('escapeshellarg', $command)) . ' 2>/dev/null', $output, $exitCode);
         if ($exitCode !== 0) {
             return $fallback;
         }
