@@ -147,6 +147,46 @@
       }
     }
 
+    // The dialog hides the viewer-level loading line, so while a query waits on the
+    // first database download its own status carries the progress instead.
+    function setLoadProgress(message) {
+      setStatus(message, "loading");
+      if (queryStatus && queryStatus.dataset.state === "loading") {
+        setQueryStatus(message, "loading");
+      }
+    }
+
+    function formatMegabytes(bytes) {
+      return (bytes / 1048576).toFixed(1);
+    }
+
+    async function readWithProgress(response) {
+      var total = Number(response.headers.get("Content-Length")) || 0;
+      if (!response.body || typeof response.body.getReader !== "function") {
+        return new Uint8Array(await response.arrayBuffer());
+      }
+      var reader = response.body.getReader();
+      var chunks = [];
+      var received = 0;
+      var reported = -1;
+      for (;;) {
+        var step = await reader.read();
+        if (step.done) { break; }
+        chunks.push(step.value);
+        received += step.value.length;
+        var tenth = Math.floor(received / 104857.6);
+        if (tenth !== reported) {
+          reported = tenth;
+          setLoadProgress("Downloading the database (first time only)... " + formatMegabytes(received)
+            + (total > 0 ? " of " + formatMegabytes(total) : "") + " MB");
+        }
+      }
+      var bytes = new Uint8Array(received);
+      var offset = 0;
+      chunks.forEach(function (chunk) { bytes.set(chunk, offset); offset += chunk.length; });
+      return bytes;
+    }
+
     function renderEffectiveQuery(countSql, dataSql) {
       if (effectiveCount) {
         effectiveCount.textContent = countSql;
@@ -575,10 +615,12 @@
           if (!refresh) { response = await cache.match(databaseUrl); saved = !!response; }
         } catch (error) { /* Storage is optional; keep the in-memory viewer usable. */ }
         if (!response) {
+          setLoadProgress("Downloading the database (first time only)...");
           response = await window.fetch(databaseUrl, { credentials: "same-origin", cache: "no-store" });
         }
         if (!response.ok) { throw new Error("The published database could not be downloaded. Retry when connected."); }
-        var bytes = new Uint8Array(await response.arrayBuffer());
+        var bytes = saved ? new Uint8Array(await response.arrayBuffer()) : await readWithProgress(response);
+        setLoadProgress("Opening the database...");
         if (!runtimePromise) {
           runtimePromise = window.initSqlJs({ locateFile: function (fileName) {
             return fileName === "sql-wasm.wasm" ? runtimeUrl : "/assets/" + fileName;
@@ -626,6 +668,7 @@
         }
         return true;
       } catch (error) {
+        if (queryStatus && queryStatus.dataset.state === "loading") { setQueryStatus("", "ok"); }
         setStatus(error && error.message ? error.message : "The database could not be loaded.", "error");
       } finally {
         if (loadButton) {

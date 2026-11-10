@@ -229,7 +229,7 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-status"]').textContent.includes('Only one read-only'));
   await input.fill('SELECT COUNT(*) AS remaining FROM threads');
   await page.getByRole('button', { name: 'Run Query', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('130'));
+  await page.waitForFunction(() => document.querySelector('[data-role="sqlite-query-results"]').textContent.includes('200'));
   // A later context wins even while the shared cold load is still pending.
   await page.evaluate(() => caches.delete('forum-query-read-model-v1'));
   delay = 300;
@@ -237,6 +237,8 @@ try {
   const requestsBeforeRace = downloads;
   await page.locator('[data-query-key="one"]').click();
   await page.waitForFunction(() => document.querySelector('[data-role="sqlite-status"]').dataset.state === 'loading');
+  // The dialog hides the viewer status, so the first download must show in the query status.
+  await page.waitForFunction(() => { const s = document.querySelector('[data-role="sqlite-query-status"]'); return !s.hidden && s.textContent.includes('Downloading the database'); });
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => document.body.style.overflow !== 'hidden');
   await page.locator('[data-query-key="two"]').click();
