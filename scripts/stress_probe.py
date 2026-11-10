@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Small, stepped read-load probe for a v3 site. Standard library only.
+"""Small, stepped read-load probe for a v3 site. Python 3.7+, standard library only.
+PHP and Perl versions with the same options and output: stress_probe.php, stress_probe.pl.
 
 Nothing is sent unless --confirm repeats the target's host name exactly; without it the
 script prints the plan and exits. Each step runs a fixed number of concurrent readers for
@@ -24,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import http.client
+import math
 import random
 import re
 import ssl
@@ -156,10 +158,15 @@ def concrete_path(label: str, path: str) -> str:
     return '%s%sstress=%d' % (path, separator, random.randrange(10 ** 12))
 
 
+def half_up(value: float) -> int:
+    # Same rounding as the PHP and Perl probes (Python's round() rounds halves to even).
+    return int(math.floor(value + 0.5))
+
+
 def percentile(sorted_values: list[float], fraction: float) -> float:
     if not sorted_values:
         return 0.0
-    index = min(len(sorted_values) - 1, max(0, round(fraction * (len(sorted_values) - 1))))
+    index = min(len(sorted_values) - 1, max(0, half_up(fraction * (len(sorted_values) - 1))))
     return sorted_values[index]
 
 
@@ -222,17 +229,17 @@ def run_step(args: argparse.Namespace, plan: list[tuple[str, str]], concurrency:
     for label in sorted({sample[0] for sample in samples}):
         values = sorted(sample[2] for sample in samples if sample[0] == label)
         hits = sum(1 for sample in samples if sample[0] == label and sample[3] == 'hit')
-        by_label[label] = {'requests': len(values), 'p50_ms': round(percentile(values, .5)), 'p95_ms': round(percentile(values, .95)),
+        by_label[label] = {'requests': len(values), 'p50_ms': half_up(percentile(values, .5)), 'p95_ms': half_up(percentile(values, .95)),
                            'cache_hits': hits}
     return {
-        'concurrency': concurrency, 'seconds': round(wall, 1), 'requests': total,
-        'requests_per_second': round(total / wall, 1) if wall > 0 else 0,
-        'p50_ms': round(percentile(latencies, .5)), 'p95_ms': round(percentile(latencies, .95)),
-        'p99_ms': round(percentile(latencies, .99)), 'max_ms': round(latencies[-1]) if latencies else 0,
+        'concurrency': concurrency, 'seconds': wall, 'requests': total,
+        'requests_per_second': total / wall if wall > 0 else 0.0,
+        'p50_ms': half_up(percentile(latencies, .5)), 'p95_ms': half_up(percentile(latencies, .95)),
+        'p99_ms': half_up(percentile(latencies, .99)), 'max_ms': half_up(latencies[-1]) if latencies else 0,
         'statuses': {('network' if code == 0 else str(code)): count for code, count in sorted(statuses.items())},
         'network_errors': dict(errors), 'shed_503': shed, 'failures': failures,
-        'error_rate': round(failures / total, 4) if total else 1.0,
-        'shed_rate': round(shed / total, 4) if total else 0.0,
+        'error_rate': failures / total if total else 1.0,
+        'shed_rate': shed / total if total else 0.0,
         'routes': by_label,
     }
 
@@ -259,7 +266,7 @@ def print_step(step: dict) -> None:
     for label, route in step['routes'].items():
         hit = ''
         if label == 'cached' and route['requests']:
-            hit = '  cache hits %d%%' % round(100 * route['cache_hits'] / route['requests'])
+            hit = '  cache hits %d%%' % half_up(100 * route['cache_hits'] / route['requests'])
         print('        %-8s %6d req  p50 %5d  p95 %5d ms%s' % (label, route['requests'], route['p50_ms'], route['p95_ms'], hit))
     if step['network_errors']:
         print('        network errors: %s' % ', '.join('%s %d' % item for item in step['network_errors'].items()))
@@ -273,11 +280,11 @@ def record_text(result: dict) -> str:
              'Stop-Rules: p95 %d ms; errors %g%%; shed %g%%' % (rules['p95_ms'], rules['max_error_rate'] * 100, rules['max_shed_rate'] * 100),
              'Stopped: %s' % (result['stopped'] or 'no')]
     for step in result['steps']:
-        lines += ['', 'Step-Concurrency: %d' % step['concurrency'], 'Seconds: %s' % step['seconds'],
-                  'Requests: %d' % step['requests'], 'Requests-Per-Second: %s' % step['requests_per_second'],
+        lines += ['', 'Step-Concurrency: %d' % step['concurrency'], 'Seconds: %.1f' % step['seconds'],
+                  'Requests: %d' % step['requests'], 'Requests-Per-Second: %.1f' % step['requests_per_second'],
                   'Latency-Ms: p50 %d; p95 %d; p99 %d; max %d' % (step['p50_ms'], step['p95_ms'], step['p99_ms'], step['max_ms']),
                   'Statuses: %s' % ', '.join('%s %d' % item for item in step['statuses'].items()),
-                  'Error-Rate: %s' % step['error_rate'], 'Shed-Rate: %s' % step['shed_rate']]
+                  'Error-Rate: %.4f' % step['error_rate'], 'Shed-Rate: %.4f' % step['shed_rate']]
         if step['network_errors']:
             lines.append('Network-Errors: %s' % ', '.join('%s %d' % item for item in step['network_errors'].items()))
         for label, route in step['routes'].items():

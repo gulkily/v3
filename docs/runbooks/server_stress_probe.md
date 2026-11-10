@@ -1,8 +1,18 @@
 # Server Stress Probe
 
 `scripts/stress_probe.py` sends a small, stepped read load at a v3 site and reports
-latency, status codes and high-traffic cache hits for each step. It uses only the
-Python standard library and sends GET requests only.
+latency, status codes and high-traffic cache hits for each step. It sends GET requests
+only. Use whichever runtime the machine has; the three scripts take the same options
+and print the same plan, output and record:
+
+| Script | Needs |
+| --- | --- |
+| `python3 scripts/stress_probe.py` | Python 3.7+, standard library only |
+| `php scripts/stress_probe.php` | PHP 8.1+ with the curl extension |
+| `perl scripts/stress_probe.pl` | Perl 5.20+, core modules; HTTPS also needs IO::Socket::SSL (Debian/Ubuntu: `libio-socket-ssl-perl`) |
+
+Network error names come from each runtime, so they read differently; everything
+else matches. The examples below use the Python script.
 
 Run it from a machine the host already knows, such as one that has signed in to the
 hosting control panel. Do it at a quiet time, and stop if the host warns you.

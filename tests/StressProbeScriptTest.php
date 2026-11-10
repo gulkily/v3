@@ -4,32 +4,42 @@ declare(strict_types=1);
 
 final class StressProbeScriptTest
 {
-    public function testSendsNothingWithoutAMatchingConfirmation(): void
-    {
-        // 192.0.2.1 is reserved for documentation; these runs must exit before connecting.
-        [$status, $output] = $this->run(['http://192.0.2.1:9']);
-        assertSame(0, $status, $output);
-        assertStringContains('Plan only; nothing was sent. Add --confirm 192.0.2.1', $output);
+    private const IMPLEMENTATIONS = ['python3' => 'stress_probe.py', 'php' => 'stress_probe.php', 'perl' => 'stress_probe.pl'];
 
-        [$status, $output] = $this->run(['http://192.0.2.1:9', '--confirm', 'example.com']);
-        assertSame(2, $status, $output);
-        assertStringContains('does not match the target host 192.0.2.1. Nothing was sent.', $output);
+    public function testEveryImplementationSendsNothingWithoutAMatchingConfirmation(): void
+    {
+        $plans = [];
+        foreach (self::IMPLEMENTATIONS as $runtime => $script) {
+            // 192.0.2.1 is reserved for documentation; these runs must exit before connecting.
+            [$status, $output] = $this->run($runtime, $script, ['http://192.0.2.1:9', '--steps', '1,3', '--max-rps', '12.5']);
+            assertSame(0, $status, $script . ': ' . $output);
+            assertStringContains('Plan only; nothing was sent. Add --confirm 192.0.2.1', $output);
+            $plans[$script] = $output;
+
+            [$status, $output] = $this->run($runtime, $script, ['http://192.0.2.1:9', '--confirm', 'example.com']);
+            assertSame(2, $status, $script . ': ' . $output);
+            assertStringContains('does not match the target host 192.0.2.1. Nothing was sent.', $output);
+        }
+        // The three scripts are interchangeable: the same plan, word for word.
+        assertSame(1, count(array_unique($plans)), implode("\n----\n", $plans));
     }
 
-    public function testRejectsUnsafeSettings(): void
+    public function testEveryImplementationRejectsUnsafeSettings(): void
     {
-        foreach ([['--steps', '64'], ['--seconds', '600'], ['--max-rps', '1000']] as $option) {
-            [$status, $output] = $this->run(array_merge(['http://192.0.2.1:9'], $option));
-            assertSame(2, $status, $output);
+        foreach (self::IMPLEMENTATIONS as $runtime => $script) {
+            foreach ([['--steps', '64'], ['--seconds', '600'], ['--max-rps', '1000'], ['--mode', 'all']] as $option) {
+                [$status, $output] = $this->run($runtime, $script, array_merge(['http://192.0.2.1:9'], $option));
+                assertSame(2, $status, $script . ' ' . implode(' ', $option) . ': ' . $output);
+            }
+            [$status] = $this->run($runtime, $script, ['http://192.0.2.1:9/threads/x']);
+            assertSame(2, $status, $script);
         }
-        [$status] = $this->run(['http://192.0.2.1:9/threads/x']);
-        assertSame(2, $status);
     }
 
     /** @param list<string> $arguments @return array{int, string} */
-    private function run(array $arguments): array
+    private function run(string $runtime, string $script, array $arguments): array
     {
-        $command = 'python3 ' . escapeshellarg(__DIR__ . '/../scripts/stress_probe.py');
+        $command = $runtime . ' ' . escapeshellarg(__DIR__ . '/../scripts/' . $script);
         foreach ($arguments as $argument) {
             $command .= ' ' . escapeshellarg($argument);
         }
