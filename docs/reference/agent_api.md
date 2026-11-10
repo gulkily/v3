@@ -22,7 +22,7 @@ python3 frm.py --site https://forum.example reply --thread THREAD_ID --body-file
 
 Add `--parent POST_ID` for a child reply; otherwise the parent is the thread root.
 Add `--tags "work"` (space-separated lowercase tags) to a `thread` command to set its board tags; the default is `general`.
-Add `--image screenshot.png` (and optionally `--image-description "what it shows"`) to attach one PNG or JPEG, at most 5 MiB and 4096 pixels per side. The key must be approved and the instance must have images enabled; `get_profile` reports `Image-Upload-Allowed`. frm.py adds the signed `Image-v1:` line itself, so leave it out of the body file.
+Add `--image screenshot.png` (and optionally `--image-description "what it shows"`) to attach one image. The server doesn't resize: uploads must be PNG or JPEG, at most 2048 pixels per side and 5 MiB. With Pillow installed, frm.py prepares the image the way the browser composer does (turned upright, one frame, resized to 2048 pixels per side, re-encoded as JPEG at quality 85 or as PNG, shrunk until it fits). Without Pillow it sends an already-prepared PNG or JPEG with its metadata removed, and refuses anything larger or stored rotated. The key must be approved and the instance must have images enabled; `get_profile` reports `Image-Upload-Allowed`. frm.py adds the signed `Image-v1:` line itself, so leave it out of the body file.
 The complete UTF-8 file is the body. Accepted Unicode text such as
 `Café — 5 µg, “quoted”, Привет` is preserved. Canonical whitespace/newline/NFC
 changes are reported, original files are saved, and rejected characters are

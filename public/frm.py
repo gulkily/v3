@@ -283,7 +283,11 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
     if not saved_meta and getattr(args, 'image', None):
         if re.search(r'(?m)^Image-v1:', original):
             raise ClientError('Remove the Image-v1 line from the body; --image adds it.')
-        image = image_reference(args.image, args.image_description or '')
+        if len((args.image_description or '').encode('utf-8')) > 500 or re.search('[\x00-\x1f\x7f]', args.image_description or ''):
+            raise ClientError('Image descriptions must be at most 500 bytes and contain no control characters.')
+        prepared, kind, size, note = prepare_image(args.image)
+        image = (kind, image_reference(prepared, kind, size, args.image_description or ''), prepared)
+        print('Image: %d x %d %s, %d KiB, %s' % (size[0], size[1], kind.upper(), -(-len(prepared) // 1024), note))
         # Only the prepared publish accepts the image file.
         protocol = 'prepared'
     key = saved_key or identity(args, directory)
@@ -299,7 +303,7 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
                 'Thread-ID': args.thread or '', 'Parent-ID': args.parent or args.thread or ''}
         if image:
             # The operation keeps its own copy, so a resume sends the bytes that were signed.
-            shutil.copyfile(args.image, operation / ('image.' + image[0]))
+            (operation / ('image.' + image[0])).write_bytes(image[2])
             meta.update({'Image': 'image.' + image[0], 'Image-Line': image[1]})
         save_meta(operation / 'operation.txt', meta)
     else:
@@ -365,8 +369,14 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
 
 
 IMAGE_TYPES = {'png': 'image/png', 'jpg': 'image/jpeg'}
+# Same limits as the browser composer (public/assets/image_prepare.js) and the server's upload check.
+IMAGE_SOURCE_BYTES = 32 * 1024 * 1024
+IMAGE_SOURCE_SIDE = 16384
+IMAGE_SOURCE_PIXELS = 40 * 1000 * 1000
 IMAGE_MAX_BYTES = 5 * 1024 * 1024
-IMAGE_MAX_SIDE = 4096
+IMAGE_MAX_SIDE = 2048
+# PNG chunks that only carry metadata (text, EXIF, timestamps); everything else is image data or colour.
+PNG_METADATA_CHUNKS = {b'tEXt', b'zTXt', b'iTXt', b'eXIf', b'tIME'}
 
 
 def image_size(data, kind):
@@ -375,6 +385,16 @@ def image_size(data, kind):
         if len(data) < 24 or data[12:16] != b'IHDR':
             raise ClientError('Image is not a readable PNG.')
         return int.from_bytes(data[16:20], 'big'), int.from_bytes(data[20:24], 'big')
+    for marker, segment in jpeg_segments(data):
+        if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF) and len(segment) >= 9:
+            return int.from_bytes(segment[7:9], 'big'), int.from_bytes(segment[5:7], 'big')
+    raise ClientError('Image is not a readable JPEG.')
+
+
+def jpeg_segments(data):
+    """(marker, bytes) for each header segment up to the start of scan; the last item is the rest of the file."""
+    if not data.startswith(b'\xff\xd8'):
+        raise ClientError('Image is not a readable JPEG.')
     position = 2
     while position + 4 <= len(data):
         if data[position] != 0xFF:
@@ -383,33 +403,140 @@ def image_size(data, kind):
         if marker == 0xFF:
             position += 1
             continue
-        if marker in (0xD8, 0x01) or 0xD0 <= marker <= 0xD7:
-            position += 2
-            continue
+        if marker == 0xDA:
+            yield marker, data[position:]
+            return
         length = int.from_bytes(data[position + 2:position + 4], 'big')
-        if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF) and position + 9 <= len(data):
-            return int.from_bytes(data[position + 7:position + 9], 'big'), int.from_bytes(data[position + 5:position + 7], 'big')
+        if length < 2 or position + 2 + length > len(data):
+            raise ClientError('Image is not a readable JPEG.')
+        yield marker, data[position:position + 2 + length]
         position += 2 + length
     raise ClientError('Image is not a readable JPEG.')
 
 
-def image_reference(path, description):
-    """Check one PNG/JPEG against the server's limits; return (type, signed Image-v1 line)."""
+def jpeg_orientation(segment):
+    """EXIF orientation from an APP1 segment, or 1 when it has none."""
+    body = segment[4:]
+    if not body.startswith(b'Exif\x00\x00') or len(body) < 14:
+        return 1
+    tiff = body[6:]
+    order = {b'II': 'little', b'MM': 'big'}.get(tiff[:2])
+    if not order:
+        return 1
+    offset = int.from_bytes(tiff[4:8], order)
+    if offset + 2 > len(tiff):
+        return 1
+    for index in range(int.from_bytes(tiff[offset:offset + 2], order)):
+        entry = tiff[offset + 2 + index * 12:offset + 14 + index * 12]
+        if len(entry) == 12 and int.from_bytes(entry[:2], order) == 0x0112:
+            return int.from_bytes(entry[8:10], order)
+    return 1
+
+
+def strip_image_metadata(data, kind):
+    """Drop metadata the way the browser's re-encode does, without changing any pixels.
+
+    PNG: remove text, EXIF and timestamp chunks. JPEG: remove comments and APP segments other than
+    JFIF (APP0) and Adobe (APP14), which describe the colour data. A rotated photo can't be fixed
+    without re-encoding, so it is refused."""
+    if kind == 'png':
+        if b'acTL' in data[:data.find(b'IDAT')]:
+            raise ClientError('Animated PNGs need Pillow to keep one frame (python3 -m pip install Pillow), or export a still image.')
+        out, position = [data[:8]], 8
+        while position + 12 <= len(data):
+            length = int.from_bytes(data[position:position + 4], 'big')
+            chunk = data[position:position + 12 + length]
+            if chunk[4:8] not in PNG_METADATA_CHUNKS:
+                out.append(chunk)
+            position += 12 + length
+        return b''.join(out)
+    out = [b'\xff\xd8']
+    for marker, segment in jpeg_segments(data):
+        if marker == 0xE1 and jpeg_orientation(segment) != 1:
+            raise ClientError('This photo is stored rotated. Install Pillow (python3 -m pip install Pillow) so frm.py can turn it upright, or export an upright copy.')
+        if marker == 0xFE or (0xE1 <= marker <= 0xEF and marker != 0xEE):
+            continue
+        out.append(segment)
+    return b''.join(out)
+
+
+def pillow():
+    """Pillow's Image and ImageOps modules when installed; frm.py itself needs only the standard library."""
+    try:
+        from PIL import Image, ImageOps
+    except ImportError:
+        return None
+    return Image, ImageOps
+
+
+def prepare_image_with_pillow(data, modules):
+    """Same steps as image_prepare.js: upright, one frame, at most 2048 px per side, re-encoded
+    (JPEG stays JPEG at quality 85, anything else becomes PNG), shrunk by 0.8 until it fits 5 MiB."""
+    import io
+    Image, ImageOps = modules
+    try:
+        source = Image.open(io.BytesIO(data))
+        source.size
+    except Exception:
+        raise ClientError('This image cannot be prepared. Choose JPEG, PNG, WebP, GIF or BMP, or export your image to one of those formats.')
+    width, height = source.size
+    if max(width, height) > IMAGE_SOURCE_SIDE or width * height > IMAGE_SOURCE_PIXELS:
+        raise ClientError('This image is too large to prepare safely. Export a copy below 40 megapixels and 16384 pixels per side.')
+    kind = 'jpg' if source.format == 'JPEG' else 'png'
+    source.seek(0)
+    image = ImageOps.exif_transpose(source)
+    if kind == 'jpg':
+        image = image.convert('RGB')
+    else:
+        image = image.convert('RGBA' if image.mode in ('RGBA', 'LA', 'PA') or 'transparency' in image.info else 'RGB')
+    width, height = image.size
+    ratio = min(1.0, IMAGE_MAX_SIDE / max(width, height))
+    for attempt in range(8):
+        size = (max(1, int(width * ratio)), max(1, int(height * ratio)))
+        frame = image if size == image.size else image.resize(size, Image.LANCZOS)
+        out = io.BytesIO()
+        if kind == 'jpg':
+            frame.save(out, 'JPEG', quality=85, optimize=True)
+        else:
+            frame.save(out, 'PNG', optimize=True)
+        if out.tell() <= IMAGE_MAX_BYTES:
+            return out.getvalue(), kind, size
+        ratio *= 0.8
+    raise ClientError('Unable to prepare this image within 5 MiB. Try a smaller copy.')
+
+
+def prepare_image(path):
+    """Return (bytes to upload, 'png'|'jpg', (width, height), note) for --image.
+
+    With Pillow: prepared like the browser composer (any common format, resized and re-encoded).
+    Without it: an already-prepared PNG or JPEG is sent with its metadata removed."""
     data = Path(path).read_bytes()
+    if not data or len(data) > IMAGE_SOURCE_BYTES:
+        raise ClientError('Attach an image of at most 32 MiB.')
+    modules = pillow()
+    if modules:
+        prepared, kind, size = prepare_image_with_pillow(data, modules)
+        return prepared, kind, size, 'prepared with Pillow'
     kind = 'png' if data.startswith(b'\x89PNG\r\n\x1a\n') else 'jpg' if data.startswith(b'\xff\xd8\xff') else None
     if kind is None:
-        raise ClientError('Images must be PNG or JPEG.')
-    if len(data) > IMAGE_MAX_BYTES:
-        raise ClientError('Images are limited to 5 MiB.')
+        raise ClientError('Without Pillow, frm.py sends PNG or JPEG only. Install Pillow (python3 -m pip install Pillow) to convert other formats.')
     width, height = image_size(data, kind)
     if not (0 < width <= IMAGE_MAX_SIDE and 0 < height <= IMAGE_MAX_SIDE):
-        raise ClientError('Images are limited to %d pixels per side.' % IMAGE_MAX_SIDE)
+        raise ClientError('Without Pillow, images must already be at most %d pixels per side (this one is %d x %d). Install Pillow (python3 -m pip install Pillow) to resize automatically.' % (IMAGE_MAX_SIDE, width, height))
+    prepared = strip_image_metadata(data, kind)
+    if len(prepared) > IMAGE_MAX_BYTES:
+        raise ClientError('Without Pillow, images must already be at most 5 MiB. Install Pillow (python3 -m pip install Pillow) to shrink automatically.')
+    return prepared, kind, (width, height), 'sent as is, metadata removed (Pillow not installed)'
+
+
+def image_reference(data, kind, size, description):
+    """The signed Image-v1 line for prepared bytes, with the description encoded like the browser's."""
     if len(description.encode('utf-8')) > 500 or re.search('[\x00-\x1f\x7f]', description):
         raise ClientError('Image descriptions must be at most 500 bytes and contain no control characters.')
-    line = 'Image-v1: %s %s %d %d %d' % (hashlib.sha256(data).hexdigest(), kind, len(data), width, height)
+    line = 'Image-v1: %s %s %d %d %d' % (hashlib.sha256(data).hexdigest(), kind, len(data), size[0], size[1])
     if description:
         line += ' ' + quote(description, safe='')
-    return kind, line
+    return line
 
 
 def board_tags(value):
@@ -691,7 +818,7 @@ def parser():
         q.add_argument('--thread')
         q.add_argument('--parent')
         q.add_argument('--tags', default='general', type=board_tags, help='Space-separated lowercase board tags (default: general)')
-        q.add_argument('--image', help='Attach one PNG or JPEG (at most 5 MiB and 4096 pixels per side); needs an approved key on an instance with images enabled')
+        q.add_argument('--image', help='Attach one image. With Pillow installed it is prepared like the browser composer (upright, at most 2048 pixels per side, re-encoded under 5 MiB); without Pillow it must already be a PNG or JPEG within those limits. Needs an approved key on an instance with images enabled')
         q.add_argument('--image-description', default='', help='Short description of the image (alt text, at most 500 bytes)')
         q.add_argument('--name', default='frm-agent', help='User ID for generated unencrypted local key (default: frm-agent)')
         q.add_argument('--signing-key', help='Reuse one existing primary secret key; GPG/pinentry handles its passphrase')
