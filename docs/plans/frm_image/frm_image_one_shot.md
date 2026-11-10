@@ -50,6 +50,7 @@ Excluded: more than one image per post (the server allows one); images in `creat
 ## Dated execution history
 
 - 2026-11-10: first version uploaded the original file and checked 4096 pixels per side (the reference-format ceiling). The maintainer asked whether the browser's client-side resize and compression were accounted for; they weren't, and the server's upload limit is 2048. Asked to support both, frm.py now prepares with Pillow when installed and otherwise sends only already-prepared PNG/JPEG with metadata removed.
+- 2026-11-10: tested against zenmemes.com from a Python environment without Pillow: a 2560 x 1800 screenshot was refused before any request with Pillow named; after installing Pillow the same command posted it at 2048 x 1440 ([reply](https://zenmemes.com/posts/reply-20261110052742-dd8da807)). Maintainer asked to write down when Claude installs Pillow: in its own workspace yes, elsewhere ask first; added to Claude's skill text.
 
 ## Concepts touched
 
