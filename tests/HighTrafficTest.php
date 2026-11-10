@@ -64,7 +64,7 @@ final class HighTrafficTest
         symlink($cache->root . '/pages', $tmp . '/public/.high-traffic');
         $cache->atomic($cache->root . '/state.json', json_encode(['enabled'=>true,'generation'=>'test']));
         \ForumRewrite\Host\HighTrafficRenderInput::build(\ForumRewrite\Host\HighTrafficPublication::capture($tmp . '/repo'), $tmp . '/read.sqlite3');
-        $route = '/threads/root-001/';
+        $route = '/threads/root-001';
         $refresh = new \ForumRewrite\Host\HighTrafficRefresh($cache);
         try {
             // Not cached yet: the first reader generates it, as before.
@@ -122,7 +122,7 @@ final class HighTrafficTest
         $cache->atomic($cache->root . '/state.json', json_encode(['enabled'=>true,'generation'=>'test']));
         \ForumRewrite\Host\HighTrafficRenderInput::build(\ForumRewrite\Host\HighTrafficPublication::capture($tmp . '/repo'), $tmp . '/read.sqlite3');
         file_put_contents($tmp . '/access.log', '');
-        $route = '/threads/root-001/';
+        $route = '/threads/root-001';
         $refresh = new \ForumRewrite\Host\HighTrafficRefresh($cache);
         try {
             $cache->atomic($cache->path($route), 'old HTML');
