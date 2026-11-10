@@ -1,6 +1,6 @@
 // Run with: node tests/browser/gloss_palettes.mjs
-// Gloss's colour picker: each palette applies, persists, passes contrast and
-// turns the navigation icons; Engagify, which shares Gloss's stylesheet,
+// Gloss's and Gloss Dark's colour pickers: each palette applies, persists,
+// passes contrast and turns the navigation icons; Engagify, which shares Gloss's stylesheet,
 // stays violet; LCD keeps its own saved palette.
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
@@ -13,6 +13,7 @@ import { chromium } from 'playwright-core';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const root = await mkdtemp(join(tmpdir(), 'gloss-palettes-'));
+const shots = process.env.SCREENSHOT_DIR || root;
 const env = { ...process.env, BOOKMARKLET_TEST_ROOT: root, FORUM_SITE_ID: 'zenmemes',
   FORUM_SECRETS_PATH: join(root, 'unused.php'), FORUM_STATIC_HTML_ROOT: join(root, 'static'),
   FORUM_APP_VERSION_NOTIFICATION: 'false', FAST_SCORING_ENABLED: 'false' };
@@ -30,9 +31,12 @@ server.stderr.on('data', data => { log += data; });
 
 const themeKey = 'forum-zenmemes-theme';
 const paletteKey = themeKey + '-gloss-palette';
-const toggle = '[data-action="gloss-palette-toggle"]';
-const option = value => `[data-gloss-palette-option="${value}"]`;
+const toggleFor = name => `[data-action="${name}-palette-toggle"]`;
+const optionFor = (name, value) => `[data-${name}-palette-option="${value}"]`;
+const toggle = toggleFor('gloss');
+const option = value => optionFor('gloss', value);
 const palettes = { violet: 'Violet', blue: 'Blue', teal: 'Teal', rose: 'Rose' };
+const labels = { gloss: 'Gloss', glossdark: 'Gloss Dark' };
 const errors = [];
 let browser;
 
@@ -52,12 +56,12 @@ async function theme(page, value) {
   await page.evaluate(value => document.querySelector(`[data-theme-option="${value}"]`).click(), value);
   await page.waitForFunction(value => document.documentElement.dataset.theme === value, value);
 }
-async function palette(page, value) {
+async function palette(page, value, name = 'gloss') {
   await openThemeControls(page);
-  await page.locator(toggle).click();
-  await page.locator(option(value)).click();
+  await page.locator(toggleFor(name)).click();
+  await page.locator(optionFor(name, value)).click();
 }
-const attr = page => page.locator('html').getAttribute('data-gloss-palette');
+const attr = (page, name = 'gloss') => page.locator('html').getAttribute(`data-${name}-palette`);
 
 try {
   for (let i = 0; i < 100; i++) {
@@ -73,46 +77,53 @@ try {
   await theme(page, 'light');
   await openThemeControls(page);
   assert.equal(await page.locator(toggle).isVisible(), false, 'picker hidden outside Gloss');
-  await theme(page, 'gloss');
-
-  for (const width of [390, 1280]) {
-    await page.setViewportSize({ width, height: 844 });
-    for (const [value, label] of Object.entries(palettes)) {
-      await palette(page, value);
-      assert.equal(await attr(page), value);
-      assert.equal(await page.locator(toggle).getAttribute('aria-label'), `Choose Gloss palette: ${label}`);
-      assert.equal(await page.locator(option(value)).getAttribute('aria-checked'), 'true');
-      await page.reload();
-      assert.equal(await attr(page), value, 'palette survives reload');
-      await page.goto(base + '/tools/');
-      assert.equal(await attr(page), value, 'palette survives navigation');
-      const probe = await page.evaluate(() => {
-        const icon = document.querySelector('.tool-launcher-button');
-        const sample = document.createElement('i'); document.body.append(sample);
-        const pairs = [];
-        const read = (fg, bg, target) => {
-          sample.style.cssText = `color:var(${fg});background:var(${bg})`;
-          const style = getComputedStyle(sample);
-          pairs.push({ fg, bg, target, pair: [style.color, style.backgroundColor].map(c => c.match(/[\d.]+/g).slice(0, 3).map(Number)) });
-        };
-        for (const fg of ['--ink', '--ink-soft']) for (const bg of ['--page-bg', '--panel', '--input-bg', '--button-bg', '--button-alt-bg', '--active-bg']) read(fg, bg, 4.5);
-        read('--active-ink', '--active-bg', 4.5);
-        for (const bg of ['--page-bg', '--panel', '--button-bg']) read('--gloss-accent', bg, 4.5);
-        for (const bg of ['--page-bg', '--panel', '--input-bg']) read('--line', bg, 3);
-        read('--active-line', '--panel', 3);
-        sample.remove();
-        return { pairs, iconFilter: icon ? getComputedStyle(icon, '::before').filter : 'missing' };
-      });
-      for (const pair of probe.pairs) assert.ok(contrast(pair.pair) >= pair.target, `${value}: ${pair.fg} on ${pair.bg} ${contrast(pair.pair).toFixed(2)}`);
-      assert.equal(probe.iconFilter === 'none', value === 'violet', `${value}: icon filter ${probe.iconFilter}`);
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-      await openThemeControls(page);
-      await page.locator(toggle).click();
-      await page.screenshot({ path: join(root, `gloss-${value}-${width}.png`), fullPage: true });
-      await page.keyboard.press('Escape');
-      assert.equal(await page.locator(toggle).evaluate(e => e === document.activeElement), true, 'Escape returns focus');
+  assert.equal(await page.locator(toggleFor('glossdark')).isVisible(), false, 'Gloss Dark picker hidden outside Gloss Dark');
+  // Gloss Dark shares Gloss's stylesheet and offers the same colours, dark.
+  for (const name of ['gloss', 'glossdark']) {
+    await theme(page, name);
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 844 });
+      for (const [value, label] of Object.entries(palettes)) {
+        await palette(page, value, name);
+        assert.equal(await attr(page, name), value);
+        assert.equal(await page.locator(toggleFor(name)).getAttribute('aria-label'), `Choose ${labels[name]} palette: ${label}`);
+        assert.equal(await page.locator(optionFor(name, value)).getAttribute('aria-checked'), 'true');
+        await page.reload();
+        assert.equal(await attr(page, name), value, 'palette survives reload');
+        await page.goto(base + '/tools/');
+        assert.equal(await attr(page, name), value, 'palette survives navigation');
+        const probe = await page.evaluate(() => {
+          const icon = document.querySelector('.tool-launcher-button');
+          const sample = document.createElement('i'); document.body.append(sample);
+          const pairs = [];
+          const read = (fg, bg, target) => {
+            sample.style.cssText = `color:var(${fg});background:var(${bg})`;
+            const style = getComputedStyle(sample);
+            pairs.push({ fg, bg, target, pair: [style.color, style.backgroundColor].map(c => c.match(/[\d.]+/g).slice(0, 3).map(Number)) });
+          };
+          for (const fg of ['--ink', '--ink-soft']) for (const bg of ['--page-bg', '--panel', '--input-bg', '--button-bg', '--button-alt-bg', '--active-bg']) read(fg, bg, 4.5);
+          read('--active-ink', '--active-bg', 4.5);
+          for (const bg of ['--page-bg', '--panel', '--button-bg']) read('--gloss-accent', bg, 4.5);
+          for (const bg of ['--page-bg', '--panel', '--input-bg']) read('--line', bg, 3);
+          read('--active-line', '--panel', 3);
+          sample.remove();
+          return { pairs, scheme: getComputedStyle(document.documentElement).colorScheme, iconFilter: icon ? getComputedStyle(icon, '::before').filter : 'missing' };
+        });
+        for (const pair of probe.pairs) assert.ok(contrast(pair.pair) >= pair.target, `${name} ${value}: ${pair.fg} on ${pair.bg} ${contrast(pair.pair).toFixed(2)}`);
+        assert.equal(probe.scheme, name === 'glossdark' ? 'dark' : 'light');
+        // Gloss Dark always inverts the icons; Gloss turns them for every colour but violet.
+        assert.equal(probe.iconFilter === 'none', name === 'gloss' && value === 'violet', `${name} ${value}: icon filter ${probe.iconFilter}`);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+        await openThemeControls(page);
+        await page.locator(toggleFor(name)).click();
+        await page.screenshot({ path: join(shots, `${name}-${value}-${width}.png`), fullPage: true });
+        await page.keyboard.press('Escape');
+        assert.equal(await page.locator(toggleFor(name)).evaluate(e => e === document.activeElement), true, 'Escape returns focus');
+      }
     }
+    await palette(page, 'violet', name);
   }
+  await theme(page, 'gloss');
 
   // Keyboard: open, move, choose.
   await openThemeControls(page);
@@ -143,7 +154,7 @@ try {
   assert.equal(await attr(page), 'violet');
 
   assert.deepEqual(errors, []);
-  console.log('PASS Gloss palettes: picker, reload, navigation, contrast, icon hue, keyboard, Engagify unaffected, LCD independent, bad value');
+  console.log('PASS Gloss and Gloss Dark palettes: picker, reload, navigation, contrast, icon hue, keyboard, Engagify unaffected, LCD independent, bad value');
 } catch (error) {
   console.error(log);
   throw error;

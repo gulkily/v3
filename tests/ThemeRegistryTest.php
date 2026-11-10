@@ -104,7 +104,7 @@ final class ThemeRegistryTest
     {
         $publicRoot = dirname(__DIR__) . '/public';
         $palettes = ThemeRegistry::palettes();
-        assertSame(['console', 'lcd', 'gloss'], array_keys($palettes));
+        assertSame(['console', 'lcd', 'gloss', 'glossdark'], array_keys($palettes));
         foreach ($palettes as $name => $entry) {
             assertSame(true, ThemeRegistry::isExplicitName($name));
             assertSame(true, count($entry['palettes']) >= 2);
