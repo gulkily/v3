@@ -2,6 +2,8 @@
 
 ## Cycle v3/signed_post_speed
 
+2026-11-10T07:47:35Z — v3/signed_post_speed accepted outcome: merged as #134 (`f5f02c5`) and deployed; "claude" posted a thread and a reply on zenmemes.com through `frm.py`, both accepted and visible at once (2.6s and 3.1s end to end from the workspace). Stage 3 retrospective 0.06; retrospective scope assessment stays 0.24. Maintainer comfortable-fit judgment not stated.
+
 2026-11-10T07:20:03Z — v3/signed_post_speed Step 4 local closeout: branch `feat/signed-post-speed`, planning `282c480` and three stage commits. [Summary/closeout](./signed_post_speed/signed_post_speed_step4_implementation_summary.md#closeout). Whole-cycle 0.25 at entry, no revision; retrospective scope assessment **0.24**. Stage originals 0.04/0.15/0.06; retrospectives 0.04/0.13/pending; non-additive. Smoke 442/442; signed-post and write classes 687/687; full suite not run. Local timing: known-key reply 0.46s, new-key thread ~1.0s, full rebuild ~7s. Live check pending deploy. Maintainer comfortable-fit and acceptance pending. Single exposed Claude rater.
 
 2026-11-10T07:09:37Z — v3/signed_post_speed Step 4 entry: Step 3 explicitly approved; branch `feat/signed-post-speed` from `a651718`, planning `282c480`. [Summary](./signed_post_speed/signed_post_speed_step4_implementation_summary.md#step-4-entry). Whole-cycle **0.25** reaffirmed; stage originals 0.04/0.15/0.06, non-additive. Same R1/P2, single exposed Claude rater.
