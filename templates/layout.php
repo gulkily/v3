@@ -32,6 +32,13 @@
           document.documentElement.setAttribute('data-visitor', 'known');
         }
       } catch (error) {}
+      try {
+        // Post table text size (table_zoom.js), restored before paint.
+        var tableZoom = parseFloat(localStorage.getItem('table-zoom'));
+        if (tableZoom >= 0.5 && tableZoom <= 6) {
+          document.documentElement.style.setProperty('--table-zoom', String(tableZoom));
+        }
+      } catch (error) {}
 <?php if ($navSlotCount > 0): ?>
       try {
         // Personal phone tabs, chosen by nav_slots.js and read here before paint.
@@ -192,6 +199,7 @@
   <script src="<?= $e($replyViewportScriptPath) ?>" defer></script>
   <script src="<?= $e($composeDisclosureScriptPath) ?>" defer></script>
   <script src="<?= $e($markdownDetectScriptPath) ?>" defer></script>
+  <script src="<?= $e($tableZoomScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
 <?php if (($inboxUnreadScriptPath ?? null) !== null): ?>
   <script src="<?= $e($inboxUnreadScriptPath) ?>" defer></script>

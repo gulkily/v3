@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Docs;
 
+use ForumRewrite\View\ZoomButtons;
+
 final class PublicMarkdownRenderer
 {
     /** True while rendering an untrusted post body rather than a project document. */
@@ -356,10 +358,17 @@ final class PublicMarkdownRenderer
             }
             return $html . '</tr>';
         };
-        $html = '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table"><table><thead>'
-            . $renderRow($rows[0], 'th') . '</thead><tbody>';
+        // Post tables fit the phone width by column count (site.css) and carry their own text-size
+        // controls (table_zoom.js); documentation pages keep their plain scrolling table.
+        $columns = min(count($rows[0]), 8);
+        $html = self::$postMode
+            ? '<div class="post-table">'
+                . ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'larger' => 'in'])
+                . '<div class="docs-table-scroll post-table-cols-' . $columns . '" tabindex="0" role="region" aria-label="Table">'
+            : '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table">';
+        $html .= '<table><thead>' . $renderRow($rows[0], 'th') . '</thead><tbody>';
         foreach (array_slice($rows, 2) as $row) { $html .= $renderRow($row, 'td'); }
-        return $html . '</tbody></table></div>';
+        return $html . '</tbody></table></div>' . (self::$postMode ? '</div>' : '');
     }
 
     /** Split only structural pipes; uncertain code spans retain the complete source block. */

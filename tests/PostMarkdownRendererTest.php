@@ -22,6 +22,23 @@ final class PostMarkdownRendererTest
         assertStringContains('<table>', $html);
     }
 
+    public function testPostTablesCarryFitColumnsAndZoomControlsButDocTablesDoNot(): void
+    {
+        $source = "| A | B | C | D |\n| --- | --- | --- | --- |\n| 1 | 2 | 3 | 4 |";
+        $post = PublicMarkdownRenderer::renderPost($source);
+        assertStringContains('<div class="post-table"><div class="zoom-buttons post-table-zoom" role="group" aria-label="Text size">', $post);
+        assertStringContains('data-table-zoom="out"', $post);
+        assertStringContains('data-table-zoom="fit"', $post);
+        assertStringContains('data-table-zoom="in"', $post);
+        assertStringContains('class="docs-table-scroll post-table-cols-4"', $post);
+        assertStringContains('</table></div></div>', $post);
+        $doc = PublicMarkdownRenderer::render($source);
+        assertStringNotContains('post-table', $doc);
+        assertStringContains('<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table"><table>', $doc);
+        $wide = PublicMarkdownRenderer::renderPost('|' . str_repeat(' x |', 11) . "\n|" . str_repeat(' --- |', 11) . "\n|" . str_repeat(' y |', 11));
+        assertStringContains('post-table-cols-8"', $wide);
+    }
+
     public function testHeadingsNestInsideThePostWithoutPageIds(): void
     {
         assertSame('<h3>Top</h3>', PublicMarkdownRenderer::renderPost('# Top'));
