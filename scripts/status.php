@@ -51,6 +51,9 @@ try {
         foreach (deploymentWarnings($projectRoot) as $warning) {
             fwrite(STDOUT, 'Deployment: WARN ' . $warning . "\n");
         }
+        foreach (\ForumRewrite\Support\GpgAvailability::warnings() as $warning) {
+            fwrite(STDOUT, 'Dependencies: WARN ' . $warning . "\n");
+        }
         foreach (HealthIndicators::fromStatus($status) as $indicator) {
             if (in_array($indicator['label'], ['Frontend', 'Read model', 'Task queue', 'Failed tasks'], true)) {
                 // Home is deliberately compact; details retain all indicators/recovery.
@@ -227,7 +230,7 @@ function printDeploymentSettings(string $projectRoot, string $repositoryRoot, st
             fwrite(STDOUT, "{$key}: ERROR " . $exception->getMessage() . "\n");
         }
     }
-    foreach (deploymentWarnings($projectRoot) as $warning) {
+    foreach ([...deploymentWarnings($projectRoot), ...\ForumRewrite\Support\GpgAvailability::warnings()] as $warning) {
         fwrite(STDOUT, 'WARN  ' . $warning . "\n");
     }
 }
