@@ -61,6 +61,7 @@ final class DeploymentSettings
         return dirname(__DIR__, 3);
     }
 
+    /** @internal Test hook: clears the cached settings files. */
     public static function resetForTesting(): void
     {
         self::$fileCache = [];

@@ -26,6 +26,7 @@ final class SignatureCheckCache
         }
     }
 
+    /** @internal Test hook: turns the cache off until useBeside() is called again. */
     public static function disable(): void
     {
         self::$path = null;
@@ -48,6 +49,7 @@ final class SignatureCheckCache
         try {
             self::connection()?->prepare('INSERT OR IGNORE INTO signature_checks (check_key) VALUES (?)')->execute([$key]);
         } catch (\Throwable) {
+            // The cache is an optimization; a failed write only means gpg runs again next time.
         }
     }
 

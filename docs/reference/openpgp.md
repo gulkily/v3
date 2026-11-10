@@ -62,7 +62,7 @@ All under `src/ForumRewrite/Security/` unless noted.
 - `Write/SignedPostIdentity`, `Write/SignedPostBundleValidator`, `Write/LocalWriteService`: accept signed posts and identity bootstraps on the write path.
 - `Agent/AgentIdentityService`: generates and uses the server's own **reply-agent** key with `gpg` in a temporary home. This is the only private key the server handles.
 
-The server needs `gpg` on `PATH`. Neither `./v3 status` nor `scripts/check_local_server_dependencies.php` checks for it yet. A missing `gpg` shows up as signature-verification failures.
+The server needs `gpg` on `PATH`. `./v3 status` warns when it is missing (`Support/GpgAvailability`); without it, every signature check fails.
 
 ## Identities and records
 
