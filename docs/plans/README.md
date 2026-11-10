@@ -18,6 +18,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
+[Codebase page sizes](codebase_sizes/codebase_sizes_step3_development_plan.md) — `/tools/codebase/` shows a collapsed Sizes card (database, repositories, downloads) and download sizes next to each link.
+
 [Board thumbnails one-shot](board_thumbnails/board_thumbnails_one_shot.md) — image posts show a small thumbnail on the board and on Recent.
 
 [Image gallery one-shot](image_gallery/image_gallery_one_shot.md) — a Gallery page shows posts with attached images as a grid of resized previews.
