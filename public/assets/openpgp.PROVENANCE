@@ -1,0 +1,39 @@
+OpenPGP.js by the OpenPGP.js developers (LGPL-3.0-or-later)
+Upstream: https://github.com/openpgpjs/openpgpjs
+License text: openpgp.LICENSE (identical in both packages below).
+
+Two builds are vendored on purpose. Do not remove either one.
+
+openpgp.min.js is OpenPGP.js 6.3.0, the default bundle.
+Package: https://registry.npmjs.org/openpgp/-/openpgp-6.3.0.tgz
+Package integrity: sha512-pLzCU8IgyKXPSO11eeharQkQ4GzOKNWhXq79pQarIRZEMt1/ssyr+MIuWBv1mNoenJLg04gvPx+fi4gcKZ4bag==
+openpgp.min.js is the unmodified package/dist/openpgp.min.js.
+SHA-256: 46d3e5b6bfe4f0d19b44fd3aa826ac1c67174e95a97be082a3982160b6caae4e
+openpgp.min.js.map is the unmodified package/dist/openpgp.min.js.map.
+SHA-256: 38a0325606c543b878e38af8f7a313389548ad9ac9222ec88c0dfc795228cb70
+
+openpgp.v5.11.3.min.js is OpenPGP.js 5.11.3, the plain-HTTP fallback.
+Package: https://registry.npmjs.org/openpgp/-/openpgp-5.11.3.tgz
+Package integrity: sha512-jXOPfIteBUQ2zSmRG4+Y6PNntIIDEAvoM/lOYCnvpXAByJEruzrHQZWE/0CGOKHbubwUuty2HoPHsqBzyKHOpA==
+openpgp.v5.11.3.min.js is the unmodified package/dist/openpgp.min.js.
+SHA-256: 89ae4b15e830e08096a125003218bdc7b5c39a4075437dc8d6d4a4e3bdc9a550
+
+Why both: v6 needs WebCrypto (crypto.subtle), which browsers expose only in
+secure contexts. On a public http:// origin the v6 bundle throws before it
+defines window.openpgp. v3 keeps plain HTTP as a supported access path, so
+v5, which still has a non-WebCrypto fallback, is served there instead.
+Loopback http:// counts as secure, so local testing does not reproduce this.
+
+Selection: openpgp_loader.js loads exactly one bundle per page, v5 only when
+window.isSecureContext === false. TemplateRenderer publishes both paths in
+window.__forumAssetPaths (openpgpV6, openpgpV5).
+Live check: ./v3 openpgp smoke
+Overview: docs/reference/openpgp.md
+Background: docs/plans/http_openpgp_failure_fix_plan_v1.md
+
+Updating: replace the file from the new package's dist/, update the version,
+integrity and SHA-256 lines here, then run ./v3 openpgp smoke and the browser
+key tests in docs/reference/key_backups.md under both HTTP and HTTPS. The v5
+filename carries its version, so a v5 update also renames the file and its
+two references in TemplateRenderer.
+No runtime network access or build step is required.
