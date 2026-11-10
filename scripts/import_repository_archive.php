@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
+require __DIR__ . '/lib/record_files.php';
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
@@ -533,16 +534,6 @@ function buildExistingRecordIndex(string $repositoryRoot): array
     }
 
     return $index;
-}
-
-function repositoryRelativePath(string $repositoryRoot, string $path): string
-{
-    $prefix = rtrim($repositoryRoot, '/') . '/';
-    if (!str_starts_with($path, $prefix)) {
-        throw new RuntimeException('Path is outside repository root: ' . $path);
-    }
-
-    return substr($path, strlen($prefix));
 }
 
 function isValidCanonicalSourcePath(string $relativePath): bool
