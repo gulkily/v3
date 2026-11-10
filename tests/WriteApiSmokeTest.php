@@ -4983,6 +4983,41 @@ NODE;
         assertStringNotContains('Prose a reader already has open', $page);
     }
 
+    public function testFallbacksToAFullRebuildAreLogged(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $log = tempnam(sys_get_temp_dir(), 'rebuild-fallback-log-');
+        $previousLog = ini_set('error_log', $log);
+        try {
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            (new ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+
+            (new \ForumRewrite\ReadModel\ReadModelStaleMarker($db))->mark(['reason' => 'test']);
+            $writer->createThread(['board_tags' => 'general', 'subject' => 'Behind', 'body' => 'Written while stale']);
+
+            $failing = new class($root, $db, $artifacts, new CanonicalRecordRepository($root)) extends LocalWriteService {
+                protected function incrementalReadModelUpdater(): \ForumRewrite\ReadModel\IncrementalReadModelUpdater
+                {
+                    return new class($this->databasePath(), $this->repositoryRoot()) extends \ForumRewrite\ReadModel\IncrementalReadModelUpdater {
+                        public function applyPostWrite(\ForumRewrite\Canonical\PostRecord $record, string $commitSha): array
+                        {
+                            throw new \RuntimeException('forced for the test');
+                        }
+                    };
+                }
+            };
+            $failing->createThread(['board_tags' => 'general', 'subject' => 'Failing', 'body' => 'Update throws']);
+        } finally {
+            ini_set('error_log', $previousLog === false ? '' : $previousLog);
+        }
+        $lines = array_values(array_filter(explode("\n", (string) file_get_contents($log)), static fn (string $l): bool => str_contains($l, 'fell back to a full rebuild')));
+        @unlink($log);
+
+        assertSame(2, count($lines), implode("\n", $lines));
+        assertStringContains('Read model: post update fell back to a full rebuild: stale marker present', $lines[0]);
+        assertStringContains('Read model: post update fell back to a full rebuild: forced for the test', $lines[1]);
+    }
+
     public function testTargetedRetractionMatchesAFullRebuild(): void
     {
         $scenarios = [

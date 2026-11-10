@@ -867,6 +867,9 @@ class LocalWriteService
             $this->deletePreparedPost($prepareToken);
 
             $failedStep = null;
+            if ($updateContext === null) {
+                $this->logRebuildFallback('retraction update', $this->readModelNotCurrentReason() ?? 'read model behind HEAD or post not in it');
+            }
             $targetedTimings = $updateContext === null ? null : $this->applyRetractionToOnePost($postId, $commitSha);
             if ($targetedTimings !== null) {
                 $timings = array_merge($timings, $targetedTimings);
@@ -1162,11 +1165,13 @@ class LocalWriteService
         try {
             $removal = \ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $postId);
             if ($removal === null) {
+                $this->logRebuildFallback('retraction update', 'no accepted removal record');
                 return null;
             }
             $timings = (new IncrementalReadModelUpdater($this->databasePath, $this->repositoryRoot))
                 ->applyPostRemoval($removal, AcceptedRetraction::path($postId), array_keys($removal['labels'] ?? []), $commitSha);
-        } catch (\Throwable) {
+        } catch (\Throwable $error) {
+            $this->logRebuildFallback('retraction update', $error->getMessage());
             return null;
         }
         $this->staleMarker()->clear();
@@ -3138,6 +3143,7 @@ class LocalWriteService
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('post update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -3172,6 +3178,7 @@ class LocalWriteService
 
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('post update', $throwable->getMessage());
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
@@ -3215,6 +3222,7 @@ class LocalWriteService
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('thread label update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -3230,6 +3238,7 @@ class LocalWriteService
             $incrementalTimings = $this->incrementalReadModelUpdater()->applyThreadLabelWrite($threadId, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('thread label update', $throwable->getMessage());
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
@@ -3269,6 +3278,7 @@ class LocalWriteService
     private function synchronizeThreadSubjectDerivedState(string $threadId, string $commitSha): void
     {
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('thread title update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $this->refreshDerivedStateAfterCommit($commitSha);
 
             return;
@@ -3278,6 +3288,7 @@ class LocalWriteService
             $this->incrementalReadModelUpdater()->applyThreadSubjectWrite($threadId, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('thread title update', $throwable->getMessage());
             try {
                 $this->refreshDerivedStateAfterCommit($commitSha);
             } catch (\Throwable $fallbackThrowable) {
@@ -3302,6 +3313,7 @@ class LocalWriteService
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('post reaction update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -3317,6 +3329,7 @@ class LocalWriteService
             $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('post reaction update', $throwable->getMessage());
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
@@ -3361,6 +3374,7 @@ class LocalWriteService
         $phaseStartedAt = hrtime(true);
         $this->identityUpdateMetrics = ['path' => 'incremental'];
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('identity link update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $this->identityUpdateMetrics = ['path' => 'full_rebuild', 'fallback_reason' => 'incremental_unavailable'];
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
@@ -3382,6 +3396,7 @@ class LocalWriteService
             $this->identityUpdateMetrics += $updater->identityUpdateMetrics();
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('identity link update', $throwable->getMessage());
             $this->identityUpdateMetrics = ['path' => 'full_rebuild', 'fallback_reason' => 'incremental_update_failed'] + ($updater?->identityUpdateMetrics() ?? []);
             $fallbackStartedAt = hrtime(true);
             try {
@@ -3426,6 +3441,7 @@ class LocalWriteService
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
+            $this->logRebuildFallback('approval update', $this->readModelNotCurrentReason() ?? 'read model not current');
             $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
             $timings = [
                 'read_model_approval_rebuild' => $this->elapsedMilliseconds($phaseStartedAt),
@@ -3441,6 +3457,7 @@ class LocalWriteService
             $incrementalTimings = $this->incrementalReadModelUpdater()->applyApprovalWrite($record, $commitSha);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
+            $this->logRebuildFallback('approval update', $throwable->getMessage());
             $fallbackStartedAt = hrtime(true);
             try {
                 $rebuildTimings = $this->refreshDerivedStateAfterCommit($commitSha);
@@ -3475,6 +3492,31 @@ class LocalWriteService
         }
 
         return $timings;
+    }
+
+    /**
+     * One log line whenever a targeted update gives way to a full rebuild, so each cause can
+     * be found and fixed (see docs/plans/rebuild_triggers_checklist.md).
+     */
+    private function logRebuildFallback(string $update, string $reason): void
+    {
+        error_log('Read model: ' . $update . ' fell back to a full rebuild: ' . $reason);
+    }
+
+    /** Why the read model cannot take a targeted update, or null when it can. */
+    private function readModelNotCurrentReason(): ?string
+    {
+        if (!is_file($this->databasePath)) return 'no read model';
+        if ($this->staleMarker()->exists()) return 'stale marker present';
+        try {
+            $metadata = (new ReadModelConnection($this->databasePath))->open()->query('SELECT key, value FROM metadata')->fetchAll(\PDO::FETCH_KEY_PAIR);
+        } catch (\Throwable $error) {
+            return 'metadata unreadable: ' . $error->getMessage();
+        }
+        if (!ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) return 'schema differs';
+        if (($metadata['repository_root'] ?? null) !== $this->repositoryRoot) return 'repository root differs';
+
+        return null;
     }
 
     protected function canIncrementallyUpdateReadModel(): bool
