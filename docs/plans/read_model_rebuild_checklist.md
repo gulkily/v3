@@ -22,10 +22,12 @@ Problem: some writes (retraction, profile name, key retirement, and others) do a
 - [x] Retraction updates the read model for one post (`applyPostRemoval`, shared with `delete-record`), falling back to a full rebuild
 - [x] Retraction clears only the pages that showed the post, not every static page
 - [x] Measure on a qdb-sized repo: the targeted removal took 0.24s locally, against 7.0s for a full rebuild
-- [ ] Live check on zenmemes.com after deploy
+- [x] Live check: merged as #119; the maintainer retracted a post on the live site and reported it worked very quickly
 - Profile-name changes moved to cycle 3 (usernames are copied widely and claimed first-come, so an in-place update is risky for a rare action).
 
 ## 3. `background_rebuild`: full rebuilds leave the request path
+
+Superseded as a single cycle by the [rebuild triggers checklist](rebuild_triggers_checklist.md), which lists every remaining trigger so each can be removed in its own cycle. The items below stay as a record of the original plan.
 
 - [ ] A write that needs a full rebuild commits, marks the site stale, queues the rebuild, and returns
 - [ ] Every full rebuild builds a new file and swaps it in (unless cycle 1 already does)

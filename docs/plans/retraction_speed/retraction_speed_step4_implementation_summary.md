@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/retraction_speed`; [host ledger](../effor
 
 Extended estimates: enabled
 
-Status: Step 4 closeout recorded; zenmemes.com live check pending deploy.
+Status: complete; merged as #119 and confirmed live by the maintainer.
 
 **Cycle estimate: 0.25** (Step 3, reaffirmed at entry)
 
@@ -51,13 +51,13 @@ Status: Step 4 closeout recorded; zenmemes.com live check pending deploy.
 ## Stage 3 - Timing, docs and the live check
 
 **Original estimate: 0.07**
-**Retrospective: pending (live check outstanding)**
+**Retrospective: 0.07**
 
 - Changes: concept entries [post retraction](../../concepts/post_retraction.md) and [incremental source removal](../../concepts/incremental_source_removal.md) updated; the [checklist](../read_model_rebuild_checklist.md) marks this cycle's items, records the measurement and moves profile names to cycle 3.
 - Verification:
   - Timing on the 30,000-quote local copy (61 MB read model): the targeted removal took 0.24s, a full rebuild with swap 6.99s. Measured through `delete-record`, which runs the same targeted update and page clearing; a signed retraction adds signature checking and its commit. Target under 1 second: passed for the shared path.
   - Smoke set: 441 run, 441 passed. Full suite not run.
-  - Live check on zenmemes.com: pending deploy. "claude" retracts a test post through `frm.py`; record the response time, the thread placeholder and that an unrelated cached page still exists.
+  - Live check: after #119 merged and deployed, the maintainer retracted a post on the live site and reported that it "worked very quickly". No response time or page-state record was taken; the planned agent check was not run, since the maintainer's own retraction covered the user path.
 - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
@@ -67,10 +67,10 @@ Status: Step 4 closeout recorded; zenmemes.com live check pending deploy.
 **Cycle estimate at entry: 0.25**
 **Retrospective scope assessment: 0.22**
 
-- Technical status: Stages 1–2 complete; Stage 3 local work complete. Not complete overall: the zenmemes.com live check is pending deploy. Merge and publication are the maintainer's.
+- Technical status: all stages complete; merged as #119 (`8a189ab`) and confirmed live by the maintainer.
 - Commits: planning `9c94d3c`; stages `22fee09` (1), `91faa3f` (2), `1b7f0af` (3).
 - Checks: smoke set 441/441; all 47 retraction-related test classes 858/858; equality with a full rebuild for four retraction cases, with a mutation check. Full suite not run.
-- Retrospective slightly under the entry estimate: `applyPostRemoval()` needed no change. The three test reroutes and the shared snapshot helper were unplanned but small. Stage retrospectives 0.03/0.12/pending, non-additive.
+- Retrospective slightly under the entry estimate: `applyPostRemoval()` needed no change. The three test reroutes and the shared snapshot helper were unplanned but small. Stage retrospectives 0.03/0.12/0.07, non-additive.
 - Maintainer comfortable-fit judgment and study acceptance: pending.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
