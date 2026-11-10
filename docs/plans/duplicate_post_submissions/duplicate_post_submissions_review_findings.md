@@ -223,9 +223,13 @@ ID, without checking its text. It now clears only when the stored body matches
 the draft body after the server's normalization (line endings, trim, NFC). A
 mismatch keeps the draft, and finding 11's fix lets it publish.
 
-**Decision to confirm:** after a moderator removes a post whose response was
-lost, posting again publishes the same text as a new post. That follows
-"Accommodate first"; the new post can be moderated like any other.
+**Decision (confirmed by Ilya, 2026-11-10):** after a moderator removes a post
+whose response was lost, posting again publishes the same text as a new post. A
+re-sent reply must stay a reply to the same post, because dropping that would
+change what the author sent. The reply form carries `thread_id` and `parent_id`,
+so the fresh send keeps both; `testRemovedReplyIsResentAsAReplyToTheSamePost`
+checks this for a reply to another reply. A planned feature to reparent a reply
+as its own post is separate and leaves this unchanged.
 
 **Verification:** `./v3 test --smoke BrowserSigningNormalizationTest ComposeAttemptReplayTest LocalWriteServiceTitleDirectiveTest LocalAppSmokeTest`
 on the rebased branch; the full suite was not run. The browser check now also

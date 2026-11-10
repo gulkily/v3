@@ -135,6 +135,40 @@ final class ComposeAttemptReplayTest
         assertStringContains('Replay body', $page);
     }
 
+    public function testRemovedReplyIsResentAsAReplyToTheSamePost(): void
+    {
+        [$repository, $service, , $application] = $this->environment();
+        $parentId = $service->createReply(['body' => 'Parent reply', 'compose_attempt' => str_repeat('e', 32)] + $this->reply())['post_id'];
+        $fields = ['parent_id' => $parentId] + $this->reply();
+        $this->post($application, '/compose/reply', $fields);
+        $postId = 'reply-' . self::ATTEMPT;
+        $path = $repository . '/' . LabelRemoval::path($postId);
+        @mkdir(dirname($path), 0777, true);
+        file_put_contents($path, LabelRemoval::encode([
+            'acceptance_version' => 2,
+            'source_id' => $postId,
+            'source_hash' => str_repeat('a', 64),
+            'operation' => 'delete',
+            'accepted_at' => '2026-11-04T00:00:00Z',
+            'actor' => 'local-operator',
+            'labels' => [],
+            'post' => ['post_id' => $postId, 'thread_id' => 'root-001', 'parent_id' => $parentId, 'created_at' => '2026-11-04T00:00:00Z', 'author_identity_id' => null, 'thread_type' => null],
+        ]));
+
+        $page = $this->post($application, '/compose/reply', $fields);
+
+        assertStringContains('data-compose-attempt-retired="' . self::ATTEMPT . '"', $page);
+        assertStringContains('name="parent_id" value="' . $parentId . '"', $page);
+
+        // The browser's next send carries a fresh ID and is still a reply to the same post.
+        $freshAttempt = str_repeat('f', 32);
+        $this->post($application, '/compose/reply', ['compose_attempt' => $freshAttempt] + $fields);
+        $resent = $this->record($repository, 'reply-' . $freshAttempt);
+        assertSame('root-001', $resent->threadId);
+        assertSame($parentId, $resent->parentId);
+        assertSame('Replay body', trim($resent->body));
+    }
+
     public function testOtherErrorsKeepTheAttemptForRetry(): void
     {
         [$repository, , , $application] = $this->environment();
