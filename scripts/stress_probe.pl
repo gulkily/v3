@@ -12,6 +12,7 @@ use strict;
 use warnings;
 use Getopt::Long qw(GetOptionsFromArray);
 use HTTP::Tiny;
+use IO::Handle;
 use File::Temp qw(tempdir);
 use POSIX qw(floor strftime);
 use Time::HiRes qw(time sleep);
@@ -48,6 +49,7 @@ options:
   --max-error-rate N    stop when 5xx/network errors exceed this share (default 0.02)
   --max-shed-rate N     stop when 503 Retry-After responses exceed this share (default 0.25)
   --timeout N           per-request timeout in seconds (default 30)
+  --progress N          print a progress line this often during each step; 0 turns it off (default 5)
   --record FILE         also write the result as a Key: value text record
 TEXT
 }
@@ -56,12 +58,12 @@ sub parse_args {
     my @argv = @_;
     my %args = (confirm => '', mode => 'cached', steps => '1,2,4,8', seconds => 20, 'max-rps' => 50, pause => 5,
         threads => 5, path => [], 'p95-ms' => 2000, 'max-error-rate' => 0.02, 'max-shed-rate' => 0.25,
-        timeout => 30, record => undef);
+        timeout => 30, progress => 5, record => undef);
     my $help = 0;
     my @errors;
     local $SIG{__WARN__} = sub { push @errors, $_[0] };
     my $ok = GetOptionsFromArray(\@argv, \%args, 'confirm=s', 'mode=s', 'steps=s', 'seconds=f', 'max-rps=f', 'pause=f',
-        'threads=i', 'path=s@', 'p95-ms=f', 'max-error-rate=f', 'max-shed-rate=f', 'timeout=f', 'record=s',
+        'threads=i', 'path=s@', 'p95-ms=f', 'max-error-rate=f', 'max-shed-rate=f', 'timeout=f', 'progress=f', 'record=s',
         'help|h' => \$help);
     if ($help) { print help_text(); exit 0 }
     if (!$ok) { my $message = $errors[0] // 'invalid arguments'; chomp $message; usage_error($message) }
@@ -87,7 +89,8 @@ sub parse_args {
     $args{step_list} = \@steps;
     usage_error("--seconds must be between 0 and $MAX_STEP_SECONDS") unless $args{seconds} > 0 && $args{seconds} <= $MAX_STEP_SECONDS;
     usage_error("--max-rps must be between 0 and $MAX_RPS") unless $args{'max-rps'} > 0 && $args{'max-rps'} <= $MAX_RPS;
-    usage_error('--pause, --threads and --timeout must not be negative') if $args{pause} < 0 || $args{threads} < 0 || $args{timeout} <= 0;
+    usage_error('--pause, --threads, --progress and --timeout must not be negative')
+        if $args{pause} < 0 || $args{threads} < 0 || $args{timeout} <= 0 || $args{progress} < 0;
     for my $path (@{ $args{path} }) {
         usage_error('--path values must start with /') unless $path =~ m{\A/};
     }
@@ -167,6 +170,7 @@ sub reader {
     my $http = client($args);
     my $index = $offset;
     open my $fh, '>', $out or die "Cannot write $out: $!\n";
+    $fh->autoflush(1);  # the parent reads these lines for progress while the step runs
     while (1) {
         my $now = time;
         $next += $period * (1 + int(($now - $next) / $period)) if $now > $next + $period;
@@ -192,6 +196,36 @@ sub reader {
     close $fh;
 }
 
+sub progress_line {
+    # $recent: latencies of requests finished since the previous progress line.
+    my ($concurrency, $elapsed, $seconds, $samples, $recent) = @_;
+    my %statuses;
+    $statuses{ $_->[1] }++ for @$samples;
+    my $counts = join ' ', map { ($_ == 0 ? 'network' : $_) . ":$statuses{$_}" } sort { $a <=> $b } keys %statuses;
+    my @sorted = sort { $a <=> $b } @$recent;
+    my $p95 = @sorted ? half_up(percentile(\@sorted, .95)) . ' ms' : '-';
+    my $rate = $elapsed > 0 ? @$samples / $elapsed : 0;
+    return sprintf('  .. c=%d  %ds/%gs  %d req  %.1f/s  recent p95 %s  [%s]', $concurrency, int $elapsed, $seconds,
+        scalar @$samples, $rate, $p95, $counts);
+}
+
+sub collect_lines {
+    # Read whole lines appended to each reader's file since the last call.
+    my ($dir, $concurrency, $offsets, $samples, $errors) = @_;
+    for my $offset (0 .. $concurrency - 1) {
+        open my $fh, '<', "$dir/$offset" or next;
+        seek $fh, $offsets->[$offset] // 0, 0;
+        while (my $line = <$fh>) {
+            last unless $line =~ s/\n\z//;  # a reader is still writing this line
+            $offsets->[$offset] = tell $fh;
+            my ($label, $status, $ms, $cache, $retry, $error) = split /\t/, $line, -1;
+            push @$samples, [$label, $status + 0, $ms + 0, $cache, $retry];
+            $errors->{$error}++ if $status == 0;
+        }
+        close $fh;
+    }
+}
+
 sub run_step {
     my ($args, $plan, $concurrency) = @_;
     my $dir = tempdir(CLEANUP => 1);
@@ -207,20 +241,28 @@ sub run_step {
         }
         push @children, $pid;
     }
-    waitpid $_, 0 for @children;
-    my $wall = time - $started;
-
-    my (@samples, %errors);
-    for my $offset (0 .. $concurrency - 1) {
-        open my $fh, '<', "$dir/$offset" or next;
-        while (my $line = <$fh>) {
-            chomp $line;
-            my ($label, $status, $ms, $cache, $retry, $error) = split /\t/, $line, -1;
-            push @samples, [$label, $status + 0, $ms + 0, $cache, $retry];
-            $errors{$error}++ if $status == 0;
+    my (@samples, %errors, @offsets);
+    my %running = map { $_ => 1 } @children;
+    my $next_tick = $started + $args->{progress};
+    my $reported = 0;
+    while (%running) {
+        for my $pid (keys %running) {
+            delete $running{$pid} if waitpid($pid, POSIX::WNOHANG()) != 0;
         }
-        close $fh;
+        my $now = time;
+        if ($args->{progress} > 0 && $now >= $next_tick) {
+            if ($now < $deadline) {
+                collect_lines($dir, $concurrency, \@offsets, \@samples, \%errors);
+                print progress_line($concurrency, $now - $started, $args->{seconds}, \@samples,
+                    [map { $_->[2] } @samples[$reported .. $#samples]]), "\n";
+                $reported = @samples;
+            }
+            $next_tick += $args->{progress};
+        }
+        sleep 0.1 if %running;
     }
+    my $wall = time - $started;
+    collect_lines($dir, $concurrency, \@offsets, \@samples, \%errors);
     my (%statuses, $shed, $failures);
     ($shed, $failures) = (0, 0);
     for my $sample (@samples) {
@@ -322,6 +364,7 @@ sub main {
     printf "Rate:    at most %g requests per second in total\n", $args->{'max-rps'};
     printf "Stops:   any 429; errors > %g%%; shed 503s > %g%%; p95 > %d ms\n", $args->{'max-error-rate'} * 100,
         $args->{'max-shed-rate'} * 100, $args->{'p95-ms'};
+    print 'Report:  ', ($args->{progress} > 0 ? sprintf('progress every %gs', $args->{progress}) : 'step results only'), "\n";
     if (!$confirmed) {
         if ($args->{confirm} ne '') {
             printf "\n--confirm %s does not match the target host %s. Nothing was sent.\n", $args->{confirm}, $args->{host};
@@ -335,7 +378,12 @@ sub main {
         return 1;
     }
 
-    my @threads = $args->{threads} ? discover_paths($args) : ();
+    my @threads;
+    if ($args->{threads}) {
+        printf "Reading / for up to %d thread links...\n", $args->{threads};
+        @threads = discover_paths($args);
+        printf "Found %d thread page%s.\n", scalar @threads, @threads == 1 ? '' : 's';
+    }
     my @plan = route_plan($args, @threads);
     my %paths = map { $_->[1] => 1 } @plan;
     print 'Routes:  ', join(', ', sort keys %paths), "\n";
@@ -344,7 +392,12 @@ sub main {
         stop_rules => { p95_ms => $args->{'p95-ms'}, max_error_rate => $args->{'max-error-rate'}, max_shed_rate => $args->{'max-shed-rate'} },
         steps => [], stopped => '');
     for my $number (0 .. $#steps) {
-        sleep $args->{pause} if $number;
+        if ($number && $args->{pause} > 0) {
+            printf "Resting %gs...\n", $args->{pause};
+            sleep $args->{pause};
+        }
+        printf "Step %d/%d: %d reader%s for %gs\n", $number + 1, scalar @steps, $steps[$number], $steps[$number] == 1 ? '' : 's',
+            $args->{seconds};
         my $step = run_step($args, \@plan, $steps[$number]);
         push @{ $result{steps} }, $step;
         print_step($step);

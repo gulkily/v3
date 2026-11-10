@@ -61,6 +61,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                         help='stop when 5xx/network errors exceed this share, excluding load-shedding 503s (default 0.02)')
     parser.add_argument('--max-shed-rate', type=float, default=0.25,
                         help='stop when 503 Retry-After responses exceed this share (default 0.25)')
+    parser.add_argument('--progress', type=float, default=5,
+                        help='print a progress line this often during each step, in seconds; 0 turns it off (default 5)')
     parser.add_argument('--timeout', type=float, default=30, help='per-request timeout in seconds (default 30)')
     parser.add_argument('--record', metavar='FILE', help='also write the result as a Key: value text record')
     args = parser.parse_args(argv)
@@ -79,8 +81,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         parser.error('--seconds must be between 0 and %d' % MAX_STEP_SECONDS)
     if not 0 < args.max_rps <= MAX_RPS:
         parser.error('--max-rps must be between 0 and %d' % MAX_RPS)
-    if args.pause < 0 or args.threads < 0 or args.timeout <= 0:
-        parser.error('--pause, --threads and --timeout must not be negative')
+    if args.pause < 0 or args.threads < 0 or args.timeout <= 0 or args.progress < 0:
+        parser.error('--pause, --threads, --progress and --timeout must not be negative')
     for path in args.path:
         if not path.startswith('/'):
             parser.error('--path values must start with /')
@@ -170,6 +172,20 @@ def percentile(sorted_values: list[float], fraction: float) -> float:
     return sorted_values[index]
 
 
+def say(line: str) -> None:
+    print(line, flush=True)
+
+
+def progress_line(concurrency: int, elapsed: float, seconds: float, samples: list, recent: list) -> str:
+    # recent: latencies (ms) of requests finished since the previous progress line.
+    statuses = Counter(sample[1] for sample in samples)
+    counts = ' '.join('%s:%d' % ('network' if code == 0 else code, count) for code, count in sorted(statuses.items()))
+    p95 = '%d ms' % half_up(percentile(sorted(recent), .95)) if recent else '-'
+    rate = len(samples) / elapsed if elapsed > 0 else 0.0
+    return '  .. c=%d  %ds/%gs  %d req  %.1f/s  recent p95 %s  [%s]' % (
+        concurrency, int(elapsed), seconds, len(samples), rate, p95, counts)
+
+
 def run_step(args: argparse.Namespace, plan: list[tuple[str, str]], concurrency: int) -> dict:
     deadline = time.monotonic() + args.seconds
     lock = threading.Lock()
@@ -216,8 +232,21 @@ def run_step(args: argparse.Namespace, plan: list[tuple[str, str]], concurrency:
     workers = [threading.Thread(target=reader, args=(i,), daemon=True) for i in range(concurrency)]
     for worker in workers:
         worker.start()
+    give_up = started + args.seconds + args.timeout + 5
+    next_tick = started + args.progress
+    reported = 0
+    while any(worker.is_alive() for worker in workers) and time.monotonic() < give_up:
+        now = time.monotonic()
+        if args.progress > 0 and now >= next_tick:
+            if now < deadline:
+                with lock:
+                    snapshot = list(samples)
+                say(progress_line(concurrency, now - started, args.seconds, snapshot, [sample[2] for sample in snapshot[reported:]]))
+                reported = len(snapshot)
+            next_tick += args.progress
+        time.sleep(0.1)
     for worker in workers:
-        worker.join(args.seconds + args.timeout + 5)
+        worker.join(max(0.0, give_up - time.monotonic()))
     wall = time.monotonic() - started
 
     statuses = Counter(sample[1] for sample in samples)
@@ -295,6 +324,8 @@ def record_text(result: dict) -> str:
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(line_buffering=True)  # show each line at once, even when piped to a log
     confirmed = args.confirm == args.host
     total_seconds = len(args.step_list) * args.seconds + (len(args.step_list) - 1) * args.pause
     print('Target:  %s://%s%s' % (args.scheme, args.host, '' if args.port is None else ':%d' % args.port))
@@ -303,6 +334,7 @@ def main(argv: list[str]) -> int:
     print('Rate:    at most %g requests per second in total' % args.max_rps)
     print('Stops:   any 429; errors > %g%%; shed 503s > %g%%; p95 > %d ms' % (
         args.max_error_rate * 100, args.max_shed_rate * 100, args.p95_ms))
+    print('Report:  %s' % ('progress every %gs' % args.progress if args.progress > 0 else 'step results only'))
     if not confirmed:
         if args.confirm:
             print('\n--confirm %s does not match the target host %s. Nothing was sent.' % (args.confirm, args.host))
@@ -310,17 +342,24 @@ def main(argv: list[str]) -> int:
         print('\nPlan only; nothing was sent. Add --confirm %s to run it.' % args.host)
         return 0
 
-    threads = discover_paths(args) if args.threads else []
+    threads: list[str] = []
+    if args.threads:
+        say('Reading / for up to %d thread links...' % args.threads)
+        threads = discover_paths(args)
+        say('Found %d thread page%s.' % (len(threads), '' if len(threads) == 1 else 's'))
     plan = route_plan(args, threads)
-    print('Routes:  %s' % ', '.join(sorted({path for _, path in plan})))
+    say('Routes:  %s' % ', '.join(sorted({path for _, path in plan})))
     result = {'target': args.base_url, 'mode': args.mode, 'started_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
               'user_agent': USER_AGENT, 'max_rps': args.max_rps, 'stop_rules': {'p95_ms': args.p95_ms, 'max_error_rate': args.max_error_rate,
                                                        'max_shed_rate': args.max_shed_rate},
               'steps': [], 'stopped': ''}
     try:
         for number, concurrency in enumerate(args.step_list):
-            if number:
+            if number and args.pause > 0:
+                say('Resting %gs...' % args.pause)
                 time.sleep(args.pause)
+            say('Step %d/%d: %d reader%s for %gs' % (number + 1, len(args.step_list), concurrency,
+                                                    '' if concurrency == 1 else 's', args.seconds))
             step = run_step(args, plan, concurrency)
             result['steps'].append(step)
             print_step(step)

@@ -44,6 +44,7 @@ options:
   --max-error-rate N    stop when 5xx/network errors exceed this share (default 0.02)
   --max-shed-rate N     stop when 503 Retry-After responses exceed this share (default 0.25)
   --timeout N           per-request timeout in seconds (default 30)
+  --progress N          print a progress line this often during each step; 0 turns it off (default 5)
   --record FILE         also write the result as a Key: value text record
 
 TEXT;
@@ -54,7 +55,7 @@ function parse_args(array $argv): array
 {
     $args = ['confirm' => '', 'mode' => 'cached', 'steps' => '1,2,4,8', 'seconds' => '20', 'max-rps' => '50', 'pause' => '5',
         'threads' => '5', 'path' => [], 'p95-ms' => '2000', 'max-error-rate' => '0.02', 'max-shed-rate' => '0.25',
-        'timeout' => '30', 'record' => null];
+        'timeout' => '30', 'progress' => '5', 'record' => null];
     $positional = [];
     for ($i = 0; $i < count($argv); $i++) {
         $argument = $argv[$i];
@@ -113,7 +114,7 @@ function parse_args(array $argv): array
         usage_error('each step must be between 1 and ' . MAX_CONCURRENCY);
     }
     $args['step_list'] = $steps;
-    foreach (['seconds', 'max-rps', 'pause', 'p95-ms', 'max-error-rate', 'max-shed-rate', 'timeout'] as $name) {
+    foreach (['seconds', 'max-rps', 'pause', 'p95-ms', 'max-error-rate', 'max-shed-rate', 'timeout', 'progress'] as $name) {
         if (!is_numeric($args[$name])) {
             usage_error("argument --{$name}: invalid float value: '{$args[$name]}'");
         }
@@ -129,8 +130,8 @@ function parse_args(array $argv): array
     if (!($args['max-rps'] > 0 && $args['max-rps'] <= MAX_RPS)) {
         usage_error('--max-rps must be between 0 and ' . MAX_RPS);
     }
-    if ($args['pause'] < 0 || $args['threads'] < 0 || $args['timeout'] <= 0) {
-        usage_error('--pause, --threads and --timeout must not be negative');
+    if ($args['pause'] < 0 || $args['threads'] < 0 || $args['timeout'] <= 0 || $args['progress'] < 0) {
+        usage_error('--pause, --threads, --progress and --timeout must not be negative');
     }
     foreach ($args['path'] as $path) {
         if (!str_starts_with($path, '/')) {
@@ -243,6 +244,26 @@ function concrete_path(string $label, string $path): string
     return $path . (str_contains($path, '?') ? '&' : '?') . 'stress=' . random_int(0, 10 ** 12 - 1);
 }
 
+/**
+ * @param list<array> $samples
+ * @param list<float> $recent latencies of requests finished since the previous progress line
+ */
+function progress_line(int $concurrency, float $elapsed, float $seconds, array $samples, array $recent): string
+{
+    $statuses = [];
+    foreach ($samples as $sample) {
+        $statuses[$sample[1]] = ($statuses[$sample[1]] ?? 0) + 1;
+    }
+    ksort($statuses);
+    $counts = implode(' ', array_map(fn ($code, $count): string => ($code === 0 ? 'network' : $code) . ':' . $count,
+        array_keys($statuses), $statuses));
+    sort($recent);
+    $p95 = $recent === [] ? '-' : half_up(percentile($recent, .95)) . ' ms';
+    $rate = $elapsed > 0 ? count($samples) / $elapsed : 0.0;
+    return sprintf('  .. c=%d  %ds/%gs  %d req  %.1f/s  recent p95 %s  [%s]', $concurrency, (int) $elapsed, $seconds,
+        count($samples), $rate, $p95, $counts);
+}
+
 function run_step(array $args, array $plan, int $concurrency): array
 {
     $multi = curl_multi_init();
@@ -262,8 +283,18 @@ function run_step(array $args, array $plan, int $concurrency): array
     }
 
     $started = now();
+    $nextTick = $started + $args['progress'];
+    $reported = 0;
     while (true) {
         $time = now();
+        if ($args['progress'] > 0 && $time >= $nextTick) {
+            if ($time < $deadline) {
+                echo progress_line($concurrency, $time - $started, $args['seconds'], $samples,
+                    array_map(fn (array $sample): float => $sample[2], array_slice($samples, $reported))) . "\n";
+                $reported = count($samples);
+            }
+            $nextTick += $args['progress'];
+        }
         // Shared pacing: requests start at evenly spaced times so the total rate stays capped.
         foreach ($readers as $i => &$reader) {
             if ($reader['busy'] || $reader['retired'] || $time >= $deadline || $time < $nextSlot) {
@@ -310,7 +341,7 @@ function run_step(array $args, array $plan, int $concurrency): array
         if ($busy > 0) {
             curl_multi_select($multi, max(0.001, min(0.05, $nextSlot - now())));
         } else {
-            $wait = min($nextSlot, $deadline) - now();
+            $wait = min($nextSlot, $deadline, $args['progress'] > 0 ? $nextTick : INF) - now();
             if ($wait > 0) {
                 usleep((int) ($wait * 1e6));
             }
@@ -445,6 +476,7 @@ function main(array $argv): int
     printf("Rate:    at most %g requests per second in total\n", $args['max-rps']);
     printf("Stops:   any 429; errors > %g%%; shed 503s > %g%%; p95 > %d ms\n", $args['max-error-rate'] * 100,
         $args['max-shed-rate'] * 100, $args['p95-ms']);
+    echo 'Report:  ' . ($args['progress'] > 0 ? sprintf('progress every %gs', $args['progress']) : 'step results only') . "\n";
     if (!$confirmed) {
         if ($args['confirm'] !== '') {
             printf("\n--confirm %s does not match the target host %s. Nothing was sent.\n", $args['confirm'], $args['host']);
@@ -458,7 +490,12 @@ function main(array $argv): int
         return 1;
     }
 
-    $threads = $args['threads'] > 0 ? discover_paths($args) : [];
+    $threads = [];
+    if ($args['threads'] > 0) {
+        printf("Reading / for up to %d thread links...\n", $args['threads']);
+        $threads = discover_paths($args);
+        printf("Found %d thread page%s.\n", count($threads), count($threads) === 1 ? '' : 's');
+    }
     $plan = route_plan($args, $threads);
     $paths = array_values(array_unique(array_map(fn (array $entry): string => $entry[1], $plan)));
     sort($paths, SORT_STRING);
@@ -468,9 +505,11 @@ function main(array $argv): int
         'stop_rules' => ['p95_ms' => $args['p95-ms'], 'max_error_rate' => $args['max-error-rate'], 'max_shed_rate' => $args['max-shed-rate']],
         'steps' => [], 'stopped' => ''];
     foreach ($steps as $number => $concurrency) {
-        if ($number > 0) {
+        if ($number > 0 && $args['pause'] > 0) {
+            printf("Resting %gs...\n", $args['pause']);
             usleep((int) ($args['pause'] * 1e6));
         }
+        printf("Step %d/%d: %d reader%s for %gs\n", $number + 1, count($steps), $concurrency, $concurrency === 1 ? '' : 's', $args['seconds']);
         $step = run_step($args, $plan, $concurrency);
         $result['steps'][] = $step;
         print_step($step);
