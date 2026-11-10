@@ -54,6 +54,11 @@ The run stops after the first step that breaks a stop rule:
 - load-shedding `503` responses above `--max-shed-rate` (default 25%);
 - p95 latency above `--p95-ms` (default 2000).
 
+While it runs, it says when it reads the home page for thread links, starts each step
+and rests between steps. During a step it prints a progress line every `--progress`
+seconds (default 5; `0` turns it off) with elapsed time, requests so far, the rate, p95
+over the last interval and the status codes so far.
+
 The exit status is 0 when every step passed and 1 when the run stopped early.
 `--record FILE` saves the result as a `Key: value` text record.
 
