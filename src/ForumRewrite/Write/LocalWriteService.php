@@ -4133,12 +4133,12 @@ class LocalWriteService
             return null;
         }
         if (!is_string($attempt) || preg_match('/^[a-f0-9]{32}$/D', $attempt) !== 1) {
-            throw new RuntimeException('Invalid compose attempt.');
+            throw new ComposeAttemptRetired('Invalid compose attempt.', is_string($attempt) ? $attempt : '');
         }
         $postId = $prefix . '-' . $attempt;
         if ((\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete'
             || (\ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $postId)['operation'] ?? null) === 'delete') {
-            throw new RuntimeException('This post was removed and cannot be posted again.');
+            throw new ComposeAttemptRetired('An earlier send of this post was removed. Post again to publish it as a new post.', $attempt);
         }
 
         return $postId;
@@ -4173,7 +4173,11 @@ class LocalWriteService
             return null;
         }
         if (rtrim((string) file_get_contents($path), "\n") !== rtrim($contents, "\n")) {
-            throw new RuntimeException('This compose attempt already belongs to a different post.');
+            // Never stuck: the browser drops this ID and the next send publishes under a fresh one.
+            throw new ComposeAttemptRetired(
+                'This post does not match its earlier send. Post again to publish it as a new post.',
+                substr($record->postId, strpos($record->postId, '-') + 1)
+            );
         }
         if (!$committed) {
             return null;

@@ -2626,8 +2626,15 @@ NODE;
         assertSame('', $result['body']);
     }
 
+    public function testAnonymousAttemptKeepsTextWhenTheServerPostDiffers(): void
+    {
+        $result = $this->runComposeAttemptScript('thread', '', 'navigate', false, 'Some other text');
+
+        assertSame('Anonymous text', $result['body']);
+    }
+
     /** @return array<string, mixed> */
-    private function runComposeAttemptScript(string $kind, string $search, string $navigation, bool $recentlyCleared): array
+    private function runComposeAttemptScript(string $kind, string $search, string $navigation, bool $recentlyCleared, string $serverBody = 'Anonymous text'): array
     {
         $script = <<<'NODE'
 const fs = require('fs');
@@ -2708,7 +2715,7 @@ global.navigator = {};
 global.fetch = async function (url) {
   lookups.push(url);
   const postId = url.split('post_id=')[1];
-  return { ok: true, async text() { return 'Post-ID: ' + postId + '\n'; } };
+  return { ok: true, async text() { return 'Post-ID: ' + postId + '\n\n' + config.serverBody + '\n'; } };
 };
 
 (async () => {
@@ -2737,7 +2744,7 @@ global.fetch = async function (url) {
 NODE;
 
         return $this->runScript(str_replace('__CONFIG__', json_encode([
-            'kind' => $kind, 'search' => $search, 'navigation' => $navigation, 'recentlyCleared' => $recentlyCleared,
+            'kind' => $kind, 'search' => $search, 'navigation' => $navigation, 'recentlyCleared' => $recentlyCleared, 'serverBody' => $serverBody,
         ], JSON_THROW_ON_ERROR), $script));
     }
 
@@ -3017,7 +3024,7 @@ global.fetch = async function(url) {
   const attempt = JSON.parse(state.localStore['forum_compose_draft:thread']).anonymousAttempt;
   const postId = 'thread-' + attempt.id;
   require('node:assert/strict').equal(url, '/api/get_post?post_id=' + postId);
-  return { ok: true, async text() { return 'Post-ID: ' + postId + '\n'; } };
+  return { ok: true, async text() { return 'Post-ID: ' + postId + '\n\nAnonymous body\n'; } };
 };
 
 vm.runInThisContext(source);

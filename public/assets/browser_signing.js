@@ -3625,7 +3625,13 @@
       const postId = (isReplyComposeForm(form) ? "reply-" : "thread-") + attempt.id;
       try {
         const response = await fetch("/api/get_post?post_id=" + encodeURIComponent(postId), { cache: "no-store" });
-        if (!response.ok || !(await response.text()).split("\n").includes("Post-ID: " + postId)) return;
+        if (!response.ok) return;
+        const record = await response.text();
+        if (!record.split("\n").includes("Post-ID: " + postId)) return;
+        // Clear only text the server holds; a post that differs leaves the draft for a fresh send.
+        const sameText = (text) => text.replace(/\r\n?/g, "\n").trim().normalize("NFC");
+        const separator = record.indexOf("\n\n");
+        if (separator < 0 || sameText(record.slice(separator + 2)) !== sameText(composeFormFieldValue(form, "body"))) return;
         if (submitInFlight || anonymousComposeAttempts.get(form) !== attempt
             || attempt.fields !== anonymousComposeFields()
             || JSON.stringify(serializeComposeDraft(form).fields) !== fields) return;
@@ -3843,6 +3849,12 @@
     } else {
       restoreComposeDraft(form);
       normalizeComposeFields({ removeUnsupported: false });
+    }
+
+    // The server refused this attempt's ID for good; keep the text and send it under a fresh ID next time.
+    if (root.dataset.composeAttemptRetired !== undefined) {
+      anonymousComposeAttempts.delete(form);
+      saveComposeDraft(form);
     }
 
     textFields.forEach(function (field) {

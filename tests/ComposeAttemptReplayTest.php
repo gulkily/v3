@@ -60,7 +60,7 @@ final class ComposeAttemptReplayTest
         [, $service] = $this->environment();
         $service->createThread($this->thread());
 
-        $this->assertRefused('already belongs to a different post', fn () => $service->createThread(['body' => 'Other text'] + $this->thread()));
+        $this->assertRefused('does not match its earlier send', fn () => $service->createThread(['body' => 'Other text'] + $this->thread()));
     }
 
     public function testRemovedPostIsNotRestored(): void
@@ -80,7 +80,71 @@ final class ComposeAttemptReplayTest
             'post' => ['post_id' => $postId, 'thread_id' => $postId, 'parent_id' => null, 'created_at' => '2026-11-04T00:00:00Z', 'author_identity_id' => null, 'thread_type' => null],
         ]));
 
-        $this->assertRefused('cannot be posted again', fn () => $service->createThread($this->thread()));
+        $this->assertRefused('was removed', fn () => $service->createThread($this->thread()));
+    }
+
+    public function testConflictPageRetiresTheAttemptAndKeepsTheText(): void
+    {
+        [$repository, $service, , $application] = $this->environment();
+        $service->createThread($this->thread());
+        $commits = $this->commitCount($repository);
+
+        $page = $this->post($application, '/compose/thread', ['body' => 'Other text'] + $this->thread());
+
+        assertStringContains('data-compose-attempt-retired="' . self::ATTEMPT . '"', $page);
+        assertStringContains('Other text', $page);
+        assertSame($commits, $this->commitCount($repository));
+
+        // The browser's next send carries a fresh ID and publishes.
+        $this->post($application, '/compose/thread', ['body' => 'Other text', 'compose_attempt' => str_repeat('f', 32)] + $this->thread());
+        assertSame($commits + 1, $this->commitCount($repository));
+    }
+
+    public function testReplyConflictPageRetiresTheAttempt(): void
+    {
+        [, $service, , $application] = $this->environment();
+        $service->createReply($this->reply());
+
+        $page = $this->post($application, '/compose/reply', ['body' => 'Other reply'] + $this->reply());
+
+        assertStringContains('data-compose-attempt-retired="' . self::ATTEMPT . '"', $page);
+        assertStringContains('Other reply', $page);
+    }
+
+    public function testRemovedPostPageRetiresTheAttempt(): void
+    {
+        [$repository, , , $application] = $this->environment();
+        $this->post($application, '/compose/thread', $this->thread());
+        $postId = 'thread-' . self::ATTEMPT;
+        $path = $repository . '/' . LabelRemoval::path($postId);
+        @mkdir(dirname($path), 0777, true);
+        file_put_contents($path, LabelRemoval::encode([
+            'acceptance_version' => 2,
+            'source_id' => $postId,
+            'source_hash' => str_repeat('a', 64),
+            'operation' => 'delete',
+            'accepted_at' => '2026-11-04T00:00:00Z',
+            'actor' => 'local-operator',
+            'labels' => [],
+            'post' => ['post_id' => $postId, 'thread_id' => $postId, 'parent_id' => null, 'created_at' => '2026-11-04T00:00:00Z', 'author_identity_id' => null, 'thread_type' => null],
+        ]));
+
+        $page = $this->post($application, '/compose/thread', $this->thread());
+
+        assertStringContains('data-compose-attempt-retired="' . self::ATTEMPT . '"', $page);
+        assertStringContains('Replay body', $page);
+    }
+
+    public function testOtherErrorsKeepTheAttemptForRetry(): void
+    {
+        [$repository, , , $application] = $this->environment();
+        $commits = $this->commitCount($repository);
+
+        $page = $this->post($application, '/compose/thread', ['body' => ''] + $this->thread());
+
+        assertStringContains('feedback-error', $page);
+        assertSame($commits, $this->commitCount($repository));
+        assertTrue(!str_contains($page, 'data-compose-attempt-retired'));
     }
 
     public function testUncommittedRecordFromFailedCommitIsFinishedOnRetry(): void
@@ -165,6 +229,21 @@ final class ComposeAttemptReplayTest
         assertTrue($first['post_id'] !== $second['post_id']);
         assertTrue(preg_match('/^thread-\d{14}-[a-f0-9]{8}$/', $first['post_id']) === 1);
         assertTrue(count(glob($repository . '/records/posts/*/*/*/' . $first['post_id'] . '.txt') ?: []) === 1);
+    }
+
+    /** @param array<string, mixed> $fields */
+    private function post(Application $application, string $path, array $fields): string
+    {
+        $previous = $_POST;
+        try {
+            $_POST = $fields;
+            ob_start();
+            $application->handle('POST', $path);
+
+            return (string) ob_get_clean();
+        } finally {
+            $_POST = $previous;
+        }
     }
 
     private function assertRefused(string $message, callable $action): void

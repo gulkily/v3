@@ -6,6 +6,7 @@ namespace ForumRewrite\Http;
 
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Support\ThreadTitle;
+use ForumRewrite\Write\ComposeAttemptRetired;
 use RuntimeException;
 
 /**
@@ -146,7 +147,8 @@ final class ComposeAndAccountKeyController
                         (string) ($input['event_location'] ?? ''),
                         (string) ($input['event_link'] ?? ''),
                         (string) ($input['event_time'] ?? ''),
-                        (string) ($input['event_end_date'] ?? '')
+                        (string) ($input['event_end_date'] ?? ''),
+                        $exception instanceof ComposeAttemptRetired ? $exception->attempt : null
                     ),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
@@ -189,7 +191,8 @@ final class ComposeAndAccountKeyController
                     null,
                     $exception->getMessage(),
                     (string) ($input['board_tags'] ?? 'general'),
-                    (string) ($input['body'] ?? '')
+                    (string) ($input['body'] ?? ''),
+                    $exception instanceof ComposeAttemptRetired ? $exception->attempt : null
                 ),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
@@ -280,7 +283,8 @@ final class ComposeAndAccountKeyController
         string $eventLocation = '',
         string $eventLink = '',
         string $eventTime = '',
-        string $eventEndDate = ''
+        string $eventEndDate = '',
+        ?string $retiredComposeAttempt = null
     ): string {
         return $this->routeServices->renderPageTemplate('compose_thread.php', [
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
@@ -293,6 +297,7 @@ final class ComposeAndAccountKeyController
             'eventLink' => $eventLink,
             'eventTime' => $eventTime,
             'eventEndDate' => $eventEndDate,
+            'retiredComposeAttempt' => $retiredComposeAttempt,
         ], 'New Post', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
     }
 
@@ -313,7 +318,8 @@ final class ComposeAndAccountKeyController
         ?string $notice = null,
         ?string $error = null,
         string $boardTags = 'general',
-        string $body = ''
+        string $body = '',
+        ?string $retiredComposeAttempt = null
     ): string {
         $parentPost = $parentId !== '' ? ($this->fetchPost)($parentId) : null;
         if (is_array($parentPost) && $threadId !== '' && (string) ($parentPost['thread_id'] ?? '') !== $threadId) {
@@ -334,6 +340,7 @@ final class ComposeAndAccountKeyController
             'error' => $error,
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'body' => $body,
+            'retiredComposeAttempt' => $retiredComposeAttempt,
         ], 'Reply', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js', '/assets/outbox_sender.js', '/assets/thread_reactions.js', '/assets/post_retraction.js', '/assets/post_analysis.js']));
     }
 

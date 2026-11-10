@@ -196,3 +196,40 @@ published, so this format is hard to change after deployment.
   is unverified there.
 - Finding 5's in-flight case is covered by the Node test, not the browser check.
 - Other themes were not checked. No markup or CSS changed.
+
+## Second review (2026-11-10)
+
+An independent review, requested in the ZenMemes thread
+`thread-20261110175436-b3745c6d`, rebased the branch onto `main` and found two
+recovery gaps. Both are fixed on `fix/duplicate-post-submissions-rebased`.
+
+### 11. A refused attempt ID could block posting forever
+
+When the server refused an attempt ID (a stored post that does not match the
+draft, or a post removed after a lost response), the error page restored the
+draft with the same ID. Every retry sent that ID and got the same refusal until
+the user happened to edit the text. A deploy that changes the record format
+between a lost response and the retry is enough to trigger it.
+
+**Fix:** these refusals throw `ComposeAttemptRetired`. The compose page then
+carries `data-compose-attempt-retired`, and the browser drops the ID and saves the
+draft without it. The text stays, and the next send publishes under a fresh ID.
+Other errors keep the ID, because the post may already have been accepted.
+
+### 12. Reconcile could clear text the server does not hold
+
+On load, reconcile cleared the composer when any post existed under the attempt
+ID, without checking its text. It now clears only when the stored body matches
+the draft body after the server's normalization (line endings, trim, NFC). A
+mismatch keeps the draft, and finding 11's fix lets it publish.
+
+**Decision to confirm:** after a moderator removes a post whose response was
+lost, posting again publishes the same text as a new post. That follows
+"Accommodate first"; the new post can be moderated like any other.
+
+**Verification:** `./v3 test --smoke BrowserSigningNormalizationTest ComposeAttemptReplayTest LocalWriteServiceTitleDirectiveTest LocalAppSmokeTest`
+on the rebased branch; the full suite was not run. The browser check now also
+covers a refused retry followed by a fresh send, for threads and replies, on
+desktop and phone viewports; with the browser part of the fix disabled it fails.
+It also reads the lost response's body, because Node 22's `fetch` crashed on the
+unread response before any scenario ran.

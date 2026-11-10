@@ -7,7 +7,7 @@ $parentBody = is_array($parentPost) ? $plainText($parentPost, (string) ($parentP
 // Long parents are clamped to a few lines; the full post is one tap away.
 $parentIsLong = mb_strlen($parentBody) > 280 || substr_count($parentBody, "\n") >= 4;
 ?>
-<section class="stack compose-page" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>"<?= $notice !== null ? ' data-compose-submitted="1"' : '' ?>>
+<section class="stack compose-page" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>"<?= $notice !== null ? ' data-compose-submitted="1"' : '' ?><?= isset($retiredComposeAttempt) ? ' data-compose-attempt-retired="' . $e($retiredComposeAttempt) . '"' : '' ?>>
   <article class="card reply-context-card">
     <h1 class="compose-page-title"><?= $e($parentAuthorName !== '' ? 'Reply to ' . $parentAuthorName : 'Reply') ?></h1>
 <?php if (is_array($parentPost)): ?>

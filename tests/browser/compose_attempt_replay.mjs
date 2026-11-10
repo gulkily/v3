@@ -1,7 +1,7 @@
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/compose_attempt_replay.mjs
 // A lost response or Back must not publish an anonymous post twice, on a real server.
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -48,7 +48,8 @@ async function submitLosingResponse(page) {
   const handler = async (route) => {
     const request = route.request();
     if (request.method() !== 'POST') return route.fallback();
-    await fetch(request.url(), { method: 'POST', headers: { 'content-type': request.headers()['content-type'] }, body: request.postData(), redirect: 'manual' });
+    // Read the body: an unread response can crash Node's fetch when the server closes the socket.
+    await (await fetch(request.url(), { method: 'POST', headers: { 'content-type': request.headers()['content-type'] }, body: request.postData(), redirect: 'manual' })).arrayBuffer();
     await route.abort();
     lost();
   };
@@ -118,6 +119,30 @@ async function backAndPrefill(context, text) {
   await page.close();
 }
 
+// The stored post no longer matches this draft (say, a deploy changed the record format).
+// The refusal must keep the text and the next send must publish, never refuse forever.
+async function conflictThenFreshSend(context, composeUrl, text) {
+  const page = await context.newPage();
+  page.setDefaultTimeout(10000);
+  await page.goto(base + composeUrl);
+  await body(page).fill(text);
+  const committed = commits();
+  await submitLosingResponse(page);
+  const [stored] = committedWith(text);
+  const storedPath = join(repository, stored.replace(/^HEAD:/, ''));
+  writeFileSync(storedPath, readFileSync(storedPath, 'utf8').replace(text, `${text} as stored`));
+  git('commit', '-am', 'Diverge stored post');
+
+  await page.route('**/api/get_post*', (route) => route.abort());
+  await page.goto(base + composeUrl);
+  await submitAnonymously(page);
+  await page.waitForSelector('[data-compose-attempt-retired]');
+  assert.equal(await body(page).inputValue(), text, 'refusal keeps the text');
+  await Promise.all([page.waitForURL((url) => !url.pathname.startsWith('/compose')), submitAnonymously(page)]);
+  assert.equal(commits(), committed + 3, 'the next send published under a fresh ID');
+  await page.close();
+}
+
 let failed = false;
 try {
   for (const [name, options] of [['desktop', {}], ['phone', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }]]) {
@@ -129,6 +154,8 @@ try {
     await lostResponse(context, '/compose/reply?thread_id=root-001&parent_id=root-001', `Retry reply ${name}`, 'reply');
     await reconciledAfterLoss(context, '/compose/reply?thread_id=root-001&parent_id=root-001', `Reconciled reply ${name}`);
     await backAndPrefill(context, `Prefill check ${name}`);
+    await conflictThenFreshSend(context, '/compose/thread', `Conflict thread ${name}`);
+    await conflictThenFreshSend(context, '/compose/reply?thread_id=root-001&parent_id=root-001', `Conflict reply ${name}`);
     await context.close();
     console.log(`PASS compose attempt replay (${name})`);
   }
