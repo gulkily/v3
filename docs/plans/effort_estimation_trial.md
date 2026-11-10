@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/accept_and_stage
+
+2026-11-10T07:20:00Z — v3/accept_and_stage Step 3 handoff (standing P2 enrollment, no parent): user explicitly approved Step 2. Joins P2 at this checkpoint; intake and Step 1–2 snapshots missing (drafted without study fields), not backfilled. [Plan/checkpoint](./accept_and_stage_step3_development_plan.md#study-checkpoint) eight stages: skewed votes accepted with receipt sidecar, skewed posts and effective sort time, reordered headers stored as signed, private staging store, signed replacement, `/staged/` author and operator page, `frm.py` staged/replace, docs and acceptance. Scope v1/B, starting revision `40c49e76`, R1. Projected total **0.70**. Stage work 0.06/0.10/0.05/0.12/0.08/0.10/0.08/0.08, non-additive. Single exposed Claude rater. Await Approved Step 3.
+
 ## Cycle v3/retraction_speed
 
 2026-11-10T00:06:59Z — v3/retraction_speed accepted outcome: merged as #119 (`8a189ab`); the maintainer retracted a post on the live site and reported it "worked very quickly" (qualitative, no timing). Stage 3 retrospective 0.07; retrospective scope assessment stays 0.22. Maintainer comfortable-fit judgment not stated.
