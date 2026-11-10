@@ -8,6 +8,7 @@ use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\SiteConfig;
+use ForumRewrite\Support\ByteSize;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\OperatorStatusCollector;
 use ForumRewrite\Tools\ToolsPageSupport;
@@ -156,10 +157,41 @@ final class CodebaseStateController
                 'stale_commit_sha' => $readModel['stale_commit_sha'],
                 'row_counts' => $rowCounts,
             ],
+            'sizes' => $this->sizes(),
             'downloads' => [
                 ['href' => '/downloads/repository.tar.gz', 'label' => 'Content repository (.tar.gz)'],
                 ['href' => '/downloads/repository.zip', 'label' => 'Content repository (.zip)'],
                 ['href' => '/downloads/read_model.sqlite3', 'label' => 'SQLite index database'],
+            ],
+        ];
+    }
+
+    /**
+     * Sources use the same relative state/... labels as the rest of the page
+     * so no absolute deploy path is printed.
+     *
+     * @return array<string, array{bytes: ?int, source: string}>
+     */
+    private function sizes(): array
+    {
+        $database = 'state/cache/' . basename($this->databasePath);
+
+        return [
+            'Read-model database' => [
+                'bytes' => ByteSize::file($this->databasePath),
+                'source' => 'stat -c %s ' . $database,
+            ],
+            'Content records (committed)' => [
+                'bytes' => ByteSize::trackedTree($this->repositoryRoot, 'records'),
+                'source' => 'git -C state/local_repository ls-tree -r -l HEAD -- records',
+            ],
+            'Content repository Git store' => [
+                'bytes' => ByteSize::gitStore($this->repositoryRoot),
+                'source' => 'git -C state/local_repository count-objects -v',
+            ],
+            'App checkout Git store' => [
+                'bytes' => ByteSize::gitStore($this->projectRoot),
+                'source' => 'git count-objects -v',
             ],
         ];
     }
