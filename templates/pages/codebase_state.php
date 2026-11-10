@@ -41,6 +41,20 @@ $rowCountSources = [
     'Generated responses' => 'SELECT COUNT(*) FROM post_generated_responses;',
     'Approved profiles' => 'SELECT COUNT(*) FROM profiles WHERE is_approved = 1;',
 ];
+
+$formatSize = static fn (?int $bytes, string $missing = 'unavailable'): string => $bytes === null
+    ? $missing
+    : \ForumRewrite\Support\ByteSize::format($bytes) . ($bytes >= 1024 ? ' (' . number_format($bytes) . ' bytes)' : '');
+$sizeRows = $state['sizes'];
+if ($textBackupEnabled ?? true) {
+    foreach ($state['downloads'] as $download) {
+        $sizeRows['Download: ' . $download['label']] = [
+            'bytes' => $download['bytes'],
+            'missing' => $download['on_request'] ? 'built on request' : 'unavailable',
+            'source' => $download['on_request'] ? 'last cached build for the current revision' : 'same file as Read-model database',
+        ];
+    }
+}
 ?>
 <section class="stack">
   <article class="card codebase-status-card" data-role="codebase-state">
@@ -139,12 +153,28 @@ $rowCountSources = [
       </tbody>
     </table>
   </article>
+  <details class="card codebase-sizes" data-role="codebase-sizes">
+    <summary><h2>Sizes</h2></summary>
+    <table class="codebase-facts">
+      <tbody>
+<?php foreach ($sizeRows as $label => $row): ?>
+        <tr>
+          <th scope="row"><?= $e($label) ?></th>
+          <td>
+            <code><?= $e($formatSize($row['bytes'], $row['missing'] ?? 'unavailable')) ?></code>
+            <div class="codebase-source"><code><?= $e($row['source']) ?></code></div>
+          </td>
+        </tr>
+<?php endforeach; ?>
+      </tbody>
+    </table>
+  </details>
   <article class="card" data-role="codebase-state">
 <?php if ($textBackupEnabled ?? true): ?>
     <h2>Downloads</h2>
     <ul class="codebase-downloads">
 <?php foreach ($state['downloads'] as $download): ?>
-      <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a></li>
+      <li><a href="<?= $e($download['href']) ?>"><?= $e($download['label']) ?></a><?php if ($download['bytes'] !== null): ?> <span class="meta"><?= $e(\ForumRewrite\Support\ByteSize::format($download['bytes'])) ?></span><?php endif; ?></li>
 <?php endforeach; ?>
     </ul>
 <?php else: ?>

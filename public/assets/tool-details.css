@@ -91,6 +91,18 @@
   overflow-wrap: anywhere;
 }
 
+.codebase-sizes > summary {
+  cursor: pointer;
+}
+
+.codebase-sizes > summary h2 {
+  display: inline;
+}
+
+.codebase-sizes[open] > summary {
+  margin-bottom: 0.6rem;
+}
+
 .codebase-source {
   margin-top: 0.18rem;
   color: var(--ink-soft);
