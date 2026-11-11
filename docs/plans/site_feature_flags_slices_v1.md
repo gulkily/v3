@@ -115,7 +115,7 @@ Checklist:
   - source
   - whether effective value equals default
   - whether the flag can be changed through the site, initially `false`
-- preserve `SiteConfig::unicodeAuthoredTextEnabled()` and `SiteConfig::appVersionNotificationEnabled()` as compatibility wrappers.
+- preserve `SiteConfig::unicodeAuthoredTextEnabled()` and `SiteConfig::appVersionNotificationEnabled()` as compatibility wrappers. (Update: later slices moved every caller to the evaluator, and the wrappers were removed in #146.)
 - do not change `LocalWriteService`, `TemplateRenderer`, page output, or write behavior yet.
 
 Expected outcome:

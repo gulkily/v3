@@ -21,6 +21,13 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 - [ ] Remember the deployed sites (zenmemes.com, qdb.us, mitrapclub, chouse): something unused in core may be used only by one site profile.
 - [ ] Each removal batch: smoke set + tests for touched areas (`./v3 test --smoke <Tests…>`), not the full suite.
 - [ ] Log every finding as *remove / keep (with reason) / defer*.
+- [ ] **Search everywhere before calling something unused.** The first pass missed live code because it skipped these places:
+  - `docs/plans/`, including acceptance docs and runbooks. Some tools are documented only there (the Markdown audit scripts were).
+  - `scripts/README.md`, which says what runs each script. `./v3` calls scripts by `${ROOT}/scripts/...` path, so a bare file-name search misses them (the "one-time" migration scripts were live commands).
+  - `templates/`, for classes and values used only from a template.
+  - `public/assets/*.PROVENANCE` and code comments, for things kept on purpose (the OpenPGP source map).
+  - `git log -S<name>`, to see whether a caller was removed on purpose and when.
+- [ ] **Check that new tests run.** `tests/run.php` lists test files explicitly; `TestFileRegistrationTest` now fails when a `*Test.php` file is missing from it.
 - [ ] Start from the earlier audit, `docs/plans/codebase_cleanup_audit_findings_v1.md`. It already resolved some false leads, including the OpenPGP pair.
 - [ ] **Intentional-duplicate rule.** If something looks unused or duplicated but is kept on purpose, the reason has to be visible *at the file*, not just in a plan doc:
   - Vendored third-party files get a `<name>.PROVENANCE` sidecar (upstream, version, integrity, SHA-256, modifications, why it's here, how to update) and a `<name>.LICENSE`. Examples: `qrcode-generator.PROVENANCE`, `openpgp.PROVENANCE` (PR #139).

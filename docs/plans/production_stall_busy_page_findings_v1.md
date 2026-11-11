@@ -90,7 +90,7 @@ $this->buildStaticArtifactOnEligibleMiss($method, $requestUri, $cookies, $static
 
 Source: `src/ForumRewrite/Host/FrontController.php:54-61`.
 
-For eligible anonymous queryless GETs, `buildStaticArtifactOnEligibleMiss()` constructs `StaticArtifactBuilder` and calls `buildSingleRoute()`.
+For eligible anonymous queryless GETs, `buildStaticArtifactOnEligibleMiss()` constructs `StaticArtifactBuilder` and calls `buildSingleRoute()`. (Update: the on-miss build was removed on 2026-09-21 in `fee91dee`; nothing in production calls `buildSingleRoute()` now.)
 
 Source: `src/ForumRewrite/Host/FrontController.php:225-255`.
 
