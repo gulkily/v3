@@ -166,3 +166,27 @@ Reuse decisions made at entry, from inspecting the existing code:
 - Estimate details: original scope unchanged. Above the original because of the signed-out sign-in path, the name lookups for the operator view and the phone overflow fix.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - frm.py reports staged posts and replaces them
+
+**Original estimate: 0.08**
+
+- Changes:
+  - `public/frm.py` (version `2026-11-11`): `api()` returns HTTP 202 `staged` from `create_signed_post` as an outcome. `submit()` marks the operation `staged` and prints `Staged:`, `Reason:`, `Post-ID:`, `View: <site>/staged/` and a `Replace:` command, then exits with the new status 3 (published 0, error 2). Character positions are mapped to the original draft by `print_characters`, now shared with rejections; it omits the character itself when the server sends only the code point.
+  - New `--replace POST_ID` on `thread` and `reply`: finds the staged operation in this state directory, reuses its key, post ID, `Created-At` and thread, and publishes the new `--body-file` (and `--subject`). On success the staged operation becomes `replaced`. It refuses `--thread`, `--parent`, `--image` and key options, works only on sites with one-shot signed posts, and errors clearly when no staged operation matches.
+  - Staged and replaced operations no longer block new writes. Resuming a staged operation explains that it was staged and prints the replace command, instead of resending.
+  - `docs/agents/claude_zenmemes_skill.md`: what `Staged:` and exit status 3 mean, and to use `--replace` instead of a new write.
+  - Older `frm.py` copies: a 202 prints "Unexpected response" with a Resume line; resuming stages the same post again, so nothing is lost, only the message is unclear.
+- Verification:
+  - Passed: new `FrmClientTest::testStagedPostIsReportedAndReplacedUnderItsId` against a test server (Unicode on, emoji off). A first post registers the key; an emoji subject exits 3 with `U+1F3A4 at subject index 13`, the `View:` line and an exact `Replace:` command, and no `Resume:`; resuming it explains instead of resending; an unrelated write still goes through; `--replace` one second later publishes under the staged ID with the fixed body; a second `--replace` finds nothing staged.
+  - Found and fixed during verification: the replacement first reused the staged `Created-At` for the bootstrap record too, which the server refused once the fix was signed in a later second. The post and the bootstrap now take separate timestamps, and the test waits a second so this cannot pass by coincidence.
+  - Passed: `./v3 test --smoke --jobs=2` plus `FrmClientTest AgentPostingApiTest SingleRequestHttpTest LlmsTxtRendererTest`: 469 run, 469 passed. Full suite not run.
+  - Not covered here: a replacement sent after the 600-second window; the server side of that is covered by Stage 2 and Stage 5 tests (`testSignedFixPublishesAStagedPost` fixes a post sent 20 minutes earlier).
+- Notes:
+  - The `--image` path uses the prepared flow, where text rules fail before signing; it never stages.
+
+**Retrospective stage work: 0.09**
+
+- Estimate details: original scope unchanged; the bootstrap timestamp bug added a little.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
