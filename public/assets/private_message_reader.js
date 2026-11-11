@@ -247,7 +247,13 @@
     presentState(card, 'loading', '');
 
     let result;
-    try {
+    // A message this browser already read and verified shows from the encrypted local copy, with no
+    // network fetch or OpenPGP. Only verified reads are ever saved, and only for messages the page lists.
+    const cache = mailbox === "conversation" && !suppliedMessage && !historyCandidate ? window.ForumPrivateMessageCache : null;
+    const cached = cache && cache.enabled() ? await cache.get(messageId) : null;
+    if (cached !== null) {
+      result = { kind: "verified", plaintext: cached };
+    } else try {
       const message = suppliedMessage || cardMessages.get(card) || await mailboxMessage(mailbox, messageId, counterpartUsernameToken, cardCursors.get(card));
       if (String(message.message_id) !== messageId) throw new Error("Message identity mismatch.");
       cardMessages.set(card, message);
@@ -262,6 +268,9 @@
         encryptedEnvelope: message.encrypted_envelope,
         senderPublicKeyArmors: senderPublicKeyArmors, historyCandidate: historyCandidate,
       });
+      if (result.kind === "verified" && mailbox === "conversation" && window.ForumPrivateMessageCache) {
+        window.ForumPrivateMessageCache.put(messageId, result.plaintext);
+      }
     } catch (error) {
       if (!cardMessages.has(card)) mailboxRequests.delete(requestKey(mailbox, counterpartUsernameToken, cardCursors.get(card)));
       result = { kind: "load-failed", message: "This encrypted message or its sender keys could not be loaded. Try again." };

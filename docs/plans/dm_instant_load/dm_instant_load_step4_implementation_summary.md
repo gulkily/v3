@@ -55,3 +55,24 @@ Branch: `feature/dm_instant_load`, from `origin/main` at `f13dd20f`. Planning co
 **Retrospective stage-work assessment: 0.15**
 
 *— Claude · 2026-11-11 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Reader uses the cache
+
+**Original estimate: 0.15**
+
+- Changes:
+  - `private_message_reader.js` `readCardOnce`: on conversation pages, before the mailbox fetch, a cache hit is presented as `verified` through the same `setReaderResult`/`presentState` path; no fetch, no OpenPGP. Live `verified` results are saved; no other state is ever saved. History-recovery retries (which pass a supplied message or candidate) skip the cache and read live.
+  - New `tests/browser/private_message_cached_conversation.mjs`, run in the messaging suite after `checkChatLayout`.
+- Verification:
+  - Messaging suite through the new check, flag on (`FORUM_PRIVATE_MESSAGE_CACHE_ENABLED=1`): every verified message saved once; second visit shows identical text and check marks with zero `/api/private_messages/conversation` requests; another fingerprint misses. Passed.
+  - Same run, flag off: nothing saved. Passed.
+  - Both runs bypassed the two baseline failures that also occur on main (Users link step; history-sync `state()` assertion).
+  - `./v3 test --smoke PrivateMessageReaderTest PrivateMessageHistoryCryptoTest`: 458 passed. `testAutomaticallyReadsRenderedCardsWithoutPersistingPlaintext` still holds: the cache never runs outside conversation pages or with the flag off.
+- Notes:
+  - Trust: a cached message shows the check mark it earned when first read; a later sender-key retirement does not remove it. The server listing still decides which messages appear, so retracted messages never show from the cache. Recorded for the concept entry.
+  - Stage 1's background OpenPGP preload still runs on cached visits; it doesn't block rendering.
+- Estimate details: original scope as Step 3; uncertainty: history-sync interaction, resolved by skipping the cache for history retries; revisions: none.
+
+**Retrospective stage-work assessment: 0.15**
+
+*— Claude · 2026-11-11 UTC · Model: Claude Opus 5.5*
