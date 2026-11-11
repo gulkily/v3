@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/offline_compose`; [host ledger](../effort
 
 Extended estimates: enabled
 
-Status: Step 4 in progress on `feat/offline-compose`.
+Status: Step 4 stages complete on `feat/offline-compose`; production replay by Ilya pending.
 
 Cycle estimate: 0.80
 
@@ -168,5 +168,38 @@ Cycle estimate: 0.80
   - The test waits for the board's signing scripts before pressing Post, as a person's typing does. Pressing Post within milliseconds of the first keystroke, before they load, still falls back to a plain form post, as it does online.
   - Still pending, for the production replay: a member with an approved key and username, and the Forte composer.
 - Estimate details: original scope plus the draft-restore fix, which this stage's test found.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Docs, review and handoff
+
+**Original estimate: 0.06**
+**Retrospective: 0.06**
+
+- Changes:
+  - Offline reading runbook: a "Writing offline" section (same composers, cached compose pages, Post keeps posts as "not sent", what stays in the composer). The old line saying direct offline compose isn't supported is gone. Automatic delivery now covers pages with a composer.
+  - Offline Outbox MVP checklist: the reply and new-thread items note what this cycle delivered; Outbox draft editing is still open.
+  - Concepts: new [Outbox](../../concepts/outbox.md) entry. [Shared composer](../../concepts/shared_composer.md) describes its offline placements. The offline reader stays a proposed concept, named in the Outbox entry.
+- Verification:
+  - Concept and runbook links resolve; `git diff --check` clean.
+  - Final diff review against `origin/main`: 29 files. Only intended files; no duplicated components (the reader composers come from the existing partials). One unplanned addition: the single-post page also loads `outbox_compose.js`, from Stage 1's script-list edit. It binds that page's composer if it has one and sends waiting posts, consistent with "pages with a composer"; kept.
+  - Production replay on zenmemes.com in Chrome on Windows: **pending**, after merge and deploy.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion Contract:
+  - Entry through New post, Reply links and Post: passed locally (headless Chrome, 390px and 1280px).
+  - Outcome: offline composers match online; posts written offline are published once after reconnecting. Passed locally, including ten sends with dropped responses.
+  - Recovery: refused posts stay in the Outbox with the reason (existing Outbox behavior, not replayed in this cycle); unsaved threads can still be replied to (passed).
+  - External verification, Ilya in Chrome on Windows on zenmemes.com: **pending**.
+  - Release: **pending** merge and deploy.
+- Unverified: a member with an approved key and username (the runs used a fresh browser key, which the Outbox registers on first send); the Forte composer offline; Safari and Firefox.
+- Baseline failures reproduced on `origin/main`: `offline_board_toolbar.cjs` (word97 390px Tags position), `board_compose_focus.mjs` (timeout at line 61), `inline_reply_link.mjs` (fixture missing `ThreadTheme`).
+- Full suite not run; focused and smoke runs only.
+- Commits: planning `5520b837`; stages `d6897f76`, `e23885eb`, `bb145b2e`, `453265b3` + fix `83b4d70d`, `a84c2553`, `e2ceb6fc`, `ca47fbd4`, and Stage 8.
+- Study: whole-cycle projection 0.80 at entry. **Retrospective scope assessment: 0.85.** Stage retrospectives 0.05/0.10/0.10/0.08/0.08/0.18/0.12/0.06, non-additive. Corrective work found inside the cycle: interrupted-send retry (Stage 6), draft restore over typing (Stage 7). Maintainer comfortable-fit judgment: pending.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
