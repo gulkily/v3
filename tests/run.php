@@ -288,6 +288,7 @@ $testFiles = [
     __DIR__ . '/DeploymentSettingsTest.php',
     __DIR__ . '/SiteProfileRegistryTest.php',
     __DIR__ . '/ThemeRegistryTest.php',
+    __DIR__ . '/ThemeCatalogPageTest.php',
     __DIR__ . '/GpgAvailabilityTest.php',
     __DIR__ . '/ScriptsIndexTest.php',
     __DIR__ . '/TestFileRegistrationTest.php',

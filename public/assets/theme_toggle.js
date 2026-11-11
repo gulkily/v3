@@ -479,6 +479,11 @@
       applySelection(next);
     };
 
+    // Choosing a theme from outside the menu (the /themes catalog).
+    window.forumSelectTheme = function (theme) {
+      if (themes.indexOf(theme) !== -1) applySelection(theme);
+    };
+
     cycleButton.addEventListener("click", function () {
       var next = nextAppearance(currentTheme);
       applySelection(next.theme, next.palette);
