@@ -363,7 +363,7 @@ final class PublicMarkdownRenderer
         $columns = min(count($rows[0]), 8);
         $html = self::$postMode
             ? '<div class="post-table">'
-                . ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'larger' => 'in'])
+                . ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in'])
                 . '<div class="docs-table-scroll post-table-cols-' . $columns . '" tabindex="0" role="region" aria-label="Table">'
             : '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table">';
         $html .= '<table><thead>' . $renderRow($rows[0], 'th') . '</thead><tbody>';

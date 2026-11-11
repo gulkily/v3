@@ -34,8 +34,11 @@
       } catch (error) {}
       try {
         // Post table text size (table_zoom.js), restored before paint.
-        var tableZoom = parseFloat(localStorage.getItem('table-zoom'));
-        if (tableZoom >= 0.5 && tableZoom <= 6) {
+        var tableZoomSaved = localStorage.getItem('table-zoom');
+        var tableZoom = parseFloat(tableZoomSaved);
+        if (tableZoomSaved === 'page') {
+          document.documentElement.setAttribute('data-table-size', 'page');
+        } else if (tableZoom >= 0.5 && tableZoom <= 8) {
           document.documentElement.style.setProperty('--table-zoom', String(tableZoom));
         }
       } catch (error) {}
