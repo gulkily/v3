@@ -6,6 +6,12 @@
   const cardMessages = new WeakMap();
   const cardRequests = new WeakMap();
   const cardCursors = new WeakMap();
+  const cacheChecks = new WeakMap();
+
+  function cacheChecked(card) {
+    const done = cacheChecks.get(card);
+    if (done) { cacheChecks.delete(card); done(); }
+  }
 
   function armoredPrivateKey() {
     try {
@@ -22,6 +28,18 @@
     }
 
     return identity.ensureOpenPgpApi(["readKey", "readPrivateKey", "readMessage", "decrypt"]);
+  }
+
+  // Parsed keys are reused for the whole page; each parse costs as much as a decryption.
+  const parsedPrivateKeys = new Map();
+  const parsedPublicKeys = new Map();
+  function parsedOnce(cache, armor, parse) {
+    if (!cache.has(armor)) {
+      const parsing = parse(armor);
+      parsing.catch(function () { if (cache.get(armor) === parsing) cache.delete(armor); });
+      cache.set(armor, parsing);
+    }
+    return cache.get(armor);
   }
 
   async function decryptEnvelope(input) {
@@ -45,13 +63,13 @@
     }
     try {
       verificationKeys = await Promise.all(senderPublicKeyArmors.map(function (armoredKey) {
-        return openpgp.readKey({ armoredKey: String(armoredKey) });
+        return parsedOnce(parsedPublicKeys, String(armoredKey), function (armor) { return openpgp.readKey({ armoredKey: armor }); });
       }));
     } catch (error) {
       return { kind: "bad-signature", message: "The sender's approved public keys could not be read, so this message cannot be verified." };
     }
     try {
-      decryptionKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmor });
+      decryptionKey = await parsedOnce(parsedPrivateKeys, privateKeyArmor, function (armor) { return openpgp.readPrivateKey({ armoredKey: armor }); });
     } catch (error) {
       return { kind: "read-failed", message: "The saved private key could not be read. Check your browser identity, then retry." };
     }
@@ -235,7 +253,14 @@
     presentState(card, 'loading', '');
 
     let result;
-    try {
+    // A message this browser already read and verified shows from the encrypted local copy, with no
+    // network fetch or OpenPGP. Only verified reads are ever saved, and only for messages the page lists.
+    const cache = mailbox === "conversation" && !suppliedMessage && !historyCandidate ? window.ForumPrivateMessageCache : null;
+    const cached = cache && cache.enabled() ? await cache.get(messageId) : null;
+    cacheChecked(card);
+    if (cached !== null) {
+      result = { kind: "verified", plaintext: cached };
+    } else try {
       const message = suppliedMessage || cardMessages.get(card) || await mailboxMessage(mailbox, messageId, counterpartUsernameToken, cardCursors.get(card));
       if (String(message.message_id) !== messageId) throw new Error("Message identity mismatch.");
       cardMessages.set(card, message);
@@ -250,6 +275,9 @@
         encryptedEnvelope: message.encrypted_envelope,
         senderPublicKeyArmors: senderPublicKeyArmors, historyCandidate: historyCandidate,
       });
+      if (result.kind === "verified" && mailbox === "conversation" && window.ForumPrivateMessageCache) {
+        window.ForumPrivateMessageCache.put(messageId, result.plaintext);
+      }
     } catch (error) {
       if (!cardMessages.has(card)) mailboxRequests.delete(requestKey(mailbox, counterpartUsernameToken, cardCursors.get(card)));
       result = { kind: "load-failed", message: "This encrypted message or its sender keys could not be loaded. Try again." };
@@ -265,7 +293,7 @@
   function readCard(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate) {
     if (!card) return Promise.resolve();
     if (cardRequests.has(card)) return cardRequests.get(card);
-    const request = readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate).finally(function () { cardRequests.delete(card); });
+    const request = readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate).finally(function () { cacheChecked(card); cardRequests.delete(card); });
     cardRequests.set(card, request);
     return request;
   }
@@ -299,7 +327,18 @@
     }
     document.addEventListener('private-message-history-restored', retryHistory);
     document.addEventListener('private-message-viewer-known', retryHistory, {once:true});
-    Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
+    // Start loading OpenPGP now, and read the newest messages first so the bottom of the thread fills in first.
+    if (armoredPrivateKey()) openPgpApi().catch(function () {});
+    // The conversation keeps its messages hidden until saved copies are in place, so it doesn't jump.
+    if (root.dataset.privateMessageCache === "1") {
+      Promise.all(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
+        return new Promise(function (resolve) { cacheChecks.set(card, resolve); });
+      })).then(function () {
+        root.dataset.privateMessageCacheChecked = "1";
+        if (root.dispatchEvent) root.dispatchEvent(new CustomEvent("private-message-cache-checked"));
+      });
+    }
+    Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).reverse().map(function (card) {
       cardCursors.set(card, root.dataset.historyPageCursor || '');
       return readCard(mailbox, card, counterpartUsernameToken);
     })).then(function () {

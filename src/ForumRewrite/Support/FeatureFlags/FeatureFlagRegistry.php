@@ -13,6 +13,7 @@ final class FeatureFlagRegistry
     public const IMAGE_GALLERY_ENABLED = 'FORUM_IMAGE_GALLERY_ENABLED';
     public const IMAGE_CONTENT_ENABLED = 'FORUM_IMAGE_CONTENT_ENABLED';
     public const PRIVATE_MESSAGES_ENABLED = 'FORUM_PRIVATE_MESSAGES_ENABLED';
+    public const PRIVATE_MESSAGE_CACHE_ENABLED = 'FORUM_PRIVATE_MESSAGE_CACHE_ENABLED';
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
     public const EVENT_SUPPORT_ENABLED = 'FORUM_EVENT_SUPPORT_ENABLED';
@@ -53,7 +54,7 @@ final class FeatureFlagRegistry
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
-            self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER],
+            self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -294,6 +295,15 @@ final class FeatureFlagRegistry
                 'In a browser that has deployed from Tools → Deploy, check for updates a few seconds after each page load and show Deploy now in the header when the site is behind. Checks reuse a fetch from the last ten minutes. Only root-approved operators can check or deploy.',
                 false,
                 self::DEPLOY_HEADER_PROMPT_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::PRIVATE_MESSAGE_CACHE_ENABLED,
+                'Saved message copies',
+                'Keep copies of private messages this browser has already read, encrypted with a key the browser cannot export, so conversations open without decrypting them again. Removing the browser identity deletes the copies. Turning this off stops using them; existing copies stay until the identity is removed.',
+                false,
+                self::PRIVATE_MESSAGE_CACHE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

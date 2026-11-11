@@ -10,6 +10,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 import { checkChatLayout } from './private_message_chat_layout.mjs';
+import { checkCachedConversation } from './private_message_cached_conversation.mjs';
 import { checkChatRecovery } from './private_message_chat_recovery.mjs';
 import { checkHistory } from './private_message_history.mjs';
 import { checkHistoryRecovery } from './private_message_history_recovery.mjs';
@@ -185,6 +186,8 @@ try {
   await page.setViewportSize({ width: 1100, height: 800 });
   console.log('Checking checkChatLayout');
   await checkChatLayout(page, root);
+  console.log('Checking checkCachedConversation');
+  await checkCachedConversation(page, base);
   console.log('Checking checkChatRecovery');
   await checkChatRecovery(page, context, base, root, seed, {
     valid: incoming,

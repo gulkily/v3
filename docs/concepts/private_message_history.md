@@ -29,3 +29,8 @@ Name: Bounded history continuation
 Purpose: Finish useful recovery during an ordinary visible visit, then stop repeated work.
 Scenario: Ten-original, sixteen-attempt background turns yield between batches and honor admission delays. Foreground readers take priority between turns. Settled revision-aware passes use one small response; new relevant data reopens recovery. A recorded submitting key is a verification hint, not proof of the original encrypted signer; bounded fallback preserves other approved signers and existing send acceptance.
 Sources: [coordinator](../../public/assets/private_message_history_sync.js), [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [acceptance](../plans/message_sync_activity/acceptance.txt).
+
+Name: Saved message copies
+Purpose: Let a conversation this browser has already read open without decrypting it again.
+Scenario: With `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`, each verified read on a conversation page is saved in the browser, encrypted with a key the browser generated and cannot export, and bound to the identity fingerprint. The next visit shows those messages before revealing the transcript, with no fetch or OpenPGP; new messages read live. Only messages the server still lists are looked up, so retracted messages never reappear. A saved copy keeps the check mark it earned when first read. Any storage failure is a miss. Removing the browser identity deletes the copies and their key. This is the approved exception to keeping plaintext in browser memory only.
+Sources: [cache](../../public/assets/private_message_cache.js), [reader](../../public/assets/private_message_reader.js), [plan](../plans/dm_instant_load/dm_instant_load_step2_feature_description.md).
