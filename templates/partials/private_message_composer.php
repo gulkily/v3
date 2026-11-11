@@ -14,12 +14,12 @@
   <form class="stack" data-private-message-form>
     <label>
       <?= ($compact ?? false) ? '' : 'Message' ?>
-      <textarea name="plaintext" rows="3" maxlength="65536" aria-label="Message to <?= $e($recipientLabel) ?>" placeholder="Write a message…" required></textarea>
+      <textarea name="plaintext" rows="<?= ($compact ?? false) ? '1' : '3' ?>" maxlength="65536" aria-label="Message to <?= $e($recipientLabel) ?>" placeholder="Write a message…" required></textarea>
     </label>
     <div class="private-message-actions">
 <?php if ($compact ?? false): ?>
-      <button type="button" data-role="private-message-latest">Latest message</button>
-      <button type="submit" class="private-message-send" aria-label="Send"><span aria-hidden="true">↑</span></button>
+      <button type="button" class="private-message-latest" data-role="private-message-latest" aria-label="Latest message"><span aria-hidden="true">↓</span></button>
+      <button type="submit" class="private-message-send">Send</button>
 <?php else: ?>
       <button type="submit">Send</button>
 <?php endif; ?>

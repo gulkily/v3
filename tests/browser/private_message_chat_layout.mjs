@@ -5,7 +5,7 @@ export async function checkChatLayout(page, artifacts) {
   const field = page.locator('textarea[name="plaintext"]');
   assert.match(await field.getAttribute('aria-label'), /Message to bob/);
   assert.equal(await page.locator('[data-private-message-composer] h2').count(), 0);
-  assert.equal(await field.getAttribute('rows'), '3');
+  assert.equal(await field.getAttribute('rows'), '1');
   await field.fill('Keyboard draft');
   await field.press('Enter');
   await field.press('Shift+Enter');
