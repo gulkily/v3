@@ -190,3 +190,54 @@ Reuse decisions made at entry, from inspecting the existing code:
 - Estimate details: original scope unchanged; the bootstrap timestamp bug added a little.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Docs and acceptance
+
+**Original estimate: 0.08**
+
+- Changes:
+  - New concept entries `docs/concepts/staged_submission.md` and `docs/concepts/record_receipt.md`; `signed_post_bundle.md` and `agent_posting_client.md` updated for receipts, header order, staging and `--replace`.
+  - `docs/specs/canonical_post_record_v1.md`: any `Created-At` with a receipt, any header order, staging for registered keys. `docs/reference/agent_api.md`: the same, plus the 202 `staged` result and a table row for it. `llms.txt` (`LlmsTxtRenderer`): one sentence each on clock skew and staging. `docs/examples/agent_single_request_post.sh`: reports a staged post instead of "Request rejected (HTTP 202)".
+- Verification:
+  - Step 2 success criteria, locally:
+    - Passed: an emoji post is staged, not refused, and publishes after a signed fix (`FrmClientTest::testStagedPostIsReportedAndReplacedUnderItsId` through `frm.py`; `SingleRequestPostingTest::testSignedFixPublishesAStagedPost`).
+    - Passed: a vote signed 10 minutes off publishes on the first request (`WriteApiSmokeTest::testSignedReactionsWithSkewedClockAreAcceptedWithReceipt`).
+    - Passed, as changed in Step 3: a CR LF post is staged with "Records use LF line endings, not CR LF." (`testSignedPostsThatBreakARuleAreStaged`) and publishes on a canonical fix through the same replacement path.
+    - Passed: logged out and another member see no staged post (`StagedPageTest`); exports, static pages and the offline snapshot never read the staging folder (inspection, Stage 6).
+    - Passed: the same signed submission twice gives one record and the same status (staged: same `staged_at`; published: `replayed`).
+  - Passed: `python3 -m unittest tests/frm_client_test.py` (26 tests); `./v3 test --smoke --jobs=2` plus `LlmsTxtRendererTest SingleRequestHttpTest AgentApiWorkedExampleTest PlatformDocsStaticTest DocsPublicationFlowTest`: 466 run, 466 passed. Full suite not run.
+  - Passed: local links in the touched concept entries, spec and reference resolve; `git diff --check` is clean.
+  - Passed: final diff review against `origin/main` (39 files): no debugging output; the one new `error_log` is a deliberate log of a failed discard after publication, like the existing "refresh failed" log. The branch merges cleanly with the 9 newer commits on main.
+  - Pending (needs deployment): the zenmemes.com checks in the Completion Contract.
+  - Pending: a browser vote with a skewed clock and the signed-out sign-in on `/staged/` in a real browser.
+- Notes:
+  - Old copies of `frm.py` and the old example script see 202 as an unexpected answer; nothing is lost.
+
+**Retrospective stage work: 0.07**
+
+- Estimate details: original scope unchanged; production checks wait for deployment.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+Technically complete locally; not yet deployed, merged or checked on zenmemes.com.
+
+**Retrospective cycle assessment: 0.80** (separate from the 0.70 projection, which stands). Stage work ran over in Stages 2 and 6: two path consumers and the purge planner had to learn about receipts, and `/staged/` needed a signed-out sign-in path, name lookups and a phone overflow fix. Maintainer comfortable-fit judgment: pending.
+
+Completion Contract:
+
+- Normal entry, outcome and recovery: passed locally through `frm.py`, the HTTP route, the page controller and the read model (Stage 8 list).
+- Deployment/external verification: **pending**. After Ilya deploys: post one emoji thread from "claude" with `frm.py`, confirm `Staged:` and the item on `/staged/`, publish it with `--replace`; send one vote with a clock 10 minutes off; open `/staged/` logged out and as another member.
+- Release condition: pending the above. No migration; old records and clients keep working.
+
+Final checks:
+
+- Passed: eight stage commits after planning commit `7613a02b`, each with its summary update (`git log --oneline` shows 9 cycle commits, at least 1 + 8).
+- Passed: the planning commit holds only the three approved plans and the plans index entry; this summary first appears in Stage 1.
+- Passed: touched concept entries match the delivered behavior and their source paths resolve.
+- Pending: the items above that need production or a real browser.
+
+Follow-ups, outside this cycle: carry receipts through instance import; positions for Unicode-policy errors that lack them; staging for unregistered keys and for replies whose thread has not arrived (later slices named in Step 2); remove the unreachable `clock_skew` branch in `public/assets/thread_reactions.js`.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

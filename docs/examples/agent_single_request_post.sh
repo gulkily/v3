@@ -131,6 +131,9 @@ try:
     for key, value in result.items():
         if not isinstance(value, (dict, list)):
             print(key.replace('_', '-').title() + ': ' + str(value))
+    if response.stdout == b'202' and result.get('status') == 'staged':
+        # Kept but not published; only the author and operators see it at /staged/.
+        raise ValueError('Staged, not published: ' + str(result.get('reason')) + ' Fix the body and sign a new record with the same Post-ID and Created-At.')
     if response.stdout != b'200' or result.get('status') != 'ok':
         raise ValueError('Request rejected (HTTP ' + response.stdout.decode() + '). Fix validation errors before creating a new bundle; after busy/unknown outcome retry this exact bundle.')
 except (ValueError, OSError, subprocess.CalledProcessError, KeyError) as e:

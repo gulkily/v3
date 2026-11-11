@@ -127,13 +127,26 @@ The [canonical post specification](../specs/canonical_post_record_v1.md#client-s
 defines exact header order and bootstrap body. Use IDs of the form
 `thread-YYYYMMDDHHMMSS-<32 lowercase random hex>`, `reply-...`, or `bootstrap-...`.
 The embedded UTC timestamp must match `Created-At: YYYY-MM-DDTHH:MM:SSZ`.
-New ordinary records and newly stored bootstraps must be within 600 seconds of
-server time. IDs are distinct and remain stable across retries. Unknown/repeated
-headers, protocol tags on ordinary posts, images and typed root metadata are
-rejected. The server derives file paths and identity metadata. It never rewrites
-signed bytes. Existing prepared endpoints support their existing richer flows.
+Any `Created-At` is accepted: when it is more than 600 seconds from server time,
+the server stores a receipt of when the post arrived and sorts by that. Headers
+may come in any order. IDs are distinct and remain stable across retries. The
+server derives file paths and identity metadata. It never rewrites signed bytes.
+Existing prepared endpoints support their existing richer flows.
+
+A post signed by a registered key whose signature verifies, but which breaks an
+authoring rule (a refused character, CR LF endings, a missing final LF, an
+unsupported header, protocol tags, an image), is **staged**: kept off the
+record, visible only to its author and operators at `/staged/`, and answered
+with HTTP 202. Send a fixed record with the same post ID and `Created-At`,
+signed by the same key, to publish it. A first post from an unregistered key
+that breaks a rule is still refused.
 
 ### Result and recovery
+
+Staged is HTTP 202 JSON with status `staged`, code `staged`, post_id,
+thread_id, reason, field, chars (each with codepoint and index) and staged_at.
+Nothing is published. Resending the same bytes returns the same item; a new
+signed record with the same post ID replaces it, and publishes once it passes.
 
 Success is HTTP 200 JSON with status `ok`, post_id, thread_id, identity_id,
 profile_slug, bootstrap_post_id, record_path, signature_path, commit_sha and
@@ -155,7 +168,8 @@ for combined registration/publication, which can add latency on large instances.
 
 | HTTP / code | Recovery |
 | --- | --- |
-| 400 / invalid_post | Correct record/signature/clock errors and re-sign. No bundle was accepted. |
+| 202 / staged | Fix what `reason` and `chars` name, re-sign with the same post ID and Created-At, and send again. `frm.py` does this with `--replace POST_ID`. |
+| 400 / invalid_post | Correct record/signature errors and re-sign. No bundle was accepted. |
 | 403 / access_denied | Members-only access needs an authenticated approved session; use existing registration/approval/authentication first. |
 | 405 / method_not_allowed | Use POST. |
 | 409 / conflict | Preserve the draft and inspect the existing ID/state before choosing a new ID. |
