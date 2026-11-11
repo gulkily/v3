@@ -139,3 +139,30 @@ Reuse decisions made at entry, from inspecting the existing code:
 - Estimate details: original scope unchanged; the store-location correction was small.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - /staged/ page and the Unread link
+
+**Original estimate: 0.10**
+
+- Changes:
+  - New `src/ForumRewrite/Http/StagedPageController.php` and `templates/pages/staged.php`, routed at `/staged` and `/staged/` in `Application` (and listed in `isApplicationRoute`). Built on the `InboxPageController` pattern: private, per viewer, `noStoreHeaders()`, plain form POST.
+  - A signed-in viewer sees staged posts from any of their username's approved keys (`ApprovedUserKeyResolver`, as Unread does); an operator (`ApprovalPolicy::isOperator`) sees all, labelled with the author's name, or key when the read model has no profile. Replies show their thread's subject. Posts that have since been published are left out.
+  - Each item shows a `chip--pending` "Held" chip, kind and date, subject, a 240-character preview, the reason with each character's code point and position, the post ID (for `frm.py --replace`) and a Discard button. One line above the list keeps the privacy fact and the recovery step; no other explanatory copy.
+  - Discard: POST `post_id`, checked with `SameOriginRequest` and against the items this viewer may see; success redirects 303 back to `/staged/`, failure re-renders with "Couldn’t discard. Nothing was removed." (409).
+  - A signed-out viewer gets "Nothing staged." A browser holding a key is decided before paint (`account_state_script`): it shows the heading only while the new `public/assets/staged_access.js` signs in through `PrivateSiteAuth` and reloads once; a refused sign-in shows Retry. This mirrors `private_message_access.js`, without its approval requirement (staging does not need approval).
+  - Unread (`InboxPageController`, `inbox.php`) shows a "Staged (n)" link card at the top when this viewer can see any staged post.
+  - `public/assets/site.css`: one rule, `.staged-item__id code { overflow-wrap: anywhere; }`, so post IDs wrap on phones.
+  - Not a navigation destination, so `theme-nav-icons.css` is unchanged.
+- Verification:
+  - Passed: new `StagedPageTest` (registered in `tests/run.php`): logged out and another member see "Nothing staged." and no staged text; the author sees only theirs, with code point, position and Discard; the operator sees both, author names and the reply's thread link; a published post drops out; cross-site discard is refused and keeps the post; another member cannot discard; the author and the operator can; Unread shows "Staged (1)" for the author, "Staged (2)" for the operator and nothing for others.
+  - Passed: `./v3 test --smoke --jobs=2` plus `StagedPageTest StagedSubmissionStoreTest InboxPageTest InboxFeedTest WebServerRoutingTest NavIconSetsTest ApiRouteCatalogTest SingleRequestPostingTest`: 476 run, 476 passed. Full suite not run.
+  - Passed, rendered check: the real templates rendered through the controller and served with the site's CSS and scripts, screenshotted with Playwright at 1100 px and 390 px, light and dark, in these states: author with items, operator, signed out, failed discard, empty after discard, Unread with the link. The first pass found the post ID overflowing at 390 px; after the wrap rule and moving the ID onto its own line, no state overflows horizontally. Screenshots were working files and are not committed.
+  - Passed, by inspection: `StaticArtifactBuilder` and the offline snapshot code never read the staging folder or render `/staged/`; the offline snapshot is built from the read model, which never holds staged posts.
+  - Pending: the sign-in-and-reload path for a signed-out browser that holds a key was not exercised in a real browser session; it reuses `PrivateSiteAuth.authenticate` the way Messages does. Checked again on zenmemes.com in Stage 8.
+  - Not covered: themes other than the default, light and dark. The page uses only existing card, meta and chip classes.
+
+**Retrospective stage work: 0.12**
+
+- Estimate details: original scope unchanged. Above the original because of the signed-out sign-in path, the name lookups for the operator view and the phone overflow fix.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

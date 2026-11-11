@@ -46,6 +46,7 @@ $testFiles = [
     __DIR__ . '/SignedPostIdentityTest.php',
     __DIR__ . '/SignedPostBundleValidatorTest.php',
     __DIR__ . '/StagedSubmissionStoreTest.php',
+    __DIR__ . '/StagedPageTest.php',
     __DIR__ . '/ActivityProjectionTest.php',
     __DIR__ . '/BackupFeatureFlagTest.php',
     __DIR__ . '/ProfilePublicDetailsTest.php',

@@ -365,6 +365,11 @@ final class Application
             return;
         }
 
+        if ($path === '/staged' || $path === '/staged/') {
+            $this->stagedPageController()->show($method, $query);
+            return;
+        }
+
         if ($path === '/messages' || $path === '/messages/') {
             $this->privateMessagePageController()->conversations($method);
             return;
@@ -2354,7 +2359,7 @@ final class Application
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/compose/thread', '/compose/reply',
-            '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread',
+            '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
@@ -2587,6 +2592,11 @@ final class Application
             $this->privateMessageStore(...),
             $this->recordHistoryActivity(...),
         );
+    }
+
+    private function stagedPageController(): \ForumRewrite\Http\StagedPageController
+    {
+        return new \ForumRewrite\Http\StagedPageController($this->routeServices(), $this->authenticatedViewerProfile(...));
     }
 
     private function inboxPageController(): \ForumRewrite\Http\InboxPageController
