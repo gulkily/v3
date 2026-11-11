@@ -35,8 +35,9 @@ final class SignedPostBundleValidatorTest
     {
         $v = new SignedPostBundleValidator();
         $text = str_replace(['thread-', 'Board-Tags: general','Subject: Hello',"\n\nHello\n"], ['bootstrap-', 'Board-Tags: identity internal','Subject: account bootstrap',"\n\nAutomatic account bootstrap anchor.\n"],$this->record());
-        $r=$v->validateRecord($text,true); $v->assertFresh($r,strtotime($r->createdAt)+600);
-        try { $v->assertFresh($r,strtotime($r->createdAt)+601); throw new LogicException('Expected clock rejection'); } catch (RuntimeException) {}
+        $r=$v->validateRecord($text,true);
+        if (\ForumRewrite\Canonical\RecordReceipt::isSkewed($r->createdAt, strtotime($r->createdAt)+600, 600)) throw new LogicException('600 seconds is in the window');
+        if (!\ForumRewrite\Canonical\RecordReceipt::isSkewed($r->createdAt, strtotime($r->createdAt)+601, 600)) throw new LogicException('601 seconds needs a receipt');
         try { $v->validateRecord($text); throw new LogicException('Expected ordinary rejection'); } catch (RuntimeException) {}
     }
 }

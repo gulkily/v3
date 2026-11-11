@@ -60,11 +60,46 @@ final class SingleRequestPostingTest
         assertSame($inode, fileinode($db), 'no rebuild swapped in a new file');
     }
 
-    private function signedRecord(array $input, ?string $threadId, string $body): string
+    /** A skewed signed post publishes as signed and sorts by when it arrived, in place and after a rebuild. */
+    public function testSkewedSignedPostsPublishWithReceipt(): void
+    {
+        foreach (['20 minutes behind' => [-1200, false], 'a day ahead' => [86400, false], 'reply an hour behind' => [-3600, true]] as $name => [$offset, $reply]) {
+            [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $input = SignedPostIdentityTest::bundle();
+            $own = $writer->createSignedPost($input);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+
+            $record = $this->signedRecord($input, $reply ? $own['post_id'] : null, "Late #upvote\n", $offset);
+            $bundle = ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)] + $input;
+            unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']);
+            $before = time();
+            $result = $writer->createSignedPost($bundle);
+
+            assertSame('ok', $result['status'], $name);
+            assertSame($record, file_get_contents($root . '/' . $result['record_path']), $name . ': stored as signed');
+            $received = \ForumRewrite\Canonical\RecordReceipt::parse((string) @file_get_contents($root . '/' . $result['record_path'] . '.received'));
+            assertSame(true, $received !== null && strtotime($received) >= $before && strtotime($received) <= time(), $name . ': receipt written');
+            $written = trim((new SignedPostTransaction($root))->git(['show', '--name-only', '--format=', 'HEAD']));
+            assertStringContains($result['record_path'] . '.received', $written, $name . ': receipt committed with the post');
+
+            $pdo = new PDO('sqlite:' . $db);
+            $createdAt = static fn (): string => (string) $pdo->query('SELECT created_at FROM posts WHERE post_id = ' . $pdo->quote($result['post_id']))->fetchColumn();
+            assertSame($received, $createdAt(), $name . ': sorts by arrival in place');
+            if (!$reply) assertSame($received, (string) $pdo->query('SELECT root_post_created_at FROM threads WHERE root_post_id = ' . $pdo->quote($result['post_id']))->fetchColumn(), $name . ': thread time');
+            $targeted = ReadModelSnapshot::take($db);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame([], ReadModelSnapshot::differences(ReadModelSnapshot::take($db), $targeted), $name . ': rebuild agrees');
+
+            assertSame(true, $writer->createSignedPost($bundle)['replayed'], $name . ': exact retry replays');
+        }
+    }
+
+    private function signedRecord(array $input, ?string $threadId, string $body, int $offset = 0): string
     {
         preg_match('/^Author-Identity-ID: (.+)$/m', $input['canonical_record'], $author);
-        $time = gmdate('Y-m-d\TH:i:s\Z');
-        $id = ($threadId === null ? 'thread-' : 'reply-') . gmdate('YmdHis') . '-' . bin2hex(random_bytes(16));
+        $time = gmdate('Y-m-d\TH:i:s\Z', time() + $offset);
+        $id = ($threadId === null ? 'thread-' : 'reply-') . gmdate('YmdHis', time() + $offset) . '-' . bin2hex(random_bytes(16));
         $headers = "Post-ID: {$id}\nCreated-At: {$time}\nBoard-Tags: general\n";
         if ($threadId !== null) $headers .= "Thread-ID: {$threadId}\nParent-ID: {$threadId}\n";
         $headers .= "Author-Identity-ID: {$author[1]}\n";

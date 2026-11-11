@@ -69,8 +69,12 @@ final class ApprovalHistory
             $invitation = in_array('invitation', $tags, true) && $post['author_identity_id'] === $profile['identity_id']
                 && preg_match('/^Invitation-Action: redeem$/m', $post['body']);
             if (!$direct && !$invitation) continue;
+            // created_at can be a receipt time, so fall back to the dates the post ID carries.
             $path = CanonicalPathResolver::datedPost($post['post_id'], $post['created_at']);
-            if (!is_file($this->root . '/' . $path)) $path = CanonicalPathResolver::post($post['post_id']);
+            foreach (CanonicalPathResolver::postCandidates($post['post_id']) as $candidate) {
+                if (is_file($this->root . '/' . $path)) break;
+                $path = $candidate;
+            }
             $receipt = ApprovalAcceptance::read($this->root, $path);
             if ($receipt !== null && $receipt['context']['target_identity_id'] === $profile['identity_id']) {
                 $context = $receipt['context'];

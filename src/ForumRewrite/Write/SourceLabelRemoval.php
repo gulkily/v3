@@ -96,7 +96,7 @@ final class SourceLabelRemoval
                 $remove[] = $path;
             }
             foreach ($remove as $path) {
-                foreach ([$path, $path . '.asc', $path . '.sig'] as $candidate) $paths[] = $candidate;
+                foreach ([$path, $path . '.asc', $path . '.sig', $path . \ForumRewrite\Canonical\RecordReceipt::SUFFIX] as $candidate) $paths[] = $candidate;
             }
         }
         // One lookup each in the index and HEAD instead of per-path Git processes. A rejected

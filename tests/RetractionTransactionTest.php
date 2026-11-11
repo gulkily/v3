@@ -53,6 +53,16 @@ final class RetractionTransactionTest
         $failed=false;try {AcceptedRetraction::read($root,'root');}catch(RuntimeException){$failed=true;}assertSame(true,$failed);
     }
 
+    public function testRetractionRemovesAReceipt(): void
+    {
+        [$root,$r] = $this->fixture();
+        file_put_contents($root.'/records/posts/root.txt.received', \ForumRewrite\Canonical\RecordReceipt::contents(strtotime('2026-10-25T12:30:00Z')));
+        LabelRemoval::git($root,['add','records/posts/root.txt.received']); LabelRemoval::git($root,['commit','-m','receipt','--','records/posts/root.txt.received']);
+        $commit=RetractionDeletion::commit($root,$r);
+        assertSame(false,is_file($root.'/records/posts/root.txt.received'));
+        assertStringContains('records/posts/root.txt.received',LabelRemoval::git($root,['diff-tree','--no-commit-id','--name-only','-r',$commit]));
+    }
+
     public function testProcessExitAtEveryBoundaryLeavesRecoverableState(): void
     {
         for($boundary=1;$boundary<=6;$boundary++) {

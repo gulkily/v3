@@ -42,3 +42,30 @@ Reuse decisions made at entry, from inspecting the existing code:
 - Estimate details: original scope unchanged; no revisions. The retrospective matches the original: the journal needed a small extension, offset by the class removal being trivial.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Skewed signed posts sort by arrival
+
+**Original estimate: 0.10**
+
+- Changes:
+  - `createSignedPost` no longer refuses a post outside 600 seconds. It commits `<post>.txt.received` with the post (and with a first-use bootstrap post when that one is skewed). Hashtag label records and title records the server builds for a skewed post use the arrival time.
+  - Removed `SignedPostBundleValidator::assertFresh`; its test now checks the window through `RecordReceipt::isSkewed`.
+  - Read model: every `created_at` the two builders fill from a post, thread label or post reaction goes through `RecordReceipt::effectiveCreatedAt`. That is `ReadModelBuilder` (posts, label activity, reaction activity) and `IncrementalReadModelUpdater` (post insert, thread insert, last activity, post activity, reaction activity, label activity), the latter through one helper, `effectivePostCreatedAt`.
+  - Receipts are applied at fill points, not when records load: several write paths and `ApprovalAcceptance` rebuild a post's path from its loaded `Created-At`, and changing that value would break them.
+  - `ApprovalHistory` built a post path from the read model's `created_at`; it now falls back to the dates in the post ID, so a receipt time cannot hide an approval post.
+  - Retraction (`RetractionDeletion`), source cleanup (`SourceLabelRemoval`) and `HistoryPurgePlanner` include `.txt.received` beside `.txt` and `.txt.asc`.
+- Verification:
+  - Passed: new `SingleRequestPostingTest::testSkewedSignedPostsPublishWithReceipt`. A thread 20 minutes behind, a thread a day ahead and a reply an hour behind each publish as signed, commit the receipt in the post's commit, get the arrival time in `posts.created_at` (and `threads.root_post_created_at`), match a full rebuild exactly (`ReadModelSnapshot`), and replay on an exact retry.
+  - Passed: new `RetractionTransactionTest::testRetractionRemovesAReceipt`; `HistoryPurgePlannerTest` now expects the receipt among purge targets.
+  - Passed: `./v3 test --smoke --jobs=2` plus `ApprovalHistoryTest ActivityProjectionTest ReadModelPostReactionsTest ReadModelThreadLabelsTest ReadModelPostRetractionsTest DeleteRecordCommandTest ContentImportPlannerTest SingleRequestPostingTest SingleRequestHttpTest SignedPostBundleValidatorTest SignedPostIdentityTest HistoryPurgeTest HistoryPurgePlannerTest RetractionTransactionTest AcceptedRetractionTest ReactionRecordFormatParityTest ViewerTagLookupParityTest StandardActivityPaginationTest SourceRouteCommitMapTest AgentPostingApiTest`: 526 run, 526 passed. Full suite not run.
+  - Direct `->createdAt` reads outside the read model, reviewed: path derivations in `LocalWriteService`, `ApprovalAcceptance`, `ArchiveRecordCatalog` and `SignedPostIdentity` need the signed value and keep it; `AttributionCutoff`, `InvitationLedger`, invitation replay order, `ContentImportPlanner`, `LegacyTimestampBake` and `ImageBackup` read records that are server-built or compared byte-for-byte, so they are unaffected. `ApprovalAcceptance` rejects an acceptance older than `Created-At`; approvals are server-built through `prepare_approval`, so skew does not reach it.
+  - Inapplicable: UI. Verified-attribution cutoffs keep comparing the signed `Created-At` in both builders, so they stay consistent.
+- Notes:
+  - Ordering of label and reaction operations inside a rebuild still follows the signed `Created-At` (add and remove replay order); only displayed and sorted times use the receipt.
+  - Instance import (`ContentImportPlanner`) still copies records without receipts; an imported skewed post sorts by its signed time. Recorded as a follow-up; carrying receipts through import is outside this slice.
+
+**Retrospective stage work: 0.12**
+
+- Estimate details: original scope unchanged. Retrospective above the original because two path consumers (`ApprovalHistory`, source cleanup) and the purge planner surfaced only during the stage.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

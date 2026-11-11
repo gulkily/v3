@@ -86,12 +86,4 @@ final class SignedPostBundleValidator
         if ($canonical !== $bytes) throw new RuntimeException('Record contains unsupported headers, order or noncanonical bytes.');
         return $record;
     }
-
-    public function assertFresh(PostRecord $record, ?int $now = null): void
-    {
-        $now ??= time();
-        if (abs($now - strtotime($record->createdAt)) > 600) {
-            throw new RuntimeException('New record must be within 600 seconds of server UTC ' . gmdate('Y-m-d\TH:i:s\Z', $now) . '.');
-        }
-    }
 }

@@ -19,7 +19,7 @@ final class RetractionDeletion
             $record + ['source_id'=>$record['post_id'],'operation'=>'delete','labels'=>[]], $local);
         $remove = [];
         foreach (CanonicalPathResolver::postCandidates($record['post_id']) as $candidate) {
-            foreach ([$candidate, $candidate . '.asc'] as $path) {
+            foreach ([$candidate, $candidate . '.asc', $candidate . \ForumRewrite\Canonical\RecordReceipt::SUFFIX] as $path) {
                 if (is_link($root . '/' . $path)) throw new RuntimeException('Cannot retract a symlink.');
                 if (is_file($root . '/' . $path) || trim(LabelRemoval::git($root, ['ls-files', '--', $path])) !== ''
                     || trim(LabelRemoval::git($root, ['ls-tree', '--name-only', 'HEAD', '--', $path])) !== '') $remove[] = $path;

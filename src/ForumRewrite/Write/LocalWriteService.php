@@ -61,6 +61,8 @@ class LocalWriteService
     private const HIDDEN_BOOTSTRAP_BOARD_TAGS = 'identity internal';
     /** Seconds a signed reaction's Created-At may differ from the server clock before it gets a receipt. */
     private const SIGNED_REACTION_CLOCK_WINDOW = 300;
+    /** Seconds a signed post's Created-At may differ from the server clock before it gets a receipt. */
+    private const SIGNED_POST_CLOCK_WINDOW = 600;
 
     /** @var (callable():void)|null */
     private $enqueueOfflineSnapshotPublication;
@@ -581,24 +583,32 @@ class LocalWriteService
                 if ($commit === '') throw new RuntimeException('Unable to identify accepted post commit.');
             } else {
                 $validator->validateRecord($input['canonical_record']);
-                $validator->assertFresh($post);
                 if ($this->postTargetExists($post->postId)) throw new RuntimeException('Post ID is already reserved.', 409);
                 if ($post->isReply()) $this->assertReplyTarget($post->threadId, $post->parentId);
                 if (!$bundle['known']) {
-                    $validator->assertFresh($bundle['bootstrap']);
                     if (\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $bundle['bootstrap']->postId) !== null || $this->postTargetExists($bundle['bootstrap']->postId)) throw new RuntimeException('Bootstrap ID is already reserved.', 409);
                 }
                 $files = $bundle['files'];
                 $files[$path] = $input['canonical_record'];
                 $files[$path . '.asc'] = $input['detached_signature'];
+                // A skewed clock is accepted as signed; the receipt records when it arrived.
+                $now = time();
+                $effectiveCreatedAt = $post->createdAt;
+                if (RecordReceipt::isSkewed($post->createdAt, $now, self::SIGNED_POST_CLOCK_WINDOW)) {
+                    $files[$path . RecordReceipt::SUFFIX] = RecordReceipt::contents($now);
+                    $effectiveCreatedAt = gmdate('Y-m-d\\TH:i:s\\Z', $now);
+                }
+                if (!$bundle['known'] && RecordReceipt::isSkewed($bundle['bootstrap']->createdAt, $now, self::SIGNED_POST_CLOCK_WINDOW)) {
+                    $files[CanonicalPathResolver::datedPost($bundle['bootstrap']->postId, $bundle['bootstrap']->createdAt) . RecordReceipt::SUFFIX] = RecordReceipt::contents($now);
+                }
                 $labels = $this->extractThreadLabelsFromBody($post->body);
                 if ($labels !== []) {
-                    [$labelPath,$labelBytes] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
+                    [$labelPath,$labelBytes] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $effectiveCreatedAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
                     $files[$labelPath] = $labelBytes;
                     $hasLabels = true;
                 }
                 if ($post->isReply()) {
-                    $subjectRecord = $this->titleDirectiveRecord($post->threadId, $post->postId, $input['canonical_record'], $post->body, $post->authorIdentityId, $post->createdAt);
+                    $subjectRecord = $this->titleDirectiveRecord($post->threadId, $post->postId, $input['canonical_record'], $post->body, $post->authorIdentityId, $effectiveCreatedAt);
                     if ($subjectRecord !== null) {
                         $files[$subjectRecord[0]] = $subjectRecord[1];
                         $hasSubject = true;

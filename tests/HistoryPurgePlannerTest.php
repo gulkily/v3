@@ -17,6 +17,8 @@ final class HistoryPurgePlannerTest
         $this->post($root, 'quote-20260101000000-aaaa0001', '2026-01-01T00:00:00Z', 'first');
         $this->post($root, 'quote-20260102000000-aaaa0002', '2026-01-02T00:00:00Z', 'second');
         file_put_contents($root . '/records/posts/legacy.txt', "Post-ID: legacy\nAuthor-Identity-ID: " . self::AUTHOR . "\nBoard-Tags: general\n\nold prose\n");
+        // The first post arrived with a skewed clock, so it carries a receipt.
+        file_put_contents($root . '/records/posts/2026/01/01/quote-20260101000000-aaaa0001.txt.received', \ForumRewrite\Canonical\RecordReceipt::contents(strtotime('2026-01-01T00:20:00Z')));
         $git(['add', '.']); $git(['commit', '-q', '-m', 'posts']);
 
         $plan = HistoryPurgePlanner::plan($root);
@@ -28,7 +30,7 @@ final class HistoryPurgePlannerTest
         // Delete the first post the way delete-record does: remove files, accept a receipt, commit together.
         $deleted = 'records/posts/2026/01/01/quote-20260101000000-aaaa0001.txt';
         $source = file_get_contents($root . '/' . $deleted);
-        unlink($root . '/' . $deleted); unlink($root . '/' . $deleted . '.asc');
+        unlink($root . '/' . $deleted); unlink($root . '/' . $deleted . '.asc'); unlink($root . '/' . $deleted . '.received');
         mkdir($root . '/records/post-removals', 0775, true);
         file_put_contents($root . '/records/post-removals/quote-20260101000000-aaaa0001.txt', $this->receipt('quote-20260101000000-aaaa0001', '2026-01-01T00:00:00Z', $source));
         $legacy = file_get_contents($root . '/records/posts/legacy.txt');
@@ -44,7 +46,7 @@ final class HistoryPurgePlannerTest
         assertSame(2, $plan['receipts']);
         assertSame(['quote-20260103000000-aaaa0009'], $plan['receipts_without_history']);
         // Only the dated candidate ever existed; the undated candidate is not reported.
-        assertSame([$deleted, $deleted . '.asc'], $plan['targets']);
+        assertSame([$deleted, $deleted . '.asc', $deleted . '.received'], $plan['targets']);
         assertSame(3, $plan['commits_total']);
         assertSame(2, $plan['commits_affected']);
         assertSame([], $plan['legacy_without_timestamp']);

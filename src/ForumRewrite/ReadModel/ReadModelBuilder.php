@@ -9,6 +9,7 @@ use ForumRewrite\Canonical\CanonicalRecordParseException;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\PostRecord;
+use ForumRewrite\Canonical\RecordReceipt;
 use ForumRewrite\Canonical\PostRetractionRecord;
 use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\ThreadLabelRecord;
@@ -211,7 +212,7 @@ final class ReadModelBuilder
             $isRetracted = $retractedAt !== null;
             $parsedPosts[] = [
                 'post_id' => $record->postId,
-                'created_at' => $record->createdAt,
+                'created_at' => RecordReceipt::effectiveCreatedAt($this->repositoryRoot, $relativePath, $record->createdAt),
                 'thread_id' => $threadId,
                 'parent_id' => $record->parentId,
                 'subject' => $isRetracted ? null : $record->subject,
@@ -487,7 +488,7 @@ final class ReadModelBuilder
             if ($labelsAdded !== []) {
                 sort($labelsAdded);
                 $this->threadLabelActivityEvents[] = [
-                    'created_at' => $record->createdAt,
+                    'created_at' => RecordReceipt::effectiveCreatedAt($this->repositoryRoot, CanonicalPathResolver::threadLabel($record->recordId), $record->createdAt),
                     'thread_id' => $record->threadId,
                     'author_identity_id' => $record->authorIdentityId,
                     'labels_added' => $labelsAdded,
@@ -657,7 +658,7 @@ final class ReadModelBuilder
             }
 
             $this->postReactionActivityEvents[] = [
-                'created_at' => $record->createdAt,
+                'created_at' => RecordReceipt::effectiveCreatedAt($this->repositoryRoot, CanonicalPathResolver::postReaction($record->recordId), $record->createdAt),
                 'post_id' => $record->postId,
                 'thread_id' => $knownPosts[$record->postId]['thread_id'],
                 'author_identity_id' => $record->authorIdentityId,
