@@ -133,7 +133,7 @@ Longest methods in `src/`:
 
 ## 8. Needs maintainer input
 
-- **Feature flags permanently on everywhere:** all 36 are read by code. Removing a flag's "off" path needs the production settings for zenmemes, qdb, mitrapclub, and chouse.
+- **Feature flags permanently on everywhere:** **keep**. Flags exist to switch off a buggy feature and to let future instances leave a feature out, so "on everywhere" is not a reason to remove one (Ilya, 2026-11-10). All 36 are read by code.
 - **Interface-only methods** (`FastScoreStore`, `AgentReplyGenerationStore`): keep the interfaces?
 
 ## Suggested next PRs

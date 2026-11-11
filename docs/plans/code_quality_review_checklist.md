@@ -42,7 +42,7 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 - [ ] Unreachable branches: code after `return`/`throw`, conditions on values that can no longer occur (e.g. old schema versions, removed record types).
 
 ### 1.2 Feature flags
-- [~] For each flag in `Support/FeatureFlags/FeatureFlagRegistry`: is it permanently on everywhere? If so, remove the flag and the "off" path. Needs the production settings for each site.
+- [x] Flags that are on everywhere are **not** dead code; keep them. A flag lets an operator switch off a buggy feature without a deploy, and lets a future instance leave out a feature it doesn't want (Ilya, 2026-11-10). A flag is dead only if no code reads it.
 - [x] Flags referenced in code but not in the registry, or registered but never checked. All 36 flags are read; none orphaned.
 
 ### 1.3 Routes, templates, assets
