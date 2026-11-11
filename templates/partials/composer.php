@@ -28,7 +28,7 @@ $composerTagsSummary = implode(' ', array_map(static fn (string $tag): string =>
 $composerTagsOpen = $composerFull && ((string) $boardTags !== 'general' || ($error ?? null) !== null);
 $composerEventSpan = (string) ($eventDate ?? '') !== '' && (string) ($eventEndDate ?? '') !== '' ? $eventDate . ' – ' . $eventEndDate : (string) ($eventDate ?? '');
 $composerEventValues = array_values(array_filter([$composerEventSpan, (string) ($eventTime ?? ''), (string) ($eventLocation ?? '')], static fn (string $value): bool => $value !== ''));
-$composerEventOpen = $composerEventValues !== [] || (string) ($eventLink ?? '') !== '' || ($error ?? null) !== null;
+$composerEventOpen = $composerEventValues !== [] || (string) ($eventLink ?? '') !== '' || (string) ($eventWhen ?? '') !== '' || ($error ?? null) !== null;
 $composerNormalizationStatus = static fn (string $field): string => <<<HTML
   <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="{$field}" hidden>
     <span data-role="compose-field-normalization-message"></span>
@@ -103,6 +103,16 @@ HTML;
 <?php if ($eventSupportEnabled ?? false): ?>
     <details class="compose-disclosure compose-tool" data-compose-disclosure="event"<?= $composerEventOpen ? ' open' : '' ?>>
       <summary>Event <span class="meta" data-role="compose-disclosure-summary"><?= $e(implode(' · ', $composerEventValues)) ?></span></summary>
+<?php if ($eventWhenEnabled ?? false): ?>
+      <div class="compose-event-when" data-role="event-when">
+        <label>When<input type="text" name="event_when" maxlength="<?= \ForumRewrite\Calendar\EventPhraseReader::MAX_LENGTH ?>" autocomplete="off" placeholder="next Friday at 7" value="<?= $e($eventWhen ?? '') ?>"></label>
+        <button type="submit" name="event_when_fill" value="1" formnovalidate data-action="fill-event-when">Fill</button>
+      </div>
+      <p class="meta" data-role="event-when-status"<?= (string) ($eventWhenStatus ?? '') === '' ? ' hidden' : '' ?>><?= $e($eventWhenStatus ?? '') ?></p>
+<?php if ($composerEventDateFixed ?? false): ?>
+      <input type="hidden" name="event_date_fixed" value="1">
+<?php endif; ?>
+<?php endif; ?>
       <label>Date<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"<?= ($composerEventDateFixed ?? false) ? ' readonly' : '' ?>></label>
       <label>Until<input type="date" name="event_end_date" value="<?= $e($eventEndDate ?? '') ?>"></label>
       <label>Time<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>

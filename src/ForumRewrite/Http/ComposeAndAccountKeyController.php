@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Calendar\EventPhraseFill;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\Write\ComposeAttemptRetired;
@@ -106,6 +107,10 @@ final class ComposeAndAccountKeyController
         $phaseStartedAt = hrtime(true);
         $input = $this->routeServices->requestData($query);
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
+        if (!$isQdbQuote && (string) ($input['event_when_fill'] ?? '') !== '') {
+            $this->routeServices->sendHtml($this->renderEventWhenFill($input), 200);
+            return;
+        }
         try {
             $result = $isQdbQuote
                 ? $this->routeServices->writer()->createQuote($input)
@@ -136,7 +141,8 @@ final class ComposeAndAccountKeyController
                         (string) ($input['event_link'] ?? ''),
                         (string) ($input['event_time'] ?? ''),
                         (string) ($input['event_end_date'] ?? ''),
-                        $exception instanceof ComposeAttemptRetired ? $exception->attempt : null
+                        $exception instanceof ComposeAttemptRetired ? $exception->attempt : null,
+                        $this->eventWhenState($input)
                     ),
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
@@ -272,9 +278,10 @@ final class ComposeAndAccountKeyController
         string $eventLink = '',
         string $eventTime = '',
         string $eventEndDate = '',
-        ?string $retiredComposeAttempt = null
+        ?string $retiredComposeAttempt = null,
+        array $eventWhenState = []
     ): string {
-        return $this->routeServices->renderPageTemplate('compose_thread.php', [
+        return $this->routeServices->renderPageTemplate('compose_thread.php', $eventWhenState + [
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'subject' => $subject,
             'body' => $body,
@@ -287,6 +294,62 @@ final class ComposeAndAccountKeyController
             'eventEndDate' => $eventEndDate,
             'retiredComposeAttempt' => $retiredComposeAttempt,
         ], 'New Post', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
+    }
+
+    /**
+     * Fill without JavaScript: the composer comes back with the Event fields read from
+     * the When phrase and the rest of the draft as typed. Nothing is posted. Today is
+     * the UTC date here, since the server cannot know the poster's clock.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function renderEventWhenFill(array $input): string
+    {
+        $today = gmdate('Y-m-d');
+        $state = $this->eventWhenState($input);
+        $result = (new EventPhraseFill())->fill(
+            (string) ($input['event_when'] ?? ''),
+            $today,
+            [
+                'event_date' => (string) ($input['event_date'] ?? ''),
+                'event_end_date' => (string) ($input['event_end_date'] ?? ''),
+                'event_time' => (string) ($input['event_time'] ?? ''),
+            ],
+            $state['composerEventDateFixed']
+        );
+        $status = $result['status'];
+        if ($result['filled']) {
+            $status = trim($status . ' Read with today as ' . $today . ' (UTC).');
+        }
+        $state['eventWhenStatus'] = $status;
+
+        return $this->renderComposeThreadPage(
+            (string) ($input['board_tags'] ?? 'general'),
+            (string) ($input['subject'] ?? ''),
+            (string) ($input['body'] ?? ''),
+            null,
+            null,
+            $result['fields']['event_date'],
+            (string) ($input['event_location'] ?? ''),
+            (string) ($input['event_link'] ?? ''),
+            $result['fields']['event_time'],
+            $result['fields']['event_end_date'],
+            null,
+            $state
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array{eventWhen:string, eventWhenStatus:string, composerEventDateFixed:bool}
+     */
+    private function eventWhenState(array $input): array
+    {
+        return [
+            'eventWhen' => (string) ($input['event_when'] ?? ''),
+            'eventWhenStatus' => '',
+            'composerEventDateFixed' => (string) ($input['event_date_fixed'] ?? '') === '1',
+        ];
     }
 
     private function renderComposeQuotePage(string $body, ?string $error = null): string
