@@ -51,13 +51,20 @@
 
   window.forumOutboxCompose = { replyItem: replyItem, threadItem: threadItem };
 
-  document.addEventListener("DOMContentLoaded", function () {
+  // A form is bound once, whether this script ran before or after the page finished parsing.
+  function unbound(form) {
+    if (form.dataset.outboxComposeBound === "true") return false;
+    form.dataset.outboxComposeBound = "true";
+    return true;
+  }
+
+  function bindComposeForms() {
     if (!window.forumOutbox || !window.forumOutboxStorage) return;
     Array.from(document.querySelectorAll('[data-compose-form][data-compose-kind="reply"]')).forEach(function (form) {
       var actions = form.querySelector(".compose-form-actions");
       if (!actions) return;
       var button = form.querySelector('[data-action="save-compose-outbox"]');
-      if (!button) return;
+      if (!button || !unbound(form)) return;
       button.disabled = false;
       var status = document.createElement("p");
       status.className = "meta";
@@ -97,7 +104,7 @@
       var actions = form.querySelector(".compose-form-actions");
       if (!actions) return;
       var button = form.querySelector('[data-action="save-compose-outbox"]');
-      if (!button) return;
+      if (!button || !unbound(form)) return;
       button.disabled = false;
       var status = document.createElement("p");
       status.className = "meta";
@@ -133,5 +140,12 @@
       });
       form.appendChild(status);
     });
-  });
+  }
+
+  window.forumOutboxCompose.bind = bindComposeForms;
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindComposeForms);
+  } else {
+    bindComposeForms();
+  }
 })();

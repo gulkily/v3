@@ -100,7 +100,10 @@ final class BoardPageController
             array_merge([
                 '/assets/inline_reply_form.js',
                 '/assets/lazy_compose_signing.js',
-            ], $qdbPolicy !== null ? ['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_sender.js', '/assets/thread_reactions.js'] : []),
+                '/assets/outbox_store.js',
+                '/assets/outbox_storage.js',
+                '/assets/outbox_compose.js',
+            ], $qdbPolicy !== null ? ['/assets/outbox_sender.js', '/assets/thread_reactions.js'] : []),
         );
     }
 
@@ -140,7 +143,7 @@ final class BoardPageController
             ],
             'Board',
             'board',
-            ['/assets/inline_reply_form.js', '/assets/lazy_compose_signing.js'],
+            ['/assets/inline_reply_form.js', '/assets/lazy_compose_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js'],
         );
     }
 
