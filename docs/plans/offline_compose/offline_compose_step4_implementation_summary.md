@@ -121,3 +121,27 @@ Cycle estimate: 0.80
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - The offline board and thread show the same composers as online
+
+**Original estimate: 0.15**
+**Revised estimate (2026-11-11, new understanding): 0.18** — interrupted sends waited two minutes, which the reader replay exposed.
+**Retrospective: 0.18**
+
+- Changes:
+  - The reader page carries the board's compact New post composer and the thread's reply composer as templates, from the same partials as online. The reader mounts them where the online pages have them: New post under the board toolbar, the reply composer under the thread. It sets the thread target and binds signing, inline expand and Outbox the same way.
+  - Offline posts get Reply links before Like, as online, pointing at the reply page the worker serves offline.
+  - The reader page loads `compose.css`, `inline_reply_form.js` and `outbox_compose.js`. `inline_reply_form.js` exposes a bind for composers added later.
+  - Outbox delivery: while the cross-tab delivery lock is held, an item left "sending" by a closed or navigated page is retried at once instead of after two minutes. A manual Send in the Outbox now takes the same lock and rereads the item first, so an item another tab already sent is not sent again.
+  - The composer templates render only when the page renderer is present, so browser tests that include the reader template bare keep working.
+- Verification:
+  - Browser replay at 390px and 1280px: type online on the board and a thread, go offline, open them in the reader. One composer each, with the text typed online restored, Save to Outbox enabled and Post queueing. Unsent replies are listed under the thread, and offline posts carry Reply links. After reconnecting on the same page, all four items were accepted within 20 seconds and the unsent list cleared.
+  - Online and offline screenshots compared side by side: same composer markup and controls. The reader's own differences (date format, no intro banner) predate this cycle.
+  - `OfflineSnapshotThreadPresentationTest` now finds Like after Reply and checks the Reply links.
+  - `./v3 test --smoke OfflineOutboxSendTest ReactionOutboxTest OfflineOutboxPresentationTest OfflineSnapshotPresentationTest OfflineSnapshotThreadPresentationTest LocalAppSmokeTest OfflineNavigationWorkerTest OfflineOutboxComposeTest`: 485 run, 485 passed. `tests/browser/composers.mjs`: pass. Full suite not run.
+  - `tests/browser/offline_board_toolbar.cjs`: fails at "word97 390px: Tags at the right". It fails the same way on `origin/main` (`a8436cb5`), so it is a baseline failure, not from this cycle.
+- Notes:
+  - The offline board composer starts collapsed when it restores a draft, as the online one does after a reload.
+- Estimate details: original scope plus the interrupted-send fix, found by this stage's replay and needed for "sent once on reconnect" in the approved outcome.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
