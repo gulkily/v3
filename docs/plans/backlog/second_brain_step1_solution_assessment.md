@@ -8,7 +8,7 @@ Please review second_brain.txt and write an outline of features we have and don'
 
 ## Understood Intent
 
-Compare the second-brain pattern in [second_brain.txt](../../../second_brain.txt) with this application. We have useful infrastructure, but the source-backed, self-maintaining knowledge system remains to be built.
+Compare the second-brain pattern in [second_brain_source.txt](second_brain_source.txt) (originally `second_brain.txt` at the repo root) with this application. We have useful infrastructure, but the source-backed, self-maintaining knowledge system remains to be built.
 
 ## Feature outline
 

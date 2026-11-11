@@ -10,7 +10,7 @@ Status: Step 1 proposed; no implementation authorized
 
 Please review claude_request.txt and let's try to accommodate claude's requests
 
-Request source: [Claude's complete request](../../../claude_request.txt), retained unchanged in the working tree; it is currently untracked. Preserve this source with the eventual approved planning inventory.
+Request source: [Claude's complete request](claude_request.txt), kept unchanged beside this cycle's plans.
 
 Problem: Agents must reconstruct signing clients and recover from unclear text errors, HTML API failures and repetitive key approvals.
 
