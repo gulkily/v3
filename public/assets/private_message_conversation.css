@@ -2,6 +2,7 @@
 .private-message-history-controls { text-align: center; }
 .private-message-history-controls button { width: auto; min-height: 44px; }
 .private-message-history-controls p { margin: .35rem 0; }
+.private-conversation .private-message-history-controls { margin-top: 0; }
 .private-conversation .private-message {
   width: fit-content;
   max-width: 85%;
@@ -62,11 +63,13 @@
 /* App shell phone tab bar: keep the sticky composer above it, or at the bottom while it is scrolled away (`--app-tabbar-offset` comes from site.css). */
 @media (max-width: 639px) { [data-shell="app"] .private-conversation [data-private-message-composer] { bottom: var(--app-tabbar-offset); } }
 .private-conversation [data-private-message-form] { gap: .35rem; }
-.private-conversation [data-private-message-composer] textarea { margin-top: 0; min-height: 3.5rem; resize: vertical; }
+/* One line until you type more; script grows it to the same cap as before. */
+.private-conversation [data-private-message-composer] textarea { margin-top: 0; min-height: 44px; resize: none; font-weight: 400; line-height: 1.35; }
 .private-conversation [data-private-message-composer] button { width: auto; min-height: 44px; margin-top: 0; }
 .private-conversation [data-private-message-composer] p { margin: .35rem 0 0; }
 .private-conversation [data-role="private-message-encryption-note"] { font-size: .75rem; }
 .private-conversation .private-message-actions { display: flex; gap: .5rem; align-items: stretch; }
+.private-conversation [data-private-message-composer] .private-message-latest { flex: 0 0 auto; min-width: 44px; padding: 0 .9rem; }
 .private-conversation [data-role="private-message-feedback"].feedback-ok { padding: 0; border: 0; background: transparent; }
 @media (max-width: 480px) {
   .private-conversation .private-message { max-width: 94%; }
@@ -80,10 +83,12 @@
 @media (prefers-reduced-motion: reduce) { .private-conversation .private-message.is-pending { transition: none; } }
 /* Chat presentation: the name as title with a back link, the privacy promise under it, bubbles by day. */
 .private-conversation .conversation-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 .5rem; }
-.private-conversation .conversation-head h1 { margin: 0; overflow-wrap: anywhere; }
+/* A compact title bar: the name at section-heading size, the privacy line under it. */
+.private-conversation .conversation-head { padding-block: .4rem; }
+.private-conversation .conversation-head h1 { margin: 0; font-size: 1.35rem; line-height: 1.2; overflow-wrap: anywhere; }
 .private-conversation .conversation-head h1 a { color: inherit; text-decoration: none; }
 .conversation-head__back { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; font-size: 1.6rem; line-height: 1; text-decoration: none; }
-.conversation-head__privacy { grid-column: 1 / -1; margin: .25rem 0 0; }
+.conversation-head__privacy { grid-column: 2; margin: 0; font-size: .75rem; }
 .private-conversation .private-message { position: relative; }
 .private-conversation [data-role="private-message-verification"] { display: none; }
 .private-message-empty { text-align: center; }

@@ -350,7 +350,8 @@
     }
     function initiallySettled() { regroup(root); layout(); if (!navigated) revealLatest(); }
     root.addEventListener('private-message-reader-settled', initiallySettled);
-    if (root.dataset.privateMessageReaderSettled === '1') initiallySettled();
+    // Start at the newest message right away; settling repeats this once heights are final.
+    initiallySettled();
     latest.addEventListener('click', function () { revealLatest(); });
     root.addEventListener('private-message-before-append', function () {
       const obstruction = root.classList.contains('composer-inline') ? 0 : composer.getBoundingClientRect().height;
