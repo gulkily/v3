@@ -46,7 +46,7 @@ final class ThreadRepository
                     threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
                     posts.body AS root_post_body, posts.body_format AS root_post_body_format,
                     posts.post_score_total AS root_post_score_total,
-                    threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date,
+                    threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date, threads.event_when,
                     profiles.username_token AS author_username_token, COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -72,7 +72,7 @@ final class ThreadRepository
                     threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
                     posts.body AS root_post_body, posts.body_format AS root_post_body_format,
                     posts.post_score_total AS root_post_score_total,
-                    threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date,
+                    threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date, threads.event_when,
                     profiles.username_token AS author_username_token, COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id

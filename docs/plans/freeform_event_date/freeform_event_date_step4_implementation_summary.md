@@ -122,3 +122,24 @@ Maintainer direction at approval (2026-11-11): "let's stretch it a little bit if
 **Retrospective stage work: 0.09**
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Phrase in the read model and event block
+
+**Original estimate: 0.10**
+
+- Changes:
+  - Schema 54: nullable `threads.event_when`. `ReadModelBuilder` and `IncrementalReadModelUpdater` fill it; retraction, deletion and `PublicationPostFilter` clear it with the other event columns; `ThreadRepository` board and single-thread queries and `Application::fetchThread` select it.
+  - `event_block.php` shows `· “Friday 7pm”` after the dates while the flag is on, on the thread page, board rows and cards. With the flag off a stored phrase is not shown.
+  - `docs/specs/read_model_schema_v1.md`: column row, contract note and a Version 54 section.
+- Verification:
+  - `./v3 test --smoke EventWhenRecordTest ReadModelSchemaTest ReadModelMetadataTest WriteApiSmokeTest CalendarPageTest BoardListTest ReadModelPostRetractionsTest`: 682 passed.
+  - `EventWhenRecordTest` adds: incremental and full rebuild agree; the thread page and board show the phrase; a version 53 database without the column is rebuilt at startup and then shows it; flag off hides it.
+  - `./v3 rebuild <fixture copy> <db>` on a repository holding an `Event-When` record: the row has `event_when = Friday 7pm`.
+  - Full suite not run.
+- Notes:
+  - The calendar day page lists titles with time and place, not the event block, so it does not show the phrase. Left as is.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+**Retrospective stage work: 0.10**
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

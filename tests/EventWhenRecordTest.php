@@ -55,6 +55,63 @@ final class EventWhenRecordTest
         eventWhenAssertSame($head, trim((string) shell_exec('cd ' . escapeshellarg($root) . ' && git rev-parse HEAD')));
     }
 
+    public function testReadModelKeepsThePhraseAcrossRebuildAndFromTheLastSchema(): void
+    {
+        [$root, $application] = $this->environment(true);
+        $this->post($application, ['body' => 'Games', 'subject' => 'Games night', 'event_date' => '2027-01-08', 'event_time' => '19:00', 'event_when' => 'Friday 7pm']);
+        $this->post($application, ['body' => 'Plain', 'subject' => 'Plain event', 'event_date' => '2027-01-09']);
+        $database = $root . '.sqlite3';
+        $columns = static function () use ($database): array {
+            $rows = (new PDO('sqlite:' . $database))->query('SELECT subject, event_when FROM threads WHERE event_date IS NOT NULL ORDER BY subject')->fetchAll(PDO::FETCH_KEY_PAIR);
+            return $rows;
+        };
+        $incremental = $columns();
+        eventWhenAssertSame(['Games night' => 'Friday 7pm', 'Plain event' => null], $incremental);
+
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new \ForumRewrite\Canonical\CanonicalRecordRepository($root)))->rebuild();
+        eventWhenAssertSame($incremental, $columns());
+
+        $threadId = (string) (new PDO('sqlite:' . $database))->query("SELECT root_post_id FROM threads WHERE subject = 'Games night'")->fetchColumn();
+        $page = $this->get($application, '/threads/' . rawurlencode($threadId));
+        eventWhenAssertContains('📅 2027-01-08 at 19:00</span>', $page);
+        eventWhenAssertContains('<span class="event-block__when"> · “Friday 7pm”</span>', $page);
+        eventWhenAssertContains('event-block__when', $this->get($application, '/calendar/2027-01-08') . $this->get($application, '/threads/?view=all'));
+
+        // A version 53 database (no column) is rebuilt at startup before the column is read.
+        $pdo = new PDO('sqlite:' . $database);
+        $pdo->exec('ALTER TABLE threads DROP COLUMN event_when');
+        $pdo->exec("UPDATE metadata SET value = '53' WHERE key = 'schema_version'");
+        $pdo = null;
+        $fresh = new Application(dirname(__DIR__), $root, $database, $root . '-public');
+        eventWhenAssertContains('“Friday 7pm”', $this->get($fresh, '/threads/' . rawurlencode($threadId)));
+        eventWhenAssertSame(\ForumRewrite\ReadModel\ReadModelMetadata::SCHEMA_VERSION, (new PDO('sqlite:' . $database))->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+        eventWhenAssertSame($incremental, $columns());
+    }
+
+    public function testFlagOffHidesAStoredPhrase(): void
+    {
+        [$root, $application] = $this->environment(true);
+        $this->post($application, ['body' => 'Games', 'subject' => 'Games night', 'event_date' => '2027-01-08', 'event_when' => 'Friday']);
+        file_put_contents($root . '/records/instance/feature-flags.txt', "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: true\nFORUM_EVENT_WHEN_ENABLED: false\n");
+        $threadId = (string) (new PDO('sqlite:' . $root . '.sqlite3'))->query("SELECT root_post_id FROM threads WHERE subject = 'Games night'")->fetchColumn();
+        $page = $this->get(new Application(dirname(__DIR__), $root, $root . '.sqlite3', $root . '-public'), '/threads/' . rawurlencode($threadId));
+        eventWhenAssertContains('📅 2027-01-08</span>', $page);
+        eventWhenAssertSame(false, str_contains($page, 'event-block__when'));
+    }
+
+    private function get(Application $application, string $path): string
+    {
+        http_response_code(200);
+        ob_start();
+        try {
+            $application->handle('GET', $path);
+        } finally {
+            $html = (string) ob_get_clean();
+        }
+
+        return $html;
+    }
+
     private function root(string $eventHeaders): string
     {
         return "Post-ID: t1\nCreated-At: 2026-11-04T12:00:00Z\nBoard-Tags: general\nSubject: Games\n" . $eventHeaders . "\nhello\n";

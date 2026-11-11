@@ -75,6 +75,7 @@ final class ReadModelSchema
                 event_link TEXT NULL,
                 event_time TEXT NULL,
                 event_end_date TEXT NULL,
+                event_when TEXT NULL,
                 retracted_at TEXT NULL,
                 retraction_class TEXT NULL,
                 retraction_attribution TEXT NULL
