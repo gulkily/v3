@@ -1871,3 +1871,72 @@ pre {
 .scripture-expansion summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .scripture-expansion .body { margin-block-start: 0.6rem; overflow-wrap: anywhere; }
 .agent-reply-feedback { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+
+/* Busy and site-update pages (FrontController::renderWaitPage): one calm
+   message near the optical center, with a slow bar so the page looks alive
+   while it reloads itself. */
+.wait-page .shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+.wait-page .main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  padding-bottom: 12vh;
+}
+
+.wait-page .stack {
+  width: 100%;
+  max-width: 32rem;
+}
+
+.wait-page h1 {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 2.75rem);
+  line-height: 1.1;
+}
+
+.wait-page .stack > p {
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.wait-page__progress {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.wait-page__progress::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  border-radius: inherit;
+  background: var(--active-line);
+  animation: wait-page-progress 1.8s ease-in-out infinite;
+}
+
+@keyframes wait-page-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(290%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wait-page__progress::after {
+    animation: wait-page-pulse 2.4s ease-in-out infinite alternate;
+    width: 100%;
+    opacity: 0.35;
+  }
+
+  @keyframes wait-page-pulse {
+    to { opacity: 0.8; }
+  }
+}

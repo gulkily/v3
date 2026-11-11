@@ -329,7 +329,7 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             return ['status' => $m[1], 'message' => $m[1] === 'queued' ? $last : ''];
         }
 
-        return ['status' => 'unknown', 'message' => 'Could not check the read model; if pages show "Site Update", run ./v3 rebuild.'];
+        return ['status' => 'unknown', 'message' => 'Could not check the read model; if pages show "Back in a moment", run ./v3 rebuild.'];
     }
 
     /**

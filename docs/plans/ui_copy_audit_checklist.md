@@ -905,3 +905,8 @@ Change: the composer's ··· menu holds only actions. Markdown, Formatting help
 Verification: see the record; headless Chrome at 390/1100px in default, Gloss and Word97 (plus dark and Chicago for the menu in #103). Other themes and the phone reply panel with Options open unchecked.
 Follow-up 2026-11-09: Options became a settings list (name left, switch or menu right); the "Formatting help" link became a "?" beside Markdown with "Formatting help" as its accessible name and tooltip. No wording added.
 
+
+## Site Update and busy pages — 2026-11-11
+
+Change: the read-model recovery page ("Site Update") and the busy page now share `FrontController::renderWaitPage`. The redundant "Site Update" heading and boxed card are gone; the page shows one heading ("Back in a moment", or "Down for maintenance" for an unknown state), one line, and a slow progress bar (pulses instead under reduced motion), placed near the optical center. "Please try again in a moment" was replaced with "This page will reload on its own" on both pages, since the meta refresh already retries every 10 seconds; the internal updating/rebuilding distinction is no longer shown. Docs and the deploy hint in `AppUpdate` use the new name.
+Verification: Playwright at iPhone SE (light, dark) and 1280px (dark) with system theme; affected FrontController tests plus smoke set pass. Not checked: user-selected themes (the page has no theme bootstrap, so it follows system light/dark only, as before). Full suite not run.
