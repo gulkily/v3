@@ -2,7 +2,7 @@
 // Theme hook (inert): a stable hue per person, from their name.
 $personHue = hexdec(substr(hash('crc32b', $counterpartUsernameToken), 0, 4)) % 360;
 ?>
-<section class="stack private-conversation" data-approved-identity="<?= $e((string) ($viewerProfile['identity_id'] ?? '')) ?>" data-person="<?= $e($counterpartUsernameToken) ?>" style="--person: <?= (int) $personHue ?>" data-private-message-mailbox data-mailbox="conversation" data-counterpart-username-token="<?= $e($counterpartUsernameToken) ?>" data-viewer-username-token="<?= $e($viewerProfile['username_token']) ?>" data-history-page-cursor="<?= $e($historyPage['page_cursor'] ?? '') ?>" data-history-next-cursor="<?= $e($historyPage['next_cursor'] ?? '') ?>">
+<section class="stack private-conversation" data-approved-identity="<?= $e((string) ($viewerProfile['identity_id'] ?? '')) ?>" data-person="<?= $e($counterpartUsernameToken) ?>" style="--person: <?= (int) $personHue ?>" data-private-message-mailbox data-private-message-cache="<?= ($privateMessageCacheEnabled ?? false) ? '1' : '0' ?>" data-mailbox="conversation" data-counterpart-username-token="<?= $e($counterpartUsernameToken) ?>" data-viewer-username-token="<?= $e($viewerProfile['username_token']) ?>" data-history-page-cursor="<?= $e($historyPage['page_cursor'] ?? '') ?>" data-history-next-cursor="<?= $e($historyPage['next_cursor'] ?? '') ?>">
   <input type="hidden" data-role="private-message-read-token" value="<?= $e($historyPage['read_token'] ?? '') ?>">
   <header class="card conversation-head">
     <a class="conversation-head__back" href="/messages" aria-label="Back to Messages"><span aria-hidden="true">‹</span></a>

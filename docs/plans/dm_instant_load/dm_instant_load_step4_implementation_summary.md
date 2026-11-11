@@ -34,3 +34,24 @@ Branch: `feature/dm_instant_load`, from `origin/main` at `f13dd20f`. Planning co
 **Retrospective stage-work assessment: 0.10** — smaller than planned because reads already ran concurrently, so reordering was one line.
 
 *— Claude · 2026-11-11 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - Encrypted cache store and flag
+
+**Original estimate: 0.15**
+
+- Changes:
+  - New `public/assets/private_message_cache.js`: `get(messageId)`, `put(messageId, plaintext)`, `clearAll()`, `enabled()`. One IndexedDB database (`forum-private-message-cache-v1`) holds a non-extractable AES-GCM key and per-message ciphertext; entries are keyed and authenticated (AES-GCM additional data) by identity fingerprint plus message id. Every failure returns a miss. A second tab racing to create the key adopts the first tab's key. The open connection closes on `versionchange` so `clearAll` can delete it.
+  - Flag `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED` ("Saved message copies", off, site-mutable, Experience group), exposed to templates as `privateMessageCacheEnabled` and on the conversation root as `data-private-message-cache`.
+  - Conversation page loads the cache script before the reader. Nothing reads from the cache yet.
+- Verification:
+  - New `tests/browser/private_message_cache_browser.mjs` (routed https origin, Chromium): round trip, ciphertext-only storage, non-extractable key, other fingerprint misses, flag off makes no reads or writes, `clearAll` removes the database while the page holds it open, blocked IndexedDB and failed key generation are misses. Passed.
+  - `./v3 test --smoke FeatureFlagRegistryTest FeatureFlagEvaluatorTest PrivateMessageConversationPageTest`: 444 of 445 before updating the flag lists; `FeatureFlagEvaluatorTest` updated for the new flag in definition and presentation order.
+  - `./v3 test FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest`: 26 of 27. `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder` fails identically on main (its toolbar fixture exits 255 in `tools_nav_card.php`); baseline failure, not caused here.
+  - Safari: not run here; covered by Stage 6.
+- Notes:
+  - A test bug found during verification: after `clearAll`, a later `get` reopens (recreates) an empty database. That is acceptable: it holds only a fresh key, and clearing the identity runs on a page where no reads follow.
+- Estimate details: original scope as Step 3; uncertainty: Safari's stored non-exportable keys, still open until Stage 6; revisions: none.
+
+**Retrospective stage-work assessment: 0.15**
+
+*— Claude · 2026-11-11 UTC · Model: Claude Opus 5.5*
