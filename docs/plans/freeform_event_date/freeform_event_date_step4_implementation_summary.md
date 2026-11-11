@@ -56,3 +56,25 @@ Maintainer direction at approval (2026-11-11): "let's stretch it a little bit if
 **Retrospective stage work: 0.12**
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Fill in place with JavaScript
+
+**Original estimate: 0.10**
+
+- Changes:
+  - `GET /api/read_event_phrase` (`EventPhraseApiController`): returns the filled fields, a message and the date it read with. It writes nothing, answers 404 with the flag off, and is `no-store`. The browser's local date is used when it is within a day of the server's UTC date; otherwise the UTC date.
+  - `public/assets/event_when.js`, loaded only while the flag is on: Fill and Enter in the When box call the endpoint, fill Date, Until and Time in place, and fire input events so the Event summary and the draft store update. A fixed Date stays (the read-only picker is sent as fixed). The status line shows only reasons and the fixed-date note; a plain success shows nothing.
+  - `compose.css`: When and Fill share a row.
+  - Route registered in `Application` and `ApiRouteCatalog`.
+- Verification:
+  - `./v3 test --smoke ApiRouteCatalogTest WebServerRoutingTest EventPhraseComposeTest EventPhraseReaderTest CalendarPageTest`: 470 passed.
+  - `node tests/browser/event_when.mjs` (new): passes. New York at phone width and Tokyo at desktop width; in-place fill with the browser's date, Enter fills without posting, a span fills Until, an unread phrase changes nothing; a calendar day page keeps its date; without JavaScript Fill returns the filled composer; the repository HEAD is unchanged throughout; no page errors; no horizontal overflow. Screenshots checked at 390 and 1280 px in the default theme.
+  - Browser test run with the preinstalled `playwright-core` 1.63.0 linked into `node_modules`; the project pins 1.58.1. Nothing was added to the repository.
+  - Full suite not run.
+- Notes:
+  - Other themes are checked in Stage 8.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+**Retrospective stage work: 0.10**
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

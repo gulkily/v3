@@ -73,6 +73,54 @@ final class EventPhraseComposeTest
         eventPhraseComposeAssertContains('name="event_date_fixed" value="1"', $html);
     }
 
+    public function testReadApiFillsWithThePostersDateAndWritesNothing(): void
+    {
+        [$root, $application] = $this->environment(true);
+        $head = $this->head($root);
+        $today = gmdate('Y-m-d');
+        $tomorrow = gmdate('Y-m-d', time() + 86400);
+
+        $payload = $this->json($application, ['phrase' => 'tomorrow 7pm', 'today' => $today]);
+        eventPhraseComposeAssertSame(['ok', true, $tomorrow, '', '19:00', ''], [$payload['status'], $payload['filled'], $payload['event_date'], $payload['event_end_date'], $payload['event_time'], $payload['message']]);
+
+        $local = $this->json($application, ['phrase' => 'today', 'today' => $tomorrow]);
+        eventPhraseComposeAssertSame($tomorrow, $local['event_date']);
+
+        $implausible = $this->json($application, ['phrase' => 'today', 'today' => '2020-01-01']);
+        eventPhraseComposeAssertSame($today, $implausible['event_date']);
+
+        $fixed = $this->json($application, ['phrase' => 'Friday 8pm', 'today' => $today, 'event_date' => '2030-01-02', 'event_date_fixed' => '1']);
+        eventPhraseComposeAssertSame(['2030-01-02', '20:00'], [$fixed['event_date'], $fixed['event_time']]);
+
+        $unread = $this->json($application, ['phrase' => 'whenever', 'today' => $today, 'event_date' => '2030-01-02']);
+        eventPhraseComposeAssertSame([false, '2030-01-02', 'Could not read a date from that.'], [$unread['filled'], $unread['event_date'], $unread['message']]);
+        eventPhraseComposeAssertSame($head, $this->head($root));
+
+        [, $off] = $this->environment(false);
+        $this->json($off, ['phrase' => 'today']);
+        eventPhraseComposeAssertSame(404, http_response_code());
+    }
+
+    public function testPosterTodayAcceptsOnlyADayEitherSideOfUtc(): void
+    {
+        $now = new DateTimeImmutable('2026-11-10T23:30:00Z');
+        eventPhraseComposeAssertSame('2026-11-11', \ForumRewrite\Http\EventPhraseApiController::posterToday('2026-11-11', $now));
+        eventPhraseComposeAssertSame('2026-11-09', \ForumRewrite\Http\EventPhraseApiController::posterToday('2026-11-09', $now));
+        eventPhraseComposeAssertSame('2026-11-10', \ForumRewrite\Http\EventPhraseApiController::posterToday('2026-11-12', $now));
+        eventPhraseComposeAssertSame('2026-11-10', \ForumRewrite\Http\EventPhraseApiController::posterToday('nope', $now));
+    }
+
+    /**
+     * @param array<string, string> $query
+     * @return array<string, mixed>
+     */
+    private function json(Application $application, array $query): array
+    {
+        $body = $this->request($application, 'GET', '/api/read_event_phrase?' . http_build_query($query));
+
+        return (array) json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+    }
+
     /** @return array{string, Application} */
     private function environment(bool $when): array
     {

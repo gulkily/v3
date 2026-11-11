@@ -500,6 +500,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/read_event_phrase') {
+            (new \ForumRewrite\Http\EventPhraseApiController($this->routeServices(), $this->featureFlags()))->read($method, $query);
+            return;
+        }
+
         if ($path === '/api/feature_flags/navigation') {
             $this->toolsPageController()->featureFlagNavigation($method);
             return;
@@ -2363,7 +2368,7 @@ final class Application
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
-            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
+            '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/read_event_phrase', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
             '/latest', '/top', '/leetness', '/add', '/random', '/search',
         ], true)) {
