@@ -66,7 +66,7 @@
 .private-conversation [data-private-message-composer] button { width: auto; min-height: 44px; margin-top: 0; }
 .private-conversation [data-private-message-composer] p { margin: .35rem 0 0; }
 .private-conversation [data-role="private-message-encryption-note"] { font-size: .75rem; }
-.private-conversation .private-message-actions { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: space-between; }
+.private-conversation .private-message-actions { display: flex; gap: .5rem; align-items: stretch; }
 .private-conversation [data-role="private-message-feedback"].feedback-ok { padding: 0; border: 0; background: transparent; }
 @media (max-width: 480px) {
   .private-conversation .private-message { max-width: 94%; }
@@ -88,7 +88,8 @@
 .private-conversation [data-role="private-message-verification"] { display: none; }
 .private-message-empty { text-align: center; }
 .private-message-empty__starfield:empty { display: none; }
-.private-conversation [data-private-message-composer] .private-message-send { min-width: 44px; padding: 0 .9rem; font-size: 1.2rem; }
+/* Send matches the thread composer's Post: a text pill that takes the rest of the row. */
+.private-conversation [data-private-message-composer] .private-message-send { flex: 1 1 0; min-width: 0; }
 /* Messages that can't be read: one line, Details and Retry; a quiet placeholder while decrypting. */
 .private-message .private-message-problem { margin: .2rem 0; font-style: italic; color: var(--ink-soft); }
 .private-message [data-role="private-message-unavailable-details"] { display: inline-block; margin: 0 .5rem 0 0; }
