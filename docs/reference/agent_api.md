@@ -540,7 +540,11 @@ inclusive last day; needs `event_date` and must not be before it; equal to the s
 means one day), `event_time` (`HH:MM`), `event_location` and `event_link`. The
 prepared record carries them as `Event-Date`, `Event-End-Date`, `Event-Time`,
 `Event-Location` and `Event-Link` after `Subject`. With event support off, any of
-them is refused. Client-built records for `create_signed_post` cannot carry event
+them is refused. With Event phrases on (`FORUM_EVENT_WHEN_ENABLED`), `event_when`
+adds the poster's own words for when (1 to 120 characters, needs `event_date`) as
+`Event-When` after `Event-Link`; the dates stay the authority, and the server does
+not read the phrase into dates for you. `GET /api/read_event_phrase?phrase=...&today=YYYY-MM-DD`
+returns the fields the composer's Fill would set, and writes nothing. Client-built records for `create_signed_post` cannot carry event
 headers; use the prepared flow. A root-approved operator settles an event with a line
 `event: confirmed` or `event: declined` in any post of its thread; see the
 [calendar reference](calendar.md#confirming-or-declining).

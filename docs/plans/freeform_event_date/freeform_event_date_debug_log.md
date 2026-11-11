@@ -17,3 +17,9 @@
 - Instructions used: step3_development_plan_before/do/after.md, shared implementation standards, RAILSPIKE.md writing style and attribution, AGENTS.md P2 enrollment.
 - Essential: Completion Contract, Key Risks with high-risk prefixes, stage fields with stage-work estimates, eight-stage limit.
 - Missing or unclear: no request limiter exists in v3 to reuse for the LLM fallback; the plan relies on member gating and a phrase limit instead. Plan sits at the eight-stage limit, with Stages 5 to 7 named as the split point. Host ledger line still pending until the planning commit.
+
+## Step 4 - 2026-11-11 UTC
+
+- Instructions used: step4_implementation_before/do/after.md, shared implementation standards, AGENTS.md (tests, navigation icons, feedback items, thread to pull request), CONTRIBUTING.md (UI verification, feature flag order, read-model schema changes).
+- Essential: planning commit first, one commit per stage with its summary, schema bump with a prior-version rebuild test, theme and phone checks, feedback item and trailer.
+- Missing or unclear: thread_to_pr asks for a thread reply at each approval point in staged cycles; those replies were not posted during Steps 1 to 3 because approvals came in this session. The browser test needs `playwright-core`; the preinstalled 1.63.0 was linked instead of the pinned 1.58.1. No navigation destination was added, so the icon rule did not apply.

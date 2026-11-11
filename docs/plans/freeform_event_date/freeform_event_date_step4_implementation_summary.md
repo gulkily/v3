@@ -163,3 +163,38 @@ Maintainer direction at approval (2026-11-11): "let's stretch it a little bit if
 **Retrospective stage work: 0.07**
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Docs and the full journey
+
+**Original estimate: 0.08**
+
+- Changes:
+  - New concept [date phrase](../../concepts/date_phrase.md); [post event metadata](../../concepts/post_event_metadata.md) and [shared composer](../../concepts/shared_composer.md) updated.
+  - `docs/reference/calendar.md` (adding an event with When; records and storage) and `docs/reference/agent_api.md` (`event_when`, `/api/read_event_phrase`).
+  - Feedback item `PF-20261111-F01` for the thread, with the feedback index regenerated.
+  - Ledger entries for this cycle in `effort_estimation_trial.md`.
+- Verification:
+  - Every theme (light, dark, console, lcd, chicago, vapor, forge, sticker, arena, thermal, whitehot, word97, midnight, gloss) at 375 and 1280 px with the Event section open and an unread-phrase status: no page overflow, When and Fill on one row with matching heights, Fill inside the section, no page errors. Screenshots looked at for Word 97, Console, Midnight, Gloss, Chicago and Vapor. (Scratch script, not committed.)
+  - `./v3 feedback check`: 0 problems.
+  - Final run, `./v3 test --smoke` plus the 23 changed or affected classes (the Event phrase classes, flags, calendar, write API, signing, routing, read model, LLM config, parsers, docs): 833 run, 832 passed. The one failure is the baseline `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder` from Stage 1.
+  - `node tests/browser/event_when.mjs`: passes (Stage 7 run, no code changes since).
+- Notes:
+  - The calendar day page lists events by title, time and place, so it does not show the phrase; the thread page, board rows and cards do.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+**Retrospective stage work: 0.07**
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion Contract: met locally. A poster types "Friday 7pm", presses Fill, sees Date and Time filled, and posts; the thread shows the dates with the phrase, signed or plain, and the calendar lists the event on its date (`event_when.mjs`, `EventWhenRecordTest`). Recovery: unread phrases and provider errors change no field and say why; a refused post keeps the phrase and draft; a fixed Date never changes.
+- Release condition: smoke and changed tests pass, apart from the baseline failure noted in Stage 1; rebuild from schema 53 is tested; the journey ran with JavaScript on and off and with the stub provider and none. A real provider was not checked: there is no key in this workspace.
+- Final diff review: no debug output or stray files; `node_modules` (a local link to the preinstalled `playwright-core`) is ignored by Git.
+- Full suite not run.
+
+**Retrospective scope assessment: 0.85**
+
+Maintainer comfortable-fit judgment and acceptance: pending.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

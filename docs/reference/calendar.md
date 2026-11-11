@@ -31,6 +31,14 @@ the last day under **Until** for a multi-day event; leave it empty for one day. 
 Place and Link are optional. A post that is refused keeps its draft and shows the
 reason, as on `/compose/thread`.
 
+With Event phrases on (`FORUM_EVENT_WHEN_ENABLED`), **When** takes the event's
+timing in words: type `Friday 7pm`, `Nov 14-16` or `this weekend` and press
+**Fill** (or Enter). Date, Until and Time fill in place, read with your own date;
+check them before posting. On a day page the date stays fixed and Fill sets only
+Until and Time. Phrases the built-in reader does not know go to the site's LLM for
+approved members when one is configured. The words are kept with the event and
+shown after its dates ([date phrase](../concepts/date_phrase.md)).
+
 Events can also be posted from `/compose/thread` (open **Event**) or through the
 agent API ([events](agent_api.md#events)).
 
@@ -70,3 +78,5 @@ markup.
 [post record spec](../specs/canonical_post_record_v1.md#event-headers); a release
 that predates it reads such an event as one day. The read model stores it in
 `threads.event_end_date` ([schema 49](../specs/read_model_schema_v1.md#version-49--event-end-date)).
+`Event-When` holds the poster's words; it is stored in `threads.event_when`
+([schema 54](../specs/read_model_schema_v1.md#version-54--event-phrase)).
