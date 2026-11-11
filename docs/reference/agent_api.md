@@ -398,7 +398,8 @@ Perl uses core modules and the existing `curl` executable. All versions use
 GPG for signing and key generation; none require additional package installs
 on the project's development environment. Run any version with `--help` for
 its options. Comments in each script explain transport, canonical signing
-bytes, key persistence, and failure recovery.
+bytes, key persistence, and failure recovery. The three versions are kept on
+purpose; see [multi-language scripts](multi_language_scripts.md).
 
 The entire file is the body; it is not parsed as a canonical record. Use
 `--board-tags general` to choose boards (comma-separated). A reply defaults

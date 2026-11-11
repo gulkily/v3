@@ -5,6 +5,7 @@ declare(strict_types=1);
 // Small, stepped read-load probe for a v3 site. PHP 8.1+ with the curl extension.
 // Same options, output, record format and exit codes as stress_probe.py and stress_probe.pl;
 // see that script or docs/runbooks/server_stress_probe.md for the full description.
+// Intentional multi-language set; see docs/reference/multi_language_scripts.md.
 //
 //   php scripts/stress_probe.php https://zenmemes.com                       # show the plan
 //   php scripts/stress_probe.php https://zenmemes.com --confirm zenmemes.com

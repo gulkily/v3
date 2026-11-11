@@ -7,6 +7,7 @@ use Getopt::Long qw(GetOptions Configure);
 use JSON::PP qw(decode_json);
 
 # Core Perl modules, existing curl, and GPG for signed publication.
+# One of three versions (publish_text.py, .php, .pl) with the same options and output, kept on purpose; see docs/reference/multi_language_scripts.md.
 $| = 1;
 sub input_error { print STDERR "Error: $_[0]\nUse --help for usage.\n"; exit 2 }
 sub capture {

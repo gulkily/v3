@@ -4,6 +4,7 @@
 declare(strict_types=1);
 
 // Standalone publisher: PHP 8.1+, HTTP(S) streams, and GPG for signed posts.
+// One of three versions (publish_text.py, .php, .pl) with the same options and output, kept on purpose; see docs/reference/multi_language_scripts.md.
 function failInput(string $message): never
 {
     fwrite(STDERR, "Error: $message\nUse --help for usage.\n");

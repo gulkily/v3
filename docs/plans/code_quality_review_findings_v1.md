@@ -83,7 +83,7 @@ For each "review" item, the choice is: remove the method and its test, or keep i
   - `markdown_list_corpus_audit.py`, `markdown_task_corpus_audit.py`: one-off Markdown audits. Proposed: **review**, either move to `scripts/oneoff/` or remove.
   - `import_scripture_source.py`: documented in `resources/scripture/README.md`. **Keep.**
   - `qdb_archive_import_run.php`: documented in `docs/runbooks/qdb_archive_import.md`. **Keep.**
-- **Script triplets** `publish_text.{php,pl,py}` and `stress_probe.{php,pl,py}`: still open. Are these intentional multi-language examples? If so, add a header line saying so.
+- **Script triplets** `publish_text.{php,pl,py}` and `stress_probe.{php,pl,py}`: **keep**. Intentional (maintainer, 2026-11-10) and expected to grow; see `docs/reference/multi_language_scripts.md`.
 
 ## 5. Duplication (jscpd, clones of 15+ lines / 100+ tokens)
 
@@ -133,8 +133,7 @@ Longest methods in `src/`:
 
 ## 8. Needs maintainer input
 
-- **Feature flags permanently on everywhere:** all 36 are read by code. Removing a flag's "off" path needs the production settings for zenmemes, qdb, mitrapclub, and chouse.
-- **Script triplets** (section 4).
+- **Feature flags permanently on everywhere:** **keep**. Flags exist to switch off a buggy feature and to let future instances leave a feature out, so "on everywhere" is not a reason to remove one (Ilya, 2026-11-10). All 36 are read by code.
 - **Interface-only methods** (`FastScoreStore`, `AgentReplyGenerationStore`): keep the interfaces?
 
 ## Suggested next PRs
