@@ -145,3 +145,28 @@ Cycle estimate: 0.80
 - Estimate details: original scope plus the interrupted-send fix, found by this stage's replay and needed for "sent once on reconnect" in the approved outcome.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - One browser test replays the acceptance check
+
+**Original estimate: 0.10**
+**Retrospective: 0.12**
+
+- Changes:
+  - New `tests/browser/offline_compose.mjs`. At 390px and 1280px, on a real local server with the worker:
+    - Reply: load a thread online, go offline, click Reply on a reply, see the quoted post, write, reload offline (text kept), Post ("Saved on this device, not sent", composer cleared). The offline thread shows the same composer controls as online and lists the unsent reply, with nothing published yet. Reconnect: published exactly once, and the list clears.
+    - New post: from the board, the same steps through the compose page. The offline board composer matches the online one. Reconnect on the page: published exactly once.
+    - Each page checks that Post and ··· share a row and that nothing scrolls sideways.
+    - A request dropped while "online" is reported and not queued. An anonymous post offline keeps its text.
+  - Fix found by the test: when the board's signing scripts load on the first keystroke, they restored the saved draft over what was being typed. Text typed before the scripts load now wins over the saved draft. This affected online fast typists too.
+- Verification:
+  - `tests/browser/offline_compose.mjs`: pass.
+  - `compose_attempt_replay.mjs` (desktop, phone), `composers.mjs`, `reply_compose_focus.mjs`, `compose_disclosure.mjs`: pass. `composers.mjs` timed out once and passed on rerun.
+  - `board_compose_focus.mjs` (timeout at line 61) and `inline_reply_link.mjs` (missing `ThreadTheme` class in its fixture) fail the same way on `origin/main`: baseline failures.
+  - `./v3 test --smoke BrowserSigningNormalizationTest AccountKeyPageHooksTest OfflineOutboxComposeTest LocalAppSmokeTest`: 548 run, 548 passed. Full suite not run.
+- Notes:
+  - Deviation from the plan: instead of running `compose_layout_stability.mjs` against offline pages (it builds its own image-member fixture), the new test compares each offline composer's controls with its online counterpart and checks the row and overflow rules at both widths.
+  - The test waits for the board's signing scripts before pressing Post, as a person's typing does. Pressing Post within milliseconds of the first keystroke, before they load, still falls back to a plain form post, as it does online.
+  - Still pending, for the production replay: a member with an approved key and username, and the Forte composer.
+- Estimate details: original scope plus the draft-restore fix, which this stage's test found.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

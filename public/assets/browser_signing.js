@@ -533,6 +533,15 @@
       return false;
     }
 
+    // Text typed before this script ran wins over the saved draft: the board loads signing on the
+    // first keystroke, and restoring then would replace what the person is typing.
+    const typedBeforeLoad = composeDraftFields(form).some(function (field) {
+      return (field.name === "body" || field.name === "subject") && field.value !== "" && field.value !== field.defaultValue;
+    });
+    if (typedBeforeLoad) {
+      return false;
+    }
+
     if (draft.anonymousAttempt) anonymousComposeAttempts.set(form, draft.anonymousAttempt);
     let restoredAny = false;
     composeDraftFields(form).forEach(function (field) {
