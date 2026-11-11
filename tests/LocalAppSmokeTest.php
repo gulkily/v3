@@ -4702,6 +4702,34 @@ PHP;
         }
     }
 
+    public function testFrontControllerPreviewsWaitPagesWithoutTouchingTheReadModel(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+        @unlink($databasePath);
+        $staticHtmlRoot = sys_get_temp_dir() . '/forum-rewrite-static-' . bin2hex(random_bytes(6));
+        $publicRoot = sys_get_temp_dir() . '/forum-rewrite-public-root-' . bin2hex(random_bytes(6));
+        mkdir($staticHtmlRoot, 0777, true);
+        mkdir($publicRoot, 0777, true);
+        $controller = new FrontController(dirname(__DIR__), $repositoryRoot, $databasePath, $staticHtmlRoot, $publicRoot);
+
+        try {
+            http_response_code(200);
+            $update = $this->renderFrontController($controller, 'GET', '/preview/site-update', []);
+            $maintenance = $this->renderFrontController($controller, 'GET', '/preview/maintenance', []);
+            $busy = $this->renderFrontController($controller, 'GET', '/preview/busy', []);
+
+            assertSame(200, http_response_code());
+            assertStringContains('Back in a moment', $update);
+            assertStringContains('Down for maintenance', $maintenance);
+            assertStringContains('wait-page__progress', $busy);
+            assertStringContains('Math.min(10*Math.pow(2,n),120)', $update);
+            assertTrue(!is_file($databasePath), 'Previews must not create or open the read model.');
+        } finally {
+            @rmdir($publicRoot);
+            $this->deleteTree($staticHtmlRoot);
+        }
+    }
+
     public function testFrontControllerShowsBusyErrorForExecutionLockContention(): void
     {
         [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
@@ -4728,6 +4756,9 @@ PHP;
         }
 
         assertStringContains('Meme Oven Is Busy', $response);
+        assertStringContains('<noscript><meta http-equiv="refresh" content="30"></noscript>', $response);
+        assertStringContains('Math.min(10*Math.pow(2,n),120)', $response);
+        assertStringNotContains('<meta http-equiv="refresh" content="10">', $response);
         assertStringContains('The next batch of zenmemes is still baking. This page will reload on its own.', $response);
         assertStringNotContains('Service Busy', $response);
         assertStringNotContains('Timed out waiting for execution lock', $response);
