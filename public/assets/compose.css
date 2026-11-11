@@ -178,6 +178,40 @@
 .compose-disclosure[open] > summary::after { transform: rotate(90deg); }
 .compose-disclosure > summary [data-role="compose-disclosure-summary"]:not(:empty)::before { content: "\00B7  "; }
 .compose-disclosure > label { display: block; margin-top: .5rem; }
+/* Quiet bottom on the full composer: below Post, nothing is a box until it is in use.
+   Title is an underlined line, not a second text box; closed tools are a single row of
+   small muted words ("Tags · #general   Event   Options") that keep a 44px tap target.
+   A tool gets its box back only when opened. :root lifts these above themes' input
+   and disclosure rules (gloss rounds every .compose-disclosure into a pill). */
+:root [data-compose-form] input.compose-title {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 1rem;
+}
+:root [data-compose-form] input.compose-title::placeholder { font-weight: normal; }
+:root [data-compose-form] input.compose-title:focus { border-bottom-color: var(--active-line, currentColor); }
+:root [data-compose-form] input.compose-title:focus-visible { outline: none; border-bottom-width: 2px; }
+.compose-tools { column-gap: 1.25rem; row-gap: 0; }
+:root .compose-tools > .compose-disclosure:not([open]) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+:root .compose-tools > .compose-disclosure:not([open]) > summary {
+  min-height: 44px;
+  padding: 0;
+  font-size: .9rem;
+  opacity: .7;
+  gap: .3rem;
+}
+:root .compose-tools > .compose-disclosure:not([open]) > summary:hover { opacity: 1; }
+:root .compose-tools > .compose-disclosure:not([open]) > summary::after { margin-left: .15rem; }
 /* When and Fill share a row: the phrase grows, Fill sits at the end of the box. */
 .compose-event-when { display: flex; align-items: flex-end; gap: .5rem; margin-top: .5rem; }
 .compose-event-when > label { flex: 1 1 auto; min-width: 0; margin: 0; }
