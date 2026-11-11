@@ -55,13 +55,13 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 - [ ] Orphaned CSS selectors inside large stylesheets (lower priority).
 
 ### 1.4 Scripts (`scripts/`, 66 files)
-- [~] Scripts not mentioned by `./v3`, docs, or other code: `markdown_list_corpus_audit.py`, `markdown_task_corpus_audit.py` (one-off audits?). Waiting on a keep/remove decision.
+- [x] Scripts not mentioned by `./v3`, docs, or other code: `markdown_list_corpus_audit.py`, `markdown_task_corpus_audit.py`. **Keep**: Markdown renderer audit tools, still needed while the renderer is being extended; documented only in their plan acceptance docs, which the scan skipped. Docstrings now link there (#156).
 - [x] Triplicated implementations: `publish_text.{php,pl,py}` and `stress_probe.{php,pl,py}`. Intentional and will grow; documented in `docs/reference/multi_language_scripts.md`, with a pointer in each file's header.
 - [ ] One-shot migrations/backfills that have already run everywhere: `backfill_unicode_risk.php`, `bake_legacy_timestamps.php`, `inject_approval.php`, the four `qdb_archive_import_*` scripts.
 - [ ] Probes/benchmarks still worth keeping: `benchmark_profile_registration.php`, `markdown_render_probe.php`, `qdb_capacity_probe.js`.
 
 ### 1.5 Repo clutter
-- [ ] Root-level notes that look like working scratch: `claude_request.txt`, `second_brain.txt`, `todo-scraped.txt`, `todo.txt` (308 lines). Move to `docs/` or remove; reconcile `todo.txt` with `docs/feedback`.
+- [x] Root-level notes: `claude_request.txt`, `second_brain.txt` and `todo-scraped.txt` moved into `docs/plans/` beside the work they belong to (#156). `todo.txt` stays at the root as the quick inbox.
 - [ ] `docs/plans/` (516 files): fine to keep as history, but check for plans marked in-progress whose work was abandoned.
 - [ ] `queries/`, `prompts/`, `resources/`: confirm each file is still read by code.
 
