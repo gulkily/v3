@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Audit rendered read-only tasks against a frozen source-candidate inventory; retain no HTML."""
+"""Audit rendered read-only tasks against a frozen source-candidate inventory; retain no HTML.
+
+Part of the Markdown renderer audit tools; rerun when task-list rendering changes.
+How to run it: docs/plans/markdown_task_lists/task_render_acceptance.md
+"""
 import argparse
 from collections import Counter
 import hashlib

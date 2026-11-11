@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Classify measured nested-list documents using the canonical renderer, without saving HTML."""
+"""Classify measured nested-list documents using the canonical renderer, without saving HTML.
+
+Part of the Markdown renderer audit tools; rerun when list rendering changes.
+Input comes from scripts/markdown_metrics.py. How to run it:
+docs/plans/markdown_list_structure/list_render_acceptance.md
+"""
 import argparse
 from collections import Counter
 import hashlib
