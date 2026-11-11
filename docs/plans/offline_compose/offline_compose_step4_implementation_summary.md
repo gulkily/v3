@@ -36,3 +36,26 @@ Cycle estimate: 0.80
 - Estimate details: original scope unchanged; no revision.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Post without a connection saves to the Outbox
+
+**Original estimate: 0.12**
+**Retrospective: 0.10**
+
+- Changes:
+  - `outbox_compose.js`: `itemFromForm` builds an Outbox item from any composer (the two Save to Outbox handlers now share it), and `queueFromForm` saves it as queued.
+  - `browser_signing.js`: when the browser is offline, Post queues the text, clears the composer and its saved draft, and says "Saved on this device, not sent. It will be sent when you're back online." with an Outbox link. Anonymous posts and images can't go through the Outbox, so they stay in the composer with "You're offline. Your text stays here; post it once you're back online."
+  - A request that fails to reach the server while the browser thinks it is online is never queued, since the server may have accepted it. The composer keeps the text and says "Couldn't reach the server. Your text is still here: try again, or Save to Outbox to send it later." instead of "Couldn't create your account". The account failure now keeps its cause so this can be told apart.
+- Verification:
+  - Browser replay, local server with the worker: Post offline on a thread, the board (lazily loaded signing), `/compose/reply` and `/compose/thread`. Each showed the "not sent" message, cleared the text and added a queued item. Opening Tools → Outbox online sent all four, each "accepted".
+  - Anonymous Post offline on the board: text kept, offline message, nothing queued.
+  - Online with every POST refused: refusal shown, text kept, nothing queued. Online with every POST dropped: "Couldn't reach the server", text kept, nothing queued.
+  - New `OfflineOutboxComposeTest::testQueueFromFormSavesAQueuedItemAndRefusesImages`.
+  - `./v3 test --smoke OfflineOutboxComposeTest OfflineOutboxSendTest OfflineOutboxStateTest BrowserSigningNormalizationTest AccountKeyPageHooksTest LocalAppSmokeTest`: 555 run, 555 passed. Full suite not run.
+  - `tests/browser/compose_attempt_replay.mjs` (duplicate-post protection): desktop and phone pass.
+  - Signed-in member queueing and reloading offline: not yet replayed; the run used a fresh guest key. Pending for Stage 7.
+- Notes:
+  - Plan said to classify by the fetch failure, never by `navigator.onLine` alone. In practice `navigator.onLine === false` is the only case where a request certainly never left, so it is the only one that queues. A dropped request while "online" is reported, not queued, which is safer against duplicates.
+- Estimate details: original scope unchanged; anonymous and image limits were already in the plan's risks.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

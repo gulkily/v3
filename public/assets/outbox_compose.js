@@ -49,7 +49,52 @@
     });
   }
 
-  window.forumOutboxCompose = { replyItem: replyItem, threadItem: threadItem };
+  function hasImage(form) {
+    var image = form.querySelector('[name="image"]');
+    return Boolean((window.ForumImageUpload && window.ForumImageUpload.has(form)) || (image && image.files && image.files.length));
+  }
+
+  function fieldValue(form, name) {
+    var field = form.querySelector('[name="' + name + '"]');
+    return field ? field.value : "";
+  }
+
+  // The composer's current text as an Outbox draft item.
+  function itemFromForm(form) {
+    if (hasImage(form)) throw new Error("Images cannot be saved to Outbox. Keep this draft open and publish online, or remove the image.");
+    if (form.dataset.composeKind === "reply") {
+      return replyItem({
+        threadId: fieldValue(form, "thread_id"),
+        parentId: fieldValue(form, "parent_id"),
+        body: fieldValue(form, "body"),
+        bodyFormat: bodyFormatOf(form),
+        theme: themeOf(form)
+      });
+    }
+    return threadItem({
+      subject: fieldValue(form, "subject"),
+      body: fieldValue(form, "body"),
+      boardTags: fieldValue(form, "board_tags"),
+      bodyFormat: bodyFormatOf(form),
+      theme: themeOf(form)
+    });
+  }
+
+  // Post without a connection: keep the text in the Outbox, queued to send once the connection returns.
+  function queueFromForm(form) {
+    if (!window.forumOutbox || !window.forumOutboxStorage) {
+      return Promise.reject(new Error("The Outbox is unavailable on this page."));
+    }
+    var item;
+    try {
+      item = window.forumOutbox.transition(itemFromForm(form), "queued");
+    } catch (error) {
+      return Promise.reject(error);
+    }
+    return window.forumOutboxStorage.save(item).then(function () { return item; });
+  }
+
+  window.forumOutboxCompose = { replyItem: replyItem, threadItem: threadItem, itemFromForm: itemFromForm, queueFromForm: queueFromForm };
 
   // A form is bound once, whether this script ran before or after the page finished parsing.
   function unbound(form) {
@@ -73,15 +118,7 @@
       button.addEventListener("click", function () {
         var item;
         try {
-          var image = form.querySelector('[name="image"]');
-          if ((window.ForumImageUpload && window.ForumImageUpload.has(form)) || (image && image.files && image.files.length)) throw new Error("Images cannot be saved to Outbox. Keep this draft open and publish online, or remove the image.");
-          item = replyItem({
-            threadId: form.querySelector('[name="thread_id"]').value,
-            parentId: form.querySelector('[name="parent_id"]').value,
-            body: form.querySelector('[name="body"]').value,
-            bodyFormat: bodyFormatOf(form),
-            theme: themeOf(form)
-          });
+          item = itemFromForm(form);
         } catch (error) {
           status.textContent = error.message;
           status.hidden = false;
@@ -113,15 +150,7 @@
       button.addEventListener("click", function () {
         var item;
         try {
-          var image = form.querySelector('[name="image"]');
-          if ((window.ForumImageUpload && window.ForumImageUpload.has(form)) || (image && image.files && image.files.length)) throw new Error("Images cannot be saved to Outbox. Keep this draft open and publish online, or remove the image.");
-          item = threadItem({
-            subject: form.querySelector('[name="subject"]').value,
-            body: form.querySelector('[name="body"]').value,
-            boardTags: form.querySelector('[name="board_tags"]').value,
-            bodyFormat: bodyFormatOf(form),
-            theme: themeOf(form)
-          });
+          item = itemFromForm(form);
         } catch (error) {
           status.textContent = error.message;
           status.hidden = false;

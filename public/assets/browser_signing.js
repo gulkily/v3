@@ -2847,7 +2847,17 @@
     const status = statusFromError(error, "Unable to prepare your browser identity.");
     failure.technicalDetails = [status.message, status.technicalDetails].filter(Boolean).join(" ");
     failure.accountCreationFailure = true;
+    failure.cause = error;
     return failure;
+  }
+
+  // The browser has no connection, or a request never reached the server (as opposed to a refusal from it).
+  function isConnectionFailure(error) {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+    for (let current = error; current; current = current.cause) {
+      if (current instanceof TypeError && /fetch|network|load failed/i.test(String(current.message || ""))) return true;
+    }
+    return false;
   }
 
   async function ensureComposeIdentity(root, statusNode, timing) {
@@ -3665,6 +3675,36 @@
       return Boolean(submitter && submitter.dataset && submitter.dataset.action === "submit-anonymous-compose");
     }
 
+    // Post with no connection: the text goes to the Outbox, queued, so nothing is sent until the connection returns.
+    // Anonymous posts and images can't be sent from the Outbox, so they stay in the composer.
+    async function keepComposeWhileOffline(submitter, timing) {
+      const outboxCompose = window.forumOutboxCompose;
+      if (isAnonymousComposeSubmitter(submitter) || composeImageFile(form) || !outboxCompose || typeof outboxCompose.queueFromForm !== "function") {
+        setStatus(statusNode, "You're offline. Your text stays here; post it once you're back online.", "error");
+        completeActionTiming(timing, "offline");
+        restoreComposeUiState();
+        return;
+      }
+      try {
+        await outboxCompose.queueFromForm(form);
+      } catch (error) {
+        setStatus(statusNode, statusFromError(error, "Unable to save this post on this device.").message, "error");
+        completeActionTiming(timing, "offline");
+        restoreComposeUiState();
+        return;
+      }
+      clearComposeFields();
+      setStatus(statusNode, "Saved on this device, not sent. It will be sent when you're back online.", "ok");
+      if (statusNode) {
+        const link = document.createElement("a");
+        link.href = "/tools/outbox/";
+        link.textContent = "Outbox";
+        statusNode.append(" ", link);
+      }
+      completeActionTiming(timing, "queued_offline");
+      restoreComposeUiState({ persistDraft: false });
+    }
+
     async function submitOptimisticReply(timing) {
       const fields = collectReplySubmitFields(form);
       const operationKey = beginPendingReplyOperation(form, fields);
@@ -4073,6 +4113,11 @@
       }
 
       try {
+        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+          await keepComposeWhileOffline(submitter, timing);
+          return;
+        }
+
         if (isAnonymousComposeSubmitter(submitter) && composeImageFile(form)) {
           throw new Error("Image attachments require signed publication by an approved member. Remove the image to post anonymously.");
         }
@@ -4133,7 +4178,13 @@
         restoreComposeUiState();
       } catch (error) {
         timing.errorKind = error instanceof Error && error.name ? error.name : "error";
-        const status = statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");
+        // A post that may have reached the server is never queued again (that could publish it twice); say what happened instead.
+        const status = isConnectionFailure(error)
+          ? {
+            message: "Couldn't reach the server. Your text is still here: try again, or Save to Outbox to send it later.",
+            technicalDetails: statusFromError(error, "").technicalDetails || (error && error.message) || "",
+          }
+          : statusFromError(error, "Unable to prepare your browser identity. Use /account/key/ manually.");
         setStatus(
           statusNode,
           status.message,
