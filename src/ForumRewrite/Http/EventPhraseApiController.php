@@ -20,7 +20,7 @@ final class EventPhraseApiController
     public function __construct(
         private readonly RouteServices $routeServices,
         private readonly FeatureFlagEvaluator $featureFlags,
-        private readonly EventPhraseFill $fill = new EventPhraseFill(),
+        private readonly ?EventPhraseFill $fill = null,
     ) {
     }
 
@@ -38,7 +38,8 @@ final class EventPhraseApiController
         }
 
         $today = self::posterToday((string) ($query['today'] ?? ''));
-        $result = $this->fill->fill(
+        $fill = $this->fill ?? EventPhraseFillFactory::forRequest($this->routeServices, (string) ($query['time_zone'] ?? ''));
+        $result = $fill->fill(
             (string) ($query['phrase'] ?? ''),
             $today,
             [

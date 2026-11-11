@@ -23,6 +23,7 @@ use DateTimeZone;
 final class EventPhraseReader
 {
     public const MAX_LENGTH = 120;
+    public const UNREAD_DATE = 'Could not read a date from that.';
 
     private const MONTHS = [
         'jan' => 1, 'january' => 1, 'feb' => 2, 'february' => 2, 'mar' => 3, 'march' => 3,
@@ -62,7 +63,7 @@ final class EventPhraseReader
         }
         $span = $this->readSpan($text, $todayDate);
         if ($span === null) {
-            return EventPhraseReading::unread('Could not read a date from that.');
+            return EventPhraseReading::unread(self::UNREAD_DATE);
         }
 
         return EventPhraseReading::read($span[0]->format('Y-m-d'), $span[1]?->format('Y-m-d'), $time, 'built-in');

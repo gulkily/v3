@@ -20,6 +20,7 @@ $testFiles = [
     __DIR__ . '/EventEndDateParserTest.php',
     __DIR__ . '/EventPhraseReaderTest.php',
     __DIR__ . '/EventPhraseComposeTest.php',
+    __DIR__ . '/EventPhraseLlmReaderTest.php',
     __DIR__ . '/EventStatusTest.php',
     __DIR__ . '/ThreadThemeTest.php',
     __DIR__ . '/CalendarPageTest.php',

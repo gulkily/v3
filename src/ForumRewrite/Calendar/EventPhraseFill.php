@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace ForumRewrite\Calendar;
 
 /**
- * What Fill puts into the composer's Event fields for a phrase. A fixed Date (the
- * calendar day page) is never changed: only Until and Time are filled, and only when
- * they fit that day. An unread phrase leaves every field as it was.
+ * What Fill puts into the composer's Event fields for a phrase. The built-in reader goes
+ * first; a phrase it cannot read goes to the fallback (the LLM) when there is one. A
+ * fixed Date (the calendar day page) is never changed: only Until and Time are filled,
+ * and only when they fit that day. An unread phrase leaves every field as it was.
  */
 final class EventPhraseFill
 {
-    public function __construct(private readonly EventPhraseReader $reader = new EventPhraseReader())
-    {
+    /** @param (\Closure(string, string): EventPhraseReading)|null $fallback phrase and today in, a reading out */
+    public function __construct(
+        private readonly EventPhraseReader $reader = new EventPhraseReader(),
+        private readonly ?\Closure $fallback = null,
+    ) {
     }
 
     /**
@@ -27,6 +31,9 @@ final class EventPhraseFill
             'event_time' => (string) ($fields['event_time'] ?? ''),
         ];
         $reading = $this->reader->read($phrase, $today);
+        if (!$reading->isRead() && $this->fallback !== null && $reading->reason === EventPhraseReader::UNREAD_DATE) {
+            $reading = ($this->fallback)(trim($phrase), $today);
+        }
         if (!$reading->isRead()) {
             return ['fields' => $current, 'status' => (string) $reading->reason, 'filled' => false];
         }

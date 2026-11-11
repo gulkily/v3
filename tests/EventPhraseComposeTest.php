@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 
@@ -12,6 +13,8 @@ use ForumRewrite\Application;
  */
 final class EventPhraseComposeTest
 {
+    private const OPERATOR = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
     public function testWhenBoxNeedsTheFlag(): void
     {
         [, $application] = $this->environment(false);
@@ -99,6 +102,37 @@ final class EventPhraseComposeTest
         [, $off] = $this->environment(false);
         $this->json($off, ['phrase' => 'today']);
         eventPhraseComposeAssertSame(404, http_response_code());
+    }
+
+    public function testLlmFallbackIsOnlyForApprovedMembers(): void
+    {
+        [$root, $application] = $this->environment(true);
+        $head = $this->head($root);
+        $today = gmdate('Y-m-d');
+        $weekLater = gmdate('Y-m-d', time() + 7 * 86400);
+        putenv('LLM_PROVIDER=stub');
+        try {
+            TestViewerSession::signedOut();
+            $anonymous = $this->json($application, ['phrase' => 'the weekend after Thanksgiving', 'today' => $today]);
+            eventPhraseComposeAssertSame([false, 'Could not read a date from that.'], [$anonymous['filled'], $anonymous['message']]);
+
+            TestViewerSession::signIn(self::OPERATOR);
+            $member = $this->json($application, ['phrase' => 'the weekend after Thanksgiving', 'today' => $today, 'time_zone' => 'America/New_York']);
+            eventPhraseComposeAssertSame([true, $weekLater, '18:00'], [$member['filled'], $member['event_date'], $member['event_time']]);
+
+            $unclear = $this->json($application, ['phrase' => 'unclear plans', 'today' => $today]);
+            eventPhraseComposeAssertSame([false, 'Could not read a date from that.'], [$unclear['filled'], $unclear['message']]);
+
+            // The built-in reader still goes first, and the no-JS path uses the same fallback.
+            $builtIn = $this->json($application, ['phrase' => 'tomorrow', 'today' => $today]);
+            eventPhraseComposeAssertSame(gmdate('Y-m-d', time() + 86400), $builtIn['event_date']);
+            $html = $this->request($application, 'POST', '/compose/thread', ['body' => 'x', 'event_when' => 'after the holidays', 'event_when_fill' => '1']);
+            eventPhraseComposeAssertContains('name="event_date" value="' . $weekLater . '"', $html);
+        } finally {
+            putenv('LLM_PROVIDER');
+            TestViewerSession::reset();
+        }
+        eventPhraseComposeAssertSame($head, $this->head($root));
     }
 
     public function testPosterTodayAcceptsOnlyADayEitherSideOfUtc(): void

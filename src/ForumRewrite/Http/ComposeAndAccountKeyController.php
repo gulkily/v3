@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
-use ForumRewrite\Calendar\EventPhraseFill;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use ForumRewrite\Support\ThreadTitle;
 use ForumRewrite\Write\ComposeAttemptRetired;
@@ -307,7 +306,7 @@ final class ComposeAndAccountKeyController
     {
         $today = gmdate('Y-m-d');
         $state = $this->eventWhenState($input);
-        $result = (new EventPhraseFill())->fill(
+        $result = EventPhraseFillFactory::forRequest($this->routeServices)->fill(
             (string) ($input['event_when'] ?? ''),
             $today,
             [

@@ -78,3 +78,26 @@ Maintainer direction at approval (2026-11-11): "let's stretch it a little bit if
 **Retrospective stage work: 0.10**
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - LLM fallback
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `EventPhraseLlmReader` (new): one structured call (`event_phrase` schema: status, date, end_date, time) with today, the poster's time zone and the phrase, through the existing Anthropic or OpenAI-compatible provider. Timeout capped at 15 seconds; no exchange recorder is passed, so Fill calls are not stored. The answer is checked like a record: valid dates, Until not before Date, 24-hour time, and a date from a year back to five years ahead. A provider error gives "Could not read that right now."
+  - `StubEventPhraseProvider` (new) serves `LLM_PROVIDER=stub`: a week after today at 18:00, or unclear when the phrase says "unclear".
+  - `EventPhraseFill` takes an optional fallback. It runs only when the built-in reader could not read the day, not for a bad time, a time with no day, or a phrase over 120 characters.
+  - `EventPhraseFillFactory` (new) builds Fill for the request: the fallback only for a signed-in approved member with a provider configured, built lazily. Both the API and the no-JS path use it. The time zone must be a known IANA name or it is dropped.
+  - `RouteServices::projectRoot()` added so the factory can load the private config.
+- Verification:
+  - `./v3 test --smoke EventPhraseLlmReaderTest EventPhraseComposeTest EventPhraseReaderTest LlmProviderConfigTest PostAnalyzerFactoryTest`: 481 passed.
+  - `EventPhraseLlmReaderTest` (new) covers success, the request contents, ten unclear or malformed answers, a provider exception, an over-long phrase, and that the fallback runs only for an unread day. `EventPhraseComposeTest` covers the stub provider end to end: refused for a signed-out viewer, used for the approved operator, unclear answers, the built-in reader first, and the no-JS path. HEAD unchanged.
+  - Not checked against a real provider: no key in this workspace.
+  - Full suite not run.
+- Notes:
+  - No request limiter exists to reuse (confirmed); gating, the length cap and one call per Fill are the cost guard, as planned.
+- Estimate details: original scope as planned; uncertainty medium; no revision.
+
+**Retrospective stage work: 0.12**
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
