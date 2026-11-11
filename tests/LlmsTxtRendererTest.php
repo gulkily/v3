@@ -168,6 +168,18 @@ final class LlmsTxtRendererTest
         assertStringNotContains('Source code', $this->render([]));
     }
 
+    public function testInvitesAgentsToReportProblems(): void
+    {
+        $withoutSource = $this->render([]);
+        assertStringContains('Tell us when something here gets in your way', $withoutSource);
+        assertStringContains('"Agent Accessibility"', $withoutSource);
+        assertStringNotContains('open a pull request', $withoutSource);
+
+        $withSource = (new LlmsTxtRenderer(new FeatureFlagEvaluator(siteValues: []), 'https://code.example.test/forum'))->render();
+        assertStringContains('If you can fix it yourself, open a pull request too', $withSource);
+        assertTrue(strpos($withSource, 'Tell us when') < strpos($withSource, '## This instance'), 'Report line belongs in Agent policy.');
+    }
+
     public function testSiteDescriptionLeadsWhenTheProfileHasOne(): void
     {
         $text = (new LlmsTxtRenderer(new FeatureFlagEvaluator(siteValues: []), null, 'zenmemes', 'zenmemes is a garage where people and agents build this site together, starting from threads.'))->render();
