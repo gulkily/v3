@@ -80,7 +80,7 @@ For each "review" item, the choice is: remove the method and its test, or keep i
 - **Theme CSS (`theme-*.css`):** **false positive.** `View/ThemeRegistry` builds `/assets/theme-<name>.css` from the registry, so a name search can't find them. Suggestion: a comment in `public/assets/` or a test asserting every `theme-*.css` has a registry entry, so this doesn't come up again.
 - **OpenPGP bundles:** **keep**, documented in PR #139.
 - **Scripts with no reference in `./v3`, code, or reference docs:**
-  - `markdown_list_corpus_audit.py`, `markdown_task_corpus_audit.py`: one-off Markdown audits. Proposed: **review**, either move to `scripts/oneoff/` or remove.
+  - `markdown_list_corpus_audit.py`, `markdown_task_corpus_audit.py`: **keep**. Markdown renderer audit tools, still in use while the renderer is extended (maintainer, 2026-11-10); documented in their plan acceptance docs, which this scan skipped. Docstrings now say so (#156).
   - `import_scripture_source.py`: documented in `resources/scripture/README.md`. **Keep.**
   - `qdb_archive_import_run.php`: documented in `docs/runbooks/qdb_archive_import.md`. **Keep.**
 - **Script triplets** `publish_text.{php,pl,py}` and `stress_probe.{php,pl,py}`: **keep**. Intentional (maintainer, 2026-11-10) and expected to grow; see `docs/reference/multi_language_scripts.md`.
