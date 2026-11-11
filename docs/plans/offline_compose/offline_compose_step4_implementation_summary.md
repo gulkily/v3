@@ -80,3 +80,24 @@ Cycle estimate: 0.80
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - New post and Reply open the cached compose pages offline
+
+**Original estimate: 0.10**
+**Retrospective: 0.08**
+
+- Changes:
+  - The worker caches `/compose/thread` and `/compose/reply` as they render with no target, alongside the reader shell, and finds their scripts and styles the same way. Both pages count toward the revision check, so a deploy that changes the composer refreshes them.
+  - Offline, a GET navigation to either page gets the cached copy at the usual address. For a reply, the worker fills `thread_id` and `parent_id` from the address (escaped), as the server would. Form posts are never answered from the cache.
+  - Offline cache version 15 → 16, so existing installs fetch the new pages.
+- Verification:
+  - Browser replay, local server with the worker: online board and thread, go offline, click New post (from both) and a Reply link. Each opens the compose page at its usual address. The reply page carries `root-001`/`reply-001`, Save to Outbox is enabled, and Post queues with "Saved on this device, not sent". On reconnect the Outbox sent them.
+  - Deploy simulation: edited the New post template on disk and browsed three pages online; the cached page picked up the change. Template restored.
+  - New `OfflineNavigationWorkerTest::testComposeNavigationServesTheCachedPageWithTheReplyTargetFromTheAddress` (target fill, escaping, POST not served). The refresh test also checks both pages are cached.
+  - `./v3 test --smoke OfflineNavigationWorkerTest LocalAppSmokeTest OfflineOutboxComposeTest OfflineSnapshotBootstrapTest`: 466 run, 466 passed. `SiteProfileRegistryTest` passed. Full suite not run.
+- Notes:
+  - The Step 3 risk about one visitor's details in a cached page: the bare pages hold no per-visitor content (two fetches were byte-identical), and the cache belongs to that browser profile.
+  - Offline, the reply page shows only "Reply" with no quoted post yet. That is Stage 5.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
