@@ -201,6 +201,8 @@ NODE;
         assertSame('ready', $outcome['result']['status']);
         assertTrue(in_array('/offline/reader/', $outcome['stored'], true), 'Reader shell should be cached.');
         assertTrue(in_array('/assets/offline_reader.js', $outcome['stored'], true), 'Reader assets should be cached.');
+        assertTrue(in_array('/compose/thread', $outcome['stored'], true), 'The New post page should be cached for offline use.');
+        assertTrue(in_array('/compose/reply', $outcome['stored'], true), 'The reply page should be cached for offline use.');
         assertTrue(!in_array('/offline/snapshot.sqlite3', $outcome['stored'], true), 'A missing snapshot must not be cached.');
     }
 
@@ -544,5 +546,57 @@ NODE;
             $this->testRefreshMessageReportsSuccessAndFailureToRequester();
             $this->testActivationRefreshesOnlyTheActiveProfileCacheFamily();
         });
+    }
+
+    public function testComposeNavigationServesTheCachedPageWithTheReplyTargetFromTheAddress(): void
+    {
+        // Offline, New post and Reply open the real compose pages at their usual addresses.
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const listeners = {};
+const page = (title) => '<title>' + title + '</title><section data-compose-root><input type="hidden" name="thread_id" value=""><input type="hidden" name="parent_id" value=""></section>';
+const context = {
+  URL, Response, Promise, console: { info() {}, error() {} },
+  self: { location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' }, navigator: { onLine: false }, addEventListener(type, listener) { listeners[type] = listener; } },
+  caches: { open: async () => ({ match: async (url) => {
+    const path = new URL(url).pathname;
+    return path === '/compose/thread' ? new Response(page('New Post')) : path === '/compose/reply' ? new Response(page('Reply')) : undefined;
+  } }) },
+  fetch: async () => { throw new TypeError('Failed to fetch'); },
+};
+vm.runInNewContext(source, context);
+const navigate = (url, method = 'GET') => new Promise((resolve) => listeners.fetch({
+  request: { mode: 'navigate', method, url },
+  respondWith(promise) { promise.then((response) => response.text(), (error) => 'ERROR ' + error.message).then(resolve); },
+}));
+(async () => {
+  process.stdout.write(JSON.stringify({
+    thread: await navigate('https://forum.test/compose/thread'),
+    reply: await navigate('https://forum.test/compose/reply?thread_id=root-001&parent_id=reply-001'),
+    escaped: await navigate('https://forum.test/compose/reply?thread_id=a%22%3E%3Cb&parent_id='),
+    posted: await navigate('https://forum.test/compose/reply', 'POST'),
+  }));
+})();
+NODE;
+        $command = sprintf(
+            'node -e %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/service_worker.js'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Compose worker fallback failed: ' . implode("\n", $output));
+        }
+        $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertStringContains('<title>New Post</title>', $result['thread']);
+        assertStringContains('data-compose-root data-offline-copy="1"', $result['thread']);
+        assertStringContains('data-compose-root data-offline-copy="1"', $result['reply']);
+        assertStringContains('name="thread_id" value="root-001"', $result['reply']);
+        assertStringContains('name="parent_id" value="reply-001"', $result['reply']);
+        assertStringContains('name="thread_id" value="a&quot;&gt;&lt;b"', $result['escaped']);
+        assertStringContains('ERROR', $result['posted']);
     }
 }

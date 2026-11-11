@@ -33,6 +33,8 @@ final class OfflineReaderController
                 '/assets/outbox_storage.js',
                 '/assets/outbox_intent.js',
                 '/assets/outbox_sender.js',
+                '/assets/inline_reply_form.js',
+                '/assets/outbox_compose.js',
                 '/assets/offline_reader.js',
             ],
         );

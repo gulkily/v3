@@ -168,6 +168,7 @@ final class ThreadAndPostPageController
                 '/assets/inline_reply_form.js',
                 '/assets/outbox_store.js',
                 '/assets/outbox_storage.js',
+                '/assets/outbox_compose.js',
                 '/assets/outbox_sender.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_retraction.js',
@@ -270,6 +271,7 @@ final class ThreadAndPostPageController
             $this->identityScripts([
                 '/assets/outbox_store.js',
                 '/assets/outbox_storage.js',
+                '/assets/outbox_compose.js',
                 '/assets/outbox_sender.js',
                 '/assets/thread_reactions.js',
                 '/assets/post_retraction.js',

@@ -564,6 +564,11 @@
         if (options.onQueueReaction) {
           var actions = document.createElement("div");
           actions.className = "button-row button-row-natural post-card-actions" + (isRoot ? " thread-root-actions" : "");
+          var reply = document.createElement("a");
+          reply.href = "/compose/reply?thread_id=" + encodeURIComponent(String(options.threadId)) + "&parent_id=" + encodeURIComponent(String(row[0] || ""));
+          reply.textContent = "Reply";
+          if (isRoot) reply.setAttribute("data-inline-reply-link", "");
+          actions.appendChild(reply);
           var queueLike = document.createElement("button");
           queueLike.type = "button";
           queueLike.className = "thread-reaction-button";
@@ -736,6 +741,28 @@
       renderThreadDetail(database, threadId);
     }
 
+    // Offline, the board and thread carry the same composers as online, from the page's own templates.
+    function mountComposer(kind, threadId) {
+      var template = document.querySelector('template[data-offline-composer="' + kind + '"]');
+      if (!template || !content) return null;
+      var composer = template.content.firstElementChild.cloneNode(true);
+      if (kind === "reply") {
+        composer.querySelector('[name="thread_id"]').value = threadId;
+        composer.querySelector('[name="parent_id"]').value = threadId;
+        content.appendChild(composer);
+      } else {
+        var toolbar = content.querySelector(".board-toolbar");
+        content.insertBefore(composer, toolbar ? toolbar.nextSibling : content.firstChild);
+      }
+      if (window.ForumInlineComposer) window.ForumInlineComposer.bind(composer);
+      if (window.ForumBrowserSigning && typeof window.ForumBrowserSigning.init === "function") window.ForumBrowserSigning.init(composer);
+      if (window.forumOutboxCompose) {
+        if (typeof window.forumOutboxCompose.bind === "function") window.forumOutboxCompose.bind();
+        if (typeof window.forumOutboxCompose.showUnsentReplies === "function") window.forumOutboxCompose.showUnsentReplies();
+      }
+      return composer;
+    }
+
     function renderOfflineBoard(database) {
       root.dataset.offlineNavigation = "board";
       showOfflineMode();
@@ -765,6 +792,7 @@
           window.location.assign(snapshotPresentation.normalThreadUrl(threadId));
         }
       });
+      mountComposer("thread");
     }
 
     function renderOfflineTagsIndex(database) {
@@ -806,7 +834,7 @@
           });
         },
         threadId: threadId
-      });
+      }) && mountComposer("reply", threadId);
     }
 
     window.addEventListener("online", function () {

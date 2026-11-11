@@ -122,14 +122,17 @@ const database = { exec() { calls += 1; return calls === 1 ? [{ values: [['2026-
 const queued = [];
 const content = element('div');
 window.forumOfflineSnapshot.renderThreadDetail({ content, database, threadId: 'root-1', setStatus() {}, onQueueReaction(target, summary, payload) { queued.push({ target, summary, payload }); return Promise.resolve(); } });
-const rootButton = content.children[0].children[4].children[0];
-const replyButton = content.children[1].children[3].children[0];
+// Each action row starts with Reply, as online; Like follows it.
+const rootButton = content.children[0].children[4].children[1];
+const replyButton = content.children[1].children[3].children[1];
+const replyLinks = [content.children[0].children[4].children[0], content.children[1].children[3].children[0]];
 rootButton.listeners.click();
 replyButton.listeners.click();
 Promise.resolve().then(() => Promise.resolve()).then(() => process.stdout.write(JSON.stringify({
   buttons: [rootButton, replyButton].map((button) => ({ className: button.className, text: button.textContent, action: button.attributes['data-action'], tag: button.attributes['data-tag'], pressed: button.attributes['aria-pressed'] })),
   queued,
-  actionRows: [content.children[0].children[4], content.children[1].children[3]].map((actions) => actions.className)
+  actionRows: [content.children[0].children[4], content.children[1].children[3]].map((actions) => actions.className),
+  replyLinks: replyLinks.map((link) => [link.textContent, link.href])
 })));
 NODE;
         $command = sprintf('node -e %s %s', escapeshellarg($script), escapeshellarg(__DIR__ . '/../public/assets/offline_reader.js'));
@@ -150,5 +153,9 @@ NODE;
         assertSame('post', $result['queued'][1]['target']['kind']);
         assertSame('thread_tag', $result['queued'][0]['payload']['kind']);
         assertSame('post_tag', $result['queued'][1]['payload']['kind']);
+        // Reply opens the reply page, which the worker serves offline.
+        assertSame('Reply', $result['replyLinks'][0][0]);
+        assertStringContains('/compose/reply?thread_id=root-1&parent_id=', $result['replyLinks'][0][1]);
+        assertStringContains('/compose/reply?thread_id=root-1&parent_id=', $result['replyLinks'][1][1]);
     }
 }

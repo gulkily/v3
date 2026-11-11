@@ -47,7 +47,7 @@ final class TemplateRenderer
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
-        'offline_reader.php' => ['/assets/sqlite.css', '/assets/thread-list.css', '/assets/tags.css', '/assets/content-interactions.css'],
+        'offline_reader.php' => ['/assets/sqlite.css', '/assets/thread-list.css', '/assets/tags.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'platform_docs_document.php' => ['/assets/platform_docs.css'],
         'platform_docs_index.php' => ['/assets/platform_docs.css'],
         'tags.php' => ['/assets/tags.css'],
@@ -254,6 +254,9 @@ final class TemplateRenderer
                 'openpgpLoader' => $this->assetPath('/assets/openpgp_loader.js'),
                 'browserSigning' => $this->assetPath('/assets/browser_signing.js'),
                 'replyContinuation' => $this->assetPath('/assets/reply_continuation.js'),
+                // The offline reply page reads the post being answered from the saved snapshot.
+                'sqlRuntime' => $this->assetPath('/assets/sql-wasm.js'),
+                'sqlRuntimeBinary' => $this->assetPath('/assets/sql-wasm.wasm'),
             ] + ($messagingNavigation ? ['privateMessaging' => array_map($this->assetPath(...), $this->messagingScriptPaths())] : []),
             'browserRuntime' => $browserRuntime,
             'pageStylesheetPaths' => $pageStylesheetPaths,
@@ -615,6 +618,9 @@ final class TemplateRenderer
                 'openpgpLoader' => $this->assetPath('/assets/openpgp_loader.js'),
                 'browserSigning' => $this->assetPath('/assets/browser_signing.js'),
                 'replyContinuation' => $this->assetPath('/assets/reply_continuation.js'),
+                // The offline reply page reads the post being answered from the saved snapshot.
+                'sqlRuntime' => $this->assetPath('/assets/sql-wasm.js'),
+                'sqlRuntimeBinary' => $this->assetPath('/assets/sql-wasm.wasm'),
             ],
         ]);
     }

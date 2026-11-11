@@ -2074,6 +2074,10 @@ PHP;
         assertStringContains('name="board_tags" value="general"', $board);
         assertFingerprintedAsset($board, 'inline_reply_form.js');
         assertFingerprintedAsset($board, 'lazy_compose_signing.js');
+        // The board's composer can save to the Outbox when the connection drops.
+        assertFingerprintedAsset($board, 'outbox_compose.js');
+        // Posts waiting in the Outbox go out from the board once the connection is back.
+        assertFingerprintedAsset($board, 'outbox_sender.js');
         assertStringNotContains('/assets/openpgp_loader.js', $board);
         assertStringNotContains('/assets/browser_signing.js', $board);
         assertStringNotContains('View: All', $board);
@@ -2103,6 +2107,7 @@ PHP;
         assertFingerprintedAsset($thread, 'browser_signing.js');
         assertFingerprintedAsset($thread, 'url_hints.js');
         assertFingerprintedAsset($thread, 'inline_reply_form.js');
+        assertFingerprintedAsset($thread, 'outbox_compose.js');
         assertFingerprintedAsset($thread, 'thread_reactions.js');
         assertFingerprintedAsset($thread, 'post_analysis.js');
         assertStringContains('data-thread-reactions-root', $thread);
@@ -3927,7 +3932,7 @@ PHP;
         assertStringContains('force: true', (string) file_get_contents(dirname(__DIR__) . '/public/assets/offline_health.js'));
         assertStringContains('networkFirstNavigation', $serviceWorker);
         assertStringContains('offlineCachePrefix', $serviceWorker);
-        assertStringContains('zenmemes-offline-reader-v15', $serviceWorker);
+        assertStringContains('zenmemes-offline-reader-v16', $serviceWorker);
         assertStringContains('[offline reading] fetch failed', $serviceWorker);
         assertStringContains('offline reader shell', $serviceWorker);
         assertStringContains('__offline_bootstrap', $serviceWorker);

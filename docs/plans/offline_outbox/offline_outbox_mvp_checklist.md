@@ -45,8 +45,11 @@ initial Outbox release; remaining items are deliberate follow-up work.
 ## Feature 3 — Offline replies
 
 - [ ] Store reply content as an editable local draft before it is queued.
+  (Replies can be written, saved and queued from any composer, including
+  offline; editing a draft from the Outbox is still missing.)
 - [ ] Preserve target-thread context and explain when it is absent, locked,
-  hidden, or removed.
+  hidden, or removed. (Offline, the reply page quotes the saved post or says
+  the thread isn't saved on this device; locked and hidden are not shown.)
 - [x] Require an explicit online send/retry path that completes the existing
   prepare, signing, and finalization lifecycle.
 - [x] Map an accepted local intent to its canonical server post and link it from
@@ -56,6 +59,8 @@ initial Outbox release; remaining items are deliberate follow-up work.
 ## Feature 4 — Offline new-thread compose
 
 - [ ] Store subject and body as an editable local draft before it is queued.
+  (New posts can be written and queued offline from the board or New post;
+  Outbox editing is still missing. See `offline_compose`.)
 - [ ] Restore, edit, export, discard, and queue a new-thread draft after a
   browser restart.
 - [x] Require an explicit online send/retry path that completes the existing

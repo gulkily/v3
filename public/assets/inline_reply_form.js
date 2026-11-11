@@ -38,8 +38,12 @@
     sync();
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-inline-thread-compose]").forEach(function (node) { bindInlineComposer(node, "inlineThreadExpanded"); });
-    document.querySelectorAll("[data-inline-reply-compose]").forEach(function (node) { bindInlineComposer(node, "inlineReplyExpanded"); });
-  });
+  function bindAll(scope) {
+    scope.querySelectorAll("[data-inline-thread-compose]").forEach(function (node) { bindInlineComposer(node, "inlineThreadExpanded"); });
+    scope.querySelectorAll("[data-inline-reply-compose]").forEach(function (node) { bindInlineComposer(node, "inlineReplyExpanded"); });
+  }
+
+  // The offline reader adds its composers after drawing the page.
+  window.ForumInlineComposer = { bind: bindAll };
+  document.addEventListener("DOMContentLoaded", function () { bindAll(document); });
 })();

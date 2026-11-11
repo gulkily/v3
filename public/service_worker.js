@@ -1,7 +1,7 @@
 const RUNTIME = self.__forumBrowserRuntime || {
   namespace: "zenmemes",
   offlineCachePrefix: "zenmemes-offline-reader-",
-  offlineCacheName: "zenmemes-offline-reader-v15"
+  offlineCacheName: "zenmemes-offline-reader-v16"
 };
 const CACHE_NAME = RUNTIME.offlineCacheName;
 const CACHE_PREFIX = RUNTIME.offlineCachePrefix;
@@ -10,6 +10,9 @@ const UPDATE_URL = "/offline/update.sqlite3";
 const OFFLINE_HEALTH_URL = "/offline/";
 const OFFLINE_READER_URL = "/offline/reader/";
 const OFFLINE_OUTBOX_URL = "/tools/outbox/";
+// The compose pages are cached as they render with no target, and served offline at their usual addresses.
+const COMPOSE_THREAD_URL = "/compose/thread";
+const COMPOSE_REPLY_URL = "/compose/reply";
 const BOOTSTRAP_QUERY_PARAMETER = "__offline_bootstrap";
 const REVISION_KEY = "/__offline_reader_revision__";
 
@@ -104,8 +107,11 @@ async function refreshOfflineReader(extraUrls) {
   const shell = await fetchOfflineResource(OFFLINE_READER_URL, "offline reader shell");
   const health = await fetchOfflineResource(OFFLINE_HEALTH_URL, "offline health page");
   const outbox = await fetchOfflineResource(OFFLINE_OUTBOX_URL, "offline outbox page");
-  const shellBodies = await Promise.all([shell, health, outbox].map((response) => response.clone().text()));
-  const assetUrls = await Promise.all([shell, health, outbox].map(async (response) => {
+  const composeThread = await fetchOfflineResource(COMPOSE_THREAD_URL, "offline new post page");
+  const composeReply = await fetchOfflineResource(COMPOSE_REPLY_URL, "offline reply page");
+  const pages = [shell, health, outbox, composeThread, composeReply];
+  const shellBodies = await Promise.all(pages.map((response) => response.clone().text()));
+  const assetUrls = await Promise.all(pages.map(async (response) => {
     const html = await response.clone().text();
     return [...html.matchAll(/(?:<script[^>]*\ssrc|<link[^>]*\shref|data-runtime-url)="([^"]+)"/g)]
       .map((match) => new URL(match[1], self.location.origin))
@@ -122,6 +128,8 @@ async function refreshOfflineReader(extraUrls) {
     [OFFLINE_READER_URL, shell],
     [OFFLINE_HEALTH_URL, health],
     [OFFLINE_OUTBOX_URL, outbox],
+    [COMPOSE_THREAD_URL, composeThread],
+    [COMPOSE_REPLY_URL, composeReply],
   ]);
   await refreshSnapshot();
   await storeRevision(await revisionFromBodies(shellBodies));
@@ -150,7 +158,7 @@ async function revisionFromBodies(bodies) {
 }
 
 async function currentRevision() {
-  const bodies = await Promise.all([OFFLINE_READER_URL, OFFLINE_HEALTH_URL, OFFLINE_OUTBOX_URL].map(async (url) => {
+  const bodies = await Promise.all([OFFLINE_READER_URL, OFFLINE_HEALTH_URL, OFFLINE_OUTBOX_URL, COMPOSE_THREAD_URL, COMPOSE_REPLY_URL].map(async (url) => {
     const response = await fetchOfflineResource(url, "revision shell");
     return response.text();
   }));
@@ -183,11 +191,40 @@ function supportsOfflineNavigation(url) {
     || /^\/tags\/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*\/?$/.test(url.pathname);
 }
 
+function composePageFor(url) {
+  const path = url.pathname.replace(/\/$/, "");
+  return path === COMPOSE_THREAD_URL || path === COMPOSE_REPLY_URL ? path : null;
+}
+
+function escapeAttribute(value) {
+  return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// The cached reply page has an empty target; fill it from the address, as the server would.
+async function offlineComposePage(url) {
+  const page = composePageFor(url);
+  const cached = await cachedResponse(await caches.open(CACHE_NAME), page);
+  if (!cached) return cached;
+  // Marked so page scripts know this copy came from the device, not the server.
+  let html = (await cached.text()).replace("data-compose-root", 'data-compose-root data-offline-copy="1"');
+  if (page !== COMPOSE_REPLY_URL) return new Response(html, { status: cached.status, statusText: cached.statusText, headers: cached.headers });
+  for (const name of ["thread_id", "parent_id"]) {
+    const value = url.searchParams.get(name) || "";
+    html = html.replace(`name="${name}" value=""`, `name="${name}" value="${escapeAttribute(value)}"`);
+  }
+  return new Response(html, { status: cached.status, statusText: cached.statusText, headers: cached.headers });
+}
+
 async function networkFirstNavigation(request) {
   try {
     return await fetch(request);
   } catch (error) {
     const url = new URL(request.url);
+    if (request.method === "GET" && composePageFor(url)) {
+      const page = await offlineComposePage(url);
+      if (page) return page;
+      throw error;
+    }
     const fallbackUrl = (url.pathname === "/offline" || url.pathname === OFFLINE_HEALTH_URL)
       ? OFFLINE_HEALTH_URL
       : url.pathname === OFFLINE_OUTBOX_URL || url.pathname === "/tools/outbox"

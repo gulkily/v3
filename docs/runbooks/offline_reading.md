@@ -127,9 +127,9 @@ the service-worker cache. Its content is therefore device-local and is never
 published merely because it appears in the Outbox. Each item is a compact row;
 open it to inspect its status, timing, outcome, and available controls.
 
-A draft has been saved locally; queue it when it is ready. While an Outbox or
-offline-reader page is open, queued work is processed automatically when the
-browser regains a connection (and when either page opens while connected).
+A draft has been saved locally; queue it when it is ready. Queued work is
+processed automatically when the browser regains a connection, and when a page
+with a composer, the Outbox or the offline reader opens while connected.
 Drafts are never sent automatically. A closed browser has no Background Sync
 worker and therefore cannot deliver queued work until an appropriate page is
 opened again.
@@ -155,10 +155,29 @@ site data until you have reviewed or discarded the local items. Browser storage
 is also the current recovery boundary: sharing a device can expose saved drafts
 to another person using the same browser profile.
 
-This MVP does not yet provide draft editing, export, bulk clear confirmation,
-or direct offline navigation to a fresh compose page. A compose page that is
-already open can save its reply or thread as a local draft; use **Discard** or
-**Remove** in the Outbox to remove individual local records.
+### Writing offline
+
+Offline, writing works as it does online. The offline board and thread show the
+same composers as the online pages, and **New post** and **Reply** open the
+compose pages at their usual addresses. The worker caches `/compose/thread` and
+`/compose/reply` as they render with no target, refreshes them with the reader
+when a deploy changes them, and fills the reply target from the address. The
+reply page quotes the post being answered from the saved snapshot, or says the
+thread isn't saved on this device; the reply can still be written and saved.
+
+Pressing **Post** with no connection saves the post to the Outbox as queued and
+says "Saved on this device, not sent." A thread lists its own unsent replies
+above its reply composer. When the connection returns, they are sent once
+through the delivery path above. **Save to Outbox** saves a draft instead, on
+every composer.
+
+Anonymous posts and posts with images cannot go through the Outbox: offline,
+they stay in the composer. A request that fails while the browser reports a
+connection may have reached the server, so it is reported ("Couldn't reach the
+server") and never queued automatically.
+
+This MVP does not yet provide draft editing, export or bulk clear confirmation;
+use **Discard** or **Remove** in the Outbox to remove individual local records.
 
 `Offline reading is ready on this device` means the browser has the worker and
 all saved artifacts necessary to read the bounded snapshot. A connected browser

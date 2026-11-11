@@ -212,9 +212,12 @@
   function processQueuedOutbox() {
     if (typeof navigator !== "undefined" && navigator.onLine === false) return Promise.resolve([]);
     if (processingPromise) return processingPromise;
+    var locks = typeof navigator !== "undefined" && navigator.locks && typeof navigator.locks.request === "function";
     var process = function () {
       return window.forumOutboxStorage.list().then(function (items) {
-        var staleBefore = Date.now() - staleSendingMs;
+        // Holding the delivery lock means no other tab is sending, so a "sending" item was cut off
+        // (the page closed or navigated) and can be retried now. Without locks, wait out the stale window.
+        var staleBefore = locks ? Infinity : Date.now() - staleSendingMs;
         var eligible = items.filter(function (item) {
           return item.state === "queued" || item.state === "waiting_for_connection"
             || (item.state === "sending" && Date.parse(item.updatedAt) < staleBefore);
@@ -233,7 +236,6 @@
         }, Promise.resolve([]));
       });
     };
-    var locks = typeof navigator !== "undefined" && navigator.locks && typeof navigator.locks.request === "function";
     processingPromise = (locks
       ? navigator.locks.request("forum-outbox-delivery", { ifAvailable: true }, function (lock) { return lock ? process() : []; })
       : process()
@@ -241,5 +243,18 @@
     return processingPromise;
   }
 
-  window.forumOutboxSender = { send: send, failureState: failureState, processQueuedOutbox: processQueuedOutbox };
+  // A manual Send takes the same lock as automatic delivery, then rereads the item,
+  // so an item another tab already sent is not sent again.
+  function sendWithLock(item) {
+    var locks = typeof navigator !== "undefined" && navigator.locks && typeof navigator.locks.request === "function";
+    if (!locks || !item || !item.id) return send(item);
+    return navigator.locks.request("forum-outbox-delivery", function () {
+      return window.forumOutboxStorage.load(item.id).then(function (current) {
+        var latest = current || item;
+        return latest.state === "queued" || latest.state === "waiting_for_connection" ? send(latest) : latest;
+      });
+    });
+  }
+
+  window.forumOutboxSender = { send: sendWithLock, failureState: failureState, processQueuedOutbox: processQueuedOutbox };
 })();
