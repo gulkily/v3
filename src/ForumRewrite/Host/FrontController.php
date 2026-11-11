@@ -637,20 +637,12 @@ final class FrontController
 
     private function renderReadModelRecovery(string $state): string
     {
-        $message = match ($state) {
-            'updating' => 'We’re updating site data. The site will be back soon. Please try again in a moment.',
-            'rebuilding' => 'We’re rebuilding site data. The site will be back soon. Please try again in a moment.',
-            default => 'This site needs maintenance. Please try again later.',
+        [$heading, $message] = match ($state) {
+            'updating', 'rebuilding' => ['Back in a moment', 'We’re updating site data. This page will reload on its own.'],
+            default => ['Down for maintenance', 'This site needs maintenance. This page will keep checking.'],
         };
 
-        return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-            . self::retryRefreshTag()
-            . '<title>Site Update</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
-            . '<div class="shell"><header class="site-header"><p class="eyebrow">'
-            . htmlspecialchars(SiteConfig::displayName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-            . '</p></header>'
-            . '<main class="main"><section class="stack"><h1>Site Update</h1>'
-            . '<article class="card"><p>' . $message . '</p></article></section></main></div></body></html>';
+        return $this->renderWaitPage($heading, $heading, $message);
     }
 
     private function renderUnexpectedError(): string
@@ -669,15 +661,22 @@ final class FrontController
     {
         $busyContent = ProfilePresentationContent::busy(SiteProfileRegistry::active());
 
+        return $this->renderWaitPage($busyContent['title'], $busyContent['heading'], $busyContent['message']);
+    }
+
+    /** Shared 503 page that reloads itself: busy read model and site data updates. */
+    private function renderWaitPage(string $title, string $heading, string $message): string
+    {
+        $e = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
         return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . self::retryRefreshTag()
-            . '<title>' . htmlspecialchars($busyContent['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</title><link rel="stylesheet" href="/assets/site.css"></head><body>'
-            . '<div class="shell"><header class="site-header"><p class="eyebrow">'
-            . htmlspecialchars(SiteConfig::displayName(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-            . '</p></header>'
-            . '<main class="main"><section class="stack"><h1>' . htmlspecialchars($busyContent['heading'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</h1>'
-            . '<article class="card"><p>' . htmlspecialchars($busyContent['message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
-            . '</article></section></main></div></body></html>';
+            . '<title>' . $e($title) . '</title><link rel="stylesheet" href="/assets/site.css"></head><body class="wait-page">'
+            . '<div class="shell"><header class="site-header"><p class="eyebrow">' . $e(SiteConfig::displayName()) . '</p></header>'
+            . '<main class="main"><section class="stack" role="status"><h1>' . $e($heading) . '</h1>'
+            . '<p>' . $e($message) . '</p>'
+            . '<div class="wait-page__progress" aria-hidden="true"></div>'
+            . '</section></main></div></body></html>';
     }
 
     /** Seconds a visitor waits before the busy or update page reloads itself. */

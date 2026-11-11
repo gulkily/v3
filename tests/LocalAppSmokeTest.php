@@ -4631,8 +4631,8 @@ PHP;
             $second = $this->renderFrontController($controller, 'GET', '/', []);
 
             assertSame(503, http_response_code());
-            assertStringContains('Site Update', $first);
-            assertStringContains('The site will be back soon', $first);
+            assertStringContains('Back in a moment', $first);
+            assertStringContains('We’re updating site data. This page will reload on its own.', $first);
             assertStringNotContains('SQLSTATE', $first);
             assertStringNotContains('threads.vote_count', $first);
             assertStringNotContains('Configuration Error', $first);
@@ -4728,7 +4728,7 @@ PHP;
         }
 
         assertStringContains('Meme Oven Is Busy', $response);
-        assertStringContains('The next batch of zenmemes is still baking. Try again in a moment.', $response);
+        assertStringContains('The next batch of zenmemes is still baking. This page will reload on its own.', $response);
         assertStringNotContains('Service Busy', $response);
         assertStringNotContains('Timed out waiting for execution lock', $response);
         assertStringNotContains('forum-rewrite.lock', $response);
