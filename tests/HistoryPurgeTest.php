@@ -148,6 +148,46 @@ final class HistoryPurgeTest
         $this->cleanup($root);
     }
 
+    public function testRestoreRefusesAJournalWithoutRecordedRefs(): void
+    {
+        [$root, $git] = $this->fixture();
+        $before = $this->refs($root);
+        $journal = $root . '/.git/history-purge';
+        mkdir($journal, 0700);
+        file_put_contents($journal . '/journal.txt', "Phase: rewrite\nHEAD: refs/heads/main\n");
+
+        // Missing refs file, then an empty one (for example a write cut short by a full disk).
+        foreach ([null, ''] as $contents) {
+            if ($contents !== null) { file_put_contents($journal . '/refs-before.txt', $contents); }
+            try { HistoryPurge::restore($root); throw new LogicException('Restored without recorded refs'); }
+            catch (RuntimeException $e) { assertSame(true, str_contains($e->getMessage(), 'no recorded refs')); }
+            // Nothing was cleared or changed, so the operator can still recover by hand.
+            assertSame(true, is_file($journal . '/journal.txt'));
+            assertSame($before, $this->refs($root));
+        }
+        $this->cleanup($root);
+    }
+
+    public function testAJournalWriteThatFailsStopsThePurge(): void
+    {
+        [$root] = $this->fixture();
+        $journal = $root . '/.git/history-purge';
+        mkdir($journal, 0700);
+        // Tests run as root, so a directory in the file's place is the reliable way to make the write fail.
+        mkdir($journal . '/journal.txt');
+        $write = new ReflectionMethod(HistoryPurge::class, 'writeJournalFile');
+        $write->setAccessible(true);
+        try {
+            @$write->invoke(null, $root, 'journal.txt', "Phase: prune\n");
+            throw new LogicException('A failed journal write was ignored');
+        } catch (RuntimeException $e) {
+            assertSame(true, str_contains($e->getMessage(), 'Cannot write the purge journal'));
+        }
+        $write->invoke(null, $root, 'refs-before.txt', "abc refs/heads/main\n");
+        assertSame("abc refs/heads/main\n", file_get_contents($journal . '/refs-before.txt'));
+        $this->cleanup($root);
+    }
+
     public function testRunCommitsTheMapRebuildsAndClearsCaches(): void
     {
         [$root, $git] = $this->fixture();
