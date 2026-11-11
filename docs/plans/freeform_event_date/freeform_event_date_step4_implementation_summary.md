@@ -36,3 +36,23 @@ Maintainer direction at approval (2026-11-11): "let's stretch it a little bit if
 **Retrospective stage work: 0.10**
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Built-in reader coverage
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `EventPhraseReader` now reads start times ("7pm", "7:30 p.m.", "19:00", "at 7", "noon", "midnight", "7-9pm" keeps its start), "this" and "next" weekdays, "in 3 days" and "in two weeks", spans ("Nov 14-16", "Nov 28 - Dec 2", "Friday to Sunday", "this weekend", "next weekend"), and a weekday with a date ("Sat Nov 14"), which must agree.
+  - The rules where English is loose are written at the top of the class: a bare weekday includes today, "next Friday" is the Friday of next week, a bare hour from 1 to 11 is pm unless "am" or "morning" says otherwise.
+  - New reasons: a time with no day, a malformed time.
+- Verification:
+  - `./v3 test EventPhraseReaderTest EventPhraseComposeTest`: 15 passed. The phrase test set in `EventPhraseReaderTest` covers each rule, month and year ends, leap day, a Sunday "today", and phrases that must stay unread ("next week", "the week of the 20th", a weekday that disagrees with its date).
+  - Smoke set not rerun for this stage: only the new reader class changed. Full suite not run.
+- Notes:
+  - The phrase test set is the agreed contract for "common". The maintainer can add phrases during review.
+  - Phrases about holidays ("the weekend after Thanksgiving") stay unread for the LLM fallback in Stage 4.
+- Estimate details: original scope as planned; uncertainty medium; no revision.
+
+**Retrospective stage work: 0.12**
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
