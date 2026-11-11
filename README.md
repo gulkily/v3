@@ -55,6 +55,7 @@ that stays accurate even as implementation details move around:
 ### Reference
 
 - [Authentication Modes and Access](docs/reference/authentication_modes.md) — public and members-only access, browser identities, approval, and session recovery
+- [Scripts index](scripts/README.md) — what runs each file in `scripts/` (`./v3` command, other code, or by hand)
 - [Multi-language scripts](docs/reference/multi_language_scripts.md) — why some scripts ship in PHP, Perl and Python, and the rules for adding more
 - [OpenPGP in v3](docs/reference/openpgp.md) — browser and server OpenPGP pieces, the two OpenPGP.js bundles, identity record paths, and how to check them
 - [Browser key backups](docs/reference/key_backups.md) — encrypted text/Starfield downloads and recovery
