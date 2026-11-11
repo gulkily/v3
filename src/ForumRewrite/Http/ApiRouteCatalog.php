@@ -116,6 +116,7 @@ final class ApiRouteCatalog
             ['POST', '/api/test_self_approval', 'testing', 'json', 'Self-approval on test instances.'],
             // Page fragments used by the web UI
             ['GET', '/api/feature_flags/navigation', 'public', 'json', 'Navigation HTML fragment.'],
+            ['GET', '/api/read_event_phrase?phrase=<words>&today=<YYYY-MM-DD>', 'public', 'json', 'Event fields read from a date phrase. Writes nothing. Requires the Event phrases flag.'],
             ['GET', '/api/forte_activity_page', 'public', 'json', 'Forte activity HTML fragment.'],
             ['GET', '/api/forte_activity_detail?id=<id>', 'public', 'json', 'Forte activity detail fragment.'],
             ['GET', '/api/forte_commit_detail?sha=<sha>', 'public', 'json', 'Forte commit detail fragment.'],

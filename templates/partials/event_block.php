@@ -4,6 +4,8 @@ $eventEndDate = (string) ($thread['event_end_date'] ?? '');
 $eventTime = (string) ($thread['event_time'] ?? '');
 $eventLocation = (string) ($thread['event_location'] ?? '');
 $eventLink = (string) ($thread['event_link'] ?? '');
+// The poster's own words ("next Friday at 7"), shown beside the dates they filled while Event phrases is on.
+$eventWhen = ($eventWhenEnabled ?? false) ? (string) ($thread['event_when'] ?? '') : '';
 // Only render a clickable link for http(s) URLs - event_link is author-
 // submitted free text with no scheme restriction at write time, so a
 // non-http(s) value (e.g. a stray "javascript:" scheme) renders as plain
@@ -13,6 +15,9 @@ $eventLinkIsHttp = $eventLink !== '' && preg_match('#^https?://#i', $eventLink) 
 <?php if ($eventSupportEnabled && $eventDate !== ''): ?>
 <p class="event-block" data-event-block>
   <span class="event-block__date">📅 <?= $e($eventDate) ?><?= $eventEndDate !== '' ? ' – ' . $e($eventEndDate) : '' ?><?= $eventTime !== '' ? ' at ' . $e($eventTime) : '' ?></span>
+<?php if ($eventWhen !== ''): ?>
+  <span class="event-block__when"> · “<?= $e($eventWhen) ?>”</span>
+<?php endif; ?>
 <?php if ($eventLocation !== ''): ?>
   <span class="event-block__location"> · <?= $e($eventLocation) ?></span>
 <?php endif; ?>

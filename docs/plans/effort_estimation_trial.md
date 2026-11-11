@@ -1,5 +1,19 @@
 # Effort estimation trial ledger
 
+## Cycle v3/freeform_event_date
+
+2026-11-11T01:55:00Z — v3/freeform_event_date Step 4 local closeout: branch `feat/freeform_event_date`, planning `b70aadd` and eight stage commits. [Summary/closeout](./freeform_event_date/freeform_event_date_step4_implementation_summary.md#closeout). Whole-cycle 0.90 at entry, not revised; retrospective scope assessment **0.85**. Stage originals 0.10/0.12/0.10/0.12/0.10/0.10/0.08/0.08; retrospectives 0.10/0.12/0.10/0.12/0.09/0.10/0.07/0.07; non-additive. Smoke plus changed tests pass except baseline `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder`; `node tests/browser/event_when.mjs` passes; full suite not run; no real LLM provider checked. Maintainer comfortable-fit and acceptance pending. Single exposed Claude rater.
+
+2026-11-11T01:40:00Z — v3/freeform_event_date Step 4 entry: Step 3 explicitly approved ("let's stretch it a little bit if we have to"); all eight stages kept in this cycle. Branch from `ed6aecc`, planning `b70aadd`. [Summary](./freeform_event_date/freeform_event_date_step4_implementation_summary.md#study-checkpoint). Whole-cycle **0.90** reaffirmed; stage originals 0.10/0.12/0.10/0.12/0.10/0.10/0.08/0.08, non-additive. Same R1/P2, single exposed Claude rater.
+
+2026-11-11T01:30:00Z — v3/freeform_event_date Step 3 handoff: Step 2 explicitly approved. [Plan/checkpoint](./freeform_event_date/freeform_event_date_step3_development_plan.md#study-checkpoint) eight stages. Whole-cycle 0.85 → **0.90** (new understanding: schema 54, no call limiter to reuse). Await Approved Step 3; planning uncommitted.
+
+2026-11-10T17:20:00Z — v3/freeform_event_date Step 2 handoff: Step 1 Revision 1 (A + B + C) explicitly approved. [Description/checkpoint](./freeform_event_date/freeform_event_date_step2_feature_description.md#study-checkpoint). Projected total 0.80 → **0.85** (new understanding: `prepare_thread` path, member gating, own flag).
+
+2026-11-09T00:06:00Z — v3/freeform_event_date Step 1 Revision 1: maintainer wants all three options. Scope v2: When box, built-in reader with LLM fallback, `Event-When`. Projected total 0.35 → **0.80**, changed scope.
+
+2026-11-09T00:04:00Z — v3/freeform_event_date Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./freeform_event_date/freeform_event_date_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A. Starting revision `fac52df6`, R1/P2; R1 hashes not re-verified. Pristine intake missing. Projected total **0.35**; options 0.35/0.60/0.45/0.55, non-additive.
+
 ## Cycle v3/signed_post_speed
 
 2026-11-10T07:47:35Z — v3/signed_post_speed accepted outcome: merged as #134 (`f5f02c5`) and deployed; "claude" posted a thread and a reply on zenmemes.com through `frm.py`, both accepted and visible at once (2.6s and 3.1s end to end from the workspace). Stage 3 retrospective 0.06; retrospective scope assessment stays 0.24. Maintainer comfortable-fit judgment not stated.

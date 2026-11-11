@@ -201,6 +201,9 @@
   <script src="<?= $e($composeDraftClearScriptPath) ?>" defer></script>
   <script src="<?= $e($replyViewportScriptPath) ?>" defer></script>
   <script src="<?= $e($composeDisclosureScriptPath) ?>" defer></script>
+<?php if (($eventWhenScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($eventWhenScriptPath) ?>" defer></script>
+<?php endif; ?>
   <script src="<?= $e($markdownDetectScriptPath) ?>" defer></script>
   <script src="<?= $e($tableZoomScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>

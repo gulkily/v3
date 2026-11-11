@@ -20,12 +20,16 @@ final class PostRecordParser
         'Task-Sources',
     ];
 
+    /** Same limit as the composer's When box (EventPhraseReader::MAX_LENGTH). */
+    public const EVENT_WHEN_MAX_LENGTH = 120;
+
     private const EVENT_HEADERS = [
         'Event-Date',
         'Event-Location',
         'Event-Link',
         'Event-Time',
         'Event-End-Date',
+        'Event-When',
     ];
 
     public function __construct(
@@ -143,6 +147,15 @@ final class PostRecordParser
                 throw new CanonicalRecordParseException('Event-End-Date must not be before Event-Date.');
             }
         }
+        $eventWhen = $record->headers['Event-When'] ?? null;
+        if ($eventWhen !== null) {
+            if ($eventDate === null) {
+                throw new CanonicalRecordParseException('Event-When requires Event-Date.');
+            }
+            if (trim($eventWhen) === '' || mb_strlen($eventWhen) > self::EVENT_WHEN_MAX_LENGTH) {
+                throw new CanonicalRecordParseException('Event-When must be 1 to ' . self::EVENT_WHEN_MAX_LENGTH . ' characters.');
+            }
+        }
 
         return new PostRecord(
             $record->headers['Post-ID'],
@@ -169,6 +182,7 @@ final class PostRecordParser
             $bodyFormat,
             $eventEndDate,
             $theme,
+            $eventWhen,
         );
     }
 

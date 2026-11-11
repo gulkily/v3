@@ -20,6 +20,9 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 54 adds `threads.event_when`, the root's `Event-When` phrase; prior-version
+startup rebuild is required.
+
 Version 53 removes the Codex handoff Activity view (`codex_handoff`) and its
 `activity_counts` row; prior-version startup rebuild is required.
 
@@ -171,6 +174,7 @@ One row per thread (keyed by its root post).
 | `event_date` | TEXT NULL | root `Event-Date`, `YYYY-MM-DD`; null when the thread is not an event or the root is retracted |
 | `event_end_date` | TEXT NULL | root `Event-End-Date`, the inclusive last day; null for a one-day event (schema 49) |
 | `event_time` | TEXT NULL | root `Event-Time`, `HH:MM` |
+| `event_when` | TEXT NULL | root `Event-When`, the poster's own words for when the event happens; null without the header or when the root is retracted (schema 54) |
 | `event_location` | TEXT NULL | root `Event-Location` |
 | `event_link` | TEXT NULL | root `Event-Link` |
 | `retracted_at` | TEXT NULL | root retraction timestamp |
@@ -745,3 +749,12 @@ Removes the Codex handoff feature. `ActivityService::KIND_VIEWS` no longer has
 rebuilds no longer project `codex_handoff_events` into Activity. Older databases
 may still hold `codex_handoffs` and `codex_handoff_events` tables; nothing reads
 them. Normal startup rebuilds version 52 and older models.
+
+## Version 54 — Event phrase
+
+Adds nullable `threads.event_when` from the root's `Event-When` header (see
+[canonical post record](canonical_post_record_v1.md#event-headers)). The full
+rebuild and the incremental thread insert both fill it, retracted and deleted
+roots clear it with the other event columns, and the thread page, board listing
+queries and `Application::fetchThread` select it. Normal startup rebuilds
+version 53 and older models before the column is read.

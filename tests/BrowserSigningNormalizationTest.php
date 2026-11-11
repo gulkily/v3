@@ -3517,6 +3517,7 @@ NODE;
                 'event_time' => '',
                 'event_location' => '',
                 'event_link' => '',
+                'event_when' => '',
             ],
             $result['fields']
         );
@@ -3549,7 +3550,8 @@ const fields = [
   field('event_end_date', '2026-11-15'),
   field('event_time', '19:30'),
   field('event_location', 'MIT Media Lab, E14'),
-  field('event_link', 'https://example.test/cypher-night')
+  field('event_link', 'https://example.test/cypher-night'),
+  field('event_when', 'Saturday 7:30pm')
 ];
 const form = {
   dataset: { composeKind: 'thread' },
@@ -3595,6 +3597,7 @@ NODE;
                 'event_time' => '19:30',
                 'event_location' => 'MIT Media Lab, E14',
                 'event_link' => 'https://example.test/cypher-night',
+                'event_when' => 'Saturday 7:30pm',
             ],
             $result['fields']
         );

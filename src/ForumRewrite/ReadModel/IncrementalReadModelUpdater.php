@@ -237,7 +237,7 @@ class IncrementalReadModelUpdater
             if ($isRoot) {
                 $this->measure($timings, 'write_placeholder_thread', function () use ($pdo, $threadId, $retraction): void {
                     $pdo->prepare('UPDATE threads SET subject = NULL, subject_author_identity_id = NULL, body_preview = \'\', board_tags_json = \'[]\',
-                            event_date = NULL, event_location = NULL, event_link = NULL, event_time = NULL, event_end_date = NULL,
+                            event_date = NULL, event_location = NULL, event_link = NULL, event_time = NULL, event_end_date = NULL, event_when = NULL,
                             retracted_at = :at, retraction_class = :class, retraction_attribution = :attribution
                          WHERE root_post_id = :thread')
                         ->execute(['thread' => $threadId] + $retraction);
@@ -1211,9 +1211,9 @@ class IncrementalReadModelUpdater
     {
         $stmt = $pdo->prepare(
             'INSERT INTO threads (
-                root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, event_date, event_location, event_link, event_time, event_end_date
+                root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, event_date, event_location, event_link, event_time, event_end_date, event_when
              ) VALUES (
-                :root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :event_date, :event_location, :event_link, :event_time, :event_end_date
+                :root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :event_date, :event_location, :event_link, :event_time, :event_end_date, :event_when
              )'
         );
         $stmt->execute([
@@ -1232,6 +1232,7 @@ class IncrementalReadModelUpdater
             'event_link' => $record->eventLink,
             'event_time' => $record->eventTime,
             'event_end_date' => $record->eventEndDate,
+            'event_when' => $record->eventWhen,
         ]);
     }
 

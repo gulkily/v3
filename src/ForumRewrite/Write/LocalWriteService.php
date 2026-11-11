@@ -127,6 +127,7 @@ class LocalWriteService
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
+            $eventWhen = $this->normalizeEventWhen($input, $eventDate);
 
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
             $attemptId = !$isQdbQuote && $authorIdentityId === null ? $this->composeAttemptPostId('thread', $input) : null;
@@ -134,7 +135,7 @@ class LocalWriteService
                 $postId = $attemptId;
                 $createdAt = $this->composeAttemptCreatedAt($postId) ?? $createdAt;
             }
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input));
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = $attemptId !== null ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -336,8 +337,9 @@ class LocalWriteService
             $eventLink = $this->normalizeAuthoredLine((string) ($input['event_link'] ?? ''), 'event_link');
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
+            $eventWhen = $this->normalizeEventWhen($input, $eventDate);
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input));
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen);
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -671,7 +673,8 @@ class LocalWriteService
         string $eventTime = '',
         ?string $bodyFormat = null,
         string $eventEndDate = '',
-        ?string $theme = null
+        ?string $theme = null,
+        string $eventWhen = ''
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -683,9 +686,35 @@ class LocalWriteService
             . ($eventTime !== '' ? "Event-Time: {$eventTime}\n" : '')
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
+            . ($eventWhen !== '' ? "Event-When: {$eventWhen}\n" : '')
             . ($bodyFormat !== null ? "Body-Format: {$bodyFormat}\n" : '')
             . ($theme !== null ? "Theme: {$theme}\n" : '')
             . "\n{$body}";
+    }
+
+    /**
+     * The When phrase is kept only while Event phrases is on (otherwise it is ignored, as
+     * before the flag existed) and only beside a date, so every event stays on the calendar.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function normalizeEventWhen(array $input, string $eventDate): string
+    {
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_WHEN_ENABLED)) {
+            return '';
+        }
+        $eventWhen = trim($this->normalizeAuthoredLine((string) ($input['event_when'] ?? ''), 'event_when'));
+        if ($eventWhen === '') {
+            return '';
+        }
+        if ($eventDate === '') {
+            throw new RuntimeException('Add a date for the event, or press Fill.');
+        }
+        if (mb_strlen($eventWhen) > PostRecordParser::EVENT_WHEN_MAX_LENGTH) {
+            throw new RuntimeException('event_when must be at most ' . PostRecordParser::EVENT_WHEN_MAX_LENGTH . ' characters.');
+        }
+
+        return $eventWhen;
     }
 
     /**
