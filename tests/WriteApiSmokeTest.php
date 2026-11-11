@@ -897,7 +897,7 @@ CODE;
         }
     }
 
-    public function testSignedReactionsClockFallbackBindsPreparedBytesAndExpires(): void
+    public function testSignedReactionsWithSkewedClockAreAcceptedWithReceipt(): void
     {
         [$root, $database, $artifacts] = $this->createTempEnvironment();
         $key = $this->createSigningKey('skew-reaction-signer');
@@ -907,38 +907,48 @@ CODE;
             $identity = $writer->linkIdentity(['public_key' => $key['public_key']])['identity_id'];
             $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
             $_COOKIE = ['identity_hint' => $identity];
-            foreach ([['thread', 'legacy'], ['post', 'legacy'], ['thread', 'unified'], ['post', 'unified']] as [$kind, $layout]) {
+            $cases = [['thread', 'legacy', -600], ['post', 'legacy', 600], ['thread', 'unified', 600], ['post', 'unified', -600], ['thread', 'unified', -30]];
+            foreach ($cases as $index => [$kind, $layout, $offset]) {
                 $family = $kind === 'thread' ? 'thread-label' : 'post-reaction';
                 $targetHeader = $kind === 'thread' ? 'Thread-ID' : 'Post-ID';
                 $tagHeader = $kind === 'thread' ? 'Labels' : 'Tags';
-                $created = gmdate('Y-m-d\TH:i:s\Z', time() - 3600);
-                $tag = $layout === 'legacy' ? 'like' : 'upvote';
+                $created = gmdate('Y-m-d\TH:i:s\Z', time() + $offset);
+                $tag = $index === 4 ? 'downvote' : ($layout === 'legacy' ? 'like' : 'upvote');
+                $id = $family . '-skew-' . $index;
                 $record = $layout === 'legacy'
-                    ? "Record-ID: {$family}-skew\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: {$tag}\nAuthor-Identity-ID: {$identity}\n\n"
-                    : ReactionRecordParser::build($kind, $family . '-skew-unified', $created, 'root-001', [$tag], $identity);
+                    ? "Record-ID: {$id}\nCreated-At: {$created}\n{$targetHeader}: root-001\nOperation: add\n{$tagHeader}: {$tag}\nAuthor-Identity-ID: {$identity}\n\n"
+                    : ReactionRecordParser::build($kind, $id, $created, 'root-001', [$tag], $identity);
                 $_POST = [$kind . '_id' => 'root-001', 'tag' => $tag, 'canonical_record' => $record,
                     'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
-                $prepared = json_decode($this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'), true, 512, JSON_THROW_ON_ERROR);
-                assertSame('clock_skew', $prepared['error_code']);
-                assertSame(array_slice(explode("\n", $record), 2), array_slice(explode("\n", $prepared['canonical_record']), 2));
-                $_POST['canonical_record'] = $prepared['canonical_record'];
-                $_POST['prepare_token'] = $prepared['prepare_token'];
-                $_POST['detached_signature'] = $this->signCanonicalRecord($key['home'], $_POST['canonical_record']);
-                $validPost = $_POST;
-                $_POST['canonical_record'] = preg_replace('/Created-At: [^\n]+/', 'Created-At: 2020-01-01T00:00:00Z', $_POST['canonical_record']);
-                $_POST['detached_signature'] = $this->signCanonicalRecord($key['home'], $_POST['canonical_record']);
-                assertStringContains('does not match', $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'));
-                $_POST = $validPost;
-                $tokenPath = dirname($database) . '/prepared-posts/' . $prepared['prepare_token'] . '.json';
-                $tokenBytes = file_get_contents($tokenPath);
-                $expired = json_decode($tokenBytes, true);
-                $expired['expires_at'] = '2000-01-01T00:00:00Z';
-                file_put_contents($tokenPath, json_encode($expired));
-                assertStringContains('expired', $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'));
-                file_put_contents($tokenPath, $tokenBytes);
-                assertStringContains('wrote_record=yes', $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'));
+                $receiptPath = $root . '/records/' . $family . 's/' . $id . '.txt.received';
+                $response = $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag');
+                if (!str_contains($response, 'wrote_record=yes')) throw new RuntimeException("Skewed vote case {$index} was refused: {$response}");
+                assertSame($record, file_get_contents($root . '/records/' . $family . 's/' . $id . '.txt'));
+                if (abs($offset) <= 300) {
+                    assertFalse(file_exists($receiptPath));
+                    continue;
+                }
+                $receipt = (string) file_get_contents($receiptPath);
+                $received = \ForumRewrite\Canonical\RecordReceipt::parse($receipt);
+                assertTrue($received !== null && abs(strtotime($received) - time()) < 60, 'Receipt records the arrival time.');
+                assertSame('', trim((string) shell_exec('git -C ' . escapeshellarg($root) . ' status --porcelain -- records')));
                 assertStringContains('wrote_record=no', $this->renderMethod($app, 'POST', '/api/apply_' . $kind . '_tag'));
+                assertSame($receipt, file_get_contents($receiptPath));
             }
+
+            // A prepare_token issued by an older server is still honored.
+            $id = 'thread-label-skew-token';
+            $record = ReactionRecordParser::build('thread', $id, gmdate('Y-m-d\TH:i:s\Z'), 'root-001', ['flag'], $identity);
+            $token = bin2hex(random_bytes(16));
+            if (!is_dir(dirname($database) . '/prepared-posts')) mkdir(dirname($database) . '/prepared-posts', 0700, true);
+            file_put_contents(dirname($database) . '/prepared-posts/' . $token . '.json', json_encode([
+                'kind' => 'reaction-thread', 'author_identity_id' => $identity, 'prepare_token' => $token,
+                'record_path' => 'records/thread-labels/' . $id . '.txt', 'canonical_sha256' => hash('sha256', $record),
+                'canonical_record' => $record, 'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 600),
+            ]));
+            $_POST = ['thread_id' => 'root-001', 'tag' => 'flag', 'canonical_record' => $record, 'prepare_token' => $token,
+                'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
+            assertStringContains('wrote_record=yes', $this->renderMethod($app, 'POST', '/api/apply_thread_tag'));
         } finally {
             $_COOKIE = $cookies; $_POST = $post;
             $this->deleteTree($key['home']); $this->deleteTree($root);

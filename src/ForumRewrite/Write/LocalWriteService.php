@@ -18,6 +18,7 @@ use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRetractionRecordParser;
 use ForumRewrite\Canonical\ReactionRecordParser;
+use ForumRewrite\Canonical\RecordReceipt;
 use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
@@ -58,6 +59,8 @@ use ForumRewrite\Images\ImageStore;
 class LocalWriteService
 {
     private const HIDDEN_BOOTSTRAP_BOARD_TAGS = 'identity internal';
+    /** Seconds a signed reaction's Created-At may differ from the server clock before it gets a receipt. */
+    private const SIGNED_REACTION_CLOCK_WINDOW = 300;
 
     /** @var (callable():void)|null */
     private $enqueueOfflineSnapshotPublication;
@@ -1381,7 +1384,7 @@ class LocalWriteService
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : [$recordPath, $recordPath . '.asc'], 'Apply thread tag ' . $tag . ' to ' . $threadId);
+            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : $this->signedReactionPaths($signed), 'Apply thread tag ' . $tag . ' to ' . $threadId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
@@ -1503,7 +1506,7 @@ class LocalWriteService
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : [$recordPath, $recordPath . '.asc'], 'Apply post tag ' . $tag . ' to ' . $postId);
+            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : $this->signedReactionPaths($signed), 'Apply post tag ' . $tag . ' to ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
@@ -4319,7 +4322,11 @@ class LocalWriteService
     {
         \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, $signed[0], $signed[1]);
         // Publish the signature first: a crash must never leave a new apparently unsigned vote.
-        foreach ([$signed[0] . '.asc' => $signed[2], $signed[0] => $signed[1]] as $relative => $bytes) {
+        $files = [$signed[0] . '.asc' => $signed[2], $signed[0] => $signed[1]];
+        if (isset($signed[3])) {
+            $files = [$signed[0] . RecordReceipt::SUFFIX => $signed[3]] + $files;
+        }
+        foreach ($files as $relative => $bytes) {
             $path = $this->repositoryRoot . '/' . $relative;
             if (file_exists($path)) {
                 if (file_get_contents($path) !== $bytes) throw new RuntimeException('Reaction recovery collision: ' . $relative);
@@ -4342,7 +4349,8 @@ class LocalWriteService
     {
         foreach (glob($this->reactionJournalDirectory() . '/*.json') ?: [] as $journal) {
             $signed = json_decode((string) file_get_contents($journal), true, 512, JSON_THROW_ON_ERROR);
-            if (!is_array($signed) || count($signed) !== 3 || !is_string($signed[0] ?? null)
+            if (!is_array($signed) || !in_array(count($signed), [3, 4], true) || !is_string($signed[0] ?? null)
+                || (isset($signed[3]) && RecordReceipt::parse((string) $signed[3]) === null)
                 || !preg_match('#^records/(thread-labels|post-reactions)/[A-Za-z0-9_-]+\.txt$#D', $signed[0])) {
                 throw new RuntimeException('Invalid reaction recovery journal.');
             }
@@ -4354,7 +4362,7 @@ class LocalWriteService
                 throw new RuntimeException('Reaction recovery signature is invalid.');
             }
             $this->writeSignedReactionPair($signed);
-            $paths = [$signed[0], $signed[0] . '.asc'];
+            $paths = $this->signedReactionPaths($signed);
             $dirty = trim($this->runGitCommand(array_merge(['status', '--porcelain', '--'], $paths), 'Unable to inspect reaction recovery'));
             $head = $dirty === ''
                 ? trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'))
@@ -4400,16 +4408,6 @@ class LocalWriteService
                 || strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
                 throw new RuntimeException('Prepared reaction is expired or does not match this action.');
             }
-        } elseif (abs(time() - strtotime($record->createdAt)) > 300) {
-            // Keep the client's layout: only Record-ID and Created-At change.
-            $preparedId = $this->generateRecordId($prefix);
-            $preparedContents = "Record-ID: {$preparedId}\nCreated-At: {$this->canonicalTimestampNow()}\n"
-                . implode("\n", array_slice(explode("\n", $contents), 2));
-            $preparedPath = $kind === 'thread' ? CanonicalPathResolver::threadLabel($preparedId) : CanonicalPathResolver::postReaction($preparedId);
-            $prepared = $this->storePreparedPost($preparedPath, $preparedContents, [
-                'kind' => 'reaction-' . $kind, 'author_identity_id' => $author,
-            ]);
-            throw new ReactionClockSkew($prepared + ['canonical_record' => $preparedContents]);
         }
 
         foreach ([$path => $contents, $path . '.asc' => $signature] as $candidate => $bytes) {
@@ -4418,7 +4416,24 @@ class LocalWriteService
                 throw new RuntimeException('Signed reaction record identifier collision.');
             }
         }
+        // A skewed clock is accepted as signed; the receipt records when it arrived.
+        if (!isset($input['prepare_token']) && RecordReceipt::isSkewed($record->createdAt, time(), self::SIGNED_REACTION_CLOCK_WINDOW)) {
+            return [$path, $contents, $signature, RecordReceipt::forWrite($this->repositoryRoot, $path, time())];
+        }
         return [$path, $contents, $signature];
+    }
+
+    /**
+     * Repository paths a signed reaction write commits.
+     *
+     * @param array{0:string,1:string,2:string,3?:string} $signed
+     * @return list<string>
+     */
+    private function signedReactionPaths(array $signed): array
+    {
+        return isset($signed[3])
+            ? [$signed[0], $signed[0] . '.asc', $signed[0] . RecordReceipt::SUFFIX]
+            : [$signed[0], $signed[0] . '.asc'];
     }
 
     /**
