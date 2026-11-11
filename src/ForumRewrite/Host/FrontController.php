@@ -823,6 +823,7 @@ final class FrontController
     {
         return match (strtolower((string) pathinfo($path, PATHINFO_EXTENSION))) {
             'css' => 'text/css; charset=utf-8',
+            'html' => 'text/html; charset=utf-8',
             'js' => 'application/javascript; charset=utf-8',
             'json', 'map' => 'application/json; charset=utf-8',
             'ico' => 'image/x-icon',
