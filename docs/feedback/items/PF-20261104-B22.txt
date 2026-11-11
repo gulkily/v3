@@ -10,7 +10,9 @@ During image upload, a confusing temporary state appears and then works normally
 
 Sources:
 - https://zenmemes.com/posts/reply-20261103062636-b57f9dff
+- https://zenmemes.com/posts/thread-20261110165319-fcb0f9f7
 
 Notes:
 Screenshot unavailable; do not claim upload failure or data loss.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 1 source(s): Repeat (Nov 10): the wrong controls show while an image is uploading.

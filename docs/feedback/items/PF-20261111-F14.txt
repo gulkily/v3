@@ -1,0 +1,20 @@
+ID: PF-20261111-F14
+Title: Better offline image presentation
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Offline mode notes: image presentation is lacking; even if an image is unavailable it should be presented better.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+- https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+- https://zenmemes.com/posts/thread-20261105202246-44cc3909
+- https://zenmemes.com/posts/thread-20261105202310-30736513
+- https://zenmemes.com/posts/thread-20261105202317-aa1c1019
+- https://zenmemes.com/posts/thread-20261105202334-ba48d42e
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261111-F58
+Title: Mentioning a hashtag labels the post
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Writing about a tag in a post body can label the post by accident; decide which hashtags count as labels.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111144455-0cb60798
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude).

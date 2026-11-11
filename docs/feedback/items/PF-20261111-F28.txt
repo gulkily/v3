@@ -1,0 +1,15 @@
+ID: PF-20261111-F28
+Title: Sticky table header row
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Wherever there is a data table, the header row should stick to the top of the screen when scrolling down.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261108235344-c1f809c3
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

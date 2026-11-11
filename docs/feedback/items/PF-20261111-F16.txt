@@ -1,0 +1,15 @@
+ID: PF-20261111-F16
+Title: Key and proof of work to browse
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Add a mode that requires a user to make a key and do a proof of work to browse anything.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261106160023-102cdf4e
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

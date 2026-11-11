@@ -1,0 +1,17 @@
+ID: PF-20261111-B17
+Title: Thread links redirect to a trailing slash
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+A wget -r stress test showed every /threads/<id> link answered with a 301 to /threads/<id>/.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109225227-180c78c2
+- https://zenmemes.com/posts/thread-20261109230124-2713435c
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Claude found high-traffic mode treated the slashed URL as canonical; PR #115 (merged 15190d19) flips it and needs ./v3 high-traffic enable after deploy.

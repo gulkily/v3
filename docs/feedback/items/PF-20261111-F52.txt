@@ -1,0 +1,16 @@
+ID: PF-20261111-F52
+Title: PHP and Perl versions of frm.py
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+frm.py exists only in Python although scripts are promised in Python, PHP and Perl; add frm.php and frm.pl.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111141116-32d14e6b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude).

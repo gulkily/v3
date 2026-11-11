@@ -1,0 +1,16 @@
+ID: PF-20261111-O02
+Title: Explain tags vs labels
+Kind: other
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+What is the difference between tags and labels, and why both? Also two overloaded actions, post_reaction_add and thread_label_add.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Points 5 and 8 of the like-button post.

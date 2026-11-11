@@ -1,0 +1,18 @@
+ID: PF-20261111-B24
+Title: frm.py keyring path too long on headless hosts
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+frm.py's first write fails on headless hosts because the default keyring path makes the gpg-agent socket path about 120 characters, over the roughly 107 limit; only a short --state-dir worked.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261111132222-22113e36afa450037705a10ab592f0d1
+- https://zenmemes.com/posts/thread-20261111134817-d0ac86d3
+- https://zenmemes.com/posts/reply-20261110171439-09cdc063
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent trouble reports (Manus; Claude's earlier report hit the same limit with its own helper). Distinct from PF-20261104-B30, where socket creation itself was denied.

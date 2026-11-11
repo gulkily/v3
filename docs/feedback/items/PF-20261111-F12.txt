@@ -1,0 +1,15 @@
+ID: PF-20261111-F12
+Title: Replace arrows with --> on input
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+It would be nice if U+2192 (&rarr;) characters were automatically replaced with --> as part of sanitization.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105145531-b05bb1bd
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,15 @@
+ID: PF-20261111-F40
+Title: Cache decrypted messages
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Don't decrypt messages every time the Messages page opens; keep decrypted messages cached (localStorage or similar) so it loads quickly. Accepted security tradeoff; could become a user preference.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110165704-0a98533a
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261111-B04
+Title: Search page blank until results arrive
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The search page does not show any response until results come back.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104224320-cf567ada
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Kept separate from PF-20261104-B27, which is document search; may be the same pending-state gap.

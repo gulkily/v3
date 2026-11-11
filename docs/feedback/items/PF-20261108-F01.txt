@@ -1,18 +1,22 @@
 ID: PF-20261108-F01
 Title: Calendar marks today and jumps back to it
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-08
-Evidence: locally-verified
+Evidence: production-accepted
 
 Request:
 The calendar highlights the current date and has a button to go to the month with the current date when it is not already shown.
 
 Sources:
 - https://zenmemes.com/threads/thread-20261108034244-8b24dcc8
+- https://zenmemes.com/posts/thread-20261107030611-4a517f5d
+- https://zenmemes.com/posts/thread-20261107153010-8da18da8
 
 Done when:
 On /calendar and tag calendars, today's square is visibly marked in the viewer's own time zone, and a Today link appears beside Earlier and Later whenever today's month is not on screen and opens that month.
 
 Notes:
 2026-11-08: one-shot on feat/calendar-today (record docs/plans/calendar_today/calendar_today_one_shot.md); built and verified locally in headless Chrome; awaiting review and deployment.
+2026-11-14: Triage 2026-11-11 attached 2 source(s): The original request, posted twice before the sourced thread.
+2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PR #71 (d1052b3f) merged 2026-11-07; the requester replied "I merged it and it looks good!" on 2026-11-08 (https://zenmemes.com/posts/reply-20261108162527-366ca25e). Tag calendars were not mentioned.

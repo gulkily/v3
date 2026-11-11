@@ -1,0 +1,16 @@
+ID: PF-20261111-B19
+Title: Alarming message after leaving a pending like
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+When I like something and then navigate away before it's confirmed, an ugly and alarming message is displayed (screenshot).
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110165454-16a6692d
+- https://zenmemes.com/posts/reply-20261110165458-8db231d2
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

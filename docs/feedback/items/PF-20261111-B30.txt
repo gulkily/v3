@@ -1,0 +1,16 @@
+ID: PF-20261111-B30
+Title: Test fails only in parallel runs
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+One test sometimes fails when the suite runs in parallel and never alone; not yet tracked down.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110093417-a845671877a163967c6bf89f4a171c5f
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude); test name not recorded.

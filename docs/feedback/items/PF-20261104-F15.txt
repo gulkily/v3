@@ -11,6 +11,17 @@ You should navigate to the account/profile/identity page while presenting the Ab
 Sources:
 - https://zenmemes.com/posts/thread-20261103040413-a008e701
 - https://zenmemes.com/posts/thread-20261103082445-475cead1
+- https://zenmemes.com/posts/thread-20261104211647-eab5abec
+- https://zenmemes.com/posts/thread-20261104211659-3d78e3bd
+- https://zenmemes.com/posts/thread-20261104211710-90ce43be
+- https://zenmemes.com/posts/thread-20261104211721-4f851a67
+- https://zenmemes.com/posts/thread-20261104211733-cf9e1a87
+- https://zenmemes.com/posts/thread-20261104211755-0e8f751f
+- https://zenmemes.com/posts/thread-20261104211806-de22248f
+- https://zenmemes.com/posts/thread-20261104211816-0547f72b
+- https://zenmemes.com/posts/thread-20261104211827-ee34a5d5
+- https://zenmemes.com/posts/thread-20261104211839-70df7259
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 10 source(s): Split reposts, each submitted about five times; no new content.

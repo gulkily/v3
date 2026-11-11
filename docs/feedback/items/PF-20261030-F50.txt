@@ -11,7 +11,10 @@ Remove the New post button and retain the expandable form.
 
 Sources:
 - https://zenmemes.com/posts/thread-20261029214842-6241e1bd
+- https://zenmemes.com/posts/thread-20261106061843-86b28732
+- https://zenmemes.com/posts/thread-20261106061844-a6d284da
 
 Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F50; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-14: Triage 2026-11-11 attached 2 source(s): Repeat: the New post button crowds the mobile toolbar when the form is already at the top.

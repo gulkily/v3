@@ -1,0 +1,15 @@
+ID: PF-20261111-F43
+Title: Distraction-free writing space
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+A place to write freely and comfortably, not a quick jot but something more like FocusWriter.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110171946-e5ed4c70
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

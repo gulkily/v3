@@ -12,6 +12,7 @@ Sources:
 - https://zenmemes.com/posts/thread-20261103065646-b1b83702
 - https://zenmemes.com/posts/thread-20261103185300-870542f7
 - https://zenmemes.com/posts/reply-20261103185716-b269f88f
+- https://zenmemes.com/posts/reply-20261105225926-c397c06c
 
 Notes:
 Retain explicit board versus Recent surfaces in completion checks; title-only reply confirms board intent.
@@ -20,3 +21,5 @@ Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 20
 2026-11-05: follow-up adds independent List thumbnails flag (default on, requires image attachments); runtime verification blocked by missing PHP in the implementation workspace; review/deployment pending.
 2026-11-06: board rows now use the thread's first stored image (root first, then replies in thread order, hidden replies skipped); Recent unchanged. On feat/thread-first-image-thumbnail, awaiting review and deployment.
 2026-11-06: list-row thumbnails now fill a 4.5rem square (object-fit: cover) from centre-cropped 72/144px WebP copies instead of letterboxing inside a narrow tall slot; checked visually in Light, Word97, Chicago and Midnight against live board content. On feat/square-cover-thumbnails, awaiting review and deployment.
+2026-11-14: Triage 2026-11-11 attached 1 source(s): Refinement from the maintainer's review: constrained consistent width, natural proportions with a maximum height, small cached derivatives with a sharper-screen option, flag kept in scope.
+2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PRs #28, #44, #45 (7a51eaf4, d8da233c, bc561923) merged 2026-11-05/06; deployment and acceptance not checked.

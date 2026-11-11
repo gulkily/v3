@@ -1,0 +1,15 @@
+ID: PF-20261111-B02
+Title: Favicon odd in light theme
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The favicon looks odd in light theme.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104200237-80b737bc
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

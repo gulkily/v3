@@ -1,0 +1,16 @@
+ID: PF-20261111-F30
+Title: Transfer session to another browser
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+It would be nice if there was a "transfer session to another browser" feature.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109005823-1b398654
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Related to PF-20261104-F19 (keychain) and PF-20261030-F55.

@@ -1,0 +1,17 @@
+ID: PF-20261111-F55
+Title: Obvious offline-save confirmation
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+After pressing Post offline, the only sign is a small grey line under the form; make saving offline as clear as a successful post.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111143214-80094872
+- https://zenmemes.com/posts/reply-20261111143948-4c0fa1fd
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Maintainer's screenshot, written up by Claude.

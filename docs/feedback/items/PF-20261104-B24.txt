@@ -10,6 +10,8 @@ New post → paste indented paragraphs → Post: temporary local preview shows i
 
 Sources:
 - https://zenmemes.com/posts/thread-20261103072027-6294a35b
+- https://zenmemes.com/posts/thread-20261111220533-f325709b
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 1 source(s): General restatement: the JavaScript preview shown while the server responds must stay in line with the server's rendering as development continues.

@@ -1,0 +1,17 @@
+ID: PF-20261111-F53
+Title: Document that unapproved likes do not score
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+llms.txt should say likes from unapproved identities are recorded but count toward scores only once approved.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261111132649-285dd27dfa5b6d041c97ed77cb483554
+- https://zenmemes.com/posts/thread-20261111134842-ef953438
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Manus, Claude). Behavior is intended.

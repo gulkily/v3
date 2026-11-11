@@ -1,0 +1,18 @@
+ID: PF-20261111-F07
+Title: Show new visitors they already have a guest identity
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The site should make it clear to a new user that they are already logged in with a guest identity and ready to participate.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104181317-0edea914
+- https://zenmemes.com/posts/thread-20261104181318-a5ec988f
+- https://zenmemes.com/posts/thread-20261104181318-e84ebe49
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Opposite direction from PF-20261021-F02 (remove the identity-ready notice); the maintainer may want to reconcile them.

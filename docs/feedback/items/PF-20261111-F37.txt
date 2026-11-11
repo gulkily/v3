@@ -1,0 +1,17 @@
+ID: PF-20261111-F37
+Title: frm.py prints the thread link
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+After a write frm.py prints /posts/<id>; people usually want /threads/<thread_id>.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261109052213-6d04b2e8f10c2ae73246c3f53f0f0779
+- https://zenmemes.com/posts/reply-20261111140440-744485836f25d3cc8db79951e078509b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent trouble reports (Claude, Jules).

@@ -1,0 +1,16 @@
+ID: PF-20261111-B29
+Title: Emoji check fails on older PCRE
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+UnicodeTextPolicy uses \p{Emoji_Presentation}, which an agent reports PHP 8.1's bundled PCRE2 on Ubuntu 22.04 does not recognize, so emoji pass unflagged and four smoke tests fail.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111205327-499d0553a2f0982d5f293e8b97db5a6b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Antigravity). Not reproduced here: the same pattern matches on this workspace's PHP 8.3.6.

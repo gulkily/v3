@@ -1,0 +1,16 @@
+ID: PF-20261111-F04
+Title: Clip bookmarklet keeps bold and italics
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Now that we support Markdown, it would be amazing if italics and bold were preserved when clipping somehow.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104153205-a7bb4302
+- https://zenmemes.com/posts/thread-20261104153747-878e6df0
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261111-B11
+Title: Post stays disabled after Back
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The Post button is still disabled when I use Back to return to a page to compose a new message.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261107000657-d65e9caa
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Possibly covered by the PF-20261030-B03 fix (PR #145, merged 0cc23a5a); kept separate until checked.

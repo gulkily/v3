@@ -1,0 +1,17 @@
+ID: PF-20261111-F54
+Title: Tame the fixed bottom bar on phones
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+On phones the fixed bottom bar covers content while scrolling; let people dismiss or tame it (brainstorm).
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111134854-720445a5
+- https://zenmemes.com/posts/reply-20261111132234-e73c3651e677d2d34e3e64f4baef0ceb
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude) from a Manus mobile test.

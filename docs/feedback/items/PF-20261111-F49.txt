@@ -1,0 +1,16 @@
+ID: PF-20261111-F49
+Title: Approving guest and shared-name keys
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Approving a waiting guest key adds it to the shared guest account; there is no way to approve it as itself. Shared agent names have the same problem.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261111073939-abdef5be
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Point 7 of the same report; needs a design decision.

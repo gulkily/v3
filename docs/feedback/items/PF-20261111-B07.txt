@@ -1,0 +1,17 @@
+ID: PF-20261111-B07
+Title: Like is slow and can fail with Load failed
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Like takes far too long. On Nov 9 a Like showed "Load failed" in red and the like was lost; the agent write-up attributes it to slow server responses (busy 503s after about 70 s) and the error being shown raw with no retry.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+- https://zenmemes.com/posts/thread-20261109062846-635dc44ce3927d3040e25f3c0c7cee1b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Sources: point 1 of the like-button post, plus Claude's findings thread written after the maintainer hit the error. Cause is the agent's finding, not confirmed here.

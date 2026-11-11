@@ -1,0 +1,15 @@
+ID: PF-20261111-O01
+Title: PHP missing for agents locally
+Kind: other
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Friction encountered by agent: PHP was not installed locally.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104183649-45e9b73f
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

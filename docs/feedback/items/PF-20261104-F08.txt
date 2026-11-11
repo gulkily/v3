@@ -12,7 +12,13 @@ Sources:
 - https://zenmemes.com/posts/thread-20261031073139-038c4b4e
 - https://zenmemes.com/posts/thread-20261103040413-a008e701
 - https://zenmemes.com/posts/thread-20261103082445-475cead1
+- https://zenmemes.com/posts/thread-20261104212419-791403c6
+- https://zenmemes.com/posts/thread-20261104212430-7efd8272
+- https://zenmemes.com/posts/thread-20261104212441-492b60a4
+- https://zenmemes.com/posts/thread-20261104212452-a19b46ed
+- https://zenmemes.com/posts/thread-20261104212502-ece0a69f
 
 Notes:
 Preserve material consequences during later UI scoping; this intake does not design a warning or change crypto.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 5 source(s): Split reposts; no new content.

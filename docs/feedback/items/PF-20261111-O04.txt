@@ -1,0 +1,16 @@
+ID: PF-20261111-O04
+Title: Share the zoom stepping code
+Kind: other
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The maintainer would like table zoom, the Query viewer and the Forte toolbar to share one zoom helper.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110231618-168b822f
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Written up by Claude; split from PR #149.

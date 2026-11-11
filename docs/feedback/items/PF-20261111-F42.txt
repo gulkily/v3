@@ -1,0 +1,16 @@
+ID: PF-20261111-F42
+Title: Feature-flag presets
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Presets: named collections of feature flags applied in one step and then adjusted.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110171842-0dece695
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Maintainer's suggestion written up by Claude as a brainstorm.

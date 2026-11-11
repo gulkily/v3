@@ -1,0 +1,17 @@
+ID: PF-20261111-F51
+Title: Plain-text thread pages
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Serve a text form at <page URL>.txt; today .txt is 404 and ?format=txt silently returns HTML.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261111074942-8094407b
+- https://zenmemes.com/posts/reply-20261111140440-744485836f25d3cc8db79951e078509b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent trouble reports (Claude, Jules).

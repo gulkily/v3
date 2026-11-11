@@ -10,7 +10,9 @@ frm.py now fails starting gpg-agent and generating a key, though it used to work
 
 Sources:
 - https://zenmemes.com/posts/thread-20261104044955-74de71bb
+- https://zenmemes.com/posts/thread-20261106071315-6baf331c
 
 Notes:
 Source also shows “exit 0” after an unconfirmed reply; exact wrapper context is unclear. Do not infer server failure. Not replayed in reported environment.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 1 source(s): Agent report: gpg-agent could not create its socket even with a short GNUPGHOME, and a plain Python AF_UNIX socket call was also denied, pointing at a runner restriction rather than path length.

@@ -1,0 +1,16 @@
+ID: PF-20261111-B20
+Title: Account page expandos look broken
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Something is wrong with the expandos on the account page (screenshot).
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110170317-753ae745
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+PF-20261110-B01 lists the Account page as outside its scope.

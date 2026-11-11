@@ -1,0 +1,19 @@
+ID: PF-20261111-F09
+Title: Faster default import-instance
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Basic import-instance takes 22 wall seconds; it should be under 5. We can trim content for the default import if we have to, but the trim must cut at the seams of connected content (keep a whole thread with its pubkeys).
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105122938-06e0cb0c
+- https://zenmemes.com/posts/reply-20261105122952-c362dd68
+- https://zenmemes.com/posts/reply-20261105123029-05a19ee7
+- https://zenmemes.com/posts/thread-20261105133335-20d67f3d
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+This run's import took about 34 s.

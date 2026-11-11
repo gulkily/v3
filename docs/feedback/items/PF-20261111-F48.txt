@@ -1,0 +1,16 @@
+ID: PF-20261111-F48
+Title: API for keys awaiting approval
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+A list_pending route returning each waiting key's username, real post count, recent titles and approval label.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261111073939-abdef5be
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Point 5 of the same report.

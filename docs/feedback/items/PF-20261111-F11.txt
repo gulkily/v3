@@ -1,0 +1,15 @@
+ID: PF-20261111-F11
+Title: Compact event date and time fields
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+In the event section of the new post form, date and time should be on the same row, and Until should also have an optional time.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105145032-705ae942
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

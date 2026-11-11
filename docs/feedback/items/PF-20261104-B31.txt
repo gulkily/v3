@@ -10,7 +10,10 @@ Request:
 
 Sources:
 - https://zenmemes.com/posts/thread-20261104135020-349fbf6d
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+- https://zenmemes.com/posts/thread-20261108163832-474312dd
 
 Notes:
 Qualifier retained; no assumption about reaction counting versus attribution display.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 2 source(s): Repeated in the like-button post (point 3) and in an agent report (Liked by ilyag, ilyag from two keys).
