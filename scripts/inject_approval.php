@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+// Run with ./v3 approve, ./v3 approval seed or ./v3 approval approve; all scripts: scripts/README.md.
+
 require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Canonical\CanonicalPathResolver;

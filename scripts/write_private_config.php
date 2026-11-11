@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+// Run with ./v3 private-config; all scripts: scripts/README.md.
+
 // Private temporary files must be private from creation, before their first byte.
 umask(0077);
 

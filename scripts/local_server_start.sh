@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Run with ./v3 start; all scripts: scripts/README.md.
 # Bash owns signals; a control pipe lets PHP clean up even without PCNTL.
 local_server_start() {
   local server_pid control_fd read_fd write_fd output_fd result=0 stopping=0 control_ready=0

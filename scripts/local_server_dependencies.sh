@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Run with ./v3 check-dependencies or ./v3 start; all scripts: scripts/README.md.
 # Shared, read-only checks for the local PHP development server.
 source "${ROOT}/scripts/php_setup_guidance.sh"
 source "${ROOT}/scripts/local_server_dependency_install.sh"
