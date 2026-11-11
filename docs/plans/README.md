@@ -24,6 +24,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Consistent page titles one-shot](page_header_consistency/page_header_consistency_one_shot.md) — main-nav pages show no visible title (the active nav item names the page); other pages keep the title as their first card's heading, with no blank line above it.
 
+[Quiet composer bottom one-shot](quiet_composer_bottom/quiet_composer_bottom_one_shot.md) — below Post on the New post form, Title is an underlined line and closed Tags, Event and Options are one row of small words; a tool gets its box when opened.
+
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
 [Codebase page sizes](codebase_sizes/codebase_sizes_step3_development_plan.md) — `/tools/codebase/` shows a collapsed Sizes card (database, repositories, downloads) and download sizes next to each link.

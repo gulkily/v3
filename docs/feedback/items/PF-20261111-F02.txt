@@ -1,0 +1,19 @@
+ID: PF-20261111-F02
+Title: The new post form is busy below Post
+Kind: feature
+Workflow: blocked
+Created: 2026-11-11
+Evidence: locally-verified
+Estimate: 0.20
+
+Request:
+The default new post form is ugly and too busy at the bottom, on desktop and on iPhone: below Post sit a boxed Title field and three boxed Tags, Event and Options buttons that wrap onto a second row on a phone.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261110165107-01f2d2e0
+
+Done when:
+On the New post page, nothing below Post is a box until it is in use: Title is a single underlined line and the closed Tags, Event and Options tools are one row of small words that fits a phone's width; an opened tool shows its fields in a box as before. Order, behavior and tap targets are unchanged.
+
+Notes:
+2026-11-11: one-shot on fix/quiet-composer-bottom (record docs/plans/quiet_composer_bottom/quiet_composer_bottom_one_shot.md); CSS-only change, verified locally in headless Chrome (Gloss Dark and Light at 375px, Gloss and Word 97 at 700px; tags open and closed). PR open, awaiting review and deployment.
