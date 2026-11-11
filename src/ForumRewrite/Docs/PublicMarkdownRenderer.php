@@ -349,26 +349,53 @@ final class PublicMarkdownRenderer
         foreach ($rows as $row) {
             if (count($row) !== count($rows[0])) { return $fallback(); }
         }
-        $renderRow = static function (array $row, string $tag) use ($alignments, $sourcePath, $projectRoot): string {
+        $longest = array_fill(0, count($rows[0]), 0.0);
+        $renderRow = static function (array $row, string $tag) use ($alignments, $sourcePath, $projectRoot, &$longest): string {
             $html = '<tr>';
             foreach ($row as $i => $cell) {
+                $inner = self::inline($cell, $sourcePath, $projectRoot);
+                $longest[$i] = max($longest[$i], self::longestWordEm($inner, $tag === 'th'));
                 $html .= '<' . $tag . ($tag === 'th' ? ' scope="col"' : '')
                     . ($alignments[$i] === null ? '' : ' class="docs-align-' . $alignments[$i] . '"') . '>'
-                    . self::inline($cell, $sourcePath, $projectRoot) . '</' . $tag . '>';
+                    . $inner . '</' . $tag . '>';
             }
             return $html . '</tr>';
         };
-        // Post tables fit the phone width by column count (site.css) and carry their own text-size
-        // controls (table_zoom.js); documentation pages keep their plain scrolling table.
-        $columns = min(count($rows[0]), 8);
-        $html = self::$postMode
-            ? '<div class="post-table">'
-                . ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in'])
-                . '<div class="docs-table-scroll post-table-cols-' . $columns . '" tabindex="0" role="region" aria-label="Table">'
-            : '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table">';
-        $html .= '<table><thead>' . $renderRow($rows[0], 'th') . '</thead><tbody>';
-        foreach (array_slice($rows, 2) as $row) { $html .= $renderRow($row, 'td'); }
-        return $html . '</tbody></table></div>' . (self::$postMode ? '</div>' : '');
+        $body = '<table><thead>' . $renderRow($rows[0], 'th') . '</thead><tbody>';
+        foreach (array_slice($rows, 2) as $row) { $body .= $renderRow($row, 'td'); }
+        $body .= '</tbody></table></div>';
+        if (!self::$postMode) {
+            return '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table">' . $body;
+        }
+        // Post tables carry their own text-size controls (table_zoom.js). On phones they open at
+        // the largest text size at which every column still fits its longest word side by side
+        // (site.css, --table-min); the browser then sizes the columns from their content.
+        $minimum = 0.0;
+        foreach ($longest as $width) { $minimum += $width + self::TABLE_CELL_PADDING_EM; }
+        return '<div class="post-table">'
+            . ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in'])
+            . '<div class="docs-table-scroll" style="--table-min: ' . number_format($minimum, 1, '.', '') . '" tabindex="0" role="region" aria-label="Table">'
+            . $body . '</div>';
+    }
+
+    /** Horizontal padding plus border of one table cell, in em (site.css: 0.5em each side). */
+    private const TABLE_CELL_PADDING_EM = 1.1;
+
+    /** Words longer than this many characters may break mid-word, so they count as this long. */
+    private const TABLE_WORD_CAP = 20;
+
+    /**
+     * Estimated width in em of the longest unbreakable word in a rendered cell: an average
+     * character is about 0.55em in body text, and header text is bold and a little wider.
+     */
+    private static function longestWordEm(string $html, bool $header): float
+    {
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $longest = 0;
+        foreach (preg_split('/[\s\p{Z}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+            $longest = max($longest, min(self::TABLE_WORD_CAP, mb_strlen($word, 'UTF-8')));
+        }
+        return $longest * ($header ? 0.6 : 0.55);
     }
 
     /** Split only structural pipes; uncertain code spans retain the complete source block. */

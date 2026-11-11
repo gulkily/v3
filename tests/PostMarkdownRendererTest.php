@@ -31,13 +31,32 @@ final class PostMarkdownRendererTest
         assertStringContains('data-table-zoom="fit"', $post);
         assertStringContains('data-table-zoom="page"', $post);
         assertStringContains('data-table-zoom="in"', $post);
-        assertStringContains('class="docs-table-scroll post-table-cols-4"', $post);
+        assertStringContains('<div class="docs-table-scroll" style="--table-min: ', $post);
         assertStringContains('</table></div></div>', $post);
         $doc = PublicMarkdownRenderer::render($source);
         assertStringNotContains('post-table', $doc);
+        assertStringNotContains('--table-min', $doc);
         assertStringContains('<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table"><table>', $doc);
-        $wide = PublicMarkdownRenderer::renderPost('|' . str_repeat(' x |', 11) . "\n|" . str_repeat(' --- |', 11) . "\n|" . str_repeat(' y |', 11));
-        assertStringContains('post-table-cols-8"', $wide);
+    }
+
+    public function testPostTableMinimumWidthFollowsEachColumnsLongestWord(): void
+    {
+        $minimum = static function (string $source): float {
+            preg_match('/--table-min: ([0-9.]+)"/', PublicMarkdownRenderer::renderPost($source), $m);
+            return (float) ($m[1] ?? -1);
+        };
+        // Header "What" (4 bold chars) and body "reports" (7 chars) set the first column; the
+        // second column's long prompt only counts its longest word, "behavior," (9 chars).
+        $labels = $minimum("| What you want | What to ask |\n| --- | --- |\n| Group bug reports | Find the reports that describe the same behavior, and link them. |");
+        assertSame(round(7 * 0.55 + 1.1 + 9 * 0.55 + 1.1, 1), $labels);
+        // More columns of short words need less room than two columns of long ones.
+        $narrow = $minimum("| a | b | c | d | e |\n| --- | --- | --- | --- | --- |\n| 1 | 2 | 3 | 4 | 5 |");
+        assertSame(round(5 * (0.6 + 1.1), 1), $narrow);
+        // A URL counts as 20 characters (it may break in the table) and markup isn't counted.
+        $link = $minimum("| Source | x |\n| --- | --- |\n| [https://example.test/a/very/long/path/to/a/page](https://example.test/x) | x |");
+        $code = $minimum("| Route | x |\n| --- | --- |\n| `GET /api/get_thread?thread_id=thread-20261111034513` | x |");
+        assertSame(round(20 * 0.55 + 1.1 + 0.6 + 1.1, 1), $link);
+        assertSame(round(20 * 0.55 + 1.1 + 0.6 + 1.1, 1), $code);
     }
 
     public function testHeadingsNestInsideThePostWithoutPageIds(): void
