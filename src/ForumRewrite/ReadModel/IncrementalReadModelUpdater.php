@@ -7,6 +7,7 @@ namespace ForumRewrite\ReadModel;
 use ForumRewrite\Canonical\CanonicalPathResolver;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Canonical\CanonicalRecordParseException;
+use ForumRewrite\Canonical\RecordReceipt;
 use ForumRewrite\Canonical\IdentityBootstrapRecord;
 use ForumRewrite\Canonical\PostReactionRecord;
 use ForumRewrite\Canonical\PostRecord;
@@ -138,7 +139,7 @@ class IncrementalReadModelUpdater
                 );
                 $stmt->execute([
                     'post_id' => $record->postId,
-                    'created_at' => $record->createdAt,
+                    'created_at' => $this->effectivePostCreatedAt($record),
                     'thread_id' => $record->threadId ?? $record->postId,
                     'parent_id' => $record->parentId,
                     'subject' => $record->subject,
@@ -1190,7 +1191,7 @@ class IncrementalReadModelUpdater
         );
         $stmt->execute([
             'post_id' => $record->postId,
-            'created_at' => $record->createdAt,
+            'created_at' => $this->effectivePostCreatedAt($record),
             'thread_id' => $record->threadId ?? $record->postId,
             'parent_id' => $record->parentId,
             'subject' => $record->subject,
@@ -1218,8 +1219,8 @@ class IncrementalReadModelUpdater
         );
         $stmt->execute([
             'root_post_id' => $record->postId,
-            'root_post_created_at' => $record->createdAt,
-            'last_activity_at' => $record->createdAt,
+            'root_post_created_at' => $this->effectivePostCreatedAt($record),
+            'last_activity_at' => $this->effectivePostCreatedAt($record),
             'subject' => $record->subject,
             'body_preview' => $this->preview(\ForumRewrite\Support\PostText::plainPreview($record->body, $record->bodyFormat)),
             'reply_count' => 0,
@@ -1254,7 +1255,7 @@ class IncrementalReadModelUpdater
              WHERE root_post_id = :thread_id'
         );
         $stmt->execute([
-            'created_at' => $record->createdAt,
+            'created_at' => $this->effectivePostCreatedAt($record),
             'last_post_id' => $record->postId,
             'thread_id' => $threadId,
         ]);
@@ -1313,7 +1314,7 @@ class IncrementalReadModelUpdater
              )'
         );
         $stmt->execute([
-            'created_at' => $receipt['accepted_at'] ?? $record->createdAt,
+            'created_at' => $receipt['accepted_at'] ?? $this->effectivePostCreatedAt($record),
             'kind' => $this->activityKindForPost($record),
             'record_family' => $this->activityRecordFamilyForPost($record),
             'action_key' => $this->postSourcePath($record->postId),
@@ -1340,6 +1341,12 @@ class IncrementalReadModelUpdater
         }
 
         return $record->subject ?? $this->preview(\ForumRewrite\Support\PostText::plainPreview($record->body, $record->bodyFormat));
+    }
+
+    /** Created-At, or the receipt time for a post that arrived with a skewed clock. */
+    private function effectivePostCreatedAt(PostRecord $record): string
+    {
+        return RecordReceipt::effectiveCreatedAt($this->repositoryRoot, $this->postSourcePath($record->postId), $record->createdAt);
     }
 
     private function postSourcePath(string $postId): string
@@ -1967,7 +1974,7 @@ class IncrementalReadModelUpdater
             $sourcePath = CanonicalPathResolver::postReaction($record->recordId);
             $author = $this->resolveActivityAuthor($pdo, $record->authorIdentityId);
             $insert->execute([
-                'created_at' => $record->createdAt,
+                'created_at' => RecordReceipt::effectiveCreatedAt($this->repositoryRoot, $sourcePath, $record->createdAt),
                 'kind' => 'post_reaction_add',
                 'record_family' => 'post_reaction',
                 'action_key' => $sourcePath,
@@ -2080,7 +2087,7 @@ class IncrementalReadModelUpdater
             if ($labelsAdded !== []) {
                 sort($labelsAdded);
                 $activityEvents[] = [
-                    'created_at' => $record->createdAt,
+                    'created_at' => RecordReceipt::effectiveCreatedAt($this->repositoryRoot, CanonicalPathResolver::threadLabel($record->recordId), $record->createdAt),
                     'author_identity_id' => $record->authorIdentityId,
                     'labels_added' => $labelsAdded,
                     'source_path' => CanonicalPathResolver::threadLabel($record->recordId),

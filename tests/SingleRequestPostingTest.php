@@ -60,11 +60,160 @@ final class SingleRequestPostingTest
         assertSame($inode, fileinode($db), 'no rebuild swapped in a new file');
     }
 
-    private function signedRecord(array $input, ?string $threadId, string $body): string
+    /** A skewed signed post publishes as signed and sorts by when it arrived, in place and after a rebuild. */
+    public function testSkewedSignedPostsPublishWithReceipt(): void
+    {
+        foreach (['20 minutes behind' => [-1200, false], 'a day ahead' => [86400, false], 'reply an hour behind' => [-3600, true]] as $name => [$offset, $reply]) {
+            [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+            $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+            $input = SignedPostIdentityTest::bundle();
+            $own = $writer->createSignedPost($input);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+
+            $record = $this->signedRecord($input, $reply ? $own['post_id'] : null, "Late #upvote\n", $offset);
+            $bundle = ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)] + $input;
+            unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']);
+            $before = time();
+            $result = $writer->createSignedPost($bundle);
+
+            assertSame('ok', $result['status'], $name);
+            assertSame($record, file_get_contents($root . '/' . $result['record_path']), $name . ': stored as signed');
+            $received = \ForumRewrite\Canonical\RecordReceipt::parse((string) @file_get_contents($root . '/' . $result['record_path'] . '.received'));
+            assertSame(true, $received !== null && strtotime($received) >= $before && strtotime($received) <= time(), $name . ': receipt written');
+            $written = trim((new SignedPostTransaction($root))->git(['show', '--name-only', '--format=', 'HEAD']));
+            assertStringContains($result['record_path'] . '.received', $written, $name . ': receipt committed with the post');
+
+            $pdo = new PDO('sqlite:' . $db);
+            $createdAt = static fn (): string => (string) $pdo->query('SELECT created_at FROM posts WHERE post_id = ' . $pdo->quote($result['post_id']))->fetchColumn();
+            assertSame($received, $createdAt(), $name . ': sorts by arrival in place');
+            if (!$reply) assertSame($received, (string) $pdo->query('SELECT root_post_created_at FROM threads WHERE root_post_id = ' . $pdo->quote($result['post_id']))->fetchColumn(), $name . ': thread time');
+            $targeted = ReadModelSnapshot::take($db);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame([], ReadModelSnapshot::differences(ReadModelSnapshot::take($db), $targeted), $name . ': rebuild agrees');
+
+            assertSame(true, $writer->createSignedPost($bundle)['replayed'], $name . ': exact retry replays');
+        }
+    }
+
+    /** A post whose headers are all authored but out of order is stored exactly as signed and reads back everywhere. */
+    public function testReorderedHeadersPublishAsSigned(): void
+    {
+        [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+        [$destination] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = SignedPostIdentityTest::bundle();
+        $writer->createSignedPost($input);
+        [$headers, $body] = explode("\n\n", $this->signedRecord($input, null, "Out of order\n"), 2);
+        $record = implode("\n", array_reverse(explode("\n", $headers))) . "\n\n" . $body;
+        $bundle = ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)] + $input;
+        unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']);
+
+        $result = $writer->createSignedPost($bundle);
+        assertSame('ok', $result['status']);
+        assertSame($record, file_get_contents($root . '/' . $result['record_path']));
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        $pdo = new PDO('sqlite:' . $db);
+        assertSame('Signed thread', (string) $pdo->query('SELECT subject FROM threads WHERE root_post_id = ' . $pdo->quote($result['post_id']))->fetchColumn());
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($root, $destination);
+        assertSame('import', $plan[$result['record_path']]['state']);
+        assertSame(true, $writer->createSignedPost($bundle)['replayed']);
+    }
+
+    /** A signed post that verifies but breaks an authoring rule is kept off the record, not refused. */
+    public function testSignedPostsThatBreakARuleAreStaged(): void
+    {
+        [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = SignedPostIdentityTest::bundle();
+        $writer->createSignedPost($input);
+        $tx = new SignedPostTransaction($root);
+        $head = trim($tx->git(['rev-parse', 'HEAD']));
+        $sign = static fn (string $record): array => ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)];
+        $known = static function (array $bundle): array { unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']); return $bundle; };
+
+        $cases = [
+            'emoji' => [$this->signedRecord($input, null, "Cypher recap \u{1F3A4}\n"), 'body', true],
+            'CR LF' => [str_replace("\n", "\r\n", $this->signedRecord($input, null, "Windows\n")), 'record', false],
+            'no final LF' => [$this->signedRecord($input, null, "No newline"), '', false],
+            'unknown header' => [str_replace("Subject: Signed thread\n", "Subject: Signed thread\nImported-Score-Seed: 99\n", $this->signedRecord($input, null, "Seed\n")), 'record', false],
+        ];
+        foreach ($cases as $name => [$record, $field, $hasChars]) {
+            $bundle = $known($sign($record) + $input);
+            $result = $writer->createSignedPost($bundle);
+            assertSame('staged', $result['status'], $name);
+            assertSame($field, $result['field'], $name . ': field');
+            assertSame($hasChars, $result['chars'] !== [], $name . ': character positions');
+            if ($name === 'emoji') assertSame('U+1F3A4', $result['chars'][0]['codepoint']);
+            if ($name === 'unknown header') assertSame('Unsupported header: Imported-Score-Seed.', $result['reason']);
+            if ($name === 'CR LF') assertSame('Records use LF line endings, not CR LF.', $result['reason']);
+            $stored = $writer->stagedSubmissions()->find($result['post_id']);
+            assertSame($record, $stored['record'], $name . ': exact bytes kept');
+            assertSame($result['staged_at'], $writer->createSignedPost($bundle)['staged_at'], $name . ': exact retry returns the same item');
+        }
+        assertSame($head, trim($tx->git(['rev-parse', 'HEAD'])), 'nothing staged reaches the records');
+        assertSame('', trim($tx->git(['status', '--porcelain', '--', 'records'])));
+        assertSame(false, str_contains(implode("\n", glob($root . '/records/**/*') ?: []), 'staged'));
+
+        // Not the author's to fix: a bad signature and an unknown key are still refused.
+        $bad = $known(['canonical_record' => $this->signedRecord($input, null, "Bad \u{1F3A4}\n"), 'detached_signature' => $sign("x\n")['detached_signature']] + $input);
+        try { $writer->createSignedPost($bad); throw new LogicException('Expected refusal'); } catch (RuntimeException $e) { assertSame(false, $e instanceof LogicException); }
+        [$root2, $db2, $artifacts2] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $fresh = new LocalWriteService($root2, $db2, $artifacts2, new CanonicalRecordRepository($root2));
+        $first = $sign($this->signedRecord($input, null, "First \u{1F3A4}\n")) + $input;
+        try { $fresh->createSignedPost($first); throw new LogicException('Expected refusal'); } catch (RuntimeException $e) { assertSame(false, $e instanceof LogicException); }
+
+        // The per-author cap protects the store.
+        for ($i = count($cases); $i < \ForumRewrite\Write\StagedSubmissionStore::PER_AUTHOR; $i++) {
+            assertSame('staged', $writer->createSignedPost($known($sign($this->signedRecord($input, null, "Filler {$i} \u{1F3A4}\n")) + $input))['status']);
+        }
+        try { $writer->createSignedPost($known($sign($this->signedRecord($input, null, "One too many \u{1F3A4}\n")) + $input)); throw new LogicException('Expected cap'); }
+        catch (RuntimeException $e) { assertStringContains('staged posts', $e->getMessage()); }
+    }
+
+    /** The author's signed fix with the same post ID publishes a staged post and clears the staged copy. */
+    public function testSignedFixPublishesAStagedPost(): void
+    {
+        [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = SignedPostIdentityTest::bundle();
+        $writer->createSignedPost($input);
+        $send = static function (string $record) use ($writer, $input): array {
+            $bundle = ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)] + $input;
+            unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']);
+            return $writer->createSignedPost($bundle);
+        };
+
+        // Sent 20 minutes ago with an emoji; the fix keeps that post ID and Created-At.
+        $staged = $this->signedRecord($input, null, "Cypher recap \u{1F3A4}\n", -1200);
+        $postId = $send($staged)['post_id'];
+        $stillBad = str_replace("\u{1F3A4}", "\u{1F3B6}", $staged);
+        assertSame('U+1F3B6', $send($stillBad)['chars'][0]['codepoint'], 'a second bad fix updates the reason');
+        assertSame(1, count($writer->stagedSubmissions()->listFor(null)));
+
+        $fixed = str_replace(" \u{1F3A4}", '', $staged);
+        $published = $send($fixed);
+        assertSame('ok', $published['status']);
+        assertSame($postId, $published['post_id']);
+        assertSame($fixed, file_get_contents($root . '/' . $published['record_path']));
+        assertSame(null, $writer->stagedSubmissions()->find($postId), 'staged copy discarded');
+        assertSame(true, is_file($root . '/' . $published['record_path'] . '.received'), 'the old Created-At gets a receipt');
+        $pdo = new PDO('sqlite:' . $db);
+        assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE post_id = ' . $pdo->quote($postId))->fetchColumn());
+        assertSame(true, $send($fixed)['replayed']);
+
+        // A staged copy under someone else's key is left alone when this author publishes the ID.
+        $other = $this->signedRecord($input, null, "Mine\n");
+        preg_match('/^Post-ID: (.+)$/m', $other, $id);
+        $writer->stagedSubmissions()->stage($id[1], 'openpgp:' . str_repeat('c', 40), null, "x\n", "s\n", 'r', '', [], time());
+        assertSame('ok', $send($other)['status']);
+        assertSame('openpgp:' . str_repeat('c', 40), $writer->stagedSubmissions()->find($id[1])['author_identity_id']);
+    }
+
+    private function signedRecord(array $input, ?string $threadId, string $body, int $offset = 0): string
     {
         preg_match('/^Author-Identity-ID: (.+)$/m', $input['canonical_record'], $author);
-        $time = gmdate('Y-m-d\TH:i:s\Z');
-        $id = ($threadId === null ? 'thread-' : 'reply-') . gmdate('YmdHis') . '-' . bin2hex(random_bytes(16));
+        $time = gmdate('Y-m-d\TH:i:s\Z', time() + $offset);
+        $id = ($threadId === null ? 'thread-' : 'reply-') . gmdate('YmdHis', time() + $offset) . '-' . bin2hex(random_bytes(16));
         $headers = "Post-ID: {$id}\nCreated-At: {$time}\nBoard-Tags: general\n";
         if ($threadId !== null) $headers .= "Thread-ID: {$threadId}\nParent-ID: {$threadId}\n";
         $headers .= "Author-Identity-ID: {$author[1]}\n";

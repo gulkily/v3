@@ -21,13 +21,14 @@ requested action and resolved viewer identity, and verifies the detached
 signature before considering duplicate suppression. It never normalizes signed
 bytes or silently falls back to unsigned after a signing/verification error.
 
-The server accepts creation times within 300 seconds of its clock. Otherwise,
-it returns HTTP 409 with a JSON `error_code` of `clock_skew`, `canonical_record`,
-`prepare_token`, `canonical_sha256`, and `expires_at`. The browser checks that
-only the identifier/time changed, signs the replacement, and resubmits to the
-same endpoint with the token. The prepared record keeps the layout the client
-submitted. There is one automatic fallback. Tokens expire
-in ten server-clock minutes and bind exact bytes, author, and record family.
+The server accepts any creation time. When `Created-At` is more than 300
+seconds from its clock, it writes a receipt beside the record
+(`<record>.txt.received`, one `Received-At:` line) in the same commit, and
+sorting uses the receipt time; see `RecordReceipt`. An exact retry reuses the
+existing receipt. Until 2026-11 the server instead answered skew with HTTP 409,
+`error_code` `clock_skew` and a prepared record to sign; it still accepts a
+`prepare_token` from such an answer (ten-minute expiry, bound to exact bytes,
+author and record family), but no longer issues one.
 Normal success retains the existing text response and score/moderation fields.
 
 Legacy requests without signing fields retain unsigned behavior and existing

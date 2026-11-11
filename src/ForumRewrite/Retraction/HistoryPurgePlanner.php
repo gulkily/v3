@@ -6,6 +6,7 @@ namespace ForumRewrite\Retraction;
 
 use ForumRewrite\Canonical\AcceptedRemoval;
 use ForumRewrite\Canonical\CanonicalPathResolver;
+use ForumRewrite\Canonical\RecordReceipt;
 use ForumRewrite\Canonical\LabelRemoval;
 use ForumRewrite\Canonical\LegacyPostTimestamp;
 use RuntimeException;
@@ -50,10 +51,10 @@ final class HistoryPurgePlanner
             $result['receipts']++;
             $receiptIds[(string) $id] = [];
             foreach (CanonicalPathResolver::postCandidates((string) $id) as $candidate) {
-                $candidates[$candidate] = true;
-                $candidates[$candidate . '.asc'] = true;
-                $receiptIds[(string) $id][] = $candidate;
-                $receiptIds[(string) $id][] = $candidate . '.asc';
+                foreach ([$candidate, $candidate . '.asc', $candidate . RecordReceipt::SUFFIX] as $file) {
+                    $candidates[$file] = true;
+                    $receiptIds[(string) $id][] = $file;
+                }
             }
         }
 

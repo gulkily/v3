@@ -57,6 +57,7 @@ final class InboxPageController
 
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('inbox.php', [
             'viewerProfile' => $viewer,
+            'stagedCount' => $this->stagedCount($viewer),
             'messages' => $this->messages($viewer),
             'sections' => $this->sections($viewer, $failedCatchUp),
         ], 'Unread', 'inbox', ['/assets/inbox_catch_up.js']), $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
@@ -133,6 +134,16 @@ final class InboxPageController
             $sections[$section] = ['items' => $items, 'failed' => $failed, 'catch_up_failed' => $failedCatchUp === $section];
         }
         return $sections;
+    }
+
+    /** @param array<string, mixed> $viewer */
+    private function stagedCount(array $viewer): int
+    {
+        try {
+            return count((new StagedPageController($this->routeServices, $this->authenticatedViewerProfile))->visibleItems($viewer));
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     /** @param array<string, mixed> $viewer */

@@ -18,6 +18,7 @@ use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRetractionRecordParser;
 use ForumRewrite\Canonical\ReactionRecordParser;
+use ForumRewrite\Canonical\RecordReceipt;
 use ForumRewrite\Canonical\RetractedPosts;
 use ForumRewrite\Canonical\SiteFeatureFlagsRecordParser;
 use ForumRewrite\Canonical\ThreadLabelRecordParser;
@@ -58,6 +59,10 @@ use ForumRewrite\Images\ImageStore;
 class LocalWriteService
 {
     private const HIDDEN_BOOTSTRAP_BOARD_TAGS = 'identity internal';
+    /** Seconds a signed reaction's Created-At may differ from the server clock before it gets a receipt. */
+    private const SIGNED_REACTION_CLOCK_WINDOW = 300;
+    /** Seconds a signed post's Created-At may differ from the server clock before it gets a receipt. */
+    private const SIGNED_POST_CLOCK_WINDOW = 600;
 
     /** @var (callable():void)|null */
     private $enqueueOfflineSnapshotPublication;
@@ -559,6 +564,14 @@ class LocalWriteService
                 $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
                 $this->emojiAuthoredTextEnabled(),
             );
+            try {
+                $validator->validateRecord((string) ($input['canonical_record'] ?? ''));
+            } catch (RuntimeException $ruleError) {
+                // A correctly signed post that breaks an authoring rule is kept, not refused.
+                // Anything else (a replay, an unknown key) continues to the original checks.
+                $staged = $this->stageSignedPost($input, $ruleError);
+                if ($staged !== null) return $staged;
+            }
             $bundle = (new SignedPostIdentity($this->repositoryRoot, $validator))->resolve($input);
             $post = $bundle['post'];
             $path = CanonicalPathResolver::datedPost($post->postId, $post->createdAt);
@@ -578,24 +591,32 @@ class LocalWriteService
                 if ($commit === '') throw new RuntimeException('Unable to identify accepted post commit.');
             } else {
                 $validator->validateRecord($input['canonical_record']);
-                $validator->assertFresh($post);
                 if ($this->postTargetExists($post->postId)) throw new RuntimeException('Post ID is already reserved.', 409);
                 if ($post->isReply()) $this->assertReplyTarget($post->threadId, $post->parentId);
                 if (!$bundle['known']) {
-                    $validator->assertFresh($bundle['bootstrap']);
                     if (\ForumRewrite\Canonical\AcceptedRemoval::read($this->repositoryRoot, $bundle['bootstrap']->postId) !== null || $this->postTargetExists($bundle['bootstrap']->postId)) throw new RuntimeException('Bootstrap ID is already reserved.', 409);
                 }
                 $files = $bundle['files'];
                 $files[$path] = $input['canonical_record'];
                 $files[$path . '.asc'] = $input['detached_signature'];
+                // A skewed clock is accepted as signed; the receipt records when it arrived.
+                $now = time();
+                $effectiveCreatedAt = $post->createdAt;
+                if (RecordReceipt::isSkewed($post->createdAt, $now, self::SIGNED_POST_CLOCK_WINDOW)) {
+                    $files[$path . RecordReceipt::SUFFIX] = RecordReceipt::contents($now);
+                    $effectiveCreatedAt = gmdate('Y-m-d\\TH:i:s\\Z', $now);
+                }
+                if (!$bundle['known'] && RecordReceipt::isSkewed($bundle['bootstrap']->createdAt, $now, self::SIGNED_POST_CLOCK_WINDOW)) {
+                    $files[CanonicalPathResolver::datedPost($bundle['bootstrap']->postId, $bundle['bootstrap']->createdAt) . RecordReceipt::SUFFIX] = RecordReceipt::contents($now);
+                }
                 $labels = $this->extractThreadLabelsFromBody($post->body);
                 if ($labels !== []) {
-                    [$labelPath,$labelBytes] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $post->createdAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
+                    [$labelPath,$labelBytes] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $post->threadId ?? $post->postId, $labels, $post->authorIdentityId, $effectiveCreatedAt, sourcePostId: $post->postId, sourcePostSha256: hash('sha256',$input['canonical_record']));
                     $files[$labelPath] = $labelBytes;
                     $hasLabels = true;
                 }
                 if ($post->isReply()) {
-                    $subjectRecord = $this->titleDirectiveRecord($post->threadId, $post->postId, $input['canonical_record'], $post->body, $post->authorIdentityId, $post->createdAt);
+                    $subjectRecord = $this->titleDirectiveRecord($post->threadId, $post->postId, $input['canonical_record'], $post->body, $post->authorIdentityId, $effectiveCreatedAt);
                     if ($subjectRecord !== null) {
                         $files[$subjectRecord[0]] = $subjectRecord[1];
                         $hasSubject = true;
@@ -603,6 +624,8 @@ class LocalWriteService
                 }
                 $commit = $tx->accept($files);
             }
+            // The post is committed: a staged copy from the same author is now replaced.
+            $this->discardStagedCopy($post->postId, (string) $post->authorIdentityId);
             $result = ['status'=>'ok', 'post_id'=>$post->postId, 'thread_id'=>$post->threadId ?? $post->postId,
                 'identity_id'=>$post->authorIdentityId, 'profile_slug'=>$bundle['identity']->identitySlug(),
                 'bootstrap_post_id'=>$bundle['identity']->bootstrapByPost, 'record_path'=>$path,
@@ -620,6 +643,109 @@ class LocalWriteService
             }
             return $result;
         }, true);
+    }
+
+    /**
+     * Stages a signed post that failed `$ruleError`, when the failure is the author's to fix:
+     * the post ID and author parse, the author's key is registered, the signature verifies over
+     * the exact bytes, and the post is not already published. Otherwise returns null and the
+     * caller refuses the post as before.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function stageSignedPost(array $input, RuntimeException $ruleError): ?array
+    {
+        $record = (string) ($input['canonical_record'] ?? '');
+        $signature = (string) ($input['detached_signature'] ?? '');
+        if ($record === '' || $signature === '') return null;
+        $headers = self::lenientHeaders($record);
+        $postId = $headers['Post-ID'] ?? '';
+        $author = $headers['Author-Identity-ID'] ?? '';
+        $createdAt = $headers['Created-At'] ?? '';
+        if (!StagedSubmissionStore::validPostId($postId)
+            || !preg_match('/^openpgp:[a-f0-9]{40,64}$/D', $author)
+            || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/D', $createdAt)
+            || gmdate('YmdHis', (int) strtotime($createdAt)) !== substr($postId, strpos($postId, '-') + 1, 14)
+            || (str_starts_with($postId, 'reply-') !== isset($headers['Thread-ID']))) {
+            return null;
+        }
+        try {
+            \ForumRewrite\Security\KeyRetirement::assertActive($this->repositoryRoot, $author);
+            [$key, $fingerprint] = $this->publicKeyForIdentity($author);
+        } catch (RuntimeException) {
+            return null;
+        }
+        if (!$this->signatureVerifier->verifyDetached($key, $record, $signature, $fingerprint)['ok']
+            || $this->postTargetExists($postId)) {
+            return null;
+        }
+
+        [$reason, $field, $chars] = self::stagingReason($ruleError, $headers, $record);
+        $item = $this->stagedSubmissions()->stage($postId, $author, $headers['Thread-ID'] ?? null, $record, $signature, $reason, $field, $chars, time());
+        return [
+            'status' => 'staged',
+            'code' => 'staged',
+            'post_id' => $postId,
+            'thread_id' => $item['thread_id'] ?? $postId,
+            'reason' => $item['reason'],
+            'field' => $item['field'],
+            'chars' => $item['chars'],
+            'staged_at' => $item['staged_at'],
+            'replayed' => false,
+        ];
+    }
+
+    private function discardStagedCopy(string $postId, string $author): void
+    {
+        $store = $this->stagedSubmissions();
+        $staged = $store->find($postId);
+        if ($staged === null || $staged['author_identity_id'] !== $author) return;
+        try {
+            $store->discard($postId);
+        } catch (RuntimeException $error) {
+            // The post is published; a leftover copy is hidden from /staged/ and removed on retry.
+            error_log('Published staged post; discard failed: ' . $error->getMessage());
+        }
+    }
+
+    public function stagedSubmissions(): StagedSubmissionStore
+    {
+        // Keyed by repository like the reaction journal, so instances sharing a state directory stay apart.
+        return new StagedSubmissionStore(dirname($this->databasePath) . '/private/staged-posts-' . substr(hash('sha256', $this->repositoryRoot), 0, 16));
+    }
+
+    /** @return array<string, string> header values from a record that may break the canonical rules */
+    private static function lenientHeaders(string $record): array
+    {
+        $headers = [];
+        $block = explode("\n\n", str_replace("\r\n", "\n", $record), 2)[0];
+        foreach (explode("\n", $block) as $line) {
+            if (preg_match('/^([A-Za-z][A-Za-z0-9-]*): (.*)$/D', $line, $m) === 1 && !isset($headers[$m[1]])) {
+                $headers[$m[1]] = $m[2];
+            }
+        }
+        return $headers;
+    }
+
+    /**
+     * @param array<string, string> $headers
+     * @return array{0: string, 1: string, 2: list<array{codepoint: string, index: int}>}
+     */
+    private static function stagingReason(RuntimeException $error, array $headers, string $record): array
+    {
+        $authored = ['Post-ID', 'Created-At', 'Board-Tags', 'Thread-ID', 'Parent-ID', 'Author-Identity-ID', 'Subject', 'Body-Format', 'Theme'];
+        $unknown = array_values(array_diff(array_keys($headers), $authored));
+        if ($unknown !== []) {
+            return ['Unsupported header: ' . implode(', ', $unknown) . '.', 'record', []];
+        }
+        if (str_contains($record, "\r\n")) {
+            return ['Records use LF line endings, not CR LF.', 'record', []];
+        }
+        if ($error instanceof \ForumRewrite\Support\TextValidationException) {
+            $chars = array_map(static fn (array $c): array => ['codepoint' => (string) $c['codepoint'], 'index' => (int) $c['index']], $error->chars);
+            return [$error->getMessage(), $error->field, $chars];
+        }
+        return [$error->getMessage(), '', []];
     }
 
     /**
@@ -1381,7 +1507,7 @@ class LocalWriteService
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : [$recordPath, $recordPath . '.asc'], 'Apply thread tag ' . $tag . ' to ' . $threadId);
+            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : $this->signedReactionPaths($signed), 'Apply thread tag ' . $tag . ' to ' . $threadId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
@@ -1503,7 +1629,7 @@ class LocalWriteService
             }
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
 
-            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : [$recordPath, $recordPath . '.asc'], 'Apply post tag ' . $tag . ' to ' . $postId);
+            $commitResult = $this->commitCanonicalWrite($signed === null ? [$recordPath] : $this->signedReactionPaths($signed), 'Apply post tag ' . $tag . ' to ' . $postId);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
@@ -4319,7 +4445,11 @@ class LocalWriteService
     {
         \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, $signed[0], $signed[1]);
         // Publish the signature first: a crash must never leave a new apparently unsigned vote.
-        foreach ([$signed[0] . '.asc' => $signed[2], $signed[0] => $signed[1]] as $relative => $bytes) {
+        $files = [$signed[0] . '.asc' => $signed[2], $signed[0] => $signed[1]];
+        if (isset($signed[3])) {
+            $files = [$signed[0] . RecordReceipt::SUFFIX => $signed[3]] + $files;
+        }
+        foreach ($files as $relative => $bytes) {
             $path = $this->repositoryRoot . '/' . $relative;
             if (file_exists($path)) {
                 if (file_get_contents($path) !== $bytes) throw new RuntimeException('Reaction recovery collision: ' . $relative);
@@ -4342,7 +4472,8 @@ class LocalWriteService
     {
         foreach (glob($this->reactionJournalDirectory() . '/*.json') ?: [] as $journal) {
             $signed = json_decode((string) file_get_contents($journal), true, 512, JSON_THROW_ON_ERROR);
-            if (!is_array($signed) || count($signed) !== 3 || !is_string($signed[0] ?? null)
+            if (!is_array($signed) || !in_array(count($signed), [3, 4], true) || !is_string($signed[0] ?? null)
+                || (isset($signed[3]) && RecordReceipt::parse((string) $signed[3]) === null)
                 || !preg_match('#^records/(thread-labels|post-reactions)/[A-Za-z0-9_-]+\.txt$#D', $signed[0])) {
                 throw new RuntimeException('Invalid reaction recovery journal.');
             }
@@ -4354,7 +4485,7 @@ class LocalWriteService
                 throw new RuntimeException('Reaction recovery signature is invalid.');
             }
             $this->writeSignedReactionPair($signed);
-            $paths = [$signed[0], $signed[0] . '.asc'];
+            $paths = $this->signedReactionPaths($signed);
             $dirty = trim($this->runGitCommand(array_merge(['status', '--porcelain', '--'], $paths), 'Unable to inspect reaction recovery'));
             $head = $dirty === ''
                 ? trim($this->runGitCommand(['rev-parse', 'HEAD'], 'Unable to read commit SHA'))
@@ -4400,16 +4531,6 @@ class LocalWriteService
                 || strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
                 throw new RuntimeException('Prepared reaction is expired or does not match this action.');
             }
-        } elseif (abs(time() - strtotime($record->createdAt)) > 300) {
-            // Keep the client's layout: only Record-ID and Created-At change.
-            $preparedId = $this->generateRecordId($prefix);
-            $preparedContents = "Record-ID: {$preparedId}\nCreated-At: {$this->canonicalTimestampNow()}\n"
-                . implode("\n", array_slice(explode("\n", $contents), 2));
-            $preparedPath = $kind === 'thread' ? CanonicalPathResolver::threadLabel($preparedId) : CanonicalPathResolver::postReaction($preparedId);
-            $prepared = $this->storePreparedPost($preparedPath, $preparedContents, [
-                'kind' => 'reaction-' . $kind, 'author_identity_id' => $author,
-            ]);
-            throw new ReactionClockSkew($prepared + ['canonical_record' => $preparedContents]);
         }
 
         foreach ([$path => $contents, $path . '.asc' => $signature] as $candidate => $bytes) {
@@ -4418,7 +4539,24 @@ class LocalWriteService
                 throw new RuntimeException('Signed reaction record identifier collision.');
             }
         }
+        // A skewed clock is accepted as signed; the receipt records when it arrived.
+        if (!isset($input['prepare_token']) && RecordReceipt::isSkewed($record->createdAt, time(), self::SIGNED_REACTION_CLOCK_WINDOW)) {
+            return [$path, $contents, $signature, RecordReceipt::forWrite($this->repositoryRoot, $path, time())];
+        }
         return [$path, $contents, $signature];
+    }
+
+    /**
+     * Repository paths a signed reaction write commits.
+     *
+     * @param array{0:string,1:string,2:string,3?:string} $signed
+     * @return list<string>
+     */
+    private function signedReactionPaths(array $signed): array
+    {
+        return isset($signed[3])
+            ? [$signed[0], $signed[0] . '.asc', $signed[0] . RecordReceipt::SUFFIX]
+            : [$signed[0], $signed[0] . '.asc'];
     }
 
     /**

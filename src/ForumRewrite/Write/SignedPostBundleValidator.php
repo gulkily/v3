@@ -83,15 +83,24 @@ final class SignedPostBundleValidator
         if ($record->bodyFormat !== null) $canonical .= "Body-Format: {$record->bodyFormat}\n";
         if ($record->theme !== null) $canonical .= "Theme: {$record->theme}\n";
         $canonical .= "\n{$record->body}";
-        if ($canonical !== $bytes) throw new RuntimeException('Record contains unsupported headers, order or noncanonical bytes.');
+        // Every reader parses headers in any order, so order alone is stored as signed.
+        if ($canonical !== $bytes && !self::sameHeadersInAnyOrder($canonical, $bytes)) {
+            throw new RuntimeException('Record contains unsupported headers or noncanonical bytes.');
+        }
         return $record;
     }
 
-    public function assertFresh(PostRecord $record, ?int $now = null): void
+    private static function sameHeadersInAnyOrder(string $canonical, string $bytes): bool
     {
-        $now ??= time();
-        if (abs($now - strtotime($record->createdAt)) > 600) {
-            throw new RuntimeException('New record must be within 600 seconds of server UTC ' . gmdate('Y-m-d\TH:i:s\Z', $now) . '.');
+        $expected = explode("\n\n", $canonical, 2);
+        $actual = explode("\n\n", $bytes, 2);
+        if (count($actual) !== 2 || $actual[1] !== $expected[1]) {
+            return false;
         }
+        $expectedHeaders = explode("\n", $expected[0]);
+        $actualHeaders = explode("\n", $actual[0]);
+        sort($expectedHeaders);
+        sort($actualHeaders);
+        return $expectedHeaders === $actualHeaders;
     }
 }

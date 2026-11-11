@@ -88,6 +88,49 @@ final class FrmClientTest
         } finally {$server->close();}
     }
 
+    public function testStagedPostIsReportedAndReplacedUnderItsId(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true','FORUM_EMOJI_AUTHORED_TEXT'=>'false']);
+        try {
+            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'staged')];
+            file_put_contents($root.'/first.txt',"Registering this key.\n");
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','First','--body-file',$root.'/first.txt'])); assertSame(0,$code,$out);
+
+            file_put_contents($root.'/body.txt',"Saturday ran long.\n");
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject',"Cypher recap \u{1F3A4}",'--body-file',$root.'/body.txt']));
+            assertSame(3,$code,$out);
+            assertStringContains('Staged: the server kept this post but has not published it.',$out);
+            assertStringContains('U+1F3A4 at subject index 13',$out);
+            assertStringContains('View: '.$server->url.'/staged/',$out);
+            preg_match('/^Post-ID: (thread-\S+)$/m',$out,$id);
+            assertStringContains('thread --replace '.$id[1].' --body-file FIXED_DRAFT --subject SUBJECT',$out);
+            assertSame(false,str_contains($out,'Resume:'),'a staged post is not an unresolved write');
+            $operation=dirname(glob(self::stateDir($root,'staged').'/*/operation-*/operation.txt')[0]);
+            [$code,$out]=self::run($script,array_merge($base,['thread','--resume',dirname(self::findOperation($root,$id[1]))]));
+            assertSame(2,$code,$out); assertStringContains('was staged, not lost',$out);
+
+            // Another write is not blocked, and the fix publishes under the staged ID.
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Unrelated','--body-file',$root.'/first.txt'])); assertSame(0,$code,$out);
+            sleep(1); // The fix is signed in a later second than the staged post.
+            [$code,$out]=self::run($script,array_merge($base,['thread','--replace',$id[1],'--subject','Cypher recap','--body-file',$root.'/body.txt']));
+            assertSame(0,$code,$out); assertStringContains('Post-ID: '.$id[1],$out);
+            $post=file_get_contents($server->url.'/api/get_post?post_id='.urlencode($id[1]));
+            assertStringContains('Post-ID: '.$id[1],$post); assertStringContains('Saturday ran long.',$post);
+            [$code,$out]=self::run($script,array_merge($base,['thread','--replace',$id[1],'--subject','Again','--body-file',$root.'/body.txt']));
+            assertSame(2,$code,$out); assertStringContains('No staged operation for '.$id[1],$out);
+            \ForumRewrite\Security\GpgHomeCleaner::dispose(dirname($operation).'/keyring');
+        } finally {$server->close();}
+    }
+
+    private static function findOperation(string $root, string $postId): string
+    {
+        foreach (glob(self::stateDir($root,'staged').'/*/operation-*/operation.txt') ?: [] as $file) {
+            if (str_contains((string) file_get_contents($file), 'Post-ID: '.$postId."\n")) return $file;
+        }
+        throw new RuntimeException('No operation for '.$postId);
+    }
+
     public function testInterruptedLegacyRegistrationResolvesSameIdentity(): void
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();

@@ -1202,6 +1202,11 @@ pre {
   color: var(--status-warning, var(--ink-soft));
 }
 
+/* Staged: post IDs are long unbroken strings; let them wrap on phones. */
+.staged-item__id code {
+  overflow-wrap: anywhere;
+}
+
 .chip--approved {
   border-color: var(--status-ok, var(--line));
   color: var(--status-ok, var(--ink));

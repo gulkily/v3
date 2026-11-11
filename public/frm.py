@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Portable forum client. Python 3 standard library, curl and GPG; no packages."""
-FRM_VERSION = "2026-11-10"
+FRM_VERSION = "2026-11-11"
 
 import argparse
 import datetime
@@ -212,6 +212,9 @@ def api(site, route, fields, args, operation=None, files=None):
             raise ClientError('Unrecognized API response; retain the saved operation.')
         if status == 200 and result.get('status') == 'ok':
             return result
+        if status == 202 and result.get('status') == 'staged' and route == '/api/create_signed_post':
+            print_characters(result, route, fields, operation)
+            return result
         if status == 503 and result.get('status') == 'busy' and attempt < args.retries:
             delay = headers.get('retry-after', result.get('retry_after', 10))
             try:
@@ -230,15 +233,21 @@ def api(site, route, fields, args, operation=None, files=None):
         if operation and status in (400, 403) and ((route == '/api/create_signed_post' and result.get('code') in ('invalid_post', 'access_denied')) or route.startswith('/api/prepare_')):
             meta = load_meta(operation / 'operation.txt')
             meta['State'] = 'rejected'; save_meta(operation / 'operation.txt', meta)
-        for char in (result.get('chars') if isinstance(result.get('chars'), list) else []):
-            if not isinstance(char, dict): continue
-            index = char.get('index'); field = result.get('field')
-            if operation and route == '/api/create_signed_post' and field in ('body', 'subject') and isinstance(index, int):
-                original = (operation / ('original-' + field + '.txt')).read_bytes().decode('utf-8')
-                canonical = fields['canonical_record'].split('\n\n', 1)[1] if field == 'body' else next((line[9:] for line in fields['canonical_record'].splitlines() if line.startswith('Subject: ')), '')
-                index = source_index(original, canonical, index)
-            print('Character: %s %s at %s index %s' % (repr(char.get('char')), char.get('codepoint'), field, index), file=sys.stderr)
+        print_characters(result, route, fields, operation)
         raise response_error(status, text)
+
+
+def print_characters(result, route, fields, operation):
+    """Report each refused character at its position in the original draft file."""
+    for char in (result.get('chars') if isinstance(result.get('chars'), list) else []):
+        if not isinstance(char, dict): continue
+        index = char.get('index'); field = result.get('field')
+        if operation and route == '/api/create_signed_post' and field in ('body', 'subject') and isinstance(index, int):
+            original = (operation / ('original-' + field + '.txt')).read_bytes().decode('utf-8')
+            canonical = fields['canonical_record'].split('\n\n', 1)[1] if field == 'body' else next((line[9:] for line in fields['canonical_record'].splitlines() if line.startswith('Subject: ')), '')
+            index = source_index(original, canonical, index)
+        shown = repr(char['char']) + ' ' if isinstance(char.get('char'), str) else ''
+        print('Character: %s%s at %s index %s' % (shown, char.get('codepoint'), field, index), file=sys.stderr)
 
 
 def save_payload(operation, meta, route, payload, phase):
@@ -265,6 +274,21 @@ def submit(operation, meta, args):
     expected = meta.get('Post-ID')
     if expected and result.get('post_id') != expected:
         raise ClientError('Unexpected publication ID. Keep this operation and check its saved Post-ID.')
+    if result.get('status') == 'staged':
+        meta['State'] = 'staged'
+        save_meta(operation / 'operation.txt', meta)
+        print('Staged: the server kept this post but has not published it.')
+        print('Reason: ' + str(result.get('reason') or 'unknown'))
+        print('Post-ID: ' + result['post_id'])
+        print('View: ' + meta['Site'] + '/staged/')
+        print('Fix the draft, then publish it under the same post ID:')
+        print('Replace: ' + replace_command(meta))
+        return STAGED_EXIT
+    if meta.get('Replaces'):
+        staged_operation = Path(meta['Replaces'])
+        staged_meta = load_meta(staged_operation / 'operation.txt')
+        staged_meta['State'] = 'replaced'
+        save_meta(staged_operation / 'operation.txt', staged_meta)
     meta['State'] = 'accepted'
     save_meta(operation / 'operation.txt', meta)
     print('Status: accepted\nPost-ID: ' + result['post_id'])
@@ -290,7 +314,7 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
         print('Image: %d x %d %s, %d KiB, %s' % (size[0], size[1], kind.upper(), -(-len(prepared) // 1024), note))
         # Only the prepared publish accepts the image file.
         protocol = 'prepared'
-    key = saved_key or identity(args, directory)
+    key = saved_key or (load_meta(args.replaces / 'key.txt') if getattr(args, 'replaces', None) else identity(args, directory))
     fingerprint = key['Fingerprint']
     author = 'openpgp:' + fingerprint.lower()
     if operation is None:
@@ -301,6 +325,10 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
         save_meta(operation / 'key.txt', key)
         meta = {'Site': site, 'Protocol': protocol, 'Kind': args.command, 'State': 'preparing', 'Identity-ID': author,
                 'Thread-ID': args.thread or '', 'Parent-ID': args.parent or args.thread or ''}
+        if getattr(args, 'replaces', None):
+            if protocol != 'signed':
+                raise ClientError('This site does not take one-shot signed posts, so --replace is unavailable.')
+            meta.update({'Replaces': str(args.replaces), 'Replace-Post-ID': args.replace})
         if image:
             # The operation keeps its own copy, so a resume sends the bytes that were signed.
             (operation / ('image.' + image[0])).write_bytes(image[2])
@@ -334,15 +362,21 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
             now = datetime.datetime.now(datetime.timezone.utc)
             timestamp = now.strftime('%Y-%m-%dT%H:%M:%SZ'); prefix = now.strftime('%Y%m%d%H%M%S')
             post_id = args.command + '-' + prefix + '-' + secrets.token_hex(16)
-            def record(id, tags, content, title='', thread='', parent=''):
-                lines = ['Post-ID: ' + id, 'Created-At: ' + timestamp, 'Board-Tags: ' + tags]
+            post_timestamp = timestamp
+            if meta.get('Replaces'):
+                # Same post ID and Created-At as the staged post; the server records when it arrived.
+                post_id = meta['Replace-Post-ID']
+                stamp = post_id.split('-')[1]
+                post_timestamp = '%s-%s-%sT%s:%s:%sZ' % (stamp[0:4], stamp[4:6], stamp[6:8], stamp[8:10], stamp[10:12], stamp[12:14])
+            def record(id, tags, content, title='', thread='', parent='', created=timestamp):
+                lines = ['Post-ID: ' + id, 'Created-At: ' + created, 'Board-Tags: ' + tags]
                 if thread:
                     lines += ['Thread-ID: ' + header(thread), 'Parent-ID: ' + header(parent)]
                 lines += ['Author-Identity-ID: ' + author]
                 if title:
                     lines += ['Subject: ' + title]
                 return '\n'.join(lines) + '\n\n' + content
-            canonical = record(post_id, args.tags, body, subject, args.thread or '', args.parent or args.thread or '')
+            canonical = record(post_id, args.tags, body, subject, args.thread or '', args.parent or args.thread or '', post_timestamp)
             bootstrap = record('bootstrap-' + prefix + '-' + secrets.token_hex(16), 'identity internal',
                                'Automatic account bootstrap anchor.\n', 'account bootstrap')
             payload = {'canonical_record': canonical, 'public_key': public, 'bootstrap_record': bootstrap}
@@ -583,6 +617,24 @@ def prepared_post(operation, meta, args, key, public, body):
 
 
 REJECTED_GUIDANCE = 'Rejected: the server refused this write, so nothing was published. Correct the original draft and start a new write; do not resume.'
+# Exit status for a post the server kept but did not publish (0 published, 2 error).
+STAGED_EXIT = 3
+
+
+def replace_command(meta):
+    command = 'python3 frm.py --site ' + shlex.quote(meta['Site']) + ' ' + meta['Kind'] + ' --replace ' + shlex.quote(meta['Post-ID']) + ' --body-file FIXED_DRAFT'
+    return command + (' --subject SUBJECT' if meta['Kind'] == 'thread' else '')
+
+
+def staged_operation(state, site, kind, post_id):
+    """The saved operation that staged post_id on this site."""
+    for file in state.glob('operation-*/operation.txt'):
+        meta = load_meta(file)
+        if meta.get('Post-ID') == post_id and meta.get('Site') == site and meta.get('State') == 'staged':
+            if meta.get('Kind') != kind:
+                raise ClientError('Post %s was staged as a %s; use that command to replace it.' % (post_id, meta.get('Kind')))
+            return file.parent, meta
+    raise ClientError('No staged operation for %s in this state directory. Replace it from the client that sent it.' % post_id)
 
 
 def rejected(operation):
@@ -618,6 +670,8 @@ def resume_post(operation, meta, args):
         raise ClientError('Unknown saved route; no request sent.')
     key = load_meta(operation / 'key.txt')
     state = meta['State']
+    if state in ('staged', 'replaced'):
+        raise ClientError('This post was staged, not lost; resending the same draft stages it again. ' + ('Publish a fix with: ' + replace_command(meta) if state == 'staged' else 'It was replaced by a fixed version.'))
     if meta['Protocol'] == 'signed' and state in ('ready', 'sending', 'accepted'):
         return submit(operation, meta, args)
     if state == 'rejected':
@@ -791,8 +845,12 @@ def write_post(args, site):
                 raise
         for file in state.glob('operation-*/operation.txt'):
             meta = load_meta(file)
-            if meta['State'] not in ('accepted', 'rejected'):
+            if meta['State'] not in ('accepted', 'rejected', 'staged', 'replaced'):
                 raise ClientError('Unresolved operation. Resume it before creating another post: ' + recovery_command(file.parent, meta))
+        if args.replace:
+            args.replaces, staged = staged_operation(state, site, args.command, args.replace)
+            args.thread = staged.get('Thread-ID') or None
+            args.parent = staged.get('Parent-ID') or None
         return new_post(args, site, state)
     finally:
         lock.rmdir()
@@ -814,6 +872,7 @@ def parser():
         q = sub.add_parser(name, help='Publish signed content; private keys stay local')
         q.add_argument('--body-file')
         q.add_argument('--resume', metavar='OPERATION_DIR', help='Resume saved exact operation without creating a new post')
+        q.add_argument('--replace', metavar='POST_ID', help='Publish a fixed version of a staged post under its post ID (keeps its thread; give the new --body-file and, for threads, --subject)')
         q.add_argument('--subject', default='')
         q.add_argument('--thread')
         q.add_argument('--parent')
@@ -839,9 +898,11 @@ def main():
         if args.timeout <= 0:
             raise ClientError('--timeout must be positive.')
         if args.command in ('thread', 'reply'):
-            if args.resume and any((args.body_file, args.subject, args.thread, args.parent, args.signing_key, args.gpg_home, args.image, args.image_description)):
+            if args.resume and any((args.body_file, args.subject, args.thread, args.parent, args.signing_key, args.gpg_home, args.image, args.image_description, args.replace)):
                 raise ClientError('--resume uses saved inputs; do not combine it with new content or key options.')
-            if not args.resume and (not args.body_file or (args.command == 'reply' and not args.thread)):
+            if args.replace and (args.thread or args.parent or args.image or args.signing_key or args.gpg_home):
+                raise ClientError('--replace keeps the staged post\'s thread and key; give only the fixed --body-file (and --subject for threads).')
+            if not args.resume and (not args.body_file or (args.command == 'reply' and not args.thread and not args.replace)):
                 raise ClientError('New writes require --body-file; replies also require --thread.')
             if (args.command == 'thread' and (args.thread or args.parent)) or (args.command == 'reply' and args.subject):
                 raise ClientError('Use subject for threads, thread/parent for replies.')

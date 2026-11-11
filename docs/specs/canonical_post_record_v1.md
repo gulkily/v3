@@ -203,17 +203,20 @@ The additive single-request posting protocol uses existing records and signature
 Its client IDs are `thread-YYYYMMDDHHMMSS-<32 lowercase random hex>`,
 `reply-YYYYMMDDHHMMSS-<32 lowercase random hex>` or
 `bootstrap-YYYYMMDDHHMMSS-<32 lowercase random hex>`. The timestamp must match
-`Created-At` (UTC, whole seconds). New records must be within 600 seconds of
-server time; already accepted retries are exempt.
+`Created-At` (UTC, whole seconds). Any time is accepted; when it is more than
+600 seconds from server time, the server commits a receipt beside the record
+(`<record>.txt.received`, one `Received-At:` line) and sorts by the receipt.
+The signed bytes are unchanged.
 
 Threads use headers in order: Post-ID, Created-At, Board-Tags,
 Author-Identity-ID, optional nonempty Subject, optional Body-Format, optional Theme.
 Replies use Post-ID, Created-At, Board-Tags, Thread-ID, Parent-ID,
 Author-Identity-ID, optional Body-Format, optional Theme. A record without
-Body-Format is plain text. Unknown, repeated or
-out-of-order headers are rejected. Protocol-only tags and image attachments
-are excluded from ordinary submissions. Existing APIs and historical records
-retain their existing formats.
+Body-Format is plain text. The order above is the canonical order; a record
+with the same headers in another order is stored exactly as signed, because
+every reader parses headers in any order. Unknown or repeated headers,
+protocol-only tags and image attachments are excluded from ordinary
+submissions. Existing APIs and historical records retain their existing formats.
 
 A separate bootstrap uses the thread header order, `identity internal` tags,
 subject `account bootstrap` and body `Automatic account bootstrap anchor.`.
@@ -223,5 +226,8 @@ continues to point to this dedicated bootstrap, never the ordinary post.
 Signed bytes must already satisfy current authored-text policy and canonical
 LF/newline rules. Unicode is supported when enabled by instance policy; the
 historical ASCII-only descriptions above describe the original baseline.
-The server rejects text requiring normalization instead of rewriting it after
-signing. Detached signatures cover the entire exact record.
+The server never rewrites text after signing. A record from a registered key
+whose signature verifies but which breaks one of these rules is staged, outside
+the record, until the author signs a fix under the same post ID; from an
+unregistered key it is rejected. Detached signatures cover the entire exact
+record.

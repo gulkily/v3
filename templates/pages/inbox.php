@@ -5,10 +5,14 @@
  *
  * @var array{enabled:bool,failed:bool,conversations:list<array{counterpart:string,unread_count:int,latest_at:string}>} $messages
  * @var array<string, array{items:list<array<string,mixed>>,failed:bool,catch_up_failed:bool}> $sections
+ * @var int $stagedCount signed posts held for this viewer (or everyone's, for an operator)
  */
 ?>
 <section class="stack inbox" data-approved-identity="<?= $e((string) ($viewerProfile['identity_id'] ?? '')) ?>">
   <h1 class="visually-hidden">Unread</h1>
+<?php if (($stagedCount ?? 0) > 0): ?>
+  <p class="card inbox-staged"><a href="/staged/">Staged (<?= $e((string) $stagedCount) ?>)</a> <span class="chip chip--pending">Held</span></p>
+<?php endif; ?>
 <?php if ($messages['enabled']): ?>
   <article class="card inbox-section" id="inbox-messages-section" aria-labelledby="inbox-messages">
     <h2 id="inbox-messages">Messages</h2>
