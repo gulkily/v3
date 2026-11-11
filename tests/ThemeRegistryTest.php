@@ -230,6 +230,19 @@ final class ThemeRegistryTest
             ':root[data-theme="qdb"] .thread-list > .card:not(.quote-card) {'
         ));
     }
+
+    public function testCounterpartsAreKnownThemesInTheOtherMode(): void
+    {
+        $modes = array_column(ThemeRegistry::all(), 'mode', 'name');
+        foreach (ThemeRegistry::COUNTERPARTS as $theme => $counterpart) {
+            assertSame(true, isset($modes[$theme], $modes[$counterpart]));
+            assertSame(true, in_array($modes[$theme], ['light', 'dark'], true));
+            assertSame(true, $modes[$theme] !== $modes[$counterpart]);
+        }
+        assertSame('midnight', ThemeRegistry::counterpart('chicago'));
+        assertSame('word97', ThemeRegistry::counterpart('midnight'));
+        assertSame(null, ThemeRegistry::counterpart('vapor'));
+    }
 }
 
 if (!function_exists('assertSame')) {

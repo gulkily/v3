@@ -16,6 +16,31 @@ final class ThemeRegistry
     public const LEGACY_ALIASES = ['windark' => 'midnight'];
 
     /**
+     * Each theme's version in the other mode (light to dark, dark to light),
+     * for showing a theme's look on a device or for a reader in the other
+     * mode. The mapping is one-way and need not be one to one: Word 97 and
+     * Chicago both go to Midnight, which comes back to Word 97. A theme with
+     * no entry has no counterpart and shows as it is. Nothing reads this yet;
+     * a caller must still check that the counterpart is permitted on the site.
+     */
+    public const COUNTERPARTS = [
+        'light' => 'dark',
+        'dark' => 'light',
+        'gloss' => 'glossdark',
+        'glossdark' => 'gloss',
+        'engagify' => 'glossdark',
+        'whitehot' => 'thermal',
+        'thermal' => 'whitehot',
+        'word97' => 'midnight',
+        'chicago' => 'midnight',
+        'midnight' => 'word97',
+        'lcd' => 'console',
+        'console' => 'lcd',
+        'sticker' => 'arena',
+        'arena' => 'sticker',
+    ];
+
+    /**
      * A theme may set 'script' => true to ship /assets/theme-<name>.js, which
      * runs only while that theme is active, 'stylesheet' => '<other>' to
      * load /assets/theme-<other>.css instead of its own, and 'cycle' => false
@@ -65,6 +90,12 @@ final class ThemeRegistry
         }
 
         return $names;
+    }
+
+    /** The theme's counterpart in the other mode, or null when it has none. */
+    public static function counterpart(string $name): ?string
+    {
+        return self::COUNTERPARTS[$name] ?? null;
     }
 
     public static function isKnownName(string $name): bool
