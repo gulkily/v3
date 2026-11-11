@@ -1,0 +1,19 @@
+# freeform_event_date debug log
+
+## Step 1 - 2026-11-09 UTC
+
+- Instructions used: RAILSPIKE.md (overview, agent rules, artifact naming, navigation, attribution), docs/workflow/step1_solution_assessment.md, v3 AGENTS.md standing P2 enrollment, PRINCIPLES.md (no-JS posting, optional services safe to switch off).
+- Essential: Original Query rule, Shared/Options/Recommendation structure, extended estimates per option, study checkpoint.
+- Missing or unclear: the host ledger entry could not be added because this workspace clone is not pushed; it should be added when the plan is committed. Site time zone handling for events is undecided (calendar code works in UTC); left for Step 2.
+
+## Step 2 - 2026-11-10 UTC
+
+- Instructions used: docs/workflow/step2_feature_description.md, shared implementation standards (reuse inventory), RAILSPIKE.md writing style and attribution, PRINCIPLES.md (no-JS posting, no third-party components, optional services).
+- Essential: core requirements, completion boundary, risks with validation and mitigation, shared component inventory.
+- Missing or unclear: v3 has no site time zone; chose the calendar_today viewer-clock rule, with UTC for no-JS. Whether Fill calls should be recorded in the LLM exchange store is a maintainer decision; Step 2 says no. Host ledger line still pending until the plans are committed.
+
+## Step 3 - 2026-11-11 UTC
+
+- Instructions used: step3_development_plan_before/do/after.md, shared implementation standards, RAILSPIKE.md writing style and attribution, AGENTS.md P2 enrollment.
+- Essential: Completion Contract, Key Risks with high-risk prefixes, stage fields with stage-work estimates, eight-stage limit.
+- Missing or unclear: no request limiter exists in v3 to reuse for the LLM fallback; the plan relies on member gating and a phrase limit instead. Plan sits at the eight-stage limit, with Stages 5 to 7 named as the split point. Host ledger line still pending until the planning commit.
