@@ -65,6 +65,14 @@ final class FrontController
         if ((new \ForumRewrite\Docs\DocsResponder($this->projectRoot, $this->staticHtmlRoot))->serve($method, $requestUri)) {
             return;
         }
+        // Operators preview the wait pages on a live site without breaking anything; nothing here touches the read model.
+        $waitPreview = $method === 'GET' ? (self::WAIT_PREVIEWS[parse_url($requestUri, PHP_URL_PATH) ?: ''] ?? null) : null;
+        if ($waitPreview !== null) {
+            header('Cache-Control: no-store');
+            header('X-Robots-Tag: noindex');
+            $this->sendHtml($waitPreview === 'busy' ? $this->renderBusyError() : $this->renderReadModelRecovery($waitPreview), 200);
+            return;
+        }
         // Keep discovery independent of sessions, read-model initialization and public caches.
         if ($method === 'GET' && parse_url($requestUri, PHP_URL_PATH) === \ForumRewrite\Support\FrontendInstance::PATH) {
             header('Cache-Control: no-store, private');
@@ -679,18 +687,41 @@ final class FrontController
             . '</section></main></div></body></html>';
     }
 
-    /** Seconds a visitor waits before the busy or update page reloads itself. */
+    /** Seconds the deploy script waits before polling again. */
     private const RETRY_SECONDS = 10;
 
+    /** Wait pages back off from the first delay, doubling up to the cap, so open tabs do not hammer a busy server. */
+    private const PAGE_RETRY_FIRST_SECONDS = 10;
+    private const PAGE_RETRY_MAX_SECONDS = 120;
+    /** Fixed reload for visitors without JavaScript; also the page's Retry-After. */
+    private const PAGE_RETRY_NOSCRIPT_SECONDS = 30;
+
+    /** @var array<string, string> */
+    private const WAIT_PREVIEWS = [
+        '/preview/site-update' => 'updating',
+        '/preview/maintenance' => 'unknown',
+        '/preview/busy' => 'busy',
+    ];
+
+    /**
+     * Reload with exponential backoff and ±20% jitter (10, 20, 40, 80, then 120 s), counted per tab and reset after
+     * ten quiet minutes. A hidden tab waits until it is shown again. location.replace re-requests with GET.
+     */
     private static function retryRefreshTag(): string
     {
-        return '<meta http-equiv="refresh" content="' . self::RETRY_SECONDS . '">';
+        return '<noscript><meta http-equiv="refresh" content="' . self::PAGE_RETRY_NOSCRIPT_SECONDS . '"></noscript>'
+            . '<script>(function(){var k="v3-wait-retry",now=Date.now(),n=0,v;'
+            . 'try{v=(sessionStorage.getItem(k)||"").split(":");if(v.length===2&&now-Number(v[1])<600000)n=Number(v[0])+1||0;sessionStorage.setItem(k,n+":"+now);}catch(e){}'
+            . 'var s=Math.min(' . self::PAGE_RETRY_FIRST_SECONDS . '*Math.pow(2,n),' . self::PAGE_RETRY_MAX_SECONDS . ')*(0.8+Math.random()*0.4);'
+            . 'function go(){location.replace(location.href);}'
+            . 'setTimeout(function(){if(!document.hidden){go();return;}'
+            . 'document.addEventListener("visibilitychange",function(){if(!document.hidden)go();});},s*1000);})();</script>';
     }
 
     /** Busy and update pages: 503 with Retry-After, so the page and well-behaved clients retry. */
     private function sendRetryablePage(string $html): void
     {
-        header('Retry-After: ' . self::RETRY_SECONDS);
+        header('Retry-After: ' . self::PAGE_RETRY_NOSCRIPT_SECONDS);
         $this->sendHtml($html, 503);
     }
 
