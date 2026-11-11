@@ -17,3 +17,4 @@ With Event phrases on, a poster can type when an event happens in words, press F
 
 Notes:
 2026-11-11: staged Railspike cycle approved through Step 3 by the maintainer (docs/plans/freeform_event_date/); built on feat/freeform_event_date behind FORUM_EVENT_WHEN_ENABLED and verified locally. PR open, awaiting review and deployment.
+2026-11-11: maintainer says the feature needs refinement; specifics not yet given. Next: collect what to refine, then revise on feat/freeform_event_date before merging.

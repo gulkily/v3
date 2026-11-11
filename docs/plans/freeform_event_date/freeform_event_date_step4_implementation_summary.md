@@ -197,4 +197,6 @@ Maintainer direction at approval (2026-11-11): "let's stretch it a little bit if
 
 Maintainer comfortable-fit judgment and acceptance: pending.
 
+2026-11-11: maintainer review: "this feature needs refinement." Not accepted as is; specifics to be gathered before the next change. Keep the PR open and the flag off.
+
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
