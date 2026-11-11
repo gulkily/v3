@@ -95,6 +95,30 @@ final class SingleRequestPostingTest
         }
     }
 
+    /** A post whose headers are all authored but out of order is stored exactly as signed and reads back everywhere. */
+    public function testReorderedHeadersPublishAsSigned(): void
+    {
+        [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+        [$destination] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = SignedPostIdentityTest::bundle();
+        $writer->createSignedPost($input);
+        [$headers, $body] = explode("\n\n", $this->signedRecord($input, null, "Out of order\n"), 2);
+        $record = implode("\n", array_reverse(explode("\n", $headers))) . "\n\n" . $body;
+        $bundle = ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)] + $input;
+        unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']);
+
+        $result = $writer->createSignedPost($bundle);
+        assertSame('ok', $result['status']);
+        assertSame($record, file_get_contents($root . '/' . $result['record_path']));
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $db, new CanonicalRecordRepository($root)))->rebuild();
+        $pdo = new PDO('sqlite:' . $db);
+        assertSame('Signed thread', (string) $pdo->query('SELECT subject FROM threads WHERE root_post_id = ' . $pdo->quote($result['post_id']))->fetchColumn());
+        $plan = (new \ForumRewrite\Import\ContentImportPlanner())->plan($root, $destination);
+        assertSame('import', $plan[$result['record_path']]['state']);
+        assertSame(true, $writer->createSignedPost($bundle)['replayed']);
+    }
+
     private function signedRecord(array $input, ?string $threadId, string $body, int $offset = 0): string
     {
         preg_match('/^Author-Identity-ID: (.+)$/m', $input['canonical_record'], $author);

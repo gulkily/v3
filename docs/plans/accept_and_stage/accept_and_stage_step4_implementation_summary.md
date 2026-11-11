@@ -69,3 +69,25 @@ Reuse decisions made at entry, from inspecting the existing code:
 - Estimate details: original scope unchanged. Retrospective above the original because two path consumers (`ApprovalHistory`, source cleanup) and the purge planner surfaced only during the stage.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Reordered headers are stored as signed
+
+**Original estimate: 0.05**
+
+- Changes:
+  - `SignedPostBundleValidator::validateRecord` still rebuilds the canonical form, but a mismatch caused only by header order now passes (`sameHeadersInAnyOrder`: same header lines, same body). Unknown, missing or duplicate headers and any other byte difference still fail. The error now reads "unsupported headers or noncanonical bytes".
+  - Implemented as a private method on the validator rather than the `PostAuthoredHeaders` class named in Step 3: the check is ten lines and only the validator uses it.
+- Verification:
+  - Before changing it, searched `src`, `public/assets` and `public/*.py` for order-dependent header parsing: only record builders match; every reader goes through `GenericTextRecordParser`, which takes any order.
+  - Passed: new `SignedPostBundleValidatorTest::testReorderedHeadersAreAcceptedAsSigned` (fully reversed headers accepted; `Imported-Score-Seed`, a changed body and a missing header refused). `testOptionalThemeHeaderFollowsBodyFormat` now expects its two reordered cases to be accepted; its duplicate and invalid-value cases are still refused.
+  - Passed: new `SingleRequestPostingTest::testReorderedHeadersPublishAsSigned`. A post with reversed headers publishes byte-for-byte, appears after a full rebuild, is marked `import` by `ContentImportPlanner` (parse plus signature check on the receiving side) and replays on retry.
+  - Passed: `./v3 test --smoke --jobs=2` plus `SignedPostBundleValidatorTest SingleRequestPostingTest SingleRequestHttpTest SignedPostIdentityTest AgentPostingApiTest BrowserSigningNormalizationTest`: 547 run, 547 passed. Full suite not run.
+  - Inapplicable: UI, read model (records were already parsed in any order).
+- Notes:
+  - `canonical_post_record_v1.md` is updated with the other specs in Stage 8.
+
+**Retrospective stage work: 0.04**
+
+- Estimate details: original scope unchanged; slightly under the original because no reader needed changes.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
