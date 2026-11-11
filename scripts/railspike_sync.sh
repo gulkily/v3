@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Run with ./v3 railspike sync; all scripts: scripts/README.md.
 set -euo pipefail
 
 railspike_usage() {

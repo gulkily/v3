@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+// Run with ./v3 bake-timestamps; all scripts: scripts/README.md.
+
 require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Retraction\LegacyTimestampBake;

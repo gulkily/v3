@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Run with ./v3 tui; all scripts: scripts/README.md.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

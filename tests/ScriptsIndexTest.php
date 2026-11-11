@@ -32,6 +32,32 @@ final class ScriptsIndexTest
         assertSame([], $unknown);
     }
 
+    /**
+     * Every script the ./v3 launcher runs is in the index's ./v3 section, and
+     * says near its top which ./v3 command runs it.
+     */
+    public function testLauncherScriptsNameTheirCommand(): void
+    {
+        $root = dirname(__DIR__);
+        preg_match_all('/scripts\/([A-Za-z0-9_.-]+\.(?:php|py|pl|sh|mjs|js|cjs))/', (string) file_get_contents($root . '/v3'), $launched);
+        $launched = array_values(array_unique($launched[1]));
+        sort($launched);
+
+        $section = explode("\n## ", explode('## Behind `./v3` commands', $this->index(), 2)[1] ?? '', 2)[0];
+        $problems = [];
+        foreach ($launched as $script) {
+            if (!str_contains($section, '`' . $script . '`')) {
+                $problems[] = $script . ': not in the ./v3 section of scripts/README.md';
+            }
+            $head = implode("\n", array_slice(file($root . '/scripts/' . $script) ?: [], 0, 15));
+            if (!str_contains($head, 'Run with ./v3 ')) {
+                $problems[] = $script . ': no "Run with ./v3 ..." line near the top';
+            }
+        }
+
+        assertSame([], $problems);
+    }
+
     private function index(): string
     {
         return (string) file_get_contents(dirname(__DIR__) . '/scripts/README.md');

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+// Run with ./v3 agent-reply status; all scripts: scripts/README.md.
+
 require dirname(__DIR__) . '/autoload.php';
 
 use ForumRewrite\Llm\LlmExchangeDatabaseConfig;
