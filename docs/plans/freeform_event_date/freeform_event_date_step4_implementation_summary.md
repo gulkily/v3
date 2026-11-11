@@ -143,3 +143,23 @@ Maintainer direction at approval (2026-11-11): "let's stretch it a little bit if
 **Retrospective stage work: 0.10**
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Browser-signed events carry the phrase
+
+**Original estimate: 0.08**
+
+- Changes:
+  - `browser_signing.js`: `collectThreadSubmitFields` sends `event_when`, so a signed post prepares it through `prepare_thread`. The writer change from Stage 5 already puts it in the prepared record.
+  - Anonymous posting with scripts on already submits the plain form, so it carries the phrase unchanged.
+- Verification:
+  - `./v3 test --smoke EventWhenRecordTest BrowserSigningNormalizationTest AgentPostingApiTest`: 542 passed.
+  - `EventWhenRecordTest::testPrepareThreadCarriesThePhraseForSigning` (new): the prepared record has `Event-When` after `Event-Date`; a phrase without a date is refused before anything is written.
+  - `BrowserSigningNormalizationTest`: the collected thread fields now include `event_when`, empty and filled.
+  - `node tests/browser/event_when.mjs` extended and passing: a post signed by the browser's key keeps `Event-Date`, `Event-Time` and `Event-When` and the thread shows the phrase; a post without JavaScript does the same.
+  - Full suite not run.
+- Notes: none.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+**Retrospective stage work: 0.07**
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

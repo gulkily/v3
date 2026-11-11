@@ -88,6 +88,33 @@ final class EventWhenRecordTest
         eventWhenAssertSame($incremental, $columns());
     }
 
+    public function testPrepareThreadCarriesThePhraseForSigning(): void
+    {
+        [$root, $application] = $this->environment(true);
+        $head = trim((string) shell_exec('cd ' . escapeshellarg($root) . ' && git rev-parse HEAD'));
+        $query = 'board_tags=general&subject=Prepared&body=Prepared%20body&author_identity_id=' . rawurlencode('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+        $payload = json_decode($this->request($application, 'POST', '/api/prepare_thread?' . $query . '&event_date=2027-01-08&event_when=' . rawurlencode('Friday, after work')), true, 512, JSON_THROW_ON_ERROR);
+        eventWhenAssertSame('ok', $payload['status']);
+        eventWhenAssertContains("Event-Date: 2027-01-08\nEvent-When: Friday, after work\n", $payload['canonical_record']);
+
+        $refused = json_decode($this->request($application, 'POST', '/api/prepare_thread?' . $query . '&event_when=Friday'), true, 512, JSON_THROW_ON_ERROR);
+        eventWhenAssertSame('Add a date for the event, or press Fill.', $refused['error'] ?? null);
+        eventWhenAssertSame($head, trim((string) shell_exec('cd ' . escapeshellarg($root) . ' && git rev-parse HEAD')));
+    }
+
+    private function request(Application $application, string $method, string $uri): string
+    {
+        http_response_code(200);
+        ob_start();
+        try {
+            $application->handle($method, $uri);
+        } finally {
+            $body = (string) ob_get_clean();
+        }
+
+        return $body;
+    }
+
     public function testFlagOffHidesAStoredPhrase(): void
     {
         [$root, $application] = $this->environment(true);

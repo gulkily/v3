@@ -115,6 +115,49 @@ try {
   await plain.context.close();
 
   assert.equal(head(), before, 'Fill never posts');
+
+  // Posting keeps the phrase: signed by the browser's key, and plainly without JavaScript.
+  const latestRecord = () => {
+    const repo = join(root, 'repository');
+    const path = spawnSync('git', ['-C', repo, 'log', '-1', '--name-only', '--format=', '--', 'records/posts'], { encoding: 'utf8' }).stdout.trim().split('\n')[0];
+    return spawnSync('git', ['-C', repo, 'show', `HEAD:${path}`], { encoding: 'utf8' }).stdout;
+  };
+  const signer = await open(true);
+  await signer.page.goto(base + '/compose/thread');
+  for (let quiet = 0, i = 0; quiet < 3 && i < 40; i++) {
+    const url = signer.page.url(); await signer.page.waitForTimeout(400);
+    quiet = signer.page.url() === url ? quiet + 1 : 0;
+  }
+  const signed = signer.page.locator('[data-compose-kind="thread"]');
+  await signed.getByRole('textbox', { name: 'Title' }).fill('Signed games night');
+  await signed.getByRole('textbox', { name: 'Body' }).fill('Bring a game');
+  await signed.locator('[data-compose-disclosure="event"] > summary').click();
+  await signed.getByRole('textbox', { name: 'When' }).fill('2027-06-05 at 7pm');
+  await signed.getByRole('button', { name: 'Fill' }).click();
+  await signer.page.waitForFunction(() => document.querySelector('[name="event_time"]').value === '19:00');
+  await signed.getByRole('button', { name: 'Post', exact: true }).click();
+  await signer.page.waitForURL(/\/threads\//, { timeout: 60000 });
+  await signer.page.getByText('“2027-06-05 at 7pm”').first().waitFor();
+  const signedRecord = latestRecord();
+  assert.match(signedRecord, /Author-Identity-ID: openpgp:/, 'signed by the browser key');
+  assert.match(signedRecord, /Event-Date: 2027-06-05\nEvent-Time: 19:00\nEvent-When: 2027-06-05 at 7pm\n/);
+  assert.deepEqual(signer.seen, { dialogs: [], errors: [] });
+  await signer.context.close();
+
+  const anonymous = await open(false);
+  await anonymous.page.goto(base + '/compose/thread');
+  const plainPost = anonymous.page.locator('[data-compose-kind="thread"]');
+  await plainPost.locator('[data-compose-disclosure="event"] > summary').click();
+  await plainPost.getByRole('textbox', { name: 'Title' }).fill('Plain games night');
+  await plainPost.getByRole('textbox', { name: 'Body' }).fill('No scripts here');
+  await plainPost.getByRole('textbox', { name: 'When' }).fill('2027-06-12 noon');
+  await plainPost.getByRole('button', { name: 'Fill' }).click();
+  await anonymous.page.waitForLoadState();
+  await anonymous.page.locator('[data-compose-kind="thread"] .compose-form-actions > button[type="submit"]').click();
+  await anonymous.page.waitForLoadState('load');
+  await anonymous.page.getByText('Plain games night').first().waitFor();
+  assert.match(latestRecord(), /Event-Date: 2027-06-12\nEvent-Time: 12:00\nEvent-When: 2027-06-12 noon\n/);
+  await anonymous.context.close();
   console.log('event_when: ok');
 } catch (error) {
   console.error(serverLog.slice(-4000));
