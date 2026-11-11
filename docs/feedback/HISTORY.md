@@ -23,3 +23,4 @@ Each run after an import leaves its proposals in [`triage/`](triage/), named by 
 
 - [October 18 summary](../plans/zenmemes_meta_feedback_2026-10-18_summary.md) and [October 21 summary](../plans/zenmemes_meta_feedback_2026-10-21_summary.md): largely repeated in the October 30 summary, which already merged them, but not checked row by row.
 - [Imported feature requests](../plans/imported_feature_requests_summary_v1.md): listed as unreconciled by the register; not reviewed.
+- [Scraped site requests, Oct 15](../plans/zenmemes_scraped_feature_requests_2026-10-15.txt) (formerly `todo-scraped.txt` at the repo root): requests from zenmemes.com threads (Sep 24 to Oct 15) missing from todo.txt at the time; not checked against items.

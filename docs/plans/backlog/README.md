@@ -10,7 +10,7 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 
 ## Agent and automation
 
-- [Second brain feature assessment](second_brain_step1_solution_assessment.md) — backlogged; [source proposal](../../../second_brain.txt), [debug log](second_brain_debug_log.md).
+- [Second brain feature assessment](second_brain_step1_solution_assessment.md) — backlogged; [source proposal](second_brain_source.txt), [debug log](second_brain_debug_log.md).
 
 - [Agent Reply Return Notification](agent_reply_return_notification_step1_solution_assessment.md)
 - [Classifier Optimization](classifier_optimization_step1_solution_assessment.md)

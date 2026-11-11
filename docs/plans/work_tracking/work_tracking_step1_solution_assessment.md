@@ -23,7 +23,7 @@ Okay, go ahead and write it up, please.
 Direction settled with the maintainer in a follow-up voice discussion (2026-11-03):
 
 - Only **claims and status** (open, active, done, dropped) need one home. Ideas may arrive anywhere and stay loose, as long as nothing is lost and nobody starts work someone else has claimed.
-- `todo.txt` stays the maintainer's quick scratchpad and acts as an inbox, as do site threads, chats, the [meta feedback summaries](../zenmemes_meta_feedback_2026-10-30_summary.md), `todo-scraped.txt` and parked Step 1 assessments. Sweeps pull inbox items into the claim/status home.
+- `todo.txt` stays the maintainer's quick scratchpad and acts as an inbox, as do site threads, chats, the [meta feedback summaries](../zenmemes_meta_feedback_2026-10-30_summary.md), [scraped site requests](../zenmemes_scraped_feature_requests_2026-10-15.txt) (formerly `todo-scraped.txt`) and parked Step 1 assessments. Sweeps pull inbox items into the claim/status home.
 - Status goes back to each item's site thread both automatically (when work lands) and in batches (during site sweeps).
 - Claiming work must not require committing to the v3 repository; parallel sessions cannot see each other's unpulled commits, and the friction is too high.
 - This step decides where claims and status live. The one-time reconciliation of existing sources (about 364 cited site links, 48 Step 1 assessments with no later step, both todo files) is a separate follow-up cycle that uses the result.
