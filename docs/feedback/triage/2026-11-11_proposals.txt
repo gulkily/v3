@@ -1,0 +1,1284 @@
+Title: Feedback triage proposals since November 4
+Status: awaiting review
+Intake-Date: 2026-11-11
+Window-UTC: 2026-11-04T14:43:13Z (end of the 2026-11-04 applied window) through 2026-11-11T22:07:23Z (latest imported post)
+Window-America-New_York: 2026-11-04 09:43:13 EST through 2026-11-11 17:07:23 EST
+Local-Repository-Commit: db0806d2539f3437482caf017832b93c6695dcd2 (import from zenmemes.com, 2026-11-11T22:09Z)
+Application-Commit: 273bf93755a64c091fab231237381d9a5205ad08
+Source: state/local_repository/records/posts; Created-At, all roots/replies/tags
+Procedure: docs/agents/feedback_triage.md
+Posts-Screened: 575
+Post-Classification: attach 78, create 130, skip 367 (posts; total 575)
+Proposed-New-Items: 95 (outcomes)
+New-Item-Kinds: 58 feature, 33 bug, 4 other (outcomes; total 95)
+Proposed-Existing-Item-Updates: 27 (source-attachment outcomes)
+Proposed-Status-Updates: 4 field changes plus 14 note-only merge records (existing items)
+Verification: local text, screenshot and source review; git history reconciliation; no runtime/device replay, no feature implementation, no posting
+
+Review notes:
+- No local import existed in this fresh workspace, so this run initialized state/local_repository and imported zenmemes.com itself (result: partial; 146 invalid and 67 unsupported records, report under the local repository's .git/instance-import/). Posts in those records are not screened.
+- 13 posts in the window were already listed in item Sources (items created between runs); they are skips and need nothing.
+- Many posts were submitted several times (the 2026-11-04 split reposts about five times each, offline notes six times). Exact duplicates are listed as sources on the same outcome and counted with it.
+- Agent-written posts are labeled as agent reports or proposals. Agent replies in the Agent Accessibility thread (thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e) are treated as feedback per the procedure.
+- One post can feed several outcomes: the Nov 4 like-button list (B05, B06, B07, F60, F61, O02, attach B31), the offline notes (B15, B33, F13, F14, F15), and Claude's key-approval report (F47, F48, F49).
+- A ChatGPT post (thread-20261111012910-af4e0764) aggregates the same window; it was used only as context.
+- Image-only posts were opened; all were social.
+## create
+PF-20261111-B01 (bug) Compose menu cut off near viewport top
+  Request: The ... menu in the compose form gets cut off when the form is displayed near the top of the viewport (screenshot).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104155019-1d2637f7
+  Notes: A 2026-11-09 agent reply (reply-20261109180752-2b6da3a09adc1c354370015832280e84) says PR #103 makes the menu open downward when there is no room above; not verified here.
+
+PF-20261111-B02 (bug) Favicon odd in light theme
+  Request: The favicon looks odd in light theme.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104200237-80b737bc
+
+PF-20261111-B03 (bug) Chicago theme pages styled inconsistently
+  Request: The Chicago theme has a lot of inconsistently styled pages; see screenshots for some examples.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105061047-afaabd4f
+  - https://zenmemes.com/posts/reply-20261105061103-8e5a80f5
+  - https://zenmemes.com/posts/reply-20261105061120-6455c4c6
+  - https://zenmemes.com/posts/reply-20261105061151-ed6de7e9
+  - https://zenmemes.com/posts/reply-20261105061212-7f933b57
+  - https://zenmemes.com/posts/reply-20261105061233-0bf1416e
+  Notes: Five screenshots attached as replies; separate from PF-20261104-F66 (apply Word97 repairs to Chicago).
+
+PF-20261111-B04 (bug) Search page blank until results arrive
+  Request: The search page does not show any response until results come back.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104224320-cf567ada
+  Notes: Kept separate from PF-20261104-B27, which is document search; may be the same pending-state gap.
+
+PF-20261111-B05 (bug) New like attribution not linked until reload
+  Request: When "Liked by ilyag" is first injected into the page the username is not linked; it is linked after reload.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+  Notes: Point 2 of a multi-point like-button post.
+
+PF-20261111-B06 (bug) Second tag fails while first is pending
+  Request: Trying to apply a second tag while the first one is still taking a long time results in "Unable to apply tag."
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+  Notes: Point 4 of the same post.
+
+PF-20261111-B07 (bug) Like is slow and can fail with Load failed
+  Request: Like takes far too long. On Nov 9 a Like showed "Load failed" in red and the like was lost; the agent write-up attributes it to slow server responses (busy 503s after about 70 s) and the error being shown raw with no retry.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+  - https://zenmemes.com/posts/thread-20261109062846-635dc44ce3927d3040e25f3c0c7cee1b
+  Notes: Sources: point 1 of the like-button post, plus Claude's findings thread written after the maintainer hit the error. Cause is the agent's finding, not confirmed here.
+
+PF-20261111-B08 (bug) Front-page Post sometimes publishes as Guest
+  Request: The front-page composer sometimes publishes a post as Guest instead of signing it. Revised after review with the maintainer: post immediately, publish as Guest if signing is not ready or fails rather than make the user wait, warm signing in the background after load, and preserve ownership continuity for later claiming.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105203351-44bac944
+  - https://zenmemes.com/posts/reply-20261105225914-330513e4
+  Notes: Filed by ChatGPT from the maintainer's report; the follow-up supersedes the original blocking behavior. The length correlation is unconfirmed.
+
+PF-20261111-B09 (bug) View query uses stale cached database
+  Request: View query on the front page fails with "no such column: posts.body_format" because a stale browser-cached database survived a schema change, and the embedded dialog has no refresh. Wanted: separate schema compatibility and freshness, refresh in the background, keep a usable copy on failure, and offer retry inside the dialog.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105203031-f45eb3a4
+  - https://zenmemes.com/posts/reply-20261105225922-8d52151c
+  Notes: Written up by ChatGPT; the maintainer identified the cause. The maintainer noted the report's GitHub issue link is a mistake (GitHub issues are not used).
+
+PF-20261111-B10 (bug) Untitled posts show their first line twice
+  Request: When a post has no subject the generated title is the truncated first line, and the body repeats that line in full right below.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261106062035-bacc3870
+  Notes: Agent-filed (Claude). PR #142 (merged 39ce6389) reports that a thread with no subject no longer shows its first line twice; not verified here. Related: large type for short posts (F27 in this run).
+
+PF-20261111-B11 (bug) Post stays disabled after Back
+  Request: The Post button is still disabled when I use Back to return to a page to compose a new message.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261107000657-d65e9caa
+  Notes: Possibly covered by the PF-20261030-B03 fix (PR #145, merged 0cc23a5a); kept separate until checked.
+
+PF-20261111-B12 (bug) Board composer lost image attachment
+  Request: The new-thread module on the board page seems to have lost the ability to attach images; it still works on the dedicated page.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261107000818-f5676279
+
+PF-20261111-B13 (bug) Cannot attach images
+  Request: Bug: I cannot attach images.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261108235944-dbea4180
+  Notes: Terse; page and theme unstated. May be the same as B12; kept separate because the location is unknown.
+
+PF-20261111-B14 (bug) High-traffic mode turns itself off
+  Request: High-traffic mode keeps turning itself off; the maintainer asked whether deploys were doing it.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261106224157-743c40fe
+  Notes: Claude's code reading (main 0f424560) suggests silent symlink detaches on username changes, retractions and similar invalidations leave state saying enabled while serving normally. Server check not yet done.
+
+PF-20261111-B15 (bug) Offline compose for threads and replies
+  Request: Offline mode notes: only the board works; "I think we broke offline compose thread and reply." Later marked high priority after the maintainer could not write anything while offline.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+  - https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+  - https://zenmemes.com/posts/thread-20261105202246-44cc3909
+  - https://zenmemes.com/posts/thread-20261105202310-30736513
+  - https://zenmemes.com/posts/thread-20261105202317-aa1c1019
+  - https://zenmemes.com/posts/thread-20261105202334-ba48d42e
+  - https://zenmemes.com/posts/thread-20261111012022-7416348e
+  Notes: 2026-11-11: Claude's replay found offline writing was never reachable rather than regressed; PR #173 (merged f1f62b93) adds offline composers and the Outbox path, and the maintainer posted "Yes it works offline" shortly after. Not yet independently checked; see status note in review.
+
+PF-20261111-B16 (bug) Like needs two taps on iOS
+  Request: On iOS the Like button sometimes only activates the second time I tap; it visibly reacts to the first tap, and it is always twice.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109102005-82d5f403
+  - https://zenmemes.com/posts/reply-20261109102019-174496bc
+  - https://zenmemes.com/posts/reply-20261109102055-608f3187
+  - https://zenmemes.com/posts/reply-20261109102126-3df2bd2d
+  - https://zenmemes.com/posts/reply-20261109102211-e452bd31
+  - https://zenmemes.com/posts/reply-20261109102248-65c4ff0e
+  Notes: Claude traced it to the hover-revealed action row on continuation posts and opened a fix; the maintainer replied "It works!" Merge and deployment not checked here.
+
+PF-20261111-B17 (bug) Thread links redirect to a trailing slash
+  Request: A wget -r stress test showed every /threads/<id> link answered with a 301 to /threads/<id>/.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109225227-180c78c2
+  - https://zenmemes.com/posts/thread-20261109230124-2713435c
+  Notes: Claude found high-traffic mode treated the slashed URL as canonical; PR #115 (merged 15190d19) flips it and needs ./v3 high-traffic enable after deploy.
+
+PF-20261111-B18 (bug) Reload keeps extra parameters on a new post
+  Request: We recently made a change to remove extra parameters from the URL of a newly made post on reload, but it doesn't seem to work anymore.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109222707-ebc215ef
+  Notes: PRs #116 and #117 (merged) move the stripping into url_hints.js; not verified here.
+
+PF-20261111-B19 (bug) Alarming message after leaving a pending like
+  Request: When I like something and then navigate away before it's confirmed, an ugly and alarming message is displayed (screenshot).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110165454-16a6692d
+  - https://zenmemes.com/posts/reply-20261110165458-8db231d2
+
+PF-20261111-B20 (bug) Account page expandos look broken
+  Request: Something is wrong with the expandos on the account page (screenshot).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110170317-753ae745
+  Notes: PF-20261110-B01 lists the Account page as outside its scope.
+
+PF-20261111-B21 (bug) Gloss SQLite viewer cells clipped
+  Request: In the Gloss theme, the expandable fields in SQLite viewer results have a styling problem (screenshot).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110170931-02e6d172
+  Notes: PR #140 (merged 1b2e5cdb) removes pill styling from the cell toggle; not verified here.
+
+PF-20261111-B22 (bug) frm.py cannot post Markdown
+  Request: frm.py has no format option and never writes Body-Format, so every frm.py text post is plain. Proposed: --format plain|markdown on thread and reply.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261110093023-0820ebd2065fe2aaa54dd3ba40f61699
+  - https://zenmemes.com/posts/thread-20261110093310-aa3049ff3a08728b0a29e5af421884d0
+  - https://zenmemes.com/posts/reply-20261111135012-06991466cb73c819d1021afe28330cd8
+  - https://zenmemes.com/posts/reply-20261111140440-744485836f25d3cc8db79951e078509b
+  Notes: Agent trouble reports (Claude, Jules, Manus). Manus notes image posts come out as Markdown while text posts stay plain.
+
+PF-20261111-B23 (bug) llms.txt ambiguous about Markdown default
+  Request: llms.txt says new posts render as Markdown and also that a record without Body-Format is plain; say which default applies to which route.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110093323-588dbee3d289f3fb679d7052bdf8f827
+  Notes: Agent-filed (Claude). Related to PF-20261030-B26.
+
+PF-20261111-B24 (bug) frm.py keyring path too long on headless hosts
+  Request: frm.py's first write fails on headless hosts because the default keyring path makes the gpg-agent socket path about 120 characters, over the roughly 107 limit; only a short --state-dir worked.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261111132222-22113e36afa450037705a10ab592f0d1
+  - https://zenmemes.com/posts/thread-20261111134817-d0ac86d3
+  - https://zenmemes.com/posts/reply-20261110171439-09cdc063
+  Notes: Agent trouble reports (Manus; Claude's earlier report hit the same limit with its own helper). Distinct from PF-20261104-B30, where socket creation itself was denied.
+
+PF-20261111-B25 (bug) Post menu missing on cached pages
+  Request: In high-traffic mode the post ... menu (Retract, Show as Markdown) disappears for everyone, including authors and operators, because cached HTML decides visibility on the server.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111141003-39a043e6
+  Notes: Agent-filed (Claude) after the maintainer found no menu on a cached page.
+
+PF-20261111-B26 (bug) First visits are slow
+  Request: First visits take about 3-4 s before the first byte (home, /api/list_index, /recent/, search), with cold mobile first paint 4.5-7.2 s; warm loads 1-2 s.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111134829-b2127874
+  - https://zenmemes.com/posts/reply-20261111132234-e73c3651e677d2d34e3e64f4baef0ceb
+  Notes: Agent-filed (Claude) from Manus measurements on Nov 11 before high-traffic mode was re-enabled; a later Manus retest with the cache on measured far lower times.
+
+PF-20261111-B27 (bug) Calendar scrolls sideways on phones
+  Request: On mobile view, the calendar is prone to horizontal scrolling.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111220723-33f14ea7
+
+PF-20261111-B28 (bug) Friendly time display missing
+  Request: We used to have friendly time display and it seems to have gone away?
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111220447-47779b35
+  Notes: Asked as a question; cause unknown.
+
+PF-20261111-B29 (bug) Emoji check fails on older PCRE
+  Request: UnicodeTextPolicy uses \p{Emoji_Presentation}, which an agent reports PHP 8.1's bundled PCRE2 on Ubuntu 22.04 does not recognize, so emoji pass unflagged and four smoke tests fail.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111205327-499d0553a2f0982d5f293e8b97db5a6b
+  Notes: Agent-filed (Antigravity). Not reproduced here: the same pattern matches on this workspace's PHP 8.3.6.
+
+PF-20261111-B30 (bug) Test fails only in parallel runs
+  Request: One test sometimes fails when the suite runs in parallel and never alone; not yet tracked down.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110093417-a845671877a163967c6bf89f4a171c5f
+  Notes: Agent-filed (Claude); test name not recorded.
+
+PF-20261111-B31 (bug) Deploy behind count exceeds incoming commits
+  Request: On Deploy, the "behind" number is one more than the number of incoming commits. Explain why; should we fix this?
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109222616-7edadd02
+  - https://zenmemes.com/posts/reply-20261109222619-ebfcd96a
+  - https://zenmemes.com/posts/reply-20261109222807-bd3f379f9bd7f15aaf8f137d0dcc6a25
+  Notes: Claude explained it: behind counts merge commits, Incoming skips them. Suggested fixing the label rather than the number. No change decided.
+
+PF-20261111-B32 (bug) Posting with an image is too slow
+  Request: Posting something with an image is way too slow.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110165319-fcb0f9f7
+  Notes: Same post re-reports the wrong-controls state; that part is attached to PF-20261104-B22.
+
+PF-20261111-B33 (bug) Like button makes the page jump
+  Request: Offline mode notes: "Like button makes page jump."
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+  - https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+  - https://zenmemes.com/posts/thread-20261105202246-44cc3909
+  - https://zenmemes.com/posts/thread-20261105202310-30736513
+  - https://zenmemes.com/posts/thread-20261105202317-aa1c1019
+  - https://zenmemes.com/posts/thread-20261105202334-ba48d42e
+  Notes: Kept separate from the general PF-20261030-B02 (pages jump vertically); may be the same cause.
+
+PF-20261111-F04 (feature) Clip bookmarklet keeps bold and italics
+  Request: Now that we support Markdown, it would be amazing if italics and bold were preserved when clipping somehow.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104153205-a7bb4302
+  - https://zenmemes.com/posts/thread-20261104153747-878e6df0
+
+PF-20261111-F05 (feature) Formatting help outside the ... menu
+  Request: I don't think the ... menu is the right place for the Formatting help item (or probably the Markdown checkbox).
+  Sources:
+  - https://zenmemes.com/posts/reply-20261104155053-d5dd8577
+  Notes: PF-20261109-F01 later moved these into an Options section; check whether this is satisfied.
+
+PF-20261111-F06 (feature) Call the Markdown switch Formatted
+  Request: The Markdown checkbox should be called "formatted" or "formatted text" for users who don't know what Markdown is.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261104155114-ddad088b
+
+PF-20261111-F07 (feature) Show new visitors they already have a guest identity
+  Request: The site should make it clear to a new user that they are already logged in with a guest identity and ready to participate.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104181317-0edea914
+  - https://zenmemes.com/posts/thread-20261104181318-a5ec988f
+  - https://zenmemes.com/posts/thread-20261104181318-e84ebe49
+  Notes: Opposite direction from PF-20261021-F02 (remove the identity-ready notice); the maintainer may want to reconcile them.
+
+PF-20261111-F08 (feature) Rename the events flag
+  Request: Rename the events feature flag to "events and calendar"?
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105122245-c67eecd9
+  Notes: Asked as a question.
+
+PF-20261111-F09 (feature) Faster default import-instance
+  Request: Basic import-instance takes 22 wall seconds; it should be under 5. We can trim content for the default import if we have to, but the trim must cut at the seams of connected content (keep a whole thread with its pubkeys).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105122938-06e0cb0c
+  - https://zenmemes.com/posts/reply-20261105122952-c362dd68
+  - https://zenmemes.com/posts/reply-20261105123029-05a19ee7
+  - https://zenmemes.com/posts/thread-20261105133335-20d67f3d
+  Notes: This run's import took about 34 s.
+
+PF-20261111-F10 (feature) More prominent Post button
+  Request: In the default theme the Post button is barely visible compared with other elements; for a lot of themes the action button like Post should be much more prominent.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105144935-49bd0fb1
+  - https://zenmemes.com/posts/thread-20261109182547-0531c024
+
+PF-20261111-F11 (feature) Compact event date and time fields
+  Request: In the event section of the new post form, date and time should be on the same row, and Until should also have an optional time.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105145032-705ae942
+
+PF-20261111-F12 (feature) Replace arrows with --> on input
+  Request: It would be nice if U+2192 (&rarr;) characters were automatically replaced with --> as part of sanitization.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105145531-b05bb1bd
+
+PF-20261111-F13 (feature) Offline mode for the rest of the site
+  Request: Offline mode notes: the rest of the site needs to be added to offline mode.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+  - https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+  - https://zenmemes.com/posts/thread-20261105202246-44cc3909
+  - https://zenmemes.com/posts/thread-20261105202310-30736513
+  - https://zenmemes.com/posts/thread-20261105202317-aa1c1019
+  - https://zenmemes.com/posts/thread-20261105202334-ba48d42e
+
+PF-20261111-F14 (feature) Better offline image presentation
+  Request: Offline mode notes: image presentation is lacking; even if an image is unavailable it should be presented better.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+  - https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+  - https://zenmemes.com/posts/thread-20261105202246-44cc3909
+  - https://zenmemes.com/posts/thread-20261105202310-30736513
+  - https://zenmemes.com/posts/thread-20261105202317-aa1c1019
+  - https://zenmemes.com/posts/thread-20261105202334-ba48d42e
+
+PF-20261111-F15 (feature) Dismissable offline banner
+  Request: Offline mode notes: it should be possible to make the offline banner go away (maybe into the menubar).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261105202212-95b88c5b
+  - https://zenmemes.com/posts/thread-20261105202235-a19aecdd
+  - https://zenmemes.com/posts/thread-20261105202246-44cc3909
+  - https://zenmemes.com/posts/thread-20261105202310-30736513
+  - https://zenmemes.com/posts/thread-20261105202317-aa1c1019
+  - https://zenmemes.com/posts/thread-20261105202334-ba48d42e
+  Notes: ChatGPT suggested keeping a pending-send count visible after dismissal (agent suggestion).
+
+PF-20261111-F16 (feature) Key and proof of work to browse
+  Request: Add a mode that requires a user to make a key and do a proof of work to browse anything.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261106160023-102cdf4e
+
+PF-20261111-F17 (feature) Clear user, profile and account navigation
+  Request: Under You, add a profile link; the profile page should link to the user page. User vs profile vs account needs refining so it's easier to navigate, especially for non-technical users; maybe rename profile (session? device?).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261106164113-8b520a73
+  Notes: Related to PF-20261104-F15. Claude replied with vocabulary suggestions (agent suggestion).
+
+PF-20261111-F18 (feature) Friendly 404 page
+  Request: This is not a friendly message for a 404: "Not Found. The requested route does not exist in the local test slice."
+  Sources:
+  - https://zenmemes.com/posts/thread-20261106164558-d1bb06be
+  Notes: PR #36 (merged a0fa5b9b) rewrites the 404 and 405 pages and adds recent threads and a report link; not verified here.
+
+PF-20261111-F19 (feature) Midnight Like and Flag match Word 97
+  Request: Bring the button styling (Like/Flag) in Midnight in line with the Word 97 theme.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261107024511-eda36827
+  Notes: Compare PF-20261104-F48 and PF-20261104-F66.
+
+PF-20261111-F20 (feature) Mass-approve keys
+  Request: Would it be possible to mass-approve keys? I think it would save a lot of backend space.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261108205304-1b027efe
+  Notes: Asked as a question.
+
+PF-20261111-F21 (feature) Serve a robots.txt
+  Request: We do need a robots.txt.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261109032013-c73dfc0c
+  - https://zenmemes.com/posts/reply-20261108210513-4c9730f4
+  Notes: Prompted by an agent noting /robots.txt returns the HTML 404 page.
+
+PF-20261111-F22 (feature) Highlight up to date on Deploy
+  Request: On Deploy, the "up to date" part should be highlighted when it's true so I can easily spot it.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261108230028-1c7c26be
+  - https://zenmemes.com/posts/reply-20261108230046-ca94ec5f
+
+PF-20261111-F23 (feature) Liking your own post as self-approval
+  Request: Like should be a secret self-approval: liking your own post gives it score +1, putting it above score 0.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261108230110-511fa9ae
+
+PF-20261111-F24 (feature) Clear the Outbox from the UI
+  Request: There's no way to clear the Outbox through the interface.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261108230824-39d176c6
+  - https://zenmemes.com/posts/reply-20261108230930-510bd857
+
+PF-20261111-F25 (feature) More color variants for the glass theme
+  Request: More different vibe color schemes for the glass theme would be nice.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261108232429-63ad6154
+  - https://zenmemes.com/posts/reply-20261108232451-f78365db
+  Notes: "glass" as written; probably Gloss.
+
+PF-20261111-F26 (feature) Other display formats besides Markdown
+  Request: For the show-as-Markdown setting, are there other formats we may want to support?
+  Sources:
+  - https://zenmemes.com/posts/thread-20261108235011-6ef78ee3
+  Notes: Asked as a question.
+
+PF-20261111-F27 (feature) Large type for short posts
+  Request: Show off the large font for short text.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261108235042-9bd90610
+  Notes: Related to B10 in this run.
+
+PF-20261111-F28 (feature) Sticky table header row
+  Request: Wherever there is a data table, the header row should stick to the top of the screen when scrolling down.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261108235344-c1f809c3
+
+PF-20261111-F29 (feature) Promote a much-liked reply to its own thread
+  Request: Optional: if a reply gets many more likes than its parent, it should become a new top-level item.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109004748-2103084c
+  - https://zenmemes.com/posts/reply-20261109004800-25654684
+  - https://zenmemes.com/posts/reply-20261109004902-c6ee97b3
+  Notes: Dictated; Claude's cleanup lists open questions (threshold, move or copy, back-link, who enables it).
+
+PF-20261111-F30 (feature) Transfer session to another browser
+  Request: It would be nice if there was a "transfer session to another browser" feature.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109005823-1b398654
+  Notes: Related to PF-20261104-F19 (keychain) and PF-20261030-F55.
+
+PF-20261111-F31 (feature) Background audio playback
+  Request: SoundCloud lets me play music in the browser out of focus; want that here too.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109114726-487fba7f
+
+PF-20261111-F32 (feature) Close the ... menu on outside click
+  Request: Should the ... button's menu go away when I click elsewhere on the page?
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109174818-d73f84e4
+  Notes: Asked as a question.
+
+PF-20261111-F33 (feature) Expanded phone navbar looks like content
+  Request: On iPhone the expanded navbar looks a bit like content, which is confusing. How do we improve on this?
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109175829-d767228f
+
+PF-20261111-F34 (feature) Plain summary on the Offline page
+  Request: For /offline/, have a non-technical overview at the top that expands into the technical one.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109180426-5c2c2e9a
+
+PF-20261111-F35 (feature) Archive and discard old media
+  Request: Archive all media older than x days (probably 30 by default), download the archive, and discard the media to save space.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261109182528-bde9f758
+
+PF-20261111-F36 (feature) Signed likes and tag votes for agents
+  Request: Make it straightforward for an agent to Like or tag under its own key: a documented signed-Like recipe with a runnable example and attribution check, and a prepare route for tag votes like the one posts have, instead of hand-built records.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261106213551-f577458a
+  - https://zenmemes.com/posts/thread-20261109224633-64817ab49f4184114e60526f79da3aa9
+  Notes: Agent proposals (ChatGPT task list; Claude, ahead of a planned signed "front" tag). Related to PF-20261104-F10 and F14.
+
+PF-20261111-F37 (feature) frm.py prints the thread link
+  Request: After a write frm.py prints /posts/<id>; people usually want /threads/<thread_id>.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261109052213-6d04b2e8f10c2ae73246c3f53f0f0779
+  - https://zenmemes.com/posts/reply-20261111140440-744485836f25d3cc8db79951e078509b
+  Notes: Agent trouble reports (Claude, Jules).
+
+PF-20261111-F38 (feature) frm.py attaches images
+  Request: frm.py has no way to attach an image; agents must run prepare_reply and create_prepared_post by hand.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261110024605-b7d7c3ab43894eb3be3831d9c7ff357b
+  Notes: PR #130 (merged 40c49e76) adds --image; an agent tested it live on Nov 10 and Manus on Nov 11.
+
+PF-20261111-F39 (feature) Voice dictation in text boxes
+  Request: Voice dictation in the text boxes? How to?
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110165028-44ec98a8
+  Notes: Asked as a question.
+
+PF-20261111-F40 (feature) Cache decrypted messages
+  Request: Don't decrypt messages every time the Messages page opens; keep decrypted messages cached (localStorage or similar) so it loads quickly. Accepted security tradeoff; could become a user preference.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110165704-0a98533a
+
+PF-20261111-F41 (feature) User and client preferences
+  Request: We need user/client preferences.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110165717-b0ca1d92
+
+PF-20261111-F42 (feature) Feature-flag presets
+  Request: Presets: named collections of feature flags applied in one step and then adjusted.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110171842-0dece695
+  Notes: Maintainer's suggestion written up by Claude as a brainstorm.
+
+PF-20261111-F43 (feature) Distraction-free writing space
+  Request: A place to write freely and comfortably, not a quick jot but something more like FocusWriter.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110171946-e5ed4c70
+
+PF-20261111-F44 (feature) One shared table component with zoom
+  Request: Every table (visitor statistics, admin and tools pages, Markdown in posts) should render through one component with the same zoom controls.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111022842-fe7b25eb
+  Notes: Maintainer's request written up by Claude.
+
+PF-20261111-F45 (feature) @mentions
+  Request: Writing @username in a post or reply should link to that person's profile.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111022854-1f4ffc8d
+  Notes: Maintainer's request written up by Claude, with open questions (notification, shared usernames, autocomplete).
+
+PF-20261111-F46 (feature) Sign a post after publishing
+  Request: Let an author attach a signature to an existing unsigned post, shown as "Signed later by" with its own date.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111034625-e01f7e3e
+  Notes: Agent request (ChatGPT, after posting as Guest).
+
+PF-20261111-F47 (feature) Key approval usable by agents
+  Request: Document the approval routes, fix misleading errors (no-session, challenge format, author_identity_id mismatch), show the approval label without preparing one, and add an frm.py approve command.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261111073939-abdef5be
+  Notes: Agent trouble report (Claude, at the maintainer's request). Points 1-4, 6 and 8 of the report.
+
+PF-20261111-F48 (feature) API for keys awaiting approval
+  Request: A list_pending route returning each waiting key's username, real post count, recent titles and approval label.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261111073939-abdef5be
+  Notes: Point 5 of the same report.
+
+PF-20261111-F49 (feature) Approving guest and shared-name keys
+  Request: Approving a waiting guest key adds it to the shared guest account; there is no way to approve it as itself. Shared agent names have the same problem.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261111073939-abdef5be
+  Notes: Point 7 of the same report; needs a design decision.
+
+PF-20261111-F50 (feature) Look up a profile by identity ID
+  Request: get_profile?identity_id=... says profile not found; let it accept identity_id, or say which parameter it expects.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261110171439-09cdc063
+  Notes: Agent trouble report (Claude), point 3.
+
+PF-20261111-F51 (feature) Plain-text thread pages
+  Request: Serve a text form at <page URL>.txt; today .txt is 404 and ?format=txt silently returns HTML.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261111074942-8094407b
+  - https://zenmemes.com/posts/reply-20261111140440-744485836f25d3cc8db79951e078509b
+  Notes: Agent trouble reports (Claude, Jules).
+
+PF-20261111-F52 (feature) PHP and Perl versions of frm.py
+  Request: frm.py exists only in Python although scripts are promised in Python, PHP and Perl; add frm.php and frm.pl.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111141116-32d14e6b
+  Notes: Agent-filed (Claude).
+
+PF-20261111-F53 (feature) Document that unapproved likes do not score
+  Request: llms.txt should say likes from unapproved identities are recorded but count toward scores only once approved.
+  Sources:
+  - https://zenmemes.com/posts/reply-20261111132649-285dd27dfa5b6d041c97ed77cb483554
+  - https://zenmemes.com/posts/thread-20261111134842-ef953438
+  Notes: Agent-filed (Manus, Claude). Behavior is intended.
+
+PF-20261111-F54 (feature) Tame the fixed bottom bar on phones
+  Request: On phones the fixed bottom bar covers content while scrolling; let people dismiss or tame it (brainstorm).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111134854-720445a5
+  - https://zenmemes.com/posts/reply-20261111132234-e73c3651e677d2d34e3e64f4baef0ceb
+  Notes: Agent-filed (Claude) from a Manus mobile test.
+
+PF-20261111-F55 (feature) Obvious offline-save confirmation
+  Request: After pressing Post offline, the only sign is a small grey line under the form; make saving offline as clear as a successful post.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111143214-80094872
+  - https://zenmemes.com/posts/reply-20261111143948-4c0fa1fd
+  Notes: Maintainer's screenshot, written up by Claude.
+
+PF-20261111-F56 (feature) Show offline posts in place
+  Request: Show posts saved offline in the board and thread, marked unsent, readable and likeable.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111143227-d8080e90
+  Notes: Written up by Claude.
+
+PF-20261111-F57 (feature) Keep and show all of a post's times
+  Request: Keep when an offline post was written, and show a post's several times (Created-At, signature, Received-At, commit, written/sent).
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111143240-ef27f061
+  Notes: Written up by Claude.
+
+PF-20261111-F58 (feature) Mentioning a hashtag labels the post
+  Request: Writing about a tag in a post body can label the post by accident; decide which hashtags count as labels.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111144455-0cb60798
+  Notes: Agent-filed (Claude).
+
+PF-20261111-F59 (feature) Show that posts live in Git
+  Request: Readers can't see from a post that it is a file in a Git repo; add source and history links.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261111144551-78c8c205
+  Notes: Agent-filed (Claude).
+
+PF-20261111-F60 (feature) Reach a like from the thread
+  Request: Likes added with the Like button don't show up in the thread in a way that lets me go directly to the like's record and interact with it.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+  Notes: Point 6 of the like-button post.
+
+PF-20261111-F61 (feature) Compact #like replies
+  Request: Likes added via #like show up as full comments which take too much space.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+  Notes: Point 7 of the like-button post.
+
+PF-20261111-O01 (other) PHP missing for agents locally
+  Request: Friction encountered by agent: PHP was not installed locally.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104183649-45e9b73f
+
+PF-20261111-O02 (other) Explain tags vs labels
+  Request: What is the difference between tags and labels, and why both? Also two overloaded actions, post_reaction_add and thread_label_add.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+  Notes: Points 5 and 8 of the like-button post.
+
+PF-20261111-O03 (other) Agents comment shell commands
+  Request: Agents should start each shell command with a one-line # comment saying what it does, so long commands are readable on a phone.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110171901-bbdb9c52
+  - https://zenmemes.com/posts/reply-20261110182455-d4da4562
+  - https://zenmemes.com/posts/reply-20261110213557-833e1ec6
+  Notes: Agent instruction proposal (Claude) with the maintainer's input; would go in agent guidance.
+
+PF-20261111-O04 (other) Share the zoom stepping code
+  Request: The maintainer would like table zoom, the Query viewer and the Forte toolbar to share one zoom helper.
+  Sources:
+  - https://zenmemes.com/posts/thread-20261110231618-168b822f
+  Notes: Written up by Claude; split from PR #149.
+
+## attach
+PF-20261104-B31 Deduplicate like attribution by user
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+  - https://zenmemes.com/posts/thread-20261108163832-474312dd
+  Adds: Repeated in the like-button post (point 3) and in an agent report (Liked by ilyag, ilyag from two keys).
+
+PF-20261104-F15 You opens account and profile
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104211647-eab5abec
+  - https://zenmemes.com/posts/thread-20261104211659-3d78e3bd
+  - https://zenmemes.com/posts/thread-20261104211710-90ce43be
+  - https://zenmemes.com/posts/thread-20261104211721-4f851a67
+  - https://zenmemes.com/posts/thread-20261104211733-cf9e1a87
+  - https://zenmemes.com/posts/thread-20261104211755-0e8f751f
+  - https://zenmemes.com/posts/thread-20261104211806-de22248f
+  - https://zenmemes.com/posts/thread-20261104211816-0547f72b
+  - https://zenmemes.com/posts/thread-20261104211827-ee34a5d5
+  - https://zenmemes.com/posts/thread-20261104211839-70df7259
+  Adds: Split reposts, each submitted about five times; no new content.
+
+PF-20261104-F16 Remember expanded advanced sections
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104211858-d516eef0
+  - https://zenmemes.com/posts/thread-20261104211909-1fca9612
+  - https://zenmemes.com/posts/thread-20261104211920-4573a5f6
+  - https://zenmemes.com/posts/thread-20261104211931-d0f92c85
+  - https://zenmemes.com/posts/thread-20261104211942-7df4371f
+  Adds: Split reposts; no new content.
+
+PF-20261104-F17 Expand and copy fingerprints
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212002-9e87866c
+  - https://zenmemes.com/posts/thread-20261104212013-97fda929
+  - https://zenmemes.com/posts/thread-20261104212024-24ff93c4
+  - https://zenmemes.com/posts/thread-20261104212035-cef4faf4
+  - https://zenmemes.com/posts/thread-20261104212046-3f7f192a
+  - https://zenmemes.com/posts/thread-20261104212105-fd19dc1e
+  - https://zenmemes.com/posts/thread-20261104212116-9ebe0292
+  - https://zenmemes.com/posts/thread-20261104212127-02f90eec
+  - https://zenmemes.com/posts/thread-20261104212138-8c0902d3
+  - https://zenmemes.com/posts/thread-20261104212149-c7777cc2
+  Adds: Split reposts; no new content.
+
+PF-20261104-F18 Friendly localStorage browser
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212209-15935596
+  - https://zenmemes.com/posts/thread-20261104212221-eab2a241
+  - https://zenmemes.com/posts/thread-20261104212235-b20d1e0f
+  - https://zenmemes.com/posts/thread-20261104212246-f4c80a9d
+  - https://zenmemes.com/posts/thread-20261104212257-93f4885b
+  Adds: Split reposts; no new content.
+
+PF-20261104-F19 Local keychain and identity switching
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212316-9cbeced1
+  - https://zenmemes.com/posts/thread-20261104212327-9ec0a1c3
+  - https://zenmemes.com/posts/thread-20261104212338-02df57db
+  - https://zenmemes.com/posts/thread-20261104212349-8a0365e6
+  - https://zenmemes.com/posts/thread-20261104212400-be2466b1
+  Adds: Split reposts; no new content.
+
+PF-20261104-F08 Optional key-backup passphrase
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212419-791403c6
+  - https://zenmemes.com/posts/thread-20261104212430-7efd8272
+  - https://zenmemes.com/posts/thread-20261104212441-492b60a4
+  - https://zenmemes.com/posts/thread-20261104212452-a19b46ed
+  - https://zenmemes.com/posts/thread-20261104212502-ece0a69f
+  Adds: Split reposts; no new content.
+
+PF-20261104-F20 Qualify edited Starfield image warning
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212522-5beb6e6e
+  - https://zenmemes.com/posts/thread-20261104212532-ebc3869c
+  - https://zenmemes.com/posts/thread-20261104212543-643bb7f3
+  - https://zenmemes.com/posts/thread-20261104212554-7d50626f
+  - https://zenmemes.com/posts/thread-20261104212606-b8685261
+  Adds: Split reposts; no new content.
+
+PF-20261104-F21 Paste Starfield key images
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212625-11c72de6
+  - https://zenmemes.com/posts/thread-20261104212636-c5e3e55e
+  - https://zenmemes.com/posts/thread-20261104212647-71789c0d
+  Adds: Split reposts; no new content.
+
+PF-20261104-F22 Optional sign-in debug display
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212700-00c63699
+  Adds: Split repost; no new content.
+
+PF-20261104-F13 Modern theme with icons
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212709-6fc3a2fc
+  Adds: Split repost of the Whitehot plus Word 97 icons idea; no new content.
+
+PF-20261104-B09 Word97 key-removal message unformatted
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212718-985e0629
+  Adds: Split repost; no new content.
+
+PF-20261104-F23 Stash draft and start blank
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212729-d12fbaa7
+  Adds: Split repost; no new content.
+
+PF-20261104-B10 Cannot collapse event section
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104212738-8fcf840f
+  Adds: Split repost; no new content.
+
+PF-20261030-B03 Submitted draft stays in composer
+  New sources:
+  - https://zenmemes.com/posts/thread-20261104184550-7bb613a1
+  - https://zenmemes.com/posts/reply-20261105144618-60f88fcc
+  - https://zenmemes.com/posts/thread-20261105144842-ecd3231d
+  - https://zenmemes.com/posts/reply-20261105144910-8eb05724
+  - https://zenmemes.com/posts/reply-20261105225919-0528e186
+  - https://zenmemes.com/posts/thread-20261110165541-f34dbd07
+  Adds: New repeat reports: mashing Post or resubmitting an old draft makes duplicates; a reproduction (Post, then New post before redirect); ask that the server clear the stored draft on success; a suggestion for exact-text hash matching; the maintainer's reviewed prevention spec (stable submission ID plus a normalized content hash); and "drafts bug is still here" on Nov 10 at 11:55 EST, before PR #145 merged.
+
+PF-20261108-B01 Sent reply briefly shows without header and footer
+  New sources:
+  - https://zenmemes.com/posts/thread-20261105144740-03f36390
+  - https://zenmemes.com/posts/thread-20261105144747-d4d27225
+  - https://zenmemes.com/posts/thread-20261105144752-bb833db0
+  Adds: Earlier report of the same three-stage reply (Nov 5), submitted three times.
+
+PF-20261111-F02 The new post form is busy below Post
+  New sources:
+  - https://zenmemes.com/posts/reply-20261105144945-a0b43425
+  - https://zenmemes.com/posts/thread-20261109175752-3b39271a
+  - https://zenmemes.com/posts/reply-20261109175904-7be8e180
+  Adds: Earlier reports: the new post form looks very busy; the title placeholder ("or we'll use your first line") looks like filled-in data; #general and Event expandos don't match and look like the Post button.
+
+PF-20261030-F50 Remove the New post button
+  New sources:
+  - https://zenmemes.com/posts/thread-20261106061843-86b28732
+  - https://zenmemes.com/posts/thread-20261106061844-a6d284da
+  Adds: Repeat: the New post button crowds the mobile toolbar when the form is already at the top.
+
+PF-20261104-F60 Board and Recent image thumbnails
+  New sources:
+  - https://zenmemes.com/posts/reply-20261105225926-c397c06c
+  Adds: Refinement from the maintainer's review: constrained consistent width, natural proportions with a maximum height, small cached derivatives with a sharper-screen option, flag kept in scope.
+
+PF-20261104-F52 Support features with encrypted API keys
+  New sources:
+  - https://zenmemes.com/posts/thread-20261105035303-18b09027
+  Adds: Terse note "Pay with api key idea"; probably this item, kept as an attach.
+
+PF-20261104-B30 GPG helper previously working now fails
+  New sources:
+  - https://zenmemes.com/posts/thread-20261106071315-6baf331c
+  Adds: Agent report: gpg-agent could not create its socket even with a short GNUPGHOME, and a plain Python AF_UNIX socket call was also denied, pointing at a runner restriction rather than path length.
+
+PF-20261108-F01 Calendar marks today and jumps back to it
+  New sources:
+  - https://zenmemes.com/posts/thread-20261107030611-4a517f5d
+  - https://zenmemes.com/posts/thread-20261107153010-8da18da8
+  Adds: The original request, posted twice before the sourced thread.
+
+PF-20261110-B01 Page titles are inconsistent across pages
+  New sources:
+  - https://zenmemes.com/posts/thread-20261110165157-0f85abfd
+  - https://zenmemes.com/posts/thread-20261110165236-bc54b5cf
+  Adds: Separate threads: the top of the calendar page looks plain; the users page needs a redesign and is hard to scan (screenshots).
+
+PF-20261021-F01 Reply focus
+  New sources:
+  - https://zenmemes.com/posts/thread-20261110165903-2ab3695e
+  Adds: Contrary report (Nov 10): the reply form no longer focuses after writing a reply; "regression? or is it because of image uploads?"
+
+PF-20261104-B22 Confusing image-upload temporary state
+  New sources:
+  - https://zenmemes.com/posts/thread-20261110165319-fcb0f9f7
+  Adds: Repeat (Nov 10): the wrong controls show while an image is uploading.
+
+PF-20261030-F47 Offer secure mode on HTTP
+  New sources:
+  - https://zenmemes.com/posts/thread-20261111012035-dc686fa4
+  Adds: Agent write-up of the maintainer's idea: gently nudge HTTP visitors that can use HTTPS, since offline mode needs a secure origin; never force it.
+
+PF-20261104-B24 Posting preview indentation differs
+  New sources:
+  - https://zenmemes.com/posts/thread-20261111220533-f325709b
+  Adds: General restatement: the JavaScript preview shown while the server responds must stay in line with the server's rendering as development continues.
+
+## status (existing items)
+
+Reconciliation range: 1dd5f66e (commit that added the 2026-11-04 applied proposals) through 273bf937 (main at intake), 591 commits. Item files were already updated for every PF ID named in that range except as listed here. "Merged" means reachable from main; deployment and acceptance were not checked from this workspace.
+
+PF-20261030-B08 Wrong theme flashes before selected theme
+  Workflow: blocked -> done; Evidence: locally-verified -> production-accepted
+  Evidence: PR #34 (6efe5ba3) merged 2026-11-06 01:28 EST; the reporter (maintainer) replied "this is fixed now #fixed" on the source thread at 11:01 EST the same day (https://zenmemes.com/posts/reply-20261106160123-ca5bab01). Device not stated in the reply. Confirm before applying.
+
+PF-20261108-F01 Calendar marks today and jumps back to it
+  Workflow: blocked -> done; Evidence: locally-verified -> production-accepted
+  Evidence: PR #71 (d1052b3f) merged 2026-11-07; the requester replied "I merged it and it looks good!" on 2026-11-08 (https://zenmemes.com/posts/reply-20261108162527-366ca25e). Tag calendars were not mentioned. Confirm before applying.
+
+PF-20261030-B03 Submitted draft stays in composer
+  Workflow/Evidence unchanged (blocked / locally-verified). Add note: PR #145 merged as 0cc23a5a on 2026-11-10; next is deploy and production check (iPhone Back and lost-response cases). The Nov 10 "still here" report predates the merge.
+
+PF-20261104-F54 Shared Tools navigation on tool pages
+  Evidence: locally-verified -> deployed; Workflow stays blocked (maintainer acceptance). Evidence: #121 (99dc3c20) merged; Claude posted a live screenshot of the plain-heading Tools card on Nov 10 (https://zenmemes.com/posts/reply-20261110023555-571394ff).
+
+Merge notes only (Workflow/Evidence unchanged; each item's latest note still says awaiting review or names an unmerged branch):
+  PF-20261030-F46, PF-20261104-F13: PR #53 (2a0a580e) merged 2026-11-07.
+  PF-20261104-F27: PR #23 (8bc40af6) merged 2026-11-04.
+  PF-20261104-F49: PR #26 (822d6134) merged 2026-11-05.
+  PF-20261104-F60: PRs #28, #44, #45 (7a51eaf4, d8da233c, bc561923) merged 2026-11-05/06.
+  PF-20261104-F72: PR #97 (88c312a3) merged 2026-11-09.
+  PF-20261105-F01: PRs #33, #42, #46 (186a255e, ead3e263, d6a5e7a5) merged 2026-11-06.
+  PF-20261108-B01: PR #72 (ef72ce2b) merged 2026-11-08.
+  PF-20261108-F02: PR #79 (2c468492) merged 2026-11-08.
+  PF-20261109-F01: PRs #103, #107 (b62f35cd, 7afe0d6a) merged 2026-11-09.
+  PF-20261110-B01: PR #142 (39ce6389) merged 2026-11-10.
+  PF-20261111-F01: PR #157 (6d0f9da1) merged 2026-11-10.
+  PF-20261111-F02: PR #167 (5fff4c17) merged 2026-11-11.
+  PF-20261111-F03: PR #174 (6037a9b4) merged 2026-11-11.
+
+Possible matches, no change proposed:
+  PF-20261104-B10 (cannot collapse event section): named by calendar commits; replay did not reproduce; still needs the reporter's device.
+  PF-20261030-F05 (since-last-visit filters): Inbox/Unread work landed partly; author filters and RSS remain open per its notes.
+  PF-20261021-F01 (reply focus): a contrary report is attached above; may be a regression.
+  Several new items below already have merged work (B15 offline compose PR #173, B17 PR #115, B18 PRs #116/#117, B21 PR #140, F18 PR #36, F38 PR #130, B10 via PR #142). They start untriaged/unknown as the procedure requires; after creation they could move to blocked/locally-verified or further, which is a follow-up decision.
+
+## skip
+thread marker (retitle or tag-only reply) (9):
+  - reply-20261104144601-73f43b7c
+  - reply-20261108165125-ef6721f4
+  - reply-20261108204435-7ea340af
+  - reply-20261109225231-9f35139e
+  - reply-20261109225241-e3606034
+  - reply-20261110172641-7077f542
+  - reply-20261110180337-b6d15997
+  - reply-20261110180347-fd9b6160
+  - reply-20261111220613-cd776274
+
+social, link share or article (120):
+  - thread-20261104150535-6ece4624
+  - thread-20261104151622-0bc28332
+  - thread-20261104153050-c0dad1cf
+  - thread-20261104154901-b3c3d199
+  - thread-20261104171713-25e5c629
+  - thread-20261104173931-952cb222
+  - thread-20261104173953-0288008d
+  - reply-20261104183935-68013225
+  - thread-20261104201612-49ac96b0
+  - thread-20261104220254-ae0788af
+  - thread-20261104223428-111419c1
+  - thread-20261105035313-0ddcc9ed
+  - thread-20261105060557-d5d064cc
+  - thread-20261105063030-cc7a044d
+  - reply-20261105063821-af452fe8
+  - reply-20261105165800-262b8253
+  - thread-20261105201856-2bb594b0
+  - thread-20261105233712-bd738709
+  - thread-20261106071237-3ce55c14
+  - thread-20261106155940-7166c9b4
+  - thread-20261106200315-c7223058
+  - thread-20261106212901-839bef8638281bb772cb978e0e35136b
+  - thread-20261106220100-bfc72f6e
+  - thread-20261106222047-548088f8
+  - reply-20261106222333-c6bcbdd0
+  - thread-20261106223620-0623b252
+  - thread-20261107000639-50f282e6
+  - thread-20261107034112-a1c7bcea
+  - reply-20261107034458-0e1dcb41
+  - thread-20261107042104-8ad27b10
+  - thread-20261107042820-31c1aeed
+  - thread-20261107043341-be8c892d
+  - thread-20261107044756-1d168196
+  - thread-20261107045231-b2bec894
+  - thread-20261107045724-4f54f33f
+  - thread-20261107045852-a900fe5e
+  - thread-20261107050345-be131002
+  - thread-20261107050940-ba29a41b
+  - thread-20261107052859-53f248e6
+  - thread-20261107063348-9ea50289b5fe6dd64fe0fa97697317fd
+  - thread-20261107122423-e9b2c86a
+  - thread-20261107123757-3e425d0e
+  - thread-20261107131914-b98c54c4
+  - thread-20261107143622-56bfabb6
+  - thread-20261107144240-7c9e5b85
+  - thread-20261107173646-27caa60f
+  - reply-20261107175159-00e3a43a
+  - thread-20261107182840-1cdd81c5
+  - thread-20261107205702-0c570d5f
+  - thread-20261107205800-c240d485
+  - thread-20261108022530-c8d93804
+  - thread-20261108163528-ea66f37e
+  - thread-20261108164008-bcc498f8
+  - reply-20261108164726-183a6c16
+  - reply-20261108164958-4a0db073
+  - thread-20261108193617-c0ccc7e3
+  - reply-20261108193702-b5abb448
+  - thread-20261108193828-98d1d551
+  - thread-20261108204058-10f422d2
+  - reply-20261108204107-b32f7cb1
+  - thread-20261108204142-e7e74ef7
+  - thread-20261108204426-6b742611
+  - thread-20261108204922-87d3860f
+  - thread-20261108225816-67ee71f8
+  - reply-20261108232100-45834e62
+  - thread-20261108234549-5e42f990
+  - thread-20261109004602-67f7b771
+  - reply-20261109004703-ef97f3ff
+  - thread-20261109010108-1cb7e76b
+  - thread-20261109024515-10cc4cfe3baa97876269ea35921da2d7
+  - thread-20261109042004-31f74e95f0036ae011d44d0304c500af
+  - thread-20261109055149-f9789a3f
+  - thread-20261109060052-0b7a2632
+  - thread-20261109060327-3a504d97
+  - thread-20261109113238-a08bacea
+  - reply-20261109153109-f9ec4b5c
+  - thread-20261109174538-54b66899
+  - reply-20261109175656-8b5b5c4d
+  - thread-20261109183513-ef1f29d26bdc2c1ba49585776ba3edb2
+  - thread-20261109184037-bb9a8da1
+  - thread-20261109191447-bf6f2e62
+  - thread-20261109192902-b2299fc6
+  - thread-20261109192950-233f6cd7
+  - thread-20261109220551-6531b43d4fca80f8253125fe986c0ba6
+  - thread-20261109221955-7cd0e8cc6b258b7bd7a002d111de266d
+  - thread-20261109222551-7111bab4
+  - thread-20261109234652-1b512505
+  - thread-20261110001015-7243479d
+  - thread-20261110001152-c1d6fa95
+  - thread-20261110052153-5cc3c75f
+  - reply-20261110083504-c1c013fa
+  - thread-20261110092715-881f45f992413979cfa7ecb3aaccb4d3
+  - thread-20261110164932-d8ced015
+  - thread-20261110174216-9951d9ad
+  - thread-20261110180315-dcf6f862
+  - thread-20261110205612-7728f7bf
+  - thread-20261110210653-0ffc0264
+  - reply-20261110212417-1e452ca8
+  - thread-20261111002012-000bc421
+  - reply-20261111002303-51044c17
+  - thread-20261111034513-db948d63
+  - thread-20261111134226-ccbd6ebb11ae22fec976743a1b63e52f
+  - thread-20261111135805-0b3d96457cc23e4feaa69728126ca5fd
+  - thread-20261111140943-eeb5c6091f1212c87d26da052ccc9607
+  - thread-20261111141607-ec81e2dd
+  - thread-20261111142949-3992d258
+  - thread-20261111144438-7d47edd5
+  - thread-20261111145812-7fdfc1714fc006cf73825d80e9464a18
+  - thread-20261111150654-5fc5d16b
+  - reply-20261111160106-6e6423b1
+  - reply-20261111160305-ac112080
+  - thread-20261111164420-2738545193a4f7450c50069a070f9b00
+  - thread-20261111172609-1d6f4078c30ca825a1a8975b3afbbc3c
+  - thread-20261111173029-03e3b8c614ef531cc6e87c746efab681
+  - reply-20261111173316-93132f0e
+  - reply-20261111173416-b8e9c100
+  - thread-20261111173729-ad3feae6522487d69c1b9501cc9e0826
+  - thread-20261111174412-0b1e970315e625c417351b5368bf34c3
+  - thread-20261111175033-808c5f42316af17c8f3eb5d6a187c837
+  - thread-20261111212906-7bfa9752
+
+bootstrap record (51):
+  - bootstrap-20261104151829-86d28d0a
+  - bootstrap-20261104185913-eced72e1dab954679ecedb2b211685f5
+  - bootstrap-20261104203842-477fe589d415eb2e834e150d793c217d
+  - bootstrap-20261104214954-96325bf5
+  - bootstrap-20261104220251-cbb752c7
+  - bootstrap-20261104223350-3c8f6ded
+  - bootstrap-20261105054434-52c5e517
+  - bootstrap-20261105142051-375b4d34
+  - bootstrap-20261105145652-39f349c2
+  - bootstrap-20261105155037-a27925c0
+  - bootstrap-20261105165349-28b44a70
+  - bootstrap-20261105203344-3a344dd2
+  - bootstrap-20261105204850-0841b3fa
+  - bootstrap-20261105232135-e9aefe10
+  - bootstrap-20261105233710-2e7e48be
+  - bootstrap-20261105235358-7c447609
+  - bootstrap-20261106062033-df73d918
+  - bootstrap-20261106151421-35f09cca
+  - bootstrap-20261106203604-c1147640
+  - bootstrap-20261106204954-1578b07f
+  - bootstrap-20261106205802-f1ef0e54
+  - bootstrap-20261106212901-620dfa537180924a5485e51bbcf5d7f1
+  - bootstrap-20261106231332-9a4bb297
+  - bootstrap-20261107034111-90bb2c5a
+  - bootstrap-20261107034952-0d38322e
+  - bootstrap-20261107041712-7d41306c
+  - bootstrap-20261107045804-17afcd42
+  - bootstrap-20261107052956-642a5e43
+  - bootstrap-20261107053535-7af60d91
+  - bootstrap-20261107053649-806fc55f
+  - bootstrap-20261107155717-6f8a0130
+  - bootstrap-20261107182709-4615552b
+  - bootstrap-20261107182800-976e240a
+  - bootstrap-20261107220227-2d21c65d
+  - bootstrap-20261108004810-fa0348fe
+  - bootstrap-20261108022528-aa33d594
+  - bootstrap-20261108150847-07c21dae
+  - bootstrap-20261108164724-c1673cd9
+  - bootstrap-20261108210511-629034f0
+  - bootstrap-20261108232058-40cc5230
+  - bootstrap-20261109004900-70525ab7
+  - bootstrap-20261109080109-4a2d24ff
+  - bootstrap-20261109153029-8606833c
+  - bootstrap-20261110143638-9dbb3ffa
+  - bootstrap-20261110210652-9a715643
+  - bootstrap-20261111022327-9baa5d9d
+  - bootstrap-20261111073355-e2ddb154
+  - bootstrap-20261111123410-3fdb006b
+  - bootstrap-20261111131519-f93180cddc7aa5611ab7dc0c2f7f3366
+  - bootstrap-20261111131639-d11237f3
+  - bootstrap-20261111134226-2eb2e4a973dcae0f02880db18601f335
+
+agent suggestion or conversation, no maintainer request (29):
+  - reply-20261104151853-477b5044
+  - reply-20261105142115-137ad622
+  - reply-20261105142146-808f8313
+  - reply-20261105142319-a4ea8adf
+  - reply-20261105143126-47a1a961
+  - thread-20261105152720-835ca59c
+  - reply-20261105154443-ce43d7d0
+  - reply-20261105155100-8cade116
+  - reply-20261106151455-c7a7c3de
+  - reply-20261106204955-751f6f3b
+  - reply-20261106224715-8fa29d79
+  - thread-20261106224946-81e820f6
+  - reply-20261107155757-98d05de1
+  - reply-20261108150915-92d174dc
+  - reply-20261108231942-cde11c98
+  - reply-20261109031229-cc752b133e8f260f19cf184e7a2da3ec
+  - thread-20261109051954-8e24340fcf0d516d00a73c054ce1791e
+  - thread-20261109174436-e59ba4ec8dafa778a1ce39105c247a6f
+  - thread-20261109224722-1f431f081792efe7d6e41b62c85fcaad
+  - thread-20261110174632-108afd42
+  - thread-20261110175436-b3745c6d
+  - reply-20261110182610-5902275b
+  - thread-20261110205559-ed040b4d
+  - reply-20261111034905-7f35d41b
+  - reply-20261111035624-04aa49be
+  - reply-20261111131547-47328804b71c7359e2a9f7e5fdb8207d
+  - reply-20261111131557-c319f948f6257a4c85f944191e959b05
+  - reply-20261111133408-2dfa4f4d
+  - reply-20261111134753-3a470c586a6cac6bc7b11fa283ea1571
+
+test post (20):
+  - reply-20261104185028-6f25ac5c
+  - thread-20261105144650-99998903
+  - reply-20261105144654-ea16cdf9
+  - thread-20261105202301-fec2684c
+  - thread-20261106210513-8ff948aa
+  - reply-20261107182905-7d653ac5
+  - thread-20261108165028-0a267cb3
+  - reply-20261108165032-ab469e34
+  - reply-20261108165059-7d40d132
+  - thread-20261108170002-bc0d11d5
+  - reply-20261108170226-c3e8fc27
+  - reply-20261108170238-6aed07d4
+  - reply-20261108170435-0dd7b3a0
+  - thread-20261108192705-caef34d0
+  - thread-20261109011640-7c3b821c
+  - reply-20261109233327-72416205
+  - thread-20261110173244-0dca1a06
+  - reply-20261111132139-3a659cf3
+  - reply-20261111134819-d2d5a976
+  - reply-20261111135023-b23ab5d862e3759c4fa7e3244dfe4926
+
+agent status report on existing work (see status section) (39):
+  - reply-20261104185913-7befc7b0bdc4112d19d38b70a75c7c13
+  - reply-20261104203842-0879c11bfe09a30153558d7aade2d3d1
+  - reply-20261105145656-10e36db1
+  - reply-20261105165352-caf2a99e
+  - reply-20261105232136-421dd665
+  - reply-20261105233509-ca7426b9
+  - reply-20261106203605-cce96b0f
+  - reply-20261106204236-c8da7c4a
+  - thread-20261107151223-95b15e09
+  - reply-20261108034858-f444d758
+  - reply-20261108165816-294799a2
+  - reply-20261108172154-c1f62b5e
+  - reply-20261109012024-ad9ee1fe
+  - reply-20261109060535-98bc06981a63bdb5521e033949a9b7be
+  - reply-20261109103017-8e1acb7c132ea2073134cb203f27d9a4
+  - thread-20261109112456-565c54a79c37ac7715ee82ad11ca4956
+  - reply-20261109115006-9d93cc0c
+  - reply-20261109180752-2b6da3a09adc1c354370015832280e84
+  - reply-20261109213429-a749b67ef7cd90a804531da2372295cb
+  - reply-20261109213723-885092eb6bb3fd3581747ace83f9139e
+  - reply-20261109222056-9935daedd4f0da9abd590d9cc2fd8cbf
+  - reply-20261109222258-ea6b30c5b98b9aa35b30233404ca68c0
+  - reply-20261109233507-0eb1253c012c4b5f2753da2de4d8944a
+  - reply-20261109233718-82e12a2155474157535ec626825595fe
+  - reply-20261109234237-fa643e772a7aced19fd815078c87d598
+  - reply-20261110000308-33a28e363bb6d2d80eeccb88d8461e47
+  - reply-20261110023555-571394ff
+  - reply-20261110025120-f532064afc89d255a0f7245d9977e951
+  - reply-20261110052742-dd8da807
+  - thread-20261110074443-42f7275b902e1cbaa4a2cd61ce285a5c
+  - reply-20261110074501-a543dbd182ac149e6c946ae5c53e60a3
+  - reply-20261110092258-a814305d60c8aed9507123fbc7546971
+  - reply-20261110171136-cda5a24769513f08b5a771f541abc71b
+  - reply-20261110172337-9a409a11
+  - reply-20261110183009-d5e1a94a
+  - reply-20261111015541-623f3f13
+  - reply-20261111122616-144005ca
+  - reply-20261111130529-90595001
+  - reply-20261111142448-a356e5b1
+
+other product or personal question (11):
+  - thread-20261104194536-67649dfe
+  - thread-20261104200227-a1cca203
+  - reply-20261105142138-d7777a4e
+  - reply-20261105143111-0fa7d853
+  - thread-20261105145435-841452bf
+  - reply-20261105205822-f29ad41c
+  - thread-20261105220727-5c4b4a3c
+  - reply-20261105225929-34047e20
+  - thread-20261106223205-8a9b7ea1
+  - thread-20261110173126-321f9a09
+  - reply-20261110173228-d38eafc3
+
+image only, social content (images checked) (9):
+  - thread-20261104223540-1c5b2181
+  - thread-20261105075159-fbe1612b
+  - reply-20261106233822-dc2f2770
+  - thread-20261107000749-abfdac17
+  - reply-20261107001500-dfd8f3b7
+  - reply-20261107024758-4094fd29
+  - thread-20261107125706-6713b57f
+  - thread-20261109183031-a235aaef
+  - thread-20261109231930-d4f73b22
+
+bare word or place name, no request (17):
+  - thread-20261105133452-7ca42b33
+  - thread-20261105133510-5faa6f86
+  - thread-20261105133533-6a257181
+  - thread-20261105133546-8bc1a777
+  - thread-20261106062135-b7c84972
+  - thread-20261107025625-a36fa2e6
+  - thread-20261107055934-648fe93e
+  - thread-20261108034142-76bfbc13
+  - thread-20261108202603-fd5ce8a2
+  - thread-20261108235918-b0ae609b
+  - thread-20261109001541-95b3b4ef
+  - thread-20261109001552-f54244a5
+  - thread-20261109001610-d52d66b7
+  - thread-20261109174920-ba5ad0d3
+  - thread-20261110162221-22d17efc
+  - thread-20261110162245-0f088820
+  - thread-20261111061423-fae30e84
+
+meta note on the report (GitHub issues are not used); recorded in B09 notes (1):
+  - reply-20261105203320-edbb9d28
+
+status evidence for an existing item (see status section) (2):
+  - reply-20261106160123-ca5bab01
+  - reply-20261108162527-366ca25e
+
+spam (3):
+  - thread-20261106175624-a672b7c5
+  - thread-20261110210816-1fceaccc
+  - thread-20261111020044-d334fc9c
+
+agent trouble, one-off (2):
+  - reply-20261109052430-5c8f208f
+  - reply-20261110212359-8f0ae5ab
+
+unclear private-feedback test (2):
+  - thread-20261109080111-415421ff
+  - thread-20261110143640-13a7f551
+
+acceptance note on work in this run (recorded in the new item) (2):
+  - reply-20261109103406-9fca8efa
+  - thread-20261111142942-f403e5f4
+
+private ChatGPT link only, no request text (1):
+  - thread-20261110001607-ed0b811d
+
+agent follow-ups already tracked in docs/plans/rebuild_triggers_checklist.md (3):
+  - thread-20261110093336-46ea6f473f36352d5698a3fe3d90d1f9
+  - thread-20261110093349-e5035144b304c2b6e208325c682db00f
+  - thread-20261110093403-51ccff7cc36daa619b8f01cc20322979
+
+maintainer chore, not a product outcome (delete three merged branches) (1):
+  - thread-20261110093431-d2e0762c7af6d816e327f02397be26c7
+
+already covered: reply in a thread an item already sources (14):
+  - reply-20261110165822-cb4c8628
+  - reply-20261110165840-60d3c5f9
+  - reply-20261110165929-e58318b7
+  - reply-20261110165941-93c96228
+  - reply-20261110170009-f81529f1
+  - reply-20261110170036-10b84649
+  - reply-20261110170051-79e4bf03
+  - reply-20261110170123-202bbc8b
+  - reply-20261110170145-b0af4fb5
+  - reply-20261110170202-c9393457
+  - reply-20261110170224-6dc58ebb
+  - reply-20261110170355-0d3e20f6
+  - reply-20261110170557-384d003a
+  - reply-20261111121404-4fd8a53d
+
+code-quality review decisions, settled in thread (16):
+  - thread-20261111012557-b02a1583
+  - reply-20261111012604-bb6742b2
+  - reply-20261111012616-80aebaf0
+  - reply-20261111012629-25cf4f91
+  - reply-20261111012641-19f147ce
+  - reply-20261111012653-aaa48c64
+  - reply-20261111012706-0339bd51
+  - reply-20261111012718-cdcdca6e
+  - reply-20261111013712-1aff9008
+  - reply-20261111013904-a6f8ec99
+  - reply-20261111014408-dd37dda5
+  - reply-20261111014421-d8249b3f
+  - reply-20261111014810-6100387d
+  - reply-20261111014823-df0aa1e3
+  - reply-20261111014836-438c70e7
+  - reply-20261111032039-e0e25a3d
+
+agent aggregation of this same window (context, not feedback) (1):
+  - thread-20261111012910-af4e0764
+
+inspiration screenshot, no request (1):
+  - thread-20261111202335-12329d5d
+
+already listed in an item's Sources (13):
+  - thread-20261104182608-cc730e8b
+  - thread-20261105231111-4eb985c2
+  - reply-20261106062330-51cfdbb7
+  - thread-20261108034244-8b24dcc8
+  - thread-20261108164027-d91d0c9c
+  - thread-20261108165120-2cbd3bf2
+  - thread-20261108235455-97e8f62c
+  - thread-20261109000307-943b8f85
+  - thread-20261109001832-f640d603
+  - thread-20261109011357-ce8c5503
+  - thread-20261110165107-01f2d2e0
+  - thread-20261110165756-f4ce2a5b
+  - thread-20261111131519-fd220dd1faa105f60e08fcdac33763b9
+
