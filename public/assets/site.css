@@ -1945,3 +1945,14 @@ pre {
     to { opacity: 0.8; }
   }
 }
+
+/* Replies still on this device (Outbox), listed above a thread's reply composer; dashed so they never read as published. */
+.outbox-unsent {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 0.75rem;
+}
+
+.outbox-unsent__item {
+  border-style: dashed;
+}

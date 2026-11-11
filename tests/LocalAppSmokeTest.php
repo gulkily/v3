@@ -2076,6 +2076,8 @@ PHP;
         assertFingerprintedAsset($board, 'lazy_compose_signing.js');
         // The board's composer can save to the Outbox when the connection drops.
         assertFingerprintedAsset($board, 'outbox_compose.js');
+        // Posts waiting in the Outbox go out from the board once the connection is back.
+        assertFingerprintedAsset($board, 'outbox_sender.js');
         assertStringNotContains('/assets/openpgp_loader.js', $board);
         assertStringNotContains('/assets/browser_signing.js', $board);
         assertStringNotContains('View: All', $board);

@@ -3694,6 +3694,7 @@
         return;
       }
       clearComposeFields();
+      if (typeof outboxCompose.showUnsentReplies === "function") void outboxCompose.showUnsentReplies();
       setStatus(statusNode, "Saved on this device, not sent. It will be sent when you're back online.", "ok");
       if (statusNode) {
         const link = document.createElement("a");

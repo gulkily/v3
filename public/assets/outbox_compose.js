@@ -129,6 +129,7 @@
           status.textContent = "Reply draft saved to Tools → Outbox.";
           status.hidden = false;
           button.textContent = "Saved to Outbox";
+          showUnsentReplies();
         }).catch(function (error) {
           button.disabled = false;
           status.textContent = error && error.message ? error.message : "Unable to save the reply draft.";
@@ -161,6 +162,7 @@
           status.textContent = "Thread draft saved to Tools → Outbox.";
           status.hidden = false;
           button.textContent = "Saved to Outbox";
+          showUnsentReplies();
         }).catch(function (error) {
           button.disabled = false;
           status.textContent = error && error.message ? error.message : "Unable to save the thread draft.";
@@ -171,10 +173,93 @@
     });
   }
 
-  window.forumOutboxCompose.bind = bindComposeForms;
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bindComposeForms);
-  } else {
+  function isWaitingPost(item) {
+    return (item.action === "reply" || item.action === "thread")
+      && (item.state === "queued" || item.state === "waiting_for_connection" || item.state === "sending");
+  }
+
+  function textPreview(text) {
+    var line = String(text || "").replace(/\s+/g, " ").trim();
+    return line.length > 120 ? line.slice(0, 119) + "…" : line;
+  }
+
+  // A thread page lists its own replies that are still on this device, above its reply composer.
+  function showUnsentReplies() {
+    if (typeof document.querySelector !== "function") return Promise.resolve();
+    var form = document.querySelector('[data-compose-form][data-compose-kind="reply"]');
+    var threadField = form && form.querySelector('[name="thread_id"]');
+    if (!threadField || !threadField.value || !window.forumOutboxStorage) return Promise.resolve();
+    var threadId = threadField.value;
+    var anchor = form.closest("[data-compose-root]") || form;
+    return window.forumOutboxStorage.list().then(function (items) {
+      var unsent = items.filter(function (item) {
+        return item.action === "reply" && item.target && item.target.id === threadId
+          && (isWaitingPost(item) || item.state === "draft" || item.state === "needs_attention" || item.state === "rejected" || item.state === "conflicted");
+      }).reverse();
+      var list = document.querySelector('[data-role="outbox-unsent-replies"]');
+      if (!unsent.length) {
+        if (list) list.remove();
+        return;
+      }
+      if (!list) {
+        list = document.createElement("section");
+        list.className = "outbox-unsent";
+        list.setAttribute("data-role", "outbox-unsent-replies");
+        list.setAttribute("aria-label", "Replies saved on this device");
+        anchor.parentNode.insertBefore(list, anchor);
+      }
+      list.textContent = "";
+      unsent.forEach(function (item) {
+        var entry = document.createElement("article");
+        entry.className = "card outbox-unsent__item";
+        var body = document.createElement("p");
+        body.textContent = textPreview(item.payload && item.payload.body);
+        var meta = document.createElement("p");
+        meta.className = "meta";
+        meta.textContent = isWaitingPost(item)
+          ? "Saved on this device, not sent. "
+          : "Saved on this device as " + String(item.state).replace(/_/g, " ") + ". ";
+        var link = document.createElement("a");
+        link.href = "/tools/outbox/";
+        link.textContent = "Outbox";
+        meta.appendChild(link);
+        entry.appendChild(body);
+        entry.appendChild(meta);
+        list.appendChild(entry);
+      });
+    }).catch(function () {});
+  }
+
+  function loadSigning() {
+    if (window.ForumBrowserSigning && typeof window.ForumBrowserSigning.prepareOutboxPost === "function") return Promise.resolve();
+    var lazy = window.ForumLazyComposeSigning;
+    return lazy && typeof lazy.load === "function" ? lazy.load() : Promise.resolve();
+  }
+
+  // Once the connection is back, posts waiting in the Outbox go out from whatever page has a composer.
+  // The sender's own lock keeps two tabs from sending the same item.
+  function sendWaitingPosts() {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return Promise.resolve();
+    var sender = window.forumOutboxSender;
+    if (!window.forumOutboxStorage || !sender || typeof sender.processQueuedOutbox !== "function") return Promise.resolve();
+    return window.forumOutboxStorage.list().then(function (items) {
+      if (!items.some(isWaitingPost)) return null;
+      return loadSigning().then(function () { return sender.processQueuedOutbox(); });
+    }).catch(function () {}).then(showUnsentReplies);
+  }
+
+  function start() {
     bindComposeForms();
+    showUnsentReplies().then(sendWaitingPosts);
+  }
+
+  window.forumOutboxCompose.bind = bindComposeForms;
+  window.forumOutboxCompose.showUnsentReplies = showUnsentReplies;
+  window.forumOutboxCompose.sendWaitingPosts = sendWaitingPosts;
+  if (typeof window.addEventListener === "function") window.addEventListener("online", sendWaitingPosts);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
   }
 })();

@@ -59,3 +59,24 @@ Cycle estimate: 0.80
 - Estimate details: original scope unchanged; anonymous and image limits were already in the plan's risks.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Waiting posts send on reconnect; threads list their unsent replies
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `outbox_compose.js` sends posts waiting in the Outbox when the connection returns, and when any page with a composer loads online with waiting posts. It loads the board's lazy signing scripts first when needed, and uses the existing `processQueuedOutbox` with its cross-tab lock.
+  - A thread page lists its own replies still on this device above its reply composer, with a dashed border and "Saved on this device, not sent. Outbox". The list refreshes after Post offline, Save to Outbox and each send, and disappears once they are accepted.
+  - The board loads `outbox_sender.js`; small styles for the list in `site.css`.
+- Verification:
+  - Browser replay, local server with the worker: a reply posted offline on a thread appears in the unsent list; on reconnect it is published once and shows in the thread, and the list is gone.
+  - Ten replies queued offline, then sent with every first `create_prepared_post` response dropped after the server handled it: one published copy each, all ten "accepted" in the Outbox. One send was cut off by a page navigation and went out after the sender's existing two-minute requeue, still once.
+  - `./v3 test --smoke OfflineOutboxComposeTest OfflineOutboxSendTest OfflineOutboxStateTest LocalAppSmokeTest ReactionOutboxTest`: 464 run, 464 passed. Full suite not run.
+  - `tests/browser/composers.mjs`: pass.
+  - Two tabs sending at once: relies on the existing `navigator.locks` delivery lock; not replayed separately.
+- Notes:
+  - A post interrupted mid-send waits up to two minutes before retrying. That is the sender's existing stale-send window, left unchanged.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
