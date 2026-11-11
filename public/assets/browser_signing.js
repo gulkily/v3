@@ -3170,6 +3170,20 @@
       });
     }
 
+    // Saved private-message copies (private_message_cache.js) belong to this identity; remove them with it.
+    function clearSavedMessageCopies() {
+      if (window.ForumPrivateMessageCache) return window.ForumPrivateMessageCache.clearAll();
+      return new Promise(function (resolve) {
+        try {
+          const call = window.indexedDB.deleteDatabase("forum-private-message-cache-v1");
+          call.onsuccess = call.onerror = function () { resolve(); };
+          setTimeout(resolve, 3000);
+        } catch (error) {
+          resolve();
+        }
+      });
+    }
+
     async function clearBrowserIdentity() {
       try {
         await clearAuthenticatedIdentity();
@@ -3183,6 +3197,7 @@
         localStorage.removeItem(storageKeys.fingerprint);
         localStorage.removeItem(storageKeys.publishedFingerprint);
         localStorage.removeItem(storageKeys.composePromptCancelled);
+        await clearSavedMessageCopies();
         renderSavedState(root);
         if (publicKeyField) {
           publicKeyField.value = "";

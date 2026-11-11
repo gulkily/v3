@@ -350,6 +350,7 @@
     }
     function initiallySettled() { regroup(root); layout(); if (!navigated) revealLatest(); }
     root.addEventListener('private-message-reader-settled', initiallySettled);
+    root.addEventListener('private-message-cache-checked', initiallySettled);
     // Start at the newest message right away; settling repeats this once heights are final.
     initiallySettled();
     latest.addEventListener('click', function () { revealLatest(); });

@@ -37,6 +37,13 @@ export async function checkCachedConversation(page, base) {
   const count = request => { if (request.url().includes('/api/private_messages/conversation')) fetched++; };
   page.on('request', count);
   await page.goto(url);
+  // The transcript shows only once saved copies are in place: every message is already read and the newest is in view.
+  await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.privateMessageCacheChecked === '1');
+  assert.equal(await page.evaluate(allVerified), true);
+  assert.ok(await page.evaluate(() => {
+    const last = [...document.querySelectorAll('[data-private-message-id]')].pop().getBoundingClientRect();
+    return last.top < innerHeight && last.bottom > 0;
+  }), 'newest message is in view');
   await page.waitForFunction(allVerified);
   page.off('request', count);
   assert.deepEqual(await page.locator('[data-role="private-message-plaintext"]').allTextContents(), texts);

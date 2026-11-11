@@ -98,9 +98,12 @@ try {
   const seed = await readFile(join(root,'repository/records/approval-seeds/openpgp-'+fingerprint+'.txt'),'utf8');
   assert.match(seed,/Seed-Reason: initial approved user/);
   // Remove this key, Continue with a new name, Approve: the new key is signed in and approved without a refresh.
+  // Saved private-message copies (DM instant load) are deleted with the identity.
+  await page.evaluate(() => new Promise(resolve => { const r = indexedDB.open('forum-private-message-cache-v1'); r.onupgradeneeded = () => r.result.createObjectStore('messages'); r.onsuccess = () => { r.result.close(); resolve(); }; }));
   await page.getByRole('button', {name:'Remove this key'}).click();
   await page.locator('[data-action="clear-browser-identity"]').click();
   await page.waitForFunction(() => document.querySelector('[data-account-key-root]').dataset.accountState === 'guest');
+  assert.equal(await page.evaluate(async () => (await indexedDB.databases()).some(d => d.name === 'forum-private-message-cache-v1')), false);
   assert.equal(await button.isVisible(), false);
   await page.locator('[data-role="account-name-input"]').fill('mouse');
   await page.locator('[data-role="account-name-input"]').press('Enter');

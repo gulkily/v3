@@ -6,6 +6,12 @@
   const cardMessages = new WeakMap();
   const cardRequests = new WeakMap();
   const cardCursors = new WeakMap();
+  const cacheChecks = new WeakMap();
+
+  function cacheChecked(card) {
+    const done = cacheChecks.get(card);
+    if (done) { cacheChecks.delete(card); done(); }
+  }
 
   function armoredPrivateKey() {
     try {
@@ -251,6 +257,7 @@
     // network fetch or OpenPGP. Only verified reads are ever saved, and only for messages the page lists.
     const cache = mailbox === "conversation" && !suppliedMessage && !historyCandidate ? window.ForumPrivateMessageCache : null;
     const cached = cache && cache.enabled() ? await cache.get(messageId) : null;
+    cacheChecked(card);
     if (cached !== null) {
       result = { kind: "verified", plaintext: cached };
     } else try {
@@ -286,7 +293,7 @@
   function readCard(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate) {
     if (!card) return Promise.resolve();
     if (cardRequests.has(card)) return cardRequests.get(card);
-    const request = readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate).finally(function () { cardRequests.delete(card); });
+    const request = readCardOnce(mailbox, card, counterpartUsernameToken, suppliedMessage, historyCandidate).finally(function () { cacheChecked(card); cardRequests.delete(card); });
     cardRequests.set(card, request);
     return request;
   }
@@ -322,6 +329,15 @@
     document.addEventListener('private-message-viewer-known', retryHistory, {once:true});
     // Start loading OpenPGP now, and read the newest messages first so the bottom of the thread fills in first.
     if (armoredPrivateKey()) openPgpApi().catch(function () {});
+    // The conversation keeps its messages hidden until saved copies are in place, so it doesn't jump.
+    if (root.dataset.privateMessageCache === "1") {
+      Promise.all(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
+        return new Promise(function (resolve) { cacheChecks.set(card, resolve); });
+      })).then(function () {
+        root.dataset.privateMessageCacheChecked = "1";
+        if (root.dispatchEvent) root.dispatchEvent(new CustomEvent("private-message-cache-checked"));
+      });
+    }
     Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).reverse().map(function (card) {
       cardCursors.set(card, root.dataset.historyPageCursor || '');
       return readCard(mailbox, card, counterpartUsernameToken);

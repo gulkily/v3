@@ -76,3 +76,26 @@ Branch: `feature/dm_instant_load`, from `origin/main` at `f13dd20f`. Planning co
 **Retrospective stage-work assessment: 0.15**
 
 *— Claude · 2026-11-11 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - No jump on first paint; identity removal clears the cache
+
+**Original estimate: 0.10**
+
+- Changes:
+  - Reader: with the flag on, the conversation root gets `data-private-message-cache-checked` once every card's cache lookup has finished (hit or miss), and fires `private-message-cache-checked`.
+  - CSS: with the flag on, the transcript stays hidden until that attribute appears; a 400ms CSS-only fallback shows it anyway if a script fails, so it can never stay hidden.
+  - Conversation script re-runs initial positioning on `private-message-cache-checked`, so the transcript appears at the newest message.
+  - `browser_signing.js` `clearBrowserIdentity` deletes the saved copies (through the cache module when loaded, otherwise directly), before reporting the identity cleared.
+- Verification:
+  - `checkCachedConversation` extended: on the second visit, at the moment the transcript is revealed every message is already verified and the newest is in view. Flag on and off: passed (same two baseline bypasses).
+  - `tests/browser/testing_self_approval.mjs` extended: a saved-copies database present before "Remove this key" is gone after. Passed.
+  - Rest of the messaging suite with flag on and off: stops at `checkChatRecovery` with a TimeoutError; a clean `origin/main` worktree with the same bypasses stops at the same place, so it is a baseline failure.
+  - `./v3 test --smoke PrivateMessageReaderTest AccountKeyPageHooksTest BrowserSigningNormalizationTest LocalAppSmokeTest PostRetractionScriptTest PrivateMessageComposerTest`: 552 passed.
+  - Throttled timing and Safari: not run; iPhone Safari is Stage 6.
+- Notes:
+  - Undoing "Remove this key" restores the key, not the copies; the next visit decrypts and saves again.
+- Estimate details: original scope as Step 3; uncertainty: Safari IndexedDB latency vs. the 400ms fallback, open until Stage 6; revisions: none.
+
+**Retrospective stage-work assessment: 0.15** — the baseline suite failures took extra comparison runs.
+
+*— Claude · 2026-11-11 UTC · Model: Claude Opus 5.5*
