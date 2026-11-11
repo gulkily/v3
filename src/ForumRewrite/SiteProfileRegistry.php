@@ -23,6 +23,8 @@ final class SiteProfileRegistry
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
                 'defaultTheme' => 'auto',
+                // What Auto/System shows for a light or dark device setting.
+                'autoThemes' => ['light' => 'gloss', 'dark' => 'glossdark'],
                 'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'gloss', 'glossdark', 'engagify'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
@@ -130,6 +132,18 @@ final class SiteProfileRegistry
         return self::active()['pageThemes'][self::pageThemePath($path)] ?? null;
     }
 
+    /**
+     * The explicit themes Auto/System resolves to for a light and a dark
+     * device setting. Profiles without autoThemes use Light and Dark.
+     *
+     * @param array<string, mixed> $profile
+     * @return array{light: string, dark: string}
+     */
+    public static function autoThemes(array $profile): array
+    {
+        return ($profile['autoThemes'] ?? []) + ['light' => 'light', 'dark' => 'dark'];
+    }
+
     public static function validate(array $profiles): void
     {
         if (!isset($profiles[self::DEFAULT_SITE_ID])) {
@@ -170,6 +184,17 @@ final class SiteProfileRegistry
 
             if (!in_array($profile['defaultTheme'], $profile['permittedThemes'], true)) {
                 throw new \RuntimeException("Site profile {$siteId} default theme must be permitted.");
+            }
+
+            if (isset($profile['autoThemes'])) {
+                if (!is_array($profile['autoThemes']) || array_keys($profile['autoThemes']) !== ['light', 'dark']) {
+                    throw new \RuntimeException("Site profile {$siteId} auto themes must name a light and a dark theme.");
+                }
+                foreach ($profile['autoThemes'] as $autoTheme) {
+                    if (!is_string($autoTheme) || $autoTheme === 'auto' || !in_array($autoTheme, $profile['permittedThemes'], true)) {
+                        throw new \RuntimeException("Site profile {$siteId} auto themes must be permitted explicit themes.");
+                    }
+                }
             }
 
             foreach (($profile['pageThemes'] ?? []) as $pagePath => $pageTheme) {

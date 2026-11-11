@@ -62,10 +62,12 @@
   window.forumThemeScripts = themeScripts;
   themeScripts.activate(document.documentElement.getAttribute("data-resolved-theme"));
 
+  // The theme Auto/System shows for the device's light or dark setting
+  // (the site profile's autoThemes; Light and Dark by default).
   function systemTheme() {
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return document.documentElement.getAttribute(dark ? "data-auto-dark-theme" : "data-auto-light-theme")
+      || (dark ? "dark" : "light");
   }
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -148,6 +150,14 @@
     function applyTheme(theme) {
       if (isExplicitTheme(theme)) {
         document.documentElement.setAttribute("data-theme", theme);
+        return;
+      }
+
+      // Auto showing a site's own pair (Gloss / Gloss Dark) needs that
+      // theme's attribute; plain Light and Dark follow the device in CSS.
+      var shown = systemTheme();
+      if (shown !== "light" && shown !== "dark") {
+        document.documentElement.setAttribute("data-theme", shown);
         return;
       }
 
@@ -518,6 +528,7 @@
       mediaQuery.addEventListener("change", function () {
         if (currentTheme === "auto") {
           ensureThemeStylesheet(resolvedTheme(currentTheme), false);
+          applyTheme(currentTheme);
           syncResolvedTheme(currentTheme);
           syncButton(currentTheme);
         }

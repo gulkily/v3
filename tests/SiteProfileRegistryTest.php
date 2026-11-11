@@ -121,6 +121,30 @@ final class SiteProfileRegistryTest
         }
     }
 
+    public function testAutoThemesDefaultToLightAndDarkAndMustBePermitted(): void
+    {
+        $profiles = SiteProfileRegistry::all();
+        assertSame(['light' => 'gloss', 'dark' => 'glossdark'], SiteProfileRegistry::autoThemes($profiles['zenmemes']));
+        assertSame(['light' => 'light', 'dark' => 'dark'], SiteProfileRegistry::autoThemes($profiles['chouse']));
+
+        $message = 'Site profile chouse auto themes must be permitted explicit themes.';
+        $cases = [
+            'unpermitted theme' => [['light' => 'gloss', 'dark' => 'dark'], $message],
+            'auto' => [['light' => 'auto', 'dark' => 'dark'], $message],
+            'missing dark' => [['light' => 'light'], 'Site profile chouse auto themes must name a light and a dark theme.'],
+        ];
+        foreach ($cases as [$autoThemes, $expected]) {
+            $profiles = SiteProfileRegistry::all();
+            $profiles['chouse']['autoThemes'] = $autoThemes;
+            assertThrowsRuntime(
+                static function () use ($profiles): void {
+                    SiteProfileRegistry::validate($profiles);
+                },
+                $expected,
+            );
+        }
+    }
+
     public function testBrowserRuntimeProfilesAreDerivedOnlyFromValidatedNamespaces(): void
     {
         foreach (ProfileRegressionContract::all() as $contract) {

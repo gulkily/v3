@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\View\ThemeRegistry;
 use ForumRewrite\View\TemplateRenderer;
 
@@ -50,10 +51,12 @@ final class ProfileThemePresentationTest
                 putenv('FORUM_SITE_ID=' . $profileId);
                 $_COOKIE = [ThemeRegistry::THEME_HINT_COOKIE => $unavailableTheme];
                 $html = $renderer->renderLayout('Theme', '<main></main>', 'board');
-                $initialTheme = $profile['defaultTheme'] === 'auto' ? 'light' : $profile['defaultTheme'];
+                $initialTheme = $profile['defaultTheme'] === 'auto' ? SiteProfileRegistry::autoThemes($profile)['light'] : $profile['defaultTheme'];
+                $autoThemes = SiteProfileRegistry::autoThemes($profile);
 
                 assertSame(true, str_contains($html, 'data-default-theme="' . $profile['defaultTheme'] . '"'));
-                assertSame(true, str_contains($html, 'href="' . \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-' . $initialTheme . '.css') . '"'));
+                assertSame(true, str_contains($html, 'href="' . \ForumRewrite\Host\AssetFingerprint::fingerprintedPath($publicRoot, ThemeRegistry::stylesheetPaths()[$initialTheme]) . '"'));
+                assertSame(true, str_contains($html, 'data-auto-light-theme="' . $autoThemes['light'] . '" data-auto-dark-theme="' . $autoThemes['dark'] . '"'));
                 assertSame(false, str_contains($html, 'theme-' . $unavailableTheme));
                 assertSame(true, str_contains($html, '"themeStorageKey":"' . $contract['runtime']['themeStorageKey'] . '"'));
             }
