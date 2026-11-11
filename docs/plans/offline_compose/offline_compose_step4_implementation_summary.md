@@ -102,3 +102,22 @@ Cycle estimate: 0.80
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - The offline Reply page shows the post being answered
+
+**Original estimate: 0.10**
+**Retrospective: 0.08**
+
+- Changes:
+  - New `offline_reply_context.js` on the reply page. On the copy the worker serves offline, it reads the post being answered and its thread from the saved snapshot. It fills the same heading and quote the server renders: "Reply to <author>", author · date · in <thread title>, and the body, clamped when long. When the post isn't saved: "This thread isn't saved on this device. You can still write your reply and save it to send later."
+  - The worker marks compose pages it serves from the device with `data-offline-copy`, so the script never touches a page the server rendered.
+  - The page's asset paths now include the SQLite runtime, which the reader already caches.
+- Verification:
+  - Browser replay, offline: a reply to a reply and a reply to the thread root both show the same heading and quote as the online page. An unsaved thread shows the "isn't saved" note, and the composer still works. Text typed offline is still there after an offline reload, with the quote. Online, a reply page with no parent is left alone. Screenshot compared with the online page.
+  - `OfflineNavigationWorkerTest` checks the `data-offline-copy` mark on both pages.
+  - `./v3 test --smoke OfflineNavigationWorkerTest LocalAppSmokeTest OfflineOutboxComposeTest SiteProfileRegistryTest`: 472 run, 472 passed. `LazyComposeSigningTest OpenPgpAssetSmokeProbeTest OpenPgpLoaderTest`: 12 passed. `tests/browser/composers.mjs`: pass. Full suite not run.
+- Notes:
+  - Dates use the month and day in UTC, like the online page; the online page also adds a full-date tooltip, which the offline quote leaves out.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

@@ -391,7 +391,7 @@ final class ComposeAndAccountKeyController
             'boardTags' => $boardTags !== '' ? $boardTags : 'general',
             'body' => $body,
             'retiredComposeAttempt' => $retiredComposeAttempt,
-        ], 'Reply', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js', '/assets/outbox_sender.js', '/assets/thread_reactions.js', '/assets/post_retraction.js', '/assets/post_analysis.js']));
+        ], 'Reply', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js', '/assets/outbox_sender.js', '/assets/offline_reply_context.js', '/assets/thread_reactions.js', '/assets/post_retraction.js', '/assets/post_analysis.js']));
     }
 
     private function renderAccountKeyPage(?string $notice = null, ?string $error = null): string

@@ -556,7 +556,7 @@ const fs = require('fs');
 const vm = require('vm');
 const source = fs.readFileSync(process.argv[1], 'utf8');
 const listeners = {};
-const page = (title) => '<title>' + title + '</title><input type="hidden" name="thread_id" value=""><input type="hidden" name="parent_id" value="">';
+const page = (title) => '<title>' + title + '</title><section data-compose-root><input type="hidden" name="thread_id" value=""><input type="hidden" name="parent_id" value=""></section>';
 const context = {
   URL, Response, Promise, console: { info() {}, error() {} },
   self: { location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' }, navigator: { onLine: false }, addEventListener(type, listener) { listeners[type] = listener; } },
@@ -592,6 +592,8 @@ NODE;
         $result = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
 
         assertStringContains('<title>New Post</title>', $result['thread']);
+        assertStringContains('data-compose-root data-offline-copy="1"', $result['thread']);
+        assertStringContains('data-compose-root data-offline-copy="1"', $result['reply']);
         assertStringContains('name="thread_id" value="root-001"', $result['reply']);
         assertStringContains('name="parent_id" value="reply-001"', $result['reply']);
         assertStringContains('name="thread_id" value="a&quot;&gt;&lt;b"', $result['escaped']);

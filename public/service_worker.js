@@ -204,8 +204,10 @@ function escapeAttribute(value) {
 async function offlineComposePage(url) {
   const page = composePageFor(url);
   const cached = await cachedResponse(await caches.open(CACHE_NAME), page);
-  if (!cached || page !== COMPOSE_REPLY_URL) return cached;
-  let html = await cached.text();
+  if (!cached) return cached;
+  // Marked so page scripts know this copy came from the device, not the server.
+  let html = (await cached.text()).replace("data-compose-root", 'data-compose-root data-offline-copy="1"');
+  if (page !== COMPOSE_REPLY_URL) return new Response(html, { status: cached.status, statusText: cached.statusText, headers: cached.headers });
   for (const name of ["thread_id", "parent_id"]) {
     const value = url.searchParams.get(name) || "";
     html = html.replace(`name="${name}" value=""`, `name="${name}" value="${escapeAttribute(value)}"`);
