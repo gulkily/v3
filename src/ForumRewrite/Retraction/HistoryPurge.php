@@ -147,7 +147,8 @@ final class HistoryPurge
         if (!mkdir($journal, 0700)) {
             throw new RuntimeException('Cannot create ' . $journal);
         }
-        file_put_contents($journal . '/refs-before.txt', $refsBefore === [] ? '' : implode("\n", array_map(
+        // restore() rebuilds refs from this file, so stop before rewriting if it can't be saved in full.
+        self::writeJournalFile($root, 'refs-before.txt', $refsBefore === [] ? '' : implode("\n", array_map(
             static fn (string $ref, string $sha): string => $sha . ' ' . $ref, array_keys($refsBefore), $refsBefore)) . "\n");
         self::phase($root, 'rewrite', $head);
 
@@ -315,11 +316,17 @@ final class HistoryPurge
         if (!$state['restorable']) {
             throw new RuntimeException('The interrupted purge had already discarded old history (phase ' . $state['phase'] . '); restore the repository from the pre-purge backup.');
         }
+        $refsFile = $root . '/' . self::JOURNAL_DIRECTORY . '/refs-before.txt';
+        $recorded = is_file($refsFile) ? file_get_contents($refsFile) : false;
         $refs = [];
-        foreach (explode("\n", (string) file_get_contents($root . '/' . self::JOURNAL_DIRECTORY . '/refs-before.txt')) as $line) {
+        foreach (explode("\n", (string) $recorded) as $line) {
             if (preg_match('/^([0-9a-f]{40,64}) (\S+)$/', $line, $m) === 1) {
                 $refs[$m[2]] = $m[1];
             }
+        }
+        if ($refs === []) {
+            // Restoring nothing would clear the journal and report success with every old ref lost.
+            throw new RuntimeException('The purge journal has no recorded refs (' . $refsFile . '); restore the repository from the pre-purge backup.');
         }
         if (is_dir($root . '/.git/history-rewrite')) {
             foreach (glob($root . '/.git/history-rewrite/*') ?: [] as $leftover) {
@@ -394,10 +401,22 @@ final class HistoryPurge
         return array_keys($blobs);
     }
 
+    /**
+     * Records the phase before it starts. interrupted() decides from this whether old refs can
+     * still be restored, so a failed write stops the purge instead of leaving a wrong phase behind.
+     */
     private static function phase(string $root, string $phase, string $head): void
     {
-        file_put_contents($root . '/' . self::JOURNAL_DIRECTORY . '/journal.txt',
-            'Phase: ' . $phase . "\nHEAD: " . $head . "\nUpdated-At: " . gmdate('Y-m-d\TH:i:s\Z') . "\n", LOCK_EX);
+        self::writeJournalFile($root, 'journal.txt',
+            'Phase: ' . $phase . "\nHEAD: " . $head . "\nUpdated-At: " . gmdate('Y-m-d\TH:i:s\Z') . "\n");
+    }
+
+    private static function writeJournalFile(string $root, string $name, string $contents): void
+    {
+        $path = $root . '/' . self::JOURNAL_DIRECTORY . '/' . $name;
+        if (file_put_contents($path, $contents, LOCK_EX) !== strlen($contents)) {
+            throw new RuntimeException('Cannot write the purge journal (' . $path . '); stopping before history changes further.');
+        }
     }
 
     private static function clearJournal(string $root): void
