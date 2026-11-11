@@ -152,7 +152,8 @@ zenmemes/chouse anywhere in this checklist.
   the page now goes straight into the quote list, no intro chrome.
 - **Add Quote page compacted, at the operator's request:** `/add` now
   renders a new dedicated `qdb_add.php` (via a new
-  `ComposeAndAccountKeyController::composeThreadCompact()`) instead of
+  `ComposeAndAccountKeyController::composeThreadCompact()`; since replaced by
+  `QdbExperience`, and the method was removed in #146) instead of
   the shared `compose_thread.php` — no heading, no "Posts are stored..."
   text, and — by passing `compact: true` to the existing
   `thread_compose_form.php` partial (the same mode the inline board

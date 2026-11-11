@@ -26,6 +26,8 @@ OpenPGP.js v6 needs WebCrypto (`crypto.subtle`), which browsers expose only in s
 
 `http://127.0.0.1` and `http://localhost` count as secure contexts. **Local testing over HTTP loads v6 and does not reproduce the production HTTP path.** Use the smoke check or canary below, or a non-loopback hostname.
 
+The 1.8 MB source map is served on purpose. The v6 bundle points to it, and without it DevTools logs a 404. Browsers fetch it only while DevTools is open.
+
 Package hashes, the license, and the update procedure are in `public/assets/openpgp.PROVENANCE`. Background: [HTTP OpenPGP failure fix plan](../plans/http_openpgp_failure_fix_plan_v1.md).
 
 ### How a page gets OpenPGP

@@ -10,6 +10,9 @@ Package integrity: sha512-pLzCU8IgyKXPSO11eeharQkQ4GzOKNWhXq79pQarIRZEMt1/ssyr+M
 openpgp.min.js is the unmodified package/dist/openpgp.min.js.
 SHA-256: 46d3e5b6bfe4f0d19b44fd3aa826ac1c67174e95a97be082a3982160b6caae4e
 openpgp.min.js.map is the unmodified package/dist/openpgp.min.js.map.
+Keep serving it: openpgp.min.js ends with a sourceMappingURL pointing here, and
+without the file browser DevTools log a 404 (docs/plans/firefox_console_warnings_causes_v1.md).
+Browsers fetch it only while DevTools is open, so visitors never download it.
 SHA-256: 38a0325606c543b878e38af8f7a313389548ad9ac9222ec88c0dfc795228cb70
 
 openpgp.v5.11.3.min.js is OpenPGP.js 5.11.3, the plain-HTTP fallback.
