@@ -99,3 +99,35 @@ Branch: `feature/dm_instant_load`, from `origin/main` at `f13dd20f`. Planning co
 **Retrospective stage-work assessment: 0.15** — the baseline suite failures took extra comparison runs.
 
 *— Claude · 2026-11-11 UTC · Model: Claude Opus 5.5*
+
+## Stage 5 - Documentation and concept inventory
+
+**Original estimate: 0.10**
+
+- Changes:
+  - `docs/concepts/private_message_history.md`: new "Saved message copies" entry (behavior, trust rule, failure-as-miss, identity removal, the approved exception).
+  - `private_message_history_sync_storage_findings.md`: the "browser memory only" row now names the one approved exception and links Step 2.
+  - The flag's own description in `FeatureFlagRegistry.php` (Stage 2) is the operator-facing text; no runbook lists this kind of flag.
+- Verification:
+  - `git diff --check`: clean. New relative links in both documents resolve.
+  - `./v3 test --smoke` (no concept-specific tests exist): 445 passed.
+  - Final branch diff review (`git diff origin/main --stat`, 23 files): no duplicated reader or storage path; the direct database delete in `browser_signing.js` is a deliberate fallback for pages that don't load the cache module.
+- Notes: Full suite not run, per project policy.
+- Estimate details: original scope as Step 3; revisions: none.
+
+**Retrospective stage-work assessment: 0.05**
+
+*— Claude · 2026-11-11 UTC · Model: Claude Opus 5.5*
+
+## Stage 6 - iPhone Safari acceptance
+
+**Original estimate: 0.05**
+
+- Status: pending maintainer. Needs the PR merged, `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED` turned on (Tools → Feature flags, "Saved message copies"), then on iPhone Safari: open a conversation once, reopen it, and confirm text shows immediately at the newest message. Desktop evidence does not satisfy this.
+- If it still opens on "…" or jumps: turn the flag off to restore today's behavior.
+- Retrospective assessment: pending until evidence exists.
+
+## Cycle closeout (pending Stage 6)
+
+- Technical completion: Stages 1–5 committed and pushed on `feature/dm_instant_load`; Stage 6 pending. Not merged.
+- Retrospective whole-cycle assessment: pending Stage 6. Stage retrospectives so far: 0.10, 0.15, 0.15, 0.15, 0.05.

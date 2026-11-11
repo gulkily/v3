@@ -31,7 +31,7 @@ Reuse browser identity/authentication, the [approved-key resolver](../../../src/
 | Progress counters | Derive from existing records | Avoid redundant state and extra writes |
 | Failed attempts | Keep retryable; do not create permanent loss claims | Another donor, restored key, or later contribution may succeed |
 | Work leases and a general job queue | Omit | Idempotent uploads and safe overlapping donors remove the need for exclusive ownership |
-| Plaintext and unwrapped session keys | Browser memory only | Keep secrets out of server storage/logs and persistent browser caches |
+| Plaintext and unwrapped session keys | Browser memory only; one exception: with `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`, already-verified message text may be saved encrypted under a non-exportable browser key ([DM instant load](../dm_instant_load/dm_instant_load_step2_feature_description.md), approved 2026-11-11) | Keep secrets out of server storage/logs and readable persistent browser caches |
 
 Target confirmations report browser verification; they are not independent server proof and never replace verification when reading. Historical confirmations must not be presented as fresh verification by the current browser. Lost or ineligible transfers reopen coverage unless direct access remains valid. Losing scheduling metadata may cause repeated work, but must not destroy access or falsely close gaps.
 

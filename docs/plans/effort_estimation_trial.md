@@ -573,13 +573,15 @@ Maintainer request: “I want every future railspike to be part of the same data
 
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/dm_instant_load` | Step 3 awaiting approval | v1 / R1 / P2 | 0.70 | [Step 1](./dm_instant_load/dm_instant_load_step1_solution_assessment.md#study-snapshots); [Step 2](./dm_instant_load/dm_instant_load_step2_feature_description.md#study-snapshots); [Step 3](./dm_instant_load/dm_instant_load_step3_development_plan.md#study-snapshots) | New cycle; no implementation |
+| `v3/dm_instant_load` | Step 4: Stages 1–5 done, Stage 6 pending maintainer | v1 / R1 / P2 | 0.70 | [Step 1](./dm_instant_load/dm_instant_load_step1_solution_assessment.md#study-snapshots); [Step 2](./dm_instant_load/dm_instant_load_step2_feature_description.md#study-snapshots); [Step 3](./dm_instant_load/dm_instant_load_step3_development_plan.md#study-snapshots) | New cycle; no implementation |
 
 2026-11-11: standing P2 enrollment for DM instant load; baseline `6d0f9da1`. Intake (after inspection) and Step 1 handoff both 0.70 for Option B built on Option A; Claude single exposed rater; R1 hashes not re-verified this session. Extended estimates enabled (A 0.30, B 0.70, C 0.40; not summed). Awaiting Approved Step 1.
 
 2026-11-11: DM instant load Step 1 approved (Option B on A, storage-rule amendment). Step 2 0.70 reaffirmed, scope v1. Awaiting Approved Step 2.
 
 2026-11-11: Step 2 approved. Step 3 0.70 reaffirmed with six stages (0.15, 0.15, 0.15, 0.10, 0.10, 0.05). Awaiting Approved Step 3.
+
+2026-11-11: Step 3 approved. Step 4 entry 0.70 reaffirmed. Stages 1–5 complete (retrospective stage work 0.10, 0.15, 0.15, 0.15, 0.05); Stage 6 iPhone Safari acceptance and whole-cycle retrospective pending maintainer.
 
 E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically complete, projected 0.85, retrospective 0.90, maintainer acceptance pending. These counts are unchanged by P2. Append each new cycle here with links to its canonical snapshots; keep unsuccessful/incomplete cycles visible. The historical “0 / 6” is accepted outcomes toward the first review checkpoint, not the number of collected records.
 
