@@ -24,6 +24,18 @@
     return identity.ensureOpenPgpApi(["readKey", "readPrivateKey", "readMessage", "decrypt"]);
   }
 
+  // Parsed keys are reused for the whole page; each parse costs as much as a decryption.
+  const parsedPrivateKeys = new Map();
+  const parsedPublicKeys = new Map();
+  function parsedOnce(cache, armor, parse) {
+    if (!cache.has(armor)) {
+      const parsing = parse(armor);
+      parsing.catch(function () { if (cache.get(armor) === parsing) cache.delete(armor); });
+      cache.set(armor, parsing);
+    }
+    return cache.get(armor);
+  }
+
   async function decryptEnvelope(input) {
     const options = input || {};
     const privateKeyArmor = armoredPrivateKey();
@@ -45,13 +57,13 @@
     }
     try {
       verificationKeys = await Promise.all(senderPublicKeyArmors.map(function (armoredKey) {
-        return openpgp.readKey({ armoredKey: String(armoredKey) });
+        return parsedOnce(parsedPublicKeys, String(armoredKey), function (armor) { return openpgp.readKey({ armoredKey: armor }); });
       }));
     } catch (error) {
       return { kind: "bad-signature", message: "The sender's approved public keys could not be read, so this message cannot be verified." };
     }
     try {
-      decryptionKey = await openpgp.readPrivateKey({ armoredKey: privateKeyArmor });
+      decryptionKey = await parsedOnce(parsedPrivateKeys, privateKeyArmor, function (armor) { return openpgp.readPrivateKey({ armoredKey: armor }); });
     } catch (error) {
       return { kind: "read-failed", message: "The saved private key could not be read. Check your browser identity, then retry." };
     }
@@ -299,7 +311,9 @@
     }
     document.addEventListener('private-message-history-restored', retryHistory);
     document.addEventListener('private-message-viewer-known', retryHistory, {once:true});
-    Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
+    // Start loading OpenPGP now, and read the newest messages first so the bottom of the thread fills in first.
+    if (armoredPrivateKey()) openPgpApi().catch(function () {});
+    Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).reverse().map(function (card) {
       cardCursors.set(card, root.dataset.historyPageCursor || '');
       return readCard(mailbox, card, counterpartUsernameToken);
     })).then(function () {
