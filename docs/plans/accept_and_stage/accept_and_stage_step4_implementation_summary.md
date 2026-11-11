@@ -117,3 +117,25 @@ Reuse decisions made at entry, from inspecting the existing code:
 - Estimate details: original scope unchanged. CR being caught as a control character and seed headers failing in the parser needed reason ordering by the bytes rather than the message; otherwise as planned.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - A signed fix publishes the staged post
+
+**Original estimate: 0.08**
+
+- Changes:
+  - `createSignedPost` calls `discardStagedCopy` once the post is committed, and on an exact replay, so a crash between commit and discard heals on the next retry. Only a staged copy from the same author is discarded; a discard failure is logged, not raised, because the post is already published.
+  - A fix that still breaks a rule goes back through Stage 4's `stage`, which replaces the staged copy and its reason (same author).
+  - A fix keeps the original post ID and `Created-At`, so Stage 2's receipt gives it the publication time.
+  - Correction to Stage 4: the store folder is now `<database dir>/private/staged-posts-<16 hex of sha256(repository root)>`, the same keying as the signed-reaction journal. Tests keep their databases directly in the system temp directory, so the unkeyed folder was shared between test runs (found here as 51 staged posts where 1 was expected). In production the database directory belongs to one instance, so this only changes the folder name.
+- Verification:
+  - Passed: new `SingleRequestPostingTest::testSignedFixPublishesAStagedPost`. An emoji post sent 20 minutes ago is staged; a second bad fix updates the character (`U+1F3B6`) with still one staged item; the clean fix publishes byte-for-byte under the same ID with a receipt, the staged copy is gone, the read model has one row, and an exact retry replays. A staged copy under a different key stays when this author publishes the same ID.
+  - Passed: `./v3 test --smoke --jobs=2` plus `StagedSubmissionStoreTest SingleRequestPostingTest SingleRequestHttpTest SignedPostIdentityTest AgentPostingApiTest`: 460 run, 460 passed. Full suite not run.
+  - Inapplicable: UI (Stage 6).
+- Notes:
+  - The plan said `find` would ignore staged items whose post already exists. That check belongs to the `/staged/` page (Stage 6), which knows the repository; the store does not.
+
+**Retrospective stage work: 0.07**
+
+- Estimate details: original scope unchanged; the store-location correction was small.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

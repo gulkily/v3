@@ -624,6 +624,8 @@ class LocalWriteService
                 }
                 $commit = $tx->accept($files);
             }
+            // The post is committed: a staged copy from the same author is now replaced.
+            $this->discardStagedCopy($post->postId, (string) $post->authorIdentityId);
             $result = ['status'=>'ok', 'post_id'=>$post->postId, 'thread_id'=>$post->threadId ?? $post->postId,
                 'identity_id'=>$post->authorIdentityId, 'profile_slug'=>$bundle['identity']->identitySlug(),
                 'bootstrap_post_id'=>$bundle['identity']->bootstrapByPost, 'record_path'=>$path,
@@ -693,9 +695,23 @@ class LocalWriteService
         ];
     }
 
+    private function discardStagedCopy(string $postId, string $author): void
+    {
+        $store = $this->stagedSubmissions();
+        $staged = $store->find($postId);
+        if ($staged === null || $staged['author_identity_id'] !== $author) return;
+        try {
+            $store->discard($postId);
+        } catch (RuntimeException $error) {
+            // The post is published; a leftover copy is hidden from /staged/ and removed on retry.
+            error_log('Published staged post; discard failed: ' . $error->getMessage());
+        }
+    }
+
     public function stagedSubmissions(): StagedSubmissionStore
     {
-        return new StagedSubmissionStore(dirname($this->databasePath) . '/private/staged-posts');
+        // Keyed by repository like the reaction journal, so instances sharing a state directory stay apart.
+        return new StagedSubmissionStore(dirname($this->databasePath) . '/private/staged-posts-' . substr(hash('sha256', $this->repositoryRoot), 0, 16));
     }
 
     /** @return array<string, string> header values from a record that may break the canonical rules */

@@ -170,6 +170,45 @@ final class SingleRequestPostingTest
         catch (RuntimeException $e) { assertStringContains('staged posts', $e->getMessage()); }
     }
 
+    /** The author's signed fix with the same post ID publishes a staged post and clears the staged copy. */
+    public function testSignedFixPublishesAStagedPost(): void
+    {
+        [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = SignedPostIdentityTest::bundle();
+        $writer->createSignedPost($input);
+        $send = static function (string $record) use ($writer, $input): array {
+            $bundle = ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)] + $input;
+            unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']);
+            return $writer->createSignedPost($bundle);
+        };
+
+        // Sent 20 minutes ago with an emoji; the fix keeps that post ID and Created-At.
+        $staged = $this->signedRecord($input, null, "Cypher recap \u{1F3A4}\n", -1200);
+        $postId = $send($staged)['post_id'];
+        $stillBad = str_replace("\u{1F3A4}", "\u{1F3B6}", $staged);
+        assertSame('U+1F3B6', $send($stillBad)['chars'][0]['codepoint'], 'a second bad fix updates the reason');
+        assertSame(1, count($writer->stagedSubmissions()->listFor(null)));
+
+        $fixed = str_replace(" \u{1F3A4}", '', $staged);
+        $published = $send($fixed);
+        assertSame('ok', $published['status']);
+        assertSame($postId, $published['post_id']);
+        assertSame($fixed, file_get_contents($root . '/' . $published['record_path']));
+        assertSame(null, $writer->stagedSubmissions()->find($postId), 'staged copy discarded');
+        assertSame(true, is_file($root . '/' . $published['record_path'] . '.received'), 'the old Created-At gets a receipt');
+        $pdo = new PDO('sqlite:' . $db);
+        assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM posts WHERE post_id = ' . $pdo->quote($postId))->fetchColumn());
+        assertSame(true, $send($fixed)['replayed']);
+
+        // A staged copy under someone else's key is left alone when this author publishes the ID.
+        $other = $this->signedRecord($input, null, "Mine\n");
+        preg_match('/^Post-ID: (.+)$/m', $other, $id);
+        $writer->stagedSubmissions()->stage($id[1], 'openpgp:' . str_repeat('c', 40), null, "x\n", "s\n", 'r', '', [], time());
+        assertSame('ok', $send($other)['status']);
+        assertSame('openpgp:' . str_repeat('c', 40), $writer->stagedSubmissions()->find($id[1])['author_identity_id']);
+    }
+
     private function signedRecord(array $input, ?string $threadId, string $body, int $offset = 0): string
     {
         preg_match('/^Author-Identity-ID: (.+)$/m', $input['canonical_record'], $author);
