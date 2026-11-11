@@ -1574,8 +1574,9 @@ pre {
 .post-markdown table { border-collapse: collapse; }
 .post-markdown th, .post-markdown td { border: 1px solid rgba(127, 127, 127, 0.5); padding: 0.25em 0.5em; text-align: left; }
 /* .card breaks text anywhere, which lets auto-layout table columns shrink to one letter.
-   Cells wrap only between words (long words still break rather than overflow). */
-.post-markdown th, .post-markdown td { overflow-wrap: break-word; word-break: normal; hyphens: auto; vertical-align: top; }
+   Cells wrap only between words, without hyphenation: hyphens let a column shrink to one
+   syllable ("re-ports"), so a column of short labels lost its width to the longest column. */
+.post-markdown th, .post-markdown td { overflow-wrap: break-word; word-break: normal; hyphens: manual; vertical-align: top; }
 .post-markdown .post-table { margin: 0 0 0.75em; }
 .post-markdown .post-table .docs-table-scroll { margin: 0; }
 /* Smaller/Larger text-size buttons (ZoomButtons.php): Query viewer, post tables. Each place
@@ -1597,29 +1598,27 @@ pre {
   padding: 0.25rem 0.4rem;
 }
 .post-table-zoom { display: none; }
-.post-table-cols-2 { --table-cols: 2; }
-.post-table-cols-3 { --table-cols: 3; }
-.post-table-cols-4 { --table-cols: 4; }
-.post-table-cols-5 { --table-cols: 5; }
-.post-table-cols-6 { --table-cols: 6; }
-.post-table-cols-7 { --table-cols: 7; }
-.post-table-cols-8 { --table-cols: 8; }
-/* Phones: a table opens fitted to the screen (about 15em per column, so a four-column table
-   sets near 6px on a 375px screen) and scrolls sideways once zoomed past that. --table-zoom
-   multiplies the fitted size; table_zoom.js sets it from the buttons and from pinching on the
-   table, and layout.php restores the saved value before paint. Pinching outside tables still
-   zooms the page. */
+/* Phones: a table opens fitted to the screen and fills its width; the browser sizes the
+   columns from their content. --table-min (set per table by PublicMarkdownRenderer) is the
+   table's estimated narrowest width in em: each column's longest word plus cell padding. The
+   fitted text size is the largest at which that fits, never above the page's own size, so a
+   short two-column table keeps full-size text and only a really wide table gets small. Past
+   the fitted size the table scrolls sideways. --table-zoom multiplies the fitted size;
+   table_zoom.js sets it from the buttons and from pinching on the table, and layout.php
+   restores the saved value before paint. Pinching outside tables still zooms the page.
+   Links and code in tables (URLs, paths) may break anywhere, so one long token doesn't make
+   the whole table scroll; the renderer counts any word as at most 20 characters. */
 @media (max-width: 639px) {
   .post-table-zoom { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
   .post-table .docs-table-scroll { container-type: inline-size; touch-action: pan-x pan-y; }
   .post-table table {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    width: max-content;
-    max-width: calc(var(--table-cols, 4) * 15em);
+    width: 100%;
     font-size: calc(1em * var(--table-zoom, 1));
-    font-size: calc(min(1em, 100cqw / (var(--table-cols, 4) * 15)) * var(--table-zoom, 1));
+    font-size: calc(min(1em, 100cqw / var(--table-min, 60)) * var(--table-zoom, 1));
   }
+  .post-table :is(a, code) { overflow-wrap: anywhere; }
   /* Actual size: the page's own text size, for every table (table_zoom.js). */
   :root[data-table-size="page"] .post-table table { font-size: 1em; }
 }

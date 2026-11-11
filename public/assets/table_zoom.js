@@ -1,4 +1,4 @@
-// Text size for tables in Markdown posts on phones (site.css, .post-table).
+// Text size for tables in Markdown posts on phones (site.css, .post-table, --table-min).
 // --table-zoom on <html> multiplies each table's fitted size; the Smaller, Fit and Larger
 // buttons and a pinch on a table change it for every table. Actual size instead sets
 // data-table-size="page" on <html>, which puts every table at the page's own text size.
@@ -31,10 +31,10 @@
     if (!pageSize() || !table) { return current(); }
     var scroller = table.parentElement;
     var style = window.getComputedStyle(scroller);
-    var columns = parseFloat(style.getPropertyValue("--table-cols")) || 4;
+    var minimum = parseFloat(style.getPropertyValue("--table-min")) || 60;
     var width = scroller.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
     var pagePx = parseFloat(window.getComputedStyle(scroller.parentElement).fontSize);
-    var fitPx = Math.min(pagePx, width / (columns * 15));
+    var fitPx = Math.min(pagePx, width / minimum);
     return fitPx > 0 ? pagePx / fitPx : 1;
   }
 
