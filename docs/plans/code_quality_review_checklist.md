@@ -97,14 +97,14 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 ### 2.3 Error handling
 - [x] Empty `catch` blocks and catches that swallow exceptions without logging. All six now say why the error is ignored (#148).
 - [x] `@` error suppression. 155 uses checked; return values are checked. No action.
-- [ ] Functions that return `false`/`null`/`''` for errors instead of throwing, with callers not checking.
-- [ ] Shell-outs (`git`, `gpg`, `git fast-import`) whose exit codes or stderr are ignored.
+- [~] Functions that return `false`/`null`/`''` for errors instead of throwing, with callers not checking. Write-side done: the unchecked purge journal writes are fixed (#162). Read-side needs a higher PHPStan level.
+- [x] Shell-outs (`git`, `gpg`, `git fast-import`) whose exit codes or stderr are ignored. None ignored where it matters (findings, correctness pass).
 
 ### 2.4 Security-adjacent quick checks
 - [x] Every template output goes through the escaper (`$e(...)`); grep for raw `<?= $` in `templates/`. 38 bare echoes, all numbers, literals or pre-built HTML; `$notice` now escaped (#143).
 - [x] Shell commands built with string concatenation instead of `escapeshellarg` / argument arrays. All traced; none unsafe. The last two string-argument git helpers now take arrays (#150).
-- [ ] SQL built by string interpolation rather than bound parameters.
-- [ ] File paths derived from request input (path traversal).
+- [x] SQL built by string interpolation rather than bound parameters. 58 checked; every value is a placeholder list, fixed fragment, int or allow-listed (findings, correctness pass).
+- [x] File paths derived from request input (path traversal). All request-facing file reads are guarded (findings, correctness pass).
 
 ### 2.5 Type and API hygiene
 - [x] Files missing `declare(strict_types=1)`. None in `src/`.
