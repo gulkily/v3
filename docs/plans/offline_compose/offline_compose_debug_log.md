@@ -44,3 +44,19 @@
 
 **Uncertain assessments**
 - `step3_development_plan_do.md`, "<=1 page" with eight stages and every stage field: the plan is about three pages. Eight stages is within the stated limit, so the page limit and the stage-field list seem to conflict for larger cycles.
+
+## 2026-11-11T16:05:00Z — Step 4
+
+**Necessary/useful instructions**
+- `implementation_standards.md`, "Replay each reported failure ... as acceptance evidence": replaying Ilya's exact click sequence in a real browser found two defects that no unit test would have: interrupted sends waiting two minutes, and the board's draft restore erasing text typed before signing loaded. Retain.
+- `implementation_standards.md`, "identifying reproduced baseline failures": running the three failing browser tests on `origin/main` separated old failures from new ones before any time went into them. Retain.
+- `step4_implementation_do.md`, stage-scoped commits with the summary: when Stage 4's commit turned out to break `SiteProfileRegistryTest`, the "do not amend completed commits" rule led to a separate fix commit, keeping the record honest. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only verification rules: application change.
+
+**Uncertain assessments**
+- `step4_implementation_do.md`, "keeping each stage <2 hours": Stage 6 grew with a delivery fix found by its own replay. It stayed one stage because the fix was needed for that stage's acceptance, but the instructions don't say whether such discoveries should become their own stage.
