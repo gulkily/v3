@@ -703,6 +703,11 @@ final class Application
             return;
         }
 
+        if ($path === '/themes/' || $path === '/themes') {
+            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot))->render(), 200);
+            return;
+        }
+
         if (str_starts_with($path, '/docs/_download/')) {
             $sourcePath = \ForumRewrite\Docs\PlatformDocsCatalog::normalizePath(substr($path, strlen('/docs/_download/')));
             $file = $sourcePath === null ? null : \ForumRewrite\Docs\PlatformDocsCatalog::resolveSource($this->projectRoot, $sourcePath);
@@ -2340,6 +2345,7 @@ final class Application
             '', '/',
             '/threads', '/threads/',
             '/about', '/about/',
+            '/themes', '/themes/',
             '/docs', '/docs/',
             '/lobby', '/lobby/',
             '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',
