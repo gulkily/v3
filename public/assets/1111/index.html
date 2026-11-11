@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Eleven Eleven</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@300;700;900&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one centered instrument — date row, giant 12-hour clock whose "1" digits light up, eleven pillars for the final eleven seconds, countdown beneath */
+:root {
+  --bg: #e9ebf3;
+  --panel: #f6f7fb;
+  --ink: #23203f;
+  --muted: #6e6c8a;
+  --dim: #c9cbdc;
+  --lit: #5b3df5;
+  --glow: rgba(91, 61, 245, .28);
+  --display: "Big Shoulders Display", "Oswald", "Arial Narrow", sans-serif;
+  --body: "Instrument Sans", "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12111f; --panel: #1b1a2e; --ink: #ecebf7; --muted: #8f8db0;
+    --dim: #2e2c4a; --lit: #a996ff; --glow: rgba(169, 150, 255, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12111f; --panel: #1b1a2e; --ink: #ecebf7; --muted: #8f8db0;
+  --dim: #2e2c4a; --lit: #a996ff; --glow: rgba(169, 150, 255, .35);
+  color-scheme: dark;
+}
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 40px;
+}
+main { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 28px; text-align: center; }
+
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+.date { display: flex; gap: 10px; align-items: baseline; font-family: var(--display); font-weight: 700; font-size: clamp(28px, 6vw, 44px); letter-spacing: .02em; }
+.date .sep { color: var(--muted); font-weight: 300; }
+
+.clock { display: flex; align-items: flex-end; justify-content: center; gap: clamp(2px, 1vw, 10px); line-height: .82; font-family: var(--display); font-weight: 900; font-variant-numeric: tabular-nums; }
+.d { font-size: clamp(76px, 21vw, 220px); width: .5em; color: var(--dim); transition: color .4s, text-shadow .4s; }
+.d.on { color: var(--lit); text-shadow: 0 0 .25em var(--glow); }
+.colon { font-size: clamp(56px, 15vw, 160px); color: var(--muted); font-weight: 300; padding-bottom: .08em; }
+.ampm { font-family: var(--mono); font-size: clamp(13px, 2.4vw, 18px); color: var(--muted); align-self: flex-start; margin-left: 6px; padding-top: .6em; }
+.ampm.on { color: var(--lit); }
+
+.score { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.score b { color: var(--lit); font-weight: 600; }
+
+.pillars { display: grid; grid-template-columns: repeat(11, 1fr); gap: clamp(5px, 1.4vw, 12px); width: min(100%, 520px); height: 88px; align-items: end; }
+.p { height: 100%; border-radius: 3px; background: var(--dim); transition: background .25s, box-shadow .25s, transform .25s; transform-origin: bottom; transform: scaleY(.35); }
+.p.on { background: var(--lit); box-shadow: 0 0 14px var(--glow); transform: scaleY(1); }
+.pillar-note { font-size: 13px; color: var(--muted); margin-top: -16px; }
+
+.count { background: var(--panel); border-radius: 14px; padding: 18px 24px; display: flex; flex-direction: column; gap: 4px; min-width: min(100%, 360px); }
+.count .big { font-family: var(--mono); font-weight: 600; font-size: clamp(22px, 5vw, 30px); font-variant-numeric: tabular-nums; }
+.count .label { font-size: 14px; color: var(--muted); }
+
+.moment { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 10vw, 84px); color: var(--lit); text-wrap: balance; line-height: 1; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+button {
+  font: 500 14px var(--body); color: var(--ink); background: transparent;
+  border: 1.5px solid var(--dim); border-radius: 999px; padding: 9px 16px; cursor: pointer;
+}
+button:hover { border-color: var(--lit); }
+button:focus-visible { outline: 2px solid var(--lit); outline-offset: 2px; }
+button[aria-pressed="true"] { border-color: var(--lit); color: var(--lit); }
+.fine { font-size: 12px; color: var(--muted); max-width: 46ch; }
+
+.roll { width: min(100%, 560px); text-align: left; display: flex; flex-direction: column; gap: 14px; border-top: 1.5px solid var(--dim); padding-top: 24px; }
+.roll-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.roll h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 30px; letter-spacing: .02em; }
+.roll-intro, .roll-off { margin: 0; color: var(--muted); font-size: 14px; }
+.sign { display: grid; gap: 6px; background: var(--panel); border-radius: 14px; padding: 16px; }
+.sign label { font-size: 13px; font-weight: 600; margin-top: 4px; }
+.sign .opt { font-weight: 400; color: var(--muted); }
+.sign input { font: 15px var(--body); color: var(--ink); background: var(--bg); border: 1.5px solid var(--dim); border-radius: 8px; padding: 9px 11px; min-width: 0; }
+.sign input:focus-visible { outline: 2px solid var(--lit); outline-offset: 1px; }
+.primary { display: block; text-align: center; text-decoration: none; border-radius: 999px; border: 1.5px solid; }
+button.primary, a.primary { margin-top: 10px; background: var(--lit); border-color: var(--lit); color: var(--panel); font-weight: 600; font-size: 16px; padding: 12px 18px; }
+.primary:hover { filter: brightness(1.08); }
+.sign-status { font-size: 13px; color: var(--muted); min-height: 1.2em; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.list li { display: grid; grid-template-columns: 2.2em 1fr auto; gap: 4px 10px; align-items: baseline; padding: 10px 2px; border-bottom: 1px solid var(--dim); }
+.list .rank { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.list .who { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.list .off { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.list li.bull .off { color: var(--lit); font-weight: 600; }
+.list .note { grid-column: 2 / 4; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.list li.me .who::after { content: " (you)"; font-weight: 400; color: var(--muted); }
+
+body.celebrate .d { animation: pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 50% { text-shadow: 0 0 .5em var(--glow); } }
+@media (prefers-reduced-motion: reduce) {
+  .d, .p { transition: none; }
+  body.celebrate .d { animation: none; }
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow" id="phase">Counting down to the morning moment</div>
+
+  <div class="date" aria-label="Today's date">
+    <span class="d2" id="mo">11</span><span class="sep">/</span><span id="dy">10</span><span class="sep">/</span><span id="yr">26</span>
+  </div>
+
+  <div class="clock" aria-live="off" aria-label="Current time">
+    <span class="d" id="h1">1</span><span class="d" id="h2">1</span>
+    <span class="colon">:</span>
+    <span class="d" id="m1">1</span><span class="d" id="m2">1</span>
+    <span class="colon">:</span>
+    <span class="d" id="s1">1</span><span class="d" id="s2">1</span>
+    <span class="ampm" id="ampm">AM</span>
+  </div>
+
+  <div class="score" id="score"><b>6</b> of 10 digits are ones</div>
+
+  <div class="pillars" id="pillars" aria-hidden="true"></div>
+  <div class="pillar-note">Eleven pillars for the final eleven seconds</div>
+
+  <div class="moment" id="moment" hidden>Everybody, make a wish.</div>
+
+  <div class="count" id="countBox">
+    <div class="big" id="count">00h 00m 00s</div>
+    <div class="label" id="countLabel">until 11/11 at 11:11:11 AM</div>
+  </div>
+
+  <div class="controls">
+    <button id="chime" type="button" aria-pressed="false">Chime at 11:11:11</button>
+    <button id="wake" type="button" aria-pressed="false">Keep screen on</button>
+  </div>
+
+  <section class="roll" aria-labelledby="rollTitle">
+    <div class="roll-head">
+      <h2 id="rollTitle">Who was there</h2>
+      <span class="eyebrow" id="rollCount">Roll call</span>
+    </div>
+    <p class="roll-intro">Reply to the 11/11 thread as close to 11:11:11 as you can. Your reply's timestamp is your entry, ranked by how near you got. Say anything: where you are, who you're with, a wish.</p>
+    <div class="sign"><a class="primary" id="signBtn" href="/threads/thread-20261111150654-5fc5d16b">I'm here: reply on the thread</a><div class="sign-status" id="signStatus" role="status">Updates every 15 seconds.</div></div>
+    <p class="roll-off" id="rollOff">Loading the roll…</p>
+    <ol class="list" id="rollList"></ol>
+  </section>
+
+  <p class="fine">Uses this device's clock. Phones usually sync to network time, so everyone should land within a fraction of a second. Pass the link around and count down together. Posted from the <a href="/threads/thread-20261111150654-5fc5d16b">11/11 thread</a>.</p>
+</main>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const pillarsEl = $("pillars");
+  const pillars = [];
+  for (let i = 0; i < 11; i++) { const p = document.createElement("span"); p.className = "p"; pillarsEl.appendChild(p); pillars.push(p); }
+
+  // The moments: 11:11:11 AM and 11:11:11 PM on Nov 11, every year
+  function momentsFor(year) {
+    return [
+      { at: new Date(year, 10, 11, 11, 11, 11), name: "11/11 at 11:11:11 AM", phase: "morning" },
+      { at: new Date(year, 10, 11, 23, 11, 11), name: "11/11 at 11:11:11 PM", phase: "evening" }
+    ];
+  }
+  function nextMoment(now) {
+    const list = momentsFor(now.getFullYear()).concat(momentsFor(now.getFullYear() + 1));
+    // a moment stays "current" for 60 s after it passes, for the afterglow
+    return list.find(m => now - m.at < 60000);
+  }
+
+  const pad = n => String(n).padStart(2, "0");
+  const setDigit = (el, ch) => { el.textContent = ch; el.classList.toggle("on", ch === "1"); };
+
+  let chimeOn = false, audioCtx = null, chimedFor = null;
+  function chime() {
+    if (!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    [880, 1108.73, 1318.51, 1760].forEach((f, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t0 + i * .18);
+      g.gain.linearRampToValueAtTime(.18, t0 + i * .18 + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, t0 + i * .18 + 2.2);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t0 + i * .18); o.stop(t0 + i * .18 + 2.3);
+    });
+  }
+  $("chime").addEventListener("click", () => {
+    chimeOn = !chimeOn;
+    $("chime").setAttribute("aria-pressed", chimeOn);
+    $("chime").textContent = chimeOn ? "Chime is on" : "Chime at 11:11:11";
+    if (chimeOn) {
+      try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch (e) {}
+    }
+  });
+
+  let lock = null;
+  $("wake").addEventListener("click", async () => {
+    if (lock) { try { await lock.release(); } catch (e) {} lock = null; }
+    else {
+      try { lock = await navigator.wakeLock.request("screen"); lock.addEventListener("release", () => { lock = null; sync(); }); }
+      catch (e) { $("wake").textContent = "Screen lock not available here"; return; }
+    }
+    sync();
+    function sync() { $("wake").setAttribute("aria-pressed", !!lock); $("wake").textContent = lock ? "Screen stays on" : "Keep screen on"; }
+  });
+
+  function tick() {
+    const now = new Date();
+    const h24 = now.getHours(), h12 = h24 % 12 || 12;
+    const hh = pad(h12), mm = pad(now.getMinutes()), ss = pad(now.getSeconds());
+    setDigit($("h1"), hh[0]); setDigit($("h2"), hh[1]);
+    setDigit($("m1"), mm[0]); setDigit($("m2"), mm[1]);
+    setDigit($("s1"), ss[0]); setDigit($("s2"), ss[1]);
+    $("ampm").textContent = h24 < 12 ? "AM" : "PM";
+
+    const mo = pad(now.getMonth() + 1), dy = pad(now.getDate()), yr = String(now.getFullYear()).slice(2);
+    $("mo").textContent = mo; $("dy").textContent = dy; $("yr").textContent = yr;
+
+    const all = (hh + mm + ss + mo + dy).split("");
+    const ones = all.filter(c => c === "1").length;
+    $("score").innerHTML = "<b>" + ones + "</b> of 10 digits are ones";
+
+    const m = nextMoment(now);
+    const diff = m.at - now; // ms; negative during afterglow
+    const secsLeft = Math.ceil(diff / 1000);
+
+    // pillars: fill during the last eleven seconds, stay lit in the afterglow
+    const lit = diff <= 0 ? 11 : (secsLeft <= 11 ? 11 - secsLeft : 0);
+    pillars.forEach((p, i) => p.classList.toggle("on", i < lit));
+
+    const celebrating = diff <= 0;
+    document.body.classList.toggle("celebrate", celebrating);
+    $("moment").hidden = !celebrating;
+    $("countBox").hidden = celebrating;
+
+    if (celebrating) {
+      $("phase").textContent = "It's " + m.name.replace("11/11 at ", "");
+      if (chimeOn && chimedFor !== m.at.getTime()) { chimedFor = m.at.getTime(); chime(); }
+    } else {
+      const t = Math.max(0, secsLeft);
+      const d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), mi = Math.floor(t % 3600 / 60), s = t % 60;
+      $("count").textContent = (d ? d + "d " : "") + pad(h) + "h " + pad(mi) + "m " + pad(s) + "s";
+      const sameYear = m.at.getFullYear() === now.getFullYear();
+      $("countLabel").textContent = "until " + m.name + (sameYear ? "" : ", " + m.at.getFullYear());
+      $("phase").textContent = secsLeft <= 11 ? "Here it comes" :
+        m.phase === "morning" ? "Counting down to the morning moment" : "One more chance tonight";
+    }
+
+    setTimeout(tick, 1000 - (Date.now() % 1000) + 5);
+  }
+  tick();
+
+  // ---- Roll call: replies to the ZenMemes thread, ranked by Created-At ----
+  const THREAD = "thread-20261111150654-5fc5d16b";
+  const TARGETS = [Date.UTC(2026, 10, 11, 16, 11, 11), Date.UTC(2026, 10, 12, 4, 11, 11)];
+  function offsetText(ms) {
+    const a = Math.abs(ms), sign = ms < 0 ? "early" : "late";
+    if (a < 1000) return "on the second";
+    if (a < 60000) return Math.round(a / 1000) + " s " + sign;
+    if (a < 3600000) return Math.round(a / 60000) + " min " + sign;
+    return Math.round(a / 3600000) + " h " + sign;
+  }
+  const cache = {};
+  function field(txt, name) { const m = txt.match(new RegExp("^" + name + ": (.*)$", "m")); return m ? m[1].trim() : ""; }
+  async function loadRoll() {
+    try {
+      const t = await (await fetch("/api/get_thread?thread_id=" + THREAD, { cache: "no-store" })).text();
+      const ids = [...t.matchAll(/^\[([A-Za-z0-9_-]+)\]/gm)].map(m => m[1]).filter(id => id !== THREAD);
+      await Promise.all(ids.filter(id => !cache[id]).map(async id => {
+        const p = await (await fetch("/api/get_post?post_id=" + encodeURIComponent(id))).text();
+        if (field(p, "Retracted") === "yes") { cache[id] = { skip: true }; return; }
+        const at = Date.parse(field(p, "Created-At"));
+        const body = (p.split(/\n\s*\n/).slice(1).join(" ") || "").replace(/\s+/g, " ").trim();
+        const near = TARGETS.reduce((x, y) => Math.abs(at - y) < Math.abs(at - x) ? y : x);
+        cache[id] = { name: field(p, "Author") || "someone", note: body.slice(0, 100), offset: at - near };
+      }));
+      const seen = {}, rows = [];
+      ids.map(id => cache[id]).filter(r => r && !r.skip && !isNaN(r.offset)).forEach(r => {
+        const k = r.name; if (!seen[k] || Math.abs(r.offset) < Math.abs(seen[k].offset)) seen[k] = r;
+      });
+      Object.values(seen).forEach(r => rows.push(r));
+      rows.sort((x, y) => Math.abs(x.offset) - Math.abs(y.offset));
+      const list = $("rollList"); list.textContent = "";
+      rows.forEach((r, i) => {
+        const li = document.createElement("li");
+        if (Math.abs(r.offset) < 1000) li.classList.add("bull");
+        const rank = document.createElement("span"); rank.className = "rank"; rank.textContent = String(i + 1).padStart(2, "0");
+        const who = document.createElement("span"); who.className = "who"; who.textContent = r.name;
+        const off = document.createElement("span"); off.className = "off"; off.textContent = offsetText(r.offset);
+        li.append(rank, who, off);
+        if (r.note) { const n = document.createElement("span"); n.className = "note"; n.textContent = r.note; li.append(n); }
+        list.append(li);
+      });
+      $("rollCount").textContent = rows.length === 1 ? "1 person" : rows.length + " people";
+      $("rollOff").hidden = rows.length > 0;
+      if (!rows.length) $("rollOff").textContent = "Nobody yet. Be the first.";
+    } catch (e) {
+      $("rollOff").hidden = false; $("rollOff").textContent = "Couldn't reach the thread just now. Trying again shortly.";
+    }
+  }
+  loadRoll(); setInterval(loadRoll, 15000);
+})();
+</script>
+
+</body>
+</html>
