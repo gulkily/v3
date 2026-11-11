@@ -456,3 +456,5 @@ and repair its navigation and affected references. See the
 - [Key retirement](key_retirement/key_retirement_step1_solution_assessment.md) — signed same-account/operator retirement with retained history; Steps 1–3 approved.
 
 - [Deploy prompt in the page header](deploy_header_prompt/deploy_header_prompt_step3_development_plan.md) — operator Deploy now button in the header behind `FORUM_DEPLOY_HEADER_PROMPT_ENABLED`; Steps 1–3 approved.
+
+- [DM instant load](dm_instant_load/dm_instant_load_step3_development_plan.md) — conversations show read messages on first paint from an encrypted per-browser cache behind `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`; Steps 1–3 approved.
