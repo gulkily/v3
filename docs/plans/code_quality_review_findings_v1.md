@@ -161,3 +161,14 @@ npx jscpd@4 src public/assets templates scripts --min-lines 15 --min-tokens 100 
 `dcd_autoload.php` registers a PSR-4 loader for `ShipMonk\PHPStan\DeadCode\` → `dcd/src/` and requires v3's `autoload.php`. It must be passed with `-a`, not `bootstrapFiles`, because the extension's services are loaded before bootstrap files run.
 
 Known blind spot: the detector treats every `tests/*Test.php` method as unused because it doesn't recognise v3's own test runner. Those ~2,000 hits were ignored.
+
+## Doc review of the open decisions (2026-11-10)
+
+A second pass read every doc, including `docs/plans/`, for each open item and for the code removed in #146.
+
+- **Decision 7 (source map): keep serving it.** `firefox_console_warnings_causes_v1.md` added the map on purpose so DevTools stops logging a 404. The v6 bundle's `sourceMappingURL` points to it, and production serves it (200). Browsers fetch maps only with DevTools open, so visitors don't pay for it. `page_asset_performance_inventory.md` already notes that static releases don't copy it.
+- **Decision 8 (one-time scripts): all three are live `./v3` commands.** `inject_approval.php` is `./v3 approval seed|approve` (also used by `tests/browser/calendar.mjs`). `backfill_unicode_risk.php` is `./v3 unicode-risk-backfill`, which `task_queue_candidate_catalog.md` says to rerun when `UNICODE_RISK_SCHEMA_VERSION` changes. `bake_legacy_timestamps.php` is `./v3 bake-timestamps`. Keep all three.
+- **Decision 2 (test-only methods):** the plans confirm several ratings. `buildSingleRoute` was the on-miss static build until it was removed on purpose on Sep 21 (`fee91dee`), when builds left the request path. `cachedBytes` was added for the codebase-sizes page and later wrapped by `cachedArchive`. `markSeenThrough` was the Step 3 contract for DM unread. `setFeatureFlag` is described as "the only feature-flag write path" in the flag rebuild fix. No doc changes a rating band.
+- **Decision 3 (interfaces):** no doc gives a reason for `FastScoreStore` or `AgentReplyGenerationStore`, and nothing outside `src/` implements them. No change.
+- **Decision 4 (unread properties):** no doc mentions them. No change.
+- **Removed in #146, still described in older plans:** `qdb_classic_urls_checklist.md` says QDB `/add` renders through `composeThreadCompact()`; it now goes through `QdbExperience`, and the QDB tests pass. `site_feature_flags_slices_v1.md` asked to keep the `SiteConfig` flag helpers as compatibility wrappers during its first slice; later slices moved every caller, so removing them was safe. `ui_messages_step2_feature_description.md` already called `pages/private_messages.php` unreachable. These are history and stay as written.

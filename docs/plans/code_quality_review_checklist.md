@@ -50,19 +50,19 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 - [x] Templates in `templates/` never rendered. `pages/private_messages.php` removed in #146.
 - [x] JS files in `public/assets/` never loaded by a template or other JS. None found apart from theme scripts, which load through the registry.
 - [x] CSS: theme files all came up "unreferenced" by name — confirm they're loaded via `ThemeRegistry` string building, then check each theme is still listed in the registry. Confirmed; `ThemeRegistryTest` now fails on any `theme-*` file outside the registry (#148).
-- [x] **Two OpenPGP bundles**: both are intentional. v6 is the default; v5 is the fallback for plain HTTP, where v6 can't run without WebCrypto. This is now documented in `openpgp.PROVENANCE` (PR #139). Still open: whether the 1.8 MB source map should ship.
+- [x] **Two OpenPGP bundles**: both are intentional. v6 is the default; v5 is the fallback for plain HTTP, where v6 can't run without WebCrypto. This is now documented in `openpgp.PROVENANCE` (PR #139). The 1.8 MB source map also stays: the v6 bundle points to it, browsers fetch it only with DevTools open, and it was added on purpose to stop a DevTools 404 (`firefox_console_warnings_causes_v1.md`).
 - [x] Other vendored files in `public/assets/` with no `.PROVENANCE` / `.LICENSE` sidecar. None: OpenPGP and qrcode-generator are the only vendored files, and both have them.
 - [ ] Orphaned CSS selectors inside large stylesheets (lower priority).
 
 ### 1.4 Scripts (`scripts/`, 66 files)
 - [x] Scripts not mentioned by `./v3`, docs, or other code: `markdown_list_corpus_audit.py`, `markdown_task_corpus_audit.py`. **Keep**: Markdown renderer audit tools, still needed while the renderer is being extended; documented only in their plan acceptance docs, which the scan skipped. Docstrings now link there (#156).
 - [x] Triplicated implementations: `publish_text.{php,pl,py}` and `stress_probe.{php,pl,py}`. Intentional and will grow; documented in `docs/reference/multi_language_scripts.md`, with a pointer in each file's header.
-- [ ] One-shot migrations/backfills that have already run everywhere: `backfill_unicode_risk.php`, `bake_legacy_timestamps.php`, `inject_approval.php`, the four `qdb_archive_import_*` scripts.
+- [x] Suspected one-shot scripts are live `./v3` commands, so they stay: `inject_approval.php` (`./v3 approval seed|approve`), `backfill_unicode_risk.php` (`./v3 unicode-risk-backfill`, rerun when the Unicode-risk schema version changes), `bake_legacy_timestamps.php` (`./v3 bake-timestamps`). The scan missed them because `v3` calls them by `${ROOT}/scripts/...` path. The `qdb_archive_import_*` scripts are documented in the QDB import runbook.
 - [ ] Probes/benchmarks still worth keeping: `benchmark_profile_registration.php`, `markdown_render_probe.php`, `qdb_capacity_probe.js`.
 
 ### 1.5 Repo clutter
 - [x] Root-level notes: `claude_request.txt`, `second_brain.txt` and `todo-scraped.txt` moved into `docs/plans/` beside the work they belong to (#156). `todo.txt` stays at the root as the quick inbox.
-- [ ] `docs/plans/` (516 files): fine to keep as history, but check for plans marked in-progress whose work was abandoned.
+- [ ] `docs/plans/` (516 files): fine to keep as history, but check for plans marked in-progress whose work was abandoned. Known stale descriptions after #146: `qdb_classic_urls_checklist.md` (QDB `/add` now goes through `QdbExperience`), `production_stall_busy_page_findings_v1.md` (the on-miss static build was removed on Sep 21), `site_feature_flags_slices_v1.md` (its compatibility wrappers were a migration step; nothing calls them now).
 - [ ] `queries/`, `prompts/`, `resources/`: confirm each file is still read by code.
 
 ### 1.6 Database / read model
