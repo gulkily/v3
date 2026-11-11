@@ -242,6 +242,11 @@ final class WritePostAndIdentityApiController
                 }
             }
             $result = $this->routeServices->writer()->createSignedPost($input);
+            if ($result['status'] === 'staged') {
+                // Kept but not published: nothing to score, and 202 tells clients it is not live.
+                $this->routeServices->sendJson($result,202);
+                return;
+            }
             if (!$result['replayed']) $this->enqueueFastScore($result);
             unset($result['fastmod_new_post'],$result['timings']);
             $this->routeServices->sendJson($result,200);

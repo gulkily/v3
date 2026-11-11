@@ -564,6 +564,14 @@ class LocalWriteService
                 $this->featureFlags->isEnabled(FeatureFlagRegistry::UNICODE_AUTHORED_TEXT),
                 $this->emojiAuthoredTextEnabled(),
             );
+            try {
+                $validator->validateRecord((string) ($input['canonical_record'] ?? ''));
+            } catch (RuntimeException $ruleError) {
+                // A correctly signed post that breaks an authoring rule is kept, not refused.
+                // Anything else (a replay, an unknown key) continues to the original checks.
+                $staged = $this->stageSignedPost($input, $ruleError);
+                if ($staged !== null) return $staged;
+            }
             $bundle = (new SignedPostIdentity($this->repositoryRoot, $validator))->resolve($input);
             $post = $bundle['post'];
             $path = CanonicalPathResolver::datedPost($post->postId, $post->createdAt);
@@ -633,6 +641,95 @@ class LocalWriteService
             }
             return $result;
         }, true);
+    }
+
+    /**
+     * Stages a signed post that failed `$ruleError`, when the failure is the author's to fix:
+     * the post ID and author parse, the author's key is registered, the signature verifies over
+     * the exact bytes, and the post is not already published. Otherwise returns null and the
+     * caller refuses the post as before.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function stageSignedPost(array $input, RuntimeException $ruleError): ?array
+    {
+        $record = (string) ($input['canonical_record'] ?? '');
+        $signature = (string) ($input['detached_signature'] ?? '');
+        if ($record === '' || $signature === '') return null;
+        $headers = self::lenientHeaders($record);
+        $postId = $headers['Post-ID'] ?? '';
+        $author = $headers['Author-Identity-ID'] ?? '';
+        $createdAt = $headers['Created-At'] ?? '';
+        if (!StagedSubmissionStore::validPostId($postId)
+            || !preg_match('/^openpgp:[a-f0-9]{40,64}$/D', $author)
+            || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/D', $createdAt)
+            || gmdate('YmdHis', (int) strtotime($createdAt)) !== substr($postId, strpos($postId, '-') + 1, 14)
+            || (str_starts_with($postId, 'reply-') !== isset($headers['Thread-ID']))) {
+            return null;
+        }
+        try {
+            \ForumRewrite\Security\KeyRetirement::assertActive($this->repositoryRoot, $author);
+            [$key, $fingerprint] = $this->publicKeyForIdentity($author);
+        } catch (RuntimeException) {
+            return null;
+        }
+        if (!$this->signatureVerifier->verifyDetached($key, $record, $signature, $fingerprint)['ok']
+            || $this->postTargetExists($postId)) {
+            return null;
+        }
+
+        [$reason, $field, $chars] = self::stagingReason($ruleError, $headers, $record);
+        $item = $this->stagedSubmissions()->stage($postId, $author, $headers['Thread-ID'] ?? null, $record, $signature, $reason, $field, $chars, time());
+        return [
+            'status' => 'staged',
+            'code' => 'staged',
+            'post_id' => $postId,
+            'thread_id' => $item['thread_id'] ?? $postId,
+            'reason' => $item['reason'],
+            'field' => $item['field'],
+            'chars' => $item['chars'],
+            'staged_at' => $item['staged_at'],
+            'replayed' => false,
+        ];
+    }
+
+    public function stagedSubmissions(): StagedSubmissionStore
+    {
+        return new StagedSubmissionStore(dirname($this->databasePath) . '/private/staged-posts');
+    }
+
+    /** @return array<string, string> header values from a record that may break the canonical rules */
+    private static function lenientHeaders(string $record): array
+    {
+        $headers = [];
+        $block = explode("\n\n", str_replace("\r\n", "\n", $record), 2)[0];
+        foreach (explode("\n", $block) as $line) {
+            if (preg_match('/^([A-Za-z][A-Za-z0-9-]*): (.*)$/D', $line, $m) === 1 && !isset($headers[$m[1]])) {
+                $headers[$m[1]] = $m[2];
+            }
+        }
+        return $headers;
+    }
+
+    /**
+     * @param array<string, string> $headers
+     * @return array{0: string, 1: string, 2: list<array{codepoint: string, index: int}>}
+     */
+    private static function stagingReason(RuntimeException $error, array $headers, string $record): array
+    {
+        $authored = ['Post-ID', 'Created-At', 'Board-Tags', 'Thread-ID', 'Parent-ID', 'Author-Identity-ID', 'Subject', 'Body-Format', 'Theme'];
+        $unknown = array_values(array_diff(array_keys($headers), $authored));
+        if ($unknown !== []) {
+            return ['Unsupported header: ' . implode(', ', $unknown) . '.', 'record', []];
+        }
+        if (str_contains($record, "\r\n")) {
+            return ['Records use LF line endings, not CR LF.', 'record', []];
+        }
+        if ($error instanceof \ForumRewrite\Support\TextValidationException) {
+            $chars = array_map(static fn (array $c): array => ['codepoint' => (string) $c['codepoint'], 'index' => (int) $c['index']], $error->chars);
+            return [$error->getMessage(), $error->field, $chars];
+        }
+        return [$error->getMessage(), '', []];
     }
 
     /**

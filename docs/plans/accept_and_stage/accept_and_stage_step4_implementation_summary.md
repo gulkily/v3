@@ -91,3 +91,29 @@ Reuse decisions made at entry, from inspecting the existing code:
 - Estimate details: original scope unchanged; slightly under the original because no reader needed changes.
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Private staging store
+
+**Original estimate: 0.12**
+
+- Changes:
+  - New `src/ForumRewrite/Write/StagedSubmissionStore.php`: `stage`, `find`, `listFor`, `discard`, `validPostId`. One folder per post ID under `<database dir>/private/staged-posts/` (production: `state/private/staged-posts/`, beside sessions and messages, outside exports and Git). Each holds the exact `record.txt` and `record.txt.asc` plus `staged.txt` in `Key: value` lines (`Reason`, `Field`, `Character: U+1F3A4 21`, `Staged-At`), following the no-JSON rule in `AGENTS.md`. Writes go to a temporary folder and are renamed into place.
+  - `createSignedPost` runs the strict validator first. On failure, `stageSignedPost` stages the post only when the post ID, author and Created-At parse from a lenient header read, the key is registered and not retired, the detached signature verifies over the original bytes, and the post is not already published. Otherwise the original checks run unchanged, so replays and unknown keys behave as before.
+  - Reasons: an unsupported header is named first (`Unsupported header: Imported-Score-Seed.`), then CR LF (`Records use LF line endings, not CR LF.`), then text-rule messages with their field and character positions, then the validator's own message.
+  - Caps: 1 MiB record (`RecordLimits::ARMOR`) and 20 staged posts per author; the 21st is refused with "Fix or discard one at /staged/ first." A different author cannot overwrite a staged post ID (409).
+  - `create_signed_post` answers a staged post with HTTP 202 and `{"status": "staged", "code": "staged", "post_id", "thread_id", "reason", "field", "chars", "staged_at"}`, and skips fast scoring.
+- Verification:
+  - Passed: new `SingleRequestPostingTest::testSignedPostsThatBreakARuleAreStaged`. Emoji, CR LF, a missing final LF and `Imported-Score-Seed` are each staged with the expected reason, field and characters. Exact bytes are kept, an exact retry returns the same `staged_at`, HEAD and `records/` are untouched, a bad signature and an unregistered key are refused, and the 21st post hits the cap.
+  - Passed: new `StagedSubmissionStoreTest` (replace, identical resubmission, cross-author 409, newest-first listing, discard, path-traversal IDs ignored), registered in `tests/run.php`.
+  - Passed: `SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection` now expects HTTP 202 `staged` with `U+1F642` for an emoji post from a registered key, and checks the post is not readable through `get_post`.
+  - Passed: `./v3 test --smoke --jobs=2` plus `StagedSubmissionStoreTest SingleRequestPostingTest SingleRequestHttpTest SignedPostIdentityTest SignedPostBundleValidatorTest AgentPostingApiTest BrowserSigningNormalizationTest TestRunnerBehaviorTest ApiRouteCatalogTest`: 549 run, 549 passed. Full suite not run.
+  - Inapplicable: UI (Stage 6), `frm.py` (Stage 7).
+- Notes:
+  - Two behaviors changed for clients: an emoji post from a registered key now gets 202 instead of 400, and `docs/examples/agent_single_request_post.sh` treats anything but 200 as rejected. The example's wording is fixed with the agent docs in Stage 8.
+  - Text-rule errors from `UnicodeTextPolicy` that are plain `RuntimeException`s (unsupported spacing or format characters) stage with their message but no character positions; adding positions there is outside this slice.
+
+**Retrospective stage work: 0.12**
+
+- Estimate details: original scope unchanged. CR being caught as a control character and seed headers failing in the parser needed reason ordering by the bytes rather than the message; otherwise as planned.
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

@@ -82,7 +82,12 @@ final class SingleRequestHttpTest
             $input['canonical_record']=preg_replace('/(-[a-f0-9]{32})\n/','-'.bin2hex(random_bytes(16))."\n",$input['canonical_record'],1);
             $input['canonical_record']=str_replace('Café','→ 🙂',$input['canonical_record']);
             $input['detached_signature']=SignedPostIdentityTest::helper('signCanonicalRecord',SignedPostIdentityTest::$home,$input['canonical_record']);
-            [$headers,$error]=self::request($server,$input); assertStringContains('400',$headers[0]); assertStringContains('unsupported Unicode symbols',$error['error']);
+            // The key is registered and the signature verifies, so the post is staged for the author to fix.
+            [$headers,$staged]=self::request($server,$input); assertStringContains('202',$headers[0]);
+            assertSame('staged',$staged['status']); assertStringContains('unsupported Unicode symbols',$staged['reason']);
+            assertSame('U+1F642',$staged['chars'][0]['codepoint']);
+            $missing=file_get_contents($server->url.'/api/get_post?post_id='.urlencode($staged['post_id']));
+            assertSame(false,str_contains((string) $missing,'🙂'));
         } finally { $server->close(); }
     }
     public function testMembersOnlyDenialIsJson(): void

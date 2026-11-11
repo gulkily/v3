@@ -119,6 +119,57 @@ final class SingleRequestPostingTest
         assertSame(true, $writer->createSignedPost($bundle)['replayed']);
     }
 
+    /** A signed post that verifies but breaks an authoring rule is kept off the record, not refused. */
+    public function testSignedPostsThatBreakARuleAreStaged(): void
+    {
+        [$root, $db, $artifacts] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $input = SignedPostIdentityTest::bundle();
+        $writer->createSignedPost($input);
+        $tx = new SignedPostTransaction($root);
+        $head = trim($tx->git(['rev-parse', 'HEAD']));
+        $sign = static fn (string $record): array => ['canonical_record' => $record, 'detached_signature' => SignedPostIdentityTest::helper('signCanonicalRecord', SignedPostIdentityTest::$home, $record)];
+        $known = static function (array $bundle): array { unset($bundle['public_key'], $bundle['bootstrap_record'], $bundle['bootstrap_signature']); return $bundle; };
+
+        $cases = [
+            'emoji' => [$this->signedRecord($input, null, "Cypher recap \u{1F3A4}\n"), 'body', true],
+            'CR LF' => [str_replace("\n", "\r\n", $this->signedRecord($input, null, "Windows\n")), 'record', false],
+            'no final LF' => [$this->signedRecord($input, null, "No newline"), '', false],
+            'unknown header' => [str_replace("Subject: Signed thread\n", "Subject: Signed thread\nImported-Score-Seed: 99\n", $this->signedRecord($input, null, "Seed\n")), 'record', false],
+        ];
+        foreach ($cases as $name => [$record, $field, $hasChars]) {
+            $bundle = $known($sign($record) + $input);
+            $result = $writer->createSignedPost($bundle);
+            assertSame('staged', $result['status'], $name);
+            assertSame($field, $result['field'], $name . ': field');
+            assertSame($hasChars, $result['chars'] !== [], $name . ': character positions');
+            if ($name === 'emoji') assertSame('U+1F3A4', $result['chars'][0]['codepoint']);
+            if ($name === 'unknown header') assertSame('Unsupported header: Imported-Score-Seed.', $result['reason']);
+            if ($name === 'CR LF') assertSame('Records use LF line endings, not CR LF.', $result['reason']);
+            $stored = $writer->stagedSubmissions()->find($result['post_id']);
+            assertSame($record, $stored['record'], $name . ': exact bytes kept');
+            assertSame($result['staged_at'], $writer->createSignedPost($bundle)['staged_at'], $name . ': exact retry returns the same item');
+        }
+        assertSame($head, trim($tx->git(['rev-parse', 'HEAD'])), 'nothing staged reaches the records');
+        assertSame('', trim($tx->git(['status', '--porcelain', '--', 'records'])));
+        assertSame(false, str_contains(implode("\n", glob($root . '/records/**/*') ?: []), 'staged'));
+
+        // Not the author's to fix: a bad signature and an unknown key are still refused.
+        $bad = $known(['canonical_record' => $this->signedRecord($input, null, "Bad \u{1F3A4}\n"), 'detached_signature' => $sign("x\n")['detached_signature']] + $input);
+        try { $writer->createSignedPost($bad); throw new LogicException('Expected refusal'); } catch (RuntimeException $e) { assertSame(false, $e instanceof LogicException); }
+        [$root2, $db2, $artifacts2] = SignedPostIdentityTest::helper('createTempEnvironment');
+        $fresh = new LocalWriteService($root2, $db2, $artifacts2, new CanonicalRecordRepository($root2));
+        $first = $sign($this->signedRecord($input, null, "First \u{1F3A4}\n")) + $input;
+        try { $fresh->createSignedPost($first); throw new LogicException('Expected refusal'); } catch (RuntimeException $e) { assertSame(false, $e instanceof LogicException); }
+
+        // The per-author cap protects the store.
+        for ($i = count($cases); $i < \ForumRewrite\Write\StagedSubmissionStore::PER_AUTHOR; $i++) {
+            assertSame('staged', $writer->createSignedPost($known($sign($this->signedRecord($input, null, "Filler {$i} \u{1F3A4}\n")) + $input))['status']);
+        }
+        try { $writer->createSignedPost($known($sign($this->signedRecord($input, null, "One too many \u{1F3A4}\n")) + $input)); throw new LogicException('Expected cap'); }
+        catch (RuntimeException $e) { assertStringContains('staged posts', $e->getMessage()); }
+    }
+
     private function signedRecord(array $input, ?string $threadId, string $body, int $offset = 0): string
     {
         preg_match('/^Author-Identity-ID: (.+)$/m', $input['canonical_record'], $author);
