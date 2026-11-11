@@ -1620,6 +1620,8 @@ pre {
     font-size: calc(1em * var(--table-zoom, 1));
     font-size: calc(min(1em, 100cqw / (var(--table-cols, 4) * 15)) * var(--table-zoom, 1));
   }
+  /* Actual size: the page's own text size, for every table (table_zoom.js). */
+  :root[data-table-size="page"] .post-table table { font-size: 1em; }
 }
 .post-markdown .docs-align-center { text-align: center; }
 .post-markdown .docs-align-right { text-align: right; }

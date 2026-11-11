@@ -8,24 +8,39 @@ require __DIR__ . '/../autoload.php';
 
 final class ZoomButtonsTest
 {
-    public function testGroupRendersSmallerFitLargerWithSharedLabels(): void
+    public function testGroupRendersSmallerFitActualLargerAsLabelledIcons(): void
     {
-        $html = ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'larger' => 'in']);
+        $html = ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in']);
         zoomAssertContains('<div class="zoom-buttons post-table-zoom" role="group" aria-label="Text size">', $html);
         zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="out" aria-label="Smaller" title="Smaller"><svg', $html);
-        zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="fit" title="Fit to screen">Fit</button>', $html);
+        zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="fit" aria-label="Fit to screen" title="Fit to screen"><svg', $html);
+        zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="page" aria-label="Same size as page text" title="Same size as page text"><svg', $html);
         zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="in" aria-label="Larger" title="Larger"><svg', $html);
-        if (strpos($html, '"out"') > strpos($html, '"fit"') || strpos($html, '"fit"') > strpos($html, '"in"')) {
-            throw new RuntimeException('Expected Smaller, Fit, Larger order: ' . $html);
+        $positions = array_map(static fn (string $value): int|false => strpos($html, '"' . $value . '"'), ['out', 'fit', 'page', 'in']);
+        $sorted = $positions;
+        sort($sorted);
+        if (in_array(false, $positions, true) || $positions !== $sorted) {
+            throw new RuntimeException('Expected Smaller, Fit, Actual size, Larger order: ' . $html);
+        }
+        if (substr_count($html, '<svg') !== 4 || preg_match('/<button[^>]*>[^<]/', $html) === 1) {
+            throw new RuntimeException('Every button should be an icon with no visible text: ' . $html);
         }
         zoomAssertEndsWith('</div>', $html);
+    }
+
+    public function testGroupKeepsItsOrderWhateverTheKeyOrder(): void
+    {
+        zoomAssertSame(
+            ZoomButtons::group('div', '', 'data-x', ['smaller' => 'a', 'fit' => 'b', 'actual' => 'c', 'larger' => 'd']),
+            ZoomButtons::group('div', '', 'data-x', ['larger' => 'd', 'actual' => 'c', 'smaller' => 'a', 'fit' => 'b']),
+        );
     }
 
     public function testGroupWithoutFitHasOnlyTwoButtons(): void
     {
         $html = ZoomButtons::group('span', 'sqlite-dialog-zoom', 'data-query-zoom', ['smaller' => '-1', 'larger' => '1']);
         zoomAssertContains('<span class="zoom-buttons sqlite-dialog-zoom" role="group" aria-label="Text size">', $html);
-        if (substr_count($html, '<button type="button" class="zoom-button"') !== 2 || str_contains($html, '>Fit<')) {
+        if (substr_count($html, '<button type="button" class="zoom-button"') !== 2) {
             throw new RuntimeException('Expected exactly Smaller and Larger: ' . $html);
         }
         // Larger's icon has the extra vertical bar of the plus sign; Smaller's does not.
@@ -50,6 +65,8 @@ final class ZoomButtonsTest
             static fn () => ZoomButtons::button('smaller', 'onclick', '1'),
             static fn () => ZoomButtons::button('smaller', 'data-x" onclick="y', '1'),
             static fn () => ZoomButtons::group('section', '', 'data-x', ['smaller' => '-1', 'larger' => '1']),
+            static fn () => ZoomButtons::group('div', '', 'data-x', ['smaller' => '-1']),
+            static fn () => ZoomButtons::group('div', '', 'data-x', ['smaller' => '-1', 'larger' => '1', 'reset' => '0']),
         ] as $call) {
             try {
                 $call();
@@ -88,5 +105,12 @@ function zoomAssertEndsWith(string $suffix, string $haystack): void
 {
     if (!str_ends_with($haystack, $suffix)) {
         throw new RuntimeException('Failed asserting that output ends with: ' . $suffix);
+    }
+}
+
+function zoomAssertSame(string $expected, string $actual): void
+{
+    if ($expected !== $actual) {
+        throw new RuntimeException("Expected:\n" . $expected . "\nActual:\n" . $actual);
     }
 }

@@ -29,6 +29,7 @@ final class PostMarkdownRendererTest
         assertStringContains('<div class="post-table"><div class="zoom-buttons post-table-zoom" role="group" aria-label="Text size">', $post);
         assertStringContains('data-table-zoom="out"', $post);
         assertStringContains('data-table-zoom="fit"', $post);
+        assertStringContains('data-table-zoom="page"', $post);
         assertStringContains('data-table-zoom="in"', $post);
         assertStringContains('class="docs-table-scroll post-table-cols-4"', $post);
         assertStringContains('</table></div></div>', $post);
