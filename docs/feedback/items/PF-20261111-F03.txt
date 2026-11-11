@@ -1,0 +1,19 @@
+ID: PF-20261111-F03
+Title: Gloss and Gloss Dark are the ZenMemes defaults
+Kind: feature
+Workflow: blocked
+Created: 2026-11-11
+Evidence: locally-verified
+Estimate: 0.10
+
+Request:
+Make Gloss and Gloss Dark the default themes on ZenMemes.
+
+Sources:
+- Maintainer request in a Claude session, 2026-11-11
+
+Done when:
+A ZenMemes visitor who has not chosen a theme (or chose Auto/System) sees Gloss on a light device setting and Gloss Dark on a dark one, from first paint, and it follows a live change of the device setting. An explicit theme choice, page themes and other sites' defaults are unchanged.
+
+Notes:
+2026-11-11: one-shot on feat/gloss-default (record docs/plans/gloss_default/gloss_default_one_shot.md); verified locally in headless Chrome at 390px, light and dark, Auto matching explicit Gloss and Gloss Dark, plus a live light-to-dark flip. PR open, awaiting review and deployment.

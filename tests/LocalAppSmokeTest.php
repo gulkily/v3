@@ -1186,9 +1186,10 @@ PHP;
             $_COOKIE = ['theme-hint' => 'auto'];
             $invalidHintHtml = $renderer->renderLayout('Theme', '<main></main>', 'board');
 
+            // Without a usable hint, ZenMemes starts on its Auto light theme, Gloss.
             assertStringContains(
                 'id="theme-stylesheet" rel="stylesheet" href="'
-                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-light.css')
+                . AssetFingerprint::fingerprintedPath($publicRoot, '/assets/theme-gloss.css')
                 . '" fetchpriority="high"',
                 $invalidHintHtml
             );

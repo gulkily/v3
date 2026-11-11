@@ -229,8 +229,9 @@ final class TemplateRenderer
             $pageTheme = null;
         }
         $themeHint = $this->themeHint($explicitThemeNames);
+        $autoThemes = SiteProfileRegistry::autoThemes($profile);
         $initialTheme = $pageTheme ?? $themeHint
-            ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : 'light');
+            ?? (ThemeRegistry::isExplicitName($defaultTheme) ? $defaultTheme : $autoThemes['light']);
 
         return $this->renderFile('layout.php', [
             'title' => $title,
@@ -277,6 +278,7 @@ final class TemplateRenderer
             'themePalettes' => array_intersect_key(ThemeRegistry::palettes(), array_flip($permittedThemeNames)),
             'explicitThemeNames' => $explicitThemeNames,
             'defaultTheme' => $defaultTheme,
+            'autoThemes' => $autoThemes,
             'pageTheme' => $pageTheme,
             'pagePath' => $pagePath,
             'themeStylesheetPaths' => $themeStylesheetPaths,

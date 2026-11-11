@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -133,13 +133,18 @@
 
       var resolvedTheme = allowed.indexOf(theme) !== -1
         ? theme
-        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        : document.documentElement.getAttribute(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'data-auto-dark-theme' : 'data-auto-light-theme');
       var themeStylesheet = document.getElementById('theme-stylesheet');
       if (themeStylesheet && themeStylesheetPaths[resolvedTheme]) {
         themeStylesheet.setAttribute('href', themeStylesheetPaths[resolvedTheme]);
         themeStylesheet.setAttribute('data-theme-name', resolvedTheme);
       }
       document.documentElement.setAttribute('data-resolved-theme', resolvedTheme);
+      // Auto showing a site's own pair (Gloss / Gloss Dark) needs that theme's attribute.
+      if (resolvedTheme !== theme && resolvedTheme !== 'light' && resolvedTheme !== 'dark') {
+        document.documentElement.setAttribute('data-theme', resolvedTheme);
+      }
       window.forumThemeStylesheetPaths = themeStylesheetPaths;
       window.forumUpdateThemeHint = updateThemeHint;
       updateThemeHint(resolvedTheme);
