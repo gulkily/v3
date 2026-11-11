@@ -12,9 +12,9 @@ final class ZoomButtonsTest
     {
         $html = ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'larger' => 'in']);
         zoomAssertContains('<div class="zoom-buttons post-table-zoom" role="group" aria-label="Text size">', $html);
-        zoomAssertContains('<button type="button" data-table-zoom="out" aria-label="Smaller" title="Smaller"><svg', $html);
-        zoomAssertContains('<button type="button" data-table-zoom="fit" title="Fit to screen">Fit</button>', $html);
-        zoomAssertContains('<button type="button" data-table-zoom="in" aria-label="Larger" title="Larger"><svg', $html);
+        zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="out" aria-label="Smaller" title="Smaller"><svg', $html);
+        zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="fit" title="Fit to screen">Fit</button>', $html);
+        zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="in" aria-label="Larger" title="Larger"><svg', $html);
         if (strpos($html, '"out"') > strpos($html, '"fit"') || strpos($html, '"fit"') > strpos($html, '"in"')) {
             throw new RuntimeException('Expected Smaller, Fit, Larger order: ' . $html);
         }
@@ -25,7 +25,7 @@ final class ZoomButtonsTest
     {
         $html = ZoomButtons::group('span', 'sqlite-dialog-zoom', 'data-query-zoom', ['smaller' => '-1', 'larger' => '1']);
         zoomAssertContains('<span class="zoom-buttons sqlite-dialog-zoom" role="group" aria-label="Text size">', $html);
-        if (substr_count($html, '<button') !== 2 || str_contains($html, '>Fit<')) {
+        if (substr_count($html, '<button type="button" class="zoom-button"') !== 2 || str_contains($html, '>Fit<')) {
             throw new RuntimeException('Expected exactly Smaller and Larger: ' . $html);
         }
         // Larger's icon has the extra vertical bar of the plus sign; Smaller's does not.
@@ -40,7 +40,7 @@ final class ZoomButtonsTest
     public function testSingleButtonCarriesExtraClassForToolbars(): void
     {
         $html = ZoomButtons::button('larger', 'data-paned-zoom', '1', 'paned-toolbar-btn paned-toolbar-zoom');
-        zoomAssertContains('<button type="button" class="paned-toolbar-btn paned-toolbar-zoom" data-paned-zoom="1" aria-label="Larger" title="Larger">', $html);
+        zoomAssertContains('<button type="button" class="zoom-button paned-toolbar-btn paned-toolbar-zoom" data-paned-zoom="1" aria-label="Larger" title="Larger">', $html);
     }
 
     public function testRejectsUnsafeAttributeNamesAndUnknownDirections(): void
