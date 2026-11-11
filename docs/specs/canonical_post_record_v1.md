@@ -62,11 +62,16 @@ written only while event support is on; replies must not include them.
 - `Event-Time`: start time, 24-hour `HH:MM`
 - `Event-Location`: one line of free text naming the place
 - `Event-Link`: one line, usually a URL
+- `Event-When`: the poster's own words for when the event happens, such as
+  `next Friday at 7`; one line of 1 to 120 characters; requires `Event-Date`. It is
+  written only while the Event phrases flag is on. The dates above stay the
+  authority: the calendar reads them, and the phrase is shown beside them.
 
 Writers emit them after `Subject` in this order: `Event-Date`, `Event-End-Date`,
-`Event-Time`, `Event-Location`, `Event-Link`. Parsers ignore root headers they do not
-know, so a release that predates `Event-End-Date` reads a span as a one-day event on
-`Event-Date`.
+`Event-Time`, `Event-Location`, `Event-Link`, `Event-When`. Parsers ignore root headers
+they do not know, so a release that predates `Event-End-Date` reads a span as a one-day
+event on `Event-Date`, and one that predates `Event-When` shows the dates without the
+phrase.
 
 ## Body Rules
 

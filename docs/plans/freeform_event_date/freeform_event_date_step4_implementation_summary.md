@@ -101,3 +101,24 @@ Maintainer direction at approval (2026-11-11): "let's stretch it a little bit if
 **Retrospective stage work: 0.12**
 
 *— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Event-When in the signed record
+
+**Original estimate: 0.10**
+
+- Changes:
+  - `PostRecordParser`: `Event-When` is a root-only event header of 1 to 120 characters that requires `Event-Date`. `PostRecord::$eventWhen` carries it.
+  - `LocalWriteService`: both thread write paths (the form's `createThread` and `prepareThread`) write `Event-When` after `Event-Link` from `event_when`, through the authored-line policy. It is ignored while the flag is off, as before the flag existed. A phrase with no Date is refused with "Add a date for the event, or press Fill."; the composer keeps the phrase and draft.
+  - `docs/specs/canonical_post_record_v1.md`: the header, its order and what older releases do.
+- Verification:
+  - `./v3 test --smoke EventWhenRecordTest EventPhraseComposeTest CalendarPageTest WriteApiSmokeTest`: 677 passed.
+  - `EventWhenRecordTest` (new): parse, missing date, reply, length; form post with the flag on writes the header; flag off writes none; a phrase without a date is refused with HEAD unchanged and the draft kept.
+  - `./v3 test EventEndDateParserTest CanonicalRecordParsersTest`: passed.
+  - Full suite not run.
+- Notes:
+  - `prepareThread` shares the writer change, so Stage 7 only needs the browser to send the phrase and API coverage.
+- Estimate details: original scope as planned; uncertainty low; no revision.
+
+**Retrospective stage work: 0.09**
+
+*— Claude · 2026-11-11 UTC · Model: claude-opus-5-5*

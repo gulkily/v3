@@ -43,6 +43,8 @@ final class PostRecord
         public readonly ?string $eventEndDate = null,
         /** The thread's page theme set from this post without a visible `theme:` line; `none` clears. */
         public readonly ?string $theme = null,
+        /** The poster's own words for when the event happens ("next Friday at 7"); requires an event date. */
+        public readonly ?string $eventWhen = null,
     ) {
     }
 
