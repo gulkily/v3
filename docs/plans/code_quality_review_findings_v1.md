@@ -172,3 +172,33 @@ A second pass read every doc, including `docs/plans/`, for each open item and fo
 - **Decision 3 (interfaces):** no doc gives a reason for `FastScoreStore` or `AgentReplyGenerationStore`, and nothing outside `src/` implements them. No change.
 - **Decision 4 (unread properties):** no doc mentions them. No change.
 - **Removed in #146, still described in older plans:** `qdb_classic_urls_checklist.md` says QDB `/add` renders through `composeThreadCompact()`; it now goes through `QdbExperience`, and the QDB tests pass. `site_feature_flags_slices_v1.md` asked to keep the `SiteConfig` flag helpers as compatibility wrappers during its first slice; later slices moved every caller, so removing them was safe. `ui_messages_step2_feature_description.md` already called `pages/private_messages.php` unreachable. These are history and stay as written.
+
+## Correctness pass (2026-11-10)
+
+Checklist §2.3 and §2.4: read-only scans of `src/` and `scripts/`, then a hand trace of every hit that could reach user input or lose data.
+
+**One real bug, fixed in #162.** `./v3 purge-history` didn't check its journal writes. A failed `refs-before.txt` write let the purge continue, and a later `restore` then restored zero refs, cleared the journal and reported success. A failed phase write could leave a pruned repository marked restorable. Both writes now throw, and `restore` refuses an empty record.
+
+**SQL built from strings: no problems.** 58 queries put PHP values into SQL text. Each value is one of these:
+- a placeholder list
+- a fixed fragment
+- an `int` (enforced by `strict_types`)
+- a value checked against an allowed list (`ActivityService::activitySortSql`, sort direction, mailbox column)
+
+Page numbers go through `PageNavigation::pageNumber`, which accepts at most 6 digits. QDB search casts with `(int)` but clamps to the page count before building the offset.
+
+**File paths from requests: no problems.**
+- Source viewer: an explicit list of record paths, then the real path must stay inside the repository.
+- Docs downloads: refuse `..`, encoded slashes and dot segments.
+- Images: a 64-character hash, re-checked against the file's checksum.
+- Assets: a strict name pattern, and the real path must sit directly in `assets/`.
+- High-traffic cache: only routes that pass `HighTrafficRoute::canonical`.
+- Feature-flag records: `[A-Za-z0-9._-]` with no `..`, then the in-repository check.
+
+**git and gpg failures: no problems.** Every call whose result matters checks the exit code (`proc_get_status`, `exec` exit argument or `proc_close` status), throws on short output, or fails closed. For example, `RetractionAuthority` refuses the actor when `git` returns nothing. `SourceLabelRemoval` reads an empty `symbolic-ref` result on purpose, as a detached HEAD.
+
+**Ignored write results:** apart from the purge journal, the unchecked writes are best-effort logs (`@`), temporary files where the next step fails loudly, or lock releases. One is low priority and left as is:
+- `ReadModelStaleMarker::mark()` ignores a failed write. Every caller has just made a commit the read model hasn't seen, and `ensureReadModel` also rebuilds on a repository head mismatch, so a lost marker still leads to a rebuild.
+
+Not covered: read-side `false`/`null` returns. Most are deliberate `(string)` casts with a default, so a useful scan needs a type checker (a higher PHPStan level), not grep.
+
