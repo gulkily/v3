@@ -29,7 +29,10 @@ export async function checkHistoryRecovery(page) {
   };
   await page.route('**/api/private_messages/conversation?*', intercept);
   const settled = () => page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.historyLoading === '0');
+  const restartButton = page.getByRole('button', { name: 'Restart history', exact: true });
   for (const failure of ['abort', 'malformed', 'shape', 'auth', 'eligibility', 'stale']) {
+    // Restart history stays hidden until a stale history position needs it.
+    assert.equal(await restartButton.isVisible(), false, 'Restart history hidden before ' + failure);
     mode = failure;
     await page.locator('[data-role="history-load"]').click();
     await settled();
@@ -73,6 +76,7 @@ export async function checkHistoryRecovery(page) {
   await settled();
   assert.equal((await ids()).filter(id => id === reply).length, 1);
   assert.equal((await ids()).length, 26, 'Fresh 25-message window must also retain the concurrent confirmation');
+  assert.equal(await restartButton.isVisible(), false, 'Restart history hides again after a successful restart');
   assert.equal(await field.inputValue(), 'Newer draft must survive restart and send');
   await page.unroute('**/api/private_messages', sendRoute);
 

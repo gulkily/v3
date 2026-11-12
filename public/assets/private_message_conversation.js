@@ -131,7 +131,6 @@
   function bindHistory(root) {
     const load = root.querySelector('[data-role="history-load"]');
     const restart = root.querySelector('[data-role="history-restart"]');
-    const more = root.querySelector('[data-role="history-more"]');
     const status = root.querySelector('[data-role="history-status"]');
     const transcript = root.querySelector('[data-role="private-message-transcript"]');
     if (!load || !status) return;
@@ -222,7 +221,7 @@
         status.textContent = cursor ? (fresh ? 'History restarted. Recent messages loaded.' : added.length + ' older messages loaded.') : 'All history loaded.';
         load.hidden = !cursor;
         load.textContent = 'Load older';
-        if (more) more.open = false;
+        restart.hidden = true;
         if (fresh) {
           root.querySelector('[data-role="private-message-read-token"]').value = page.read_token || '';
           root.dispatchEvent(new CustomEvent('private-message-window-settled', { detail: {
@@ -237,8 +236,8 @@
           : error.authorization
             ? 'History access is unavailable. Check your sign-in and messaging eligibility, then retry. Your loaded conversation and draft are unchanged.'
             : (error.detail || 'Unable to ' + (fresh ? 'restart history' : 'load older messages') + '.') + ' Your conversation and draft are unchanged.';
-        // A required restart opens the ··· menu so the action is in view.
-        if (more && (fresh || error.restart)) more.open = true;
+        // Restart history only appears when it is the way out: a stale history position, or a failed restart.
+        if (fresh || error.restart) restart.hidden = false;
         load.hidden = fresh || error.restart || !cursor;
         load.textContent = 'Retry loading older';
       } finally {
@@ -345,8 +344,9 @@
     function revealLatest() {
       root.dispatchEvent(new CustomEvent('private-message-reveal-latest'));
       const last = presentationFor(root, Array.from(transcript.querySelectorAll('[data-private-message-id], [data-pending-message-id]')).at(-1)) || transcript;
-      const obstruction = root.classList.contains('composer-inline') ? 0 : composer.getBoundingClientRect().height;
-      window.scrollBy({ top: last.getBoundingClientRect().bottom - viewportHeight() + obstruction + 24, behavior: 'instant' });
+      // Measure where the pinned composer really starts: it sits above the site's bottom navigation, not at the screen edge.
+      const visibleBottom = root.classList.contains('composer-inline') ? viewportHeight() : Math.min(viewportHeight(), composer.getBoundingClientRect().top);
+      window.scrollBy({ top: last.getBoundingClientRect().bottom - visibleBottom + 24, behavior: 'instant' });
     }
     function initiallySettled() { regroup(root); layout(); if (!navigated) revealLatest(); }
     root.addEventListener('private-message-reader-settled', initiallySettled);
@@ -355,8 +355,8 @@
     initiallySettled();
     latest.addEventListener('click', function () { revealLatest(); });
     root.addEventListener('private-message-before-append', function () {
-      const obstruction = root.classList.contains('composer-inline') ? 0 : composer.getBoundingClientRect().height;
-      followReply = transcript.getBoundingClientRect().bottom <= viewportHeight() - obstruction + 96;
+      const visibleBottom = root.classList.contains('composer-inline') ? viewportHeight() : Math.min(viewportHeight(), composer.getBoundingClientRect().top);
+      followReply = transcript.getBoundingClientRect().bottom <= visibleBottom + 96;
     });
     root.addEventListener('private-message-appended', function () { layout(); if (followReply) revealLatest(); });
     window.addEventListener('resize', layout);
