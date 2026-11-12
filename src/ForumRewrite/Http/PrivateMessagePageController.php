@@ -48,7 +48,7 @@ final class PrivateMessagePageController
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_list.php',
             ['page' => $page, 'viewerProfile' => $viewer], 'Messages', 'messages', [
                 '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_messages.js', '/assets/key_backup_status.js',
-                '/assets/private_message_reader.js', '/assets/message_time.js', '/assets/private_message_list.js',
+                '/assets/private_message_cache.js', '/assets/private_message_reader.js', '/assets/message_time.js', '/assets/private_message_list.js',
             ]), 200, $this->routeServices->noStoreHeaders());
     }
 

@@ -109,3 +109,11 @@
   .private-message-access [data-access-for="guest"] { display: block; }
 }
 .private-message-access [data-access-for="guest"] button { width: auto; }
+
+/* With saved message copies on, loading previews stay blank until saved copies are checked, so read
+   conversations go straight from blank to text. The delayed reveal is only a safety net if scripts fail. */
+[data-conversation-list][data-private-message-cache="1"]:not([data-private-message-cache-checked]) .message-list-link .message-preview.is-loading {
+  visibility: hidden;
+  animation: private-message-list-cache-reveal 0s 2s forwards;
+}
+@keyframes private-message-list-cache-reveal { to { visibility: visible; } }

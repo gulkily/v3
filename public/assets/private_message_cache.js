@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  // Messages this browser has already read and verified, kept so a conversation can show them without
+  // Messages this browser has already read and verified, kept so conversations and the Messages list can show them without
   // decrypting again. Entries are encrypted with an AES-GCM key this browser generated and cannot export,
   // and are bound to the browser identity's fingerprint. Every failure is a miss: the reader then reads live.
   const databaseName = "forum-private-message-cache-v1";
@@ -82,7 +82,43 @@
     return owner + ":" + messageId;
   }
 
+  // Lookups already started for this page, by message id. The script runs as soon as the page is parsed,
+  // before the reader and the rest of the page's scripts, so saved copies start loading at once.
+  const early = new Map();
+
+  async function readMany(ids) {
+    const owner = fingerprint();
+    const database = await openDatabase();
+    const entries = store(database, messageStore, "readonly");
+    const found = await Promise.all(ids.map(function (id) {
+      return request(entries, function (s) { return s.get(entryId(owner, id)); }).catch(function () { return null; });
+    }));
+    const secret = found.some(Boolean) ? await key(database) : null;
+    return Promise.all(found.map(function (entry, index) {
+      if (!entry || !entry.iv || !entry.data) return null;
+      return window.crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: entry.iv, additionalData: new TextEncoder().encode(entryId(owner, ids[index])) }, secret, entry.data)
+        .then(function (plain) { return owner === fingerprint() ? new TextDecoder().decode(plain) : null; })
+        .catch(function () { return null; });
+    }));
+  }
+
+  function prefetch(messageIds) {
+    const ids = Array.from(new Set(messageIds.map(String).filter(Boolean))).filter(function (id) { return !early.has(id); });
+    if (!ids.length || !enabled()) return;
+    const batch = readMany(ids).catch(function () { return ids.map(function () { return null; }); });
+    ids.forEach(function (id, index) {
+      early.set(id, batch.then(function (texts) { return texts[index]; }));
+    });
+  }
+
   async function get(messageId) {
+    const started = early.get(String(messageId));
+    if (started) {
+      early.delete(String(messageId));
+      const text = await started;
+      return text !== null && enabled() ? text : null;
+    }
     try {
       const owner = fingerprint();
       if (!enabled() || !messageId) return null;
@@ -131,5 +167,13 @@
     });
   }
 
-  window.ForumPrivateMessageCache = { databaseName: databaseName, enabled: enabled, get: get, put: put, clearAll: clearAll };
+  window.ForumPrivateMessageCache = { databaseName: databaseName, enabled: enabled, get: get, put: put, clearAll: clearAll, prefetch: prefetch };
+
+  try {
+    prefetch(Array.from(document.querySelectorAll("[data-private-message-id], [data-conversation-row][data-message-id]")).map(function (node) {
+      return node.dataset.privateMessageId || node.dataset.messageId;
+    }));
+  } catch (error) {
+    // A miss: the reader reads live.
+  }
 })();

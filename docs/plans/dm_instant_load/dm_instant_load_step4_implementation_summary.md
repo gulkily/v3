@@ -131,3 +131,7 @@ Branch: `feature/dm_instant_load`, from `origin/main` at `f13dd20f`. Planning co
 
 - Technical completion: Stages 1–5 committed and pushed on `feature/dm_instant_load`; Stage 6 pending. Not merged.
 - Retrospective whole-cycle assessment: pending Stage 6. Stage retrospectives so far: 0.10, 0.15, 0.15, 0.15, 0.05.
+
+## Follow-up after merge
+
+- 2026-11-12: Stage 6 on iPhone Safari found placeholders still showing; the flag had never reached the page. Fixed with list previews and earlier lookups in [the follow-up record](./dm_instant_load_followup_list_and_flag.md). Stage 6 acceptance remains pending.

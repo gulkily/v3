@@ -47,10 +47,41 @@
       return request;
     }
 
+    function showPreview(row, messageId, senderUsernameToken, plaintext) {
+      const text = row.querySelector('[data-role="preview"]');
+      const prefix = senderUsernameToken === root.dataset.viewer ? 'You: ' : '';
+      row.dataset.previewState = 'verified';
+      row.dataset.previewMessageId = messageId;
+      text.title = '';
+      text.textContent = prefix + plaintext.replace(/\s+/gu, ' ').trim().slice(0, 200);
+      text.className = 'message-preview';
+      row.querySelector('[data-role="verification"]').hidden = false;
+      row.querySelector('[data-action="retry-preview"]').hidden = true;
+    }
+
+    // Saved copies (private_message_cache.js) fill previews this browser has already read, without waiting
+    // for the conversation list request or decrypting. Server rows carry the message id and sender.
+    const cache = root.dataset.privateMessageCache === '1' ? window.ForumPrivateMessageCache : null;
+    function savedPreview(row, messageId, senderUsernameToken) {
+      if (!cache || !cache.enabled() || !messageId) return Promise.resolve(false);
+      return cache.get(messageId).then(function (plaintext) {
+        if (plaintext === null || row.dataset.messageId !== messageId) return false;
+        showPreview(row, messageId, senderUsernameToken, plaintext);
+        return true;
+      }, function () { return false; });
+    }
+    const savedPreviews = Promise.all(Array.from(rendered.values()).map(function (row) {
+      return savedPreview(row, row.dataset.messageId, row.dataset.sender);
+    })).then(function () {
+      root.dataset.privateMessageCacheChecked = '1';
+    });
+
     async function readPreview(row, message, historyCandidate) {
       const text = row.querySelector('[data-role="preview"]');
       const verified = row.querySelector('[data-role="verification"]');
       const retryPreview = row.querySelector('[data-action="retry-preview"]');
+      if (!historyCandidate && row.dataset.previewState === 'verified' && row.dataset.previewMessageId === message.message_id) return;
+      if (!historyCandidate && await savedPreview(row, message.message_id, message.sender_username_token)) return;
       text.textContent = 'Decrypting…';
       text.className = 'message-preview is-loading';
       verified.hidden = true;
@@ -75,10 +106,8 @@
       row.dataset.previewState = result.kind;
       text.title = '';
       if (result.kind === 'verified') {
-        const prefix = message.sender_username_token === root.dataset.viewer ? 'You: ' : '';
-        text.textContent = prefix + result.plaintext.replace(/\s+/gu, ' ').trim().slice(0, 200);
-        text.className = 'message-preview';
-        verified.hidden = false;
+        showPreview(row, message.message_id, message.sender_username_token, result.plaintext);
+        if (cache && cache.enabled()) cache.put(message.message_id, result.plaintext);
       } else {
         // One short line on the row; the reader's full reason stays in the title.
         text.textContent = result.kind === 'bad-signature' ? 'Couldn’t verify preview'
@@ -102,6 +131,7 @@
       }
       row.dataset.counterpart = message.counterpart;
       row.dataset.messageId = message.message_id;
+      row.dataset.sender = message.sender_username_token;
       row.querySelector('a').href = '/messages/conversation/' + encodeURIComponent(message.counterpart);
       row.querySelector('[data-role="counterpart"]').textContent = message.counterpart;
       const time = row.querySelector('[data-role="time"]');
@@ -155,6 +185,7 @@
 
     more.addEventListener('click', load);
     retry.addEventListener('click', load);
+    // The list request runs alongside saved previews and only decrypts what they didn't fill.
     const ready = load();
     return { load: load, ready: ready };
   }
