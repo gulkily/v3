@@ -20,7 +20,7 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `refresh_static_shared_artifacts.php` | `./v3 build-static --shared-only` | Refresh only the shared static artifacts |
 | `checkouts.php` | `./v3 checkouts` | Manage several checkouts on one host |
 | `delete_record.php` | `./v3 delete-record` | Remove one record quickly ([progress output](../docs/concepts/operator_command_progress.md)) |
-| `delete_thread.php` | `./v3 delete-thread` | Remove a thread root and all its replies |
+| `delete_thread.php` | `./v3 delete-thread` | Remove a thread root and all its replies in one commit, with their images |
 | `deploy.php` | `./v3 deploy` | Pull and deploy an update ([application update](../docs/concepts/application_update.md)) |
 | `docs.php` | `./v3 docs publish` | Publish the platform docs |
 | `fast_score.php` | `./v3 fast-score` | Fast post scoring status, audit and maintenance |
