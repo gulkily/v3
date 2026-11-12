@@ -99,7 +99,7 @@ final class ApiTextController
 
         foreach (($this->fetchThreadPosts)($threadId) as $post) {
             if (str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX)) { $lines[] = 'Image-Bytes: separate image backup required'; }
-            $marker = ($post['retracted_at'] ?? null) !== null ? '(retracted) ' : '';
+            $marker = ($post['retracted_at'] ?? null) !== null ? '(retracted) ' : self::resolutionMarker($post);
             $lines[] = '[' . $post['post_id'] . '] ' . $marker . trim(str_replace("\n", ' ', $post['body']));
         }
 
@@ -116,9 +116,40 @@ final class ApiTextController
 
         $imageNote = str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX) ? "Image-Bytes: separate image backup required\n" : '';
         $this->routeServices->sendText(
-            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\nRetracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n\n{$post['body']}",
+            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\nRetracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n" . $this->resolutionHeader($post) . "\n{$post['body']}",
             200
         );
+    }
+
+    /**
+     * `Resolution: resolved` or `closed` for a reply marked through a tagset (resources/tagsets.txt);
+     * absent when the reply is open or the feature is off.
+     *
+     * @param array<string, mixed> $post
+     */
+    private function resolutionHeader(array $post): string
+    {
+        $state = $this->resolutionState($post);
+        return $state === null ? '' : 'Resolution: ' . $state . "\n";
+    }
+
+    /** @param array<string, mixed> $post */
+    private function resolutionMarker(array $post): string
+    {
+        $state = $this->resolutionState($post);
+        return $state === null ? '' : '(' . $state . ') ';
+    }
+
+    /** @param array<string, mixed> $post */
+    private function resolutionState(array $post): ?string
+    {
+        $state = $post['resolution_state'] ?? null;
+        if (!is_string($state) || $state === ''
+            || !$this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::TAG_UNLOCKS_ENABLED)) {
+            return null;
+        }
+
+        return $state;
     }
 
     /**

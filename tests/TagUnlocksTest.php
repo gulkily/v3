@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Write\LocalWriteService;
@@ -141,6 +142,26 @@ final class TagUnlocksTest
             (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
             assertSame('resolved', $this->resolution($database, 'reply-001')[0]);
         }, approved: false);
+    }
+
+    public function testTextApiReportsResolution(): void
+    {
+        $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
+            $app = new Application(dirname(__DIR__), $root, $database, dirname($database, 2) . '/public');
+            assertStringNotContains('Resolution:', $this->render($app, '/api/get_post?post_id=reply-001'));
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'resolved', 'author_identity_id' => self::APPROVED]);
+            assertStringContains("Body-Format: plain\nResolution: resolved\n\nReply body.", $this->render($app, '/api/get_post?post_id=reply-001'));
+            assertStringContains('[reply-001] (resolved) Reply body.', $this->render($app, '/api/get_thread?thread_id=root-001'));
+        });
+    }
+
+    private function render(Application $app, string $path): string
+    {
+        $_GET = [];
+        parse_str((string) parse_url($path, PHP_URL_QUERY), $_GET);
+        ob_start();
+        $app->handle('GET', $path);
+        return (string) ob_get_clean();
     }
 
     /** @return array{0:?string,1:?string} state and set-at */

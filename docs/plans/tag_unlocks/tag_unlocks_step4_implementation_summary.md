@@ -71,3 +71,21 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty medium, reduced to the pending timing check.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - State in the plain-text API
+
+**Original estimate: 0.06**
+
+**Retrospective stage work: 0.06**
+
+- Changes:
+  - `ApiTextController`: `get_post` adds `Resolution: resolved|closed` after `Body-Format` for a marked reply; `get_thread` prefixes the reply line with `(resolved) ` or `(closed) ` in the existing marker slot (retracted still wins). Both are hidden when the flag is off.
+  - `posts.resolution_state` added to the post selects in `Application::fetchThreadPosts`, `Application::fetchPost` and `ThreadRepository` (also used by the thread page in Stage 5).
+  - `LlmsTxtRenderer`: short "Reply resolution" section. `docs/reference/agent_api.md`: "Reply resolution (tag unlocks)" section.
+- Verification:
+  - `TagUnlocksTest::testTextApiReportsResolution`: header and marker appear after a mark, absent before.
+  - `./v3 test --smoke LlmsTxtRendererTest TagUnlocksTest AgentApiWorkedExampleTest PlatformDocsCatalogTest`: 471 run, 471 passed. Full suite not run.
+- Notes: open replies get no header, so clients that parse `get_post` headers see no change for ordinary posts.
+- Estimate details: original scope unchanged; uncertainty low.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
