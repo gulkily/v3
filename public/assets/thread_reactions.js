@@ -1103,6 +1103,36 @@
     });
   }
 
+  // Show a reply's new state: "open" clears it. State buttons swap so an open reply
+  // offers the states and a marked one offers Reopen; the fold follows data-resolution.
+  function isStateButton(button) {
+    return button.getAttribute("data-state-tag") === "1";
+  }
+
+  function applyPostResolution(root, tag) {
+    const state = tag === "open" ? "" : tag;
+    if (state === "") {
+      root.removeAttribute("data-resolution");
+    } else {
+      root.setAttribute("data-resolution", state);
+    }
+    Array.from(root.querySelectorAll("[data-state-tag]")).forEach(function (stateButton) {
+      const isOpen = stateButton.getAttribute("data-tag") === "open";
+      stateButton.hidden = isOpen === (state === "");
+    });
+    const fold = root.querySelector('[data-role="post-resolution"]');
+    if (fold) {
+      fold.open = state === "";
+      const label = fold.querySelector('[data-role="post-resolution-label"]');
+      if (label && state !== "") {
+        label.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+      }
+    }
+    if (typeof root.dispatchEvent === "function" && typeof CustomEvent === "function") {
+      root.dispatchEvent(new CustomEvent("forum:post-resolution", { bubbles: true, detail: { state: state } }));
+    }
+  }
+
   function bindPostReactions(root) {
     if (boundPostRoots.has(root)) {
       return;
@@ -1162,6 +1192,22 @@
         const isHidden = parseResponseValue(text, "is_hidden") === "yes";
         const viewerIdentityId = reactionIdentityId(parseResponseValue(text, "viewer_identity_id")) || currentReactionIdentityId();
 
+        if (isStateButton(button)) {
+          // A state (resolved/closed/open) can change again, so the button is not kept as applied.
+          restorePostReactionState(root, button, previousState);
+          const approved = parseResponseValue(text, "viewer_is_approved") === "yes";
+          if (approved) {
+            applyPostResolution(root, tag);
+          }
+          setFeedback(feedbackNode, approved
+            ? (tag === "open" ? "Reopened." : `${appliedLabel}.`)
+            : "Saved. Only approved members' marks change a reply's state.", "ok");
+          notifyReactionApplied();
+          markActionTiming(timing, "forum_reconcile_complete");
+          completeActionTiming(timing, "ok");
+          return;
+        }
+
         setConfirmedReactionButton(button, appliedLabel);
         if (wroteRecord && (tag === "like" || tag === "flag") && parseResponseValue(text, "viewer_is_approved") === "yes") {
           appendSignalActor(root.querySelector('[data-role="post-signals"]'), tag, viewerSignalName());
@@ -1186,7 +1232,7 @@
       } catch (error) {
         if (outboxItem) await settleReaction(outboxItem, error);
         const queued = Boolean(outboxItem && error && error.retryable);
-        if (queued) {
+        if (queued && !isStateButton(button)) {
           // Still saved and retried from the Outbox, so the button keeps showing it as applied.
           setConfirmedReactionButton(button, appliedLabel);
         } else {

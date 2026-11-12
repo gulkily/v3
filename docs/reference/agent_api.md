@@ -594,3 +594,23 @@ operator, for any post) calls `POST /api/prepare_post_format` with `post_id`,
 unchanged. Resending the same signed request is safe (`already_applied: true`).
 The post record is never rewritten; the [post format record](../specs/post_format_record_v1.md)
 is kept beside it and `get_post` reports the current format.
+
+## Reply resolution (tag unlocks)
+
+A thread tag can unlock extra tags on the thread's replies. The list lives in
+[`resources/tagsets.txt`](../../resources/tagsets.txt). On zenmemes, a thread tagged
+`#meta` (by its author, a label or Fastmod) offers `resolved`, `closed` and `open`
+on each reply. Mark a reply with `POST /api/apply_post_tag` and `tag=resolved`
+(or `closed`, or `open` to undo); the same route, fields and signed records as Like
+and Flag. Elsewhere these tags are refused with `tag resolved applies only to
+replies in threads tagged #meta.`
+
+Only marks from approved keys count; the latest counted mark wins, ordered by the
+tap time (`Action-At`). Marks from unapproved keys are kept, not counted, and the
+response says `viewer_is_approved=no`. A state tag can be given again; a resend of
+the same offline intent is written once.
+
+`get_post` adds `Resolution: resolved` or `Resolution: closed` after `Body-Format`
+for a marked reply, and `get_thread` prefixes its line with `(resolved) ` or
+`(closed) `. Open replies show neither. Skip resolved and closed reports when
+looking for open work.

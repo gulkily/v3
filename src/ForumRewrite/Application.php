@@ -1880,7 +1880,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
-                    posts.created_at, posts.board_tags_json, posts.agent_response_json,
+                    posts.created_at, posts.board_tags_json, posts.agent_response_json, posts.resolution_state,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
@@ -1903,7 +1903,7 @@ final class Application
         $hiddenWhere = $includeHidden ? '' : ' AND posts.is_hidden = 0';
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
-                    posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason,
+                    posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason, posts.resolution_state,
                     posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, posts.body_format, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key

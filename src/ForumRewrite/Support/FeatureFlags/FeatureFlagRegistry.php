@@ -23,6 +23,7 @@ final class FeatureFlagRegistry
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
+    public const TAG_UNLOCKS_ENABLED = 'FORUM_TAG_UNLOCKS_ENABLED';
     public const DEPLOY_HEADER_PROMPT_ENABLED = 'FORUM_DEPLOY_HEADER_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
@@ -54,7 +55,8 @@ final class FeatureFlagRegistry
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
-            self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED],
+            self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
+            self::TAG_UNLOCKS_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -286,6 +288,15 @@ final class FeatureFlagRegistry
                 'Show approved members an Unread page of unread messages, replies to their posts and other new posts, with Caught up marks shared across their devices. Unread appears on the bar just before Messages. Disabling keeps stored marks.',
                 false,
                 self::INBOX_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::TAG_UNLOCKS_ENABLED,
+                'Tag unlocks',
+                'A thread tag listed in resources/tagsets.txt offers extra tags on its replies; on #meta threads, Resolved and Closed fold a reply to one line. Only approved keys change the state.',
+                true,
+                self::TAG_UNLOCKS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),
