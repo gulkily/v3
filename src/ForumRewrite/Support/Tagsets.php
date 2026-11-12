@@ -117,6 +117,12 @@ final class Tagsets
         return null;
     }
 
+    /** @return list<string> the parent tags whose sets contain $tag */
+    public function parentsOf(string $tag): array
+    {
+        return array_values(array_unique(array_map(static fn (array $set): string => $set['parent'], $this->setsContaining($tag))));
+    }
+
     /** @return list<string> every tag that belongs to an exclusive group */
     public function exclusiveTags(): array
     {

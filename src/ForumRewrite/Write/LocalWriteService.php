@@ -42,6 +42,7 @@ use ForumRewrite\Invitation\InvitationToken;
 use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\Support\Tagsets;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\ApprovalPolicy;
 use ForumRewrite\Security\AttributionCutoff;
@@ -1588,17 +1589,22 @@ class LocalWriteService
             $timings = [];
             $totalStartedAt = hrtime(true);
             $postId = $this->requireAsciiToken((string) ($input['post_id'] ?? ''), 'post_id');
-            $tag = $this->normalizeThreadTag((string) ($input['tag'] ?? ''), false);
+            $post = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($postId));
+            $threadId = $post->threadId ?? $post->postId;
+            $unlockedTag = $this->unlockedPostTag((string) ($input['tag'] ?? ''), $post);
+            $tag = $unlockedTag ?? $this->normalizeThreadTag((string) ($input['tag'] ?? ''), false);
             $authorIdentityId = $this->requireOpenPgpIdentityId((string) ($input['author_identity_id'] ?? ''), 'author_identity_id');
             $createdAt = $this->canonicalTimestampNow();
             $actionAt = $this->optionalOfflineActionAt($input);
             $intentId = $this->optionalOfflineIntentId($input);
 
-            $post = $this->canonicalRepository->loadPost(CanonicalPathResolver::post($postId));
-            $threadId = $post->threadId ?? $post->postId;
             $signed = $this->signedReactionInput('post', $input, $postId, $tag, $authorIdentityId);
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
-            if ($this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId)) {
+            // A state tag (resolved/closed/open) may be given again: the latest counted mark wins.
+            $repeatable = $unlockedTag !== null && Tagsets::forApplication()->exclusiveGroupOf($tag) !== null;
+            if ($repeatable
+                ? $this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId, $intentId ?? $this->signedIntentId($input) ?? '')
+                : $this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId)) {
                 $state = $this->currentPostReactionState($postId);
 
                 $this->recoverReactionDerivedState();
@@ -4659,6 +4665,48 @@ class LocalWriteService
         return $tag;
     }
 
+    /**
+     * The tag when a tagset unlocks it for this post, null when it is an ordinary tag.
+     * Throws when the tag is unlockable but this post's thread lacks the parent tag.
+     */
+    private function unlockedPostTag(string $value, PostRecord $post): ?string
+    {
+        $tag = strtolower(trim($value));
+        $tagsets = Tagsets::forApplication();
+        if (TagScore::isScoredTag($tag) || !$tagsets->isUnlockable($tag)
+            || !FeatureFlagEvaluator::forRepository($this->repositoryRoot)->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED)) {
+            return null;
+        }
+        if ($post->threadId === null || !in_array($tag, $tagsets->unlockedFor($this->threadTagsForUnlocks($post->threadId)), true)) {
+            throw new RuntimeException('tag ' . $tag . ' applies only to replies in threads tagged #'
+                . implode(' or #', $tagsets->parentsOf($tag)) . '.');
+        }
+
+        return $tag;
+    }
+
+    /** @return list<string> the thread's authored board tags and labels, plus public Fastmod tags */
+    private function threadTagsForUnlocks(string $threadId): array
+    {
+        $pdo = \ForumRewrite\Scoring\FastmodMetaRead::forApplication($this->readModelPdo(), dirname(__DIR__, 3), $this->repositoryRoot);
+        $stmt = $pdo->prepare('SELECT board_tags_json, thread_labels_json FROM threads WHERE root_post_id = :thread_id');
+        $stmt->execute(['thread_id' => $threadId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $stmt->closeCursor();
+        if (!is_array($row)) {
+            return [];
+        }
+        $tags = [];
+        foreach (['board_tags_json', 'thread_labels_json'] as $column) {
+            $decoded = json_decode((string) $row[$column], true);
+            foreach (is_array($decoded) ? $decoded : [] as $tag) {
+                $tags[] = strtolower((string) $tag);
+            }
+        }
+
+        return array_values(array_unique($tags));
+    }
+
     private function isQdbInstance(): bool
     {
         return SiteConfig::siteName() === 'qdb';
@@ -4829,8 +4877,18 @@ class LocalWriteService
         return false;
     }
 
-    private function hasPostTagFromIdentity(string $postId, string $tag, string $identityId): bool
+    /** @param array<string, mixed> $input */
+    private function signedIntentId(array $input): ?string
     {
+        return preg_match('/^Intent-ID: (\S+)$/m', (string) ($input['canonical_record'] ?? ''), $match) === 1 ? $match[1] : null;
+    }
+
+    /** With $intentId, matches only a record from that same offline intent (a replay). */
+    private function hasPostTagFromIdentity(string $postId, string $tag, string $identityId, ?string $intentId = null): bool
+    {
+        if ($intentId === '') {
+            return false;
+        }
         foreach (glob($this->repositoryRoot . '/records/post-reactions/*.txt') ?: [] as $path) {
             $relativePath = 'records/post-reactions/' . basename($path);
             try { $record = $this->canonicalRepository->loadPostReaction($relativePath); } catch (\ForumRewrite\Canonical\CanonicalRecordParseException) { continue; }
@@ -4838,7 +4896,7 @@ class LocalWriteService
                 continue;
             }
 
-            if (in_array($tag, $record->tags, true)) {
+            if (in_array($tag, $record->tags, true) && ($intentId === null || $record->intentId === $intentId)) {
                 return true;
             }
         }

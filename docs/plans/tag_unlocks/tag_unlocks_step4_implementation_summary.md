@@ -31,3 +31,24 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty low; no revisions.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Accept unlocked tags on replies, with repeat marks
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.13**
+
+- Changes:
+  - `LocalWriteService::applyPostTag` checks `unlockedPostTag()` before the ordinary tag check. An unlockable tag (with the flag on) is accepted only on a reply whose thread carries a parent tag; the refusal names the parent (`tag closed applies only to replies in threads tagged #meta.`). Thread roots are refused.
+  - `threadTagsForUnlocks()` reads the thread's board tags and labels through `FastmodMetaRead::forApplication`, on its own read-model connection, so a Fastmod `meta` counts.
+  - Exclusive-group tags skip the one-per-key guard, so Resolved, Open, Resolved writes three records. Replays of one offline intent (`intent_id`, or `Intent-ID` in a signed record) still write once; `hasPostTagFromIdentity` gained an optional intent match. Ordinary tags keep the one-per-key rule.
+  - `Tagsets::parentsOf()` for the refusal text.
+  - `tests/TagUnlocksTest.php` (registered in `tests/run.php`).
+- Verification:
+  - `./v3 test TagUnlocksTest TagsetsTest`: all pass (meta-only, roots refused, unknown tag refused, repeat marks, scores unchanged, intent replay, unapproved key accepted with `viewer_is_approved=no`, flag off).
+  - First focused run of `WriteApiSmokeTest` found five failures from an eager signed-intent lookup that threw on records without `Intent-ID`; fixed by reading it only for state tags, without throwing. The five reran and passed, plus `ReactionOutboxTest`.
+  - `./v3 test --smoke WriteApiSmokeTest`: 660 run, 660 passed. Full suite not run.
+- Notes: Scores already ignore non-scored tags in both read-model builders, so no score change was needed. Offline replays are ordered by tap time in Stage 3, so a late resend cannot override a later mark.
+- Estimate details: original scope unchanged plus intent-replay dedupe (new understanding, not new scope); uncertainty was medium, resolved.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
