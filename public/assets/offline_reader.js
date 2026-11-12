@@ -705,8 +705,21 @@
       return snapshotPresentation.threadTitle(subject, preview);
     }
 
+    // The shell is served for every offline address under one generic title, so name the page from what is drawn,
+    // matching the online titles, and mark it so a saved copy is not mistaken for the live page.
+    function setPageTitle(label) {
+      document.title = label + " (offline)";
+    }
+
+    function savedThreadTitle(database, threadId) {
+      var result = database.exec("SELECT subject, body FROM posts WHERE post_id = ?", [threadId])[0];
+      var row = result && result.values && result.values[0];
+      return row ? threadTitle(row[0], row[1]) : "";
+    }
+
     function renderThreadList(database) {
       if (!content) return;
+      setPageTitle("Saved threads");
       snapshotPresentation.renderThreadList({
         content: content,
         database: database,
@@ -721,6 +734,7 @@
 
     function renderThreadDetail(database, threadId) {
       if (!content) return;
+      setPageTitle(savedThreadTitle(database, threadId) || "Saved threads");
       snapshotPresentation.renderThreadDetail({
         content: content,
         database: database,
@@ -765,6 +779,7 @@
 
     function renderOfflineBoard(database) {
       root.dataset.offlineNavigation = "board";
+      setPageTitle("Board");
       showOfflineMode();
       setStatus("", "ok");
       var boardPath = snapshotPresentation.boardPathFromPathname(window.location.pathname);
@@ -797,6 +812,7 @@
 
     function renderOfflineTagsIndex(database) {
       root.dataset.offlineNavigation = "tags";
+      setPageTitle("Tags");
       showOfflineMode();
       setStatus("", "ok");
       snapshotPresentation.renderTagsIndex({
@@ -807,6 +823,7 @@
 
     function renderOfflineTag(database, tag) {
       root.dataset.offlineNavigation = "tag";
+      setPageTitle("#" + tag + " - Tag");
       showOfflineMode();
       setStatus("", "ok");
       snapshotPresentation.renderTagResult({ content: content, database: database, tag: tag });
@@ -814,6 +831,7 @@
 
     function renderOfflineThread(database, threadId) {
       root.dataset.offlineNavigation = "thread";
+      setPageTitle(savedThreadTitle(database, threadId) || "Thread not saved");
       showOfflineMode();
       setStatus("", "ok");
       snapshotPresentation.renderThreadDetail({
