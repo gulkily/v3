@@ -327,8 +327,10 @@
     }
     document.addEventListener('private-message-history-restored', retryHistory);
     document.addEventListener('private-message-viewer-known', retryHistory, {once:true});
-    // Start loading OpenPGP now, and read the newest messages first so the bottom of the thread fills in first.
-    if (armoredPrivateKey()) openPgpApi().catch(function () {});
+    // Read the newest messages first so the bottom of the thread fills in first. OpenPGP starts loading now,
+    // unless saved copies are being checked: then only once they are, and only if some message still needs it,
+    // so loading it doesn't slow the saved copies down.
+    const preloadOpenPgp = function () { if (armoredPrivateKey()) openPgpApi().catch(function () {}); };
     // The conversation keeps its messages hidden until saved copies are in place, so it doesn't jump.
     if (root.dataset.privateMessageCache === "1") {
       Promise.all(Array.from(root.querySelectorAll("[data-private-message-id]")).map(function (card) {
@@ -336,7 +338,10 @@
       })).then(function () {
         root.dataset.privateMessageCacheChecked = "1";
         if (root.dispatchEvent) root.dispatchEvent(new CustomEvent("private-message-cache-checked"));
+        if (root.querySelector('[data-private-message-id][data-reader-state="loading"]')) preloadOpenPgp();
       });
+    } else {
+      preloadOpenPgp();
     }
     Promise.allSettled(Array.from(root.querySelectorAll("[data-private-message-id]")).reverse().map(function (card) {
       cardCursors.set(card, root.dataset.historyPageCursor || '');

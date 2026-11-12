@@ -98,6 +98,8 @@ final class TemplateRenderer
         string $routeSource = 'php-fallback',
         bool $publicAuthenticationResume = false,
     ): string {
+        // Page templates (not only the layout) need this flag: messaging pages mark their roots with it.
+        $pageData['privateMessageCacheEnabled'] ??= $this->featureFlags->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGE_CACHE_ENABLED);
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
         $hasQueryDialog = $pageTemplate === 'codebase_state.php' || !empty($pageData['listingQuery']);
         if ($hasQueryDialog) {
@@ -303,7 +305,6 @@ final class TemplateRenderer
             'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
-            'privateMessageCacheEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::PRIVATE_MESSAGE_CACHE_ENABLED),
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
         ]);

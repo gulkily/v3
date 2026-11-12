@@ -109,9 +109,10 @@
 .history-more > summary::-webkit-details-marker { display: none; }
 .history-more[open] > button { margin-top: .25rem; }
 
-/* With saved message copies on, the transcript stays hidden until they are in place (or briefly, at most), so it opens without jumping. */
+/* With saved message copies on, the transcript stays hidden until they are in place, so it opens without jumping.
+   The delayed reveal is only a safety net in case scripts fail; it must outlast a slow phone reading saved copies. */
 .private-conversation[data-private-message-cache="1"]:not([data-private-message-cache-checked]) [data-role="private-message-transcript"] {
   visibility: hidden;
-  animation: private-message-cache-reveal 0s 400ms forwards;
+  animation: private-message-cache-reveal 0s 2s forwards;
 }
 @keyframes private-message-cache-reveal { to { visibility: visible; } }
