@@ -20,6 +20,7 @@ final class FeatureFlagRegistry
     public const EVENT_WHEN_ENABLED = 'FORUM_EVENT_WHEN_ENABLED';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
+    public const READING_MARGINS_ENABLED = 'FORUM_READING_MARGINS_ENABLED';
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
@@ -57,7 +58,8 @@ final class FeatureFlagRegistry
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
-            self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED],
+            self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
+            self::READING_MARGINS_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -325,6 +327,15 @@ final class FeatureFlagRegistry
                 'Keep copies of private messages this browser has already read, encrypted with a key the browser cannot export, so conversations open without decrypting them again. Removing the browser identity deletes the copies. Turning this off stops using them; existing copies stay until the identity is removed.',
                 false,
                 self::PRIVATE_MESSAGE_CACHE_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::READING_MARGINS_ENABLED,
+                'Reading margins',
+                'Show a row of radio buttons above threads; each sits where a text column edge can go. Readers pick the left and right edges; the choice stays in their browser and is ignored on phones.',
+                false,
+                self::READING_MARGINS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

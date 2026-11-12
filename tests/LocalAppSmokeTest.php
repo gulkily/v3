@@ -2832,6 +2832,52 @@ PHP;
         }
     }
 
+    public function testReadingMarginsAreHiddenByDefaultAndShownOnThreadsWhenFlagEnabled(): void
+    {
+        $previousFlag = getenv('FORUM_READING_MARGINS_ENABLED');
+        putenv('FORUM_READING_MARGINS_ENABLED');
+
+        try {
+            @unlink($this->databasePath);
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+            $thread = $this->render($application, '/threads/root-001');
+            assertStringNotContains('data-role="reading-margins"', $thread);
+            assertStringNotContains('readingMarginsStorageKey)', $thread);
+            assertStringNotContains('reading_margins', $thread);
+
+            putenv('FORUM_READING_MARGINS_ENABLED=true');
+            @unlink($this->databasePath);
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+            $thread = $this->render($application, '/threads/root-001');
+            $board = $this->render($application, '/');
+
+            assertFingerprintedAsset($thread, 'reading_margins.js');
+            assertFingerprintedAsset($thread, 'reading-margins.css');
+            assertStringContains('data-role="reading-margins"', $thread);
+            assertStringContains('localStorage.getItem(browserRuntime.readingMarginsStorageKey)', $thread);
+            assertStringContains('"readingMarginsStorageKey":"forum-zenmemes-reading-margins"', $thread);
+            foreach (['left' => [4, 14, 24, 34], 'right' => [66, 76, 86, 96]] as $edge => $positions) {
+                foreach ($positions as $position) {
+                    assertStringContains('name="reading-margin-' . $edge . '" value="' . $position . '"', $thread);
+                    assertStringContains('style="--at: ' . $position . '"', $thread);
+                }
+            }
+            // The ruler sits between the header and the column it moves.
+            assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
+            assertStringNotContains('data-role="reading-margins"', $board);
+            assertStringNotContains('reading_margins', $board);
+
+            $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/reading-margins.css');
+            assertStringContains(':root[data-reading-margins] .main', $css);
+        } finally {
+            if ($previousFlag === false) {
+                putenv('FORUM_READING_MARGINS_ENABLED');
+            } else {
+                putenv('FORUM_READING_MARGINS_ENABLED=' . $previousFlag);
+            }
+        }
+    }
+
     public function testThreadDensityToggleIsHiddenByDefaultAndShownWhenFlagEnabled(): void
     {
         $previousFlag = getenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED');

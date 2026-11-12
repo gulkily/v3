@@ -166,6 +166,18 @@
       } catch (error) {
       }
 <?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+      try {
+        // Reading margins (reading_margins.js): the chosen column edges, in vw, restored before paint.
+        var readingMargins = (localStorage.getItem(browserRuntime.readingMarginsStorageKey) || '').split(' ');
+        if (['4', '14', '24', '34'].indexOf(readingMargins[0]) !== -1 && ['66', '76', '86', '96'].indexOf(readingMargins[1]) !== -1) {
+          document.documentElement.setAttribute('data-reading-margins', readingMargins.join(' '));
+          document.documentElement.style.setProperty('--reading-left', readingMargins[0]);
+          document.documentElement.style.setProperty('--reading-right', readingMargins[1]);
+        }
+      } catch (error) {
+      }
+<?php endif; ?>
     })();
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
@@ -199,6 +211,9 @@
   <script src="<?= $e($memberApprovalScriptPath) ?>" defer></script>
 <?php if ($showThreadDensityToggle): ?>
   <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+  <script src="<?= $e($readingMarginsScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
@@ -257,6 +272,9 @@
 <?= $indent($partial('partials/theme_menu.php'), 4) ?>
       </div>
     </header>
+<?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+<?= $indent($partial('partials/reading_margins.php'), 2) ?>
 <?php endif; ?>
     <main class="main">
 <?= $indent($content, 3) ?>
