@@ -600,10 +600,10 @@ is kept beside it and `get_post` reports the current format.
 A thread tag can unlock extra tags on the thread's replies. The list lives in
 [`resources/tagsets.txt`](../../resources/tagsets.txt). On zenmemes, a thread tagged
 `#meta` (by its author, a label or Fastmod) offers `resolved`, `closed` and `open`
-on each reply. Mark a reply with `POST /api/apply_post_tag` and `tag=resolved`
+on each reply and on the thread's opening post. Mark a reply with `POST /api/apply_post_tag` and `tag=resolved`
 (or `closed`, or `open` to undo); the same route, fields and signed records as Like
 and Flag. Elsewhere these tags are refused with `tag resolved applies only to
-replies in threads tagged #meta.`
+posts in threads tagged #meta.`
 
 Only marks from approved keys count; the latest counted mark wins, ordered by the
 tap time (`Action-At`). Marks from unapproved keys are kept, not counted, and the

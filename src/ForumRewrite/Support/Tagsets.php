@@ -12,8 +12,9 @@ namespace ForumRewrite\Support;
 final class Tagsets
 {
     public const TARGET_REPLY = 'reply';
+    public const TARGET_ROOT = 'root';
 
-    /** @param list<array{parent:string,target:string,unlocks:list<string>,exclusive:bool}> $sets */
+    /** @param list<array{parent:string,targets:list<string>,unlocks:list<string>,exclusive:bool}> $sets */
     private function __construct(private readonly array $sets)
     {
     }
@@ -52,7 +53,13 @@ final class Tagsets
                 continue;
             }
             $parent = self::tag($fields['parent']);
-            $target = strtolower($fields['target'] ?? self::TARGET_REPLY);
+            $targets = [];
+            foreach (explode(',', strtolower($fields['target'] ?? self::TARGET_REPLY)) as $rawTarget) {
+                $rawTarget = trim($rawTarget);
+                if (in_array($rawTarget, [self::TARGET_REPLY, self::TARGET_ROOT], true) && !in_array($rawTarget, $targets, true)) {
+                    $targets[] = $rawTarget;
+                }
+            }
             $unlocks = [];
             foreach (explode(',', $fields['unlocks'] ?? '') as $raw) {
                 $tag = self::tag($raw);
@@ -60,12 +67,12 @@ final class Tagsets
                     $unlocks[] = $tag;
                 }
             }
-            if ($parent === null || $target !== self::TARGET_REPLY || $unlocks === []) {
+            if ($parent === null || $targets === [] || $unlocks === []) {
                 continue;
             }
             $sets[] = [
                 'parent' => $parent,
-                'target' => $target,
+                'targets' => $targets,
                 'unlocks' => $unlocks,
                 'exclusive' => strtolower($fields['exclusive'] ?? 'no') === 'yes',
             ];
@@ -84,7 +91,7 @@ final class Tagsets
         $threadTags = array_map('strtolower', $threadTags);
         $out = [];
         foreach ($this->sets as $set) {
-            if ($set['target'] === $target && in_array($set['parent'], $threadTags, true)) {
+            if (in_array($target, $set['targets'], true) && in_array($set['parent'], $threadTags, true)) {
                 foreach ($set['unlocks'] as $tag) {
                     if (!in_array($tag, $out, true)) {
                         $out[] = $tag;
@@ -138,7 +145,7 @@ final class Tagsets
         return array_values(array_unique($out));
     }
 
-    /** @return list<array{parent:string,target:string,unlocks:list<string>,exclusive:bool}> */
+    /** @return list<array{parent:string,targets:list<string>,unlocks:list<string>,exclusive:bool}> */
     private function setsContaining(string $tag): array
     {
         $tag = strtolower(trim($tag));

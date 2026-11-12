@@ -22,7 +22,9 @@ final class TagUnlocksTest
             assertSame('yes', $result['wrote_record']);
             assertSame('resolved', $result['tag']);
 
-            foreach (['reply-rules' => 'replies in threads tagged #meta', 'root-001' => 'replies in threads tagged #meta'] as $postId => $message) {
+            // The opening post of a #meta thread takes the same tags (Target: reply, root).
+            assertSame('yes', $writer->applyPostTag(['post_id' => 'root-001', 'tag' => 'closed', 'author_identity_id' => self::APPROVED])['wrote_record']);
+            foreach (['reply-rules' => 'posts in threads tagged #meta', 'thread-zenmemes-rules' => 'posts in threads tagged #meta'] as $postId => $message) {
                 $error = '';
                 try {
                     $writer->applyPostTag(['post_id' => $postId, 'tag' => 'closed', 'author_identity_id' => self::APPROVED]);
@@ -165,7 +167,15 @@ final class TagUnlocksTest
             assertStringContains('data-tag="closed"', $reply);
             assertSame(1, preg_match('/data-tag="open"[^>]*hidden/', $reply));
             assertStringNotContains('data-resolution=', $reply);
-            assertStringNotContains('data-state-tag', $this->card($html, 'root-001'));
+            $root = $this->card($html, 'root-001');
+            assertStringContains('data-tag="closed"', $root);
+            assertSame(1, preg_match('/data-role="post-resolution-label"[^>]*hidden/', $root));
+            assertStringNotContains('data-role="post-resolution"', $root);
+            $writer->applyPostTag(['post_id' => 'root-001', 'tag' => 'resolved', 'author_identity_id' => self::APPROVED]);
+            $root = $this->card($this->render($app, '/threads/root-001'), 'root-001');
+            assertStringContains('data-resolution="resolved"', $root);
+            assertSame(0, preg_match('/data-role="post-resolution-label"[^>]*hidden/', $root));
+            assertSame(1, preg_match('/post-resolution-state[^>]*>Resolved</', $root));
 
             $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'closed', 'author_identity_id' => self::APPROVED]);
             $reply = $this->card($this->render($app, '/threads/root-001'), 'reply-001');

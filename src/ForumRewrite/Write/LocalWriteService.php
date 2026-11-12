@@ -4677,8 +4677,9 @@ class LocalWriteService
             || !FeatureFlagEvaluator::forRepository($this->repositoryRoot)->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED)) {
             return null;
         }
-        if ($post->threadId === null || !in_array($tag, $tagsets->unlockedFor($this->threadTagsForUnlocks($post->threadId)), true)) {
-            throw new RuntimeException('tag ' . $tag . ' applies only to replies in threads tagged #'
+        $target = $post->threadId === null ? Tagsets::TARGET_ROOT : Tagsets::TARGET_REPLY;
+        if (!in_array($tag, $tagsets->unlockedFor($this->threadTagsForUnlocks($post->threadId ?? $post->postId), $target), true)) {
+            throw new RuntimeException('tag ' . $tag . ' applies only to posts in threads tagged #'
                 . implode(' or #', $tagsets->parentsOf($tag)) . '.');
         }
 

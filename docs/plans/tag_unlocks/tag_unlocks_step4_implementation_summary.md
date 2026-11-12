@@ -158,3 +158,13 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Maintainer comfortable-fit judgment: **pending**.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Follow-up after merge (2026-11-12, branch `tag-unlocks-root`)
+
+Maintainer requests after PR #183 merged, done directly (small, within the approved feature):
+
+- Folded line order: author and date first, then the state label, then the first words (was label first).
+- The opening post of a `#meta` thread takes the same Resolved, Closed and Reopen. `resources/tagsets.txt` now says `Target: reply, root`; `Tagsets` accepts a comma list of `reply` and `root`. The opening post shows its state label after the byline (or on its own line when the byline is deferred to a same-author run) and does not fold. The write refusal now reads "applies only to posts in threads tagged #meta".
+- Verification: `./v3 test TagUnlocksTest TagsetsTest` (15 passed, including root marks, root label hidden until marked, root not folded, a non-meta root refused); smoke set plus `LlmsTxtRendererTest`, `PostSignalsTemplateTest`, `ReactionOutboxTest` (483 passed); `node tests/browser/tag_unlocks.mjs` in light, console, gloss and word97 at phone and desktop width, including closing the opening post and a reload. Full suite not run.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
