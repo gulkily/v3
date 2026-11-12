@@ -652,10 +652,12 @@ final class ReadModelBuilder
         $verifiedFlaggersByPost = [];
         $countedVerifiedScoredTagsByPost = [];
         $eligibleByPost = [];
+        $reactionRecordsByPost = [];
         foreach ($this->progressItems('deriving_post_reaction_records', $records) as $record) {
             if (!isset($knownPosts[$record->postId])) {
                 continue;
             }
+            $reactionRecordsByPost[$record->postId][] = $record;
 
             $this->postReactionActivityEvents[] = [
                 'created_at' => RecordReceipt::effectiveCreatedAt($this->repositoryRoot, CanonicalPathResolver::postReaction($record->recordId), $record->createdAt),
@@ -717,6 +719,9 @@ final class ReadModelBuilder
         $updatePost = $pdo->prepare(
             'UPDATE posts
              SET post_tags_json = :post_tags_json,
+                 resolution_state = :resolution_state,
+                 resolution_set_at = :resolution_set_at,
+                 resolution_set_by = :resolution_set_by,
                  post_score_total = :post_score_total,
                  approved_flag_count = :approved_flag_count,
                  claimed_post_score_total = :post_score_total,
@@ -733,8 +738,12 @@ final class ReadModelBuilder
             sort($tags);
             $approvedFlagCount = count($flaggersByPost[$postId] ?? []);
             $isHidden = $approvedFlagCount > 0 && $post['author_label'] === 'reply-agent';
+            $resolution = PostResolution::derive($reactionRecordsByPost[$postId] ?? [], $approvalState);
             $updatePost->execute([
                 'post_tags_json' => json_encode($tags, JSON_THROW_ON_ERROR),
+                'resolution_state' => $resolution['state'],
+                'resolution_set_at' => $resolution['set_at'],
+                'resolution_set_by' => $resolution['set_by'],
                 'post_score_total' => $scoreByPost[$postId] ?? 0,
                 'approved_flag_count' => $approvedFlagCount,
                 'verified_post_score_total' => $verifiedScoreByPost[$postId] ?? 0,

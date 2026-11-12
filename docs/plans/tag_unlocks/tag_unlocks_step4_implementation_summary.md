@@ -52,3 +52,22 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged plus intent-replay dedupe (new understanding, not new scope); uncertainty was medium, resolved.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Per-reply state in the read model
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - Read model schema 55: `posts.resolution_state`, `resolution_set_at`, `resolution_set_by` (`ReadModelSchema`, `ReadModelMetadata`); documented in `docs/specs/read_model_schema_v1.md`.
+  - New `ReadModel\PostResolution::derive(records, approvedIds)`: latest exclusive-group mark by an approved key, ordered by Action-At, then Created-At and record ID; `open` stores null.
+  - `ReadModelBuilder` (full rebuild) and `IncrementalReadModelUpdater::derivePostReactionState` / `updatePostReactions` fill the columns. The incremental path covers mark writes and `refreshApprovalSensitivePostReactions`, so approval changes recount.
+- Verification:
+  - `./v3 test TagUnlocksTest`: 8 passed, including latest-wins across incremental writes and a rebuild, a late offline send of an earlier tap not overriding a later mark, a later Open unfolding, an unapproved mark ignored until approval, and a removed latest mark falling back.
+  - `./v3 test --smoke` plus read-model classes (`ReadModelPostReactionsTest`, `ReadModelPostRetractionsTest`, `ReadModelSchemaTest`, `ReadModelMetadataTest`, `ReadModelDropSchemaTest`, `ReadModelSignalEligibilityTest`, `ReadModelViewerTagsProjectionTest`, `ReadModelViewerTagsRebuildTest`, `PostSignalsTemplateTest`, `ReadModelBuilderTimingTest`): 463 and 26 run, all passed. Full suite not run.
+  - Rebuild timing on a production-sized snapshot: **pending**. No production snapshot is available in this workspace. The added work is one pass over each post's reaction records already loaded, so it should not change rebuild time much; confirm during the Stage 7 deploy.
+- Notes: the schema bump forces a rebuild on the next startup after deploy; see Stage 7.
+- Estimate details: original scope unchanged; uncertainty medium, reduced to the pending timing check.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

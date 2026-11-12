@@ -95,6 +95,64 @@ final class TagUnlocksTest
         }
     }
 
+    public function testReadModelKeepsLatestApprovedMarkAcrossIncrementalAndRebuild(): void
+    {
+        $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
+            assertSame([null, null], $this->resolution($database, 'reply-001'));
+            $mark = fn (string $tag, string $at) => $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => $tag,
+                'author_identity_id' => self::APPROVED, 'action_at' => $at, 'intent_id' => 'i-' . $tag . '-' . md5($at)]);
+            $mark('resolved', '2026-11-12T10:00:00Z');
+            assertSame(['resolved', '2026-11-12T10:00:00Z'], $this->resolution($database, 'reply-001'));
+            $mark('closed', '2026-11-12T11:00:00Z');
+            assertSame(['closed', '2026-11-12T11:00:00Z'], $this->resolution($database, 'reply-001'));
+            // A late offline send of an earlier tap does not override the later mark.
+            $mark('open', '2026-11-12T09:00:00Z');
+            assertSame(['closed', '2026-11-12T11:00:00Z'], $this->resolution($database, 'reply-001'));
+            $mark('open', '2026-11-12T12:00:00Z');
+            assertSame([null, '2026-11-12T12:00:00Z'], $this->resolution($database, 'reply-001'));
+            $mark('resolved', '2026-11-12T13:00:00Z');
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame(['resolved', '2026-11-12T13:00:00Z'], $this->resolution($database, 'reply-001'));
+        });
+    }
+
+    public function testRemovingTheLatestMarkFallsBackToTheOneBefore(): void
+    {
+        $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'resolved', 'author_identity_id' => self::APPROVED, 'action_at' => '2026-11-12T10:00:00Z']);
+            $before = glob($root . '/records/post-reactions/*.txt') ?: [];
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'closed', 'author_identity_id' => self::APPROVED, 'action_at' => '2026-11-12T11:00:00Z']);
+            foreach (array_diff(glob($root . '/records/post-reactions/*.txt') ?: [], $before) as $latest) {
+                unlink($latest);
+            }
+            exec('cd ' . escapeshellarg($root) . ' && git add -A && git commit -qm retract');
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame('resolved', $this->resolution($database, 'reply-001')[0]);
+        });
+    }
+
+    public function testUnapprovedMarksCountOnceTheKeyIsApproved(): void
+    {
+        $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'resolved', 'author_identity_id' => self::IDENTITY]);
+            assertSame([null, null], $this->resolution($database, 'reply-001'));
+            exec('cp -R ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1/records/approval-seeds') . ' ' . escapeshellarg($root . '/records/')
+                . ' && cd ' . escapeshellarg($root) . ' && git add -A && git commit -qm approve');
+            (new ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame('resolved', $this->resolution($database, 'reply-001')[0]);
+        }, approved: false);
+    }
+
+    /** @return array{0:?string,1:?string} state and set-at */
+    private function resolution(string $database, string $postId): array
+    {
+        $pdo = new PDO('sqlite:' . $database);
+        $stmt = $pdo->prepare('SELECT resolution_state, resolution_set_at FROM posts WHERE post_id = ?');
+        $stmt->execute([$postId]);
+        $row = $stmt->fetch(PDO::FETCH_NUM);
+        return [$row[0], $row[1]];
+    }
+
     private function postScore(string $database, string $postId): int
     {
         $pdo = new PDO('sqlite:' . $database);

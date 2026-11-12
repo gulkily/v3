@@ -20,6 +20,9 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 55 adds `posts.resolution_state`, `resolution_set_at` and `resolution_set_by`
+(tag unlocks); prior-version startup rebuild is required.
+
 Version 54 adds `threads.event_when`, the root's `Event-When` phrase; prior-version
 startup rebuild is required.
 
@@ -130,6 +133,9 @@ row matches both branches. Normal startup rebuilds schema-26 and older models.
 | `author_profile_slug` | TEXT NULL | |
 | `author_label` | TEXT | default `'guest'` |
 | `post_tags_json` | TEXT | JSON array, default `'[]'` |
+| `resolution_state` | TEXT NULL | `resolved` or `closed` from the latest exclusive tagset mark by an approved key; null when open or unmarked (schema 55) |
+| `resolution_set_at` | TEXT NULL | that mark's Action-At, or Created-At when absent; also set by a counted `open` mark |
+| `resolution_set_by` | TEXT NULL | identity ID of the key behind that mark |
 | `post_score_total` | INTEGER | default 0; effective: the claimed or verified value, chosen by the verified attribution flag |
 | `approved_flag_count` | INTEGER | default 0; effective, as `post_score_total` |
 | `attribution_verified` | INTEGER | default 1; 0 when the post names an identity but is neither signed by it nor created before the attribution cutoff (schema 31) |
@@ -758,3 +764,12 @@ rebuild and the incremental thread insert both fill it, retracted and deleted
 roots clear it with the other event columns, and the thread page, board listing
 queries and `Application::fetchThread` select it. Normal startup rebuilds
 version 53 and older models before the column is read.
+
+## Version 55 — Reply resolution
+
+Adds nullable `posts.resolution_state`, `resolution_set_at` and `resolution_set_by`.
+A post's state comes from its reactions in an exclusive group of
+`resources/tagsets.txt` (resolved, closed, open): the latest mark by an approved key
+wins, ordered by Action-At, then Created-At and record ID; `open` stores null.
+The full rebuild and every incremental post-reaction update (writes and approval
+changes) fill them. Normal startup rebuilds version 54 and older models.
