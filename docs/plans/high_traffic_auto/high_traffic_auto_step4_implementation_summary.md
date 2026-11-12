@@ -38,3 +38,25 @@ Step 3 approved on 2026-11-12 ("approved step 3"). Branch `feat/high_traffic_aut
 - Estimate details: original scope as Step 3; uncertainty low; no revisions. Retrospective equals original: the Apache harness needed a non-root user and a local Apache install, offset by a simple implementation.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Who changed the mode, and the two settings
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `HighTrafficMode::change(bool $enable, string $reason, string $source = 'operator')`: sources `operator`, `automatic`, `withdrawal`; the state records `source`. An operator off sets `Manual-Off-Hold: yes` in `automation.txt`; an operator on clears it.
+  - `HighTrafficMode::status()` adds `source`, `turn_on_automatically` and `turn_off_automatically`.
+  - `HighTrafficSafety::beforeWrite` withdrawals write `source: withdrawal`.
+  - `HighTrafficAutomation`: `set()` (under the publication and cache locks), `write()`, `turnOffEnabled()`, `turnOnBlocked()`, `isWithdrawal()`, `source()`. Settings stay a `Key: value` text file.
+  - CLI: `./v3 high-traffic auto-on on|off` and `auto-off on|off`; `status` shows source and both switches.
+- Verification:
+  - New tests: sources and the operator hold; withdrawals (marked, detached without a state write, and legacy reason-only); text settings and status; CLI. `./v3 test --smoke HighTrafficAutomationTest HighTrafficTest HighTrafficPostRefreshTest RecentPostTest`: 471 run, 471 passed. Full suite not run.
+- Notes:
+  - Every writer of the mode state, checked by grep: `HighTrafficMode::change`, `restore` and `purge`; `HighTrafficSafety::beforeWrite` (feature flags, approvals, moderation tags; also reached from imports, history purge, `delete-record`, `delete-thread` and `archive-thread`). `StaticArtifactInvalidator` removes the serving link without writing state. Coverage: marked withdrawals and detached-but-enabled states count as withdrawals; `restore`, `purge` and legacy offs count as operator offs.
+  - A legacy off has no hold, so automation may turn the mode on once traffic exceeds the threshold, matching an operator off whose hold has been released.
+  - Reused: `HighTrafficMode::change` as the only switch; `HighTrafficCache::atomic`, `locked` and `PublicationLock`.
+- Estimate details: original scope as Step 3; uncertainty low; no revisions. Retrospective equals original.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

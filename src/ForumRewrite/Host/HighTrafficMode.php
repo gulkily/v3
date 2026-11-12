@@ -23,12 +23,22 @@ final class HighTrafficMode
             && ($state['profile'] ?? \ForumRewrite\SiteProfileRegistry::active()['name'])===\ForumRewrite\SiteProfileRegistry::active()['name'] && is_link($this->cache->publicRoot . '/.high-traffic')
             && realpath($this->cache->publicRoot . '/.high-traffic') === realpath($this->cache->root . '/pages')
             && str_starts_with($rules,self::BEGIN . "\n");
-        return array_merge($state,['effective_mode'=>$effective ? 'high-traffic' : 'normal']);
+        $status=array_merge($state,['effective_mode'=>$effective ? 'high-traffic' : 'normal']);
+        $automation=HighTrafficAutomation::read($this->cache);
+        $status['source']=HighTrafficAutomation::source($status);
+        $status['turn_on_automatically']=($automation['Turn-On'] ?? 'no')==='yes';
+        $status['turn_off_automatically']=($automation['Turn-Off'] ?? 'no')==='yes';
+        return $status;
     }
-    public function change(bool $enable, string $reason): array
+    /**
+     * The only switch for the mode. $source is operator, automatic or withdrawal; an
+     * operator off holds against automatic turn-on until traffic falls below the threshold.
+     */
+    public function change(bool $enable, string $reason, string $source = 'operator'): array
     {
-        return PublicationLock::withLock($this->cache->repositoryRoot, function () use ($enable,$reason): array {
-            return $this->cache->locked(function () use ($enable,$reason): array {
+        if (!in_array($source,['operator','automatic','withdrawal'],true)) throw new RuntimeException('Unknown high-traffic change source.');
+        return PublicationLock::withLock($this->cache->repositoryRoot, function () use ($enable,$reason,$source): array {
+            return $this->cache->locked(function () use ($enable,$reason,$source): array {
             $path=$this->cache->publicRoot . '/.htaccess';
             if (is_link($path) || !is_file($path)) throw new RuntimeException('A regular managed .htaccess file is required.');
             $savedState=$this->cache->state();
@@ -63,9 +73,10 @@ final class HighTrafficMode
                 // requests fall through to the front controller.
                 HighTrafficSafety::detach($this->cache->publicRoot);
             }
-            $state=['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot,'profile'=>\ForumRewrite\SiteProfileRegistry::active()['name'],'enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c')];
+            $state=['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot,'profile'=>\ForumRewrite\SiteProfileRegistry::active()['name'],'enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c'),'source'=>$source];
             try { $this->cache->atomic($this->cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR)); }
             catch (\Throwable $error) { HighTrafficSafety::detach($this->cache->publicRoot); throw $error; }
+            if ($source==='operator') HighTrafficAutomation::write($this->cache,['Manual-Off-Hold'=>$enable ? 'no' : 'yes']);
             return $this->status();
         });
         });

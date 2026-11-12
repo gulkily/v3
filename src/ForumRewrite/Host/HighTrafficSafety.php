@@ -37,7 +37,7 @@ final class HighTrafficSafety
             $state['generation'] = bin2hex(random_bytes(16));
             if ($withdraw) {
                 self::detach($state['public_root'] ?? $cache->publicRoot);
-                $state['enabled']=false; $state['reason']='Content/access change; operator may re-enable after review.';
+                $state['enabled']=false; $state['reason']='Content/access change; operator may re-enable after review.'; $state['source']='withdrawal';
             }
             $cache->atomic($cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR));
         });
