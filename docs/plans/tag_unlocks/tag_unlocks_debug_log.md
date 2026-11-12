@@ -41,3 +41,20 @@
 ### Missing or unclear
 
 - The one-page limit is hard to meet with seven stages in extended mode, since each stage needs six fields. Suggest: allow a stage-count-based exception or a compact field layout.
+
+## Step 4 - 2026-11-12 UTC
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, planning commit gate: main had moved (schema 54 landed) and the study ledger conflicted on rebase; resolving it before the planning commit kept the ledger out of that commit as required. Retain.
+- `step4_implementation_do.md`, stage boundary protocol: one commit per stage kept the Stage 2 intent-lookup regression contained and easy to explain. Retain.
+- `implementation_standards.md`, check shared consumers: grepping themes for direct-child `.post-card >` selectors found the word97/midnight title-bar rules before they broke. Retain.
+
+### Redundant/unnecessary instructions
+
+- Extended-estimate retrospective per stage duplicates much of the cycle retrospective for small stages. Suggest: allow "as estimated" for stages within 0.02 of the original.
+
+### Missing or unclear
+
+- No instruction covers running browser checks (`tests/browser/*.mjs`) or how to import Playwright in this workspace; it took two tries. Suggest: a one-line pointer in `docs/reference/railspike_workflow.md` or `CONTRIBUTING.md`.
+- A piped test command (`... | tail -1 && git commit`) hid a failing browser run before the Stage 5 commit; the failure did not reproduce in seven later runs. Suggest: say in the stage protocol that verification exit codes must gate the commit.
