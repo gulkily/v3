@@ -161,7 +161,9 @@
     } finally { clearTimeout(timer); }
   }
   async function assertEligible(form) {
-    if (!await refreshEligibility(form)) throw new Error('Image uploading is unavailable for this identity or connection. Your draft is retained; reconnect or remove the attachment to post text.');
+    // Re-check without first displaying "ineligible": the form is locked during the check, and a
+    // pessimistic reset would hide the attachment and show the recovery prompt mid-upload.
+    if (!await refreshEligibility(form, true)) throw new Error('Image uploading is unavailable for this identity or connection. Your draft is retained; reconnect or remove the attachment to post text.');
   }
   window.ForumImageUpload = {bind,select,clear,ready,lock,assertEligible,refreshEligibility,has:form=>Boolean(form.__imageState)};
 })();
