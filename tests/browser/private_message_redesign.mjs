@@ -174,7 +174,7 @@ try {
     await unreadable.locator('summary').click();
     assert.match(await unreadable.locator('[data-role="private-message-unavailable-explanation"]').innerText(), /signature/);
     assert.equal(await page.getByText('All history loaded.').isVisible().then(visible => visible && page.getByText('All history loaded.').evaluate(node => node.getBoundingClientRect().width > 2)), false, `${label}: no routine history notice`);
-    assert.equal(await page.getByRole('button', { name: 'Restart history' }).isVisible(), false, `${label}: Restart history waits under ···`);
+    assert.equal(await page.getByRole('button', { name: 'Restart history' }).isVisible(), false, `${label}: Restart history hidden until needed`);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: no page overflow`);
     if (shots) await page.screenshot({ path: join(shots, `conversation-${theme}-${width}.png`), fullPage: true });
 

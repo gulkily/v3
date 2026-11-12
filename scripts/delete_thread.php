@@ -50,7 +50,7 @@ try {
     }
 
     $progress->step('Finding replies');
-    $replies = replyIds($repositoryRoot, $threadId);
+    $replies = replyIds($repositoryRoot, $threadId, $databasePath);
     $targets = [];
     foreach ($replies as $id) $targets[] = $id;
     // The root goes last: replies vanish first, so no reader sees a thread of placeholders.
@@ -69,24 +69,21 @@ try {
     }
 
     \ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, 'records/post-retractions/maintenance.txt');
-    $deleted = [];
+    $deleted = $targets;
     $unresolved = [];
-    $total = count($targets);
-    foreach ($targets as $n => $id) {
-        $prefix = '[' . ($n + 1) . '/' . $total . '] ';
-        $progress->step($prefix . 'Deleting ' . $id);
-        $reporter = $progress->reporter();
-        $step = $reporter === null ? null : static fn (string $line) => $reporter($prefix . $line);
-        $result = SourceLabelRemoval::run($repositoryRoot, $databasePath, $id, false, [], $artifactRoot, $step);
-        $deleted[] = ['post_id' => $id, 'commit' => $result['commit']];
-        foreach ($result['unresolved_labels'] as $label) $unresolved[] = $label;
+    $images = [];
+    if ($targets !== []) {
+        $batch = SourceLabelRemoval::runMany($repositoryRoot, $databasePath, $targets, $artifactRoot,
+            'Delete thread ' . $threadId . ' (' . count($targets) . ' post(s))', $progress->reporter());
+        $unresolved = $batch['unresolved_labels'];
+        $images = $batch['removed_images'];
     }
-    $unresolved = array_values(array_unique($unresolved));
 
-    $result = ['status' => 'ok', 'thread_id' => $threadId, 'deleted' => $deleted, 'unresolved_labels' => $unresolved];
+    $result = ['status' => 'ok', 'thread_id' => $threadId, 'deleted' => $deleted, 'commit' => $batch['commit'] ?? null, 'removed_images' => $images, 'unresolved_labels' => $unresolved];
     if ($json) fwrite(STDOUT, json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT) . "\n");
     else {
         fwrite(STDOUT, 'Thread deleted: ' . $threadId . ' (' . count($deleted) . " post(s))\n");
+        if ($images !== []) fwrite(STDOUT, 'removed_images: ' . count($images) . "\n");
         if ($unresolved !== []) {
             fwrite(STDOUT, 'unresolved_labels: ' . json_encode($unresolved) . "\n");
             fwrite(STDOUT, "Legacy labels remain unresolved; inspect them with ./v3 delete-record <post-id> --inspect.\n");
@@ -102,13 +99,15 @@ try {
 }
 
 /**
- * Live replies in the thread, newest first. Uses git grep over the checkout so it stays
- * fast on large repositories and does not depend on the read model being current.
+ * Live replies in the thread, newest first. Reads the read model when it is current at
+ * HEAD; otherwise git grep over the checkout, which stays fast on large repositories.
  *
  * @return list<string>
  */
-function replyIds(string $repositoryRoot, string $threadId): array
+function replyIds(string $repositoryRoot, string $threadId, string $databasePath): array
 {
+    $fromReadModel = readModelReplyIds($repositoryRoot, $threadId, $databasePath);
+    if ($fromReadModel !== null) return $fromReadModel;
     $command = sprintf('git -C %s grep -l -E -e %s -- records/posts 2>/dev/null',
         escapeshellarg($repositoryRoot), escapeshellarg('^Thread-ID: ' . str_replace('.', '\\.', $threadId) . '$'));
     exec($command, $paths, $status);
@@ -126,6 +125,30 @@ function replyIds(string $repositoryRoot, string $threadId): array
     uksort($replies, static fn (string $a, string $b): int => [$replies[$b], $b] <=> [$replies[$a], $a]);
 
     return array_keys($replies);
+}
+
+/** @return list<string>|null null when the read model is missing or behind HEAD */
+function readModelReplyIds(string $repositoryRoot, string $threadId, string $databasePath): ?array
+{
+    if (!is_file($databasePath) || (new \ForumRewrite\ReadModel\ReadModelStaleMarker($databasePath))->exists()) return null;
+    try {
+        $pdo = new PDO('sqlite:' . $databasePath, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $metadata = $pdo->query('SELECT key, value FROM metadata')->fetchAll(PDO::FETCH_KEY_PAIR);
+        if (!\ForumRewrite\ReadModel\ReadModelMetadata::hasExpectedSchemaIdentity($metadata)
+            || ($metadata['repository_head'] ?? null) !== \ForumRewrite\ReadModel\ReadModelMetadata::repositoryHead($repositoryRoot)) return null;
+        $select = $pdo->prepare('SELECT post_id FROM posts WHERE thread_id = ? AND post_id != ? ORDER BY created_at DESC, post_id DESC');
+        $select->execute([$threadId, $threadId]);
+        $ids = [];
+        foreach ($select->fetchAll(PDO::FETCH_COLUMN) as $id) {
+            // Rows for already-deleted posts stay as placeholders; only live source files count.
+            foreach (\ForumRewrite\Canonical\CanonicalPathResolver::postCandidates((string) $id) as $path) {
+                if (is_file($repositoryRoot . '/' . $path)) { $ids[] = (string) $id; break; }
+            }
+        }
+        return $ids;
+    } catch (PDOException) {
+        return null;
+    }
 }
 
 function rootAlreadyDeleted(string $repositoryRoot, string $threadId): bool
@@ -158,9 +181,10 @@ function usage(): string
 Usage:
   ./v3 delete-thread <thread-id> [repository_root] [database_path] [artifact_root] [--inspect] [--json] [-q]
 
-Deletes a thread: every reply (newest first), then the root post. Each post goes
-through the same removal as ./v3 delete-record, one commit per post, with
-source-owned labels removed and pages refreshed.
+Deletes a thread: every reply and the root post, in one commit. Each post gets
+the same removal receipt as ./v3 delete-record, with source-owned labels removed
+and pages refreshed. Images the posts attached are deleted too, with their
+thumbnails, unless another post still uses the same image.
 
 Options:
   --inspect     List the posts that would be deleted; change nothing.

@@ -13,7 +13,7 @@ try {
     body: '<!doctype html><section data-private-message-cache="1"></section>',
   }));
   await page.goto('https://cache.test/');
-  await page.evaluate(() => localStorage.setItem('forum_pki_fingerprint', 'AAAA1111'));
+  await page.evaluate(() => { localStorage.setItem('forum_pki_fingerprint', 'AAAA1111'); localStorage.setItem('forum_pki_private_key', 'test-key'); });
   await page.addScriptTag({ content: source });
 
   // Round trip.
@@ -39,6 +39,12 @@ try {
   await page.evaluate(() => localStorage.setItem('forum_pki_fingerprint', 'aaaa1111'));
   assert.equal(await page.evaluate(() => window.ForumPrivateMessageCache.get('m1')), 'hello ünïcode');
 
+  // Without the private key, saved copies are not used.
+  await page.evaluate(() => localStorage.removeItem('forum_pki_private_key'));
+  assert.equal(await page.evaluate(() => window.ForumPrivateMessageCache.get('m1')), null);
+  await page.evaluate(() => localStorage.setItem('forum_pki_private_key', 'test-key'));
+  assert.equal(await page.evaluate(() => window.ForumPrivateMessageCache.get('m1')), 'hello ünïcode');
+
   // Flag off: no reads or writes.
   await page.evaluate(() => document.querySelector('section').dataset.privateMessageCache = '0');
   assert.equal(await page.evaluate(() => window.ForumPrivateMessageCache.get('m1')), null);
@@ -60,7 +66,7 @@ try {
   const fresh = await browser.newPage();
   await fresh.route('https://cache.test/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><section data-private-message-cache="1"></section>' }));
   await fresh.goto('https://cache.test/');
-  await fresh.evaluate(() => { localStorage.setItem('forum_pki_fingerprint', 'cccc3333'); crypto.subtle.generateKey = () => Promise.reject(new Error('no keys')); });
+  await fresh.evaluate(() => { localStorage.setItem('forum_pki_fingerprint', 'cccc3333'); localStorage.setItem('forum_pki_private_key', 'test-key'); crypto.subtle.generateKey = () => Promise.reject(new Error('no keys')); });
   await fresh.addScriptTag({ content: source });
   assert.equal(await fresh.evaluate(() => window.ForumPrivateMessageCache.put('m1', 'x')), false);
   assert.equal(await fresh.evaluate(() => window.ForumPrivateMessageCache.get('m1')), null);

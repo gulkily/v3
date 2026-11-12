@@ -284,8 +284,9 @@ Usage:
   ./v3 delete-record <source-post-id> [repository_root] [database_path] [artifact_root] [--inspect] [--repair-labels --resolve-label=<label-id>] [--json] [-q]
 
 Deletes and commits a canonical record, then refreshes derived state.
-Post deletion also removes proven source-owned labels, preserves replies under
-placeholders, and invalidates generated presentation. Rebuild static artifacts
+Post deletion also removes proven source-owned labels, deletes the post's image
+unless another post still uses it, preserves replies under placeholders, and
+invalidates generated presentation. Rebuild static artifacts
 with ./v3 build-static when a prebuilt release is required. Other record families
 retain their existing static rebuild behavior when artifact_root is supplied.
 

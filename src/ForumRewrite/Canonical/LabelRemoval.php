@@ -109,11 +109,13 @@ final class LabelRemoval
      * @param \Closure(string):void|null $progress
      * @param string|null $databasePath read model holding the thread label file index; without
      *        a current one, every label file is scanned
+     * @param array{string,string}|null $source [path, bytes] already read by the caller; after a
+     *        deletion the file is gone and self::source() would walk Git history to find it
      */
-    public static function inspect(string $root, string $id, ?\Closure $progress = null, ?string $databasePath = null): array
+    public static function inspect(string $root, string $id, ?\Closure $progress = null, ?string $databasePath = null, ?array $source = null): array
     {
         $progress?->__invoke('Reading post ' . $id);
-        [$sourcePath, $bytes] = self::source($root, $id);
+        [$sourcePath, $bytes] = $source ?? self::source($root, $id);
         try { $post = (new PostRecordParser())->parse($bytes); }
         catch (CanonicalRecordParseException $error) {
             if ($error->getMessage() !== 'Missing required post header: Created-At') throw $error;
