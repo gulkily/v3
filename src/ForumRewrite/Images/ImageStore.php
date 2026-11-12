@@ -143,6 +143,26 @@ final class ImageStore
         return !is_link($path) && is_file($path) && filesize($path) === ImageReference::validate($reference)['bytes'];
     }
 
+    /**
+     * Deletes a stored original and its cached thumbnails. The caller must hold the publication
+     * lock and must already have checked that no remaining record references the image.
+     * Returns false when the original was not stored.
+     */
+    public function remove(array $reference): bool
+    {
+        $name = ImageReference::filename($reference);
+        $path = $this->root . '/' . $name;
+        $present = !is_link($path) && is_file($path);
+        if ($present && !unlink($path)) throw new RuntimeException('Cannot remove image ' . $name);
+        $thumbs = $this->root . '-thumbs';
+        if (is_dir($thumbs) && !is_link($thumbs)) {
+            foreach (glob($thumbs . '/' . ImageReference::validate($reference)['sha256'] . '-*') ?: [] as $thumb) {
+                if (is_file($thumb) && !is_link($thumb)) @unlink($thumb);
+            }
+        }
+        return $present;
+    }
+
     public function inventory(): array
     {
         if (!is_dir($this->root)) { return []; }

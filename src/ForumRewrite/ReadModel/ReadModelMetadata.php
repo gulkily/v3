@@ -39,6 +39,19 @@ final class ReadModelMetadata
             return 'no-git';
         }
 
+        // Fast path without a git process: HEAD on a loose branch ref, or a detached HEAD.
+        // A loose ref always wins over packed-refs, so this matches rev-parse; anything else
+        // (packed-only ref, unborn branch, odd contents) falls through to git itself.
+        $head = @file_get_contents($repositoryRoot . '/.git/HEAD');
+        if (is_string($head)) {
+            $head = trim($head);
+            if (preg_match('/^[0-9a-f]{40}$/D', $head) === 1) return $head;
+            if (preg_match('#^ref: (refs/heads/[A-Za-z0-9._/-]+)$#D', $head, $ref) === 1 && !str_contains($ref[1], '..')) {
+                $sha = @file_get_contents($repositoryRoot . '/.git/' . $ref[1]);
+                if (is_string($sha) && preg_match('/^[0-9a-f]{40}$/D', trim($sha)) === 1) return trim($sha);
+            }
+        }
+
         $output = [];
         $exitCode = 0;
         exec('cd ' . escapeshellarg($repositoryRoot) . ' && git rev-parse HEAD 2>&1', $output, $exitCode);
