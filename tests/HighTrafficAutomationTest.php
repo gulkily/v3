@@ -145,4 +145,46 @@ final class HighTrafficAutomationTest
             assertStringContains('Turn on automatically: no', implode("\n", $plain));
         } finally { $this->cleanup($root); }
     }
+
+    private function busy(HighTrafficRate $rate, int $now, int $perSecond): void
+    {
+        for ($second = $now - HighTrafficAutomation::TURN_ON_WINDOW; $second < $now; $second++) {
+            for ($i = 0; $i < $perSecond; $i++) $rate->record($second);
+        }
+    }
+
+    public function testRequestRateTurnsTheModeOnAndRespectsPrecedence(): void
+    {
+        [$root, $mode] = $this->site();
+        $cache = $mode->cache;
+        $now = time();
+        try {
+            $quiet = new HighTrafficRate($root . '/quiet');
+            $this->busy($quiet, $now, 2);
+            assertSame(null, HighTrafficAutomation::checkTurnOn($mode, $quiet, $now), 'below 3 per second');
+            assertSame('normal', $mode->status()['effective_mode']);
+            $busy = new HighTrafficRate($root . '/busy');
+            $this->busy($busy, $now, 4);
+            // An operator off holds until traffic falls below the threshold.
+            $mode->change(false, 'Operator CLI disable');
+            assertSame(null, HighTrafficAutomation::checkTurnOn($mode, $busy, $now));
+            assertSame('normal', $mode->status()['effective_mode']);
+            assertSame('released', HighTrafficAutomation::checkTurnOn($mode, $quiet, $now));
+            assertSame('on', HighTrafficAutomation::checkTurnOn($mode, $busy, $now));
+            $status = $mode->status();
+            assertSame('high-traffic', $status['effective_mode']);
+            assertSame('automatic', $status['source']);
+            assertSame('Turned on automatically, 4.0 requests/s', $status['reason']);
+            assertSame(null, HighTrafficAutomation::checkTurnOn($mode, $busy, $now), 'already on: no second change');
+            // A withdrawal keeps automation out; only an operator on lets it back in.
+            HighTrafficSafety::beforeWrite($cache->repositoryRoot, $cache->databasePath, 'records/feature-flags/site.txt');
+            assertSame(null, HighTrafficAutomation::checkTurnOn($mode, $busy, $now));
+            assertSame('normal', $mode->status()['effective_mode']);
+            // A threshold override applies.
+            putenv('FORUM_HIGH_TRAFFIC_AUTO_ON_RATE=5');
+            assertSame(5.0, HighTrafficAutomation::turnOnRate());
+            putenv('FORUM_HIGH_TRAFFIC_AUTO_ON_RATE=bogus');
+            assertSame(3.0, HighTrafficAutomation::turnOnRate());
+        } finally { putenv('FORUM_HIGH_TRAFFIC_AUTO_ON_RATE'); $this->cleanup($root); }
+    }
 }

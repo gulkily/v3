@@ -93,7 +93,13 @@ final class FrontController
 
         $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
         if (!$approvedMembersOnly && $requestUri !== '/internal/high-traffic/refresh' && HighTrafficAutomation::turnOnEnabled($highTraffic)) {
-            HighTrafficRate::forCache($highTraffic)->record();
+            $rate = HighTrafficRate::forCache($highTraffic);
+            // Only the request that opens a new second checks the rate. Pages are still
+            // rendered by the isolated worker, never from this request.
+            if ($rate->record()) {
+                try { HighTrafficAutomation::checkTurnOn(new HighTrafficMode($highTraffic), $rate); }
+                catch (Throwable $error) { $highTraffic->report($error); }
+            }
         }
         if ($requestUri === '/internal/high-traffic/refresh') {
             header('Cache-Control: no-store');

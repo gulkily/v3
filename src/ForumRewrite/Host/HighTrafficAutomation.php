@@ -16,6 +16,32 @@ final class HighTrafficAutomation
 {
     public const FILE = 'automation.txt';
     private const KEYS = ['Turn-On', 'Turn-Off', 'Manual-Off-Hold', 'Changed-At', 'Reason'];
+    /** Seconds of request history the turn-on threshold is measured over. */
+    public const TURN_ON_WINDOW = 15;
+    /** Requests per second (PHP only) above which the mode turns on; FORUM_HIGH_TRAFFIC_AUTO_ON_RATE overrides. */
+    public static function turnOnRate(): float { return self::number('FORUM_HIGH_TRAFFIC_AUTO_ON_RATE', 3.0); }
+    private static function number(string $key, float $default): float
+    {
+        $value = getenv($key);
+        return $value !== false && is_numeric($value) && (float)$value > 0 ? (float)$value : $default;
+    }
+    /**
+     * Run at most once per second, by the request that opened the second. Turns the mode
+     * on above the threshold unless a withdrawal or an operator off holds; below it,
+     * releases an operator off's hold. Returns what it did: on, released or null.
+     */
+    public static function checkTurnOn(HighTrafficMode $mode, HighTrafficRate $rate, ?int $now = null): ?string
+    {
+        $perSecond = $rate->perSecond(self::TURN_ON_WINDOW, $now);
+        if ($perSecond < self::turnOnRate()) {
+            if ((self::read($mode->cache)['Manual-Off-Hold'] ?? 'no') !== 'yes') return null;
+            $mode->cache->locked(fn () => self::write($mode->cache, ['Manual-Off-Hold' => 'no']));
+            return 'released';
+        }
+        if (self::turnOnBlocked($mode) !== null) return null;
+        $mode->change(true, sprintf('Turned on automatically, %.1f requests/s', $perSecond), 'automatic');
+        return 'on';
+    }
     /** @return array<string,string> */
     public static function read(HighTrafficCache $cache): array
     {

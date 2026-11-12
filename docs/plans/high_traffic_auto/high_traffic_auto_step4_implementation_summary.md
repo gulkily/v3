@@ -60,3 +60,26 @@ Step 3 approved on 2026-11-12 ("approved step 3"). Branch `feat/high_traffic_aut
 - Estimate details: original scope as Step 3; uncertainty low; no revisions. Retrospective equals original.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Automatic turn-on
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - `HighTrafficAutomation::checkTurnOn(HighTrafficMode, HighTrafficRate)`: above `turnOnRate()` (default 3 PHP requests per second over 15 seconds; `FORUM_HIGH_TRAFFIC_AUTO_ON_RATE` overrides) and with nothing blocking, calls `change(true, 'Turned on automatically, N requests/s', 'automatic')`; below it, releases an operator off's hold.
+  - `FrontController`: the request that opens a new second runs the check; errors are logged and the request is served normally.
+- Verification:
+  - Unit test: below threshold no change; an operator off holds while busy, is released by a quiet reading, then a busy reading turns the mode on with source `automatic` and the measured rate; already on, no second change; a withdrawal keeps automation out; threshold override and invalid value.
+  - Local Apache ramp, mode off and **Turn on automatically** on, probe steps 1,2,4 at 10 s (`--max-rps 200`): the mode turned on 2–4 seconds into step 1 ("Turned on automatically, 4.5 requests/s"); cache hits 96%, then 100%, 100%.
+  - Concurrent ramp after an operator off and 16 idle seconds, 8 readers: turned on ("7.0 requests/s"); 2 of 1,780 responses were 503 busy pages while popular pages were cold; Apache error log empty, so concurrent checks did not collide.
+  - Rendering stayed isolated: cached pages carry the `v3-cache-generation` meta written only by `HighTrafficCache::generate`, whose worker clears cookies and session; this stage did not touch that path.
+  - `./v3 test --smoke HighTrafficAutomationTest HighTrafficTest RecentPostTest`: 469 run, 469 passed. Full suite not run.
+- Notes:
+  - An operator off's hold is released by the first quiet reading. After an idle period, the next spike can turn the mode on again, as Step 2 specified.
+  - A failing change (for example a non-regular `.htaccess`) is logged at most once per second while traffic stays above the threshold.
+  - Reused: `HighTrafficMode::change` (serializes under the publication lock, idempotent when on); `HighTrafficCache::report`.
+- Estimate details: original scope as Step 3; uncertainty was medium; no revisions. Retrospective lower than original: the existing locks made concurrent triggers safe without extra work.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
