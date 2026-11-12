@@ -1184,7 +1184,10 @@ Scripture writer override: `SCRIPTURE_RESPONSE_MODEL` is blank by default (inher
 switches and manages instance-local Apache HTML caching. Run
 `./v3 high-traffic run /path/to/access.log` every minute for popularity-driven
 atomic refresh; a new post also refreshes its own cached thread page at once. See [host setup, limits, verification and recovery](../runbooks/high_traffic_mode.md).
-Automatic traffic/load activation is deferred.
+`./v3 high-traffic auto-on on|off` and `auto-off on|off` set the two automation
+switches: turn on when the PHP request rate spikes, and turn an automatic episode off
+after a quiet period in the access log (needs the cron job). See
+[automatic on and off](../runbooks/high_traffic_mode.md#automatic-on-and-off).
 
 CLI output is readable by default; use `--json` for automation.
 `./v3 high-traffic cron /path/to/access.log` prints the installation instructions

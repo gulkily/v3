@@ -155,3 +155,49 @@ Step 3 approved on 2026-11-12 ("approved step 3"). Branch `feat/high_traffic_aut
 - Estimate details: original scope as Step 3; uncertainty was low; no revisions. Retrospective higher: diagnosing the browser-test environment and the phone-width layout fix.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Documentation and replay
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.08** (local part; the zenmemes.com replay is pending)
+
+- Changes:
+  - `docs/runbooks/high_traffic_mode.md`: new "Automatic on and off" section (switches, thresholds and overrides, precedence, kept pages, where settings live); removed "no load-triggered activation"; maintenance and deployment steps now also turn off **Turn on automatically**.
+  - `docs/reference/v3_cli.md`: `auto-on` and `auto-off`; removed "deferred".
+  - `docs/concepts/static_publication.md`: one line on automatic on and off.
+- Verification:
+  - Local Apache replay, both switches on, quiet period overridden to 300 s:
+    1. A spike (2 readers, 10 s) turned the mode on ("4.6 requests/s"), with 96% cache hits.
+    2. Cron on the busy access log left it on.
+    3. Cron on a quiet log turned it off ("after 5 quiet minutes", source automatic).
+    4. A feature-flag withdrawal followed by a spike left it off (0% cache hits, source withdrawal).
+    5. An operator on was not turned off by cron on a quiet log.
+    Apache error log clean.
+  - Final diff review of the branch (16 code and test files): no debug output or stray markers; `git diff --check` clean.
+  - `./v3 test --smoke HighTrafficAutomationTest HighTrafficTest HighTrafficPostRefreshTest HighTrafficPublicationTest LocalAppSmokeTest DeleteRecordCommandTest DeleteThreadCommandTest RecentPostTest WebServerRoutingTest`: 495 run, 495 passed. Full suite not run.
+- Notes:
+  - Edge case: a removal marks caches whose saved state names the same public root. A state written by `./v3 high-traffic restore` has no public root, so a removal right after a restore relies on the next turn-on treating that state as an operator off and the page age limit. This is narrow and recorded rather than fixed.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Completion
+
+| Check | Result |
+|---|---|
+| Stages 1–6 implemented, each with its own stage commit and summary update | passed |
+| Planning commit first (`fc9a39b`), summary created after it; 8 cycle commits ≥ 1 + 7 stages | passed |
+| Counter cost: no measurable latency (Stage 1) | passed (local harness) |
+| Automatic on, precedence, keep-fresh, automatic off: unit tests and local Apache replay | passed |
+| Operations page in 15 themes at 375 and 1150 px; operator and non-operator views | passed |
+| Signed switching in a browser (`tests/browser/high_traffic_control.mjs`) | **blocked**: no viewer session in this environment; it fails the same way on unchanged `main` |
+| `tests/high_traffic_apache_test.py` | **failed, pre-existing**: stale `Retry-After: 5` assertion and a later import step; both reproduced on `main` |
+| zenmemes.com access-log sample parsed | **pending**: needs a sample from the maintainer |
+| zenmemes.com stress-probe replay after deploy (known environment, release condition) | **pending**: needs deploy |
+| Full suite | not run (maintainer runs it) |
+
+## Cycle retrospective
+
+2026-11-12T12:20:00Z: retrospective scope assessment **0.68** for the delivered scope (Stages 1–6 and local Stage 7), against the 0.70 projection. Lower: concurrency was already handled by existing locks. Higher: the browser-environment diagnosis and the removal-marker discovery. Not measured time. Maintainer comfortable-fit judgment: pending.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

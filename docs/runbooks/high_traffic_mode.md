@@ -68,6 +68,50 @@ Authorization requests should lack the hit header; direct `/.high-traffic/` URLs
 must not disclose files. Check existing authenticated actions from the cached
 page. If these checks fail, disable and correct host configuration before use.
 
+## Automatic on and off
+
+Two switches beside the mode on **Tools → Operations**, also available from the CLI:
+
+```bash
+./v3 high-traffic auto-on on     # or off
+./v3 high-traffic auto-off on    # or off
+```
+
+- **Turn on automatically** works on any instance. While the mode is off, PHP counts
+  its own requests in one-byte-per-request files under the cache's `rate/` directory
+  (no lock; measured cost within run-to-run noise). The first request of each second
+  checks the last 15 seconds and turns the mode on above
+  `FORUM_HIGH_TRAFFIC_AUTO_ON_RATE` (default 3 requests per second). Pages are still
+  rendered only by the isolated renderer, never from the request that noticed.
+- **Turn off automatically** needs the per-minute cron job below with a readable
+  combined-format access log. Each `run` records whether it could read the log; the
+  switch can be turned on only after a readable run in the last five minutes, and
+  shows why otherwise. It turns off an episode that automation started once every
+  five-minute window of the last `FORUM_HIGH_TRAFFIC_AUTO_OFF_SECONDS` (default 1800)
+  is below `FORUM_HIGH_TRAFFIC_AUTO_OFF_RATE` (default 0.5 page requests per second;
+  assets are not counted). A log that does not reach back that far, for example just
+  after rotation, is not quiet. If the log becomes unreadable, the mode stays on.
+- With only **Turn on automatically**, an automatic episode stays on until an
+  operator turns it off.
+
+Precedence, highest first:
+
+1. **Withdrawal.** A content or access change that retires serving, or a removal,
+   keeps automation out until an operator turns the mode on by hand.
+2. **Operator.** A manual on is never turned off automatically. A manual off holds
+   against automatic turn-on until the request rate is next measured below the
+   threshold, so the next spike can turn it on again.
+3. **Automation.**
+
+Turning on keeps cached pages younger than `FORUM_HIGH_TRAFFIC_KEEP_SECONDS`
+(default 3600) that were rendered after the latest withdrawal or removal, and queues
+them for the next cron run; everything else is cleared. After a withdrawal, turning
+on clears every page.
+
+Status and the operations page show the source of the last change (operator,
+automatic or withdrawal), its reason and both switches. Settings live in
+`automation.txt` (`Key: value`) in the instance's cache directory.
+
 ## Refresh
 
 Configure cron every minute, using the deployment's normal environment:
@@ -173,14 +217,16 @@ may leave routing in normal mode even if the stored requested state says enabled
 No success is reported before routing/state publication finishes. Preserve prior
 working files on write failure; fix filesystem ownership/free space before retry.
 A refresh failure retains the old eligible page and logs the error. There is no
-automatic repair or load-triggered activation in this release. Future automatic
-activation must honor maintenance locks and operator overrides as well as reuse
-the switching service.
+automatic repair. Load-triggered activation is opt-in; see
+[Automatic on and off](#automatic-on-and-off).
 
 Feature/access/retraction and classification changes may retire direct serving
 conservatively. Review the completed change and re-enable manually if appropriate;
 re-enabling clears previous HTML so withdrawn content cannot return. Do not
 re-enable during an external import, archive, deployment or configuration change.
+Before such maintenance, also turn off **Turn on automatically**
+(`./v3 high-traffic auto-on off`), so a traffic spike cannot turn the mode on midway,
+and turn it back on afterwards.
 For application-native writes, publication/switch locks coordinate the change.
 For external maintenance, disable first and keep the mode disabled until the
 canonical records/read model/configuration are consistent. Stop or pause cron for
@@ -270,7 +316,8 @@ restore while correcting invalid evidence through the supported operator process
 
 ### zenmemes production recovery checklist
 
-Keep high-traffic mode **disabled during deployment**. Deploy the tested application
+Keep high-traffic mode **disabled during deployment**, with **Turn on automatically**
+off as well (`./v3 high-traffic auto-on off`). Deploy the tested application
 revision, including its completed absent-target offline-snapshot changes, using the
 normal release process. Do not reset or modify the separate canonical repository.
 Use the deployed checkout, web app's normal user/environment, PHP CLI and public-root
