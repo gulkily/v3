@@ -187,4 +187,46 @@ final class HighTrafficAutomationTest
             assertSame(3.0, HighTrafficAutomation::turnOnRate());
         } finally { putenv('FORUM_HIGH_TRAFFIC_AUTO_ON_RATE'); $this->cleanup($root); }
     }
+
+    public function testTurningOnKeepsStillFreshPagesUnlessWithdrawnSince(): void
+    {
+        [$root, $mode] = $this->site();
+        $cache = $mode->cache;
+        $page = static function (string $route, int $age) use ($cache): string {
+            $path = $cache->path($route);
+            if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+            file_put_contents($path, '<html>' . $route . '</html>');
+            touch($path, time() - $age);
+            return $path;
+        };
+        try {
+            $mode->change(true, 'Operator CLI enable');
+            $mode->change(false, 'Turned off automatically after 30 quiet minutes', 'automatic');
+            $fresh = $page('/about/', 120);
+            $old = $page('/threads/', 3700);
+            $mode->change(true, 'Turned on automatically, 4.0 requests/s', 'automatic');
+            assertTrue(is_file($fresh), 'a page younger than an hour is kept');
+            assertSame(false, is_file($old), 'an older page is cleared');
+            assertTrue(is_file($cache->root . '/dirty'), 'kept pages are queued for cron');
+            // A removal while the mode is off clears pages rendered before it.
+            $mode->change(false, 'Operator CLI disable');
+            $before = $page('/about/', 30);
+            HighTrafficSafety::withdraw($cache->publicRoot);
+            touch($cache->root . '/withdrawn', time() - 10);
+            $after = $page('/threads/', 5);
+            $mode->change(true, 'Operator CLI enable');
+            assertSame(false, is_file($before));
+            assertTrue(is_file($after), 'a page rendered after the removal is kept');
+            // A withdrawal clears everything.
+            $kept = $page('/about/', 1);
+            HighTrafficSafety::beforeWrite($cache->repositoryRoot, $cache->databasePath, 'records/feature-flags/site.txt');
+            $mode->change(true, 'Operator CLI enable');
+            assertSame(false, is_file($kept));
+            // A removal that only detaches serving while the mode is on also clears everything.
+            $kept = $page('/about/', 1);
+            HighTrafficSafety::detach($cache->publicRoot);
+            $mode->change(true, 'Operator CLI enable');
+            assertSame(false, is_file($kept));
+        } finally { $this->cleanup($root); }
+    }
 }

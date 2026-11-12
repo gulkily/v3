@@ -57,7 +57,7 @@ final class HighTrafficMode
                 }
                 $this->cache->atomic($this->cache->root . '/normal.htaccess',$normal);
                 $this->cache->atomic($this->cache->root . '/normal-context.json',json_encode(['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot],JSON_THROW_ON_ERROR));
-                $this->clearPages();
+                $this->keepFreshPages($previous);
                 $this->cache->atomic($this->cache->root . '/pages/.htaccess',"Options -Indexes\n<IfModule mod_headers.c>\nHeader set Cache-Control \"public, no-cache, must-revalidate\"\nHeader set X-Content-Type-Options \"nosniff\"\nHeader set X-V3-High-Traffic \"hit\"\n</IfModule>\n");
                 $link=$this->cache->publicRoot . '/.high-traffic';
                 HighTrafficSafety::detach($this->cache->publicRoot);
@@ -111,7 +111,25 @@ final class HighTrafficMode
         }
         return $files;
     }
-    private function clearPages(): void { foreach ($this->htmlFiles() as $file) if (!unlink($file)) throw new RuntimeException('Cannot reset old cached pages.'); }
+    /**
+     * On turn-on, keep pages that are still fresh so a spike does not start cold. A page is
+     * kept only when it is younger than keep_seconds and newer than the latest withdrawal or
+     * removal; after a withdrawal everything is cleared. Kept pages are queued for cron.
+     */
+    private function keepFreshPages(array $previous): void
+    {
+        $withdrawn = @filemtime($this->cache->root . '/withdrawn');
+        // Marked, legacy and detached-but-enabled withdrawals all clear every page.
+        $clearAll = HighTrafficAutomation::isWithdrawal($previous + ['effective_mode' => 'normal']);
+        $oldest = max(time() - $this->cache->limits['keep_seconds'], $withdrawn === false ? 0 : $withdrawn);
+        $kept = 0;
+        foreach ($this->htmlFiles() as $file) {
+            clearstatcache(true, $file);
+            if (!$clearAll && filemtime($file) > $oldest) { $kept++; continue; }
+            if (!unlink($file)) throw new RuntimeException('Cannot reset old cached pages.');
+        }
+        if ($kept > 0 && !is_file($this->cache->root . '/dirty')) $this->cache->atomic($this->cache->root . '/dirty', gmdate('c'));
+    }
     private function normalRules(string $current): string
     {
         if (!str_contains($current,self::BEGIN) && !str_contains($current,self::END)) return $current;

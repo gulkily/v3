@@ -153,7 +153,7 @@ final class StaticArtifactInvalidator
      */
     public function invalidateRemovedPost(string $threadId, string $postId, array $tags, ?string $profileSlug): void
     {
-        foreach ($this->artifactRoots as $root) \ForumRewrite\Host\HighTrafficSafety::detach($root);
+        foreach ($this->artifactRoots as $root) \ForumRewrite\Host\HighTrafficSafety::withdraw($root);
         $paths = ['/offline/snapshot.sqlite3', '/offline/update.sqlite3', '/offline/manifest.json', '/offline/update.sqlite3.manifest.json'];
         foreach (array_unique([$threadId, $postId]) as $id) {
             array_push($paths, '/threads/' . $id . '.html', '/threads/' . $id . '/index.html', '/posts/' . $id . '.html', '/posts/' . $id . '/index.html');
@@ -176,7 +176,7 @@ final class StaticArtifactInvalidator
 
     public function invalidateAllGeneratedPresentation(bool $includeDocumentation = true): void
     {
-        foreach ($this->artifactRoots as $root) \ForumRewrite\Host\HighTrafficSafety::detach($root);
+        foreach ($this->artifactRoots as $root) \ForumRewrite\Host\HighTrafficSafety::withdraw($root);
         $paths = [];
         foreach ($this->artifactRoots as $root) {
             if (!file_exists($root)) {

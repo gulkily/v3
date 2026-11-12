@@ -83,3 +83,27 @@ Step 3 approved on 2026-11-12 ("approved step 3"). Branch `feat/high_traffic_aut
 - Estimate details: original scope as Step 3; uncertainty was medium; no revisions. Retrospective lower than original: the existing locks made concurrent triggers safe without extra work.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Keep still-fresh pages on turn-on
+
+**Original estimate: 0.08**
+
+**Revised: 0.10** — 2026-11-12, new understanding, same scope: removals detach serving without writing mode state, so pages had to be tied to the latest removal by time rather than by generation.
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `HighTrafficMode::keepFreshPages()` replaces clearing all pages on enable: a page is kept when it is younger than `keep_seconds` (default 3600; `FORUM_HIGH_TRAFFIC_KEEP_SECONDS`) and newer than the cache's `withdrawn` marker. After a withdrawal (marked, legacy, or detached while enabled) every page is cleared. Kept pages set the `dirty` marker, so the next cron run refreshes them.
+  - `HighTrafficSafety::withdraw($publicRoot)`: marks each cache whose saved public root matches, then detaches. `StaticArtifactInvalidator`'s two removal paths call it instead of `detach`. `beforeWrite` withdrawals mark the cache too.
+  - `HighTrafficCache` limits gain `keep_seconds`.
+- Verification:
+  - Unit test: a 2-minute page kept and a 62-minute page cleared, with `dirty` set; a removal while the mode was off clears pages rendered before it and keeps one rendered after; a feature-flag withdrawal clears everything; a detach while enabled clears everything.
+  - Local Apache: five warm pages; operator off then on kept all five; `./v3 high-traffic run` re-rendered all five (`rendered: 5, failed: 0`).
+  - `./v3 test --smoke` plus every test touching removals, the invalidator or the cache (BackupFeatureFlag, DeleteRecordCommand, DeleteThreadCommand, HighTraffic*, LegacyDocsMigration, LocalAppSmoke, ProfilePublicDetails, RecentPost, StandardActivityPagination, ThreadTitleWithdrawalAndConsumers, WebServerRouting, WriteApiSmoke): 736 run, 736 passed. Full suite not run.
+  - `tests/high_traffic_apache_test.py` (run as a non-root user, the only way Apache starts here) fails at line 85 on unchanged `main` too: it expects `Retry-After: 5`, but busy pages now send 30. With that assertion relaxed in a temporary copy, branch and `main` both stop at the same later step, a content-import subprocess. One branch run failed earlier at the atomic-refresh check and two reruns did not, so that one was a timing flake. Both pre-existing failures are left for the maintainer; not fixed here (out of scope).
+- Notes:
+  - First version marked every cache on the host, which let a test mark the harness's cache; narrowed to caches serving the same public root.
+  - Known limitation, unchanged from before: a render that starts before a removal and finishes after it gets an mtime after the marker. The existing publication validation in `HighTrafficCache::generate` remains the guard for that case.
+- Estimate details: scope as Step 3; uncertainty was medium; revised once (above). Retrospective equals the revision.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

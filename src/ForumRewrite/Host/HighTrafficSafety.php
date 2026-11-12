@@ -36,6 +36,7 @@ final class HighTrafficSafety
             }
             $state['generation'] = bin2hex(random_bytes(16));
             if ($withdraw) {
+                self::markWithdrawn($cache->root);
                 self::detach($state['public_root'] ?? $cache->publicRoot);
                 $state['enabled']=false; $state['reason']='Content/access change; operator may re-enable after review.'; $state['source']='withdrawal';
             }
@@ -57,6 +58,24 @@ final class HighTrafficSafety
             error_log('High-traffic mode: post refresh failed: ' . $error->getMessage());
             return 'skipped';
         }
+    }
+    /**
+     * Removal path: withdraw serving and mark each high-traffic cache that serves this public
+     * root, so turning the mode on again never keeps a page rendered before the removal,
+     * even when the mode was off at the time.
+     */
+    public static function withdraw(string $publicRoot): void
+    {
+        $public = realpath($publicRoot) ?: $publicRoot;
+        foreach (glob(dirname(__DIR__,3) . '/state/high_traffic/*/state.json') ?: [] as $state) {
+            $saved = json_decode((string)@file_get_contents($state), true);
+            if (is_array($saved) && ($saved['public_root'] ?? null) === $public) self::markWithdrawn(dirname($state));
+        }
+        self::detach($publicRoot);
+    }
+    public static function markWithdrawn(string $cacheRoot): void
+    {
+        if (is_dir($cacheRoot) && @file_put_contents($cacheRoot . '/withdrawn', gmdate('c') . "\n") === false) throw new \RuntimeException('Cannot mark high-traffic cache withdrawn; write aborted.');
     }
     public static function detach(string $publicRoot): void
     {
