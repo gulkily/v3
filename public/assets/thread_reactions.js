@@ -1123,9 +1123,14 @@
     const fold = root.querySelector('[data-role="post-resolution"]');
     if (fold) {
       fold.open = state === "";
-      const label = fold.querySelector('[data-role="post-resolution-label"]');
-      if (label && state !== "") {
+    }
+    const label = root.querySelector('[data-role="post-resolution-label"]');
+    if (label) {
+      if (state !== "") {
         label.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+      }
+      if (!fold) {
+        label.hidden = state === "";
       }
     }
     if (typeof root.dispatchEvent === "function" && typeof CustomEvent === "function") {

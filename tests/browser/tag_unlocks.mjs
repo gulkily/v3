@@ -94,8 +94,24 @@ try {
     await page.waitForFunction(id => !document.querySelector(`.post-card[data-post-id="${id}"]`)?.hasAttribute('data-resolution'), first);
     assert.equal(await card(page, first).locator('[data-role="post-resolution-summary"]').isVisible(), false);
     assert.equal(await card(page, first).locator('.body').isVisible(), true);
-    await page.reload();
+    await page.reload({ waitUntil: 'load' });
     assert.equal(await card(page, first).getAttribute('data-resolution'), null);
+
+    // The opening post takes the same tags; its label sits after the byline and it does not fold.
+    const rootCard = card(page, thread);
+    const rootLabel = rootCard.locator('[data-role="post-resolution-label"]');
+    assert.equal(await rootLabel.isVisible(), false);
+    await rootCard.hover();
+    const closeRoot = page.waitForResponse(response => /\/api\/apply_post_tag$/.test(response.url()));
+    await rootCard.locator('[data-tag="closed"]').click();
+    assert.match(await (await closeRoot).text(), /status=ok/);
+    await page.waitForFunction(id => document.querySelector(`.post-card[data-post-id="${id}"]`)?.getAttribute('data-resolution') === 'closed', thread);
+    assert.equal(await rootLabel.isVisible(), true);
+    assert.match(await rootLabel.innerText(), /closed/i);
+    assert.equal(await rootCard.locator('.body').isVisible(), true, 'opening post stays unfolded');
+    await page.reload({ waitUntil: 'load' });
+    assert.equal(await card(page, thread).locator('[data-role="post-resolution-label"]').isVisible(), true);
+    assert.equal(await card(page, thread).locator('[data-tag="open"]').isHidden(), false);
   } finally { await context.close(); }
 
   // 2. Themes at phone and desktop widths: buttons inside the viewport.

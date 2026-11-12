@@ -217,6 +217,9 @@
 .post-resolution-summary::-webkit-details-marker {
   display: none;
 }
+.post-resolution-header {
+  flex: none;
+}
 .post-resolution-line {
   min-width: 0;
   overflow: hidden;
@@ -243,5 +246,8 @@
   margin-bottom: 0.5em;
 }
 .post-card[data-resolution] > .post-resolution:not([open]) ~ .post-card-permalink {
+  display: none;
+}
+.post-resolution-root:has(> [hidden]) {
   display: none;
 }

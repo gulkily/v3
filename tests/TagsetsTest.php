@@ -35,6 +35,14 @@ final class TagsetsTest
         assertSame(false, $sets->isUnlockable('ok'));
     }
 
+    public function testTargetsReplyRootOrBoth(): void
+    {
+        $sets = Tagsets::parse("Parent: meta\nTarget: reply, root\nUnlocks: resolved\n\nParent: event\nUnlocks: attend\n\nParent: poll\nTarget: root\nUnlocks: vote\n");
+        assertSame(['resolved', 'attend'], $sets->unlockedFor(['meta', 'event', 'poll']));
+        assertSame(['resolved', 'vote'], $sets->unlockedFor(['meta', 'event', 'poll'], Tagsets::TARGET_ROOT));
+        assertSame(['resolved', 'closed', 'open'], Tagsets::fromFile(__DIR__ . '/../resources/tagsets.txt')->unlockedFor(['meta'], Tagsets::TARGET_ROOT));
+    }
+
     public function testMissingFileUnlocksNothing(): void
     {
         assertSame([], Tagsets::fromFile('/nonexistent/tagsets.txt')->unlockedFor(['meta']));
