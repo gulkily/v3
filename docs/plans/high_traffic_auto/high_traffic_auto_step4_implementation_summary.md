@@ -131,3 +131,27 @@ Step 3 approved on 2026-11-12 ("approved step 3"). Branch `feat/high_traffic_aut
 - Estimate details: original scope as Step 3; uncertainty was medium; no revisions. Retrospective equals original.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Two switches on the operations page
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.12**
+
+- Changes:
+  - `templates/pages/operations.php`: renders the mode row and the two new rows from one loop with the existing feature-flag row markup. The mode row keeps `data-high-traffic-control`; the new rows use `data-high-traffic-setting="turn-on|turn-off"`. **Turn off automatically** is disabled while unavailable, unless it is already on, so it can always be turned off.
+  - `public/assets/high_traffic_control.js`: one handler for all three rows through the existing signed prepare/finalize calls, with a `setting` field; after any change it updates every row from the returned status.
+  - `LocalWriteService::changeHighTraffic`: optional `setting` (`mode` default, `turn-on`, `turn-off`) in the signed record. Existing mode records are unchanged; turn-off is refused at prepare while unavailable. The response adds `status_reason`.
+  - `ToolsPageController::operations` passes the switch states, the reason line and the unavailable reason. `HighTrafficAutomation::statusReason()` builds the reason line.
+  - `public/assets/tool-details.css`: minimum row height at the phone breakpoint, where the control is positioned out of flow.
+  - `docs/plans/ui_copy_audit_checklist.md`: entry for the added copy.
+- Verification:
+  - Scratch Playwright check, kept outside the repository, using the existing browser-test fixture and router: three rows in order; turn-off disabled with its cron reason before cron ran; after cron, both switches and the automatic reason line shown. 15 themes at 375 and 1150 px: no clipped switch, no horizontal overflow, state labels inside rows (this caught the phone-width overlap, now fixed). The non-operator view has three disabled switches and no hooks. Screenshots reviewed for light, word97, gloss, engagify, chicago and midnight.
+  - The signed click could not complete here: this environment sets no viewer session cookie after sign-in, so finalize answers "An approved operator identity is required." The error showed in the row and the switch kept its state. `tests/browser/high_traffic_control.mjs` stops at the same sign-in step on unchanged `main`, so the maintainer's local run is the check for signed switching.
+  - `./v3 test --smoke HighTrafficAutomationTest LocalAppSmokeTest HighTrafficTest`: 465 run, 465 passed. Full suite not run.
+- Notes:
+  - The mode row's own hook is kept, so the existing browser test's locators match one button each.
+  - Reused: feature-flag row markup and CSS, the shared switch, the signed operator action and its endpoints; no new endpoint, navigation destination or icon.
+- Estimate details: original scope as Step 3; uncertainty was low; no revisions. Retrospective higher: diagnosing the browser-test environment and the phone-width layout fix.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

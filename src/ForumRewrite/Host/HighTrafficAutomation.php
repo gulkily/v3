@@ -115,6 +115,15 @@ final class HighTrafficAutomation
         // Removals detach serving without writing state: still marked enabled, but not effective.
         return ($state['enabled'] ?? false) === true && ($state['effective_mode'] ?? 'normal') !== 'high-traffic';
     }
+    /** The reason line for the operations page: automatic and withdrawal changes only. */
+    public static function statusReason(array $status): ?string
+    {
+        if (!isset($status['effective_mode']) || self::source($status) === 'operator') return null;
+        if (self::source($status) === 'withdrawal') return 'Turned off for review after a content or access change.';
+        $reason = (string)($status['reason'] ?? '');
+        $at = strtotime((string)($status['changed_at'] ?? ''));
+        return $reason === '' ? null : $reason . ($at === false ? '' : ' (' . gmdate('Y-m-d H:i', $at) . ' UTC)');
+    }
     /** Source of the latest mode change: automatic, operator or withdrawal. */
     public static function source(array $status): string
     {

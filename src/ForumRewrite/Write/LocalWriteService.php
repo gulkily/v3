@@ -2905,8 +2905,13 @@ class LocalWriteService
             $mode=new \ForumRewrite\Host\HighTrafficMode($cache);
             if (!$finalize) {
                 $enabled=$this->requireBooleanValue($input['enabled'] ?? null,'enabled');
-                $record=json_encode(['action'=>'high-traffic','operator'=>$operatorIdentityId,'enabled'=>$enabled,
-                    'generation'=>$cache->state()['generation'],'nonce'=>bin2hex(random_bytes(16))],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
+                // mode is the high-traffic switch itself; turn-on and turn-off are the automation switches.
+                $setting=(string)($input['setting'] ?? 'mode');
+                if (!in_array($setting,['mode','turn-on','turn-off'],true)) throw new RuntimeException('Unknown high-traffic setting.');
+                if ($setting==='turn-off' && $enabled && ($why=\ForumRewrite\Host\HighTrafficAutomation::turnOffUnavailable($cache))!==null) throw new RuntimeException($why);
+                $fields=['action'=>'high-traffic','operator'=>$operatorIdentityId,'enabled'=>$enabled];
+                if ($setting!=='mode') $fields['setting']=$setting;
+                $record=json_encode($fields+['generation'=>$cache->state()['generation'],'nonce'=>bin2hex(random_bytes(16))],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
                 return $this->storePreparedPost('private/high-traffic',$record,['kind'=>'high-traffic','operator_identity_id'=>$operatorIdentityId])
                     + ['status'=>'ok','canonical_record'=>$record];
             }
@@ -2920,9 +2925,15 @@ class LocalWriteService
             if (!$this->signatureVerifier->verifyDetached($key,$record,$signature,$fingerprint)['ok']) throw new RuntimeException('Detached signature verification failed.');
             $action=json_decode($record,true,512,JSON_THROW_ON_ERROR);
             if ($action['generation']!==$cache->state()['generation']) throw new RuntimeException('Mode state changed. Reload and retry.');
-            $result=$mode->change($action['enabled'],'Signed operator action by ' . $operatorIdentityId);
+            $reason='Signed operator action by ' . $operatorIdentityId;
+            $setting=$action['setting'] ?? 'mode';
+            if ($setting==='mode') $result=$mode->change($action['enabled'],$reason);
+            else {
+                \ForumRewrite\Host\HighTrafficAutomation::set($cache,$setting==='turn-on' ? $action['enabled'] : null,$setting==='turn-off' ? $action['enabled'] : null,$reason);
+                $result=$mode->status();
+            }
             $this->deletePreparedPost($token);
-            return ['status'=>'ok']+$result;
+            return ['status'=>'ok','status_reason'=>\ForumRewrite\Host\HighTrafficAutomation::statusReason($result)]+$result;
         });
     }
 

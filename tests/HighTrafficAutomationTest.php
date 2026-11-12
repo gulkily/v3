@@ -294,4 +294,15 @@ final class HighTrafficAutomationTest
             assertStringContains('cron', (string)HighTrafficAutomation::turnOffUnavailable($cache, $now + 400));
         } finally { $this->cleanup($root); }
     }
+
+    public function testReasonLineShowsOnlyAutomaticAndWithdrawalChanges(): void
+    {
+        $base = ['effective_mode' => 'normal', 'enabled' => false, 'changed_at' => '2026-11-12T11:02:00+00:00'];
+        assertSame(null, HighTrafficAutomation::statusReason($base + ['source' => 'operator', 'reason' => 'Signed operator action by openpgp:abc']));
+        assertSame('Turned off automatically after 30 quiet minutes (2026-11-12 11:02 UTC)',
+            HighTrafficAutomation::statusReason($base + ['source' => 'automatic', 'reason' => 'Turned off automatically after 30 quiet minutes']));
+        assertSame('Turned off for review after a content or access change.',
+            HighTrafficAutomation::statusReason($base + ['source' => 'withdrawal', 'reason' => 'Content/access change; operator may re-enable after review.']));
+        assertSame(null, HighTrafficAutomation::statusReason(['error' => 'x']), 'unknown status shows nothing');
+    }
 }
