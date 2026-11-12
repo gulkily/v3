@@ -17,6 +17,7 @@ register_shutdown_function(static fn () => @unlink($testGitConfig));
 
 $testFiles = [
     __DIR__ . '/DeleteRecordCommandTest.php',
+    __DIR__ . '/DeleteThreadCommandTest.php',
     __DIR__ . '/EventEndDateParserTest.php',
     __DIR__ . '/EventPhraseReaderTest.php',
     __DIR__ . '/EventPhraseComposeTest.php',
