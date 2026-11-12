@@ -1,5 +1,17 @@
 # Effort estimation trial ledger
 
+## Cycle v3/high_traffic_auto
+
+2026-11-12T02:05:00Z — v3/high_traffic_auto Step 3 handoff: Step 2 explicitly approved (Revision 1, separate switches). [Plan/checkpoint](./high_traffic_auto/high_traffic_auto_step3_development_plan.md#study-checkpoint) seven stages: request counter and cost study, mode state sources and settings, automatic turn-on, keep still-fresh pages, log turn-off and health gate, operations-page switches, docs and zenmemes.com replay. Projected total **0.70**, revised from 0.65 for verification scope; stage work 0.10/0.10/0.12/0.08/0.10/0.10/0.08, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3.
+
+2026-11-12T01:59:00Z — v3/high_traffic_auto Step 2 revision 1: separate operations-page switches for automatic turn-on and turn-off (turn-on alone supported), no deployment setting. Scope v3; projected total **0.65** reaffirmed. v2 values preserved. Await Approved Step 2.
+
+2026-11-12T01:07:41Z — v3/high_traffic_auto Step 2 handoff: Step 1 explicitly approved (Option D, one-way anti-flapping, keep still-fresh pages). [Description/snapshot](./high_traffic_auto/high_traffic_auto_step2_feature_description.md#study-snapshots). Scope v2; projected total **0.65**, revised from 0.60 for new understanding (hand-back-to-automatic control; log timestamp parsing). Same R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-11T23:34:00Z — v3/high_traffic_auto Step 1 revision 1: maintainer chose Option D (request counter turns on, access-log controller turns off, per-request cost verified with the stress probe). [Assessment/checkpoint](./high_traffic_auto/high_traffic_auto_step1_solution_assessment.md#study-checkpoint). Scope v2; projected total **0.60** for D; A 0.45, B 0.55, C 0.10 reaffirmed, non-additive. v1 values preserved. Same R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-11T22:40:58Z — v3/high_traffic_auto Step 1 handoff (standing P2 enrollment; parent [high-traffic mode](./high_traffic_mode/high_traffic_mode_step1_solution_assessment.md), which deferred automatic activation): [assessment/checkpoint](./high_traffic_auto/high_traffic_auto_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (per-minute access-log controller with precedence, anti-flapping and warm-before-switch). Starting revision `273bf93`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing. Intake and projected total **0.45**; options A 0.45, B 0.55, C 0.10, non-additive. Await Approved Step 1.
+
 ## Cycle v3/offline_compose
 
 2026-11-11T16:00:00Z — v3/offline_compose Step 4 local closeout: branch `feat/offline-compose`, planning `5520b837`, eight stage commits plus one stage-4 test fix. [Summary/closeout](./offline_compose/offline_compose_step4_implementation_summary.md#closeout). Whole-cycle 0.80 at entry; retrospective scope assessment **0.85**. Stage originals 0.05/0.12/0.10/0.10/0.10/0.15/0.10/0.06 (Stage 6 revised 0.18); retrospectives 0.05/0.10/0.10/0.08/0.08/0.18/0.12/0.06; non-additive. Corrective work inside the cycle: interrupted-send retry, draft restore over typing. Production replay, maintainer comfortable-fit and acceptance pending. Single exposed Claude rater.

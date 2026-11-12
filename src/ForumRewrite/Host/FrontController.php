@@ -92,6 +92,9 @@ final class FrontController
         $approvedMembersOnly = $featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
         $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
+        if (!$approvedMembersOnly && $requestUri !== '/internal/high-traffic/refresh' && HighTrafficAutomation::turnOnEnabled($highTraffic)) {
+            HighTrafficRate::forCache($highTraffic)->record();
+        }
         if ($requestUri === '/internal/high-traffic/refresh') {
             header('Cache-Control: no-store');
             if ($approvedMembersOnly || $method !== 'POST' || (int)($_SERVER['CONTENT_LENGTH'] ?? 0)>2048
