@@ -107,3 +107,27 @@ Step 3 approved on 2026-11-12 ("approved step 3"). Branch `feat/high_traffic_aut
 - Estimate details: scope as Step 3; uncertainty was medium; revised once (above). Retrospective equals the revision.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Automatic turn-off from the access log
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `HighTrafficRefresh::recentCounts($log, $windowSeconds, $windows)`: counts page requests per window from combined-format timestamps in the same bounded tail the popularity reader uses; assets and refresh hints are not counted. It returns null when the tail does not reach back far enough (busy, or just rotated) and throws when lines have no recognizable timestamps.
+  - `HighTrafficRefresh::automation($log)`: run by the cron job on every pass, whether or not the mode is on. It records `Cron-Checked-At` and `Cron-Log` in `automation.txt`. When **Turn off automatically** is on and the mode is on from an automatic turn-on, it turns the mode off once every five-minute window of the quiet period is below `turnOffRate()`. Defaults: 0.5 requests per second for 1800 seconds; overrides `FORUM_HIGH_TRAFFIC_AUTO_OFF_RATE` and `FORUM_HIGH_TRAFFIC_AUTO_OFF_SECONDS`.
+  - `HighTrafficRefresh::run` calls it first; results appear as `Automation` and `Automation log` in every run's report.
+  - `HighTrafficAutomation::set` refuses Turn-Off unless cron read a readable log in the last five minutes; `turnOffUnavailable()` gives the one-line reason, also in `status` as `turn_off_unavailable`.
+- Verification:
+  - Unit test: refused before cron has run; unreadable format reported; a readable log unlocks it; an operator on is never turned off; a busy five-minute window keeps the mode on; asset-only traffic counts as quiet and the mode turns off with source `automatic`; a log not reaching back 30 minutes keeps it on; with Turn-Off unset it stays on; a cron check older than five minutes makes the switch unavailable again.
+  - Local Apache: the real combined-format access log was read (`Automation log: readable`) and `./v3 high-traffic auto-off on` then succeeded.
+  - `./v3 test --smoke HighTrafficAutomationTest HighTrafficTest HighTrafficPostRefreshTest`: 467 run, 467 passed. Full suite not run.
+  - Pending: parse a sample of the zenmemes.com access log; requested from the maintainer.
+- Notes:
+  - The quiet test is stateless: every five-minute window of the period must be quiet, so a single busy minute in the last 30 restarts the wait without stored timers.
+  - Placeholder logs in existing tests (`[now]`) are now reported as unreadable; refresh behaviour is unchanged.
+  - Reused: the bounded-tail limits (`read_bytes`, `lines`, `line_bytes`) and the existing cron command; no new cron line.
+- Estimate details: original scope as Step 3; uncertainty was medium; no revisions. Retrospective equals original.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

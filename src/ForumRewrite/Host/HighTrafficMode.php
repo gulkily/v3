@@ -28,6 +28,8 @@ final class HighTrafficMode
         $status['source']=HighTrafficAutomation::source($status);
         $status['turn_on_automatically']=($automation['Turn-On'] ?? 'no')==='yes';
         $status['turn_off_automatically']=($automation['Turn-Off'] ?? 'no')==='yes';
+        $unavailable=HighTrafficAutomation::turnOffUnavailable($this->cache);
+        if ($unavailable!==null) $status['turn_off_unavailable']=$unavailable;
         return $status;
     }
     /**

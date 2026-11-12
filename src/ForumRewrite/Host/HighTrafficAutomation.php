@@ -15,11 +15,27 @@ use ForumRewrite\Support\PublicationLock;
 final class HighTrafficAutomation
 {
     public const FILE = 'automation.txt';
-    private const KEYS = ['Turn-On', 'Turn-Off', 'Manual-Off-Hold', 'Changed-At', 'Reason'];
+    private const KEYS = ['Turn-On', 'Turn-Off', 'Manual-Off-Hold', 'Changed-At', 'Reason', 'Cron-Checked-At', 'Cron-Log'];
+    /** Cron must have read the log this recently before Turn-Off can be switched on. */
+    private const CRON_FRESH_SECONDS = 300;
     /** Seconds of request history the turn-on threshold is measured over. */
     public const TURN_ON_WINDOW = 15;
     /** Requests per second (PHP only) above which the mode turns on; FORUM_HIGH_TRAFFIC_AUTO_ON_RATE overrides. */
     public static function turnOnRate(): float { return self::number('FORUM_HIGH_TRAFFIC_AUTO_ON_RATE', 3.0); }
+    /** Requests per second (access log, pages only) below which the quiet period counts. */
+    public static function turnOffRate(): float { return self::number('FORUM_HIGH_TRAFFIC_AUTO_OFF_RATE', 0.5); }
+    /** Length of the quiet period before turning off; whole five-minute windows, at least five minutes. */
+    public static function turnOffSeconds(): int { return max(300, (int)self::number('FORUM_HIGH_TRAFFIC_AUTO_OFF_SECONDS', 1800)); }
+    /** Why Turn-Off cannot be switched on yet, or null when cron has read the log recently. */
+    public static function turnOffUnavailable(HighTrafficCache $cache, ?int $now = null): ?string
+    {
+        $values = self::read($cache);
+        $checked = strtotime($values['Cron-Checked-At'] ?? '');
+        if ($checked === false || $checked < ($now ?? time()) - self::CRON_FRESH_SECONDS) return 'Needs the per-minute cron job with an access log; see ./v3 high-traffic cron.';
+        $log = $values['Cron-Log'] ?? '';
+        if ($log !== 'readable') return 'Cron cannot read the access log (' . preg_replace('/^unreadable: /', '', $log) . ').';
+        return null;
+    }
     private static function number(string $key, float $default): float
     {
         $value = getenv($key);
@@ -73,6 +89,7 @@ final class HighTrafficAutomation
         return PublicationLock::withLock($cache->repositoryRoot, fn (): array => $cache->locked(function () use ($cache, $turnOn, $turnOff, $reason): array {
             $changes = ['Changed-At' => gmdate('c'), 'Reason' => substr($reason, 0, 200)];
             if ($turnOn !== null) $changes['Turn-On'] = $turnOn ? 'yes' : 'no';
+            if ($turnOff === true && ($why = self::turnOffUnavailable($cache)) !== null) throw new \RuntimeException($why);
             if ($turnOff !== null) $changes['Turn-Off'] = $turnOff ? 'yes' : 'no';
             return self::write($cache, $changes);
         }));
