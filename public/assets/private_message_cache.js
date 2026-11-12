@@ -18,10 +18,19 @@
     }
   }
 
+  // Saved copies are only used while this browser could still decrypt them live.
+  function hasPrivateKey() {
+    try {
+      return String(window.localStorage.getItem("forum_pki_private_key") || "").trim() !== "";
+    } catch (error) {
+      return false;
+    }
+  }
+
   function enabled() {
     return Boolean(document.querySelector('[data-private-message-cache="1"]'))
       && Boolean(window.indexedDB && window.crypto && window.crypto.subtle)
-      && fingerprint() !== "";
+      && fingerprint() !== "" && hasPrivateKey();
   }
 
   function request(store, action) {

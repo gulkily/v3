@@ -128,9 +128,11 @@ final class PrivateMessagePageControllerTest
             assertStringContains('Back to Messages', $conversation);
             assertStringContains('data-approved-identity="' . $viewer['identity_id'] . '"', $conversation);
             assertStringContains('data-role="private-message-template"', $conversation);
-            // Restart history lives under the ··· menu, which opens itself when a restart is required.
-            assertStringContains('data-role="history-more"', $conversation);
-            assertStringContains('data-role="history-restart"', $conversation);
+            // Restart history is hidden until a stale history position (or a failed restart) needs it.
+            assertStringContains('data-role="history-restart" hidden', $conversation);
+            if (str_contains($conversation, 'data-role="history-more"')) {
+                throw new RuntimeException('The ··· history menu should be gone.');
+            }
             preg_match('/data-history-page-cursor="([^"]+)"/', $conversation, $cursorMatch);
             assertSame(true, isset($cursorMatch[1]));
             $snapshot = $store->conversationPageFor('alice', 'bob', html_entity_decode($cursorMatch[1]));
