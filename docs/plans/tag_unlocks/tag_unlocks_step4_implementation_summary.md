@@ -111,3 +111,23 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty low. Slightly over because of the test-stub fix and browser test flakiness.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Folded replies
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - `post_card.php`: a reply that can take a state wraps its content in `<details class="post-resolution">`, open unless the reply is resolved or closed. The summary shows the state label, author, date (`M j`) and the first 90 characters of the body. Open replies hide the summary, so they look as before.
+  - `content-interactions.css`: the summary is hidden on open replies; the state label is solid green for Resolved and dashed muted for Closed; the summary line is one line with an ellipsis; the folded card hides its `#` permalink; the first line inside the fold keeps the card's top spacing. The hover reveal for same-author runs also reaches actions inside the fold.
+  - `theme-word97.css`, `theme-midnight.css`: their title-bar byline (`.post-card > .meta:first-child`) also matches the byline inside the fold.
+  - `thread_reactions.js`: `applyPostResolution` opens or closes the fold and updates the label after a tap.
+  - Browser fixture: the root and the closed reply are anonymous, so the test shows separate cards.
+- Verification:
+  - `node tests/browser/tag_unlocks.mjs`: without JavaScript the closed reply is folded and expands on tap, and the open reply shows in full. With JavaScript, tapping Resolved folds the reply, tapping the line expands it, and Reopen unfolds it, each surviving a reload. Folded line on one line inside the viewport and closed reply folded in all 16 themes (light, dark, console, lcd, chicago, vapor, forge, sticker, arena, thermal, whitehot, word97, midnight, chouse, gloss, engagify) at 375 px and 1280 px; contact sheet reviewed by eye. Passed three more single-theme runs.
+  - `./v3 test --smoke TagUnlocksTest PostSignalsTemplateTest ReactionOutboxTest NavIconSetsTest`: 466 run, 466 passed. Full suite not run.
+- Notes: in word97 a folded same-author continuation keeps some empty space under the line; separate cards look right. The fold summary is plain text, so a Markdown reply's excerpt shows its raw marks.
+- Estimate details: original scope unchanged; uncertainty medium (sixteen themes), resolved with only two theme files needing a selector.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

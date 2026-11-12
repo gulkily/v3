@@ -33,6 +33,22 @@ $unlockedPostTags = (($tagUnlocksEnabled ?? false) && isset($thread) && is_array
     : [];
 $postResolution = $unlockedPostTags !== [] && in_array((string) ($post['resolution_state'] ?? ''), $unlockedPostTags, true)
     ? (string) $post['resolution_state'] : null;
+// A reply that can take a state renders inside <details>: open replies stay open (summary hidden),
+// resolved and closed ones fold to the summary line, and any reader can expand them.
+$postFoldable = array_filter($unlockedPostTags, static fn (string $tag): bool => \ForumRewrite\Support\Tagsets::forApplication()->exclusiveGroupOf($tag) !== null) !== [];
+$postFoldExcerpt = '';
+$postFoldDate = '';
+if ($postFoldable) {
+    $postFoldExcerpt = trim((string) preg_replace('/\s+/u', ' ', (string) ($post['body'] ?? '')));
+    if (mb_strlen($postFoldExcerpt) > 90) {
+        $postFoldExcerpt = rtrim(mb_substr($postFoldExcerpt, 0, 89)) . '…';
+    }
+    try {
+        $postFoldDate = (new DateTimeImmutable((string) ($post['created_at'] ?? '')))->format('M j');
+    } catch (\Exception) {
+        $postFoldDate = '';
+    }
+}
 $viewerHasLikedPost = isset($viewerPostLikes[(string) $post['post_id']]);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
@@ -68,6 +84,10 @@ if ($isRunTail) {
 }
 ?>
 <article id="<?= $e($postAnchorId) ?>" class="card post-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $isContinuation ? ' continuation' : '' ?><?= $isRunTail ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($post['created_at'] ?? null) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $postResolution !== null ? ' data-resolution="' . $e($postResolution) . '"' : '' ?> data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $hoverTimeLabel !== '' ? ' data-time="' . $e($hoverTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
+<?php if ($postFoldable): ?>
+<details class="post-resolution" data-role="post-resolution"<?= $postResolution === null ? ' open' : '' ?>>
+  <summary class="post-resolution-summary" data-role="post-resolution-summary"><span class="post-resolution-state" data-role="post-resolution-label"><?= $e(ucfirst((string) ($postResolution ?? 'resolved'))) ?></span> <span class="post-resolution-line"><?= $e((string) ($post['author_label'] ?? '')) ?><?= $postFoldDate !== '' ? ' · ' . $e($postFoldDate) : '' ?><?= $postFoldExcerpt !== '' ? ' · ' . $e($postFoldExcerpt) : '' ?></span></summary>
+<?php endif; ?>
 <?php if ($metaLine !== '' && !$isContinuation): ?>
   <?= $metaLine ?>
 <?php endif; ?>
@@ -219,6 +239,9 @@ if (!is_array($postAnalysisLabels)) {
   </details>
 <?php endif; ?>
   </div>
+<?php if ($postFoldable): ?>
+</details>
+<?php endif; ?>
   <a class="post-card-permalink" href="/posts/<?= $e($post['post_id']) ?>" title="<?= $e($postPermalinkLabel) ?>" aria-label="<?= $e($postPermalinkLabel) ?>">#</a>
 </article>
 <?php if ($postAnalysisRelatedContent !== []): ?>

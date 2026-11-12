@@ -37,6 +37,23 @@ try {
   const card = (page, id) => page.locator(`.post-card[data-post-id="${id}"]`);
   const visible = async (locator) => (await locator.count()) > 0 && await locator.first().isVisible();
 
+  // 0. No JavaScript: the closed reply is folded to its summary line and expands natively.
+  const noScript = await browser.newContext({ javaScriptEnabled: false, viewport: viewports[0] });
+  try {
+    const page = await noScript.newPage();
+    await page.goto(`${base}/threads/${thread}`);
+    const closed = card(page, second);
+    const summary = closed.locator('[data-role="post-resolution-summary"]');
+    assert.equal(await summary.isVisible(), true);
+    assert.match(await summary.innerText(), /closed/i);
+    assert.match(await summary.innerText(), /Thread pages have no text version/);
+    assert.equal(await closed.locator('.body').isVisible(), false);
+    await summary.click();
+    assert.equal(await closed.locator('.body').isVisible(), true);
+    assert.equal(await card(page, first).locator('[data-role="post-resolution-summary"]').isVisible(), false);
+    assert.equal(await card(page, first).locator('.body').isVisible(), true);
+  } finally { await noScript.close(); }
+
   // 1. Signed-in approved viewer: Resolved folds state in place, survives a reload, Reopen clears it.
   const context = await browser.newContext({ serviceWorkers: 'block', viewport: viewports[1] });
   try {
@@ -60,6 +77,10 @@ try {
     await reply.locator('[data-tag="resolved"]').click();
     assert.match(await (await responsePromise).text(), /status=ok/);
     await page.waitForFunction(id => document.querySelector(`.post-card[data-post-id="${id}"]`)?.getAttribute('data-resolution') === 'resolved', first);
+    assert.equal(await reply.locator('.body').isVisible(), false, 'resolved reply folds');
+    assert.match(await reply.locator('[data-role="post-resolution-summary"]').innerText(), /resolved/i);
+    await reply.locator('[data-role="post-resolution-summary"]').click();
+    assert.equal(await reply.locator('.body').isVisible(), true, 'folded reply expands');
     assert.equal(await reply.locator('[data-tag="resolved"]').isHidden(), true);
     assert.equal(await reply.locator('[data-tag="open"]').isHidden(), false);
     await page.reload({ waitUntil: 'load' });
@@ -71,6 +92,8 @@ try {
     await card(page, first).locator('[data-tag="open"]').click();
     assert.match(await (await reopen).text(), /status=ok/);
     await page.waitForFunction(id => !document.querySelector(`.post-card[data-post-id="${id}"]`)?.hasAttribute('data-resolution'), first);
+    assert.equal(await card(page, first).locator('[data-role="post-resolution-summary"]').isVisible(), false);
+    assert.equal(await card(page, first).locator('.body').isVisible(), true);
     await page.reload();
     assert.equal(await card(page, first).getAttribute('data-resolution'), null);
   } finally { await context.close(); }
@@ -84,6 +107,10 @@ try {
         await ctx.addInitScript(({ theme }) => { localStorage.setItem('forum-zenmemes-theme', theme); }, { theme });
         const page = await ctx.newPage();
         await page.goto(`${base}/threads/${thread}`);
+        const folded = card(page, second).locator('[data-role="post-resolution-summary"]');
+        const foldBox = await folded.boundingBox();
+        if (!foldBox || foldBox.x < 0 || foldBox.x + foldBox.width > viewport.width + 1 || foldBox.height > 60) failures.push(`${theme} ${viewport.label}: folded line not one line inside the viewport (${JSON.stringify(foldBox)})`);
+        if (await card(page, second).locator('.body').isVisible()) failures.push(`${theme} ${viewport.label}: closed reply not folded`);
         const button = card(page, first).locator('[data-tag="closed"]');
         await card(page, first).hover();
         const box = await button.boundingBox();

@@ -1120,6 +1120,14 @@
       const isOpen = stateButton.getAttribute("data-tag") === "open";
       stateButton.hidden = isOpen === (state === "");
     });
+    const fold = root.querySelector('[data-role="post-resolution"]');
+    if (fold) {
+      fold.open = state === "";
+      const label = fold.querySelector('[data-role="post-resolution-label"]');
+      if (label && state !== "") {
+        label.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+      }
+    }
     if (typeof root.dispatchEvent === "function" && typeof CustomEvent === "function") {
       root.dispatchEvent(new CustomEvent("forum:post-resolution", { bubbles: true, detail: { state: state } }));
     }
