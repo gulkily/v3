@@ -1,5 +1,19 @@
 # Effort estimation trial ledger
 
+## Cycle v3/tag_unlocks
+
+2026-11-12T20:30:00Z — v3/tag_unlocks Step 4 closeout on `tag-unlocks`: Stages 1-7 committed; production verification pending maintainer deploy. [Summary](./tag_unlocks/tag_unlocks_step4_implementation_summary.md#cycle-retrospective). Retrospective cycle assessment **0.65** (projection 0.65); no split, no changed scope. Maintainer judgment pending; study acceptance pending.
+
+2026-11-12T13:20:00Z — v3/tag_unlocks Step 4 entry: Step 3 approved; projection **0.65** reaffirmed after the planning commit.
+
+2026-11-12T06:40:00Z — v3/tag_unlocks Step 3 handoff: Step 2 approved. [Checkpoint](./tag_unlocks/tag_unlocks_step3_development_plan.md#study-checkpoint). Seven stages; projected total **0.65** reaffirmed.
+
+2026-11-12T06:20:00Z — v3/tag_unlocks Step 2 handoff: Step 1 Revision 3 approved (per-reply resolved/closed, approved keys only, fold). [Checkpoint](./tag_unlocks/tag_unlocks_step2_feature_description.md#study-checkpoint). Projected total **0.65** (from 0.60): duplicate-mark guard and per-reply API state.
+
+2026-11-11T07:55:00Z — v3/tag_unlocks Step 1 Revision 1: maintainer pointed to the Agent Accessibility thread; scope v2 is per-reply done/closed with collapse, not thread status. Projected total **0.60** reaffirmed for Option A; options 0.60/0.45/0.50, changed scope.
+
+2026-11-11T06:45:00Z — v3/tag_unlocks Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./tag_unlocks/tag_unlocks_step1_solution_assessment.md#study-snapshots). Scope v1, recommended Option A (tagset file with exclusive groups; `meta` → open/in-progress/closed). Starting revision `6d0f9da1`, R1 hashes verified; extended/debug enabled. Pristine intake missing. Projected total **0.60**; options 0.60/0.45/0.35, non-additive. Single exposed Claude rater.
+
 ## Cycle v3/offline_compose
 
 2026-11-11T16:00:00Z — v3/offline_compose Step 4 local closeout: branch `feat/offline-compose`, planning `5520b837`, eight stage commits plus one stage-4 test fix. [Summary/closeout](./offline_compose/offline_compose_step4_implementation_summary.md#closeout). Whole-cycle 0.80 at entry; retrospective scope assessment **0.85**. Stage originals 0.05/0.12/0.10/0.10/0.10/0.15/0.10/0.06 (Stage 6 revised 0.18); retrospectives 0.05/0.10/0.10/0.08/0.08/0.18/0.12/0.06; non-additive. Corrective work inside the cycle: interrupted-send retry, draft restore over typing. Production replay, maintainer comfortable-fit and acceptance pending. Single exposed Claude rater.

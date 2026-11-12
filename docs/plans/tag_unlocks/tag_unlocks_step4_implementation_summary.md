@@ -131,3 +131,30 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty medium (sixteen themes), resolved with only two theme files needing a selector.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Release on zenmemes and close out
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.05 so far** (production verification pending)
+
+- Changes:
+  - New concept entry `docs/concepts/tagset.md`; `reaction_record.md` and `post_presentation.md` updated.
+  - Final diff review of `origin/main..tag-unlocks`: 28 non-plan files, all within the approved scope; `git diff --check` clean. No new dependencies.
+- Verification:
+  - Production, **pending (maintainer deploy)**: after deploy, the next startup rebuilds the read model (schema 55). Then mark the handled Agent Accessibility reports, check they fold on desktop and iPhone in three themes, check `get_thread` shows the markers, and confirm an unapproved key's mark leaves the reply open. Rebuild time on the production snapshot is pending too.
+  - Phone verification on a real iPhone: **not done** (Chromium at 375 px only).
+  - Feedback items: `docs/feedback/items/` has no matching item; PF-20261104-F02 (hide posts with expandable placeholders) is related but different, so no `Feedback:` trailer.
+- Notes: `llms.txt` describes the feature even when the flag is off; the API itself hides the state then.
+- Estimate details: original scope unchanged; the production part is pending, so this retrospective covers only the work done.
+
+## Cycle retrospective
+
+- Delivered: Stages 1-7 as planned; production verification pending. Starting revision `338215268` (main at branch time; Step 1 recorded `6d0f9da1`).
+- **Retrospective cycle assessment: 0.65**, matching the projection. Not measured time.
+- Additions inside scope: offline-intent dedupe for repeat marks, and theme selectors for the fold in word97 and midnight.
+- Corrective work: eager signed-intent lookup (Stage 2), test-stub `hasAttribute` (Stage 5), browser test load timing (Stage 5).
+- Checks run: focused classes per stage plus the smoke set; `tests/browser/tag_unlocks.mjs` in all 16 themes. Full suite not run. Baseline failure seen on main: `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder`.
+- Maintainer comfortable-fit judgment: **pending**.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
