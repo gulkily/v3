@@ -64,3 +64,26 @@ No supported findings.
 ### Uncertain assessments
 
 - "Numbered plan (<=1 page)" with seven required-field stages: cannot fit a page. Same suggestion as Steps 1–2: state whether the limit is a target or a cap.
+
+## 2026-11-12T17:19:22Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, planning-docs commit gate: moving the plans into `docs/plans/high_traffic_auto/` and committing them first kept implementation commits clean; link repair was needed because plans written at the top level used `./` links to shared files. Retain.
+- `step4_implementation_do.md`, one commit per stage with its summary update: produced a reviewable history and forced each stage's verification to be written down before moving on. Retain.
+- `implementation_standards.md`, "For a reported user/environment failure, replay that condition or explicitly report it unverified": kept the zenmemes.com replay listed as pending instead of letting the local harness stand in for it. Retain.
+- `step4_implementation_after.md`, item 7 (report blocked/pending explicitly, identify reproduced baseline failures): led to running the Apache and browser tests on unchanged `main`, which showed both failures were pre-existing. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only verification items: application change.
+- Follow-up cycles before merge: not used.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md`, extended-estimate stage records: a stage whose verification is partly pending after deploy (Stage 7) has no clear retrospective rule; recorded the local part with the pending part named. Suggest stating how to record a retrospective for a stage with a post-deploy check.
+- Timestamps typed by hand drifted from the real clock over a long session (corrected in a follow-up commit). Suggest recommending that agents take snapshot times from the system clock at write time.
