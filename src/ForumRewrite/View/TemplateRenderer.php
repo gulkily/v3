@@ -650,6 +650,7 @@ final class TemplateRenderer
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
+            'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
 

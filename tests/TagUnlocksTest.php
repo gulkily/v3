@@ -155,6 +155,38 @@ final class TagUnlocksTest
         });
     }
 
+    public function testThreadPageOffersStateButtonsOnlyOnMetaReplies(): void
+    {
+        $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
+            $app = new Application(dirname(__DIR__), $root, $database, dirname($database, 2) . '/public');
+            $html = $this->render($app, '/threads/root-001');
+            $reply = $this->card($html, 'reply-001');
+            assertStringContains('data-tag="resolved"', $reply);
+            assertStringContains('data-tag="closed"', $reply);
+            assertSame(1, preg_match('/data-tag="open"[^>]*hidden/', $reply));
+            assertStringNotContains('data-resolution=', $reply);
+            assertStringNotContains('data-state-tag', $this->card($html, 'root-001'));
+
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'closed', 'author_identity_id' => self::APPROVED]);
+            $reply = $this->card($this->render($app, '/threads/root-001'), 'reply-001');
+            assertStringContains('data-resolution="closed"', $reply);
+            assertSame(1, preg_match('/data-tag="resolved"[^>]*hidden/', $reply));
+            assertSame(0, preg_match('/data-tag="open"[^>]*hidden/', $reply));
+
+            assertStringNotContains('data-state-tag', $this->render($app, '/threads/thread-zenmemes-rules'));
+        });
+    }
+
+    private function card(string $html, string $postId): string
+    {
+        $start = strpos($html, 'id="post-' . $postId . '"');
+        if ($start === false) {
+            return '';
+        }
+        $end = strpos($html, '</article>', $start);
+        return substr($html, $start, $end === false ? null : $end - $start);
+    }
+
     private function render(Application $app, string $path): string
     {
         $_GET = [];

@@ -89,3 +89,25 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty low.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Resolved, Closed and Reopen buttons on replies
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - `TemplateRenderer` passes `tagUnlocksEnabled` to templates.
+  - `post_card.php`: on a reply whose thread carries a parent tag (board tags plus labels, read through the Fastmod overlay connection), renders `partials/post_unlocked_tags.php` after Like and Flag, and sets `data-resolution` on the card for a resolved or closed reply. Thread roots, retracted replies and the single-post page get no buttons.
+  - New `partials/post_unlocked_tags.php`: one button per unlocked tag, through the existing `apply-post-tag` action. State buttons carry `data-state-tag`; an open reply shows Resolved and Closed, a marked one shows Reopen (tag `open`). All three are rendered and swapped with `hidden`, so no reload is needed. Non-state unlocked tags (none shipped) would render as ordinary tag buttons.
+  - `thread_reactions.js`: state buttons are not remembered or kept pressed. On success an approved key's mark updates `data-resolution` and swaps the buttons (`applyPostResolution`, which also dispatches `forum:post-resolution` for Stage 6); an unapproved key sees "Saved. Only approved members' marks change a reply's state." A failed tap restores the button and shows the error; a retryable failure stays in the Outbox as before.
+  - Browser test `tests/browser/tag_unlocks.mjs` with fixture `tests/Support/tag_unlocks_browser_fixture.php`.
+- Verification:
+  - `TagUnlocksTest::testThreadPageOffersStateButtonsOnlyOnMetaReplies`: buttons only on `#meta` replies, swap after a mark, none on a non-meta thread.
+  - `./v3 test --smoke TagUnlocksTest PostSignalsTemplateTest ReactionOutboxTest ReactionRecordFormatParityTest TemplateRendererMediaEmbedsScriptTest`: first run failed three `ReactionOutboxTest` cases because their DOM stubs have no `hasAttribute`; switched to `getAttribute`, and `ReactionOutboxTest` reran 5/5. Full suite not run.
+  - `node tests/browser/tag_unlocks.mjs` (Playwright, Chromium): an approved viewer taps Resolved, the card gets `data-resolution="resolved"` and Reopen appears; it survives a reload; Reopen clears it and that survives a reload. Closed button inside the viewport in light, console and gloss at 375 px and 1280 px. Passed three runs in a row after the test waited for page load before tapping.
+  - Offline retry: not driven in the browser; the Outbox path is shared with Like and Flag (covered by `ReactionOutboxTest`), and state buttons only skip the "keep applied" step.
+- Notes: the fixture's replies share an author, so they render as one merged run; Stage 6's browser check uses a second author.
+- Estimate details: original scope unchanged; uncertainty low. Slightly over because of the test-stub fix and browser test flakiness.
+
+*— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

@@ -26,6 +26,13 @@ if ($agentReplyPostedId !== '') {
 $agentReplyIsUnfinished = $agentReplyPostedId === ''
     && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true);
 $isRetracted = ($post['retracted_at'] ?? null) !== null;
+// Tags this reply's thread unlocks (resources/tagsets.txt), e.g. resolved/closed on #meta replies.
+$unlockedPostTags = (($tagUnlocksEnabled ?? false) && isset($thread) && is_array($thread) && !$isRetracted
+    && ($post['thread_id'] ?? '') !== '' && (string) $post['post_id'] !== (string) ($thread['root_post_id'] ?? ''))
+    ? \ForumRewrite\Support\Tagsets::forApplication()->unlockedFor(array_merge($thread['board_tags'] ?? [], $thread['thread_labels'] ?? []))
+    : [];
+$postResolution = $unlockedPostTags !== [] && in_array((string) ($post['resolution_state'] ?? ''), $unlockedPostTags, true)
+    ? (string) $post['resolution_state'] : null;
 $viewerHasLikedPost = isset($viewerPostLikes[(string) $post['post_id']]);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
@@ -60,7 +67,7 @@ if ($isRunTail) {
     $metaLine .= '</p>';
 }
 ?>
-<article id="<?= $e($postAnchorId) ?>" class="card post-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $isContinuation ? ' continuation' : '' ?><?= $isRunTail ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($post['created_at'] ?? null) ?>" data-post-id="<?= $e($post['post_id']) ?>" data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $hoverTimeLabel !== '' ? ' data-time="' . $e($hoverTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
+<article id="<?= $e($postAnchorId) ?>" class="card post-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $isContinuation ? ' continuation' : '' ?><?= $isRunTail ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($post['created_at'] ?? null) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $postResolution !== null ? ' data-resolution="' . $e($postResolution) . '"' : '' ?> data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $hoverTimeLabel !== '' ? ' data-time="' . $e($hoverTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
 <?php if ($metaLine !== '' && !$isContinuation): ?>
   <?= $metaLine ?>
 <?php endif; ?>
@@ -149,6 +156,9 @@ if (!is_array($postAnalysisLabels)) {
       aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
+<?php endif; ?>
+<?php if ($unlockedPostTags !== []): ?>
+<?= $indent($partial('partials/post_unlocked_tags.php', ['post' => $post, 'unlockedPostTags' => $unlockedPostTags, 'postResolution' => $postResolution]), 2) ?>
 <?php endif; ?>
 <?php if ($showAgentReplyRequestButton && !$isRetracted): ?>
     <button
