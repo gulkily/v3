@@ -469,4 +469,4 @@ and repair its navigation and affected references. See the
 
 - [Deploy prompt in the page header](deploy_header_prompt/deploy_header_prompt_step3_development_plan.md) — operator Deploy now button in the header behind `FORUM_DEPLOY_HEADER_PROMPT_ENABLED`; Steps 1–3 approved.
 
-- [DM instant load](dm_instant_load/dm_instant_load_step3_development_plan.md) — conversations show read messages on first paint from an encrypted per-browser cache behind `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`; Steps 1–3 approved.
+- [DM instant load](dm_instant_load/dm_instant_load_step3_development_plan.md) — conversations show read messages on first paint from an encrypted per-browser cache behind `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`, including Messages list previews; complete and accepted on iPhone ([Step 4](dm_instant_load/dm_instant_load_step4_implementation_summary.md)).
