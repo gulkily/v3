@@ -11,7 +11,6 @@ final class PostRetractionRecordParser
     private const REQUIRED_HEADERS = [
         'Record-ID',
         'Created-At',
-        'Post-ID',
         'Operation',
         'Author-Identity-ID',
     ];
@@ -39,13 +38,16 @@ final class PostRetractionRecordParser
             throw new CanonicalRecordParseException('Post-retraction Operation must be retract in V1.');
         }
 
-        $postId = $record->headers['Post-ID'];
+        // The target is named by Target-ID, or by Post-ID in requests signed before the rename.
+        $target = RemovalTarget::fromHeaders($record->headers);
+        $postId = $target['id'];
+        $targetHeader = $target['legacy'] ? RemovalTarget::LEGACY_ID : RemovalTarget::ID;
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $postId) !== 1) {
-            throw new CanonicalRecordParseException('Post-retraction Post-ID is not a valid post identifier.');
+            throw new CanonicalRecordParseException('Post-retraction ' . $targetHeader . ' is not a valid identifier.');
         }
 
         if ($record->headers['Record-ID'] !== self::RECORD_ID_PREFIX . $postId) {
-            throw new CanonicalRecordParseException('Post-retraction Record-ID must be derived from Post-ID.');
+            throw new CanonicalRecordParseException('Post-retraction Record-ID must be derived from ' . $targetHeader . '.');
         }
 
         $authorIdentityId = $record->headers['Author-Identity-ID'];

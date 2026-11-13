@@ -66,12 +66,12 @@ final class LabelRemoval
 
     public static function decode(string $bytes, string $id): array
     {
-        $decoded = RemovalReceipt::decode($bytes); $h = $decoded['headers'];
-        if ($h['Authority'] !== 'local-operator' || $h['Post-ID'] !== $id) throw new RuntimeException('Mismatched local removal receipt.');
+        $decoded = RemovalReceipt::decode($bytes); $h = $decoded['headers']; $target = RemovalTarget::fromHeaders($h);
+        if ($h['Authority'] !== 'local-operator' || $target['id'] !== $id) throw new RuntimeException('Mismatched local removal receipt.');
         return ['acceptance_version'=>2,'source_id'=>$id,'source_hash'=>$h['Source-SHA256'],
             'operation'=>$h['Operation'],'accepted_at'=>$h['Accepted-At'],'actor'=>$h['Actor'],'labels'=>$decoded['labels'],
             'post'=>['post_id'=>$id,'thread_id'=>$h['Thread-ID'],'parent_id'=>$h['Parent-ID'] ?: null,
-                'created_at'=>$h['Post-Created-At'],'author_identity_id'=>$h['Author-Identity-ID'] ?: null,'thread_type'=>$h['Thread-Type'] ?: null]];
+                'created_at'=>$target['created_at'],'author_identity_id'=>$h['Author-Identity-ID'] ?: null,'thread_type'=>$h['Thread-Type'] ?: null]];
     }
 
     public static function all(string $root): array

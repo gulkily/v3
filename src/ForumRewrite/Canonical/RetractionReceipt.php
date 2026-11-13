@@ -43,8 +43,8 @@ final class RetractionReceipt
 
     public static function decode(string $bytes, string $id, string $request, string $signature): array
     {
-        $decoded = RemovalReceipt::decode($bytes); $h = $decoded['headers'];
-        if ($h['Authority'] !== 'signed-retraction' || $h['Post-ID'] !== $id || $decoded['labels'] !== []) {
+        $decoded = RemovalReceipt::decode($bytes); $h = $decoded['headers']; $target = RemovalTarget::fromHeaders($h);
+        if ($h['Authority'] !== 'signed-retraction' || $target['id'] !== $id || $decoded['labels'] !== []) {
             throw new RuntimeException('Invalid signed retraction receipt.');
         }
         if ($signature === '' || !hash_equals($h['Request-SHA256'], hash('sha256', $request))
@@ -57,7 +57,7 @@ final class RetractionReceipt
             'actor' => $h['Actor'], 'classification' => $h['Retraction-Class'], 'attribution' => $h['Retraction-Attribution'],
             'signed_request' => $request, 'signature' => $signature,
             'post' => ['post_id' => $id, 'thread_id' => $h['Thread-ID'], 'parent_id' => $h['Parent-ID'] ?: null,
-                'created_at' => $h['Post-Created-At'], 'author_identity_id' => $h['Author-Identity-ID'], 'thread_type' => $h['Thread-Type'] ?: null]];
+                'created_at' => $target['created_at'], 'author_identity_id' => $h['Author-Identity-ID'], 'thread_type' => $h['Thread-Type'] ?: null]];
     }
 
     private static function id(string $id): void
