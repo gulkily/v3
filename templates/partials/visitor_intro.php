@@ -5,8 +5,7 @@
 ?>
 <?php if (($siteDescription ?? '') !== ''): ?>
 <article class="card visitor-intro" data-visitor-intro>
-  <p><?= $e($siteDescription) ?> <a href="/about/">About</a></p>
-<?= $partial('partials/agent_prompt.php', ['promptId' => 'visitor-intro-agent-prompt']) ?>
+  <p><?= $e($siteDescription) ?> <a href="/about/">About</a><?php if (($agentPrompt ?? '') !== ''): ?> · <a href="/about/#agent">Agent prompt</a><?php endif; ?></p>
   <button type="button" data-visitor-intro-hide aria-label="Hide"><span aria-hidden="true">×</span></button>
 </article>
 <script>

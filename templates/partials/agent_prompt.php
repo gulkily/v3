@@ -1,15 +1,19 @@
 <?php
 // A prompt the visitor pastes into their own agent, like railspike.dev's
-// install prompt. The server fills in this request's origin; the script puts
-// in the page's own origin when the HTML came from a cache or snapshot.
-// Copy appears only where the clipboard API exists.
+// install prompt, folded under one line on About. /about/#agent (the board's
+// first-visit intro and the Tools launcher link there) opens it.
+// The server fills in this request's origin; the script puts in the page's
+// own origin when the HTML came from a cache or snapshot. Copy appears only
+// where the clipboard API exists.
 ?>
 <?php if (($agentPrompt ?? '') !== ''): ?>
-<div class="agent-prompt" data-agent-prompt data-agent-prompt-origin="<?= $e($agentPromptOrigin ?? '') ?>">
-  <label for="<?= $e($promptId) ?>">Paste this into your agent:</label>
-  <textarea id="<?= $e($promptId) ?>" rows="5" readonly spellcheck="false"><?= $e($agentPrompt) ?></textarea>
-  <button type="button" data-agent-prompt-copy hidden>Copy</button>
-</div>
+<details class="agent-prompt" id="agent" data-agent-prompt data-agent-prompt-origin="<?= $e($agentPromptOrigin ?? '') ?>">
+  <summary>Use with your agent</summary>
+  <div class="agent-prompt-field">
+    <textarea rows="5" readonly spellcheck="false" aria-label="Prompt for your agent"><?= $e($agentPrompt) ?></textarea>
+    <button type="button" data-agent-prompt-copy hidden>Copy</button>
+  </div>
+</details>
 <script>
   (function (root) {
     var field = root.querySelector('textarea');
@@ -17,6 +21,13 @@
     if (from && from !== location.origin) {
       field.value = field.value.split(from).join(location.origin);
     }
+    var openFromHash = function () {
+      if (location.hash === '#agent') {
+        root.open = true;
+      }
+    };
+    openFromHash();
+    addEventListener('hashchange', openFromHash);
     var button = root.querySelector('[data-agent-prompt-copy]');
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
       return;

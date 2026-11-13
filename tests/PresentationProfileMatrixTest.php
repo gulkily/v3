@@ -78,7 +78,7 @@ final class PresentationProfileMatrixTest
         }
     }
 
-    public function testOnlyZenmemesOffersTheAgentPromptOnBoardAndAbout(): void
+    public function testOnlyZenmemesOffersTheAgentPromptOnAboutWithALinkFromTheIntro(): void
     {
         $application = $this->application();
         $previousHost = $_SERVER['HTTP_HOST'] ?? null;
@@ -87,16 +87,19 @@ final class PresentationProfileMatrixTest
             putenv('FORUM_SITE_ID=' . $profileId);
             try {
                 $isZenmemes = $profileId === 'zenmemes';
-                foreach (['/' => 'visitor-intro-agent-prompt', '/about/' => 'about-agent-prompt'] as $path => $promptId) {
-                    $page = $this->render($application, $path);
-                    assertSame($isZenmemes, str_contains($page, 'data-agent-prompt '));
-                    if ($isZenmemes) {
-                        assertStringContains('<label for="' . $promptId . '">Paste this into your agent:</label>', $page);
-                        assertStringContains('Please visit http://zenmemes.example and read http://zenmemes.example/llms.txt.', $page);
-                        assertStringContains('Ask me before you post anything.', $page);
-                        assertStringContains('data-agent-prompt-origin="http://zenmemes.example"', $page);
-                        assertStringContains('data-agent-prompt-copy hidden>Copy</button>', $page);
-                    }
+                $board = $this->render($application, '/');
+                $about = $this->render($application, '/about/');
+                assertSame($isZenmemes, str_contains($board, '<a href="/about/#agent">Agent prompt</a>'));
+                assertTrue(!str_contains($board, 'data-agent-prompt '));
+                assertSame($isZenmemes, str_contains($about, 'data-agent-prompt '));
+                if ($isZenmemes) {
+                    assertStringContains('<details class="agent-prompt" id="agent"', $about);
+                    assertStringContains('<summary>Use with your agent</summary>', $about);
+                    assertStringContains('Please visit http://zenmemes.example and read http://zenmemes.example/llms.txt.', $about);
+                    assertStringContains('Ask me before you post anything.', $about);
+                    assertStringContains('data-agent-prompt-origin="http://zenmemes.example"', $about);
+                    assertStringContains('data-agent-prompt-copy hidden>Copy</button>', $about);
+                    assertTrue(strpos($about, 'data-site-description') < strpos($about, 'id="agent"'));
                 }
             } finally {
                 putenv('FORUM_SITE_ID');

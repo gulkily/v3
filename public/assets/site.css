@@ -1377,6 +1377,11 @@ pre {
   margin: 0 1.5rem 0 0;
 }
 
+/* Keep each link whole so "Agent prompt" never splits across lines. */
+.visitor-intro p a {
+  white-space: nowrap;
+}
+
 /* `:root` outranks themes' general button sizing. The invisible ::after gives
    the small button a 44px touch target without covering the sentence. */
 :root .visitor-intro > button {
@@ -1396,17 +1401,16 @@ pre {
   inset: -0.625rem;
 }
 
-/* Paste-into-your-agent prompt (first-visit intro and About). */
-.agent-prompt {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.35rem 0.5rem;
-  margin-top: 0.75rem;
+/* About: the paste-into-your-agent prompt, folded under one line. */
+.agent-prompt summary {
+  cursor: pointer;
 }
 
-.agent-prompt label {
-  grid-column: 1 / -1;
-  font-size: 0.9em;
+.agent-prompt-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .agent-prompt textarea {
@@ -1427,7 +1431,7 @@ pre {
 }
 
 @media (max-width: 40rem) {
-  .agent-prompt {
+  .agent-prompt-field {
     grid-template-columns: 1fr;
   }
 
