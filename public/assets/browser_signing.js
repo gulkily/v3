@@ -1385,7 +1385,7 @@
     }
 
     const preparedResponse = await submitUrlEncoded("/api/prepare_retraction", {
-      post_id: String(postId || ""),
+      target_id: String(postId || ""),
       actor_identity_id: actorIdentityId,
     });
     const prepared = parseRetractionResponse(
@@ -1400,7 +1400,7 @@
     const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
     const finalizedResponse = await submitUrlEncoded("/api/create_prepared_retraction", {
       prepare_token: prepared.prepareToken,
-      post_id: prepared.postId,
+      target_id: prepared.postId,
       record_path: prepared.recordPath,
       actor_identity_id: actorIdentityId,
       canonical_record: prepared.canonicalRecord,

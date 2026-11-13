@@ -14,6 +14,20 @@ final class PostRetractionScriptTest
         }
     }
 
+    /** Retraction calls name the target target_id; ordinary post publishing still sends post_id. */
+    public function testRetractionCallsSendTargetIdAndPostPublishingKeepsPostId(): void
+    {
+        $js = (string) file_get_contents(__DIR__ . '/../public/assets/browser_signing.js');
+        foreach (['/api/prepare_retraction', '/api/create_prepared_retraction'] as $route) {
+            $call = substr($js, (int) strpos($js, 'submitUrlEncoded("' . $route . '"'), 400);
+            assertSame(true, str_contains(strstr($call, '});', true), 'target_id:'), $route . ' must send target_id');
+            assertSame(false, str_contains(strstr($call, '});', true), 'post_id:'), $route . ' must not send post_id');
+        }
+        $finalize = substr($js, (int) strpos($js, 'async function finalizePreparedPost('), 400);
+        assertSame(true, str_contains($finalize, 'post_id: prepared.postId'), 'finalizePreparedPost must keep post_id');
+        assertSame(false, str_contains($finalize, 'target_id'), 'finalizePreparedPost must not send target_id');
+    }
+
     public function testRetractButtonConfirmsSubmitsAndReportsEachOutcome(): void
     {
         $command = 'node ' . escapeshellarg(__DIR__ . '/fixtures/post_retraction_script_check.js') . ' ' . escapeshellarg(self::SCRIPT) . ' 2>&1';

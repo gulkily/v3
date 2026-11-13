@@ -56,22 +56,22 @@ final class LabelRemoval
         $p = $record['post'];
         if (array_diff(array_keys($p), ['post_id','thread_id','parent_id','created_at','author_identity_id','thread_type'])
             || $p['post_id'] !== $record['source_id']) throw new RuntimeException('Invalid local removal structure.');
-        return RemovalReceipt::encode(['Format'=>'removal-acceptance-v1', 'Post-ID'=>$record['source_id'],
+        return RemovalReceipt::encode(['Format'=>'removal-acceptance-v1', RemovalTarget::ID=>$record['source_id'],
             'Operation'=>$record['operation'], 'Authority'=>'local-operator', 'Accepted-At'=>$record['accepted_at'],
             'Actor'=>$record['actor'], 'Source-SHA256'=>$record['source_hash'], 'Thread-ID'=>$p['thread_id'],
-            'Parent-ID'=>$p['parent_id'] ?? '', 'Post-Created-At'=>$p['created_at'],
+            'Parent-ID'=>$p['parent_id'] ?? '', RemovalTarget::CREATED_AT=>$p['created_at'],
             'Author-Identity-ID'=>$p['author_identity_id'] ?? '', 'Thread-Type'=>$p['thread_type'] ?? '',
             'Retraction-Class'=>'', 'Retraction-Attribution'=>'', 'Request-SHA256'=>'', 'Signature-SHA256'=>''], $record['labels']);
     }
 
     public static function decode(string $bytes, string $id): array
     {
-        $decoded = RemovalReceipt::decode($bytes); $h = $decoded['headers'];
-        if ($h['Authority'] !== 'local-operator' || $h['Post-ID'] !== $id) throw new RuntimeException('Mismatched local removal receipt.');
+        $decoded = RemovalReceipt::decode($bytes); $h = $decoded['headers']; $target = RemovalTarget::fromHeaders($h);
+        if ($h['Authority'] !== 'local-operator' || $target['id'] !== $id) throw new RuntimeException('Mismatched local removal receipt.');
         return ['acceptance_version'=>2,'source_id'=>$id,'source_hash'=>$h['Source-SHA256'],
             'operation'=>$h['Operation'],'accepted_at'=>$h['Accepted-At'],'actor'=>$h['Actor'],'labels'=>$decoded['labels'],
             'post'=>['post_id'=>$id,'thread_id'=>$h['Thread-ID'],'parent_id'=>$h['Parent-ID'] ?: null,
-                'created_at'=>$h['Post-Created-At'],'author_identity_id'=>$h['Author-Identity-ID'] ?: null,'thread_type'=>$h['Thread-Type'] ?: null]];
+                'created_at'=>$target['created_at'],'author_identity_id'=>$h['Author-Identity-ID'] ?: null,'thread_type'=>$h['Thread-Type'] ?: null]];
     }
 
     public static function all(string $root): array
