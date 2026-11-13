@@ -5536,8 +5536,8 @@ NODE;
         assertStringContains('records/posts/2026/07/19/signed-test.txt.asc', $committedFiles);
 
         $postPage = $this->renderMethod($application, 'GET', '/posts/signed-test');
-        assertStringContains('Source:', $postPage);
-        assertStringContains('Signature:', $postPage);
+        assertStringContains('<th scope="row">Source</th>', $postPage);
+        assertStringContains('<th scope="row">Signature</th>', $postPage);
         assertStringContains('/source/current/records/posts/2026/07/19/signed-test.txt.asc', $postPage);
     }
 

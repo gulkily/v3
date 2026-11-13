@@ -2090,7 +2090,7 @@ PHP;
         assertStringNotContains('href="/tags/board/', $board);
         assertStringNotContains('href="/tags/label/', $board);
         assertStringNotContains('Score: 0', $board);
-        assertStringContains('Score: 0', $post);
+        assertStringContains('<th scope="row">Score</th><td>0</td>', $post);
         assertStringNotContains('Labels: bug, needs-review', $board);
         assertStringContains('Hello world', $thread);
         assertStringContains('Labels: <a href="/tags/bug">bug</a>, <a href="/tags/needs-review">needs-review</a>', $thread);
@@ -2174,11 +2174,11 @@ PHP;
         assertStringNotContains('BEGIN PGP PUBLIC KEY BLOCK', $post);
         assertStringContains('by <a href="/user/guest">guest</a> on <time datetime="2026-04-10T12:00:00Z">Apr 10, 2026 at 12:00 UTC</time>', $post);
         assertStringContains('/compose/reply?thread_id=root-001&amp;parent_id=root-001', $post);
-        assertStringContains('Source:', $post);
+        assertStringContains('<th scope="row">Source</th>', $post);
         assertStringContains('href="/source/current/records/posts/root-001.txt"', $post);
-        assertStringContains('Commit:', $post);
+        assertStringContains('<th scope="row">Commit</th>', $post);
         assertStringContains('commit unavailable', $post);
-        assertStringContains('Signature:', $post);
+        assertStringContains('<th scope="row">Signature</th>', $post);
         assertStringContains('anonymous unsigned', $post);
         foreach ([$instance, $backup, $toolsBackup] as $page) {
             assertStringContains('Backup', $page);
@@ -2529,7 +2529,7 @@ PHP;
         assertStringNotContains($href, $thread);
         assertStringContains($href, $post);
         assertSame(1, substr_count($post, $href));
-        assertOrdered($post, 'Signature:', 'Public key:');
+        assertOrdered($post, '<th scope="row">Signature</th>', '<th scope="row">Public key</th>');
     }
 
     public function testThreadRootCardOmitsDuplicateTitleLine(): void
@@ -2793,7 +2793,7 @@ PHP;
         $activity = $this->render($application, '/activity/?view=content');
         $signature = $this->render($application, '/source/current/records/posts/root-001.txt.asc');
 
-        assertStringContains('Signature:', $post);
+        assertStringContains('<th scope="row">Signature</th>', $post);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $post);
         assertStringContains('detached signature', $activity);
         assertStringContains('href="/source/current/records/posts/root-001.txt.asc"', $activity);
@@ -3106,7 +3106,7 @@ PHP;
         assertStringNotContains('href="/threads/root-001"', $allThreads);
         assertStringContains('id="post-root-001"', $thread);
         assertStringContains('id="post-reply-001"', $thread);
-        assertStringContains('Score: -100', $post);
+        assertStringContains('<th scope="row">Score</th><td>-100</td>', $post);
 
         $this->deleteTree($repositoryRoot);
         @unlink($databasePath);
