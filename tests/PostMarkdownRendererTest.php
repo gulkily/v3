@@ -26,15 +26,16 @@ final class PostMarkdownRendererTest
     {
         $source = "| A | B | C | D |\n| --- | --- | --- | --- |\n| 1 | 2 | 3 | 4 |";
         $post = PublicMarkdownRenderer::renderPost($source);
-        assertStringContains('<div class="post-table"><div class="zoom-buttons post-table-zoom" role="group" aria-label="Text size">', $post);
+        assertStringContains('<div class="zoom-table zoom-table--post" data-zoom-kind="post"><div class="zoom-buttons zoom-table-buttons" role="group" aria-label="Text size">', $post);
         assertStringContains('data-table-zoom="out"', $post);
         assertStringContains('data-table-zoom="fit"', $post);
         assertStringContains('data-table-zoom="page"', $post);
         assertStringContains('data-table-zoom="in"', $post);
-        assertStringContains('<div class="docs-table-scroll" style="--table-min: ', $post);
+        assertStringContains('<div class="zoom-table-scroll" style="--table-min: ', $post);
+        assertStringContains('</tbody></table></div></div>', $post);
         assertStringContains('</table></div></div>', $post);
         $doc = PublicMarkdownRenderer::render($source);
-        assertStringNotContains('post-table', $doc);
+        assertStringNotContains('zoom-table', $doc);
         assertStringNotContains('--table-min', $doc);
         assertStringContains('<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table"><table>', $doc);
     }

@@ -210,6 +210,7 @@ $testFiles = [
     __DIR__ . '/MarkdownTaskListTest.php',
     __DIR__ . '/PostMarkdownRendererTest.php',
     __DIR__ . '/ZoomButtonsTest.php',
+    __DIR__ . '/ZoomTableTest.php',
     __DIR__ . '/PostTextTest.php',
     __DIR__ . '/MarkdownDetectTest.php',
     __DIR__ . '/PostFormatRecordTest.php',

@@ -33,14 +33,17 @@
         }
       } catch (error) {}
       try {
-        // Post table text size (table_zoom.js), restored before paint.
-        var tableZoomSaved = localStorage.getItem('table-zoom');
-        var tableZoom = parseFloat(tableZoomSaved);
-        if (tableZoomSaved === 'page') {
-          document.documentElement.setAttribute('data-table-size', 'page');
-        } else if (tableZoom >= 0.5 && tableZoom <= 8) {
-          document.documentElement.style.setProperty('--table-zoom', String(tableZoom));
-        }
+        // Zoom table text size per kind (ZoomTable, table_zoom.js), restored before paint.
+        var tableZoomKeys = <?= json_encode(\ForumRewrite\View\ZoomTable::KINDS, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+        Object.keys(tableZoomKeys).forEach(function (kind) {
+          var saved = localStorage.getItem(tableZoomKeys[kind]);
+          var zoom = parseFloat(saved);
+          if (saved === 'page') {
+            document.documentElement.setAttribute('data-table-size-' + kind, 'page');
+          } else if (zoom >= 0.5 && zoom <= 8) {
+            document.documentElement.style.setProperty('--table-zoom-' + kind, String(zoom));
+          }
+        });
       } catch (error) {}
 <?php if ($navSlotCount > 0): ?>
       try {
