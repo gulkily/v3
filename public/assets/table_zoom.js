@@ -1,13 +1,16 @@
-// Text size for tables in Markdown posts on phones (site.css, .post-table, --table-min).
-// --table-zoom on <html> multiplies each table's fitted size; the Smaller, Fit and Larger
-// buttons and a pinch on a table change it for every table. Actual size instead sets
-// data-table-size="page" on <html>, which puts every table at the page's own text size.
-// Either is saved for later pages (layout.php restores it before paint). The pinch changes
-// font size rather than scaling, so text stays sharp and cells reflow.
+// Text size for zoom tables on phones (ZoomTable.php, site.css .zoom-table, --table-min):
+// post tables, Tools tables and the calendar (text mode: full width, only the text scales). Each kind of table has its own size: --table-zoom-<kind> on
+// <html> multiplies that kind's fitted size, and Actual size instead sets
+// data-table-size-<kind>="page" on <html>, which puts that kind at the page's own text size.
+// The Smaller, Fit, Actual size and Larger buttons and a pinch on a table change the size for
+// every table of its kind, and it is saved for later pages (layout.php restores it before
+// paint, with the same keys). The pinch changes font size rather than scaling, so text stays
+// sharp and cells reflow.
 (function () {
   "use strict";
 
-  var KEY = "table-zoom";
+  // Kind => localStorage key; matches ZoomTable::KINDS and layout.php.
+  var KEYS = { post: "table-zoom", tools: "table-zoom-tools", calendar: "table-zoom-calendar" };
   var MIN = 0.5;
   var MAX = 8;
   var root = document.documentElement;
@@ -16,51 +19,64 @@
     return Math.min(MAX, Math.max(MIN, value));
   }
 
-  function pageSize() {
-    return root.getAttribute("data-table-size") === "page";
+  function kindOf(element) {
+    var wrapper = element && element.closest && element.closest(".zoom-table");
+    var kind = wrapper && wrapper.getAttribute("data-zoom-kind");
+    return kind && Object.prototype.hasOwnProperty.call(KEYS, kind) ? kind : null;
   }
 
-  function current() {
-    var value = parseFloat(root.style.getPropertyValue("--table-zoom"));
+  function pageSize(kind) {
+    return root.getAttribute("data-table-size-" + kind) === "page";
+  }
+
+  function current(kind) {
+    var value = parseFloat(root.style.getPropertyValue("--table-zoom-" + kind));
     return value > 0 ? value : 1;
   }
 
-  // The zoom factor that would show this table at its current size. At Actual size that is
-  // page text over the table's fitted size, so Smaller, Larger and pinch carry on from there.
-  function factorFor(table) {
-    if (!pageSize() || !table) { return current(); }
-    var scroller = table.parentElement;
-    var style = window.getComputedStyle(scroller);
-    var minimum = parseFloat(style.getPropertyValue("--table-min")) || 60;
-    var width = scroller.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-    var pagePx = parseFloat(window.getComputedStyle(scroller.parentElement).fontSize);
-    var fitPx = Math.min(pagePx, width / minimum);
-    return fitPx > 0 ? pagePx / fitPx : 1;
+  // The zoom factor that would show this table at its current size, so Smaller, Larger and
+  // pinch carry on from the size on screen. At Actual size in fit mode that is the table's
+  // text size now over its size at zoom 1 (measured with Actual size briefly off).
+  function factorFor(kind, table) {
+    if (!pageSize(kind) || !table) { return current(kind); }
+    if (table.closest(".zoom-table--text")) {
+      // Text mode: Actual size sets --table-zoom to the table's --table-page-scale (a number).
+      var scale = parseFloat(window.getComputedStyle(table).getPropertyValue("--table-zoom"));
+      return scale > 0 ? scale : 1;
+    }
+    var pagePx = parseFloat(window.getComputedStyle(table).fontSize);
+    var saved = root.style.getPropertyValue("--table-zoom-" + kind);
+    root.removeAttribute("data-table-size-" + kind);
+    root.style.setProperty("--table-zoom-" + kind, "1");
+    var basePx = parseFloat(window.getComputedStyle(table).fontSize);
+    root.setAttribute("data-table-size-" + kind, "page");
+    if (saved) { root.style.setProperty("--table-zoom-" + kind, saved); } else { root.style.removeProperty("--table-zoom-" + kind); }
+    return basePx > 0 ? pagePx / basePx : 1;
   }
 
-  function apply(value) {
-    root.removeAttribute("data-table-size");
-    root.style.setProperty("--table-zoom", String(Math.round(clamp(value) * 1000) / 1000));
+  function apply(kind, value) {
+    root.removeAttribute("data-table-size-" + kind);
+    root.style.setProperty("--table-zoom-" + kind, String(Math.round(clamp(value) * 1000) / 1000));
   }
 
-  function save() {
-    try { window.localStorage.setItem(KEY, pageSize() ? "page" : String(current())); } catch (error) {}
+  function save(kind) {
+    try { window.localStorage.setItem(KEYS[kind], pageSize(kind) ? "page" : String(current(kind))); } catch (error) {}
   }
 
   document.addEventListener("click", function (event) {
     var button = event.target.closest && event.target.closest("[data-table-zoom]");
-    if (!button) { return; }
+    var kind = kindOf(button);
+    if (!kind) { return; }
     var action = button.getAttribute("data-table-zoom");
     if (action === "page") {
-      root.setAttribute("data-table-size", "page");
+      root.setAttribute("data-table-size-" + kind, "page");
     } else if (action === "fit") {
-      apply(1);
+      apply(kind, 1);
     } else {
-      var group = button.closest(".post-table");
-      var start = factorFor(group && group.querySelector(".docs-table-scroll table"));
-      apply(start * (action === "in" ? 1.25 : 0.8));
+      var table = button.closest(".zoom-table").querySelector(".zoom-table-scroll table");
+      apply(kind, factorFor(kind, table) * (action === "in" ? 1.25 : 0.8));
     }
-    save();
+    save(kind);
   });
 
   var pinch = null;
@@ -78,7 +94,7 @@
     var box = scroller.getBoundingClientRect();
     var fx = (scroller.scrollLeft + pinch.x - box.left) / (scroller.scrollWidth || 1);
     var fy = (pinch.y - before.top) / (before.height || 1);
-    apply(value);
+    apply(pinch.kind, value);
     var after = table.getBoundingClientRect();
     scroller.scrollLeft = fx * scroller.scrollWidth - (pinch.x - box.left);
     window.scrollBy(0, after.top + fy * after.height - pinch.y);
@@ -86,17 +102,20 @@
 
   document.addEventListener("touchstart", function (event) {
     if (event.touches.length !== 2) { return; }
-    var scroller = event.target.closest && event.target.closest(".post-table .docs-table-scroll");
+    var scroller = event.target.closest && event.target.closest(".zoom-table-scroll");
     var table = scroller && scroller.querySelector("table");
-    if (!table || window.getComputedStyle(scroller).touchAction.indexOf("pan") === -1) { return; }
+    var kind = kindOf(scroller);
+    if (!table || !kind || window.getComputedStyle(scroller).touchAction.indexOf("pan") === -1) { return; }
+    var start = factorFor(kind, table);
     pinch = {
+      kind: kind,
       scroller: scroller,
       table: table,
       start: distance(event.touches),
-      zoom: factorFor(table),
+      zoom: start,
       x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
       y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
-      next: factorFor(table)
+      next: start
     };
   }, { passive: true });
 
@@ -115,8 +134,8 @@
     if (!pinch || event.touches.length >= 2) { return; }
     if (frame) { window.cancelAnimationFrame(frame); frame = 0; }
     zoomAround(pinch.next);
+    save(pinch.kind);
     pinch = null;
-    save();
   }
   document.addEventListener("touchend", endPinch, { passive: true });
   document.addEventListener("touchcancel", endPinch, { passive: true });
