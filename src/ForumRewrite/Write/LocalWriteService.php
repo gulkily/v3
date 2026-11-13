@@ -17,6 +17,7 @@ use ForumRewrite\Canonical\PostRecord;
 use ForumRewrite\Canonical\PostRecordParser;
 use ForumRewrite\Canonical\PostReactionRecordParser;
 use ForumRewrite\Canonical\PostRetractionRecordParser;
+use ForumRewrite\Canonical\RemovalTarget;
 use ForumRewrite\Canonical\ReactionRecordParser;
 use ForumRewrite\Canonical\RecordReceipt;
 use ForumRewrite\Canonical\RetractedPosts;
@@ -923,6 +924,7 @@ class LocalWriteService
      */
     public function prepareRetraction(array $input): array
     {
+        $input = self::retractionTargetInput($input);
         return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $totalStartedAt = hrtime(true);
@@ -946,7 +948,7 @@ class LocalWriteService
             $targetAuthor = $post->authorIdentityId;
             $contents = 'Record-ID: ' . PostRetractionRecordParser::RECORD_ID_PREFIX . $postId . "\n"
                 . "Created-At: {$createdAt}\n"
-                . "Post-ID: {$postId}\n"
+                . RemovalTarget::ID . ": {$postId}\n"
                 . "Operation: retract\n"
                 . "Author-Identity-ID: {$targetAuthor}\n"
                 . ($targetAuthor === $authorIdentityId ? '' : "Actor-Identity-ID: {$authorIdentityId}\nRetraction-Class: operator\n")
@@ -964,6 +966,7 @@ class LocalWriteService
             return array_merge($prepared, [
                 'status' => 'ok',
                 'post_id' => $postId,
+                'target_id' => $postId,
                 'thread_id' => $threadId,
                 'record_path' => $recordPath,
                 'canonical_record' => $contents,
@@ -983,6 +986,7 @@ class LocalWriteService
      */
     public function finalizePreparedRetraction(array $input): array
     {
+        $input = self::retractionTargetInput($input);
         return $this->withTimedWriteLock(function () use ($input): array {
             $this->assertWritableRepository();
             $timings = [];
@@ -1397,6 +1401,25 @@ class LocalWriteService
      * @param array<string, float> $timings
      * @return array<string, mixed>
      */
+    /**
+     * Retraction calls name their target as target_id; post_id stays an alias for older clients.
+     * Both may be sent only when they agree. Downstream code reads the resolved value as post_id.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    private static function retractionTargetInput(array $input): array
+    {
+        $target = (string) ($input['target_id'] ?? '');
+        $alias = (string) ($input['post_id'] ?? '');
+        if ($target !== '' && $alias !== '' && $target !== $alias) {
+            throw new RuntimeException('target_id and post_id name different records; send target_id only.');
+        }
+        $input['post_id'] = $target !== '' ? $target : $alias;
+        unset($input['target_id']);
+        return $input;
+    }
+
     private function retractionResult(
         string $postId,
         string $threadId,
@@ -1441,6 +1464,7 @@ class LocalWriteService
             'failed_step' => $failedStep,
             'already_retracted' => $alreadyRetracted,
             'post_id' => $postId,
+            'target_id' => $postId,
             'thread_id' => $threadId,
             'record_path' => $recordPath,
             'signature_path' => $recordPath . '.asc',

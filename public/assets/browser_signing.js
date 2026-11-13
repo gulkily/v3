@@ -1243,7 +1243,7 @@
   async function finalizePreparedPost(fields, prepared, detachedSignature) {
     const payload = {
       prepare_token: prepared.prepareToken,
-      post_id: prepared.postId,
+      target_id: prepared.postId,
       record_path: prepared.recordPath,
       author_identity_id: fields.author_identity_id,
       canonical_record: prepared.canonicalRecord,
@@ -1385,7 +1385,7 @@
     }
 
     const preparedResponse = await submitUrlEncoded("/api/prepare_retraction", {
-      post_id: String(postId || ""),
+      target_id: String(postId || ""),
       actor_identity_id: actorIdentityId,
     });
     const prepared = parseRetractionResponse(

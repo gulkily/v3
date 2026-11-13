@@ -30,10 +30,10 @@ final class RetractionReceipt
             throw new RuntimeException('Unexpected retraction metadata.');
         }
         if ($post['post_id'] !== $record['post_id'] || $record['version'] !== 1) throw new RuntimeException('Invalid retraction record.');
-        $bytes = RemovalReceipt::encode(['Format'=>'removal-acceptance-v1', 'Post-ID'=>$record['post_id'],
+        $bytes = RemovalReceipt::encode(['Format'=>'removal-acceptance-v1', RemovalTarget::ID=>$record['post_id'],
             'Operation'=>'delete', 'Authority'=>'signed-retraction', 'Accepted-At'=>$record['accepted_at'],
             'Actor'=>$record['actor'], 'Source-SHA256'=>$record['source_hash'] ?? '', 'Thread-ID'=>$post['thread_id'],
-            'Parent-ID'=>$post['parent_id'] ?? '', 'Post-Created-At'=>$post['created_at'],
+            'Parent-ID'=>$post['parent_id'] ?? '', RemovalTarget::CREATED_AT=>$post['created_at'],
             'Author-Identity-ID'=>$post['author_identity_id'], 'Thread-Type'=>$post['thread_type'] ?? '',
             'Retraction-Class'=>$record['classification'], 'Retraction-Attribution'=>$record['attribution'],
             'Request-SHA256'=>hash('sha256', $record['signed_request']), 'Signature-SHA256'=>hash('sha256', $record['signature'])]);

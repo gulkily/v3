@@ -93,6 +93,16 @@ final class RetractionTargetIdTest
         }
     }
 
+    public function testLocalOperatorReceiptsAreWrittenWithTargetId(): void
+    {
+        $record = LabelRemoval::decode(RemovalReceipt::encode($this->receipt(true)), 'root');
+        $bytes = LabelRemoval::encode($record);
+        assertSame(true, str_contains($bytes, "\nTarget-ID: root\n"));
+        assertSame(true, str_contains($bytes, "\nTarget-Created-At: 2026-10-25T12:00:00Z\n"));
+        assertSame(false, str_contains($bytes, 'Post-ID'));
+        assertSame($record, LabelRemoval::decode($bytes, 'root'));
+    }
+
     public function testPostsCannotUseReactionPrefixes(): void
     {
         $post = fn (string $id): string => "Post-ID: $id\nCreated-At: 2026-10-25T12:00:00Z\nAuthor-Identity-ID: " . self::AUTHOR . "\nBoard-Tags: general\n\nprose\n";

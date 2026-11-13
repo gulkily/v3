@@ -15,7 +15,8 @@ final class RetractionReceiptTest
     public function testReadableReceiptBindsExactEvidence(): void
     {
         $r = $this->record(); $text = RetractionReceipt::encode($r);
-        assertSame(true, str_starts_with($text, "Format: removal-acceptance-v1\nPost-ID: root\n"));
+        assertSame(true, str_starts_with($text, "Format: removal-acceptance-v1\nTarget-ID: root\n"));
+        assertSame(false, str_contains($text, 'Post-ID'));
         assertSame(false, str_contains($text, 'secret prose'));
         assertSame(false, str_contains($text, 'signature\\n'));
         assertSame($r, RetractionReceipt::decode($text, 'root', $r['signed_request'], $r['signature']));

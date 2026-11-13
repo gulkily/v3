@@ -56,10 +56,10 @@ final class LabelRemoval
         $p = $record['post'];
         if (array_diff(array_keys($p), ['post_id','thread_id','parent_id','created_at','author_identity_id','thread_type'])
             || $p['post_id'] !== $record['source_id']) throw new RuntimeException('Invalid local removal structure.');
-        return RemovalReceipt::encode(['Format'=>'removal-acceptance-v1', 'Post-ID'=>$record['source_id'],
+        return RemovalReceipt::encode(['Format'=>'removal-acceptance-v1', RemovalTarget::ID=>$record['source_id'],
             'Operation'=>$record['operation'], 'Authority'=>'local-operator', 'Accepted-At'=>$record['accepted_at'],
             'Actor'=>$record['actor'], 'Source-SHA256'=>$record['source_hash'], 'Thread-ID'=>$p['thread_id'],
-            'Parent-ID'=>$p['parent_id'] ?? '', 'Post-Created-At'=>$p['created_at'],
+            'Parent-ID'=>$p['parent_id'] ?? '', RemovalTarget::CREATED_AT=>$p['created_at'],
             'Author-Identity-ID'=>$p['author_identity_id'] ?? '', 'Thread-Type'=>$p['thread_type'] ?? '',
             'Retraction-Class'=>'', 'Retraction-Attribution'=>'', 'Request-SHA256'=>'', 'Signature-SHA256'=>''], $record['labels']);
     }

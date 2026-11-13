@@ -39,3 +39,26 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged; no revisions. Retrospective: about as planned; finding that receipts must round-trip unchanged settled the "return headers as stored" design. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Write the new form; accept target_id
+
+**Original estimate: 0.12**
+**Retrospective estimate: 0.12**
+
+- Changes:
+  - `LocalWriteService`: the retraction request builder writes `Target-ID`. A new `retractionTargetInput()` runs at the start of `prepareRetraction` and `finalizePreparedRetraction`. It takes `target_id`, falls back to `post_id`, and rejects both when they differ. Everything downstream still reads the resolved value, so prepared-token matching and replay are unchanged. Prepare and result responses add `target_id` and keep `post_id`.
+  - `RetractionReceipt::encode` and `LabelRemoval::encode` write `Target-ID` and `Target-Created-At`, so both signed receipts and `./v3 delete-record` / label-repair receipts use the new form.
+  - `public/assets/browser_signing.js` sends `target_id` to both retraction calls.
+  - Tests: new `WriteApiSmokeTest::testRetractionWritesTargetIdAndStillReadsPostIdRetractions`. It covers a conflicting `target_id`/`post_id`, a `target_id` prepare and finalize, the written request and receipt bytes, a hand-written pre-rename `Post-ID` retraction side by side with a new one through a full `./v3 rebuild`, and an `already_retracted` replay through the `post_id` alias. New `RetractionTargetIdTest::testLocalOperatorReceiptsAreWrittenWithTargetId`. `RetractionReceiptTest` now expects `Target-ID` in the receipt.
+- Verification:
+  - Passed: `./v3 test --smoke` plus RetractionTargetIdTest, RemovalReceiptTest, RetractionReceiptTest, AcceptedRetractionTest, CanonicalRecordParsersTest, ReadModelPostRetractionsTest, RetractionTransactionTest, PostRetractionScriptTest, RetractionMaintenanceTest, RetractionSweepTest, AbsentRetractionSnapshotTest, RetractedLeafFilterTest, HistoryPurgeTest, HistoryPurgePlannerTest, PurgeHistoryCommandTest, SourceRouteCommitMapTest, ThreadTitleWithdrawalAndConsumersTest, HistoryRewriteTest, WriteApiSmokeTest, SingleRequestPostingTest and LlmsTxtRendererTest: 746 run, 746 passed, 0 failed. That includes the existing operator-retraction tests and the existing `post_id` prepare helper.
+  - Passed: `./v3 test DeleteRecordCommandTest DeleteThreadCommandTest ContentImportPlannerTest ContentImportRecoveryTest ImportInstanceCommandTest ImportedContentPublicationTest`, 51 passed.
+  - Passed: `php -l` on the changed PHP, and `node --check public/assets/browser_signing.js`.
+  - Inapplicable here: a browser click-through of Retract. The browser path differs only in the parameter name, which is covered by the API test. The live check is in Stage 3.
+  - Not run: the full suite.
+- Notes:
+  - Existing clients that send `post_id` (`public/frm.py`, Claude's zenmemes-posting skill, older cached `browser_signing.js`) keep working through the alias.
+  - `delete_record.php` needed no change. Its `Post-ID` output fields describe the deleted record itself, not a retraction target, and its receipts come from `LabelRemoval::encode`.
+- Estimate details: original scope as in Step 3, unchanged; no revisions. Retrospective: as planned. Rater: Claude, the same exposed rater.
+
+*— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*
