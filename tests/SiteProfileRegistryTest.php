@@ -154,6 +154,7 @@ final class SiteProfileRegistryTest
             assertSame($profile['browserNamespace'], $runtime['namespace']);
             assertSame('forum-' . $profile['browserNamespace'] . '-theme', $runtime['themeStorageKey']);
             assertSame('forum-' . $profile['browserNamespace'] . '-thread-density', $runtime['threadDensityStorageKey']);
+            assertSame('forum-' . $profile['browserNamespace'] . '-reading-margins', $runtime['readingMarginsStorageKey']);
             assertSame($profile['browserNamespace'] . '-offline-reader-', $runtime['offlineCachePrefix']);
             assertSame($runtime['offlineCachePrefix'] . 'v16', $runtime['offlineCacheName']);
         }

@@ -19,6 +19,7 @@ use RuntimeException;
 final class TemplateRenderer
 {
     private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
+    private const READING_MARGINS_PAGE_TEMPLATES = ['thread.php'];
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
@@ -108,9 +109,14 @@ final class TemplateRenderer
         }
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true)
             && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
+        $showReadingMargins = in_array($pageTemplate, self::READING_MARGINS_PAGE_TEMPLATES, true)
+            && $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED);
         $pageStylesheetPaths = [];
         foreach (self::PAGE_STYLESHEET_PATHS[$pageTemplate] ?? [] as $stylesheetPath) {
             $pageStylesheetPaths[] = $this->assetPath($stylesheetPath);
+        }
+        if ($showReadingMargins) {
+            $pageStylesheetPaths[] = $this->assetPath('/assets/reading-margins.css');
         }
 
         if ($hasQueryDialog) {
@@ -130,6 +136,7 @@ final class TemplateRenderer
             $publicAuthenticationResume,
             $pageStylesheetPaths,
             is_string($pageData['threadTheme'] ?? null) ? $pageData['threadTheme'] : null,
+            $showReadingMargins,
         );
     }
 
@@ -147,6 +154,7 @@ final class TemplateRenderer
         bool $publicAuthenticationResume = false,
         array $pageStylesheetPaths = [],
         ?string $threadTheme = null,
+        bool $showReadingMargins = false,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
@@ -243,6 +251,7 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'routeSource' => $routeSource,
             'showThreadDensityToggle' => $showThreadDensityToggle,
+            'showReadingMargins' => $showReadingMargins,
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,
@@ -268,6 +277,7 @@ final class TemplateRenderer
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'memberApprovalScriptPath' => $this->assetPath('/assets/member_approval.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
+            'readingMarginsScriptPath' => $this->assetPath('/assets/reading_margins.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'replyViewportScriptPath' => $this->assetPath('/assets/reply_viewport.js'),
             'composeDisclosureScriptPath' => $this->assetPath('/assets/compose_disclosure.js'),
