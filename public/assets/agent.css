@@ -1,0 +1,49 @@
+/* /agent/: copyable prompts, laid out like railspike.dev's install prompt. */
+.agent-page__prompt + .agent-page__prompt {
+  margin-top: 1.5rem;
+}
+
+.copy-prompt__label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.copy-prompt__field {
+  position: relative;
+}
+
+.copy-prompt textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 8rem;
+  /* Show the whole prompt where supported; rows="5" elsewhere. */
+  field-sizing: content;
+  padding-bottom: 3.6rem;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+
+/* `:root` outranks themes that stretch buttons on phones. */
+:root .copy-prompt__button {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+}
+
+:root .copy-prompt__button[hidden] {
+  display: none;
+}
+
+.copy-prompt__status {
+  min-height: 1.4em;
+  margin: 0.35rem 0 0;
+}
