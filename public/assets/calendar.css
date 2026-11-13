@@ -3,9 +3,10 @@
   flex-wrap: wrap;
   gap: 0.75rem;
 }
-.calendar-scroll {
-  overflow-x: auto;
-}
+/* The grid sits in a ZoomTable in text mode (ZoomTable.php, table_zoom.js): on phones
+   Smaller, Actual size and Larger change --table-zoom, which scales the event titles and
+   counts below. Day numbers grow only up to the page's text size, and the month name and
+   weekdays stay as they are. Actual size sets --table-zoom to --table-page-scale. */
 .calendar-grid {
   width: 100%;
   min-width: 36rem;
@@ -141,13 +142,22 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
   .calendar-day__number {
     display: block;
     min-height: 2.4rem;
+    font-size: min(0.8rem * var(--table-zoom, 1), 1rem);
     text-decoration: none;
   }
   .calendar-day__count {
     display: block;
     margin-top: 0.2rem;
-    font-size: 0.7rem;
+    font-size: calc(0.7rem * var(--table-zoom, 1));
     color: var(--ink-soft);
+  }
+  /* Actual size: event titles at the page's text size (they are 0.3rem at zoom 1), and in
+     the counts view the count at the page's text size too. Numbers keep the scale exact. */
+  .calendar .zoom-table--calendar {
+    --table-page-scale: 1.4286;
+  }
+  .calendar--titles .zoom-table--calendar {
+    --table-page-scale: 3.3333;
   }
   .calendar-day__entries,
   .calendar-day__more {
@@ -166,7 +176,7 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
     /* A block, so the cell's own line height does not push it down. */
     display: block;
     min-height: 0;
-    font-size: 0.65rem;
+    font-size: min(0.65rem * var(--table-zoom, 1), 1rem);
     line-height: 1;
   }
   /* The titles say what is on; the count would only repeat it. */
@@ -184,14 +194,14 @@ table.calendar-grid td.calendar-day--confirmed .calendar-day__count {
     -webkit-line-clamp: 2;
     overflow: hidden;
     overflow-wrap: break-word;
-    font-size: 0.3rem;
+    font-size: calc(0.3rem * var(--table-zoom, 1));
     line-height: 1.15;
-    margin: 0 0 0.1rem;
+    margin: 0 0 0.1em;
   }
   .calendar--titles .calendar-entry a {
     text-decoration: none;
   }
 }
-.calendar-nav + .calendar-scroll {
+.calendar-nav + .zoom-table {
   margin-top: 0.75rem;
 }

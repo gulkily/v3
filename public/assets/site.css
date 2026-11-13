@@ -1648,7 +1648,8 @@ pre {
   padding: 0.25rem 0.4rem;
 }
 /* Tables with their own text-size controls on phones (ZoomTable.php, table_zoom.js): post
-   tables and Tools tables such as Visitor statistics. A table opens fitted to the screen and
+   tables, Tools tables such as Visitor statistics, and the calendar (text mode, below).
+   Fit mode: a table opens fitted to the screen and
    fills its width; the browser sizes the columns from their content. --table-min (set per
    table by ZoomTable) is the table's estimated narrowest width in em: each column's longest
    word plus cell padding. The fitted text size is the largest at which that fits, never above
@@ -1667,6 +1668,7 @@ pre {
 .zoom-table-buttons { display: none; }
 .zoom-table--post { --table-zoom: var(--table-zoom-post, 1); }
 .zoom-table--tools { --table-zoom: var(--table-zoom-tools, 1); }
+.zoom-table--calendar { --table-zoom: var(--table-zoom-calendar, 1); }
 @media (max-width: 639px) {
   .zoom-table-buttons { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
   .zoom-table-scroll { container-type: inline-size; touch-action: pan-x pan-y; }
@@ -1674,12 +1676,19 @@ pre {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     width: 100%;
+  }
+  .zoom-table--fit table {
     font-size: calc(1em * var(--table-zoom, 1));
     font-size: calc(min(1em, 100cqw / var(--table-min, 60)) * var(--table-zoom, 1));
   }
-  .zoom-table :is(td, th) :is(a, code) { overflow-wrap: anywhere; }
+  .zoom-table--fit :is(td, th) :is(a, code) { overflow-wrap: anywhere; }
   :root[data-table-size-post="page"] .zoom-table--post table,
   :root[data-table-size-tools="page"] .zoom-table--tools table { font-size: 1em; }
+  /* Text mode (the calendar): full width always. The table's own CSS decides which text
+     scales with --table-zoom; Actual size sets --table-zoom to the table's
+     --table-page-scale, a plain number, which table_zoom.js reads back. */
+  .zoom-table--text .zoom-table-scroll { overflow-x: hidden; }
+  :root[data-table-size-calendar="page"] .zoom-table--calendar table { --table-zoom: var(--table-page-scale, 1); }
 }
 .post-markdown .docs-align-center { text-align: center; }
 .post-markdown .docs-align-right { text-align: right; }

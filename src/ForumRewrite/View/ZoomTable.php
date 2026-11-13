@@ -12,6 +12,11 @@ namespace ForumRewrite\View;
  * once zoomed past that. Buttons: Smaller, Fit, Actual size, Larger; pinching on the table
  * zooms it too.
  *
+ * Text mode (the calendar): the table always keeps its full width and only its text size
+ * changes. Buttons: Smaller, Actual size, Larger; pinching zooms it too. What Actual size
+ * means is up to the table's own CSS (--table-page-scale; the calendar puts event titles at
+ * the page's text size).
+ *
  * Each kind of table remembers its own size, so post tables can stay at Actual size while
  * Tools tables stay small. layout.php restores every kind before paint.
  */
@@ -21,7 +26,10 @@ final class ZoomTable
     public const KINDS = [
         'post' => 'table-zoom',
         'tools' => 'table-zoom-tools',
+        'calendar' => 'table-zoom-calendar',
     ];
+
+    public const MODES = ['fit', 'text'];
 
     /** Horizontal padding plus border of one table cell, in em (site.css: 0.5em each side). */
     public const CELL_PADDING_EM = 1.1;
@@ -31,16 +39,24 @@ final class ZoomTable
 
     /**
      * Opens the wrapper, the buttons and the scrolling box; the caller writes the <table>
-     * and then close(). $minimumEm comes from minimumEm() or columnMinimumEm().
+     * and then close(). In fit mode $minimumEm comes from minimumEm() or columnMinimumEm();
+     * text mode ignores it.
      */
-    public static function open(string $kind, float $minimumEm, string $label = 'Table'): string
+    public static function open(string $kind, float $minimumEm, string $label = 'Table', string $mode = 'fit'): string
     {
         if (!isset(self::KINDS[$kind])) {
             throw new \InvalidArgumentException('Unknown zoom table kind: ' . $kind);
         }
-        return '<div class="zoom-table zoom-table--' . $kind . '" data-zoom-kind="' . $kind . '">'
-            . ZoomButtons::group('div', 'zoom-table-buttons', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in'])
-            . '<div class="zoom-table-scroll" style="--table-min: ' . number_format(max(1.0, $minimumEm), 1, '.', '') . '"'
+        if (!in_array($mode, self::MODES, true)) {
+            throw new \InvalidArgumentException('Zoom table mode must be fit or text.');
+        }
+        $buttons = $mode === 'fit'
+            ? ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in']
+            : ['smaller' => 'out', 'actual' => 'page', 'larger' => 'in'];
+        return '<div class="zoom-table zoom-table--' . $kind . ' zoom-table--' . $mode . '" data-zoom-kind="' . $kind . '">'
+            . ZoomButtons::group('div', 'zoom-table-buttons', 'data-table-zoom', $buttons)
+            . '<div class="zoom-table-scroll"'
+            . ($mode === 'fit' ? ' style="--table-min: ' . number_format(max(1.0, $minimumEm), 1, '.', '') . '"' : '')
             . ' tabindex="0" role="region" aria-label="' . htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">';
     }
 

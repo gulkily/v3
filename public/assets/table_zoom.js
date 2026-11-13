@@ -1,5 +1,5 @@
 // Text size for zoom tables on phones (ZoomTable.php, site.css .zoom-table, --table-min):
-// post tables and Tools tables. Each kind of table has its own size: --table-zoom-<kind> on
+// post tables, Tools tables and the calendar (text mode: full width, only the text scales). Each kind of table has its own size: --table-zoom-<kind> on
 // <html> multiplies that kind's fitted size, and Actual size instead sets
 // data-table-size-<kind>="page" on <html>, which puts that kind at the page's own text size.
 // The Smaller, Fit, Actual size and Larger buttons and a pinch on a table change the size for
@@ -10,7 +10,7 @@
   "use strict";
 
   // Kind => localStorage key; matches ZoomTable::KINDS and layout.php.
-  var KEYS = { post: "table-zoom", tools: "table-zoom-tools" };
+  var KEYS = { post: "table-zoom", tools: "table-zoom-tools", calendar: "table-zoom-calendar" };
   var MIN = 0.5;
   var MAX = 8;
   var root = document.documentElement;
@@ -34,19 +34,24 @@
     return value > 0 ? value : 1;
   }
 
-  // The zoom factor that would show this table at its current size. At Actual size that is
-  // page text over the table's fitted size (measured with Actual size briefly off), so
-  // Smaller, Larger and pinch carry on from the size on screen.
+  // The zoom factor that would show this table at its current size, so Smaller, Larger and
+  // pinch carry on from the size on screen. At Actual size in fit mode that is the table's
+  // text size now over its size at zoom 1 (measured with Actual size briefly off).
   function factorFor(kind, table) {
     if (!pageSize(kind) || !table) { return current(kind); }
+    if (table.closest(".zoom-table--text")) {
+      // Text mode: Actual size sets --table-zoom to the table's --table-page-scale (a number).
+      var scale = parseFloat(window.getComputedStyle(table).getPropertyValue("--table-zoom"));
+      return scale > 0 ? scale : 1;
+    }
+    var pagePx = parseFloat(window.getComputedStyle(table).fontSize);
     var saved = root.style.getPropertyValue("--table-zoom-" + kind);
     root.removeAttribute("data-table-size-" + kind);
     root.style.setProperty("--table-zoom-" + kind, "1");
-    var fitPx = parseFloat(window.getComputedStyle(table).fontSize);
+    var basePx = parseFloat(window.getComputedStyle(table).fontSize);
     root.setAttribute("data-table-size-" + kind, "page");
     if (saved) { root.style.setProperty("--table-zoom-" + kind, saved); } else { root.style.removeProperty("--table-zoom-" + kind); }
-    var pagePx = parseFloat(window.getComputedStyle(table.closest(".zoom-table")).fontSize);
-    return fitPx > 0 ? pagePx / fitPx : 1;
+    return basePx > 0 ? pagePx / basePx : 1;
   }
 
   function apply(kind, value) {
