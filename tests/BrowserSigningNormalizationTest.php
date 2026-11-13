@@ -6447,6 +6447,136 @@ NODE;
         assertSame('/threads/root-001?created_post_id=reply-002#post-reply-002', $result['assignedUrl']);
     }
 
+    public function testThreadReactionUsesAppliedMessageForStatus(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const events = [];
+const marks = [];
+const debugEvents = [];
+let now = 0;
+let clickHandler = null;
+
+class HTMLButtonElement {
+  constructor() {
+    this.disabled = false;
+    this.textContent = 'Like';
+    this.attributes = {};
+  }
+  getAttribute(name) {
+    if (name === 'data-tag') return 'like';
+    if (name === 'data-applied-label') return 'Liked';
+    if (name === 'data-applied-message') return 'Like added';
+    return this.attributes[name] || null;
+  }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  closest(selector) {
+    return selector === '[data-action="apply-thread-tag"]' ? this : null;
+  }
+}
+
+const button = new HTMLButtonElement();
+const scoreNode = { textContent: 'Score: 0' };
+const feedbackNode = { textContent: '', hidden: true, setAttribute(name, value) { this[name] = value; } };
+const root = {
+  getAttribute(name) {
+    return name === 'data-thread-id' ? 'root-001' : '';
+  },
+  querySelector(selector) {
+    if (selector === '[data-role="thread-score"]') return scoreNode;
+    if (selector === '[data-role="thread-reaction-feedback"]') return feedbackNode;
+    return null;
+  },
+  addEventListener(type, handler) {
+    if (type === 'click') {
+      clickHandler = handler;
+    }
+  }
+};
+
+global.Element = HTMLButtonElement;
+global.HTMLButtonElement = HTMLButtonElement;
+global.window = {
+  location: { search: '?debug_timing=1' },
+  performance: {
+    now() {
+      now += 10;
+      return now;
+    },
+    mark(name, options) {
+      marks.push({ name, action: options && options.detail ? options.detail.action : '' });
+    }
+  },
+  __forumBrowserIdentity: {
+    async ensureActionIdentity(receivedRoot, receivedFeedback) {
+      events.push(receivedRoot === root ? 'ensure-root' : 'ensure-wrong-root');
+      events.push(receivedFeedback === feedbackNode ? 'ensure-feedback' : 'ensure-wrong-feedback');
+      events.push(arguments[2] && arguments[2].verifyPublishedIdentity === false ? 'ensure-fast' : 'ensure-verified');
+      events.push('ensure');
+    }
+  }
+};
+global.console = {
+  info(label, payload) {
+    debugEvents.push({ label, payload });
+  }
+};
+global.fetch = async function(url) {
+  events.push(url);
+  return {
+    headers: {
+      get(name) {
+        return name === 'Server-Timing' ? 'lock_wait;dur=1.2, total;dur=3.4' : '';
+      }
+    },
+    async text() {
+      return 'status=ok\nscore_total=1\nwrote_record=yes\nviewer_is_approved=yes\n';
+    }
+  };
+};
+global.document = {
+  addEventListener(type, handler) {
+    if (type === 'DOMContentLoaded') {
+      handler();
+    }
+  },
+  querySelector(selector) {
+    if (selector === '[data-thread-reactions-root]') {
+      return root;
+    }
+    return null;
+  }
+};
+
+vm.runInThisContext(source);
+clickHandler({
+  target: button,
+  preventDefault() {}
+}).then(() => {
+  process.stdout.write(JSON.stringify({
+    events,
+    score: scoreNode.textContent,
+    feedback: feedbackNode.textContent,
+    feedbackHidden: feedbackNode.hidden,
+    buttonDisabled: button.disabled,
+    buttonText: button.textContent,
+    ariaPressed: button.attributes['aria-pressed'] || '',
+    marks,
+    debugEvents
+  }));
+});
+NODE;
+
+        $result = $this->runThreadReactionScript($script);
+
+        assertSame('Like added.', $result['feedback']);
+        assertSame('Liked', $result['buttonText']);
+    }
+
     public function testThreadReactionBootstrapsIdentityBeforeApplyingLike(): void
     {
         $script = <<<'NODE'

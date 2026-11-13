@@ -980,10 +980,20 @@
     };
   }
 
-  function postReactionMessage(appliedLabel, wroteRecord) {
+  function postReactionMessage(appliedLabel, wroteRecord, appliedMessage) {
     const label = String(appliedLabel || "Applied").trim() || "Applied";
     const lowerLabel = label.toLowerCase();
-    return wroteRecord ? `${label}.` : `Already ${lowerLabel}.`;
+    if (wroteRecord) {
+      return appliedMessageText(appliedMessage, label);
+    }
+    return `Already ${lowerLabel}.`;
+  }
+
+  // A button may set data-applied-message (e.g. Forte's "Like added") to word
+  // the status line differently from the applied button label.
+  function appliedMessageText(appliedMessage, appliedLabel) {
+    const message = String(appliedMessage || "").trim();
+    return `${message || appliedLabel}.`;
   }
 
   function bindThreadReactions(root) {
@@ -1070,7 +1080,7 @@
         }
 
         const confirmationMessage = wroteRecord
-          ? `${appliedLabel}.`
+          ? appliedMessageText(button.getAttribute("data-applied-message"), appliedLabel)
           : `Already ${appliedLabel.toLowerCase()}.`;
         setFeedback(feedbackNode, confirmationMessage, "ok");
       } catch (error) {
@@ -1231,7 +1241,7 @@
           return;
         }
 
-        setFeedback(feedbackNode, postReactionMessage(appliedLabel, wroteRecord), "ok");
+        setFeedback(feedbackNode, postReactionMessage(appliedLabel, wroteRecord, button.getAttribute("data-applied-message")), "ok");
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
       } catch (error) {

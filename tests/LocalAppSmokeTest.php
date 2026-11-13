@@ -1788,8 +1788,8 @@ PHP;
 
             $_COOKIE = [];
             $anonymousForte = $this->render($application, '/forte?selected=root-001');
-            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-001" data-applied-label="Liked" aria-pressed="false">Like</button>', $anonymousForte);
-            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" aria-pressed="false">Like</button>', $anonymousForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-001" data-applied-label="Liked" data-applied-message="Like added" aria-pressed="false">Like</button>', $anonymousForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" data-applied-message="Like added" aria-pressed="false">Like</button>', $anonymousForte);
             assertStringContains('data-action="apply-post-tag" data-tag="flag" data-post-id="reply-001"', $anonymousForte);
 
             file_put_contents(
@@ -1803,7 +1803,7 @@ PHP;
             $_COOKIE = ['identity_hint' => 'guest'];
             $likedForte = $this->render($application, '/forte?selected=root-001');
 
-            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" aria-pressed="true" disabled>Liked</button>', $likedForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" data-applied-message="Like added" aria-pressed="true" disabled>Liked</button>', $likedForte);
         } finally {
             $_COOKIE = [];
             $this->deleteTree($repositoryRoot);
