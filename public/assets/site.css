@@ -1401,47 +1401,6 @@ pre {
   inset: -0.625rem;
 }
 
-/* About: the paste-into-your-agent prompt, folded under one line. */
-.agent-prompt summary {
-  cursor: pointer;
-}
-
-.agent-prompt-field {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.agent-prompt textarea {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  resize: vertical;
-  /* Show the whole prompt where supported; rows="5" elsewhere. */
-  field-sizing: content;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.85em;
-  line-height: 1.4;
-}
-
-.agent-prompt button {
-  align-self: start;
-  min-height: 44px;
-}
-
-@media (max-width: 40rem) {
-  .agent-prompt-field {
-    grid-template-columns: 1fr;
-  }
-
-  /* `:root` outranks themes that stretch buttons on phones. */
-  :root .agent-prompt button {
-    justify-self: start;
-    width: auto;
-  }
-}
-
 /* Member-only links (Messages, Invite) are in every viewer's HTML; the head
    script marks a browser remembered as approved before paint. */
 :root:not([data-member="approved"]) [data-member-only] {

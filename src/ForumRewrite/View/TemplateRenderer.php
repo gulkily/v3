@@ -23,6 +23,7 @@ final class TemplateRenderer
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
         'themes.php' => ['/assets/themes.css'],
+        'agent.php' => ['/assets/agent.css'],
         'activity.php' => ['/assets/activity.css', '/assets/access-history.css'],
         'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
@@ -630,11 +631,20 @@ final class TemplateRenderer
     }
 
     /**
+     * /agent/ exists when the flag is on and the profile has prompts.
+     */
+    public function agentPageEnabled(): bool
+    {
+        return $this->featureFlags->isEnabled(FeatureFlagRegistry::AGENT_PROMPT_ENABLED)
+            && \ForumRewrite\ProfilePresentationContent::agentPrompts(SiteProfileRegistry::active(), '') !== [];
+    }
+
+    /**
      * This request's origin for copy that names the site, such as the agent
      * prompt. Pages rendered without a request (caches, offline snapshots)
      * get a placeholder that the page's own script replaces before paint.
      */
-    private static function requestOrigin(): string
+    public static function requestOrigin(): string
     {
         $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
         if ($host === '' || preg_match('/^[A-Za-z0-9.\-:\[\]]+$/D', $host) !== 1) {
@@ -663,21 +673,19 @@ final class TemplateRenderer
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
-            'agentPrompt' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AGENT_PROMPT_ENABLED)
-                ? \ForumRewrite\ProfilePresentationContent::agentPrompt(SiteProfileRegistry::active(), self::requestOrigin())
-                : '',
+            'agentPageEnabled' => $this->agentPageEnabled(),
             'agentPromptOrigin' => self::requestOrigin(),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
-        // The Agent Prompt tool only opens About's prompt; drop it where there is none.
-        if ($data['agentPrompt'] === '') {
+        // The Agent Prompts tool opens /agent/; drop it where that page is off.
+        if (!$data['agentPageEnabled']) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {
                 if (isset($data[$toolListKey]) && is_array($data[$toolListKey])) {
                     $data[$toolListKey] = array_values(array_filter(
                         $data[$toolListKey],
-                        static fn (array $tool): bool => ($tool['key'] ?? '') !== 'agent-prompt',
+                        static fn (array $tool): bool => ($tool['key'] ?? '') !== 'agent-prompts',
                     ));
                 }
             }

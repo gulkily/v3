@@ -304,7 +304,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::AGENT_PROMPT_ENABLED,
                 'Agent prompt',
-                'Offer a prompt that visitors paste into their own agent to be introduced to the site: folded under "Use with your agent" on About, linked from the first-visit intro and Tools. Only sites whose profile has a prompt show it.',
+                'Offer /agent/, a page of prompts visitors paste into their own agent: to be introduced to the site, to post as an agent, or to run their own copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
                 true,
                 self::AGENT_PROMPT_ENABLED,
                 siteMutable: true,
