@@ -123,15 +123,19 @@ Branch: `feature/dm_instant_load`, from `origin/main` at `f13dd20f`. Planning co
 
 **Original estimate: 0.05**
 
-- Status: pending maintainer. Needs the PR merged, `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED` turned on (Tools → Feature flags, "Saved message copies"), then on iPhone Safari: open a conversation once, reopen it, and confirm text shows immediately at the newest message. Desktop evidence does not satisfy this.
-- If it still opens on "…" or jumps: turn the flag off to restore today's behavior.
-- Retrospective assessment: pending until evidence exists.
+- First check (2026-11-11, after #169): the maintainer's iPhone Safari screen recording showed faster reads but placeholders on the Messages list and in conversations. Cause: the flag never reached page templates (see follow-up below).
+- Acceptance (after #177, #178): the maintainer confirmed in session that the Messages list and reopened conversations load without placeholders on desktop and iPhone (2026-11-12), and that #178's Restart history and scroll changes look good on iPhone (2026-11-13). Evidence is the maintainer's in-session report; no recording of the passing state was kept.
+- Estimate details: original scope was confirmation only; actual work grew into the follow-up fixes, recorded there.
 
-## Cycle closeout (pending Stage 6)
+**Retrospective stage-work assessment: 0.15** — the first check found a defect that needed a second PR.
 
-- Technical completion: Stages 1–5 committed and pushed on `feature/dm_instant_load`; Stage 6 pending. Not merged.
-- Retrospective whole-cycle assessment: pending Stage 6. Stage retrospectives so far: 0.10, 0.15, 0.15, 0.15, 0.05.
+## Cycle closeout
+
+- Technical completion: complete. Merged in #169, with follow-ups #177 (list previews, flag fix) and #178 (Restart history only when needed, scroll under composer, saved copies require the private key).
+- Production acceptance: accepted on iPhone Safari and desktop by the maintainer.
+- Retrospective whole-cycle assessment: 0.85 — above the 0.70 projection because the flag defect and list previews required a follow-up cycle of work.
+- Lesson: the "flag on" browser check silently took its flag-off branch; checks now assert that the flag reaches the page.
 
 ## Follow-up after merge
 
-- 2026-11-12: Stage 6 on iPhone Safari found placeholders still showing; the flag had never reached the page. Fixed with list previews and earlier lookups in [the follow-up record](./dm_instant_load_followup_list_and_flag.md). Stage 6 acceptance remains pending.
+- 2026-11-12: Stage 6 on iPhone Safari found placeholders still showing; the flag had never reached the page. Fixed with list previews and earlier lookups in [the follow-up record](./dm_instant_load_followup_list_and_flag.md); accepted afterwards (Stage 6).
