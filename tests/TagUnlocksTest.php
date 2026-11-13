@@ -169,12 +169,12 @@ final class TagUnlocksTest
             assertStringNotContains('data-resolution=', $reply);
             $root = $this->card($html, 'root-001');
             assertStringContains('data-tag="closed"', $root);
-            assertSame(1, preg_match('/data-role="post-resolution-label"[^>]*hidden/', $root));
+            assertSame(1, preg_match('/data-role="post-state-label"[^>]*hidden/', $root));
             assertStringNotContains('data-role="post-resolution"', $root);
             $writer->applyPostTag(['post_id' => 'root-001', 'tag' => 'resolved', 'author_identity_id' => self::APPROVED]);
             $root = $this->card($this->render($app, '/threads/root-001'), 'root-001');
             assertStringContains('data-resolution="resolved"', $root);
-            assertSame(0, preg_match('/data-role="post-resolution-label"[^>]*hidden/', $root));
+            assertSame(0, preg_match('/data-role="post-state-label"[^>]*hidden/', $root));
             assertSame(1, preg_match('/post-resolution-state[^>]*>Resolved</', $root));
 
             $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'closed', 'author_identity_id' => self::APPROVED]);
@@ -184,6 +184,37 @@ final class TagUnlocksTest
             assertSame(0, preg_match('/data-tag="open"[^>]*hidden/', $reply));
 
             assertStringNotContains('data-state-tag', $this->render($app, '/threads/thread-zenmemes-rules'));
+        });
+    }
+
+    public function testClaimShowsWhoHasItWithoutFolding(): void
+    {
+        $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
+            $app = new Application(dirname(__DIR__), $root, $database, dirname($database, 2) . '/public');
+            $reply = $this->card($this->render($app, '/threads/root-001'), 'reply-001');
+            assertSame(0, preg_match('/data-tag="claimed"[^>]*hidden/', $reply));
+            assertStringContains('>Claim</button>', $reply);
+
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'claimed', 'author_identity_id' => self::APPROVED, 'action_at' => '2026-11-13T10:00:00Z']);
+            $name = (string) (new PDO('sqlite:' . $database))->query("SELECT COALESCE(NULLIF(username, ''), fallback_label) FROM profiles WHERE identity_id = '" . self::APPROVED . "'")->fetchColumn();
+            assertSame(true, $name !== '');
+            $reply = $this->card($this->render($app, '/threads/root-001'), 'reply-001');
+            assertStringContains('data-resolution="claimed"', $reply);
+            assertStringContains('>Claimed by ' . htmlspecialchars($name) . '</span>', $reply);
+            assertSame(1, preg_match('/<details class="post-resolution" data-role="post-resolution" open>/', $reply), 'claimed replies stay unfolded');
+            assertSame(1, preg_match('/data-tag="claimed"[^>]*hidden/', $reply));
+            assertSame(0, preg_match('/data-tag="resolved"[^>]*hidden/', $reply));
+            assertStringContains('>Unclaim</button>', $reply);
+
+            assertStringContains("Resolution: claimed\nClaimed-By: " . $name . "\n", $this->render($app, '/api/get_post?post_id=reply-001'));
+            assertStringContains('[reply-001] (claimed by ' . $name . ') Reply body.', $this->render($app, '/api/get_thread?thread_id=root-001'));
+
+            // Resolving a claimed reply folds it as usual.
+            // Taps within the same second tie on time, so give the later tap a later Action-At.
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'resolved', 'author_identity_id' => self::APPROVED, 'action_at' => '2026-11-13T10:05:00Z']);
+            $reply = $this->card($this->render($app, '/threads/root-001'), 'reply-001');
+            assertSame(1, preg_match('/<details class="post-resolution" data-role="post-resolution">/', $reply));
+            assertStringContains('>Reopen</button>', $reply);
         });
     }
 

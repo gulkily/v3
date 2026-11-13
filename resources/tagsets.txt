@@ -10,5 +10,5 @@ Schema: tagsets-v1
 
 Parent: meta
 Target: reply, root
-Unlocks: resolved, closed, open
+Unlocks: claimed, resolved, closed, open
 Exclusive: yes
