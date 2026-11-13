@@ -663,12 +663,25 @@ final class TemplateRenderer
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
-            'agentPrompt' => \ForumRewrite\ProfilePresentationContent::agentPrompt(SiteProfileRegistry::active(), self::requestOrigin()),
+            'agentPrompt' => $this->featureFlags->isEnabled(FeatureFlagRegistry::AGENT_PROMPT_ENABLED)
+                ? \ForumRewrite\ProfilePresentationContent::agentPrompt(SiteProfileRegistry::active(), self::requestOrigin())
+                : '',
             'agentPromptOrigin' => self::requestOrigin(),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
+        // The Agent Prompt tool only opens About's prompt; drop it where there is none.
+        if ($data['agentPrompt'] === '') {
+            foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {
+                if (isset($data[$toolListKey]) && is_array($data[$toolListKey])) {
+                    $data[$toolListKey] = array_values(array_filter(
+                        $data[$toolListKey],
+                        static fn (array $tool): bool => ($tool['key'] ?? '') !== 'agent-prompt',
+                    ));
+                }
+            }
+        }
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $mediaEmbedsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED);

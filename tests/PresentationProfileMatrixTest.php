@@ -112,6 +112,32 @@ final class PresentationProfileMatrixTest
         }
     }
 
+    public function testAgentPromptFlagAndProfileGateEveryEntryPoint(): void
+    {
+        $application = $this->application();
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::AGENT_PROMPT_ENABLED;
+        $previousFlag = getenv($flag);
+        try {
+            foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+                putenv('FORUM_SITE_ID=' . $profileId);
+                foreach (['1', '0'] as $value) {
+                    putenv($flag . '=' . $value);
+                    $shown = $profileId === 'zenmemes' && $value === '1';
+                    $board = $this->render($application, '/');
+                    $about = $this->render($application, '/about/');
+                    $tools = $this->render($application, '/tools/');
+                    $context = $profileId . ' ' . $flag . '=' . $value;
+                    assertSame($shown, str_contains($board, 'href="/about/#agent"'), $context);
+                    assertSame($shown, str_contains($about, 'data-agent-prompt '), $context);
+                    assertSame($shown, str_contains($tools, 'href="/about/#agent"'), $context);
+                }
+            }
+        } finally {
+            putenv('FORUM_SITE_ID');
+            putenv($previousFlag === false ? $flag : $flag . '=' . $previousFlag);
+        }
+    }
+
     public function testAgentPromptUsesAPlaceholderOriginWithoutARequestHost(): void
     {
         $profile = \ForumRewrite\SiteProfileRegistry::all()['zenmemes'];

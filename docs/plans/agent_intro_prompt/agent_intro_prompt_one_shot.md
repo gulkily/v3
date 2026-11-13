@@ -36,6 +36,8 @@ The first version put the whole box in the board intro and on About; screenshots
 
 "Ask me before you post anything" keeps a visitor's agent from posting on their behalf unasked. Only the zenmemes profile has the prompt; other profiles render nothing.
 
+Feature flag (added 2026-11-13 at the maintainer's request): `FORUM_AGENT_PROMPT_ENABLED`, "Agent prompt", site-mutable, default on, appended to Forum experience. Off removes all three entry points. The Tools button also drops wherever there is no prompt (flag off or a profile without one); before this it showed on every profile.
+
 ## Approach and risks
 
 The origin comes from this request's host, so clones and localhost name themselves. HTML rendered without a request (high-traffic cache, offline snapshot) gets an `{origin}` placeholder; the partial's inline script swaps whatever origin the server wrote for `location.origin` before paint. Copy shows only where the Clipboard API exists, revealed by the inline script before paint (as on railspike.dev); with JS off the text is still selectable. Risk: the visitor intro's absolute-positioned Hide button rule matched every button inside the card; narrowed to `.visitor-intro > button`.
@@ -43,6 +45,7 @@ The origin comes from this request's host, so clones and localhost name themselv
 ## Reuse decisions
 
 - Copy lives in `ProfilePresentationContent` EDITORIAL beside `siteDescription` (new `agentPrompt()`); `TemplateRenderer` passes it to every template like `siteDescription`.
+- The flag gates `agentPrompt` in `TemplateRenderer::renderFile()`; the same place drops the `agent-prompt` row from `toolPages`/`toolNavOptions` when the prompt is empty, so the Tools page and Tools bar agree without per-template checks.
 - One partial, `templates/partials/agent_prompt.php` (the fold, field, Copy and hash-open script), rendered on About.
 - The Tools entry is a `ToolsPageSupport::registry()` row (standalone, tone `agent`), so the launcher and the Tools bar both get it; icons follow the Bookmarklets rules in `theme-nav-icons.css`.
 - `ViewerSessionCookie::requestIsHttps()` for the scheme.
@@ -56,6 +59,7 @@ The origin comes from this request's host, so clones and localhost name themselv
 ## Verification
 
 - `./v3 test --smoke PresentationProfileMatrixTest NavIconSetsTest ToolsRegistryTest LlmsTxtRendererTest`: 471 run, 471 passed. Full suite not run, per `AGENTS.md`. Tests: only zenmemes has the board link and the About fold, with the request origin; the board carries no prompt box; placeholder origin without a host; tool count 17.
+- Flag: `./v3 test --smoke PresentationProfileMatrixTest FeatureFlagEvaluatorTest FeatureFlagsPageTest ToolsRegistryTest NavIconSetsTest`: 459 run, 459 passed. New test renders board, About and Tools for every profile with the flag on and off; the entry points appear only for zenmemes with it on. The Feature Flags page lists it last under Forum experience (checked in the browser).
 - Revised placement, headless Chrome, Gloss, Gloss Dark, Word 97, Chicago, Midnight and Engagify at 1280×900 and 390×844: the intro link opens About with the fold open, a plain About visit has it closed, Copy works, the Tools button has its icon, no overflow or page errors. Intro links no longer split across lines on phones.
 - Headless Chrome on a local zenmemes server: board and About in Gloss, Gloss Dark, Word 97 and Engagify at 1280×900 and 390×844. Copy visible, no horizontal overflow, no page errors; clicking Copy put the prompt on the clipboard and showed "Copied". Fixed during checks: hard line breaks wrapped badly and clipped the field (prompt is now one paragraph, field sized to content); Gloss stretched the phone button.
 
@@ -65,5 +69,6 @@ Branch: `feat/agent-intro-prompt` from `e1d938c`.
 
 - 2026-11-12: intake, implemented, verified locally; PR #187.
 - 2026-11-12: placement revised (About fold, intro link, Tools button) on the same unmerged branch, before review.
+- 2026-11-13: `FORUM_AGENT_PROMPT_ENABLED` flag added on the same unmerged branch.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
