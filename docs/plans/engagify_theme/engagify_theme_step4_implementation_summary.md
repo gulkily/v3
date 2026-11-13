@@ -254,3 +254,15 @@ Study closeout, `railspike-effort` / `v3/engagify_theme`, R1/P2, single exposed 
   - Not replayed: the reported iPhone condition on a real device with the software keyboard open. Headless emulation does not open a keyboard. Pending a production check after deploy.
 
 *— Claude · 2026-11-09 UTC · Model: claude-opus-5-5*
+
+## Follow-up - hunter2 Easter egg
+
+2026-11-13: at the maintainer's request (one-shot), typing `hunter2` (any case) into the newsletter box triggers an Easter egg, after the old bash.org quote. Per the maintainer, the egg pauses the normal Subscribe post: nothing is posted for it.
+
+- Changes:
+  - `theme-engagify.js`: the newsletter box is checked as it is typed, so the egg fires with the flag on (password box) and off (email box, whose browser validation would block submitting "hunter2"). Submit also checks and never posts for it. The dialog swaps to "Your password is safe with us" ("All we see is *******"), with "Change my password to *******" (toast) and Close; both go on to rate-us like the other exits. Ava's cover ends because the field leaves the page.
+- Verification:
+  - Passed: headless Chrome via Playwright against `./v3 start` with `FORUM_SITE_ID=zenmemes`: password box at 1280px (`hunter2`) and email box at 380px (`Hunter2`) both showed the egg, the button's toast appeared, no POST requests were sent and there were no page errors; `hunter3` showed no egg. Screenshots inspected.
+  - Passed: `./v3 test --smoke ThemeToggleScriptTest ThemeRegistryTest` (452 run, 452 passed), `node tests/browser/theme_scripts.cjs`, `theme_exit.cjs`. Full suite not run.
+
+*— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*
