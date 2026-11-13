@@ -62,3 +62,40 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged; no revisions. Retrospective: as planned. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Specs, docs and release
+
+**Original estimate: 0.08**
+**Retrospective estimate: 0.08** (documentation part; the release check is pending)
+
+- Changes:
+  - `docs/specs/post_retraction_record_v1.md`: the request is described with `Target-ID`, with an example and a "Target header compatibility" section covering the older `Post-ID`, the one-header rule and the reaction-prefix rule.
+  - `docs/specs/removal_acceptance_record_v1.md`: the example uses `Target-ID` and `Target-Created-At`. New "Target field compatibility" section, linked to the rollback note.
+  - `docs/reference/agent_api.md`: retraction calls use `target_id`, `post_id` is documented as an alias, and the example shows `target_id` in the response.
+  - `llms.txt` retraction line in `Http/LlmsTxtRenderer.php`, plus its `LlmsTxtRendererTest` assertion.
+  - `docs/reference/v3_cli.md`: new "Retraction target ID rollback" section.
+  - `docs/concepts/post_retraction.md`: a dated "Target header" line linking this plan and `RemovalTarget.php`.
+- Verification:
+  - Passed: `./v3 test --smoke LlmsTxtRendererTest RetractionTargetIdTest AgentApiWorkedExampleTest`, 462 run, 462 passed, 0 failed.
+  - Passed: `git diff --check`; the new relative links (plan, `RemovalTarget.php`, `v3_cli.md#retraction-target-id-rollback`) resolve.
+  - **Pending (maintainer):** the pre-deploy scan on the server, `ls ~/v3/records/posts | grep -E '^(post-reaction|thread-label)-'`. It should print nothing. A partial check of the live root thread IDs through `/api/list_index` found none.
+  - **Pending (maintainer):** merging, deploying to zenmemes.com, retracting one post there, and checking that its `records/post-retractions/` request and `records/post-retraction-acceptances/` receipt contain `Target-ID` and no `Post-ID`.
+  - Not run: the full suite.
+- Notes:
+  - Rollback is documented, and is the one high risk: older versions reject the new receipts.
+- Estimate details: original scope as in Step 3, unchanged; no revisions. Retrospective covers the documentation work; the release check isn't done yet. Rater: Claude, the same exposed rater.
+
+*— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*
+
+## Cycle closeout
+
+- Delivered scope: v1 as approved. New retraction requests and receipts use `Target-ID` / `Target-Created-At`. Old `Post-ID` files still read, `target_id` is accepted with `post_id` as an alias, posts can't use reaction prefixes, and the specs, API docs, `llms.txt`, CLI rollback note and concept entry are updated.
+- Revisions: start `05486f22`. Planning `a7f0fb7`, Stage 1 `5ba92ae`, Stage 2 `c74d017`, Stage 3 in this commit.
+- Stages: 3 planned, 3 implemented. The Stage 3 release check is pending on the maintainer.
+- Verification: focused and smoke tests passed at every stage, as recorded above. The full suite was not run. The deployment and live retraction are pending.
+- Corrective work versus new requests: none. No enhancement requests came up during Step 4.
+- Splits and follow-ups: child of `v3/post_records`, which builds reaction retraction on `Target-ID`. Possible follow-up: rename `PostRetractionRecord::$postId` once targets aren't always posts.
+- **Retrospective scope assessment: 0.40.** It matches the projection; the work fit the plan.
+- Maintainer comfortable-fit judgment and acceptance: **pending**. Child cycle, so it doesn't count as an independent outcome.
+
+*— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*

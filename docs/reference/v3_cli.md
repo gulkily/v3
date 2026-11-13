@@ -767,6 +767,17 @@ rather than blind retry. Preserve `records/post-removals/` and trusted Git histo
 in backups: copied receipt text alone does not establish removal authority. Imports reject
 foreign removal claims and do not restore locally removed sources or labels.
 
+### Retraction target ID rollback
+
+Since 2026-11-13, retraction requests and receipts name their target `Target-ID`
+(receipts also `Target-Created-At`) instead of `Post-ID` / `Post-Created-At`; older
+files keep the old names and still read. Application versions from before this
+change reject receipts with the new names, so rebuilds fail after a rollback that
+goes back past it. To roll back, either deploy a version that reads both forms, or
+remove the receipts written since the deploy and run `./v3 rebuild`. Without its
+receipt a retraction is no longer recorded as accepted, but the retracted post
+stays deleted because its file is already gone.
+
 ## Backfill Unicode-risk analysis for posts
 
 ```
