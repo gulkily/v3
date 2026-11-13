@@ -21,7 +21,6 @@ final class ProfilePresentationContent
             'communityHeading' => 'The community',
             'communityParagraphs' => [
                 'This board is meant for extraordinary people: founders, creators, researchers, artists, organizers, and people who make the local internet more alive.',
-                'The initial community is rooted in Boston, especially founders and creators around Harvard St Commons. From there, it can grow outward through real relationships and earned trust.',
             ],
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',
@@ -85,7 +84,6 @@ final class ProfilePresentationContent
             'communityHeading' => 'The community',
             'communityParagraphs' => [
                 'This board is meant for extraordinary people: founders, creators, researchers, artists, organizers, and people who make the local internet more alive.',
-                'The initial community is rooted in Boston, especially founders and creators around Harvard St Commons. From there, it can grow outward through real relationships and earned trust.',
             ],
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',

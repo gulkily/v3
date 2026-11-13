@@ -2301,7 +2301,7 @@ PHP;
         assertStringContains('role="switch"', $featureFlags);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
-        assertStringContains('Harvard St Commons', $about);
+        assertStringNotContains('Harvard St Commons', $about);
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
         assertStringNotContains('Identity ID', $profile);
