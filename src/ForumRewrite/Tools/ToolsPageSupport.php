@@ -49,6 +49,7 @@ final class ToolsPageSupport
             ['key' => 'outbox', 'label' => 'Outbox', 'href' => '/tools/outbox/', 'group' => 'device', 'tone' => 'outbox', 'standalone' => false],
             ['key' => 'offline-reading', 'label' => 'Offline Reading', 'href' => '/offline/', 'group' => 'device', 'tone' => 'offline', 'standalone' => true],
             ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],
+            ['key' => 'agent-prompt', 'label' => 'Agent Prompt', 'href' => '/about/#agent', 'group' => 'device', 'tone' => 'agent', 'standalone' => true],
             ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
             ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
             ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],

@@ -25,6 +25,7 @@ final class FeatureFlagRegistry
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
     public const TAG_UNLOCKS_ENABLED = 'FORUM_TAG_UNLOCKS_ENABLED';
     public const DEPLOY_HEADER_PROMPT_ENABLED = 'FORUM_DEPLOY_HEADER_PROMPT_ENABLED';
+    public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
@@ -56,7 +57,7 @@ final class FeatureFlagRegistry
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
-            self::TAG_UNLOCKS_ENABLED],
+            self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -297,6 +298,15 @@ final class FeatureFlagRegistry
                 'A thread tag listed in resources/tagsets.txt offers extra tags on its replies; on #meta threads, Resolved and Closed fold a reply to one line. Only approved keys change the state.',
                 true,
                 self::TAG_UNLOCKS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::AGENT_PROMPT_ENABLED,
+                'Agent prompt',
+                'Offer a prompt that visitors paste into their own agent to be introduced to the site: folded under "Use with your agent" on About, linked from the first-visit intro and Tools. Only sites whose profile has a prompt show it.',
+                true,
+                self::AGENT_PROMPT_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

@@ -78,6 +78,73 @@ final class PresentationProfileMatrixTest
         }
     }
 
+    public function testOnlyZenmemesOffersTheAgentPromptOnAboutWithALinkFromTheIntro(): void
+    {
+        $application = $this->application();
+        $previousHost = $_SERVER['HTTP_HOST'] ?? null;
+        $_SERVER['HTTP_HOST'] = 'zenmemes.example';
+        foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+            putenv('FORUM_SITE_ID=' . $profileId);
+            try {
+                $isZenmemes = $profileId === 'zenmemes';
+                $board = $this->render($application, '/');
+                $about = $this->render($application, '/about/');
+                assertSame($isZenmemes, str_contains($board, '<a href="/about/#agent">Agent prompt</a>'));
+                assertTrue(!str_contains($board, 'data-agent-prompt '));
+                assertSame($isZenmemes, str_contains($about, 'data-agent-prompt '));
+                if ($isZenmemes) {
+                    assertStringContains('<details class="agent-prompt" id="agent"', $about);
+                    assertStringContains('<summary>Use with your agent</summary>', $about);
+                    assertStringContains('Please visit http://zenmemes.example and read http://zenmemes.example/llms.txt.', $about);
+                    assertStringContains('Ask me before you post anything.', $about);
+                    assertStringContains('data-agent-prompt-origin="http://zenmemes.example"', $about);
+                    assertStringContains('data-agent-prompt-copy hidden>Copy</button>', $about);
+                    assertTrue(strpos($about, 'data-site-description') < strpos($about, 'id="agent"'));
+                }
+            } finally {
+                putenv('FORUM_SITE_ID');
+            }
+        }
+        if ($previousHost === null) {
+            unset($_SERVER['HTTP_HOST']);
+        } else {
+            $_SERVER['HTTP_HOST'] = $previousHost;
+        }
+    }
+
+    public function testAgentPromptFlagAndProfileGateEveryEntryPoint(): void
+    {
+        $application = $this->application();
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::AGENT_PROMPT_ENABLED;
+        $previousFlag = getenv($flag);
+        try {
+            foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+                putenv('FORUM_SITE_ID=' . $profileId);
+                foreach (['1', '0'] as $value) {
+                    putenv($flag . '=' . $value);
+                    $shown = $profileId === 'zenmemes' && $value === '1';
+                    $board = $this->render($application, '/');
+                    $about = $this->render($application, '/about/');
+                    $tools = $this->render($application, '/tools/');
+                    $context = $profileId . ' ' . $flag . '=' . $value;
+                    assertSame($shown, str_contains($board, 'href="/about/#agent"'), $context);
+                    assertSame($shown, str_contains($about, 'data-agent-prompt '), $context);
+                    assertSame($shown, str_contains($tools, 'href="/about/#agent"'), $context);
+                }
+            }
+        } finally {
+            putenv('FORUM_SITE_ID');
+            putenv($previousFlag === false ? $flag : $flag . '=' . $previousFlag);
+        }
+    }
+
+    public function testAgentPromptUsesAPlaceholderOriginWithoutARequestHost(): void
+    {
+        $profile = \ForumRewrite\SiteProfileRegistry::all()['zenmemes'];
+        assertStringContains('Please visit {origin} and read {origin}/llms.txt.', \ForumRewrite\ProfilePresentationContent::agentPrompt($profile, '{origin}'));
+        assertSame('', \ForumRewrite\ProfilePresentationContent::agentPrompt(\ForumRewrite\SiteProfileRegistry::all()['qdb'], 'https://x.example'));
+    }
+
     public function testFourthProfileFixtureUsesTheSamePresentationMatrix(): void
     {
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());

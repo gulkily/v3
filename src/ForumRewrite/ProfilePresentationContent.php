@@ -30,6 +30,8 @@ final class ProfilePresentationContent
                 'threadHref' => '/threads/thread-20261103060933-51ef9554',
                 'changeHref' => 'https://github.com/gulkily/v3/pull/26',
             ],
+            // %1$s is the site origin, %2$s the display name.
+            'agentPrompt' => "Please visit %1\$s and read %1\$s/llms.txt. Then introduce me to %2\$s: what it is, who is active, and what people are working on lately. Suggest a few useful things I could do there, based on what you know about me. Ask me before you post anything.",
             'busyTitle' => 'Meme Oven Is Busy',
             'busyHeading' => 'Meme Oven Is Busy',
             'busyMessage' => 'The next batch of zenmemes is still baking. This page will reload on its own.',
@@ -180,6 +182,19 @@ final class ProfilePresentationContent
     {
         $template = self::editorial($profile)['siteDescription'] ?? '';
         return $template === '' ? '' : sprintf($template, (string) $profile['displayName']);
+    }
+
+    /**
+     * A prompt a visitor pastes into their own agent to be introduced to the
+     * site, shared by the first-visit home intro and About. Empty when the
+     * profile has none.
+     *
+     * @param array<string, mixed> $profile
+     */
+    public static function agentPrompt(array $profile, string $origin): string
+    {
+        $template = self::editorial($profile)['agentPrompt'] ?? '';
+        return $template === '' ? '' : sprintf($template, rtrim($origin, '/'), (string) $profile['displayName']);
     }
 
     /**
