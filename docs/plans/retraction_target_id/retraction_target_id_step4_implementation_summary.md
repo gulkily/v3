@@ -90,10 +90,10 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 ## Cycle closeout
 
 - Delivered scope: v1 as approved. New retraction requests and receipts use `Target-ID` / `Target-Created-At`. Old `Post-ID` files still read, `target_id` is accepted with `post_id` as an alias, posts can't use reaction prefixes, and the specs, API docs, `llms.txt`, CLI rollback note and concept entry are updated.
-- Revisions: start `05486f22`. Planning `a7f0fb7`, Stage 1 `5ba92ae`, Stage 2 `c74d017`, Stage 3 in this commit.
+- Revisions: start `05486f22`. Planning `a7f0fb7`, Stage 1 `5ba92ae`, Stage 2 `c74d017`, Stage 3 `fc3b5f1`, then a Stage 2 correction (see below).
 - Stages: 3 planned, 3 implemented. The Stage 3 release check is pending on the maintainer.
 - Verification: focused and smoke tests passed at every stage, as recorded above. The full suite was not run. The deployment and live retraction are pending.
-- Corrective work versus new requests: none. No enhancement requests came up during Step 4.
+- Corrective work versus new requests: one correction, no new requests. The final diff review found that Stage 2's edit to `browser_signing.js` had changed `finalizePreparedPost` (ordinary post publishing) to send `target_id` instead of the retraction finalize call. That would have broken publishing from the browser with "Prepared post post_id mismatch". The correction commit restores `post_id` there, moves `target_id` to `create_prepared_retraction`, and adds `PostRetractionScriptTest::testRetractionCallsSendTargetIdAndPostPublishingKeepsPostId`. That test failed against the Stage 2 file and passes on the fix. Verified with `./v3 test --smoke PostRetractionScriptTest WriteApiSmokeTest SingleRequestPostingTest RetractionTargetIdTest`, 678 run, 678 passed. No enhancement requests came up during Step 4.
 - Splits and follow-ups: child of `v3/post_records`, which builds reaction retraction on `Target-ID`. Possible follow-up: rename `PostRetractionRecord::$postId` once targets aren't always posts.
 - **Retrospective scope assessment: 0.40.** It matches the projection; the work fit the plan.
 - Maintainer comfortable-fit judgment and acceptance: **pending**. Child cycle, so it doesn't count as an independent outcome.

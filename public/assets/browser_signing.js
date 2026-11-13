@@ -1243,7 +1243,7 @@
   async function finalizePreparedPost(fields, prepared, detachedSignature) {
     const payload = {
       prepare_token: prepared.prepareToken,
-      target_id: prepared.postId,
+      post_id: prepared.postId,
       record_path: prepared.recordPath,
       author_identity_id: fields.author_identity_id,
       canonical_record: prepared.canonicalRecord,
@@ -1400,7 +1400,7 @@
     const detachedSignature = await signCanonicalRecord(prepared.canonicalRecord);
     const finalizedResponse = await submitUrlEncoded("/api/create_prepared_retraction", {
       prepare_token: prepared.prepareToken,
-      post_id: prepared.postId,
+      target_id: prepared.postId,
       record_path: prepared.recordPath,
       actor_identity_id: actorIdentityId,
       canonical_record: prepared.canonicalRecord,
