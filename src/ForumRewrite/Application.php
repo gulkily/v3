@@ -703,6 +703,15 @@ final class Application
             return;
         }
 
+        if ($path === '/agent/' || $path === '/agent') {
+            if (!$this->renderer()->agentPageEnabled()) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\AgentPageController($this->renderPageTemplate(...)))->render(), 200);
+            return;
+        }
+
         if ($path === '/themes/' || $path === '/themes') {
             $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot))->render(), 200);
             return;
@@ -2346,6 +2355,7 @@ final class Application
             '/threads', '/threads/',
             '/about', '/about/',
             '/themes', '/themes/',
+            '/agent', '/agent/',
             '/docs', '/docs/',
             '/lobby', '/lobby/',
             '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',
