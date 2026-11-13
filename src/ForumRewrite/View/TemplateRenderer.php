@@ -630,6 +630,20 @@ final class TemplateRenderer
     }
 
     /**
+     * This request's origin for copy that names the site, such as the agent
+     * prompt. Pages rendered without a request (caches, offline snapshots)
+     * get a placeholder that the page's own script replaces before paint.
+     */
+    private static function requestOrigin(): string
+    {
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        if ($host === '' || preg_match('/^[A-Za-z0-9.\-:\[\]]+$/D', $host) !== 1) {
+            return '{origin}';
+        }
+        return (\ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER) ? 'https://' : 'http://') . $host;
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     private function renderFile(string $relativePath, array $data): string
@@ -649,6 +663,8 @@ final class TemplateRenderer
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
+            'agentPrompt' => \ForumRewrite\ProfilePresentationContent::agentPrompt(SiteProfileRegistry::active(), self::requestOrigin()),
+            'agentPromptOrigin' => self::requestOrigin(),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),

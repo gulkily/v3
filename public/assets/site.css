@@ -1379,7 +1379,7 @@ pre {
 
 /* `:root` outranks themes' general button sizing. The invisible ::after gives
    the small button a 44px touch target without covering the sentence. */
-:root .visitor-intro button {
+:root .visitor-intro > button {
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
@@ -1390,10 +1390,52 @@ pre {
   line-height: 1;
 }
 
-.visitor-intro button::after {
+.visitor-intro > button::after {
   content: "";
   position: absolute;
   inset: -0.625rem;
+}
+
+/* Paste-into-your-agent prompt (first-visit intro and About). */
+.agent-prompt {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.agent-prompt label {
+  grid-column: 1 / -1;
+  font-size: 0.9em;
+}
+
+.agent-prompt textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  resize: vertical;
+  /* Show the whole prompt where supported; rows="5" elsewhere. */
+  field-sizing: content;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+.agent-prompt button {
+  align-self: start;
+  min-height: 44px;
+}
+
+@media (max-width: 40rem) {
+  .agent-prompt {
+    grid-template-columns: 1fr;
+  }
+
+  /* `:root` outranks themes that stretch buttons on phones. */
+  :root .agent-prompt button {
+    justify-self: start;
+    width: auto;
+  }
 }
 
 /* Member-only links (Messages, Invite) are in every viewer's HTML; the head

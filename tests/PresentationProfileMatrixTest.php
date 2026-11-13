@@ -78,6 +78,44 @@ final class PresentationProfileMatrixTest
         }
     }
 
+    public function testOnlyZenmemesOffersTheAgentPromptOnBoardAndAbout(): void
+    {
+        $application = $this->application();
+        $previousHost = $_SERVER['HTTP_HOST'] ?? null;
+        $_SERVER['HTTP_HOST'] = 'zenmemes.example';
+        foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+            putenv('FORUM_SITE_ID=' . $profileId);
+            try {
+                $isZenmemes = $profileId === 'zenmemes';
+                foreach (['/' => 'visitor-intro-agent-prompt', '/about/' => 'about-agent-prompt'] as $path => $promptId) {
+                    $page = $this->render($application, $path);
+                    assertSame($isZenmemes, str_contains($page, 'data-agent-prompt '));
+                    if ($isZenmemes) {
+                        assertStringContains('<label for="' . $promptId . '">Paste this into your agent:</label>', $page);
+                        assertStringContains('Please visit http://zenmemes.example and read http://zenmemes.example/llms.txt.', $page);
+                        assertStringContains('Ask me before you post anything.', $page);
+                        assertStringContains('data-agent-prompt-origin="http://zenmemes.example"', $page);
+                        assertStringContains('data-agent-prompt-copy hidden>Copy</button>', $page);
+                    }
+                }
+            } finally {
+                putenv('FORUM_SITE_ID');
+            }
+        }
+        if ($previousHost === null) {
+            unset($_SERVER['HTTP_HOST']);
+        } else {
+            $_SERVER['HTTP_HOST'] = $previousHost;
+        }
+    }
+
+    public function testAgentPromptUsesAPlaceholderOriginWithoutARequestHost(): void
+    {
+        $profile = \ForumRewrite\SiteProfileRegistry::all()['zenmemes'];
+        assertStringContains('Please visit {origin} and read {origin}/llms.txt.', \ForumRewrite\ProfilePresentationContent::agentPrompt($profile, '{origin}'));
+        assertSame('', \ForumRewrite\ProfilePresentationContent::agentPrompt(\ForumRewrite\SiteProfileRegistry::all()['qdb'], 'https://x.example'));
+    }
+
     public function testFourthProfileFixtureUsesTheSamePresentationMatrix(): void
     {
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());

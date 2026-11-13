@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [frm.py image attachments one-shot](frm_image/frm_image_one_shot.md) — `thread` and `reply` take `--image` and `--image-description` to publish one screenshot with a post.
 
+[Agent intro prompt one-shot](agent_intro_prompt/agent_intro_prompt_one_shot.md) — the first-visit intro and About offer a "Paste this into your agent" prompt with Copy, asking the visitor's agent to introduce the site and suggest things to do.
+
 [Consistent page titles one-shot](page_header_consistency/page_header_consistency_one_shot.md) — main-nav pages show no visible title (the active nav item names the page); other pages keep the title as their first card's heading, with no blank line above it.
 
 [Quiet composer bottom one-shot](quiet_composer_bottom/quiet_composer_bottom_one_shot.md) — below Post on the New post form, Title is an underlined line and closed Tags, Event and Options are one row of small words; a tool gets its box when opened.
