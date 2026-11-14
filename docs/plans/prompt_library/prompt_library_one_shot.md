@@ -96,5 +96,5 @@ Limitations: library capped at 200 with no paging; a retracted `#prompt` label f
 
 Diff checked for duplication (reuses copy partial, board toolbar/filter, `$rowMeta`, listed-roots SQL) and file scope; `git diff --check` clean. No concept inventory change.
 
-Commit/merge/publication status: completion commit pending at time of writing; push and PR follow; not merged or deployed.
+Commit/merge/publication status: planning `2fe61838`, completion `2d9411bc`; pushed with a PR; not merged or deployed.
 Attribution: Claude (claude-opus-5-5), 2026-11-14 UTC.
