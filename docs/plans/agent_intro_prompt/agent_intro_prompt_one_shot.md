@@ -10,7 +10,7 @@ Extended estimates: disabled (one approach, small template change)
 
 **Cycle estimate: 0.20 (intake)**
 
-Status: first version (fold on About, intro link, Tools button, flag) merged in PR #187. Dedicated `/agent/` page and copy alignment implemented and verified locally on `feat/agent-page`; PR open, awaiting review, merge and deploy.
+Status: merged in PR #187 (first version, flag) and PR #194 (`/agent/` page). iPhone copy fix on `fix/agent-copy-ios`; PR open, awaiting review, merge and deploy.
 
 ## Original request
 
@@ -57,6 +57,10 @@ Existing copyable text, compared before settling the prompt block:
 
 The prompt block (`templates/partials/agent_prompt.php`) follows railspike.dev's layout and fallback, uses the Bookmarklets icon and the theme's own button styling, and the Account key "Copied"/1.5 s feedback and `.meta` status line. The earlier side-by-side layout and 2 s "Copied" were inconsistent with these and are gone.
 
+## iPhone copy fix (2026-11-13)
+
+Reported by the maintainer: Copy didn't work on iPhone. zenmemes.com also serves `/agent/` over plain HTTP, where Safari has no Clipboard API; the page then only selected the field and showed a Ctrl+C/⌘C hint, which is no use on a phone. Copy now falls back to `execCommand('copy')` on a hidden read-only field selected with `setSelectionRange`, synchronously inside the tap (iPhone Safari allows it only there), as the Invites copy already does. If both fail, touch devices are told to touch and hold the selected prompt; keyboards keep the Ctrl+C/⌘C hint. Not checked on a physical iPhone.
+
 ## Approach and risks
 
 The origin comes from this request's host, so clones and localhost name themselves. HTML rendered without a request (high-traffic cache, offline snapshot) gets an `{origin}` placeholder; the partial's inline script swaps whatever origin the server wrote for `location.origin` before paint. Copy shows only where the Clipboard API exists, revealed by the inline script before paint (as on railspike.dev); with JS off the text is still selectable. Risk: the visitor intro's absolute-positioned Hide button rule matched every button inside the card; narrowed to `.visitor-intro > button`.
@@ -82,10 +86,11 @@ The origin comes from this request's host, so clones and localhost name themselv
 - Flag: `./v3 test --smoke PresentationProfileMatrixTest FeatureFlagEvaluatorTest FeatureFlagsPageTest ToolsRegistryTest NavIconSetsTest`: 459 run, 459 passed. New test renders board, About and Tools for every profile with the flag on and off; the entry points appear only for zenmemes with it on. The Feature Flags page lists it last under Forum experience (checked in the browser).
 - Agent page: `./v3 test --smoke PresentationProfileMatrixTest FeatureFlagEvaluatorTest FeatureFlagsPageTest ToolsRegistryTest NavIconSetsTest`: all passed (the matrix run covers 456 tests). Tests: the three prompts, headings, labels and request origin on `/agent/`; every profile with the flag on and off for board, About, Tools and `/agent/`; placeholder origin.
 - Agent page, headless Chrome, all six icon themes at 1280×900 and 390×844: the intro link reaches `/agent/`; three Copy buttons; copying works and reads "Copied"; clicking a field selects it all; About and Tools link to `/agent/`; no overflow or page errors. With the clipboard rejected, the field is selected and the Ctrl+C/⌘C hint shows.
+- iPhone fix, Playwright WebKit with iPhone 14 emulation and Chrome, page served from a non-secure origin (no Clipboard API): Copy copies the full prompt and reads "Copied"; with copying blocked too, the field is selected and the touch or keyboard hint shows. HTTPS copy still works. `./v3 test --smoke PresentationProfileMatrixTest`: 457 passed.
 - Revised placement, headless Chrome, Gloss, Gloss Dark, Word 97, Chicago, Midnight and Engagify at 1280×900 and 390×844: the intro link opens About with the fold open, a plain About visit has it closed, Copy works, the Tools button has its icon, no overflow or page errors. Intro links no longer split across lines on phones.
 - Headless Chrome on a local zenmemes server: board and About in Gloss, Gloss Dark, Word 97 and Engagify at 1280×900 and 390×844. Copy visible, no horizontal overflow, no page errors; clicking Copy put the prompt on the clipboard and showed "Copied". Fixed during checks: hard line breaks wrapped badly and clipped the field (prompt is now one paragraph, field sized to content); Gloss stretched the phone button.
 
-Branches: `feat/agent-intro-prompt` from `e1d938c` (PR #187, merged); `feat/agent-page` from `b111bb3`.
+Branches: `feat/agent-intro-prompt` from `e1d938c` (PR #187, merged); `feat/agent-page` from `b111bb3` (PR #194, merged); `fix/agent-copy-ios` from `18171f6`.
 
 ## History
 
@@ -94,5 +99,6 @@ Branches: `feat/agent-intro-prompt` from `e1d938c` (PR #187, merged); `feat/agen
 - 2026-11-13: `FORUM_AGENT_PROMPT_ENABLED` flag added on the same unmerged branch.
 - 2026-11-13: PR #187 merged with the flag.
 - 2026-11-13: copy presentation reviewed and aligned; prompts moved to a dedicated `/agent/` page with post and install prompts on `feat/agent-page` (re-tested on current main: 460 passed).
+- 2026-11-13: PR #194 merged; iPhone copy fix on `fix/agent-copy-ios`.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*

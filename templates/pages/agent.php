@@ -14,6 +14,28 @@
   // offline snapshots) name a placeholder origin; use this page's own.
   (function (page) {
     var from = page.getAttribute('data-agent-prompt-origin');
+    var touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    // Copies through a hidden read-only field (selected with
+    // setSelectionRange, which iPhone Safari needs; 16px so it doesn't zoom).
+    var copySelectedText = function (text) {
+      var scratch = document.createElement('textarea');
+      scratch.value = text;
+      scratch.setAttribute('readonly', '');
+      scratch.setAttribute('aria-hidden', 'true');
+      scratch.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px';
+      document.body.appendChild(scratch);
+      var ok = false;
+      try {
+        scratch.focus();
+        scratch.select();
+        scratch.setSelectionRange(0, text.length);
+        ok = typeof document.execCommand === 'function' && document.execCommand('copy');
+      } catch (error) {
+        ok = false;
+      }
+      scratch.remove();
+      return ok;
+    };
     page.querySelectorAll('[data-copy-prompt]').forEach(function (prompt) {
       var field = prompt.querySelector('textarea');
       var button = prompt.querySelector('[data-copy-prompt-button]');
@@ -38,14 +60,28 @@
         };
         var manual = function () {
           field.focus();
-          field.select();
-          status.textContent = 'Press Ctrl+C (Windows/Linux) or ⌘C (Mac) to copy the selected prompt.';
+          field.setSelectionRange(0, field.value.length);
+          status.textContent = touch
+            ? 'Couldn\'t copy. Touch and hold the selected prompt, then tap Copy.'
+            : 'Press Ctrl+C (Windows/Linux) or ⌘C (Mac) to copy the selected prompt.';
         };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(field.value).then(copied, manual);
-        } else {
-          manual();
+        // Without the Clipboard API (plain HTTP, older browsers), copy now,
+        // inside the tap: iPhone Safari allows execCommand only there.
+        if (!navigator.clipboard || !navigator.clipboard.writeText) {
+          if (copySelectedText(field.value)) {
+            copied();
+          } else {
+            manual();
+          }
+          return;
         }
+        navigator.clipboard.writeText(field.value).then(copied, function () {
+          if (copySelectedText(field.value)) {
+            copied();
+          } else {
+            manual();
+          }
+        });
       });
     });
   })(document.currentScript.previousElementSibling);
