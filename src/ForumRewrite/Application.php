@@ -856,6 +856,21 @@ final class Application
             return;
         }
 
+        if ($path === '/guestbook/' || $path === '/guestbook') {
+            $guestbookThreadId = \ForumRewrite\Http\GuestbookPageController::threadId();
+            if ($guestbookThreadId === null || !$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::GUESTBOOK_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $html = (new \ForumRewrite\Http\GuestbookPageController($this->routeServices()))->book($guestbookThreadId, $query['page'] ?? null);
+            if ($html === null) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->sendHtml($html, 200);
+            return;
+        }
+
         if ($path === '/activity/' || $path === '/activity') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml($this->activityPageController()->rss((string) ($query['view'] ?? 'all')), 200);
@@ -2376,7 +2391,7 @@ final class Application
             '/downloads/images.zip', '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
-            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/',
+            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/', '/guestbook', '/guestbook/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',

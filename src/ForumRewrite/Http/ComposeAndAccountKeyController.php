@@ -414,6 +414,10 @@ final class ComposeAndAccountKeyController
         if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
             return $this->buildForteBoardReturnTo($matches[1] ?? '');
         }
+        // Signing the guestbook from its book page returns to the book.
+        if ($requestedReturnTo === '/guestbook/' && $threadId === \ForumRewrite\SiteProfileRegistry::guestbookThread()) {
+            return '/guestbook/';
+        }
 
         return '/threads/' . $threadId;
     }

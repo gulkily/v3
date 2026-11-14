@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
+
 [Tag unlocks](tag_unlocks/tag_unlocks_step3_development_plan.md) — a thread's tag unlocks extra tags on its replies; first use: Resolved and Closed on replies in `#meta` threads, which fold to one line.
 
 [Offline compose](offline_compose/offline_compose_step3_development_plan.md) — offline, New post, Reply and Post work as they do online: the same composers and addresses, posts kept in the Outbox as "not sent", and sent once on reconnect.

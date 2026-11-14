@@ -23,13 +23,14 @@ final class TemplateRenderer
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
+        'guestbook.php' => ['/assets/compose.css', '/assets/guestbook.css'],
         'themes.php' => ['/assets/themes.css'],
         'agent.php' => ['/assets/agent.css'],
         'activity.php' => ['/assets/activity.css', '/assets/access-history.css'],
         'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
-        'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
+        'post.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/tool-details.css'],
         'profile.php' => ['/assets/identity.css'],
         'root_approval.php' => ['/assets/identity.css'],
         'username.php' => ['/assets/identity.css', '/assets/account.css', '/assets/thread-list.css'],
@@ -707,6 +708,8 @@ final class TemplateRenderer
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
             'agentPageEnabled' => $this->agentPageEnabled(),
+            // The guestbook thread while /guestbook/ is on; the thread and About pages link to the book.
+            'siteGuestbookThreadId' => $this->featureFlags->isEnabled(FeatureFlagRegistry::GUESTBOOK_ENABLED) ? SiteProfileRegistry::guestbookThread() : null,
             'agentPromptOrigin' => self::requestOrigin(),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
