@@ -35,6 +35,8 @@ final class SiteProfileRegistry
                     // "Our cookie notice (there isn't one)"
                     '/threads/thread-20261102152258-25e82c97' => 'engagify',
                 ],
+                // The thread whose top-level replies /guestbook/ shows as a book; null until it exists.
+                'guestbookThread' => null,
                 'presentationSlots' => ['navigation' => 'app', 'boardCard' => 'list', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
             ],
             'chouse' => [
@@ -126,6 +128,14 @@ final class SiteProfileRegistry
         return $path === '/' ? '/' : rtrim($path, '/');
     }
 
+    /** The active site's guestbook thread ID, or null when the site has none. */
+    public static function guestbookThread(): ?string
+    {
+        $threadId = self::active()['guestbookThread'] ?? null;
+
+        return is_string($threadId) && $threadId !== '' ? $threadId : null;
+    }
+
     /** The page theme for a request path on the active site, or null. */
     public static function pageThemeFor(string $path): ?string
     {
@@ -204,6 +214,10 @@ final class SiteProfileRegistry
                 if (!is_string($pageTheme) || $pageTheme === 'auto' || !in_array($pageTheme, $profile['permittedThemes'], true)) {
                     throw new \RuntimeException("Site profile {$siteId} page theme must be a permitted explicit theme: {$pagePath}");
                 }
+            }
+
+            if (isset($profile['guestbookThread']) && (!is_string($profile['guestbookThread']) || preg_match('/^[A-Za-z0-9._-]+$/', $profile['guestbookThread']) !== 1)) {
+                throw new \RuntimeException("Site profile {$siteId} has an invalid guestbook thread ID.");
             }
 
             $browserNamespace = $profile['browserNamespace'];

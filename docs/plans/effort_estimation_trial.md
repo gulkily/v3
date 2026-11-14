@@ -1880,3 +1880,17 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/retraction_target_id` | Staged Step 4 technically complete; pre-deploy scan, deployment, live retraction check and maintainer acceptance pending | v1 / R1 / P2 | 0.40 (Step 2 0.40; Step 3 0.40; retrospective 0.40) | [Step 2](./retraction_target_id/retraction_target_id_step2_feature_description.md#study-checkpoint), [Step 3](./retraction_target_id/retraction_target_id_step3_development_plan.md#study-checkpoint), [Step 4](./retraction_target_id/retraction_target_id_step4_implementation_summary.md#cycle-closeout) | Child of `v3/post_records` (split at its Step 2 scope v7, 1.05, at the maintainer's request); not an independent outcome; acceptance pending |
 
 2026-11-13: standing P2 enrollment, staged cycle with extended estimates, Step 1 skipped (direction chosen during `v3/post_records`). Step 2 **0.40** after reader inspection (no pristine intake), Step 3 reaffirmed, Step 4 entry reaffirmed, retrospective **0.40**. Stage originals 0.12/0.12/0.08, non-additive. Baseline `273bf937` for planning; branch `feat/retraction-target-id` from `05486f22`. Single exposed rater Claude (claude-opus-5-5), also the parent's rater. Parent `v3/post_records` checkpoints (Steps 1–2 and the on-hold Step 3) are in its uncommitted planning artifacts; its ledger entry is pending until that cycle's planning commit. No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/guestbook
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/guestbook` | Step 4 Stages 1–4 done; Stage 5 release and maintainer acceptance pending | v2 / R1 / P2 | 0.60 (retrospective 0.60, Stage 5 pending) | [Step 1](./guestbook/guestbook_step1_solution_assessment.md#study-checkpoint); [Step 2](./guestbook/guestbook_step2_feature_description.md#study-checkpoint); [Step 3](./guestbook/guestbook_step3_development_plan.md#study-checkpoint); [Step 4](./guestbook/guestbook_step4_implementation_summary.md#cycle-closeout) | Maintainer brainstorm in session; sticky-note wall parked for later; no implementation |
+
+2026-11-11: standing P2 enrollment for the guestbook; baseline `273bf937`. Intake (after inspection) and Step 1 handoff both 0.55 for Option B; Claude single exposed rater; R1 hashes not re-verified. Extended estimates enabled (A 0.30, B 0.55, C 0.90; not summed). Awaiting Approved Step 1.
+
+2026-11-14: guestbook Step 1 approved (Option B). Scope v2 adds an explicit requirement that the guestbook thread keeps the full thread view, and that the book shows only top-level replies. Step 2 **0.60**; Claude single exposed rater; R1 hashes not re-verified. Awaiting Approved Step 2.
+
+2026-11-14: guestbook Step 2 approved. Step 3 **0.60 reaffirmed**, scope v2; five stages (S1 0.15, S2 0.12, S3 0.18, S4 0.08, S5 0.05; not summed). Awaiting Approved Step 3.
+
+2026-11-14: guestbook Step 3 approved; Step 4 entry **0.60 reaffirmed**. Stages 1–4 committed (retrospective S1 0.15, S2 0.14, S3 0.20, S4 0.08; not summed). Stage 5 release, retrospective and maintainer acceptance pending.
