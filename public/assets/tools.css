@@ -217,17 +217,23 @@
   }
 }
 
-.fastmod-rubric-label {
+.fastmod-rubric-label,
+.usage-log-switch {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: fit-content;
 }
 
-.fastmod-rubric-label input[type="checkbox"] {
+.fastmod-rubric-label input[type="checkbox"],
+.usage-log-switch input[type="checkbox"] {
   flex: 0 0 auto;
   width: auto;
   margin: 0;
+}
+
+.usage-log-switch {
+  margin: 0.75rem 0 1rem;
 }
 
 /* /tools/ launcher: one list grouped by who uses the tools. Scoped to

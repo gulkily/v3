@@ -646,7 +646,7 @@ final class Application
         if ($path === '/tools/usage-log/upload' && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
             $this->usageReportsController()->upload(
                 $method,
-                $method === 'POST' ? (string) file_get_contents('php://input', length: \ForumRewrite\UsageReports\UsageReportStore::MAX_REPORT_BYTES + 1) : '',
+                $method === 'POST' ? (string) file_get_contents('php://input', length: 2 * \ForumRewrite\UsageReports\UsageReportStore::MAX_REPORT_BYTES + 1) : '',
                 (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
                 (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
                 time(),

@@ -56,7 +56,9 @@
       refresh('Copy is blocked here; the log is selected so you can copy it yourself.');
     }
   });
-  // Sends exactly the text shown above. The log stays here whatever happens.
+  // Sends exactly the text shown above, wrapped in JSON: some hosts' request
+  // filters refuse raw line breaks in a POST body, but accept them escaped.
+  // The log stays here whatever happens.
   upload.addEventListener('click', async () => {
     const body = log.text();
     upload.disabled = true;
@@ -65,8 +67,8 @@
     try {
       const response = await fetch('/tools/usage-log/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-        body,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ log: body }),
         credentials: 'same-origin',
       });
       const payload = await response.json().catch(() => null);
