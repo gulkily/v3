@@ -1,9 +1,9 @@
 (function () {
-  // Reading margins: one row of evenly spaced radios above a thread. The two
-  // checked radios are the text column's edges. Choosing another radio moves
-  // the nearer edge to it; choosing a checked radio returns to the site's
-  // normal column. layout.php restores the saved edges before paint and
-  // reading_margins.php checks the matching radios; this script handles clicks.
+  // Reading margins: one row of evenly spaced radios above a page. The left
+  // half sets where the text column starts and the right half where it ends.
+  // Choosing a checked radio returns to the site's normal column. layout.php
+  // restores the saved edges before paint and reading_margins.php checks the
+  // matching radios; this script handles clicks.
   var runtime = window.forumBrowserRuntime || null;
   var ruler = document.querySelector("[data-role='reading-margins']");
   if (!ruler) {
@@ -12,56 +12,39 @@
 
   var root = document.documentElement;
   var storageKey = runtime && runtime.readingMarginsStorageKey;
-  var stops = Array.prototype.slice.call(ruler.querySelectorAll("[data-reading-margin-stop]"));
-  var positions = stops.map(function (stop) { return Number(stop.value); });
+  var sides = ["left", "right"];
 
-  // The current edges as [left, right] in vw, or null for the normal column.
+  function stops(edge) {
+    return Array.prototype.slice.call(ruler.querySelectorAll("[data-reading-margin-edge='" + edge + "']"));
+  }
+
+  function valid(edge, value) {
+    return stops(edge).some(function (stop) { return stop.value === value; });
+  }
+
+  // The current edges as [left, right] strings, or null for the normal column.
   var edges = (function () {
-    var saved = (root.getAttribute("data-reading-margins") || "").split(" ").map(Number);
-    return saved.length === 2 && positions.indexOf(saved[0]) !== -1 && positions.indexOf(saved[1]) !== -1 ? saved : null;
+    var saved = (root.getAttribute("data-reading-margins") || "").split(" ");
+    return saved.length === 2 && valid("left", saved[0]) && valid("right", saved[1]) ? saved : null;
   })();
 
-  // Where the normal column's edges are now, in vw.
-  function columnEdges() {
+  // The stop on `edge` nearest where the normal column's edge is now.
+  function nearestStop(edge) {
     var main = document.querySelector(".main");
     var width = root.clientWidth || window.innerWidth;
-    if (!main || !width) return [25, 75];
-    var rect = main.getBoundingClientRect();
-    return [(rect.left / width) * 100, (rect.right / width) * 100];
-  }
-
-  function nearest(target, candidates) {
-    return candidates.reduce(function (best, position) {
-      return best === null || Math.abs(position - target) < Math.abs(best - target) ? position : best;
-    }, null);
-  }
-
-  // The edges after choosing an unchecked stop at `position`.
-  function nextEdges(position) {
-    if (edges) {
-      var left = edges[0];
-      var right = edges[1];
-      // Move whichever edge is nearer; a stop exactly halfway moves the left edge.
-      if (Math.abs(position - left) <= Math.abs(position - right)) {
-        left = position;
-      } else {
-        right = position;
-      }
-      return [Math.min(left, right), Math.max(left, right)];
-    }
-    // Nothing chosen yet: the stop becomes the edge on its side of the column,
-    // and the other edge goes to the stop nearest the column's other side.
-    var current = columnEdges();
-    if (position < (current[0] + current[1]) / 2) {
-      return [position, nearest(current[1], positions.filter(function (each) { return each > position; }))];
-    }
-    return [nearest(current[0], positions.filter(function (each) { return each < position; })), position];
+    var rect = main ? main.getBoundingClientRect() : null;
+    var current = rect && width ? ((edge === "left" ? rect.left : rect.right) / width) * 100 : 50;
+    return stops(edge).reduce(function (best, stop) {
+      return !best || Math.abs(stop.value - current) < Math.abs(best.value - current) ? stop : best;
+    }, null).value;
   }
 
   function apply(next) {
-    edges = next && next[0] !== null && next[1] !== null ? next : null;
-    stops.forEach(function (stop) {
-      stop.checked = !!edges && edges.indexOf(Number(stop.value)) !== -1;
+    edges = next;
+    sides.forEach(function (edge, index) {
+      stops(edge).forEach(function (stop) {
+        stop.checked = !!edges && stop.value === edges[index];
+      });
     });
     if (edges) {
       root.setAttribute("data-reading-margins", edges.join(" "));
@@ -84,11 +67,17 @@
   }
 
   // Radios check themselves before "click" fires; apply() then sets every
-  // radio from the chosen edges, so a radio left unchecked here stays unchecked.
+  // radio from the chosen edges.
   ruler.addEventListener("click", function (event) {
-    var stop = event.target.closest && event.target.closest("[data-reading-margin-stop]");
+    var stop = event.target.closest && event.target.closest("[data-reading-margin-edge]");
     if (!stop) return;
-    var position = Number(stop.value);
-    apply(edges && edges.indexOf(position) !== -1 ? null : nextEdges(position));
+    var index = sides.indexOf(stop.getAttribute("data-reading-margin-edge"));
+    if (edges && edges[index] === stop.value) {
+      apply(null);
+      return;
+    }
+    var next = edges ? edges.slice() : [nearestStop("left"), nearestStop("right")];
+    next[index] = stop.value;
+    apply(next);
   });
 })();

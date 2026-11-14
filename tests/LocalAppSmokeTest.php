@@ -2855,11 +2855,12 @@ PHP;
             assertStringContains('data-role="reading-margins"', $thread);
             assertStringContains('localStorage.getItem(browserRuntime.readingMarginsStorageKey)', $thread);
             assertStringContains('"readingMarginsStorageKey":"forum-zenmemes-reading-margins"', $thread);
-            foreach ([5, 20, 35, 50, 65, 80, 95] as $position) {
-                assertStringContains('name="reading-margin-' . $position . '" value="' . $position . '"', $thread);
-                assertStringContains('style="--at: ' . $position . '"', $thread);
+            foreach (['left' => [5, 23, 41], 'right' => [59, 77, 95]] as $edge => $positions) {
+                foreach ($positions as $position) {
+                    assertStringContains('name="reading-margin-' . $edge . '" value="' . $position . '"', $thread);
+                    assertStringContains('style="--at: ' . $position . '"', $thread);
+                }
             }
-            assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
             assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
             // Listing pages get the ruler too; other pages do not.

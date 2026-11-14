@@ -80,3 +80,19 @@ FeatureFlagEvaluatorTest (452 passed); full suite not run. node tests/browser/re
 now also loads all five listing paths in all 17 themes with a saved "20 95": radios checked,
 column between them, final on first paint, no sideways scroll. Board screenshots reviewed
 for every theme, with and without a saved choice.
+
+Follow-up (2026-11-14): left and right halves again
+Request: guessing which edge a radio meant did not work well; keep the radios uniform
+across the top but split them into left and right again.
+- Six evenly spaced stops at 5/23/41/59/77/95vw, as on gregegan.net. The left three are
+  one radio group (left edge), the right three another (right edge), so a click only ever
+  moves its own side's edge. With nothing chosen, the other side's stop nearest the
+  normal column is checked with it. Choosing a checked radio still resets.
+- The narrowest column is 41-59 (18vw). Saved values from both earlier rulers are
+  ignored because they are not in the new lists.
+Verification: ./v3 test --smoke
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled
+FeatureFlagEvaluatorTest; full suite not run. node tests/browser/reading_margins.mjs across 17
+themes on a thread and five listing pages plus a phone: one row with equal gaps, left half then
+right half, each side moves only its edge, restore before paint, reset, old values ignored.
+Screenshots reviewed for every theme.
