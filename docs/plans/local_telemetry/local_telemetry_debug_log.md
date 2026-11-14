@@ -61,3 +61,22 @@
 
 **Uncertain assessments**
 - No guidance on whether a renewed Step 2 approval and the Step 3 approval may arrive in one reply; this handoff asks for both and accepts either order.
+
+## 2026-11-14T20:15:00Z — Step 4
+
+**Necessary/useful instructions**
+- Step 4 Before, planning-commit gate: plans were moved into `docs/plans/local_telemetry/`, links repaired and the index entry added before any code; the commit held only those. Retain.
+- Stage Boundary Protocol, "Run applicable verification ... capture commands/results": recording exact commands exposed two wrong claims (an unregistered test reported as passing, a smoke failure missed by reading only the tail) and both were corrected in later stage records. Retain.
+- Shared standards, "Inspect existing implementations": reusing the Agent Prompts tool filter, the Visitor Statistics root check and `ZoomTable` kept stages small. Retain.
+
+**Redundant/unnecessary instructions**
+- Ledger and summary both carry the closeout numbers; same note as earlier steps.
+
+**Inapplicable instructions**
+- Documentation-only checks: this is an application change.
+- Known user or environment replay: none stated.
+
+**Uncertain assessments**
+- The workflow does not say to run browser regression suites for shared surfaces (Tools launcher) at each stage; the launcher matrix broke in Stage 4 and was only caught in Stage 7. Suggest: when a stage changes a shared registry, run that registry's browser test in the same stage.
+- A revision that adds approved scope (Step 2 Revision 1) and the next approval arrived as "approved step 3" only; I read it as approving both. The workflow could say how to treat a combined approval.
+- Comparing against main with `git checkout <rev> -- .` discarded uncommitted work; the workflow could recommend `git worktree` for baseline comparisons.
