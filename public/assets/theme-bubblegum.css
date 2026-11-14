@@ -1,0 +1,305 @@
+/* Theme: bubblegum
+   Pink pixel desktop: a bubblegum page with faint pixel hearts, cards drawn
+   as little retro windows (striped title bar, three square buttons, hard
+   offset shadow), pill inputs and chunky square buttons. Uses system fonts
+   only; ui-rounded gives the bubbly face on Apple devices. */
+:root[data-theme="bubblegum"],
+.theme-menu__option[data-theme-option="bubblegum"] {
+  color-scheme: light;
+  --bubblegum-berry: #8e2457;
+  --bubblegum-bar: #e45b9c;
+  --bubblegum-shadow: #b23c74;
+  --bubblegum-butter: #ffe873;
+  --page-bg: #f7b3d2;
+  --body-background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' fill-opacity='0.22'%3E%3Cpath d='M30 24h12v6H30zM48 24h12v6H48zM24 30h42v12H24zM30 42h30v6H30zM36 48h18v6H36zM42 54h6v6h-6z'/%3E%3Cpath d='M138 120h6v6h-6zM132 126h6v6h-6zM144 126h6v6h-6zM126 132h6v6h-6zM150 132h6v6h-6zM132 138h6v6h-6zM144 138h6v6h-6zM138 144h6v6h-6z'/%3E%3Cpath d='M120 30h30v6h-30zM120 36h6v18h-6zM144 36h6v18h-6zM120 54h30v6h-30z'/%3E%3Cpath d='M24 126h6v30h-6zM24 150h30v6H24z'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(180deg, #f9c2db 0%, #f39ac4 55%, #ec7fb4 100%),
+    #f7b3d2;
+  --ink: #4f0f2f;
+  --ink-soft: #741d48;
+  --line: #8e2457;
+  --panel: #ffffff;
+  --input-bg: #fff4fa;
+  --button-bg: #ffdcec;
+  --button-alt-bg: #ffeaf4;
+  --feedback-ok-bg: #eafbea;
+  --feedback-error-bg: #ffe6ee;
+  --status-error: #b0002a;
+  --status-ok: #1d6b2a;
+  --status-warning: #7a4a00;
+  --active-bg: #b8286c;
+  --active-ink: #ffffff;
+  --active-line: #8e2457;
+  --active-ring: rgba(228, 91, 156, 0.4);
+  --body-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  --ui-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
+.theme-swatch[data-theme="bubblegum"] {
+  background:
+    linear-gradient(#e45b9c 0 32%, #8e2457 32% 40%, #ffffff 40%);
+  border: 2px solid #8e2457;
+  box-shadow: 2px 2px 0 #b23c74;
+  border-radius: 0;
+}
+
+.theme-menu__option[data-theme-option="bubblegum"] {
+  border: 2px solid #8e2457;
+  box-shadow: 2px 2px 0 #b23c74;
+}
+
+/* site.css paints the page on a fixed body::before with one cover-sized
+   layer; the heart pattern needs to tile at its own size instead. */
+:root[data-theme="bubblegum"] body::before {
+  background-repeat: repeat, no-repeat;
+  background-size: 192px 192px, cover;
+}
+
+/* Cards are windows: the title bar sits inside the border, above the padding. */
+:root[data-theme="bubblegum"] .card {
+  position: relative;
+  border: 3px solid var(--bubblegum-berry);
+  border-radius: 0;
+  padding-top: calc(0.9rem + 1.5rem);
+  box-shadow: 6px 6px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] .card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5rem;
+  box-sizing: border-box;
+  border-bottom: 3px solid var(--bubblegum-berry);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 14' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' stroke='%238e2457' stroke-width='2'%3E%3Crect x='1' y='1' width='12' height='12'/%3E%3Crect x='17' y='1' width='12' height='12'/%3E%3Crect x='33' y='1' width='12' height='12'/%3E%3C/g%3E%3C/svg%3E") right 0.4rem center / auto 0.8rem no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    var(--bubblegum-bar);
+  pointer-events: none;
+}
+
+:root[data-theme="bubblegum"] .stack > * + * {
+  margin-top: 1.4rem;
+}
+
+:root[data-theme="bubblegum"] .post-card.continuation {
+  margin-top: 0.5rem;
+}
+
+:root[data-theme="bubblegum"] .pending-reply-card,
+:root[data-theme="bubblegum"] .pending-thread-shell {
+  border-style: dashed;
+}
+
+:root[data-theme="bubblegum"] .post-card:target {
+  box-shadow: 6px 6px 0 var(--bubblegum-shadow), 0 0 0 4px var(--bubblegum-butter);
+}
+
+:root[data-theme="bubblegum"] .card h1,
+:root[data-theme="bubblegum"] .card h2,
+:root[data-theme="bubblegum"] .card h3 {
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+}
+
+/* Wordmark: white bubble letters with a berry outline and drop. */
+:root[data-theme="bubblegum"] .eyebrow,
+:root[data-theme="bubblegum"] .eyebrow .site-brand {
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 1.15rem;
+  text-shadow:
+    -1px -1px 0 var(--bubblegum-berry), 0 -1px 0 var(--bubblegum-berry),
+    1px -1px 0 var(--bubblegum-berry), 1px 0 0 var(--bubblegum-berry),
+    1px 1px 0 var(--bubblegum-berry), 0 1px 0 var(--bubblegum-berry),
+    -1px 1px 0 var(--bubblegum-berry), -1px 0 0 var(--bubblegum-berry),
+    2px 2px 0 var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] .eyebrow .site-brand {
+  text-decoration: none;
+}
+
+:root[data-theme="bubblegum"] .site-header:not(.site-header--app)::after {
+  content: "";
+  display: block;
+  margin-top: 0.8rem;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, var(--bubblegum-berry) 0 6px, transparent 6px 12px);
+}
+
+:root[data-theme="bubblegum"] .nav-link {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--bubblegum-berry);
+  box-shadow: 3px 3px 0 var(--bubblegum-shadow);
+  font-weight: 700;
+}
+
+:root[data-theme="bubblegum"] .nav-link[data-unread-count]:not([data-unread-count="0"]) {
+  background: var(--bubblegum-butter);
+}
+
+:root[data-theme="bubblegum"] .nav-link.is-active {
+  background: var(--active-bg);
+  color: var(--active-ink);
+  box-shadow: 3px 3px 0 var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] input,
+:root[data-theme="bubblegum"] select {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 999px;
+  background: var(--input-bg);
+}
+
+:root[data-theme="bubblegum"] input[type="checkbox"],
+:root[data-theme="bubblegum"] input[type="radio"] {
+  border-radius: revert;
+  accent-color: var(--active-bg);
+}
+
+:root[data-theme="bubblegum"] textarea {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 1rem;
+  background: var(--input-bg);
+}
+
+/* Chunky pixel buttons, like a POST button on an old desktop. */
+:root[data-theme="bubblegum"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 0;
+  background: var(--button-bg);
+  color: var(--bubblegum-berry);
+  box-shadow: 3px 3px 0 var(--bubblegum-berry);
+  font-family: var(--code-font);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme="bubblegum"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  background: #ffc7e0;
+}
+
+:root[data-theme="bubblegum"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+  box-shadow: 1px 1px 0 var(--bubblegum-berry);
+  transform: translate(2px, 2px);
+}
+
+:root[data-theme="bubblegum"] button[type="submit"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option),
+:root[data-theme="bubblegum"] button.feature-flags-chip[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="bubblegum"] .thread-reaction-button {
+  padding: 0.3rem 0.55rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-theme="bubblegum"] .thread-reaction-button[disabled] {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
+:root[data-theme="bubblegum"] button:not(.theme-menu__option):focus-visible,
+:root[data-theme="bubblegum"] input:focus-visible,
+:root[data-theme="bubblegum"] textarea:focus-visible,
+:root[data-theme="bubblegum"] .nav-link:focus-visible {
+  outline: 3px solid var(--bubblegum-butter);
+  outline-offset: 2px;
+}
+
+:root[data-theme="bubblegum"] .pinned-thread-marker {
+  background: var(--bubblegum-butter);
+  border: 2px solid var(--bubblegum-berry);
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+}
+
+:root[data-theme="bubblegum"] .feedback,
+:root[data-theme="bubblegum"] [data-role="public-key-viewer"],
+:root[data-theme="bubblegum"] [data-role="private-key-viewer"] {
+  border: 2px solid var(--bubblegum-berry);
+  box-shadow: 3px 3px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] ::selection {
+  background: var(--bubblegum-butter);
+  color: var(--ink);
+}
+
+/* The intro card's Hide button becomes the title bar's close box. */
+:root[data-theme="bubblegum"] .visitor-intro::before {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    var(--bubblegum-bar);
+}
+
+:root[data-theme="bubblegum"] .visitor-intro > button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  top: 0.2rem;
+  right: 0.4rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid var(--bubblegum-berry);
+  background: #ffffff;
+  box-shadow: none;
+  font-size: 0.8rem;
+  font-family: var(--ui-font);
+  letter-spacing: 0;
+  z-index: 1;
+}
+
+:root[data-theme="bubblegum"] [data-shell="app"] .new-post-button,
+:root[data-theme="bubblegum"] .account-menu__trigger {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 0;
+  background: var(--button-bg);
+  color: var(--bubblegum-berry);
+  box-shadow: 3px 3px 0 var(--bubblegum-berry);
+  font-weight: 800;
+}
+
+:root[data-theme="bubblegum"] [data-shell="app"] .new-post-button:where(.is-active) {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+/* Phones: the app nav is a bottom tab bar; tabs sit flat in one window strip. */
+@media (max-width: 639px) {
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .site-header-actions {
+    border-top: 3px solid var(--bubblegum-berry);
+    background: #ffffff;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .nav > .nav-link,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .account-menu__trigger {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button.is-active {
+    background: var(--active-bg);
+    color: var(--active-ink);
+  }
+}
+
+@media (max-width: 480px) {
+  :root[data-theme="bubblegum"] .card {
+    box-shadow: 4px 4px 0 var(--bubblegum-shadow);
+  }
+}
