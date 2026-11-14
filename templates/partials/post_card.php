@@ -35,6 +35,7 @@ $postResolution = $unlockedPostTags !== [] && in_array((string) ($post['resoluti
     ? (string) $post['resolution_state'] : null;
 // A reply that can take a state renders inside <details>: open replies stay open (summary hidden),
 // resolved and closed ones fold to the summary line, and any reader can expand them.
+$postStateLabel = \ForumRewrite\Support\PostStateView::label($postResolution, (string) ($post['resolution_set_by_username'] ?? ''));
 $postFoldable = array_filter($unlockedPostTags, static fn (string $tag): bool => \ForumRewrite\Support\Tagsets::forApplication()->exclusiveGroupOf($tag) !== null) !== [];
 $postFoldExcerpt = '';
 $postFoldDate = '';
@@ -71,6 +72,9 @@ $hoverTimeLabel = $isRunTail ? '' : $postTimeLabel;
 $metaLine = '';
 if ($isRunTail) {
     $metaLine = '<p class="meta" data-post-byline>' . $contentMeta($post, 'created_at', '');
+    if ($postFoldable) {
+        $metaLine .= ' <span class="post-resolution-state" data-role="post-state-label"' . ($postStateLabel === '' ? ' hidden' : '') . '>' . $e($postStateLabel) . '</span>';
+    }
     if ($showRootMetaExtras) {
         if ($thread['thread_labels'] !== []) {
             $metaLine .= ' · Labels: ' . $renderLabels($thread['thread_labels']);
@@ -85,8 +89,11 @@ if ($isRunTail) {
 ?>
 <article id="<?= $e($postAnchorId) ?>" class="card post-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $isContinuation ? ' continuation' : '' ?><?= $isRunTail ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($post['created_at'] ?? null) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $postResolution !== null ? ' data-resolution="' . $e($postResolution) . '"' : '' ?> data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $hoverTimeLabel !== '' ? ' data-time="' . $e($hoverTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
 <?php if ($postFoldable): ?>
-<details class="post-resolution" data-role="post-resolution"<?= $postResolution === null ? ' open' : '' ?>>
-  <summary class="post-resolution-summary" data-role="post-resolution-summary"><span class="post-resolution-header"><?= $e((string) ($post['author_label'] ?? '')) ?><?= $postFoldDate !== '' ? ' · ' . $e($postFoldDate) : '' ?></span> <span class="post-resolution-state" data-role="post-resolution-label"><?= $e(ucfirst((string) ($postResolution ?? 'resolved'))) ?></span><?php if ($postFoldExcerpt !== ''): ?> <span class="post-resolution-line"><?= $e($postFoldExcerpt) ?></span><?php endif; ?></summary>
+<details class="post-resolution" data-role="post-resolution"<?= \ForumRewrite\Support\PostStateView::folds($postResolution) ? '' : ' open' ?>>
+  <summary class="post-resolution-summary" data-role="post-resolution-summary"><span class="post-resolution-header"><?= $e((string) ($post['author_label'] ?? '')) ?><?= $postFoldDate !== '' ? ' · ' . $e($postFoldDate) : '' ?></span> <span class="post-resolution-state" data-role="post-resolution-label"><?= $e(\ForumRewrite\Support\PostStateView::folds($postResolution) ? $postStateLabel : 'Resolved') ?></span><?php if ($postFoldExcerpt !== ''): ?> <span class="post-resolution-line"><?= $e($postFoldExcerpt) ?></span><?php endif; ?></summary>
+<?php if ($metaLine === ''): ?>
+  <p class="meta post-resolution-root"><span class="post-resolution-state" data-role="post-state-label"<?= $postStateLabel === '' ? ' hidden' : '' ?>><?= $e($postStateLabel) ?></span></p>
+<?php endif; ?>
 <?php endif; ?>
 <?php if ($metaLine !== '' && !$isContinuation): ?>
   <?= $metaLine ?>

@@ -34,6 +34,7 @@ $unlockedPostTags = (($tagUnlocksEnabled ?? false) && !$isRetracted)
     : [];
 $postResolution = $unlockedPostTags !== [] && in_array((string) ($post['resolution_state'] ?? ''), $unlockedPostTags, true)
     ? (string) $post['resolution_state'] : null;
+$postStateLabel = \ForumRewrite\Support\PostStateView::label($postResolution, (string) ($post['resolution_set_by_username'] ?? ''));
 $rootTakesState = array_filter($unlockedPostTags, static fn (string $tag): bool => \ForumRewrite\Support\Tagsets::forApplication()->exclusiveGroupOf($tag) !== null) !== [];
 $postBody = (string) $post['body'];
 $postBodyFirstLineSegments = preg_split('/\r\n|\r|\n/', $postBody, 2);
@@ -121,10 +122,10 @@ if (!$metaVisible) {
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
 <?php if ($metaVisible && !$isQdbQuoteRoot): ?>
-  <p class="meta" data-post-byline><?= $contentMeta($post, 'created_at', '') ?><?php if ($rootTakesState): ?> <span class="post-resolution-state" data-role="post-resolution-label"<?= $postResolution === null ? ' hidden' : '' ?>><?= $e(ucfirst((string) ($postResolution ?? 'resolved'))) ?></span><?php endif; ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $renderLabels($thread['thread_labels']) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
+  <p class="meta" data-post-byline><?= $contentMeta($post, 'created_at', '') ?><?php if ($rootTakesState): ?> <span class="post-resolution-state" data-role="post-state-label"<?= $postStateLabel === '' ? ' hidden' : '' ?>><?= $e($postStateLabel) ?></span><?php endif; ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $renderLabels($thread['thread_labels']) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?php endif; ?>
 <?php if ($rootTakesState && (!$metaVisible || $isQdbQuoteRoot)): ?>
-  <p class="meta post-resolution-root"><span class="post-resolution-state" data-role="post-resolution-label"<?= $postResolution === null ? ' hidden' : '' ?>><?= $e(ucfirst((string) ($postResolution ?? 'resolved'))) ?></span></p>
+  <p class="meta post-resolution-root"><span class="post-resolution-state" data-role="post-state-label"<?= $postStateLabel === '' ? ' hidden' : '' ?>><?= $e($postStateLabel) ?></span></p>
 <?php endif; ?>
 <?= $partial('partials/scripture_expansion.php') ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>

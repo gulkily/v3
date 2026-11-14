@@ -122,22 +122,32 @@ final class ApiTextController
     }
 
     /**
-     * `Resolution: resolved` or `closed` for a reply marked through a tagset (resources/tagsets.txt);
-     * absent when the reply is open or the feature is off.
+     * `Resolution: claimed|resolved|closed` for a post marked through a tagset (resources/tagsets.txt),
+     * plus `Claimed-By:` for a claim; absent when the post is open or the feature is off.
      *
      * @param array<string, mixed> $post
      */
     private function resolutionHeader(array $post): string
     {
         $state = $this->resolutionState($post);
-        return $state === null ? '' : 'Resolution: ' . $state . "\n";
+        if ($state === null) {
+            return '';
+        }
+        $claimer = trim((string) ($post['resolution_set_by_username'] ?? ''));
+
+        return 'Resolution: ' . $state . "\n" . ($state === 'claimed' && $claimer !== '' ? 'Claimed-By: ' . $claimer . "\n" : '');
     }
 
     /** @param array<string, mixed> $post */
     private function resolutionMarker(array $post): string
     {
         $state = $this->resolutionState($post);
-        return $state === null ? '' : '(' . $state . ') ';
+        if ($state === null) {
+            return '';
+        }
+        $claimer = trim((string) ($post['resolution_set_by_username'] ?? ''));
+
+        return '(' . $state . ($state === 'claimed' && $claimer !== '' ? ' by ' . $claimer : '') . ') ';
     }
 
     /** @param array<string, mixed> $post */

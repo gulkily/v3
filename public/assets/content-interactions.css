@@ -200,7 +200,7 @@
 .post-card > .post-resolution:first-child > .post-resolution-summary + * {
   margin-top: 0;
 }
-.post-card:not([data-resolution]) > .post-resolution > .post-resolution-summary {
+.post-card:not([data-resolution="resolved"]):not([data-resolution="closed"]) > .post-resolution > .post-resolution-summary {
   display: none;
 }
 .post-resolution-summary {
@@ -237,6 +237,12 @@
 }
 .post-card[data-resolution="resolved"] .post-resolution-state {
   color: var(--status-ok);
+}
+.post-card[data-resolution="claimed"] .post-resolution-state {
+  color: var(--status-warning);
+  /* Keeps the claimer's name as written. */
+  text-transform: none;
+  letter-spacing: normal;
 }
 .post-card[data-resolution="closed"] .post-resolution-state {
   color: var(--ink-soft);
