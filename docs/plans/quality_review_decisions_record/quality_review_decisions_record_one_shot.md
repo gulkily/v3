@@ -10,7 +10,7 @@ Extended estimates: enabled (new enrolled cycle default); no real alternatives o
 
 **Cycle estimate: 0.10 (intake)**
 
-Status: planned; next permitted action: planning commit, then the documentation edits.
+Status: documentation complete; PR open, stacked on #223 and #227.
 
 ## Original request
 
@@ -52,11 +52,38 @@ Check links and referenced paths, run `git diff --check`, and run the Markdown/d
 
 Starting revisions and branch: PR #227 branch tip `f055f544` (on `origin/main` + #223 + #227); branch `docs/quality_review_decisions_record`.
 
-Planning commit: pending.
+Planning commit: `5607aeff` (confirmed with Git).
 
 ## Study history
 
 - 2026-11-14 intake: 0.10, scope v1. Prior exposure: the same agent ran the whole review.
 - 2026-11-14 execution entry: 0.10 reaffirmed.
+- 2026-11-14 closeout: scope v1 delivered. Retrospective scope assessment: 0.10. Maintainer acceptance pending.
 
 _Claude (Opus 5.5), 2026-11-14_
+
+## Dated execution history
+
+- 2026-11-14: checked the merge state of every cited PR (#139–#163 merged; #223 and #227 open).
+- 2026-11-14: findings gain "Decisions and outcomes" (a table of decisions 1–8, the middle-eight calls, the held items, the four bugs found and fixed, and the current baseline failures) and "Lessons for the next pass" (six lessons). The Summary links to both, and §8's open interface question is marked resolved.
+- 2026-11-14: checklist's test-only item ticked, with the held items named; new ground rule to list test callers before rating.
+
+## Outcome
+
+Both documents now say how each decision ended, what is still open (the two held items, and #223/#227 awaiting merge) and what to do differently next time.
+
+## Verification
+
+- Links and referenced paths in both documents: **passed** (script check, no broken relative links).
+- `git diff --check`: **passed**.
+- Smoke set plus PlatformDocsCatalog, DocsPublication, MarkdownListStructure and LlmsTxtRenderer: 474 run, 473 passed. The one failure is the **baseline** `testThreadCardWrapsMediaEmbedPreviewInDiv`, recorded in the findings.
+- Runtime checks: inapplicable (documentation only).
+
+## Final review
+
+Only the two review documents, this record, the index, the ledger and the debug log changed. No code or tests.
+
+Commit/merge/publication status: planning commit `5607aeff`; completion commit pending at time of writing; stacked on open PRs #223 and #227.
+
+_Claude (Opus 5.5), 2026-11-14_
+
