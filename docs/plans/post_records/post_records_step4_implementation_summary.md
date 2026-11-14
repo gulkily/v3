@@ -57,3 +57,19 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged; no revisions. Retrospective: as planned. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Targeted update after retracting a like
+
+**Original estimate: 0.10**
+**Retrospective estimate: 0.08**
+
+- Changes:
+  - `refreshAfterReactionRetraction` now calls the like path's own helpers, `synchronizeThreadLabelDerivedState` or `synchronizePostReactionDerivedState`. These re-derive the thread's labels or the post's reactions from the remaining files, and fall back to a full rebuild if the read model isn't current or the update fails.
+  - Page invalidation matches what a new like invalidates: the reply's page, or the thread for a root.
+  - The thread-like test calls `finalizePreparedRetraction` directly, so it can assert that `read_model_incremental_update` ran and `read_model_rebuild` didn't. The full rebuild at the end of that test checks that the targeted result matches a rebuild: no like in `viewer_tags` and no reaction in `posts`.
+- Verification:
+  - Passed: `./v3 test --smoke WriteApiSmokeTest ReactionRetractionTest IncrementalReadModelUpdaterTest`, 667 run, 667 passed, 0 failed.
+  - Not run: the full suite.
+- Estimate details: original scope as in Step 3, unchanged. Retrospective 0.08, slightly under: the existing helpers needed no changes. Rater: Claude, the same exposed rater.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

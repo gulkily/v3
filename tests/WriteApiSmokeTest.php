@@ -4347,8 +4347,14 @@ NODE;
         assertSame('ok', $prepared['status']);
         assertStringContains("\nTarget-ID: {$likeId}\n", $prepared['canonical_record']);
         assertStringContains('Author-Identity-ID: ' . $liker['identity_id'], $prepared['canonical_record']);
-        $result = $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home']);
+        $result = $writer->finalizePreparedRetraction(['prepare_token' => $prepared['prepare_token'], 'target_id' => $likeId,
+            'record_path' => $prepared['record_path'], 'actor_identity_id' => $liker['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($liker['home'], $prepared['canonical_record'])]);
         assertSame('complete', $result['retraction_status']);
+        // The targeted update ran, not a full rebuild.
+        assertSame(true, isset($result['timings']['read_model_incremental_update']));
+        assertSame(false, isset($result['timings']['read_model_rebuild']));
         assertSame(false, is_file($root . '/' . $likePath));
         $receipt = (string) file_get_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($likeId));
         assertStringContains("\nTarget-ID: {$likeId}\n", $receipt);

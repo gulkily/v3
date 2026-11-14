@@ -1399,7 +1399,8 @@ class LocalWriteService
     }
 
     /**
-     * Stage 2 refresh: a full derived-state refresh. Stage 3 replaces it with a targeted update.
+     * Retracting a like changes one thread's labels or one post's reactions: the like path's own
+     * targeted update re-derives them from the remaining files, falling back to a full rebuild.
      *
      * @param array<string, string> $reaction
      * @param array<string, int|float> $timings
@@ -1407,12 +1408,19 @@ class LocalWriteService
     private function refreshAfterReactionRetraction(array $reaction, string $commitSha, array &$timings): ?string
     {
         try {
-            $timings = array_merge($timings, $this->refreshDerivedStateAfterCommit($commitSha));
+            $timings = array_merge($timings, RemovalTarget::family($reaction['record_id']) === 'thread-label'
+                ? $this->synchronizeThreadLabelDerivedState($reaction['thread_id'], $commitSha)
+                : $this->synchronizePostReactionDerivedState($reaction['target_post_id'], $commitSha));
         } catch (RuntimeException) {
             return 'read_model_refresh';
         }
         try {
-            $this->invalidateRetractedPostArtifacts();
+            // Same pages a like refreshes: a reply's own page, or the thread for a root.
+            if ($reaction['target_post_id'] !== $reaction['thread_id']) {
+                $this->invalidator()->invalidateReply($reaction['thread_id'], $reaction['target_post_id']);
+            } else {
+                $this->invalidator()->invalidateBoardThread($reaction['thread_id']);
+            }
         } catch (\Throwable) {
             return 'artifact_invalidate';
         }
