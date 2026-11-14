@@ -776,6 +776,12 @@ pre {
     --app-tabbar-offset: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Pages without the bar (a single conversation): bottom-pinned parts clear only the safe area. */
+  [data-shell="app"][data-tabbar-page="none"] {
+    --app-tabbar-height: env(safe-area-inset-bottom, 0px);
+    --app-tabbar-offset: env(safe-area-inset-bottom, 0px);
+  }
+
   [data-shell="app"] .main {
     padding-bottom: var(--app-tabbar-height);
   }
@@ -804,6 +810,24 @@ pre {
      `transform: none` so the menu's fixed popovers position against the screen. */
   [data-shell="app"][data-tabbar="hidden"] .site-header--app .site-header-actions {
     transform: translateY(100%);
+  }
+
+  [data-shell="app"][data-tabbar-page="none"] .site-header--app .site-header-actions {
+    display: none;
+  }
+
+  /* Without the bar the page fills the screen, so a short page can still end at the bottom edge. */
+  [data-shell="app"][data-tabbar-page="none"] {
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+    padding-bottom: 0;
+  }
+
+  [data-shell="app"][data-tabbar-page="none"] .main {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
   }
 
   [data-shell="app"] .site-header--app .nav {

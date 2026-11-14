@@ -63,6 +63,7 @@ final class TemplateRenderer
         'calendar_day.php' => ['/assets/compose.css', '/assets/calendar.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'tag_unlocks.php' => ['/assets/tools.css'],
         'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
@@ -142,6 +143,7 @@ final class TemplateRenderer
             $pageStylesheetPaths,
             is_string($pageData['threadTheme'] ?? null) ? $pageData['threadTheme'] : null,
             $showReadingMargins,
+            !empty($pageData['tabBarHidden']),
         );
     }
 
@@ -160,6 +162,7 @@ final class TemplateRenderer
         array $pageStylesheetPaths = [],
         ?string $threadTheme = null,
         bool $showReadingMargins = false,
+        bool $tabBarHidden = false,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
@@ -319,6 +322,8 @@ final class TemplateRenderer
                 array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && ($item['phone'] ?? '') === 'more'),
             )),
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
+            // A page can drop the phone tab bar (a single conversation, whose back arrow is the way out).
+            'tabBarHidden' => $tabBarHidden,
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
             'eventWhenScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_WHEN_ENABLED) ? $this->assetPath('/assets/event_when.js') : null,
             'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,

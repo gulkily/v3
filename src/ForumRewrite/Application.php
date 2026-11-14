@@ -961,6 +961,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/tag-unlocks/' || $path === '/tools/tag-unlocks') {
+            $this->sendHtml($this->toolsPageController()->tagUnlocks(), 200);
+            return;
+        }
+
         if ($path === '/tools/outbox/' || $path === '/tools/outbox') {
             $this->sendHtml($this->toolsPageController()->outbox(), 200);
             return;
@@ -2448,6 +2453,7 @@ final class Application
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
+            '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',

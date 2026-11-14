@@ -56,6 +56,7 @@ final class ToolsPageSupport
             ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],
             ['key' => 'user-access', 'label' => 'User Access', 'href' => '/tools/user-access/', 'group' => 'community', 'tone' => 'access', 'standalone' => false],
             ['key' => 'visitor-statistics', 'label' => 'Visitor Statistics', 'href' => '/tools/visitor-statistics/', 'group' => 'community', 'tone' => 'statistics', 'standalone' => false],
+            ['key' => 'tag-unlocks', 'label' => 'Tag Unlocks', 'href' => '/tools/tag-unlocks/', 'group' => 'community', 'tone' => 'unlocks', 'standalone' => false],
             ['key' => 'feature-flags', 'label' => 'Feature Flags', 'href' => '/tools/feature-flags/', 'group' => 'operator', 'tone' => 'flags', 'standalone' => false],
             ['key' => 'codebase', 'label' => 'System status', 'href' => '/tools/codebase/', 'group' => 'operator', 'tone' => 'status', 'standalone' => false],
             ['key' => 'sqlite', 'label' => 'SQLite Viewer', 'href' => '/tools/sqlite/', 'group' => 'operator', 'tone' => 'database', 'standalone' => false],
