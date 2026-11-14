@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/guestbook`; [host ledger](../effort_estim
 
 Extended estimates: enabled
 
-Status: Step 3 approved 2026-11-14; Step 4 in progress on branch `guestbook`. Planning commit `42e32181`.
+Status: Step 4 Stages 1–4 complete on branch `guestbook`; Stage 5 (release) pending maintainer. Planning commit `42e32181`.
 
 Cycle estimate: 0.60
 
@@ -103,5 +103,27 @@ Cycle estimate: 0.60
   - The thread page's link is baked into static files, so turning the flag on or naming the thread needs a rebuild before the link shows there. `/guestbook/` itself is rendered per request, like `/gallery/`.
   - No navigation destination was added, so `theme-nav-icons.css` is unchanged.
 - Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Release on zenmemes.com
+
+**Original estimate: 0.05**
+**Retrospective: pending**
+
+- Status: pending maintainer. Needs the PR merged and deployed, a "Guestbook" thread on zenmemes.com, its ID in the `zenmemes` profile's `guestbookThread` (one line, small PR), and a static rebuild for the thread page's link.
+- Verification: pending. Ilya signs on his phone and a wide screen; Claude signs once with Quill.
+
+## Final Review
+
+- Final diff review of `42e32181..HEAD`: passed. Retracted entries and hidden posts stay out of the book; replies under a retracted entry stay in the thread; `return_to` can only reach the book from the guestbook thread; other site profiles have no guestbook.
+- Checks run: smoke set plus touched classes at each stage, `tests/browser/guestbook.mjs`, and a static build. Full suite not run.
+- Unverified: Stage 5's production check on Ilya's phone and wide screen; signing on production with Quill.
+- Commits: planning `42e32181`, then one commit per completed stage (Stages 1–4). Stage 5 waits on deployment.
+
+## Cycle Closeout
+
+- Retrospective scope assessment: Stages 1–4 delivered as planned, with the deviations recorded per stage (spread addressing, flag default on, no web fonts). The cycle total so far reads as **0.60**; Stage 5 is still pending.
+- Maintainer comfortable-fit judgment and study acceptance: pending.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
