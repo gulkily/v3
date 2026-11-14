@@ -70,6 +70,7 @@
 .private-conversation [data-role="private-message-encryption-note"] { font-size: .75rem; }
 .private-conversation .private-message-actions { display: flex; gap: .5rem; align-items: stretch; }
 .private-conversation [data-private-message-composer] .private-message-latest { flex: 0 0 auto; min-width: 44px; padding: 0 .9rem; }
+.private-conversation [data-private-message-composer] .private-message-latest[hidden] { display: none; }
 .private-conversation [data-role="private-message-feedback"].feedback-ok { padding: 0; border: 0; background: transparent; }
 @media (max-width: 480px) {
   .private-conversation .private-message { max-width: 94%; }
