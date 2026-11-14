@@ -89,7 +89,7 @@ Diff limited to the seven ruler files listed under reuse decisions plus this rec
 
 ## Commit/merge/publication status
 
-Planning commit `ac7a9ad`; completion commit pending at the time of writing (hash reported in the PR and handoff); branch `feat/reading_margins_two_clicks` pushed with a PR to `main`; not merged or deployed.
+Planning commit `ac7a9ad`; completion commit `3f7ab45` (confirmed with Git); branch `feat/reading_margins_two_clicks` pushed; PR #224 open against `main`; not merged or deployed.
 
 Debug log: [reading_margins_two_clicks_debug_log.md](./reading_margins_two_clicks_debug_log.md)
 
