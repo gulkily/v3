@@ -719,7 +719,7 @@ final class Application
                 $this->routeServices()->notFound();
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\AgentPageController($this->renderPageTemplate(...)))->render(), 200);
+            $this->sendHtml((new \ForumRewrite\Http\AgentPageController($this->renderPageTemplate(...), $this->pdo()))->render($query['sort'] ?? null, $query['tag'] ?? null), 200);
             return;
         }
 

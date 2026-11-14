@@ -1,9 +1,9 @@
 Cycle: `v3/prompt_library`; Mode: one-shot; Record: this file; Index: [plans index](../README.md)
-Debug mode: enabled (project marker `.railspike_debug_on`)
+Debug mode: enabled (project marker `.railspike_debug_on`); log: [prompt_library_debug_log.md](prompt_library_debug_log.md)
 Effort study: `railspike-effort` / `v3/prompt_library` — [host ledger](../effort_estimation_trial.md#cycle-v3prompt_library); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.25**
-Status: planned; next permitted action: implement on `feat/prompt_library`
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -62,7 +62,7 @@ Uses unchanged: thread, tag/label, member approval. New use of tags: `#prompt` m
 - Full suite not run (maintainer runs it). Baseline smoke failure before changes: `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`.
 
 Starting revision and branch: `26dd2fbff07b1e99b30d2429cd9d322a02318683`; `feat/prompt_library`
-Planning commit: pending
+Planning commit: `2fe61838`
 
 ## Study history
 
@@ -72,3 +72,29 @@ Planning commit: pending
 ## Dated execution history
 
 - 2026-11-14T22:10Z: no matching item in `docs/feedback/items/`.
+- 2026-11-14T22:40Z: implemented as planned. `ReadModel/PromptLibrary` (one query, no schema change), `AgentPageController` takes the read model and `?sort=`/`?tag=`, `agent.php` renders library then "Use this site with your agent" (`#start`). The copy partial gained `label_hidden` and a `library` variant (height capped at 16rem). About and the first-visit intro now link to `/agent/#start`. Nav: `Prompts` after Recent/Calendar/Gallery, bar order after `gallery`; phone-tab CSS lists `agent`. Flag description updated.
+- 2026-11-14T22:40Z: correction found in visual check: the page's own Top and All links (`href="/agent/"`) picked up the nav glyph; the three glyph rules and the main-nav sizing rule now exclude `.board-filter > *`.
+- 2026-11-14T22:40Z: Tools still has its Agent Prompts launcher. Removing it now that the nav links the page would follow the UI-copy rule against repeated controls, but it is outside this request; left for the maintainer.
+
+## Study closeout
+
+Intake 0.25; execution entry reaffirmed; no scope revision; **retrospective 0.25**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
+
+## Outcome
+
+Delivered as scoped: `/agent/` is the Prompts page, linked from the main nav. Approved `#prompt` threads list as cards with Copy, likes, replies/Discuss and category chips; Top/New and category are readable links; search filters in place; unapproved ones sit under "Waiting for approval"; "Share a prompt" opens the composer with `prompt` filled in. The site's three prompts follow under "Use this site with your agent".
+
+Limitations: library capped at 200 with no paging; a retracted `#prompt` label from an approved member still counts while any other `#prompt` label or the author's tag remains (`viewer_tags` keeps retracted label rows); the library starts empty until members post or tag prompts.
+
+## Verification
+
+- Passed: `./v3 test --smoke PromptLibraryTest AppNavigationPlacementTest PresentationProfileMatrixTest NavIconSetsTest`: 476/477. The one failure, `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, fails identically on the starting revision before any change.
+- Passed: local server with seeded read-model rows (approved author, member-labeled prompt, waiting prompt). Playwright: search "diff" leaves one card, nonsense search shows "No prompts match.", Copy shows "Copied" and the clipboard holds the prompt, `?tag=coding&sort=new` lists only coding prompts newest first. Screenshots in Gloss, Glossdark, Word97 and Bubblegum at 390px and 1200px, including the nav and phone tab icon.
+- Not run: full suite (maintainer runs it); production with real `#prompt` threads (none exist yet).
+
+## Final review
+
+Diff checked for duplication (reuses copy partial, board toolbar/filter, `$rowMeta`, listed-roots SQL) and file scope; `git diff --check` clean. No concept inventory change.
+
+Commit/merge/publication status: completion commit pending at time of writing; push and PR follow; not merged or deployed.
+Attribution: Claude (claude-opus-5-5), 2026-11-14 UTC.

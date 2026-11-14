@@ -94,6 +94,7 @@ $testFiles = [
     __DIR__ . '/TestingSelfApprovalTest.php',
     __DIR__ . '/ToolsRegistryTest.php',
     __DIR__ . '/BoardListingQueryTest.php',
+    __DIR__ . '/PromptLibraryTest.php',
     __DIR__ . '/TagsIndexMemoryTest.php',
     __DIR__ . '/TagPaginationTest.php',
     __DIR__ . '/BoardSearchTest.php',

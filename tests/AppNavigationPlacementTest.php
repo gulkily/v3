@@ -126,9 +126,12 @@ final class AppNavigationPlacementTest
                 ->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
             preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $bar);
             preg_match('/<details class="account-menu".*?<\/details>/s', $html, $menu);
-            foreach (['/', '/recent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
+            foreach (['/', '/recent/', '/agent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
                 assertStringContains('href="' . $href . '"', $bar[0]);
             }
+            // Prompts follows the content destinations, before Users.
+            assertSame(true, strpos($bar[0], 'href="/recent/"') < strpos($bar[0], 'href="/agent/"'));
+            assertSame(true, strpos($bar[0], 'href="/agent/"') < strpos($bar[0], 'href="/users/"'));
             // Bar order follows the Step 2 layout: Users before Messages before Search.
             assertSame(true, strpos($bar[0], 'href="/users/"') < strpos($bar[0], 'href="/messages"'));
             assertSame(true, strpos($bar[0], 'href="/messages"') < strpos($bar[0], 'href="/search"'));
@@ -149,7 +152,7 @@ final class AppNavigationPlacementTest
             assertStringContains('aria-label="Menu" data-private-message-unread-mirror', $menu[0]);
             // The head script publishes the slot count, the sections that may hold a tab and the starting tabs, the same for every viewer.
             assertStringContains('window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections, defaults: navSlotDefaults };', $html);
-            assertStringContains('var navSlotSections = ["board","recent","profiles","messages","search","about","tools"];', $html);
+            assertStringContains('var navSlotSections = ["board","recent","agent","profiles","messages","search","about","tools"];', $html);
             assertStringContains('var navSlotDefaults = ["board"];', $html);
             // Without script or saved state, the server's starting tabs show.
             assertStringContains(' data-nav-slots="board">', $html);
