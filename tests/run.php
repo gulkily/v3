@@ -73,6 +73,8 @@ $testFiles = [
     __DIR__ . '/HistoryRewriteTest.php',
     __DIR__ . '/RemovalReceiptTest.php',
     __DIR__ . '/RetractionReceiptTest.php',
+    __DIR__ . '/RetractionTargetIdTest.php',
+    __DIR__ . '/ReactionRetractionTest.php',
     __DIR__ . '/RetractionTransactionTest.php',
     __DIR__ . '/DocsPublicationTest.php',
     __DIR__ . '/IndependentDocsPublicationTest.php',

@@ -1,0 +1,6 @@
+# Post record list
+
+Purpose: Show every signed record that targets one post, each on its own page, so a reader can check them and take back their own like.
+Scenario: Behind `FORUM_POST_RECORDS_ENABLED` (off by default), a post page has a collapsed Records section. It lists the post itself; likes and flags on it; its format changes; titles it set as a reply; and, for a thread root, the thread's labels and titles. Each row links to `/records/<Record-ID>` and to its source file. A retracted like stays in the list, struck through, with a link to its receipt. The liker, or a current operator, sees a Retract button on a like's row and on its record page.
+Sources: [lookup](../../src/ForumRewrite/Canonical/PostRecordList.php), [list partial](../../templates/partials/post_records.php), [record page](../../templates/pages/record.php), [retract control](../../templates/partials/retract_record_control.php), [plan](../plans/post_records/post_records_step3_development_plan.md)
+Boundary: The list is found with `git grep` over the record directories, so it reads current files and needs no read-model index. Only likes are retractable for now; flags, labels, titles and format records are listed but not retractable. Retraction reuses [post retraction](post_retraction.md): the like's Record-ID goes in `Target-ID`.

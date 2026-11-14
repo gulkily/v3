@@ -4297,6 +4297,288 @@ NODE;
         assertSame(false, \ForumRewrite\Security\RetractionAuthority::currentOperator($root, $actor));
     }
 
+    /** @return array<string, mixed> the decoded result of signing and finalizing a prepared retraction */
+    private function finalizeRetraction(Application $app, array $prepared, string $actor, string $home): array
+    {
+        $_POST = ['prepare_token' => $prepared['prepare_token'], 'target_id' => $prepared['target_id'],
+            'record_path' => $prepared['record_path'], 'actor_identity_id' => $actor,
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($home, $prepared['canonical_record'])];
+        try { return json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true); }
+        finally { $_POST = []; }
+    }
+
+    /** @return array<string, mixed> */
+    private function prepareTargetRetraction(Application $app, string $actor, string $target): array
+    {
+        $_POST = ['actor_identity_id' => $actor, 'target_id' => $target];
+        try { return json_decode($this->renderMethod($app, 'POST', '/api/prepare_retraction'), true); }
+        finally { $_POST = []; }
+    }
+
+    private function likeRecordId(string $root, string $directory, string $identity): string
+    {
+        foreach (glob($root . '/records/' . $directory . '/*.txt') ?: [] as $path) {
+            if (str_contains((string) file_get_contents($path), 'Author-Identity-ID: ' . $identity . "\n")) return basename($path, '.txt');
+        }
+        throw new LogicException('No like by ' . $identity . ' in ' . $directory);
+    }
+
+    public function testMembersRetractTheirOwnLikesAndOperatorsRetractAnyLike(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'liked-thread', 'A thread worth liking');
+        $liker = $this->linkSigningIdentity($app, 'liker');
+        $this->seedApprovedIdentity($root, $liker['identity_id']);
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+        $likePath = 'records/thread-labels/' . $likeId . '.txt';
+
+        // Someone else, not an operator, may not retract it.
+        $stranger = $this->linkSigningIdentity($app, 'stranger');
+        $refused = $this->prepareTargetRetraction($app, $stranger['identity_id'], $likeId);
+        assertSame('error', $refused['status']);
+        assertStringContains('Only the person who liked this can retract it', $refused['error']);
+
+        // The liker retracts their like.
+        $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame('ok', $prepared['status']);
+        assertStringContains("\nTarget-ID: {$likeId}\n", $prepared['canonical_record']);
+        assertStringContains('Author-Identity-ID: ' . $liker['identity_id'], $prepared['canonical_record']);
+        $result = $writer->finalizePreparedRetraction(['prepare_token' => $prepared['prepare_token'], 'target_id' => $likeId,
+            'record_path' => $prepared['record_path'], 'actor_identity_id' => $liker['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($liker['home'], $prepared['canonical_record'])]);
+        assertSame('complete', $result['retraction_status']);
+        // The targeted update ran, not a full rebuild.
+        assertSame(true, isset($result['timings']['read_model_incremental_update']));
+        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        assertSame(false, is_file($root . '/' . $likePath));
+        $receipt = (string) file_get_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($likeId));
+        assertStringContains("\nTarget-ID: {$likeId}\n", $receipt);
+        assertStringContains("\nParent-ID: " . $author['thread_id'] . "\n", $receipt);
+        assertStringContains('Retract thread label ' . $likeId, $this->runCommand($root, 'git log -1 --format=%s'));
+
+        // The like no longer counts, no placeholder post appears, and liking again writes a new like.
+        $likes = function () use ($db, $author, $liker): array {
+            $query = (new PDO('sqlite:' . $db))->prepare("SELECT tag FROM viewer_tags WHERE target_id = ? AND author_identity_id = ?");
+            $query->execute([$author['thread_id'], $liker['identity_id']]);
+            return $query->fetchAll(PDO::FETCH_COLUMN);
+        };
+        assertSame([], $likes());
+        assertSame(false, (new PDO('sqlite:' . $db))->query("SELECT post_id FROM posts WHERE post_id = '" . $likeId . "'")->fetchColumn());
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+        assertSame(['like'], $likes());
+
+        // A replay of the same request answers already_retracted.
+        $repeat = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame(true, $repeat['already_retracted']);
+
+        // An operator may retract someone else's like.
+        $operator = $this->linkSigningIdentity($app, 'like-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $secondLike = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+        $byOperator = $this->prepareTargetRetraction($app, $operator['identity_id'], $secondLike);
+        assertSame('ok', $byOperator['status']);
+        assertStringContains('Actor-Identity-ID: ' . $operator['identity_id'], $byOperator['canonical_record']);
+        assertStringContains('Retraction-Class: operator', $byOperator['canonical_record']);
+        assertSame('complete', $this->finalizeRetraction($app, $byOperator, $operator['identity_id'], $operator['home'])['retraction_status']);
+        assertSame(false, is_file($root . '/records/thread-labels/' . $secondLike . '.txt'));
+
+        // A full rebuild agrees: no like is counted and no reaction became a post.
+        $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
+        $pdo = new PDO('sqlite:' . $db);
+        assertSame(false, $pdo->query("SELECT post_id FROM posts WHERE post_id LIKE 'thread-label-%'")->fetchColumn());
+        assertSame([], $likes());
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+    }
+
+    public function testPostPageListsItsRecordsBehindTheFlag(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'records-listed', "A thread with records\n");
+        $liker = $this->linkSigningIdentity($app, 'records-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+
+        putenv('FORUM_POST_RECORDS_ENABLED');
+        $page = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
+        assertStringNotContains('post-records', $page);
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        try {
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/posts/' . $author['thread_id']);
+            assertStringContains('<summary>Records (2)</summary>', $page);
+            assertStringContains('href="/records/' . $author['thread_id'] . '">Post</a>', $page);
+            assertStringContains('href="/records/' . $likeId . '">Like</a>', $page);
+            assertStringContains('href="/source/current/records/thread-labels/' . $likeId . '.txt">source</a>', $page);
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/posts/' . $author['thread_id']);
+            assertStringContains('<summary>Records (2)</summary>', $page);
+            assertStringContains('class="post-record-retracted" data-record-id="' . $likeId . '"', $page);
+            assertStringContains('href="/records/' . $likeId . '">Like</a>', $page);
+            assertStringContains('href="/source/current/records/post-retraction-acceptances/post-retraction-' . $likeId . '.txt">receipt</a>', $page);
+        } finally {
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
+    public function testEachRecordHasAPageAndRetractedOnesShowTheirReceipt(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'record-page', "A thread with a record page\n");
+        $liker = $this->linkSigningIdentity($app, 'record-page-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+
+        putenv('FORUM_POST_RECORDS_ENABLED');
+        assertSame(true, $this->renderStatus($app, '/records/' . $likeId) === 404);
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        try {
+            $fresh = fn (): Application => new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $page = $this->renderMethod($fresh(), 'GET', '/records/' . $likeId);
+            assertStringContains('<h1>Thread label ' . $likeId . '</h1>', $page);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">post ' . $author['thread_id'] . '</a>', $page);
+            assertStringContains('<dt>Tags</dt><dd>like</dd>', $page);
+            assertStringContains('href="/source/current/records/thread-labels/' . $likeId . '.txt"', $page);
+            assertStringContains('title="' . $liker['identity_id'] . '"', $page);
+
+            $postPage = $this->renderMethod($fresh(), 'GET', '/records/' . $author['thread_id']);
+            assertStringContains('<h1>Post ' . $author['thread_id'] . '</h1>', $postPage);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">Read this post</a>', $postPage);
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            $removed = $this->renderMethod($fresh(), 'GET', '/records/' . $likeId);
+            assertStringContains('<strong>Retracted.</strong>', $removed);
+            assertStringContains('records/post-retraction-acceptances/post-retraction-' . $likeId . '.txt', $removed);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">post ', $removed);
+            assertStringNotContains('<dt>Tags</dt>', $removed);
+
+            assertSame(true, $this->renderStatus($fresh(), '/records/post-reaction-unknown') === 404);
+            assertSame(true, $this->renderStatus($fresh(), '/records/..%2Fsecret') === 404);
+        } finally {
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
+    public function testRetractButtonsShowForTheLikerAndOperatorsOnly(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'retract-buttons', "A thread with a like\n");
+        $liker = $this->linkSigningIdentity($app, 'button-liker');
+        $stranger = $this->linkSigningIdentity($app, 'button-stranger');
+        $operator = $this->linkSigningIdentity($app, 'button-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+        $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
+        $button = 'data-post-id="' . $likeId . '"'; // only the like's Retract button carries its ID here
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        $cookies = $_COOKIE;
+        try {
+            $as = function (?array $viewer, string $path) use ($root, $db, $artifacts): string {
+                $_COOKIE = $viewer === null ? [] : ['identity_hint' => $viewer['identity_id']];
+                return $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $path);
+            };
+            foreach (['/posts/' . $author['thread_id'], '/records/' . $likeId] as $path) {
+                assertStringContains($button, $as($liker, $path));
+                assertStringContains('Retract your like?', $as($liker, $path));
+                assertStringContains($button, $as($operator, $path));
+                assertStringContains('Retract this like as an operator?', $as($operator, $path));
+                assertStringNotContains($button, $as($stranger, $path));
+                assertStringNotContains($button, $as(null, $path));
+            }
+            assertStringContains('/assets/post_retraction', $as($liker, '/records/' . $likeId)); // fingerprinted name
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            foreach (['/posts/' . $author['thread_id'], '/records/' . $likeId] as $path) {
+                assertStringNotContains($button, $as($liker, $path));
+            }
+        } finally {
+            $_COOKIE = $cookies;
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
+    public function testARetractedSignedLikeCannotBeReplayedBack(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'replayed-like', "A thread someone liked\n");
+        $liker = $this->linkSigningIdentity($app, 'replay-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $likeId = 'thread-label-replayfixture01';
+        $record = \ForumRewrite\Canonical\ReactionRecordParser::build('thread', $likeId, gmdate('Y-m-d\TH:i:s\Z'), $author['thread_id'], ['like'], $liker['identity_id']);
+        $signed = ['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id'],
+            'canonical_record' => $record, 'detached_signature' => $this->signCanonicalRecord($liker['home'], $record)];
+        assertSame('yes', $writer->applyThreadTag($signed)['wrote_record']);
+
+        $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+
+        // Anyone holding the old signed bytes (they stay in history) tries to write the like back.
+        $refused = false;
+        try { $writer->applyThreadTag($signed); }
+        catch (RuntimeException $error) { $refused = str_contains($error->getMessage(), 'was retracted and cannot be restored'); }
+        assertSame(true, $refused);
+        assertSame(false, is_file($root . '/records/thread-labels/' . $likeId . '.txt'));
+        // Liking again with a new record still works.
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+    }
+
+    public function testReplyLikesRetractAndOtherReactionsAreRefused(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'reply-like', 'Thread with a liked reply');
+        $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $author['thread_id'] . '&parent_id=' . $author['thread_id'] . '&body=Likeable%20reply');
+        $replyId = null;
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/records/posts', FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $file) {
+            $text = (string) file_get_contents((string) $file);
+            if (str_ends_with((string) $file, '.txt') && str_contains($text, "\nThread-ID: " . $author['thread_id'] . "\n") && str_contains($text, 'Likeable reply')) {
+                $replyId = basename((string) $file, '.txt');
+            }
+        }
+        assertSame(true, $replyId !== null);
+        $liker = $this->linkSigningIdentity($app, 'reply-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        assertSame('yes', $writer->applyPostTag(['post_id' => $replyId, 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+        $likeId = $this->likeRecordId($root, 'post-reactions', $liker['identity_id']);
+
+        $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame('ok', $prepared['status']);
+        assertSame($author['thread_id'], $prepared['thread_id']);
+        assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+        $receipt = (string) file_get_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($likeId));
+        assertStringContains("\nThread-ID: " . $author['thread_id'] . "\nParent-ID: {$replyId}\n", $receipt);
+        assertSame('yes', $writer->applyPostTag(['post_id' => $replyId, 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+
+        $flag = 'post-reaction-flag-fixture';
+        file_put_contents($root . '/records/post-reactions/' . $flag . '.txt',
+            \ForumRewrite\Canonical\ReactionRecordParser::build('post', $flag, '2026-11-14T08:00:00Z', $replyId, ['flag'], $liker['identity_id']));
+        $this->runCommand($root, 'git add records && git commit -qm "flag fixture"');
+        $refused = $this->prepareTargetRetraction($app, $liker['identity_id'], $flag);
+        assertSame('error', $refused['status']);
+        assertStringContains('Only likes can be retracted for now.', $refused['error']);
+        $missing = $this->prepareTargetRetraction($app, $liker['identity_id'], 'post-reaction-missing');
+        assertStringContains('Reaction to retract was not found.', $missing['error']);
+    }
+
     public function testOperatorRetractionSignsAsActorAndRechecksPrivilegeAtFinalize(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -9000,6 +9282,13 @@ NODE;
             'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 600),
         ], $metadata);
         file_put_contents($directory . '/' . $token . '.json', json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n");
+    }
+
+    private function renderStatus(Application $application, string $path): int
+    {
+        http_response_code(200);
+        $this->renderMethod($application, 'GET', $path);
+        return (int) http_response_code();
     }
 
     private function renderMethod(Application $application, string $method, string $path): string

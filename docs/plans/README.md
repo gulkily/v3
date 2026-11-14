@@ -72,7 +72,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [Retraction target ID](retraction_target_id/retraction_target_id_step3_development_plan.md) — new retraction requests and receipts name what they remove with `Target-ID` instead of `Post-ID`; old files still read, `post_id` stays an API alias, and posts can't use reaction ID prefixes; split from `post_records`; Step 4 in progress.
+- [Post records](post_records/post_records_step3_development_plan.md) — a post's Records section lists every record that targets it, each with its own `/records/<Record-ID>` page, and members (or operators) can retract likes through the existing signed retraction with `Target-ID`; behind a flag; Step 4 complete, release pending.
+- [Retraction target ID](retraction_target_id/retraction_target_id_step3_development_plan.md) — new retraction requests and receipts name what they remove with `Target-ID` instead of `Post-ID`; old files still read, `post_id` stays an API alias, and posts can't use reaction ID prefixes; split from `post_records`; merged in #189.
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — review findings for PF-20261030-B03, the fixes, and the anonymous post ID decision.
 - [Thread themes](theme_directive/theme_directive_step3_development_plan.md) — a thread's author or an operator sets its page theme with a visible `theme:` line or a hidden `Theme:` header, on the opening post or any reply; `theme: none` clears it; implemented locally, deploy pending.
 - [Engagify theme](engagify_theme/engagify_theme_step3_development_plan.md) — theme scripts, page themes in the site profile, and Engagify, a selectable parody theme of dark patterns that is the cookie notice thread's page theme; implemented locally, deploy check pending.

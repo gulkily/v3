@@ -18,7 +18,7 @@ final class RetractionDeletion
         if ($local !== null) \ForumRewrite\Canonical\AcceptedRemoval::combine(
             $record + ['source_id'=>$record['post_id'],'operation'=>'delete','labels'=>[]], $local);
         $remove = [];
-        foreach (CanonicalPathResolver::postCandidates($record['post_id']) as $candidate) {
+        foreach (\ForumRewrite\Canonical\RemovalTarget::sourceCandidates($record['post_id']) as $candidate) {
             foreach ([$candidate, $candidate . '.asc', $candidate . \ForumRewrite\Canonical\RecordReceipt::SUFFIX] as $path) {
                 if (is_link($root . '/' . $path)) throw new RuntimeException('Cannot retract a symlink.');
                 if (is_file($root . '/' . $path) || trim(LabelRemoval::git($root, ['ls-files', '--', $path])) !== ''
@@ -55,7 +55,7 @@ final class RetractionDeletion
             if ($checkpoint !== null) $checkpoint('staged', '');
             if (trim(LabelRemoval::git($root, array_merge(['diff', '--cached', '--name-only', '--'], $paths))) !== '') {
                 LabelRemoval::git($root, array_merge(['-c', 'user.name=Forum Rewrite', '-c', 'user.email=forum-rewrite@example.invalid',
-                    'commit', '-m', 'Retract post ' . $record['post_id'] . ' by ' . $record['actor'], '--'], $paths));
+                    'commit', '-m', 'Retract ' . str_replace('-', ' ', \ForumRewrite\Canonical\RemovalTarget::family($record['post_id'])) . ' ' . $record['post_id'] . ' by ' . $record['actor'], '--'], $paths));
             }
         } catch (\Throwable $error) {
             foreach ($before as $path => $bytes) {

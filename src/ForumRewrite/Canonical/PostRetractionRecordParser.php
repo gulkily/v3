@@ -42,6 +42,9 @@ final class PostRetractionRecordParser
         $target = RemovalTarget::fromHeaders($record->headers);
         $postId = $target['id'];
         $targetHeader = $target['legacy'] ? RemovalTarget::LEGACY_ID : RemovalTarget::ID;
+        if ($target['legacy'] && RemovalTarget::isReactionId($postId)) {
+            throw new CanonicalRecordParseException('A reaction can be retracted only with Target-ID.');
+        }
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $postId) !== 1) {
             throw new CanonicalRecordParseException('Post-retraction ' . $targetHeader . ' is not a valid identifier.');
         }

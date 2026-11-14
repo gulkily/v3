@@ -69,6 +69,33 @@ if ($source !== null) {
         exit(0);
     } catch (Throwable $error) { fwrite(STDERR, $error->getMessage() . "\n"); exit(1); }
 }
+// A removed like leaves the same local receipt a removed post does. Other reactions keep the
+// plain git-rm path below until they become retractable too.
+$isLike = static function (string $root, string $id): bool {
+    try { return \ForumRewrite\Canonical\ReactionTarget::describe($root, $id)['is_like']; }
+    catch (Throwable) { return false; }
+};
+if (\ForumRewrite\Canonical\RemovalTarget::isReactionId($sourceId) && !$inspect && !$repair
+    && ($target === $sourceId || str_starts_with($target, 'records/post-reactions/') || str_starts_with($target, 'records/thread-labels/'))
+    && (\ForumRewrite\Canonical\LabelRemoval::read($repositoryRoot, $sourceId) !== null || $isLike($repositoryRoot, $sourceId))) {
+    try {
+        \ForumRewrite\Host\HighTrafficSafety::beforeWrite($repositoryRoot, $databasePath, "records/post-retractions/maintenance.txt");
+        $progress->step('Removing ' . $sourceId);
+        $result = \ForumRewrite\Write\ReactionRemoval::run($repositoryRoot, $sourceId);
+        $progress->step('Rebuilding the read model');
+        (new ExecutionLock(dirname($databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(
+            static function () use ($projectRoot, $repositoryRoot, $databasePath, $artifactRoot): void {
+                (new ReadModelBuilder($repositoryRoot, $databasePath, new CanonicalRecordRepository($repositoryRoot)))->rebuild();
+                if ($artifactRoot !== null) (new StaticArtifactBuilder($projectRoot, $repositoryRoot, $databasePath, $artifactRoot))->build();
+            }
+        );
+        if ($json) fwrite(STDOUT, json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT) . "\n");
+        else foreach ($result as $key => $value) fwrite(STDOUT, $key . ': ' . (is_array($value) ? json_encode($value) : (string) $value) . "\n");
+        if (!$json) $progress->finish('Deleted ' . $sourceId);
+        exit(0);
+    } catch (Throwable $error) { fwrite(STDERR, $error->getMessage() . "\n"); exit(1); }
+}
+
 $relativePath = resolveRecordPath($repositoryRoot, $target);
 $absolutePath = $repositoryRoot . '/' . $relativePath;
 
