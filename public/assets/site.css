@@ -404,6 +404,38 @@ pre {
   display: none;
 }
 
+/* Light and dark columns: each row is a theme beside its counterpart in the
+   other mode (ThemeRegistry::menuLayout); Auto spans both. */
+.theme-menu__popover--columns {
+  grid-template-columns: repeat(2, minmax(9.5rem, 1fr));
+  min-width: 20rem;
+}
+
+.theme-menu__popover--columns [data-theme-column="both"],
+.theme-menu__divider {
+  grid-column: 1 / -1;
+}
+
+.theme-menu__heading {
+  padding: 0.25rem 0.55rem 0;
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.theme-menu__divider {
+  width: 100%;
+  margin: 0.15rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.theme-menu__empty {
+  min-height: 2rem;
+}
+
 .theme-menu__option {
   display: flex;
   align-items: center;

@@ -78,8 +78,15 @@
     var options = popover
       ? Array.prototype.slice.call(popover.querySelectorAll("[data-theme-option]"))
       : [];
-    var themes = options.map(function (option) {
-      return option.getAttribute("data-theme-option");
+    // The cycle follows the theme list; in columns the menu's order follows
+    // the grid, so data-theme-order carries the list position.
+    var themes = options.map(function (option, index) {
+      var order = option.getAttribute("data-theme-order");
+      return { name: option.getAttribute("data-theme-option"), order: order === null ? index : Number(order) };
+    }).sort(function (a, b) {
+      return a.order - b.order;
+    }).map(function (entry) {
+      return entry.name;
     });
     // Themes the cycle button passes over; they stay in the menu.
     var cycleSkips = options.filter(function (option) {
@@ -516,17 +523,43 @@
         return;
       }
 
-      if (popover.hidden || (event.key !== "ArrowDown" && event.key !== "ArrowUp")) {
+      if (popover.hidden) {
+        return;
+      }
+
+      var focused = options.indexOf(document.activeElement) === -1 ? null : document.activeElement;
+      var column = focused ? focused.getAttribute("data-theme-column") : null;
+
+      // In columns, Left and Right move to the other theme on the same row.
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        if (!column || column === "both") return;
+        var row = focused.getAttribute("data-theme-row");
+        var across = options.filter(function (option) {
+          return option !== focused && option.getAttribute("data-theme-row") === row;
+        })[0];
+        event.preventDefault();
+        if (across) across.focus();
+        return;
+      }
+
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
         return;
       }
 
       event.preventDefault();
-      var focusedIndex = options.indexOf(document.activeElement);
+      // In columns, Up and Down stay in the focused column (Auto is in both).
+      var candidates = column && column !== "both"
+        ? options.filter(function (option) {
+            var optionColumn = option.getAttribute("data-theme-column");
+            return optionColumn === column || optionColumn === "both";
+          })
+        : options;
+      var focusedIndex = candidates.indexOf(focused);
       var step = event.key === "ArrowDown" ? 1 : -1;
       var nextIndex = focusedIndex === -1
         ? 0
-        : (focusedIndex + step + options.length) % options.length;
-      options[nextIndex].focus();
+        : (focusedIndex + step + candidates.length) % candidates.length;
+      candidates[nextIndex].focus();
     });
 
     if (mediaQuery && typeof mediaQuery.addEventListener === "function") {
