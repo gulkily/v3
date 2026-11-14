@@ -106,7 +106,7 @@ Delivered scope v1: 13 members and 2 interfaces removed, 5 hooks marked. No user
 
 Diff checked for authorized scope: only the listed classes, their callers, the tests that used removed members, two new test-support files, this record, the index, the ledger and the debug log. No duplication added; the moved helpers live only in `tests/Support/`.
 
-Commit/merge/publication status: planning commit `77ad17d1`; completion commit pending at time of writing; not merged or deployed.
+Commit/merge/publication status: planning commit `77ad17d1`; completion commit `bee46630` (confirmed with Git); PR #223 open; not merged or deployed.
 
 _Claude (Opus 5.5), 2026-11-14_
 
