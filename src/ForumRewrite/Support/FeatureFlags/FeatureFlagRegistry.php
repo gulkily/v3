@@ -64,8 +64,7 @@ final class FeatureFlagRegistry
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
-            self::PENDING_CHIP_APPROVAL_ENABLED],
-            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED, self::USAGE_REPORTS_ENABLED],
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -397,6 +396,8 @@ final class FeatureFlagRegistry
                 "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
                 true,
                 self::PENDING_CHIP_APPROVAL_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
                 self::USAGE_REPORTS_ENABLED,
