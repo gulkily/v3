@@ -92,7 +92,7 @@ Diff limited to the ruler files under reuse decisions plus this record, its inde
 
 ## Commit/merge/publication status
 
-Planning commit `7a0b857`; completion commit pending at the time of writing; branch `feat/reading_margins_last_two`; PR to `main` pending; not merged or deployed.
+Planning commit `7a0b857`; completion commit `487bec0` (confirmed with Git); branch `feat/reading_margins_last_two` pushed; PR #236 open against `main`; not merged or deployed.
 
 Debug log: [reading_margins_last_two_debug_log.md](./reading_margins_last_two_debug_log.md)
 
