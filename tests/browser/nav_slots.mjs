@@ -1,6 +1,7 @@
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/nav_slots.mjs
-// Personal phone tabs (adaptive_nav): a More destination earns a slot after three
-// uses, keeps it against lighter use, yields to a clear leader used on two days,
+// Phone tabs (adaptive_nav): every tab is earned. Board and Calendar are where a
+// fresh browser starts; a destination fills a free slot after three uses, tabs hold
+// against lighter use, and the least-used tab yields to a clear leader used on two days,
 //  Pages are rendered by TemplateRenderer and served from memory.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
@@ -43,29 +44,48 @@ async function useMore(section) {
 
 try {
   await page.goto(base + '/');
-  assert.equal(await slots(), null, 'fresh browser: no slots');
-  assert.deepEqual(await tabs(), ['board', 'calendar', 'compose', 'account-menu__trigger'], 'fresh browser: four fixed tabs');
+  assert.equal(await slots(), 'board calendar', 'fresh browser: the server\'s starting tabs');
+  assert.deepEqual(await tabs(), ['board', 'calendar', 'compose', 'account-menu__trigger'], 'fresh browser: Board and Calendar to start');
 
-  // Three uses fill the free slot; the tab is there from the next page load.
+  // Three uses fill the free slot; the tab is there from the next page load, in bar order.
   await useMore('recent'); await useMore('recent');
-  assert.equal(await slots(), null, 'two uses: not yet');
+  assert.equal(await slots(), 'board calendar', 'two uses: not yet');
   await useMore('recent');
   await page.goto(base + '/about/');
-  assert.equal(await slots(), 'recent', 'three uses: Recent earned the slot');
-  assert.deepEqual(await tabs(), ['board', 'calendar', 'recent', 'compose', 'account-menu__trigger'], 'slot sits after the fixed tabs');
+  assert.equal(await slots(), 'board calendar recent', 'three uses: Recent earned the free slot');
+  assert.deepEqual(await tabs(), ['board', 'recent', 'calendar', 'compose', 'account-menu__trigger'], 'tabs follow bar order');
 
-  // Lighter use elsewhere does not move it: twenty visits to other destinations in one day.
+  // Lighter use elsewhere does not move anything: twenty visits to other destinations in one day.
   for (let i = 0; i < 20; i++) await useMore(['profiles', 'search', 'about', 'tools'][i % 4]);
-  assert.equal(await slots(), 'recent', 'twenty other visits in one day: Recent keeps the slot');
+  assert.equal(await slots(), 'board calendar recent', 'twenty other visits in one day: the tabs hold');
 
-  // A clear leader used on two days takes it: Users reaches 6 (Recent has 3) on day two.
+  // A clear leader used on two days takes the least-used tab: Users reaches 6 on day two,
+  // and Calendar (never used, earned after Board) gives way.
   await context.clock.setFixedTime(new Date('2026-11-06T12:00:00Z'));
   await useMore('profiles');
   await page.goto(base + '/');
-  assert.equal(await slots(), 'profiles', 'leader on a second day: Users takes the slot');
+  assert.equal(await slots(), 'board profiles recent', 'leader on a second day: Users takes Calendar\'s slot');
+
+  // Board is no different: Tools reaches 6 on day two and takes the unused Board tab.
+  await useMore('tools');
+  await page.goto(base + '/about/');
+  assert.equal(await slots(), 'tools profiles recent', 'Board yields to a leader too');
+  assert.deepEqual(await tabs(), ['recent', 'profiles', 'tools', 'compose', 'account-menu__trigger'], 'Board left the bar');
+  await useMore('board');
+  assert.equal(await page.locator('.account-menu__trigger .account-menu__label--current').innerText(), 'Board', 'on Board, the More tab names it');
+
+  // State saved while Board and Calendar were fixed keeps them, in front, as used as the busiest destination.
+  await page.evaluate(() => localStorage.setItem('forum_nav_slots', JSON.stringify({ slots: ['recent'], visits: { recent: { count: 4, first: '2026-11-01', last: '2026-11-05' } } })));
+  await page.goto(base + '/');
+  assert.equal(await slots(), 'board calendar recent', 'old state: Board and Calendar kept');
+  await useMore('about');
+  const moved = await page.evaluate(() => JSON.parse(localStorage.getItem('forum_nav_slots')));
+  assert.equal(moved.v, 2, 'old state: rewritten in the new form');
+  assert.deepEqual(moved.slots, ['board', 'calendar', 'recent'], 'old state: no tab moved');
+  assert.equal(moved.visits.board.count, 4, 'old state: Board starts as used as Recent');
 
   // Messages never fills a slot for a browser that is not remembered as approved.
-  await page.evaluate(() => localStorage.setItem('forum_nav_slots', JSON.stringify({ slots: ['messages'] })));
+  await page.evaluate(() => localStorage.setItem('forum_nav_slots', JSON.stringify({ v: 2, slots: ['messages'] })));
   await page.goto(base + '/');
   assert.equal(await slots(), null, 'guest: Messages is never a slot');
 
@@ -74,7 +94,7 @@ try {
   await page.evaluate(() => {
     ['forum_pki_fingerprint', 'forum_pki_approved_fingerprint'].forEach(key => localStorage.setItem(key, 'a'.repeat(40)));
     ['forum_pki_public_key', 'forum_pki_private_key'].forEach(key => localStorage.setItem(key, 'k'));
-    localStorage.setItem('forum_nav_slots', JSON.stringify({ slots: ['messages'] }));
+    localStorage.setItem('forum_nav_slots', JSON.stringify({ v: 2, slots: ['messages'] }));
   });
   await page.goto(base + '/');
   assert.equal(await slots(), 'messages', 'member: saved Messages is the slot');
@@ -95,9 +115,9 @@ try {
   // Storage holds a flat JSON object a person can read in a local-storage editor.
   await page.goto(base + '/');
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('forum_nav_slots')));
-  assert.deepEqual(Object.keys(state).sort(), ['slots']);
+  assert.deepEqual(Object.keys(state).sort(), ['slots', 'v']);
   assert.deepEqual(errors, [], 'no page errors');
-  console.log('Phone slots: fill after three uses, hold against lighter use, yield to a two-day leader.');
+  console.log('Phone tabs: start at Board and Calendar, fill after three uses, hold against lighter use, least-used yields to a two-day leader.');
 } finally {
   await browser.close();
 }

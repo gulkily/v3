@@ -306,6 +306,7 @@ final class TemplateRenderer
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
             'navSlotCount' => self::navSlotCount($navItems),
+            'navSlotDefaults' => self::navSlotDefaults($navItems),
             'navSlotSections' => array_values(array_map(
                 static fn (array $item): string => $item['section'],
                 array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && ($item['phone'] ?? '') === 'more'),
@@ -424,14 +425,14 @@ final class TemplateRenderer
         if (in_array('inbox', array_column($items, 'section'), true)) {
             array_splice($barOrder, (int) array_search('messages', $barOrder, true), 0, ['inbox']);
         }
-        // Phone tab bar: Board (or Lobby) and Calendar stay; the rest sit in More,
-        // which is the same disclosure as the desktop account menu.
-        $phoneBarSections = ['board', 'lobby', 'calendar'];
+        // Phone tab bar: every main destination sits in More (the same disclosure
+        // as the desktop account menu) and can earn a tab by use; Board (or Lobby)
+        // and Calendar are only the starting tabs (navSlotDefaults()).
         foreach ($items as $index => $item) {
             // Users is main; a personal profile link (members-only mode) belongs in the account menu.
             $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
             $items[$index]['placement'] = !in_array($item['section'], $menuSections, true) && $isUsers ? 'main' : 'menu';
-            $items[$index]['phone'] = in_array($item['section'], $phoneBarSections, true) ? 'bar' : 'more';
+            $items[$index]['phone'] = 'more';
             $items[$index]['_order'] = array_search($item['section'], $barOrder, true);
         }
         usort($items, static fn (array $a, array $b): int => ($a['_order'] === false ? PHP_INT_MAX : $a['_order']) <=> ($b['_order'] === false ? PHP_INT_MAX : $b['_order']));
@@ -442,10 +443,13 @@ final class TemplateRenderer
         return $items;
     }
 
+    /** Destinations a fresh browser shows as phone tabs, before any use is counted. */
+    private const PHONE_DEFAULT_SECTIONS = ['board', 'lobby', 'calendar'];
+
     /**
-     * Personal slots on the phone tab bar: five tabs at most, minus the fixed
-     * ones (bar destinations, New post, More), and never more than two. The
-     * browser fills them before first paint from its own saved choice.
+     * Phone tabs: every destination tab is a slot earned by use. The count keeps
+     * the bar the size it had when Board (or Lobby) and Calendar were fixed: those
+     * starting tabs plus up to two more, within five tabs with New post and More.
      *
      * @param list<array<string, mixed>> $navItems
      */
@@ -454,11 +458,30 @@ final class TemplateRenderer
         if ($navItems === [] || !isset($navItems[0]['phone'])) {
             return 0;
         }
-        $fixed = count(array_filter($navItems, static fn (array $item): bool => ($item['phone'] ?? '') === 'bar'));
+        $defaults = count(self::navSlotDefaults($navItems));
         $canPost = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'board') !== [];
-        $fixed += ($canPost ? 1 : 0) + 1;
+        $fixed = $defaults + ($canPost ? 1 : 0) + 1;
 
-        return max(0, min(2, 5 - $fixed));
+        return $defaults + max(0, min(2, 5 - $fixed));
+    }
+
+    /**
+     * The starting phone tabs, in bar order: what a browser with no saved use shows,
+     * and what the server puts on <html data-nav-slots> for pages without script.
+     *
+     * @param list<array<string, mixed>> $navItems
+     * @return list<string>
+     */
+    public static function navSlotDefaults(array $navItems): array
+    {
+        if ($navItems === [] || !isset($navItems[0]['phone'])) {
+            return [];
+        }
+
+        return array_values(array_map(
+            static fn (array $item): string => $item['section'],
+            array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && in_array($item['section'], self::PHONE_DEFAULT_SECTIONS, true)),
+        ));
     }
 
     /**

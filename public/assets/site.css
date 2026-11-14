@@ -842,10 +842,13 @@ pre {
     display: none;
   }
 
-  /* Personal slots: <html data-nav-slots="recent users"> (set before paint by
-     the head script from the browser's saved choice) shows those More
-     destinations as tabs, after the fixed ones and before New post and More. */
+  /* Phone tabs: <html data-nav-slots="board calendar recent"> (the server's
+     starting tabs, replaced before paint by the browser's saved choice) shows
+     those destinations as tabs, in bar order, before New post and More. */
+  html[data-nav-slots~="board"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="board"],
+  html[data-nav-slots~="lobby"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="lobby"],
   html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
+  html[data-nav-slots~="calendar"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
@@ -878,7 +881,10 @@ pre {
     --more-tab-icon: none;
   }
 
+  html[data-nav-slots~="board"] [data-shell="app"] .account-menu[data-current="board"],
+  html[data-nav-slots~="lobby"] [data-shell="app"] .account-menu[data-current="lobby"],
   html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
+  html[data-nav-slots~="calendar"] [data-shell="app"] .account-menu[data-current="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
