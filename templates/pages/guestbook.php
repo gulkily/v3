@@ -33,6 +33,10 @@ $entryDate = static function (string $value): string {
         <time class="guestbook__date" datetime="<?= $e($entry['created_at']) ?>"><?= $e($entryDate((string) $entry['created_at'])) ?></time>
         <div class="guestbook__note body<?= $isMarkdownPost($entry) ? ' post-markdown' : '' ?>"><?= $renderPostBody($entry) ?></div>
         <p class="guestbook__signature">— <?= $author($entry) ?></p>
+<?php $entryReplies = (int) ($entry['entry_reply_count'] ?? 0); ?>
+<?php if ($entryReplies > 0): ?>
+        <p class="guestbook__replies"><a href="/threads/<?= $e(rawurlencode($guestbookThreadId)) ?>#post-<?= $e(rawurlencode((string) $entry['post_id'])) ?>"><?= $entryReplies ?> <?= $entryReplies === 1 ? 'reply' : 'replies' ?></a></p>
+<?php endif; ?>
       </article>
 <?php endforeach; ?>
 <?php if ($side === 1 && $isLastSpread): ?>
@@ -56,7 +60,6 @@ $entryDate = static function (string $value): string {
 <?php endif; ?>
     </div>
 <?php endforeach; ?>
-<?php if ($earlierHref !== null || $laterHref !== null): ?>
     <nav class="guestbook__turns" aria-label="Pages">
 <?php if ($earlierHref !== null): ?>
     <a class="guestbook__turn" rel="prev" href="<?= $e($earlierHref) ?>">← Earlier pages</a>
@@ -67,7 +70,7 @@ $entryDate = static function (string $value): string {
 <?php if ($latestHref !== null): ?>
     <a class="guestbook__turn" href="<?= $e($latestHref) ?>">Latest page</a>
 <?php endif; ?>
+    <a class="guestbook__turn guestbook__turn--thread" href="/threads/<?= $e(rawurlencode($guestbookThreadId)) ?>">Open as a thread</a>
     </nav>
-<?php endif; ?>
   </div>
 </section>

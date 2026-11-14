@@ -198,3 +198,5 @@
 
 /* On an empty right page the form needs no rule above it. */
 .guestbook__page-head + .guestbook__sign { border-top: 0; padding-top: 0; }
+
+.guestbook__turn--thread { margin-left: auto; }

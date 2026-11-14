@@ -111,6 +111,32 @@ final class GuestbookPageTest
         });
     }
 
+    public function testBookThreadAndAboutLinkToEachOther(): void
+    {
+        $this->withBook(function (string $repositoryRoot, Application $application): void {
+            $this->writeEntry($repositoryRoot, 'entry-1', 'First note.', '2026-11-01T00:01:00Z');
+            $this->writeEntry($repositoryRoot, 'entry-2', 'Second note.', '2026-11-01T00:02:00Z');
+            $this->writePost($repositoryRoot, 'entry-1-reply', "Thread-ID: " . self::BOOK . "\nParent-ID: entry-1\n\nWelcome!", '2026-11-01T01:00:00Z');
+            $this->writePost($repositoryRoot, 'entry-1-reply-2', "Thread-ID: " . self::BOOK . "\nParent-ID: entry-1-reply\n\nThanks!", '2026-11-01T01:01:00Z');
+            $this->commit($repositoryRoot);
+
+            $book = $this->render($application, '/guestbook/');
+            assertStringContains('href="/threads/' . self::BOOK . '">Open as a thread</a>', $book);
+            assertStringContains('href="/threads/' . self::BOOK . '#post-entry-1">2 replies</a>', $book, 'Every reply under an entry counts.');
+            assertSame(1, substr_count($book, 'class="guestbook__replies"'), 'An entry without replies shows no count.');
+
+            $thread = $this->render($application, '/threads/' . self::BOOK);
+            assertStringContains('<a href="/guestbook/">Open as a book</a>', $thread);
+            assertStringContains('Welcome!', $thread, 'The thread keeps every reply.');
+            assertStringNotContains('Open as a book', $this->render($application, '/threads/root-001'), 'Only the guestbook thread links to the book.');
+            assertStringContains('<a href="/guestbook/">Sign the guestbook</a>', $this->render($application, '/about/'));
+
+            putenv(FeatureFlagRegistry::GUESTBOOK_ENABLED . '=false');
+            assertStringNotContains('Open as a book', $this->render($application, '/threads/' . self::BOOK));
+            assertStringNotContains('Sign the guestbook', $this->render($application, '/about/'));
+        });
+    }
+
     public function testEmptyMissingAndOutOfRangeBooks(): void
     {
         $this->withBook(function (string $repositoryRoot, Application $application): void {

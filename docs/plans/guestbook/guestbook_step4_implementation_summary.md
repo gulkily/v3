@@ -82,3 +82,26 @@ Cycle estimate: 0.60
 - Estimate details: original scope as planned; no revision.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Links and concept page
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - `TemplateRenderer.php`: every template gets `siteGuestbookThreadId`, the guestbook thread while the flag is on.
+  - `templates/pages/thread.php`: "Open as a book" above the root card, on the guestbook thread only.
+  - `templates/pages/about.php`: "Sign the guestbook" in the intro section.
+  - `templates/pages/guestbook.php`: "Open as a thread" in the book's footer row (which now always shows); "n replies" under an entry links to that entry in the thread.
+  - `docs/concepts/guestbook.md`: new concept page.
+- Verification:
+  - New `testBookThreadAndAboutLinkToEachOther`: both links, the count of every reply under an entry, no count on an entry without replies, the thread still showing replies, no link on another thread, links gone with the flag off.
+  - `./v3 test --smoke GuestbookPageTest AssetFingerprintTest`: 456 passed. `PostSignalsTemplateTest MediaEmbedBeaconTemplatesTest TemplateRendererMediaEmbedsScriptTest AppNavigationPlacementTest LocalAppSmokeTest`: 192 passed. Full suite not run.
+  - `node tests/browser/guestbook.mjs`: passed.
+  - Static build: `scripts/build_static_artifacts.php` on the fixture with `FORUM_STATIC_DETAIL_PAGES_ENABLED=true` and `root-001` as the guestbook; the baked `threads/root-001.html` carries "Open as a book".
+- Notes:
+  - The thread page's link is baked into static files, so turning the flag on or naming the thread needs a rebuild before the link shows there. `/guestbook/` itself is rendered per request, like `/gallery/`.
+  - No navigation destination was added, so `theme-nav-icons.css` is unchanged.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

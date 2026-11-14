@@ -685,6 +685,8 @@ final class TemplateRenderer
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
             'agentPageEnabled' => $this->agentPageEnabled(),
+            // The guestbook thread while /guestbook/ is on; the thread and About pages link to the book.
+            'siteGuestbookThreadId' => $this->featureFlags->isEnabled(FeatureFlagRegistry::GUESTBOOK_ENABLED) ? SiteProfileRegistry::guestbookThread() : null,
             'agentPromptOrigin' => self::requestOrigin(),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
