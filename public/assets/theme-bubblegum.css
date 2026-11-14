@@ -87,8 +87,7 @@
   border-bottom: 3px solid var(--bubblegum-berry);
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 14' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' stroke='%238e2457' stroke-width='2'%3E%3Crect x='1' y='1' width='12' height='12'/%3E%3Crect x='17' y='1' width='12' height='12'/%3E%3Crect x='33' y='1' width='12' height='12'/%3E%3C/g%3E%3C/svg%3E") right 0.4rem center / auto 0.8rem no-repeat,
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M4 0h2v14H4zM0 4h10v2H0z'/%3E%3C/svg%3E") left 0.55rem center / auto 0.85rem no-repeat,
-    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 1.45rem center / 3.5rem 0.75rem no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
     var(--bubblegum-bar);
   pointer-events: none;
 }
@@ -263,8 +262,7 @@
 /* The intro card's Hide button becomes the title bar's close box. */
 :root[data-theme="bubblegum"] .visitor-intro::before {
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M4 0h2v14H4zM0 4h10v2H0z'/%3E%3C/svg%3E") left 0.55rem center / auto 0.85rem no-repeat,
-    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 1.45rem center / 3.5rem 0.75rem no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
     var(--bubblegum-bar);
 }
 
