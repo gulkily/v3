@@ -50,6 +50,7 @@ final class ToolsPageSupport
             ['key' => 'offline-reading', 'label' => 'Offline Reading', 'href' => '/offline/', 'group' => 'device', 'tone' => 'offline', 'standalone' => true],
             ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],
             ['key' => 'agent-prompts', 'label' => 'Agent Prompts', 'href' => '/agent/', 'group' => 'device', 'tone' => 'agent', 'standalone' => true],
+            ['key' => 'usage-log', 'label' => 'Usage Log', 'href' => '/tools/usage-log/', 'group' => 'device', 'tone' => 'usage', 'standalone' => false],
             ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
             ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
             ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],
@@ -64,6 +65,7 @@ final class ToolsPageSupport
             ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/', 'group' => 'operator', 'tone' => 'fastmod', 'standalone' => false],
             ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/', 'group' => 'operator', 'tone' => 'operations', 'standalone' => false],
             ['key' => 'deploy', 'label' => 'Deploy', 'href' => '/tools/deploy/', 'group' => 'operator', 'tone' => 'deploy', 'standalone' => false],
+            ['key' => 'usage-reports', 'label' => 'Usage Reports', 'href' => '/tools/usage-reports/', 'group' => 'operator', 'tone' => 'usage-reports', 'standalone' => false],
         ];
     }
 
