@@ -63,6 +63,7 @@ final class PrivateConfigSchema
             'LLM_CONVERSATION_UI_ENABLED' => self::definition(true, 'boolean', template: true),
             'LLM_EXCHANGE_DATABASE_PATH' => self::definition(null, 'path'),
             'VISITOR_STATISTICS_DATABASE_PATH' => self::definition(null, 'path'),
+            'USAGE_REPORTS_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_DATABASE_PATH' => self::definition(null, 'path'),
             'PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH' => self::definition(null, 'path'),
             'VIEWER_SESSION_DATABASE_PATH' => self::definition(null, 'path'),
@@ -115,6 +116,7 @@ final class PrivateConfigSchema
                 'examples' => [
                     'LLM_EXCHANGE_DATABASE_PATH' => '/home/forum/private/llm_exchanges.sqlite3',
                     'VISITOR_STATISTICS_DATABASE_PATH' => '/home/forum/private/visitor_statistics.sqlite3',
+                    'USAGE_REPORTS_DATABASE_PATH' => '/home/forum/private/usage_reports.sqlite3',
                     'PRIVATE_MESSAGE_DATABASE_PATH' => '/home/forum/private/messages.sqlite3',
                     'PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH' => '/home/forum/private/message_history_sync.sqlite3',
                     'VIEWER_SESSION_DATABASE_PATH' => '/home/forum/private/viewer_sessions.sqlite3',
