@@ -39,4 +39,10 @@ Baked thread, profile and tag pages carry the pre-paint theme allow-list. After 
 
 ## Follow-up: window texture (2026-11-13)
 
-After the merged theme was live, the maintainer asked for "a little texture to the dialogues". Cards now carry a faint pink pixel dither (2px dots on a 6px diagonal grid, 13% opacity) over a white-to-blush fade, layered in the same `.card` rule; `--panel` stays white, so the contrast audit is unchanged (`bubblegum OK`). Checked in headless Chrome at 1280px and 390px on board and about: text stays clear, no errors or overflow. Smoke set not rerun: CSS-only change to one theme's stylesheet.
+After the merged theme was live, the maintainer asked for "a little texture to the dialogues". A first pass (a faint pink pixel dither) clashed with the font and hurt readability; he asked instead for large, soft, wavy lines, plus a little sparkle, and to reflect that the inspiration is God-oriented.
+
+- Windows: one large, pale pink wave every 120px (12px stroke, 8% opacity) with a few soft four-point sparkles, over a white-to-blush fade, and a warm butter-yellow light falling from the top of each window. The tile is 960px wide and repeats only vertically, so no window is wide enough to show a seam; an earlier 320px tile left hairline seams where the stroke crossed tile edges.
+- Faith touches: pixel crosses join the hearts in the page pattern, each title bar starts with a small white cross, and big pixel sparkles twinkle between them. A small gold sparkle sits after the wordmark (decorative `::after`, no text).
+- `--panel` stays white, so the contrast audit is unchanged (`bubblegum OK`).
+
+Checked in headless Chrome at 1280px and 390px on board and about: text stays clear, no seams, no errors or overflow. Smoke set not rerun: CSS-only change to one theme's stylesheet.
