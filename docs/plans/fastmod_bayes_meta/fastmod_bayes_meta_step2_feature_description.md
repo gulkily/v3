@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./fastmod_bayes_meta_step1_solution_assessment.md) · [Step 2](./fastmod_bayes_meta_step2_feature_description.md) · Step 3 · Step 4
+> **Feature plan:** [Step 1](./fastmod_bayes_meta_step1_solution_assessment.md) · [Step 2](./fastmod_bayes_meta_step2_feature_description.md) · [Step 3](./fastmod_bayes_meta_step3_development_plan.md) · Step 4
 
 Debug mode: enabled
 
@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/fastmod_bayes_meta`; [host ledger](../eff
 
 Extended estimates: enabled
 
-**Cycle estimate: 0.40**
+**Cycle estimate: 0.45**
 
 Step 1 approved (Revision 1, Option C in two slices) and committed as `94b70e0` on `feat/fastmod-bayes-meta`.
 
@@ -24,6 +24,8 @@ Step 1 said an operator can remove a wrong derived tag. Individual tag removal i
 - As an operator, I want a report of how the model does on posts it didn't train on, including every disagreement, so that I can decide whether to trust it before any tag depends on it.
 - As an operator, I want to switch the meta rubric between the LLM and the local model on the Fastmod page, so that I can turn the local model on and off without a deploy.
 - As a reader, I want new support threads tagged `#meta` soon after they're posted, so that I can find feedback and bug reports.
+- As an operator, I want to retrain the model from a Retrain button on the Fastmod page, so that I don't need SSH to keep it current. (Revision 2)
+- As an operator, I want scoring to catch up in the background through the task queue after a retrain or a failed publish-time score, so that no root is left unscored. (Revision 2)
 - As an operator looking at a post, I want to see its local meta score and the words that drove it, so that I can tell why a post was or wasn't tagged.
 
 ## Core requirements
@@ -44,9 +46,9 @@ Step 1 said an operator can remove a wrong derived tag. Individual tag removal i
 
 ## Completion boundary
 
-- **Normal entry:** an operator runs one `./v3 fast-score` command on the server, then sets meta to "Local" on Tools → Fastmod.
+- **Normal entry:** an operator presses Retrain on Tools → Fastmod (or runs `./v3 fast-score local-train` on the server), then sets meta to "Local" there. (Revision 2: Retrain button.)
 - **End to end:** existing roots get local scores; roots above the local threshold show `#meta` on live, static and offline pages after the usual refresh; a new root gets its score when published.
-- **Recovery:** if training finds too few labels, the command stops, names the counts, and suggests the weak-negative option. If the model file is missing or unreadable, tagging falls back to stored LLM scores and logs why, the same way missing private scores do today. Switching the source back to LLM removes local-derived tags on the next refresh.
+- **Recovery:** a failed publish-time score or a new model build queues a local score sweep, which scores every root missing a current score on the next worker run. If training finds too few labels, the command stops, names the counts, and suggests the weak-negative option. If the model file is missing or unreadable, tagging falls back to stored LLM scores and logs why, the same way missing private scores do today. Switching the source back to LLM removes local-derived tags on the next refresh.
 - **Release condition:** slice 2 merged and deployed, the maintainer runs the trainer on production, and the report passes the gate.
 
 ## Known environment
@@ -69,6 +71,8 @@ Production, with the LLM unavailable. Entry is SSH into `~/v3`, often from iPhon
 - `templates/pages/fastmod.php`, `src/ForumRewrite/Http/ToolsPageController.php`: rubric controls with signed operator saves. **Extend** with a per-rubric source choice using the same signed settings action.
 - `scripts/fast_score.php` and the `./v3` launcher: `fast-score` subcommands, including read-only `meta-status`. **Extend** with train, score and report subcommands in the same style. `meta-status` reports the source and model build.
 - `templates/pages/post.php`, `RouteServices::latestFastScoreForPost`: per-rubric score display. **Extend** to show the local score and its top words.
+- `src/ForumRewrite/TaskQueue/SqliteTaskQueueStore.php`, `TaskQueueWorker.php`, `scripts/task_queue.php`: allowlisted task types with deduplication and visible status. **Extend** with two types, local training and local score sweep. The LLM `fast_score_sweep` stays separate, since it depends on the provider. (Revision 2)
+- `src/ForumRewrite/Http/DeployController.php`: Deploy now queues work for a signed-in root-approved operator. **Reuse** that pattern for Retrain. (Revision 2)
 - `src/ForumRewrite/Scoring/FastmodScoreTransfer.php`: score transfer. **Extend** only to exclude local scores.
 - `src/ForumRewrite/Analysis/RelatedContentSearchService.php` has a private ASCII tokenizer with a stopword list. **New**: a small shared Latin tokenizer and the naive Bayes model, with no new dependency. Russian needs no tokenizing, since it is never meta. The related-content tokenizer stays unchanged in this cycle.
 
@@ -80,7 +84,7 @@ Production, with the LLM unavailable. Entry is SSH into `~/v3`, often from iPhon
 
 ## User flow
 
-1. On the server, the operator runs the train command.
+1. The operator presses Retrain on Tools → Fastmod, or runs the train command on the server. The task queue runs training, then a local score sweep. (Revision 2)
 2. It prints label counts, held-out precision and recall, a recommended local threshold, and the number of disagreements. It saves the full disagreement list to a private file.
 3. The operator runs the score command. Every root gets a local meta score; post detail shows it with its top words. Nothing public changes.
 4. *(Slice 2)* On Tools → Fastmod, the operator sets meta's source to Local and saves.
@@ -100,11 +104,15 @@ Production, with the LLM unavailable. Entry is SSH into `~/v3`, often from iPhon
 
 **Revision 1 (2026-11-14):** the maintainer said to ignore Russian text for now and treat it as always not meta, and approved Step 2 with that change.
 
+**Revision 2 (2026-11-14):** the maintainer asked for both the task-queue sweep and a Retrain button.
+
 ## Study checkpoint
 
 2026-11-14T19:30:00Z, `railspike-effort` / `v3/fastmod_bayes_meta`, Step 2 handoff. Step 1 approved and committed as `94b70e0`. Scope v2 as approved, made specific: thread roots only, separate local threshold, Fastmod source setting, transfer exclusion. Projected total 0.35 → **0.40** (new understanding: a per-rubric source setting with signed save, a separate threshold, and keeping local scores out of transfer). Same R1/P2, single exposed Claude rater. No implementation.
 
 Revision 1, 2026-11-14T19:20:00Z: Russian roots are always not meta and left out of training, so no Unicode tokenizer is needed. Projected total **0.40** reaffirmed (a slightly smaller tokenizer, offset by script detection). Approved with this change.
+
+Revision 2, 2026-11-14T20:10:00Z: maintainer asked for a local score sweep task and a queued Retrain button. Projected total 0.40 → **0.45** (new understanding: two task types and an operator button). Approved with the request.
 
 ## Enhancement Requests
 
