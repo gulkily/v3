@@ -3277,9 +3277,10 @@ PHP;
         $this->runCommand($repositoryRoot, 'git commit -m "Add detached label signature"');
 
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-        $method = new ReflectionMethod($application, 'activityCommitManifest');
+        $routeServices = new ReflectionMethod($application, 'routeServices');
+        $routeServices->setAccessible(true);
         $commitSha = trim($this->runCommand($repositoryRoot, 'git rev-parse HEAD'));
-        $manifest = $method->invoke($application, $commitSha);
+        $manifest = $routeServices->invoke($application)->activityService()->activityCommitManifest($commitSha);
         $entry = array_values(array_filter(
             $manifest,
             static fn (array $entry): bool => $entry['path'] === $signaturePath
@@ -5321,9 +5322,6 @@ PHP;
                 $invalidator->invalidateReply('thread-001', 'reply-001');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
-                $invalidator->invalidateProfile('openpgp-example');
-            },
-            static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
@@ -5364,9 +5362,6 @@ PHP;
             },
             static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateReply('thread-001', 'reply-001');
-            },
-            static function (StaticArtifactInvalidator $invalidator): void {
-                $invalidator->invalidateProfile('openpgp-example');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');

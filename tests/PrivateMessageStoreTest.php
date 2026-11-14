@@ -19,7 +19,7 @@ final class PrivateMessageStoreTest
         $first = $store->conversationPageFor('alice', 'bob');
         assertSame(25, count($first['messages']));
         assertSame('history-39', $first['messages'][0]['message_id']);
-        assertSame($first['messages'], $store->conversationFor('alice', 'bob'));
+        assertSame($first['messages'], $store->conversationPageFor('alice', 'bob')['messages']);
         $store->storeEnvelope('late', '2026-10-09T13:00:00Z', 'bob', 'alice', 'key', 'new');
         $store->storeEnvelope('backdated', '2026-10-08T12:00:00Z', 'alice', 'bob', 'key', 'new');
         assertSame($first, $store->conversationPageFor('alice', 'bob', $first['page_cursor']));
@@ -77,7 +77,7 @@ final class PrivateMessageStoreTest
         $store = new PrivateMessageStore(new PDO('sqlite::memory:'));
         $store->storeEnvelope('z', '2026-10-09T12:00:00Z', 'alice', 'bob', 'sender', 'one');
         $store->storeEnvelope('a', '2026-10-09T12:00:00Z', 'bob', 'alice', 'sender', 'two');
-        assertSame(['z', 'a'], array_column($store->conversationFor('alice', 'bob'), 'message_id'));
+        assertSame(['z', 'a'], array_column($store->conversationPageFor('alice', 'bob')['messages'], 'message_id'));
     }
 
     public function testConcurrentAcceptanceKeepsOneOriginalEnvelope(): void

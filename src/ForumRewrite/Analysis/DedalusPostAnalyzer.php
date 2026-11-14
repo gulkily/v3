@@ -96,15 +96,6 @@ final class DedalusPostAnalyzer implements PostAnalyzer
         ];
     }
 
-    /**
-     * @param array<string, mixed> $response
-     * @return array<string, mixed>
-     */
-    public static function decodeCompletionPayload(array $response): array
-    {
-        return StructuredChatCompletionDecoder::decodeOpenAiCompatiblePayload($response);
-    }
-
     private function systemPrompt(): string
     {
         if ($this->loadedSystemPrompt !== null) {

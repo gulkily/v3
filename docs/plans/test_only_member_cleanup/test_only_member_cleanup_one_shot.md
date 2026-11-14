@@ -10,7 +10,7 @@ Extended estimates: enabled (new enrolled cycle default); no real alternatives o
 
 **Cycle estimate: 0.30 (intake)**
 
-Status: planned; next permitted action: planning commit, then implementation.
+Status: implemented and verified locally; PR open, awaiting maintainer review and merge.
 
 ## Original request
 
@@ -69,11 +69,44 @@ None.
 
 Starting revisions and branch: `origin/main` at `9122adf0fa97f2e9e1bdee3d1b1bdd5e5fa684d5`; branch `chore/test_only_member_cleanup`.
 
-Planning commit: pending.
+Planning commit: `77ad17d1` (confirmed with Git; contains only this record and the index entry).
 
 ## Study history
 
 - 2026-11-14 intake: 0.30, scope v1 (above), written before detailed inspection. Prior exposure: the same agent rated these members on 2026-11-10 and read their code then.
 - 2026-11-14 execution entry: 0.30 reaffirmed; outcome, approach and verification unchanged.
+- 2026-11-14 closeout: scope v1 delivered. Retrospective scope assessment: 0.35. More test call sites needed retargeting than the intake assumed (11 test files), and two helpers turned out to be test oracles that had to move rather than go. Maintainer acceptance pending.
 
 _Claude (Opus 5.5), 2026-11-14_
+
+## Dated execution history
+
+- 2026-11-14: re-checked all 13 members against current `main` (`9122adf0`). Each still had no production caller; all but `PrivateMessageMailboxService::conversation` had test callers.
+- 2026-11-14: discovery (not a scope change). Two members are test helpers, not dead API. `TagGrouping::limitPreview` is the reference algorithm that `TagsIndexMemoryTest` compares the streaming version against. `ImageBackup::copyTree` copies fixtures. Both moved to `tests/Support/` (`TagGroupingReference`, `TestFiles`) instead of being deleted, so `src/` loses them and the tests keep their checks.
+- 2026-11-14: tests that reached a removed wrapper now call the production method behind it. Examples: `RouteServices::noStoreHeaders/serverTimingHeaders/mergeResultTimings`, `ActivityService::activityCommitManifest`, `latestForPostContent`, `claimRequestedForPost`, `conversationPageFor`, `conversationPage`, `resolveSource`, `generationInputForType`, `StructuredChatCompletionDecoder`.
+- Deleted outright: `AgentReplyGenerationTest::testStoreClaimsRequestedRowsOnce` (claim-once is covered by `testStoreClaimsRequestedRowForSpecificPost`), the two `invalidateProfile` entries in the static-invalidation lists, and the oversized-file assertion in `testRejectsOversizedFilesAndSymlinkEscapes` (covered by the catalog test that checks `available` is false for `large.md`).
+- 2026-11-14: correction. The first test run failed `ApplicationServerTimingTest::testMergeResultTimings…` and `PrivateMessageMailboxServiceTest::testConversation…`, which still used removed wrappers. The pre-edit search missed them: a display limit cut one off, and the other names the method in a reflection string. Both retargeted; the follow-up search ran without a display limit.
+- 2026-11-14: deleted `Scoring/FastScoreStore` and `Agent/AgentReplyGenerationStore`. `AgentReplyFulfillmentService` is now typed to `SqliteAgentReplyGenerationStore`. No doc named either interface.
+- 2026-11-14: `@internal` test-hook notes on the five kept members. Two stale comments now point at the surviving methods (`PlatformDocsCatalog`, `ForteContentAndUserDetailApiController`).
+
+## Outcome
+
+Delivered scope v1: 13 members and 2 interfaces removed, 5 hooks marked. No user-visible change. Not changed, as authorized: the eight 0.35–0.6 members (re-rated in the PR and handoff for the maintainer to decide), `$featureFlags`, `$sections` and every `$repositoryRoot`.
+
+## Verification
+
+- PHPStan dead-code pass, planning commit vs working tree: **passed**. 60 findings before, 39 after. Nothing new appears; the 21 that disappear are exactly the removed members and the interface methods.
+- `php -l` on every touched PHP file: **passed**. `git diff --check`: **passed**.
+- Smoke set plus ApplicationServerTiming, LocalAppSmoke, SqliteFastScoreStore, AgentReplyGeneration, WriteApiSmoke, AgentResponseGenerator, DedalusPostAnalyzer, PlatformDocsCatalog, PrivateMessageStore, RegistrationBenchmark, TagsIndexMemory, FastmodScoreTransfer, TestFileRegistration, PrivateMessageMailboxService, CommitEvidenceLookup, ContentImportPlanner, PrivateConfigSchema and ApiRouteCatalog: 782 run. After the correction above, every failure caused by this change passes (rerun: 21/21).
+- Two failures are **baseline**, reproduced on `main` without this change: `WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages` and `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`.
+- Full suite: not run (maintainer runs it).
+- Runtime UI checks: inapplicable (no rendered output changes).
+
+## Final review
+
+Diff checked for authorized scope: only the listed classes, their callers, the tests that used removed members, two new test-support files, this record, the index, the ledger and the debug log. No duplication added; the moved helpers live only in `tests/Support/`.
+
+Commit/merge/publication status: planning commit `77ad17d1`; completion commit pending at time of writing; not merged or deployed.
+
+_Claude (Opus 5.5), 2026-11-14_
+

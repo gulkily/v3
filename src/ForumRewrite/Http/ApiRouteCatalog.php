@@ -132,7 +132,8 @@ final class ApiRouteCatalog
     }
 
     /**
-     * Route paths without their query hints, for matching against the router.
+     * @internal Test hook: route paths without their query hints, for matching against the router
+     * so the API docs can't drift from the routes.
      *
      * @return list<string>
      */

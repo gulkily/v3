@@ -204,12 +204,6 @@ final class PrivateMessageStore
         return ['conversations' => $rows, 'page_cursor' => $pageCursor, 'next_cursor' => $hasMore ? $encode($position) : null];
     }
 
-    /** @return list<array<string, string>> */
-    public function conversationFor(string $viewerUsernameToken, string $counterpartUsernameToken): array
-    {
-        return $this->conversationPageFor($viewerUsernameToken, $counterpartUsernameToken)['messages'];
-    }
-
     /** @return array{messages:list<array<string, string>>,page_cursor:string,next_cursor:?string} */
     public function conversationPageFor(string $viewer, string $counterpart, ?string $cursor = null): array
     {

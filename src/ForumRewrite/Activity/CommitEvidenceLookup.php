@@ -129,7 +129,10 @@ final class CommitEvidenceLookup
         }
     }
 
+    /** @internal Test hook: work counters that let tests catch a return to one git process per commit. */
     public function manifestReads(): int { return $this->manifestReads; }
+
+    /** @internal Test hook; see manifestReads(). */
     public function processes(): int { return $this->processes; }
 
     public function close(): void

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestFiles.php';
 
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Images\ImageBackup;
@@ -16,7 +17,7 @@ final class RegistrationBenchmarkTest
         mkdir($root, 0700);
         try {
             $repository = $root . '/repository';
-            ImageBackup::copyTree(__DIR__ . '/fixtures/parity_minimal_v1', $repository);
+            TestFiles::copyTree(__DIR__ . '/fixtures/parity_minimal_v1', $repository);
             foreach ([['init', '-q'], ['config', 'user.name', 'Benchmark test'], ['config', 'user.email', 'test@example.invalid'],
                 ['config', 'commit.gpgsign', 'false'], ['config', 'core.hooksPath', '/dev/null'], ['add', '.'], ['commit', '-qm', 'Fixture']] as $args) {
                 [$exit, , $error] = $this->run(['git', '-C', $repository, ...$args], $root);

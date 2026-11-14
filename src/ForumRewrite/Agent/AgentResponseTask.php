@@ -113,15 +113,6 @@ final class AgentResponseTask
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
-    public static function defaultGenerationInput(array $context): array
-    {
-        return self::generationInputForType($context, self::DEFAULT_TYPE);
-    }
-
-    /**
-     * @param array<string, mixed> $context
-     * @return array<string, mixed>
-     */
     public static function generationInputForType(array $context, string $type): array
     {
         if (!self::isSupportedType($type)) {

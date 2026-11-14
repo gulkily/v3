@@ -20,7 +20,7 @@ final class ContentImportPlanner
 {
     private int $dependencyVisits = 0;
 
-    /** Diagnostic work counter; enables deterministic complexity regression checks. */
+    /** @internal Test hook: diagnostic work counter; enables deterministic complexity regression checks. */
     public function dependencyVisits(): int { return $this->dependencyVisits; }
 
     public static function files(string $root): array
