@@ -35,6 +35,8 @@ final class TaskQueueWorker
         private readonly mixed $runRetractionSweep = null,
         /** @var (callable():array<string, mixed>)|null returns an AppUpdate::deploy() attempt */
         private readonly mixed $runAppUpdate = null,
+        /** @var (callable():array<string, mixed>)|null returns a LocalMetaSweep::run() result, or null when no model exists */
+        private readonly mixed $runLocalScoreSweep = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
@@ -97,6 +99,7 @@ final class TaskQueueWorker
             SqliteTaskQueueStore::RETRACTION_SWEEP => $this->runRetractionSweepTask($id),
             SqliteTaskQueueStore::REBUILD_READ_MODEL => $this->runReadModelRebuild($id),
             SqliteTaskQueueStore::FAST_SCORE_SWEEP => $this->runFastScoreSweep($id),
+            SqliteTaskQueueStore::LOCAL_SCORE_SWEEP => $this->runLocalScoreSweep($id),
             SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT => $this->runOfflineSnapshotPublication($id),
             SqliteTaskQueueStore::AGENT_REPLY => $this->runAgentReply($id, $task),
             SqliteTaskQueueStore::APP_UPDATE => $this->runAppUpdateTask($id),
@@ -182,6 +185,27 @@ final class TaskQueueWorker
         $task = $this->store->markCompleted($id);
         $task['sweep'] = $sweep;
         return $task;
+    }
+
+    /** @return array<string, mixed> */
+    private function runLocalScoreSweep(int $id): array
+    {
+        if ($this->runLocalScoreSweep === null) {
+            return $this->store->markFailed($id, 'local_score_sweep_unavailable', 'Local score sweep is not configured for this worker.', false);
+        }
+        try {
+            $sweep = ($this->runLocalScoreSweep)();
+        } catch (Throwable $throwable) {
+            $this->reportThrowable($id, $throwable);
+            return $this->store->markFailed($id, 'local_score_sweep_failed', $throwable->getMessage(), true);
+        }
+        if ($sweep === null) {
+            return $this->store->markFailed($id, 'local_meta_model_missing', 'No local meta model yet. Press Retrain on Tools > Fastmod or run ./v3 fast-score local-train.', false);
+        }
+        if (($sweep['remaining'] ?? false) === true) {
+            return [...$this->store->requeueClaimed($id), 'continued' => true, 'sweep' => $sweep];
+        }
+        return [...$this->store->markCompleted($id), 'sweep' => $sweep];
     }
 
     /** @return array<string, mixed> */

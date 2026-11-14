@@ -38,6 +38,7 @@ $testFiles = [
     __DIR__ . '/FastmodDerivedTagsTest.php',
     __DIR__ . '/LocalMetaModelTest.php',
     __DIR__ . '/LocalMetaTrainingTest.php',
+    __DIR__ . '/LocalMetaSweepTest.php',
     __DIR__ . '/FrmClientTest.php',
     __DIR__ . '/AgentPostingApiTest.php',
     __DIR__ . '/SingleRequestHttpTest.php',

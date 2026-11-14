@@ -59,3 +59,26 @@ Extended estimates: enabled
 - Estimate details: original scope as Step 3; no revision; retrospective slightly higher for the threshold rework; uncertainty medium until Stage 5.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Local scores and sweep task
+
+**Original estimate: 0.08** (first value 0.05, before Step 3 Revision 1 added the sweep task)
+**Retrospective: 0.08**
+
+- Changes:
+  - New `LocalMetaScores`: table `local_rubric_scores` in the private score database (post, content hash, rubric, model build, probability, top words, signals, time), created on first write. `readOnly()` opens it without writing, for status and pages. `transaction()` keeps a whole sweep to one disk sync.
+  - New `LocalMetaSweep`: `run(int $limit = 5000)` scores visible roots missing a score from the current build for their current text; `enqueue()`; `forProject()` returns null when no model exists.
+  - Task type `local_score_sweep` (dedup key `local-score-sweep`) in `SqliteTaskQueueStore`. `TaskQueueWorker` gains `runLocalScoreSweep`: requeues while work remains, and fails without retry when no model exists, saying to press Retrain or run `local-train`.
+  - `scripts/task_queue.php` wires the sweep and prints a "Local score sweep" line instead of the Fastmod sweep line.
+  - `local-train` now queues the sweep after saving a model. New `./v3 fast-score local-score` runs the sweep directly. `meta-status` adds local model build and time, threshold, and local score count, read-only. The meta source line waits for Stage 6.
+  - `docs/concepts/internal_task_queue.md` lists the new task type.
+  - New `tests/LocalMetaSweepTest.php` (5 tests), registered.
+- Verification:
+  - `./v3 test --smoke LocalMetaSweepTest LocalMetaTrainingTest LocalMetaModelTest FastmodMetaTest TaskQueueWorkerTest`: 480 run, 479 passed; the one failure is the same pre-existing `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`.
+  - End to end with fixture databases and `FORUM_SECRETS_PATH`/`FORUM_TASK_QUEUE_DATABASE_PATH`: `local-train` printed the report and queued the sweep; `local-score` scored 66 roots; `meta-status` showed the build and 66 scores; `./v3 task-queue run --limit=1` completed the queued sweep (66 scored). Model and report files removed afterwards.
+  - 2,000 roots score well under 10 s in the test; `post_fast_scores` row count unchanged.
+  - Full suite not run.
+- Notes: `SqliteTaskQueueStoreTest` doesn't exist; the store change is covered through `LocalMetaSweepTest`'s enqueue and worker test.
+- Estimate details: scope as Step 3 Revision 1; uncertainty low.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
