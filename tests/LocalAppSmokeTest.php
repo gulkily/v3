@@ -2779,6 +2779,26 @@ PHP;
         assertStringContains('<p class="thread-card__preview">' . $longNoSubjectBody . '</p>', $noSubjectLongCard);
     }
 
+    public function testThreadCardWrapsMediaEmbedPreviewInDiv(): void
+    {
+        // A <details> embed inside <p> makes the parser close the <p> early and turn the
+        // stray </p> into an empty unclassed <p>, which Word 97 and Midnight draw as a box.
+        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
+        $card = $renderer->renderFragment('partials/thread_card.php', ['thread' => [
+            'root_post_id' => 'card-preview-embed-001',
+            'subject' => 'Artist - Title',
+            'body_preview' => "https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj  #rapclub",
+            'thread_labels' => ['rapclub'],
+            'reply_count' => 0,
+            'last_activity_at' => null,
+            'root_post_created_at' => null,
+        ]]);
+
+        assertStringContains('media-embed-card', $card);
+        assertStringContains('<div class="thread-card__preview">', $card);
+        assertStringNotContains('<p class="thread-card__preview">', $card);
+    }
+
     public function testPostAndActivityLinkAdjacentSignatureFiles(): void
     {
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-signature-repo-' . bin2hex(random_bytes(6));

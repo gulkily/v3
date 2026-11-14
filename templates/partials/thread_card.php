@@ -28,7 +28,11 @@ if (($mediaEmbedsEnabled ?? false) && $subject === 'Untitled') {
   <p class="meta">Labels: <?= $renderLabels($thread['thread_labels']) ?></p>
 <?php endif; ?>
 <?php if (!$previewDuplicatesTitle && ($thread['retracted_at'] ?? null) === null): ?>
+<?php if ($hasMediaEmbed($thread['body_preview'])): ?>
+  <div class="thread-card__preview"><?= $br($plainText($thread, (string) $thread['body_preview'])) ?></div>
+<?php else: ?>
   <p class="thread-card__preview"><?= $br($plainText($thread, (string) $thread['body_preview'])) ?></p>
+<?php endif; ?>
 <?php endif; ?>
 <?php if ((int) $thread['reply_count'] > 0): ?>
   <p class="meta"><?= (int) $thread['reply_count'] ?> <?= (int) $thread['reply_count'] === 1 ? 'reply' : 'replies' ?></p>
