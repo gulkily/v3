@@ -64,6 +64,12 @@
   border-radius: 0;
   padding-top: calc(0.9rem + 1.5rem);
   box-shadow: 6px 6px 0 var(--bubblegum-shadow);
+  /* A faint pink pixel dither over a soft white-to-blush fade, like a
+     printed window pane; light enough that text stays on near-white. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cg fill='%23e45b9c' fill-opacity='0.13'%3E%3Crect width='2' height='2'/%3E%3Crect x='6' y='6' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 12px 12px repeat,
+    linear-gradient(180deg, #ffffff 0%, #fff3f9 100%),
+    var(--panel);
 }
 
 :root[data-theme="bubblegum"] .card::before {

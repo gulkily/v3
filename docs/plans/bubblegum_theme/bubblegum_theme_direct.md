@@ -36,3 +36,7 @@ A new explicit light theme, Bubblegum (`bubblegum`), in the theme menu and cycle
 ## Deployment note
 
 Baked thread, profile and tag pages carry the pre-paint theme allow-list. After deploy, run `php scripts/build_static_artifacts.php` or those routes fall back to the default theme for Bubblegum readers.
+
+## Follow-up: window texture (2026-11-13)
+
+After the merged theme was live, the maintainer asked for "a little texture to the dialogues". Cards now carry a faint pink pixel dither (2px dots on a 6px diagonal grid, 13% opacity) over a white-to-blush fade, layered in the same `.card` rule; `--panel` stays white, so the contrast audit is unchanged (`bubblegum OK`). Checked in headless Chrome at 1280px and 390px on board and about: text stays clear, no errors or overflow. Smoke set not rerun: CSS-only change to one theme's stylesheet.
