@@ -54,7 +54,8 @@ export async function checkUnavailable(page, context, base, artifacts, seed, una
   await button.click();
   assert.equal(await button.getAttribute('aria-expanded'), 'false');
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.getByRole('button', { name: 'Latest message', exact: true }).click();
+  // ↓ only shows when the newest message is out of view; hidden means it is already in view.
+  if (await page.getByRole('button', { name: 'Latest message', exact: true }).isVisible()) await page.getByRole('button', { name: 'Latest message', exact: true }).click();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.screenshot({ path: join(artifacts, 'unavailable-mobile.png') });
   await button.click();

@@ -66,7 +66,8 @@ export async function checkUnavailableSeen(context, base, seed, unavailable) {
   await page.locator('[data-private-message-id]').getByText('Grouped seen own reply', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'Load older', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('.private-conversation').dataset.historyLoading === '0');
-  await page.getByRole('button', { name: 'Latest message', exact: true }).click();
+  // ↓ only shows when the newest message is out of view; hidden means it is already in view.
+  if (await page.getByRole('button', { name: 'Latest message', exact: true }).isVisible()) await page.getByRole('button', { name: 'Latest message', exact: true }).click();
   assert.equal(await unread(), true);
   assert.equal(receipts.length, 2, 'Expansion, old history, and own send cannot create a broader receipt');
 

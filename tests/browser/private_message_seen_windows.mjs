@@ -58,7 +58,8 @@ export async function checkSeenWindows(page, context, base, seed, incoming, inva
   await page.waitForTimeout(150);
   assert.equal(await count(), 2, 'Early navigation away from latest must prevent acknowledgment');
   await page.unroute('**/api/private_messages/conversation?*', slow);
-  await page.getByRole('button', { name: 'Latest message', exact: true }).click();
+  // ↓ only shows when the newest message is out of view; hidden means it is already in view.
+  if (await page.getByRole('button', { name: 'Latest message', exact: true }).isVisible()) await page.getByRole('button', { name: 'Latest message', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.readState === 'acknowledged');
   assert.equal(await count(), 1, 'Displayed failed verification may be seen, never verified');
   await page.locator('[data-private-message-id="seen-invalid"]').getByText('Couldn’t verify this message', { exact: true }).waitFor();
@@ -67,7 +68,8 @@ export async function checkSeenWindows(page, context, base, seed, incoming, inva
   await page.locator('textarea').fill('Draft survives seen windows');
   await page.getByRole('button', { name: 'Load older', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.historyLoading === '0');
-  await page.getByRole('button', { name: 'Latest message', exact: true }).click();
+  // ↓ only shows when the newest message is out of view; hidden means it is already in view.
+  if (await page.getByRole('button', { name: 'Latest message', exact: true }).isVisible()) await page.getByRole('button', { name: 'Latest message', exact: true }).click();
   assert.equal(await count(), 2, 'Older history cannot broaden the opened receipt');
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await page.locator('[data-private-message-id]').getByText('Draft survives seen windows', { exact: true }).waitFor();
@@ -80,7 +82,8 @@ export async function checkSeenWindows(page, context, base, seed, incoming, inva
   await page.unroute('**/api/private_messages/conversation?*', stale);
   await page.getByRole('button', { name: 'Restart history', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.historyLoading === '0');
-  await page.getByRole('button', { name: 'Latest message', exact: true }).click();
+  // ↓ only shows when the newest message is out of view; hidden means it is already in view.
+  if (await page.getByRole('button', { name: 'Latest message', exact: true }).isVisible()) await page.getByRole('button', { name: 'Latest message', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]').dataset.readState === 'acknowledged');
   assert.equal(await count(), 1, 'A successful visible fresh window acknowledges its new boundary');
 }
