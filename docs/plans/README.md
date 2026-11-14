@@ -34,6 +34,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Quiet composer bottom one-shot](quiet_composer_bottom/quiet_composer_bottom_one_shot.md) — below Post on the New post form, Title is an underlined line and closed Tags, Event and Options are one row of small words; a tool gets its box when opened.
 
+[Railspike for every commit one-shot](railspike_for_every_commit/railspike_for_every_commit_one_shot.md) — AGENTS.md runs every committed change as a Railspike cycle (one-shot by default) and asks the agent to name the mode in its first reply.
+
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
 [Codebase page sizes](codebase_sizes/codebase_sizes_step3_development_plan.md) — `/tools/codebase/` shows a collapsed Sizes card (database, repositories, downloads) and download sizes next to each link.
