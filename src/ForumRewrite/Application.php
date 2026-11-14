@@ -961,6 +961,11 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/preferences/' || $path === '/tools/preferences') {
+            $this->sendHtml($this->toolsPageController()->preferences(), 200);
+            return;
+        }
+
         if ($path === '/tools/tag-unlocks/' || $path === '/tools/tag-unlocks') {
             $this->sendHtml($this->toolsPageController()->tagUnlocks(), 200);
             return;
@@ -2448,7 +2453,7 @@ final class Application
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/calendar', '/calendar/',
-            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
+            '/tools', '/tools/', '/tools/preferences', '/tools/preferences/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',

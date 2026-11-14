@@ -1960,3 +1960,10 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-14: standing P2 enrollment, one-shot. Intake **0.10** recorded before implementation (not pristine: same rater wrote the predecessor), execution entry reaffirmed, retrospective **0.10**. Baseline `b2c8bf8`; branch `feat/reading_margins_last_two`; planning commit `7a0b857`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
+## Cycle v3/preferences_page
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/preferences_page` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.15 (intake 0.15; execution entry 0.15; retrospective 0.15) | [record](./preferences_page/preferences_page_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.15** recorded before implementation (not pristine: rated after reading the affected scripts), execution entry reaffirmed, retrospective **0.15**. Baseline `a4fe61e`; branch `feat/preferences_page`; planning commit `d43d51d`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
