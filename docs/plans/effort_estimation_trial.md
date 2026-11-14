@@ -2,6 +2,10 @@
 
 ## Cycle v3/fastmod_bayes_meta
 
+2026-11-14T19:20:00Z — v3/fastmod_bayes_meta Step 2 approved with Revision 1: Russian roots always not meta and excluded from training. [Description](./fastmod_bayes_meta/fastmod_bayes_meta_step2_feature_description.md#study-checkpoint). Projected total **0.40** reaffirmed. Step 2 approval commit follows this entry. Same R1/P2, single exposed Claude rater.
+
+2026-11-14T19:30:00Z — v3/fastmod_bayes_meta Step 2 handoff: Step 1 approved and committed (`94b70e0`). [Description/checkpoint](./fastmod_bayes_meta/fastmod_bayes_meta_step2_feature_description.md#study-checkpoint): roots only, human and stored-LLM labels, separate local threshold, Fastmod source setting, slice 2 gated on production report. Projected total 0.35 → **0.40** (new understanding: signed source setting, separate threshold, transfer exclusion). Same R1/P2, single exposed Claude rater. Await Approved Step 2; planning uncommitted.
+
 2026-11-14T19:15:00Z — v3/fastmod_bayes_meta Step 1 approved: maintainer sent "approved step 1" for Revision 1 (Option C in two slices, scope v2). Branch `feat/fastmod-bayes-meta` from `459d212`; Step 1 approval commit follows this entry. Projected total **0.35** reaffirmed. Same R1/P2, single exposed Claude rater.
 
 2026-11-11T22:20:00Z — v3/fastmod_bayes_meta Step 1 Revision 1: maintainer said production has a lot of existing data and the LLM cannot run now. [Checkpoint](./fastmod_bayes_meta/fastmod_bayes_meta_step1_solution_assessment.md#study-checkpoint). Scope v2, recommended Option C in two slices (local scores and agreement report against stored labels; then derived tags and backfill), training on human and stored LLM labels only; Option B fallback moved to follow-up. Projected total 0.40 → **0.35**; option estimates 0.25/0.40/0.30 unchanged, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.

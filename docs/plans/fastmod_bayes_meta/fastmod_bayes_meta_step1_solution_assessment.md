@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./fastmod_bayes_meta_step1_solution_assessment.md) · Step 2 · Step 3 · Step 4
+> **Feature plan:** [Step 1](./fastmod_bayes_meta_step1_solution_assessment.md) · [Step 2](./fastmod_bayes_meta_step2_feature_description.md) · Step 3 · Step 4
 
 Debug mode: enabled
 
