@@ -63,6 +63,7 @@ final class TemplateRenderer
         'calendar_day.php' => ['/assets/compose.css', '/assets/calendar.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'tag_unlocks.php' => ['/assets/tools.css'],
         'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
@@ -142,6 +143,7 @@ final class TemplateRenderer
             $pageStylesheetPaths,
             is_string($pageData['threadTheme'] ?? null) ? $pageData['threadTheme'] : null,
             $showReadingMargins,
+            !empty($pageData['tabBarHidden']),
         );
     }
 
@@ -160,6 +162,7 @@ final class TemplateRenderer
         array $pageStylesheetPaths = [],
         ?string $threadTheme = null,
         bool $showReadingMargins = false,
+        bool $tabBarHidden = false,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
@@ -299,6 +302,9 @@ final class TemplateRenderer
             'autoThemes' => $autoThemes,
             'pageTheme' => $pageTheme,
             'pagePath' => $pagePath,
+            'usageReportsEnabled' => $usageReportsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
+            'usagePageKind' => $usageReportsEnabled && $this->requestPath !== null ? \ForumRewrite\UsageReports\UsagePageKind::fromPath((string) ($this->requestPath)()) : null,
+            'usagePageWords' => $usageReportsEnabled ? implode(' ', \ForumRewrite\UsageReports\UsagePageKind::WORDS) : '',
             'themeStylesheetPaths' => $themeStylesheetPaths,
             'themeScriptPaths' => $themeScriptPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
@@ -316,11 +322,14 @@ final class TemplateRenderer
                 array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && ($item['phone'] ?? '') === 'more'),
             )),
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
+            // A page can drop the phone tab bar (a single conversation, whose back arrow is the way out).
+            'tabBarHidden' => $tabBarHidden,
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
             'eventWhenScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_WHEN_ENABLED) ? $this->assetPath('/assets/event_when.js') : null,
             'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
+            'usageLogScriptPath' => $this->assetPath('/assets/usage_log.js'),
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
         ]);
@@ -718,13 +727,21 @@ final class TemplateRenderer
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
-        // The Agent Prompts tool opens /agent/; drop it where that page is off.
+        // Drop tools whose pages are off: Agent Prompts opens /agent/, and the
+        // usage tools exist only while the "Usage reports" flag is on.
+        $hiddenTools = [];
         if (!$data['agentPageEnabled']) {
+            $hiddenTools[] = 'agent-prompts';
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            array_push($hiddenTools, 'usage-log', 'usage-reports');
+        }
+        if ($hiddenTools !== []) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {
                 if (isset($data[$toolListKey]) && is_array($data[$toolListKey])) {
                     $data[$toolListKey] = array_values(array_filter(
                         $data[$toolListKey],
-                        static fn (array $tool): bool => ($tool['key'] ?? '') !== 'agent-prompts',
+                        static fn (array $tool): bool => !in_array($tool['key'] ?? '', $hiddenTools, true),
                     ));
                 }
             }

@@ -2224,6 +2224,11 @@ PHP;
         assertStringNotContains('class="nav tools-nav"', $tools);
         assertStringNotContains('tool-launcher-description', $tools);
         foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
+            // The usage tools appear only while the "Usage reports" flag is on (off by default).
+            if (in_array($tool['key'], ['usage-log', 'usage-reports'], true)) {
+                assertSame(0, substr_count($tools, 'href="' . $tool['href'] . '"'), $tool['href']);
+                continue;
+            }
             assertSame(1, substr_count($tools, 'class="tool-launcher-button" href="' . $tool['href'] . '"'), $tool['href']);
             assertStringContains('data-tone="' . $tool['tone'] . '"', $tools);
         }
@@ -2875,12 +2880,11 @@ PHP;
             assertStringContains('data-role="reading-margins"', $thread);
             assertStringContains('localStorage.getItem(browserRuntime.readingMarginsStorageKey)', $thread);
             assertStringContains('"readingMarginsStorageKey":"forum-zenmemes-reading-margins"', $thread);
-            foreach (['left' => [5, 23, 41], 'right' => [59, 77, 95]] as $edge => $positions) {
-                foreach ($positions as $position) {
-                    assertStringContains('name="reading-margin-' . $edge . '" value="' . $position . '"', $thread);
-                    assertStringContains('style="--at: ' . $position . '"', $thread);
-                }
+            foreach ([5, 23, 41, 59, 77, 95] as $position) {
+                assertStringContains('name="reading-margin-' . $position . '" value="' . $position . '"', $thread);
+                assertStringContains('style="--at: ' . $position . '"', $thread);
             }
+            assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
             assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
             // Every page in the main layout gets the ruler, except the gallery.
