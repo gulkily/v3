@@ -521,3 +521,86 @@
     box-shadow: 0 0 5px rgba(255, 232, 115, 0.95);
   }
 }
+
+/* Visitor statistics: tiles become little stat windows, and the chart sits
+   on pink pixel graph paper with candy bars (soft pink anonymous on top of
+   hot pink authenticated), berry outlines and a berry baseline. */
+:root[data-theme="bubblegum"] .visitor-statistics-tiles > div {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 12px;
+  background: var(--bubblegum-shine), var(--bubblegum-candy), #fff4fa;
+  box-shadow: 3px 3px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles > div:nth-child(5n + 2) {
+  background-color: #efe3ff;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles > div:nth-child(5n + 3) {
+  background-color: #fff6c7;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles > div:nth-child(5n + 4) {
+  background-color: #dcf7ec;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles dt {
+  color: var(--ink-soft);
+  font-family: var(--code-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles dd {
+  color: var(--bubblegum-berry);
+  font-weight: 900;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-trend figcaption {
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-trend svg {
+  border: 3px solid var(--bubblegum-berry);
+  border-radius: 0;
+  background:
+    linear-gradient(rgba(228, 91, 156, 0.13) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(90deg, rgba(228, 91, 156, 0.13) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(180deg, #ffffff 0%, #fff0f7 100%);
+  box-shadow: 5px 5px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-trend text {
+  fill: var(--bubblegum-berry);
+  font-weight: 700;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-axis {
+  stroke: var(--bubblegum-berry);
+  stroke-width: 3;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-bar-anonymous,
+:root[data-theme="bubblegum"] .visitor-statistics-bar-authenticated {
+  stroke: var(--bubblegum-berry);
+  stroke-width: 1.5;
+  paint-order: stroke;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-bar-anonymous {
+  fill: #ffb6d6;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-bar-authenticated {
+  fill: var(--bubblegum-bar);
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-table thead th {
+  border-bottom: 3px solid var(--bubblegum-berry);
+  color: var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-table tbody tr:nth-child(even) {
+  background: rgba(228, 91, 156, 0.07);
+}
