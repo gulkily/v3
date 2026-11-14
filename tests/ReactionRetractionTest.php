@@ -65,6 +65,31 @@ final class ReactionRetractionTest
         assertSame([], \ForumRewrite\Canonical\RetractedPosts::effectivePostIds($root));
     }
 
+    public function testPostRecordListFindsExactTargetsOnly(): void
+    {
+        $root = sys_get_temp_dir() . '/post-record-list-' . bin2hex(random_bytes(4));
+        foreach (['records/posts', 'records/post-reactions', 'records/thread-labels', 'records/post-formats'] as $dir) mkdir($root . '/' . $dir, 0775, true);
+        $author = self::AUTHOR;
+        file_put_contents($root . '/records/posts/root.1.txt', "Post-ID: root.1\nCreated-At: 2026-11-14T07:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: {$author}\n\nRoot\n");
+        $like = \ForumRewrite\Canonical\ReactionRecordParser::build('thread', 'thread-label-like', '2026-11-14T08:00:00Z', 'root.1', ['like'], $author);
+        file_put_contents($root . '/records/thread-labels/thread-label-like.txt', $like);
+        // Look-alikes that must not match: a regex dot, and a longer ID.
+        file_put_contents($root . '/records/thread-labels/thread-label-dot.txt', str_replace('root.1', 'rootX1', str_replace('thread-label-like', 'thread-label-dot', $like)));
+        file_put_contents($root . '/records/thread-labels/thread-label-long.txt', str_replace('root.1', 'root.10', str_replace('thread-label-like', 'thread-label-long', $like)));
+        file_put_contents($root . '/records/post-formats/post-format-root.1-1.txt', "Record-ID: post-format-root.1-1\nCreated-At: 2026-11-14T09:00:00Z\nPost-ID: root.1\nBody-Format: markdown\nActor-Identity-ID: {$author}\n\n");
+        \ForumRewrite\Canonical\LabelRemoval::git($root, ['init', '-q']);
+        \ForumRewrite\Canonical\LabelRemoval::git($root, ['add', '.']);
+        \ForumRewrite\Canonical\LabelRemoval::git($root, ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-qm', 'fixture']);
+
+        $rows = \ForumRewrite\Canonical\PostRecordList::forPost($root, 'root.1', true);
+        assertSame(['root.1', 'thread-label-like', 'post-format-root.1-1'], array_column($rows, 'record_id'));
+        assertSame(['Post', 'Like', 'Format'], array_column($rows, 'kind'));
+        assertSame('Format: markdown', $rows[2]['summary']);
+        assertSame($author, $rows[2]['author_identity_id']);
+        // A reply's list leaves out thread-level labels.
+        assertSame(['root.1', 'post-format-root.1-1'], array_column(\ForumRewrite\Canonical\PostRecordList::forPost($root, 'root.1', false), 'record_id'));
+    }
+
     public function testPrepareRejectsPostsAndMismatchedAuthors(): void
     {
         $parsed = (new PostRetractionRecordParser())->parse($this->request());

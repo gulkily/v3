@@ -99,3 +99,9 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Maintainer comfortable-fit judgment and acceptance: **pending**. Child cycle, so it doesn't count as an independent outcome.
 
 *— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*
+
+## Correction (2026-11-14)
+
+`tests/RetractionTargetIdTest.php` was never added to the list in `tests/run.php`, so none of its 7 tests ran in this cycle. That makes the verification lines above overstated wherever they name that class: "85 tests from the named classes" in Stage 1 didn't include it. The other tests changed here (`WriteApiSmokeTest`, `RetractionReceiptTest`, `PostRetractionScriptTest`, `LlmsTxtRendererTest`) are registered and did run. The `post_records` cycle found this while adding its own test file. It registered `RetractionTargetIdTest`, and all 7 tests pass against the merged code: `./v3 test RetractionTargetIdTest ReactionRetractionTest`, 12 run, 12 passed.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

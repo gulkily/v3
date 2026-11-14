@@ -259,6 +259,9 @@ final class ThreadAndPostPageController
                 'scriptureExpansionsByPostId' => $service->scriptureExpansionsForPosts($posts),
                 'llmExchangesByPostId' => $llmExchangesByPostId,
                 'fastScore' => ($this->latestFastScoreForPost)($post),
+                'postRecords' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED)
+                    ? \ForumRewrite\Canonical\PostRecordList::forPost($this->repositoryRoot, (string) $post['post_id'], (string) $post['thread_id'] === (string) $post['post_id'])
+                    : null,
                 'agentReplyWorkByPostId' => $service->agentReplyWorkByPostId(
                     $posts,
                     '',

@@ -94,3 +94,27 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged. Retrospective 0.12, slightly over: extracting the shared reader and scoping the route to likes. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Records section on the post page
+
+**Original estimate: 0.15**
+**Retrospective estimate: 0.18**
+
+- Changes:
+  - New flag `FORUM_POST_RECORDS_ENABLED` ("Post records"): off by default, site-mutable, in the EXPERIENCE group. Added to both flag lists in `FeatureFlagEvaluatorTest`.
+  - New `Canonical/PostRecordList::forPost()` lists the post's own record, likes and flags on it, its format changes, titles it set as a reply, and receipts of retracted reactions on it. When the post is a root, it also lists thread labels and thread titles. Rows are sorted with the post first, then by time.
+  - New `templates/partials/post_records.php`: a collapsed `<details>` with kind (linking to `/records/<id>`), what, by, when, and a source or receipt link. Retracted rows are struck through.
+  - `ThreadAndPostPageController::post` passes `postRecords` only when the flag is on, and `templates/pages/post.php` renders it.
+  - Tests: `WriteApiSmokeTest::testPostPageListsItsRecordsBehindTheFlag` (flag off shows nothing; flag on lists the post and the like with links; after retraction the like row shows struck through with its receipt link) and `ReactionRetractionTest::testPostRecordListFindsExactTargetsOnly` (an ID with a dot, a regex look-alike and a longer ID; the format record's actor; replies leave out thread labels).
+  - `tests/run.php` registers `ReactionRetractionTest` and `RetractionTargetIdTest`. Neither had been registered, so both had been skipped. See the correction in [retraction_target_id's summary](../retraction_target_id/retraction_target_id_step4_implementation_summary.md#correction-2026-11-14).
+- Verification:
+  - Passed: `./v3 test RetractionTargetIdTest ReactionRetractionTest`, 12 run, 12 passed.
+  - `./v3 test --smoke RetractionTargetIdTest ReactionRetractionTest WriteApiSmokeTest FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest DeleteRecordCommandTest`: 697 run, 696 passed, 1 failed. The failure is `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder`. It fails on `main` without these changes too (an undefined `$indent` in `tools_nav_card.php` under its fixture), so it isn't caused by this work.
+  - Not run: the full suite.
+- Notes:
+  - Deviation: Step 3 said "one query over existing tables". The read model has no index of reactions, formats or titles by post, so the lookup uses `git grep` over the record directories with anchored patterns. It reads current files and needs nothing kept in sync, and it only runs with the flag on.
+  - The first version passed `-x` to `git grep`, which has no such flag, so every lookup failed silently. The page test caught it.
+  - Timestamp records aren't listed; this repository has no such record directory.
+- Estimate details: original scope as in Step 3, unchanged. Retrospective 0.18, over: the `git grep` lookup instead of a query, and the test-registration problem. Rater: Claude, the same exposed rater.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

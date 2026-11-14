@@ -37,4 +37,7 @@ $authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
 <?php endif; ?>
   </article>
 <?= $indent($partial('partials/post_card.php', ['post' => $post]), 1) ?>
+<?php if (is_array($postRecords ?? null)): ?>
+<?= $indent($partial('partials/post_records.php', ['records' => $postRecords]), 1) ?>
+<?php endif; ?>
 </section>

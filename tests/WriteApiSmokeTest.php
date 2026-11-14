@@ -4395,6 +4395,39 @@ NODE;
         assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
     }
 
+    public function testPostPageListsItsRecordsBehindTheFlag(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'records-listed', "A thread with records\n");
+        $liker = $this->linkSigningIdentity($app, 'records-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+
+        putenv('FORUM_POST_RECORDS_ENABLED');
+        $page = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
+        assertStringNotContains('post-records', $page);
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        try {
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/posts/' . $author['thread_id']);
+            assertStringContains('<summary>Records (2)</summary>', $page);
+            assertStringContains('href="/records/' . $author['thread_id'] . '">Post</a>', $page);
+            assertStringContains('href="/records/' . $likeId . '">Like</a>', $page);
+            assertStringContains('href="/source/current/records/thread-labels/' . $likeId . '.txt">source</a>', $page);
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/posts/' . $author['thread_id']);
+            assertStringContains('<summary>Records (2)</summary>', $page);
+            assertStringContains('class="post-record-retracted" data-record-id="' . $likeId . '"', $page);
+            assertStringContains('href="/source/current/records/post-retraction-acceptances/post-retraction-' . $likeId . '.txt">receipt</a>', $page);
+        } finally {
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
     public function testReplyLikesRetractAndOtherReactionsAreRefused(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
