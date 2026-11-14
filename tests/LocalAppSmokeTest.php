@@ -2224,6 +2224,11 @@ PHP;
         assertStringNotContains('class="nav tools-nav"', $tools);
         assertStringNotContains('tool-launcher-description', $tools);
         foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
+            // The usage tools appear only while the "Usage reports" flag is on (off by default).
+            if (in_array($tool['key'], ['usage-log', 'usage-reports'], true)) {
+                assertSame(0, substr_count($tools, 'href="' . $tool['href'] . '"'), $tool['href']);
+                continue;
+            }
             assertSame(1, substr_count($tools, 'class="tool-launcher-button" href="' . $tool['href'] . '"'), $tool['href']);
             assertStringContains('data-tone="' . $tool['tone'] . '"', $tools);
         }

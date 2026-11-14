@@ -96,11 +96,32 @@ Revision (Stage 2): the Stage 1 verification above was wrong about `UsageReportS
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
 
+Revision (Stage 5): the smoke result above was wrong. Hiding the usage tools while the flag is off broke `LocalAppSmokeTest::testApplicationRendersCoreRoutes`, which expects every registry tool once on `/tools/`. The failure was in the smoke output, but I read only its last lines. Fixed in Stage 5: the test now expects the two usage tools to be absent while the flag is off.
+
+*— Revised by Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
 ## Stage 5 - Upload
 
 **Original estimate: 0.12**
+**Retrospective stage work: 0.15**
 
-- Status: pending.
+- Changes:
+  - `POST /tools/usage-log/upload` (`UsageReportsController::upload()`), routed only with the flag on, in the block of POST routes that runs before the generic page 405.
+  - Checks in order: 405 for other methods; 403 unless `SameOriginRequest::check()` passes; 413 over 100 KB, checked before parsing (the plan put the format check first); 400 unless the text matches `UsageLogFormat`; then the store's 429 with `Retry-After` and 503 when full. Stored reports return 201 with the username used.
+  - `UsageLogFormat`: the `usage-log v1` grammar the recorder writes. Page kinds may hold only route words, `*` and `/`, so an unredacted ID or a query cannot be stored. `entries()` parses for Stage 6.
+  - The username comes only from the signed-in session (`authenticatedViewerProfile()`); anonymous otherwise. The members-only gate needed no new code: it runs before routing for every path off its allowlist, so a non-member gets the lobby 403. `isApplicationRoute()` lists the upload path.
+  - Usage log page: Upload is shown and sends exactly the displayed text. It reports "Uploaded as …" or "Uploaded anonymously", the server's refusal message, or a members-only explanation, and the log stays in the browser in every case.
+  - `LocalAppSmokeTest::testApplicationRendersCoreRoutes` now expects the usage tools absent while the flag is off (the Stage 4 miss above).
+- Verification:
+  - `./v3 test UsageReportUploadTest UsageReportsPageTest UsageReportStoreTest UsagePageKindTest ToolsRegistryTest TestFileRegistrationTest`: 19 passed. Covers the format check (recorder output accepted; wrong header, unredacted ID, query, unknown entry, empty name and smuggled fields rejected), exact text stored with the session username or none, 405, 403 with no or cross-site fetch metadata, 413, 400, 429 with retry seconds, 503 with nothing stored, flag off (GET 404; POST gets the site's generic page 405), and the members-only 403.
+  - `tests/browser/usage_log.mjs` passed: Upload sends the reviewed text byte for byte, anonymous confirmation, a 429 message and a members-only 403 message, with the log kept each time.
+  - `./v3 test` (smoke set, full output checked): 453 run, 452 passed; the one failure, `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, also fails on main.
+- Notes:
+  - With the flag off, POST to the upload path gets the site's generic page 405 ("only accepts regular page visits") rather than 404, like any other page path; GET gets 404.
+  - Process slip: while comparing a test against main I ran `git checkout HEAD -- .`, which discarded my uncommitted Stage 5 edits to tracked files. They were reapplied from this session's edits and every check above was rerun afterwards.
+- Estimate details: original scope as approved; retrospective above the original because of the route-order discovery, the format grammar and the Stage 4 test repair; no mid-stage revision recorded before the work.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
 
 ## Stage 6 - Root-only summary with journeys
 

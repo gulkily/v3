@@ -643,6 +643,17 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/usage-log/upload' && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->upload(
+                $method,
+                $method === 'POST' ? (string) file_get_contents('php://input', length: \ForumRewrite\UsageReports\UsageReportStore::MAX_REPORT_BYTES + 1) : '',
+                (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+                (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
+                time(),
+            );
+            return;
+        }
+
         if ($method !== 'GET') {
             $this->sendHtml(
                 $this->renderMessagePage(
@@ -1675,7 +1686,25 @@ final class Application
 
     private function usageReportsController(): \ForumRewrite\Http\UsageReportsController
     {
-        return new \ForumRewrite\Http\UsageReportsController($this->routeServices());
+        return new \ForumRewrite\Http\UsageReportsController(
+            $this->routeServices(),
+            $this->usageReportStore(...),
+            function (): ?string {
+                $username = trim((string) ($this->authenticatedViewerProfile()['username'] ?? ''));
+                return $username !== '' ? $username : null;
+            },
+        );
+    }
+
+    private function usageReportStore(): \ForumRewrite\UsageReports\UsageReportStore
+    {
+        $path = \ForumRewrite\UsageReports\UsageReportDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('Usage report database directory is not writable: ' . $directory);
+        }
+
+        return new \ForumRewrite\UsageReports\UsageReportStore(new PDO('sqlite:' . $path));
     }
 
     private function toolsPageController(): ToolsPageController
@@ -2411,7 +2440,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
-            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-reports', '/tools/usage-reports/',
+            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
             '/compose/thread', '/compose/reply',
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',

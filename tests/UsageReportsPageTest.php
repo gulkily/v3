@@ -43,6 +43,31 @@ expect(!str_contains($toolsOff, '/tools/usage-log/') && !str_contains($toolsOff,
 PHP);
     }
 
+    public function testUploadRouteIsGoneWithTheFlagOffAndBehindTheMembersOnlyGate(): void
+    {
+        $this->runScript(<<<'PHP'
+$_SERVER['HTTP_SEC_FETCH_SITE'] = 'same-origin';
+putenv('FORUM_USAGE_REPORTS_ENABLED=0');
+http_response_code(200);
+page($application(), 'GET', '/tools/usage-log/upload');
+expect(http_response_code() === 404, 'flag off: upload GET status ' . var_export(http_response_code(), true));
+http_response_code(200);
+$offPost = page($application(), 'POST', '/tools/usage-log/upload');
+expect(http_response_code() === 405 && !str_contains($offPost, 'invalid_log'), 'flag off: POST should get the generic page 405, status ' . var_export(http_response_code(), true));
+
+putenv('FORUM_USAGE_REPORTS_ENABLED=1');
+http_response_code(200);
+$open = page($application(), 'POST', '/tools/usage-log/upload');
+expect(http_response_code() === 400 && str_contains($open, 'invalid_log'), 'flag on: empty upload should reach the format check');
+
+putenv('FORUM_APPROVED_MEMBERS_ONLY=1');
+http_response_code(200);
+page($application(), 'POST', '/tools/usage-log/upload');
+expect(http_response_code() === 403, 'members only: anonymous upload status ' . var_export(http_response_code(), true));
+putenv('FORUM_APPROVED_MEMBERS_ONLY');
+PHP);
+    }
+
     /** Runs $body with $application() (fresh Application), page() and expect() helpers. */
     private function runScript(string $body): void
     {

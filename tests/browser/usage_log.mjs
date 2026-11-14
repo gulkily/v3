@@ -17,6 +17,8 @@ const renderApp = path => pages[path] ??= execFileSync('php', [`${project}/tests
 const render = section => pages[section] ??= execFileSync('php', [`${project}/tests/Support/app_layout_fixture.php`, section], { encoding: 'utf8', env, maxBuffer: 1 << 26 });
 const paths = { '/': 'board', '/recent/': 'recent', '/users/': 'profiles', '/about/': 'about', '/tools/': 'tools', '/calendar': 'calendar' };
 
+const uploads = [];
+const uploadReply = [];
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
 const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 } });
 await context.route('http://usage.test/**', async route => {
@@ -28,6 +30,10 @@ await context.route('http://usage.test/**', async route => {
   }
   if (url.pathname.startsWith('/api/')) return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
   if (url.pathname === '/tools/usage-log/') return route.fulfill({ contentType: 'text/html', body: renderApp(url.pathname) });
+  if (url.pathname === '/tools/usage-log/upload') {
+    uploads.push(route.request().postData());
+    return route.fulfill(uploadReply.shift() || { status: 201, contentType: 'application/json', body: JSON.stringify({ status: 'stored', id: uploads.length, username: null }) });
+  }
   const section = paths[url.pathname];
   return route.fulfill(section ? { contentType: 'text/html', body: render(section) } : { contentType: 'text/html', body: render('about') });
 });
@@ -111,6 +117,18 @@ try {
   await page.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { value: { writeText: async text => { window.__copied = text; } } }); });
   await page.locator('[data-action="usage-log-copy"]').click();
   assert.equal(await page.evaluate(() => window.__copied), shown, 'Copy puts the exact log on the clipboard');
+  await page.locator('[data-action="usage-log-upload"]').click();
+  await page.waitForFunction(() => /Uploaded/.test(document.querySelector('[data-role="usage-log-status"]').textContent));
+  assert.equal(uploads.at(-1), shown, 'Upload sends exactly the reviewed text');
+  assert.match(await status(), /Uploaded anonymously\. Your log is still here/, 'anonymous upload confirmed');
+  assert.equal(await page.locator('[data-role="usage-log-text"]').inputValue(), shown, 'the log stays after upload');
+  uploadReply.push({ status: 429, headers: { 'Retry-After': '1200' }, contentType: 'application/json', body: JSON.stringify({ status: 'error', code: 'rate_limited', error: 'Too many uploads from here in the last hour. Try again in 20 minutes.', retry_after: 1200 }) });
+  await page.locator('[data-action="usage-log-upload"]').click();
+  await page.waitForFunction(() => /Too many uploads/.test(document.querySelector('[data-role="usage-log-status"]').textContent));
+  assert.equal(await page.locator('[data-role="usage-log-text"]').inputValue(), shown, 'the log stays after a refusal');
+  uploadReply.push({ status: 403, contentType: 'text/html', body: '<h1>Approval required</h1>' });
+  await page.locator('[data-action="usage-log-upload"]').click();
+  await page.waitForFunction(() => /only from signed-in members/.test(document.querySelector('[data-role="usage-log-status"]').textContent));
   await page.locator('[data-action="usage-log-clear"]').click();
   assert.equal(await page.locator('[data-role="usage-log-text"]').inputValue(), 'usage-log v1\n', 'Clear empties the log');
   assert.match(await status(), /Cleared\. Recording is still on\./);
@@ -138,7 +156,7 @@ try {
   assert.deepEqual(client, server, 'browser and server page kinds agree');
 
   assert.deepEqual(errors, [], 'no page errors');
-  console.log('Usage log: off by default; records views, navbar, menu, labeled links and submits; no typed text or IDs; capped; log page switch, copy, clear, quiet, blocked storage; matches server page kinds.');
+  console.log('Usage log: off by default; records views, navbar, menu, labeled links and submits; no typed text or IDs; capped; log page switch, copy, upload and refusals, clear, quiet, blocked storage; matches server page kinds.');
 } finally {
   await browser.close();
 }

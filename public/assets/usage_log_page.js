@@ -18,6 +18,7 @@
   const text = page.querySelector('[data-role="usage-log-text"]');
   const copy = page.querySelector('[data-action="usage-log-copy"]');
   const clear = page.querySelector('[data-action="usage-log-clear"]');
+  const upload = page.querySelector('[data-action="usage-log-upload"]');
   const log = window.forumUsageLog;
 
   if (!log || !log.available()) {
@@ -33,6 +34,7 @@
     const lines = state.count === 1 ? '1 line' : state.count + ' lines';
     status.textContent = message || (state.recording ? 'Recording is on. ' : 'Recording is off. ') + 'The log has ' + lines + '.';
     copy.disabled = state.count === 0;
+    upload.disabled = state.count === 0;
     clear.disabled = state.count === 0;
   }
 
@@ -53,6 +55,34 @@
       text.select();
       refresh('Copy is blocked here; the log is selected so you can copy it yourself.');
     }
+  });
+  // Sends exactly the text shown above. The log stays here whatever happens.
+  upload.addEventListener('click', async () => {
+    const body = log.text();
+    upload.disabled = true;
+    status.textContent = 'Uploading…';
+    let message;
+    try {
+      const response = await fetch('/tools/usage-log/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        body,
+        credentials: 'same-origin',
+      });
+      const payload = await response.json().catch(() => null);
+      if (response.ok && payload && payload.status === 'stored') {
+        message = (payload.username ? 'Uploaded as ' + payload.username + '.' : 'Uploaded anonymously.') + ' Your log is still here; clear it if you like.';
+      } else if (payload && payload.error) {
+        message = payload.error;
+      } else if (response.status === 403 || response.status === 401) {
+        message = 'This site takes uploads only from signed-in members. Your log is still here, and you can copy it instead.';
+      } else {
+        message = 'The upload did not go through (' + response.status + '). Your log is still here.';
+      }
+    } catch (error) {
+      message = 'Could not reach the site. Your log is still here.';
+    }
+    refresh(message);
   });
   clear.addEventListener('click', () => {
     log.clear();
