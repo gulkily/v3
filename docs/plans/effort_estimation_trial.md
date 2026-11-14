@@ -1956,3 +1956,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-14: standing P2 enrollment, one-shot. Intake **0.10** recorded before implementation (not pristine: same rater wrote the predecessor), execution entry reaffirmed, retrospective **0.10**. Baseline `b2c8bf8`; branch `feat/reading_margins_last_two`; planning commit `7a0b857`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
+
+## Cycle v3/reading_margins_nearest_edge
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/reading_margins_nearest_edge` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (intake 0.10; execution entry 0.10; retrospective 0.10) | [record](./reading_margins_nearest_edge/reading_margins_nearest_edge_one_shot.md#study-history) | Follow-up to `v3/reading_margins_last_two` (merged #236) after the maintainer's recorded session; acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot. Intake **0.10** recorded before implementation, after a click analysis of the maintainer's recording (not pristine: same rater wrote the predecessors), execution entry reaffirmed, retrospective **0.10**. Baseline `a4fe61e`; branch `feat/reading_margins_nearest_edge`; planning commit `c344c2b`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

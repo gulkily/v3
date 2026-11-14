@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.10**
 
-Status: plan written; next permitted action: planning commit, then implementation.
+Status: implemented and verified locally; PR open; next permitted action: maintainer review, merge and a try in Firefox.
 
 Predecessor: [`v3/reading_margins_last_two`](../reading_margins_last_two/reading_margins_last_two_one_shot.md) (merged as #236).
 
@@ -61,14 +61,40 @@ Concepts touched: none.
 
 Starting revisions and branch: `origin/main` `a4fe61e`; branch `feat/reading_margins_nearest_edge`.
 
-Planning commit: pending.
+Planning commit: `c344c2b` (confirmed with Git before implementation).
 
 ## Dated execution history
 
 - 2026-11-14: `AGENTS.md`, `RAILSPIKE.md`, the one-shot workflow and the shared implementation standards re-read after cloning `main`. No matching item in `docs/feedback/items/`. Plan written before any implementation.
+- 2026-11-14: Planning commit `c344c2b`; plan shared in session; implementation followed.
+- 2026-11-14: Implemented as planned. `reading_margins.js` compares stop indexes and replaces the nearer edge (the older on a tie), keeping `[kept, clicked]` as the new click order; `apply()` outlines `order[0]` only when the edges' stop indexes differ by an even number. The partial's pre-paint script uses the same condition. CSS comments and the flag description updated. `templates/layout.php` and `tests/LocalAppSmokeTest.php` needed no change (storage and markup unchanged).
+- 2026-11-14: Browser test updated: the first-click and click-sequence steps now expect nearer-edge moves and the conditional outline; the 5 click becomes 5–77 (was 5–59); the reset step clicks the filled-in edge instead of the outlined one, which may now have no outline. Added the recording's five mismatches as before/click/after cases, its tie, and a replay of all 18 click positions checking that an outside click moves the edge on its side. Against #236's script the updated test fails at the first new expectation, as intended.
+- 2026-11-14: No new requests during execution.
 
 ## Study history
 
 - Intake, 2026-11-14: **0.10**, scope v1, recorded before implementation, after the click analysis and reading the ruler files (not pristine: same rater wrote the predecessors). Baseline `a4fe61e`; R1 hashes not re-verified. Single exposed rater Claude (claude-opus-5-5).
+- Execution entry, 2026-11-14: **0.10** reaffirmed.
+- Closeout, 2026-11-14: delivered scope v1 in full; no corrections or additions. Retrospective scope assessment **0.10**. Maintainer comfortable-fit and acceptance pending.
+
+## Outcome
+
+Clicking an unchecked radio moves the column edge nearer to it, so a click outside the column moves the edge on that side and the column never flips; a click exactly midway moves the edge clicked longer ago. The dashed outline marks that edge and shows only when a midway stop exists. Clicking either checked radio resets. Limitation: whether the click-order tie-break avoids the guesses that got #214 rejected is untested until the maintainer tries it.
+
+## Verification
+
+- `./v3 test --smoke LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled FeatureFlagEvaluatorTest`: 461 of 462 passed; `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` fails the same way on `main` since #219. Full suite not run.
+- `node tests/browser/reading_margins.mjs`: passed in all 17 permitted themes at 1280px on a thread, 13 other pages, and phone, including the recorded session's cases. Screenshots of the outlined 41–77 state reviewed for every theme; the 5–77 state and phone reviewed in Bubblegum.
+- Not checked: Firefox (the maintainer's browser in the recording), Safari, real devices, production.
+
+## Final review
+
+Diff limited to the ruler files under reuse decisions plus this record, its index entry, the debug log and the ledger entry. No new components; the outline attribute and CSS are reused. Comments and the flag description describe the new rule.
+
+## Commit/merge/publication status
+
+Planning commit `c344c2b`; completion commit pending at time of writing; branch `feat/reading_margins_nearest_edge`; PR pending; not merged or deployed.
+
+Debug log: [reading_margins_nearest_edge_debug_log.md](./reading_margins_nearest_edge_debug_log.md)
 
 *Claude (claude-opus-5-5), 2026-11-14 UTC*
