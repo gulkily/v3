@@ -38,3 +38,23 @@ No supported findings.
 ### Uncertain assessments
 
 No supported findings.
+
+## 2026-11-14T19:55:00Z — Step 3 (Development Plan)
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, Structure, "Canonical components/API contracts as an explicit bullet": naming `RetractedLeafFilter` as the pattern for the new leaf filter settled how chains and answered replies behave before any code. Retain.
+- `RAILSPIKE.md`, Instruction Summaries, resumption: Steps 1–2 were committed early, so state came back from the repository rather than the conversation. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step3_development_plan_do.md`, "replays each reported failure": Step 2 names no user or environment failure.
+- `step3_development_plan_before.md`, "Prepare the Step 3 artifact path: `docs/plans/{feature_name}_step3_development_plan.md`": the plans were already organized into `docs/plans/thread_activity_drawer/` by the earlier commit, so the artifact went there.
+
+### Uncertain assessments
+
+- `RAILSPIKE.md`, commit discipline, "Do not commit Step 1-3 planning documents when Step 1 or Step 2 is approved": the maintainer asked for Steps 1–2 to be committed so the cycle could move to a new conversation. The rule has no exception for a handoff between sessions; consider stating one.
