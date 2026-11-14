@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * Gallery: posts with an attached image as tiles, newest first. Tiles keep
  * their image's proportions (clamped) in justified rows, so the page needs

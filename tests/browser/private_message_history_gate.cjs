@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
 const listeners={},values=new Map(),requests=[];
 let hasHistory=false,username='alice',fail=false;

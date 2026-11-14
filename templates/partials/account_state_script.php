@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <script>
   // The browser's account state, decided before first paint from browser storage and the
   // server's view of this browser's key. Shared by Account and the Messages access page.

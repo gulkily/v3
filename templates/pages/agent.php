@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack agent-page" data-agent-prompt-origin="<?= $e($agentPromptOrigin) ?>">
   <h1>Use with your agent</h1>
   <article class="card agent-page__prompts">

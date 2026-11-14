@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: activity-all
 -- label: Activity: All
 -- description: Reproduce the activity page's newest-first activity records.

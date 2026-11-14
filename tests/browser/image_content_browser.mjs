@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import { mkdtemp, writeFile, readFile, mkdir } from 'node:fs/promises';

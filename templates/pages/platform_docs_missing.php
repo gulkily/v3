@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack docs-page">
   <article class="card">
     <h1>Not Found</h1>

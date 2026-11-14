@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: node tests/browser/lcd_palettes.mjs
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';

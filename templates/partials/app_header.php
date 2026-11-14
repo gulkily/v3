@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * Header for the `app` navigation slot: main destinations in one nav (top
  * bar on desktop, tab bar on phones), one New post, and an account menu that

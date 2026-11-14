@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   var refreshFilters = function () {};
   function bindFilters() {

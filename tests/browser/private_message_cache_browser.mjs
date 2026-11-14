@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Encrypted per-browser cache of read private messages (DM instant load, Stage 2).
 // Runs the cache module on a routed https origin so IndexedDB and WebCrypto behave as on the site.
 import assert from 'node:assert/strict';

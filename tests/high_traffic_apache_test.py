@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Isolated Apache; no system server config or real public .htaccess is changed."""
 import json, os, pathlib, pwd, shutil, socket, subprocess, tempfile, time, urllib.request, urllib.error, concurrent.futures, fcntl
 project = pathlib.Path(__file__).resolve().parents[1]

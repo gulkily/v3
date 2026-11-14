@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 import assert from 'node:assert/strict';
 import { checkMessagingFeatureFlag, checkMessagingBackgroundGate } from './private_message_feature_flag.mjs';
 import { mkdtemp, writeFile } from 'node:fs/promises';

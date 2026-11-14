@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   document.querySelectorAll('[data-public-key-details]').forEach(function (details) {

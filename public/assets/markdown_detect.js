@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /*
  * Ticks a composer's Markdown box when the draft looks like Markdown, until the author
  * sets the box by hand. Deliberately naive: it looks for a few clear line shapes and

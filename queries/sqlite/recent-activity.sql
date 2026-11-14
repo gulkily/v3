@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: recent-activity
 -- label: Recent activity
 -- description: Show the ten newest activity records.

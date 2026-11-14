@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   let actionTimingSequence = 0;
   const pendingReactionOperations = new Set();

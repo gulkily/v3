@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   document.addEventListener("DOMContentLoaded", function () {
     var filterList = document.querySelector("[data-paned-users-filter-list]");

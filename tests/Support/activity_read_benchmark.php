@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /** Run against a disposable standard_activity_pagination_fixture directory. */
 declare(strict_types=1);
 require dirname(__DIR__, 2) . '/autoload.php';

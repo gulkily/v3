@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # Run with ./v3 check-dependencies --install; all scripts: scripts/README.md.
 # Opt-in coordinator. Keep ordinary diagnostics independent of package tooling.
 install_manual() {

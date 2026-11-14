@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Conflict, atomic-write and legacy-stdin regressions using isolated config files."""
 import fcntl
 import json

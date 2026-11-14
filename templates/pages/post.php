@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $postLlmExchanges = $llmExchangesByPostId[$post['post_id']] ?? [];
 $authorPublicKeyPath = trim((string) ($post['author_public_key_path'] ?? ''));
 $authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   "use strict";
   const invitationTokenPattern = /^(?:[a-f0-9]{32}|[a-f0-9]{64}|[A-Za-z0-9_-]{21}[AQgw])$/;

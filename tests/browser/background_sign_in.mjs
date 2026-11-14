@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/background_sign_in.mjs
 // Delay real authentication while interacting with a real thread.
 import assert from 'node:assert/strict';

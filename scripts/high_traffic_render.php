@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /** Internal worker. Parent invokes with an argument array; visitor state is never inherited. */
 declare(strict_types=1);
 require dirname(__DIR__) . '/autoload.php';

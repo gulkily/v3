@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack" data-private-site-auth-state data-authenticated-identity-id="" data-auth-return-to="<?= $e($returnTo) ?>">
   <article class="card">
     <h1>Reconnecting</h1>

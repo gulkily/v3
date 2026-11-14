@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Copied-package PHP 8.1, stale release, failed publication and retry acceptance."""
 import json
 import os

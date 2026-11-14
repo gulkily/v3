@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/viewer_nav_prepaint.mjs
 // Member-only navigation (Messages, Invite) is in every viewer's HTML and must
 // have its final visibility from first paint; only real status changes update it.

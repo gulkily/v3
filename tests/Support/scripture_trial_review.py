@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Export anonymous review packets without candidate labels or performance data."""
 import json
 from pathlib import Path

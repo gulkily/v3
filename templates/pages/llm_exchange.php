@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $formatText = static function ($text) {
     if (is_scalar($text)) {
         $text = (string) $text;

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Audit rendered read-only tasks against a frozen source-candidate inventory; retain no HTML.
 
 Part of the Markdown renderer audit tools; rerun when task-list rendering changes.

@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: board-liked-oldest
 -- label: Board: Liked + Oldest
 -- description: Reproduce liked threads with pinned-first oldest ordering.

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Deploy now in the header, for a browser that has deployed from Tools → Deploy
 // (deploy_control.js remembers it). Loaded only with FORUM_DEPLOY_HEADER_PROMPT_ENABLED.
 // The server still decides who may check or deploy; a refusal forgets this browser.

@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack board-list">
 <?= $indent($partial('partials/visitor_intro.php', []), 1) ?>
 <?= $indent($partial('partials/board_toolbar.php', [

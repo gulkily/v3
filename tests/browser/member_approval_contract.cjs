@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Deterministic approval-memory checks for member-only navigation; no browser dependency.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $documentCount = array_sum($counts['group']);
 $filterLabels = ['q' => 'Search', 'group' => 'Collection', 'category' => 'Category', 'folder' => 'Folder'];
 $active = [];

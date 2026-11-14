@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <details class="account-key-advanced" data-public-key-details>
   <summary>Public key</summary>
 <?php if (trim((string) $publicKey) !== ''): ?>

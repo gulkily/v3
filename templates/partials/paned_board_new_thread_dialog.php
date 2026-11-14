@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php $selectedTag = (string) ($selectedTag ?? ''); ?>
 <dialog class="paned-new-thread-dialog" data-paned-new-thread-dialog data-compose-root>
   <div class="paned-dialog-titlebar">

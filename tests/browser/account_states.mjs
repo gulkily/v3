@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/account_states.mjs
 // The account page shows Guest, Waiting for approval or Approved from first paint.
 import assert from 'node:assert/strict';

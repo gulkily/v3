@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/calendar.mjs
 // The calendar: a day page posts an event through the shared composer, signed with JavaScript
 // and plain without it; the grid and day page fit a phone and a desktop.

@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $expansion = $scriptureExpansionsByPostId[$post['post_id']] ?? null;
 if (!is_array($expansion) || ($post['retracted_at'] ?? null) !== null) { return; }
 $expansionState = (string) $expansion['generation_status'];

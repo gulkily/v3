@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Known-user replay for the title directive: the thread author retitles through the ordinary
 // inline reply composer; an approved non-operator member is ignored until the operator turns the
 // second flag on through the Feature Flags page; turning the directive flag off leaves the line as text.

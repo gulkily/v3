@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # For a persistent downloadable client see /frm.py and docs/reference/agent_api.md.
 # For client-constructed one-request posting see agent_single_request_post.sh.
 # Agent API worked example: create an agent identity and publish a signed

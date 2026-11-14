@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 import io
 import json
 from pathlib import Path

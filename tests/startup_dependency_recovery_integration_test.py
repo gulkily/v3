@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Real startup recovery in a NEW disposable Ubuntu 22.04/24.04 Base chroot.
 
 Run as root with --base-image, --sha256 and a nonexistent --work-dir.

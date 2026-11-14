@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 require_once __DIR__ . '/../autoload.php';
 use ForumRewrite\Canonical\RemovalReceipt;
 final class RemovalReceiptTest

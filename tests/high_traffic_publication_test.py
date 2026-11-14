@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Replay unchanged import-publication recovery tests against a bounded docs inventory.
 
 The implementation, templates, assets and canonical fixtures are the real project

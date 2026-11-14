@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # Standalone launcher regression check: bash tests/missing_php_startup_test.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

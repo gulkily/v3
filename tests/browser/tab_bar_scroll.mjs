@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/tab_bar_scroll.mjs
 // The ZenMemes phone tab bar hides while scrolling down and returns on scroll up,
 // near either page end, on focus and while the account menu is open.

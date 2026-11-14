@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * @var array<string, mixed> $user
  * @var array{new: bool, established: bool, no_threads: bool, recently_active: bool} $flags

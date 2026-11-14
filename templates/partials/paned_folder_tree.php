@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * @var array<int, array{tag: string, count: int, threads: array}> $tagGroups
  * @var int $totalThreadCount

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/offline_compose.mjs
 // Offline, writing works as it does online: New post and Reply open the same composers at the same addresses,
 // Post keeps the text in the Outbox as "not sent", and it is published once when the connection returns.

@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 require_once __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/WriteApiSmokeTest.php';
 use ForumRewrite\Write\{SignedPostIdentity,SignedPostBundleValidator};

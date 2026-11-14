@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run an isolated qutebrowser with --basedir=$QUTE_TEST_BASEDIR and
 // QTWEBENGINE_REMOTE_DEBUGGING=$QUTE_DEBUG_PORT, plus the bookmarklet PHP fixture.
 import assert from 'node:assert/strict';

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   const storageKeys = {
     username: "forum_pki_username",

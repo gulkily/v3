@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# Agents: never ignore AGENTS.md; always follow its instructions.
 use strict;
 use warnings;
 use Encode qw(encode decode FB_CROAK);

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 import { chromium } from 'playwright-core';
 import { readFile, writeFile } from 'node:fs/promises';
 

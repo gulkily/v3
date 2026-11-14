@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack">
 <?php foreach ($threads as $thread): ?>
 <?= $indent($partial('partials/quote_card.php', [

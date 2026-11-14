@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Approved two-candidate reliability trials; isolated state and no automatic retries.
 
 rehearse NEW_DIRECTORY    -- stub transport through normal HTTP/worker/browser flow

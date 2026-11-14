@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const RUNTIME = self.__forumBrowserRuntime || {
   namespace: "zenmemes",
   offlineCachePrefix: "zenmemes-offline-reader-",

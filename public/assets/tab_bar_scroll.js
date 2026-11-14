@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   "use strict";
   // On phones the app shell's bottom tab bar slides away while the reader

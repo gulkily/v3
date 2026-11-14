@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Theme token contrast audit for the docs page (WCAG 2.2 AA).
 
 Usage: python3 -I tests/theme_contrast_audit.py <repo-root> <report.json>

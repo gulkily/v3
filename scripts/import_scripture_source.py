@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Reproduce the pinned KJV corpus from its original archive; no network access."""
 import hashlib
 import io

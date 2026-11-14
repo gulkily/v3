@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <nav class="nav">
 <?php foreach ($navItems as $item): ?>
 <?php if (($item['placement'] ?? 'main') !== 'main') continue; ?>

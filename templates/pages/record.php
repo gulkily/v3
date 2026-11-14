@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $sourceHref = static fn (string $path): string => '/source/current/' . implode('/', array_map('rawurlencode', explode('/', $path)));
 $kind = match (true) {
     str_starts_with($recordId, 'post-format-') => 'Format change',

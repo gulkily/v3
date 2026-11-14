@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // One paid-trial browser flow; provider calls are guarded by the local budget proxy.
 const {chromium} = require('playwright-core');
 const {spawn} = require('node:child_process');

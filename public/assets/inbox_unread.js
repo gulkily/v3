@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   // The Inbox link ships without a count, so every viewer gets the same HTML.

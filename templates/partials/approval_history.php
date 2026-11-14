@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $historyAccountBase = $historyAccountBase ?? '/user/';
 $historyProfileBase = $historyProfileBase ?? '/profiles/';
 $keyOnly = (bool) ($approvalHistory['profile_scope'] ?? false); ?>

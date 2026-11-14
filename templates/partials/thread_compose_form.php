@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // A new post: the shared composer. Compact (board quick compose, QDB add) leaves out Title, tags and event.
 $composerKind = 'thread';
 $composerCompact = (bool) ($compact ?? false);

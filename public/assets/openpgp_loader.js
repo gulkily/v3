@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Loads one OpenPGP.js bundle per page: v6 (openpgp.min.js) by default, or
 // v5 (openpgp.v5.11.3.min.js) on plain-HTTP origins, where v6 cannot run
 // without WebCrypto. Both bundles are intentional; see openpgp.PROVENANCE.

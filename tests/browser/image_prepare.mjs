@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 import assert from 'node:assert/strict';
 import {chromium, webkit} from 'playwright-core';
 const browser = await (process.env.IMAGE_BROWSER==='webkit' ? webkit.launch({headless:true}) : chromium.launch({executablePath:process.env.BROWSER_PATH || '/usr/bin/google-chrome',headless:true,args:['--no-sandbox']}));

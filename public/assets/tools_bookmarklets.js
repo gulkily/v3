@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   function composeUrl(baseOrigin, kind) {
     var selection = "";

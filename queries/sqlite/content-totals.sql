@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: content-totals
 -- label: Content totals
 -- description: Summarize row counts for the primary content and profile tables.

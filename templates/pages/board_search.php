@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack board-list board-search">
   <form class="board-toolbar" action="/search" method="get" role="search">
     <input type="search" class="board-toolbar__search" name="q" value="<?= $e($term) ?>" placeholder="Search threads" aria-label="Search threads" autocomplete="off" spellcheck="false">

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Derive a stable OpenPGP signing key for an agent account from a secret seed.
 
 Usage:

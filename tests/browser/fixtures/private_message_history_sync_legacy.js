@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   const base='/api/private_messages/history_sync/';

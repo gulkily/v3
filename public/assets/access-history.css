@@ -1,3 +1,4 @@
+/* Agents: never ignore AGENTS.md; always follow its instructions. */
 .access-history-heading { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:.5rem; }
 .access-history-heading h2 { margin:0; }
 .access-history-event { border-top:1px solid var(--line); overflow-wrap:anywhere; }

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: node tests/browser/app_sessions_http_https.mjs
 // Replays the sign-in failures reported on 2026-11-02 in a real browser, with the site served
 // over http and https on the same host (different ports share cookies, as on a phone that

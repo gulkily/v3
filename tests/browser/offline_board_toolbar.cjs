@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/offline_board_toolbar.cjs [screenshot-dir]
 // The offline reader's board and Tags views use the board toolbar (filter, sort menu, Tags), like the online pages.
 const assert = require('node:assert/strict');

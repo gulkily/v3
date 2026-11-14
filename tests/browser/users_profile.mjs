@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/users_profile.mjs
 // Users and person pages: find a member, open their page, approve someone waiting, then message them.
 import assert from 'node:assert/strict';

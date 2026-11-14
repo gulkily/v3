@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 require_once __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 require_once __DIR__ . '/Support/ImportHttpServer.php';

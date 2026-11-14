@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack">
   <article class="card tool-launcher bookmarklets-page">
     <h1>Bookmarklets</h1>

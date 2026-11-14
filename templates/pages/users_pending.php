@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack users-page" data-pending-approvals-root>
 <?php if (!empty($accessManagement)): ?>
   <article class="card">

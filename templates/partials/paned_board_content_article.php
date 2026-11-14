@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * @var array<string, mixed> $thread
  * @var array<int, array{post: array<string, mixed>, children: array}> $replyTree

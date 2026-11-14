@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Deploy page actions. Without this script the form posts normally and the
 // server answers with the page and a notice; with it, requests go as JSON and
 // the page reloads when there is a new state to show.

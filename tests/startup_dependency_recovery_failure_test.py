@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Failure gates in a disposable rootfs created by the startup integration test.
 
 Run as root with --work-dir pointing to that retained test directory. Never use

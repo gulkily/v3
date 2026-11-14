@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <dialog class="sqlite-dialog" data-query-dialog aria-labelledby="query-dialog-title">
   <header class="sqlite-dialog-header">
     <h2 id="query-dialog-title">Query viewer</h2>

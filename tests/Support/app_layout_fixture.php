@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Prints the ZenMemes app layout for a browser check that serves it from memory
 // (no read model, no server): php tests/Support/app_layout_fixture.php <section> [events=1] [messages=1] [inbox=0] [deploy=0]
 declare(strict_types=1);

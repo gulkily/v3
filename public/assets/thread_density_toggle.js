@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   var runtime = window.forumBrowserRuntime || null;
   var storageKey = runtime && runtime.threadDensityStorageKey;

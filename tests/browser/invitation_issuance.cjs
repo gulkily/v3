@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');

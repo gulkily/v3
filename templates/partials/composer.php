@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * The one composer: body, then Post and the ··· menu, then Title and tools (full new post only).
  * Options (post format and theme) is a tool on the full composer and its own row on the others.

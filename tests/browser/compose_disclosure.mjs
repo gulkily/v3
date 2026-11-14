@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Self-contained: exercises public/assets/compose_disclosure.js against a fixture form.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

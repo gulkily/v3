@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // One page per person: name, counts and status, Message (or Edit in Account on your own page),
 // Threads | Replies | Identities (each key, most recently active first).
 $personTab = (string) ($personTab ?? 'threads');

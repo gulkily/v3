@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 import assert from 'node:assert/strict';
 
 // DM instant load: a conversation read once in this browser reopens from the encrypted local copy.

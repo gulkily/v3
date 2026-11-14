@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // CHROMIUM_PATH=/path/to/Brave node tests/browser/inline_hashtags.mjs
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, cp, readFile } from 'node:fs/promises';

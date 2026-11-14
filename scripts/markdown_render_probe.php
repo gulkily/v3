@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /** Maintainer-only render probe. Reference AST evidence was captured before removal. */
 declare(strict_types=1);
 require dirname(__DIR__) . '/autoload.php';

@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Run against a fixture retained by image_content_browser.mjs; never touches system Apache."""
 import json, os, pathlib, pwd, socket, subprocess, sys, time, urllib.request, urllib.error
 

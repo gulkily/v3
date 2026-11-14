@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php $memberCount = count($users); ?>
 <section class="stack users-page" data-users-directory>
   <h1 class="visually-hidden">Users</h1>

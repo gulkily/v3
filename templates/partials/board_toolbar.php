@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // The board's filter, sort ▾ and Tags controls, shared by the list board and /tags/.
 // On /tags/ ($tagsCurrent) Tags is the current page and no filter or sort option is.
 $tagsCurrent = (bool) ($tagsCurrent ?? false);

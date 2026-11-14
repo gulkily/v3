@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # PHP-independent entry-point regressions: bash tests/local_server_dependency_checks_test.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

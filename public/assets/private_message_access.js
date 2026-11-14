@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   "use strict";
   // Messages for a registered key without a usable session: sign in where we are, then

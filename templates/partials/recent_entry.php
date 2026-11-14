@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * One contribution on Recent, in the board's thread-row shape: the thread
  * title links to the exact post, a one-line excerpt shows what is new, and the

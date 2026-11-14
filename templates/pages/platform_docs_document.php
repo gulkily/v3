@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack docs-page">
   <article class="card docs-source">
     <a href="/docs/<?= $returnQuery === [] ? '' : '?' . $e(http_build_query($returnQuery)) ?>#docs-library-heading" data-docs-return><?= $e($platformDocsBrand['heading']) ?></a>

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome [FORUM_SITE_ID=chouse] node tests/browser/private_message_redesign.mjs [screenshot-dir] [all|theme,theme,...]
 // The redesigned Messages (ui_messages): the access page for visitors who aren't approved members, then in each
 // theme at phone and desktop width the conversation (name, privacy line, bubbles by day, no check marks, Send,

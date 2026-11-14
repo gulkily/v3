@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   var stamp = document.querySelector('meta[name="v3-generated-at"]');

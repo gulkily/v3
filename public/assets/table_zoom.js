@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Text size for zoom tables on phones (ZoomTable.php, site.css .zoom-table, --table-min):
 // post tables, Tools tables and the calendar (text mode: full width, only the text scales). Each kind of table has its own size: --table-zoom-<kind> on
 // <html> multiplies that kind's fitted size, and Actual size instead sets

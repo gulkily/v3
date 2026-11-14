@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 require dirname(__DIR__,2).'/autoload.php';
 $root=$argv[1];$project=dirname(__DIR__,2);
 mkdir($root,0700,true);symlink($project.'/templates',$root.'/templates');symlink($project.'/public',$root.'/public');mkdir($root.'/sessions',0700,true);

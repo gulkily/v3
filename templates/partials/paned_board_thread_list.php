@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * @var array<int, array<string, mixed>> $threads
  * @var string $selectedTag

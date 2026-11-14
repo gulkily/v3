@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * Unread (internally Inbox): unread messages, then replies to the viewer's posts, then other new posts.
  * Each section is one module (a card): its heading, then its list, then its Caught up button.

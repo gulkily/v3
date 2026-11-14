@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <div class="account-key-history">
   <p>Record author: <?= $e($item['author_label'] ?? 'unknown') ?>. Event time: <?= $e($item['created_at']) ?>.</p>
 <?php if (isset($item['security_account'])): ?>

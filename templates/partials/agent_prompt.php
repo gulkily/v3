@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // One copyable prompt, laid out like railspike.dev's: a label, a read-only
 // field that selects itself, Copy in the field's corner, and a status line.
 // The button and its icon match the Bookmarklets copy button; feedback

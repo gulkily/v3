@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),crypto=require('crypto');
 global.crypto=crypto.webcrypto;
 const bundle=process.argv[2]||'openpgp.min.js';

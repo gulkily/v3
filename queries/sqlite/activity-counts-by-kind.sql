@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: activity-counts-by-kind
 -- label: Activity counts by kind
 -- description: Summarize activity volume by kind with the newest event time.

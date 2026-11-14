@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Screenshot the ZenMemes app layout without a server, for navigation work.
 //   node tests/Support/nav_shot.mjs out.png [theme=light] [width=375] [section=board] [options]
 // Options (any order): member (browser remembered as approved), more (open the More/You panel),

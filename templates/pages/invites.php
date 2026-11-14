@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack" data-invitation-page>
   <article class="card">
     <h1>Generate invite</h1>

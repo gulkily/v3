@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   const MAX_BYTES = 131072, MAX_FILE_BYTES = 20 * 1024 * 1024;

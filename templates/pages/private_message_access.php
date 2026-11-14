@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php $featureName = $featureName ?? 'Messages'; ?>
 <section class="stack private-message-access" data-private-message-access data-access-state="checking" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-approved="0">
   <article class="card">

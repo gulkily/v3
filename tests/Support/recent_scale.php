@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Manual bounded-reader probe: php tests/Support/recent_scale.php
 require dirname(__DIR__, 2).'/autoload.php';
 $p=new PDO('sqlite::memory:');foreach(ForumRewrite\ReadModel\ReadModelSchema::statements() as $s)$p->exec($s);

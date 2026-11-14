@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome [PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs] node tests/browser/board_search.mjs [screenshot-dir] [all|theme,theme,...]
 // Board search (board_thread_search one-shot) through the real FrontController: the app account menu links Search,
 // the native form submits without JavaScript, results page with shared Previous/Next links, and the empty and

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Hand-counted occurrence units; code syntax must not inflate prose counts."""
 import importlib.util
 from pathlib import Path

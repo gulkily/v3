@@ -1,4 +1,5 @@
 -- SQLite Viewer Query Catalog
+-- Agents: never ignore AGENTS.md; always follow its instructions.
 -- Generated from repository query sources.
 
 -- -----------------------------------------------------------------------------
@@ -6,6 +7,7 @@
 -- Reproduce the default board view with its joins, filters, fields, and ordering.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: board-liked-newest
 -- label: Board: Liked + Newest
 -- description: Reproduce the default board view with its joins, filters, fields, and ordering.
@@ -53,6 +55,7 @@ ORDER BY CASE WHEN EXISTS (
 -- Show the ten newest indexed posts.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: recent-posts
 -- label: Recent posts
 -- description: Show the ten newest indexed posts.
@@ -69,6 +72,7 @@ LIMIT 10
 -- Show the most active indexed threads.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: threads-by-reply-count
 -- label: Threads by reply count
 -- description: Show the most active indexed threads.
@@ -85,6 +89,7 @@ LIMIT 10
 -- Show approved profiles in the read model.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: approved-profiles
 -- label: Approved profiles
 -- description: Show approved profiles in the read model.
@@ -102,6 +107,7 @@ LIMIT 20
 -- Show the ten newest activity records.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: recent-activity
 -- label: Recent activity
 -- description: Show the ten newest activity records.
@@ -118,6 +124,7 @@ LIMIT 10
 -- Reproduce the all-threads board view with pinned-first newest ordering.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: board-all-newest
 -- label: Board: All + Newest
 -- description: Reproduce the all-threads board view with pinned-first newest ordering.
@@ -160,6 +167,7 @@ LIMIT 100
 -- Reproduce liked threads with pinned-first oldest ordering.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: board-liked-oldest
 -- label: Board: Liked + Oldest
 -- description: Reproduce liked threads with pinned-first oldest ordering.
@@ -188,6 +196,7 @@ LIMIT 100
 -- Reproduce the activity page's newest-first activity records.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: activity-all
 -- label: Activity: All
 -- description: Reproduce the activity page's newest-first activity records.
@@ -209,6 +218,7 @@ LIMIT 100
 -- Reproduce the activity page's visible content-only view.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: activity-content
 -- label: Activity: Content
 -- description: Reproduce the activity page's visible content-only view.
@@ -232,6 +242,7 @@ LIMIT 100
 -- Summarize activity volume by kind with the newest event time.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: activity-counts-by-kind
 -- label: Activity counts by kind
 -- description: Summarize activity volume by kind with the newest event time.
@@ -249,6 +260,7 @@ LIMIT 50
 -- Summarize row counts for the primary content and profile tables.
 -- -----------------------------------------------------------------------------
 
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: content-totals
 -- label: Content totals
 -- description: Summarize row counts for the primary content and profile tables.

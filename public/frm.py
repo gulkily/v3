@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Portable forum client. Python 3 standard library, curl and GPG; no packages."""
 FRM_VERSION = "2026-11-11"
 

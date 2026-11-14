@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # Pure fixtures: no real package manager, privileges, or application writes.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

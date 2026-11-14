@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome [FORUM_SITE_ID=chouse] node tests/browser/tools_launcher.mjs [screenshot-dir] [all|theme,theme,...]
 // The grouped Tools launcher (ui_tools_launcher): /tools/ lists every tool once under four group headings with theme hooks,
 // Account is not a tool, and each tool page's Tools bar lists the same tools in the same order with the current one marked.

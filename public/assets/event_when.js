@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Fill in place: the When phrase is read with the poster's own date, and Date, Until and
 // Time are filled where they are. Nothing is posted; the pickers show what will be saved.
 // Without scripts, Fill submits the form and the server does the same with the UTC date.

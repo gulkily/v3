@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $replyThreadTitle = (string) ($replyThreadTitle ?? '');
 $parentAuthorName = is_array($parentPost)
     ? trim(str_replace('(unapproved)', '', strip_tags($author($parentPost))))

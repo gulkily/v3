@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Real PTY lifecycle regression, using only Python's standard library."""
 import errno
 import os

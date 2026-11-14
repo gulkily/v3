@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (() => {
   'use strict';
   const keys = ['q', 'folder', 'category', 'group', 'page'];

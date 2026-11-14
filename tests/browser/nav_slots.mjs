@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/nav_slots.mjs
 // Phone tabs (adaptive_nav): every tab is earned. Board and Calendar are where a
 // fresh browser starts; a destination fills a free slot after three uses, tabs hold

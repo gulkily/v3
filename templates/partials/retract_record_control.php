@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * Retract button for one like, shared by the post's Records list and the record page. It uses
  * post_retraction.js, which signs a retraction naming the record in Target-ID.

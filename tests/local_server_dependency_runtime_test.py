@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Real CLI/HTTP/PTY regressions. Run with Python 3 and a PHP CLI on PATH.
 
 Only temporary projects/configurations are changed. Shared PDO/mbstring modules

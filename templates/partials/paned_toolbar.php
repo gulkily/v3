@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * @var string $activeView 'board' | 'activity' | 'users'
  * @var bool $boardControlsEnabled

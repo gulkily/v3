@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <div class="nav pagination-nav">
 <?php foreach ($pagination as $item): ?>
 <?php if ($item['type'] === 'ellipsis'): ?>

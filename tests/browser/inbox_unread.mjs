@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // The Unread count arrives after paint as data-unread-count on the Unread link and
 // its mirrors. CSS draws an outline, so nothing in the header moves or resizes.
 import assert from 'node:assert/strict';

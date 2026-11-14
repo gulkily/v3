@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run: node tests/browser/invite_signing_readiness.mjs; --baseline verifies the original defect.
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, rm, mkdir, readdir } from 'node:fs/promises';

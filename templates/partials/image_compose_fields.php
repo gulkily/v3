@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <fieldset class="image-compose-fields" hidden>
   <legend class="image-compose-legend">Image</legend>
   <div class="image-upload-dropzone" title="Attach an image, drop it here, or paste from your clipboard">

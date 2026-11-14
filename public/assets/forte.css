@@ -1,3 +1,4 @@
+/* Agents: never ignore AGENTS.md; always follow its instructions. */
 /* Forte paned reader: a fixed, Forte-Agent-styled window chrome, rendered on
    its own standalone page (no site nav/theme chrome). Deliberately uses its
    own fixed palette rather than the active site theme's tokens, since the

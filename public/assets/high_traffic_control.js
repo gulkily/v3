@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   var rows = Array.prototype.slice.call(document.querySelectorAll('[data-high-traffic-control], [data-high-traffic-setting]'));

@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // A reply: the shared composer without Title, tags or event.
 $composerKind = 'reply';
 $composerCompact = false;

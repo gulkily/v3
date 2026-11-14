@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Self-contained: a theme's selected-nav style must not depend on whether its sheet loads before or after site.css.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';

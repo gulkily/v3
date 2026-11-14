@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run against a Docs host containing tests/fixtures/markdown_task_reader.md at DOCS_TASK_FIXTURE_PATH.
 // Theme paint is applied explicitly because contexts intentionally disable preference JavaScript.
 import assert from 'node:assert/strict';

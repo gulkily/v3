@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * One calendar day: its events, then the shared composer with the day fixed and, on a
  * tag calendar, the tag preset. Every viewer gets the same markup.

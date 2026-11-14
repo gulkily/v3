@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Independent SFENC v0.2 reference. Standard library only; never uses browser code."""
 import hashlib
 import json

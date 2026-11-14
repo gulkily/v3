@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   "use strict";
   const presentations = new WeakMap(), groupStates = new WeakMap(), expanded = new WeakMap();

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Test-only optimizer: rewrite a canonical RGBA PNG as filtered/compressed RGB
 // or RGBA with split IDAT and metadata. Does not depend on the SFENC decoder.
 const { inflateSync, deflateSync } = require('node:zlib');

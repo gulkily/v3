@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php if ($canSignIn): ?>
 <div data-private-site-auth-state data-public-auth-resume="true" data-authenticated-identity-id="" data-auth-return-to="<?= $e($authReturnTo) ?>">
   <p>Sign in with your operator account to view access history.</p>

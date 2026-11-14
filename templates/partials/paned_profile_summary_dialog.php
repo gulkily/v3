@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <dialog class="paned-new-thread-dialog paned-profile-summary-dialog" data-paned-profile-summary-dialog>
   <div class="paned-dialog-titlebar">
     <span data-role="profile-summary-title">Profile</span>

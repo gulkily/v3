@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Frozen-corpus Markdown syntax candidates plus actual renderer metrics; archived reference AST counts.
 
 No dependencies. Candidate counts are NOT a Markdown conformance parser: source and

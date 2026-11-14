@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $isBootstrapPost = (string) ($post['post_id'] ?? '') === (string) ($post['thread_id'] ?? '');
 $boardTags = json_decode((string) ($post['board_tags_json'] ?? ''), true);
 $isBootstrapPost = $isBootstrapPost

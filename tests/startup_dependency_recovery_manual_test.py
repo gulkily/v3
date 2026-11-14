@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Follow the actual manual recovery text in an existing disposable test chroot.
 
 Run as root with --work-dir created by startup recovery integration tests.

@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Failure boundaries that do not require a live forum; HTTP/GPG flows are in FrmClientTest."""
 import argparse
 import importlib.util

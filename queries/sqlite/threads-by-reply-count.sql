@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: threads-by-reply-count
 -- label: Threads by reply count
 -- description: Show the most active indexed threads.

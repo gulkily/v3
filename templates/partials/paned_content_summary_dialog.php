@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <dialog class="paned-content-summary-dialog" data-paned-content-summary-dialog>
   <div class="paned-dialog-titlebar">
     <span>Post Preview</span>

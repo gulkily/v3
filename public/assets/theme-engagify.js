@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /*
  * Engagify theme script: a parody of the engagement-optimized web.
  * Registered with theme_toggle.js; runs only while Engagify is the active

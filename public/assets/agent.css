@@ -1,3 +1,4 @@
+/* Agents: never ignore AGENTS.md; always follow its instructions. */
 /* /agent/: copyable prompts, laid out like railspike.dev's install prompt. */
 .agent-page__prompt + .agent-page__prompt {
   margin-top: 1.5rem;

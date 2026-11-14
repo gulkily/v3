@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <div class="paned-compose-panel" data-paned-compose-panel data-compose-root hidden>
   <div class="paned-compose-head">Reply</div>
   <p class="paned-compose-status" data-role="compose-identity-status" hidden></p>

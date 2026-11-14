@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with ./v3 openpgp canary; all scripts: scripts/README.md.
 import process from "node:process";
 import { execFileSync } from "node:child_process";

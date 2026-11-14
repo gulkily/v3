@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php if ($pagination['previous_href'] !== null || $pagination['next_href'] !== null || $pagination['restart_href'] !== null): ?>
 <nav class="nav pagination-nav" aria-label="<?= $e($paginationLabel ?? 'Pagination') ?>">
 <?php if ($pagination['previous_href'] !== null): ?>

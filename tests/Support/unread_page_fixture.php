@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Prints the real Unread page from canned rows, for a browser check that serves it
 // from memory (no read model, no server):
 // php tests/Support/unread_page_fixture.php <replies,...|-> <new,...|-> [failed-section]

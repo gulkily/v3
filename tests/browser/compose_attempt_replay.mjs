@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/compose_attempt_replay.mjs
 // A lost response or Back must not publish an anonymous post twice, on a real server.
 import assert from 'node:assert/strict';

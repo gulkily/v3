@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: node tests/browser/gloss_palettes.mjs
 // Gloss's and Gloss Dark's colour pickers: each palette applies, persists,
 // passes contrast and turns the navigation icons; Engagify, which shares Gloss's stylesheet,

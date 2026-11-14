@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack compose-page" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>"<?= $notice !== null ? ' data-compose-submitted="1"' : '' ?><?= isset($retiredComposeAttempt) ? ' data-compose-attempt-retired="' . $e($retiredComposeAttempt) . '"' : '' ?>>
   <article class="card">
     <h1>New post</h1>

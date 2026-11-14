@@ -10,7 +10,7 @@ Extended estimates: enabled (new enrolled cycle default); no real alternatives o
 
 **Cycle estimate: 0.15 (execution entry; intake missing)**
 
-Status: planning record written; implementation already drafted in the working tree before this record (see Chronology). Next permitted action: planning commit, then completion commit and PR.
+Status: implemented and verified locally; PR open, awaiting maintainer review and merge. Follow-up pending: railspike-dev todo note (see Outcome).
 
 ## Original request
 
@@ -70,7 +70,7 @@ None.
 
 Starting revisions and branch: `main` at `59d2d64609d8b3ff98b3484df20dd4648a067f8a`; branch `chore/agents_md_source_line`.
 
-Planning commit: pending.
+Planning commit: `f70fcd7` (record only; written after the drafted implementation, see Chronology).
 
 ## Study history
 
@@ -80,6 +80,48 @@ Planning commit: pending.
 ## Dated execution history
 
 - 2026-11-14: Direct-mode draft (before this record). The script added the line to 1,369 files. The query-catalog generator header was updated and the catalog regenerated. Every changed file passed a syntax check.
+- 2026-11-14T17:20Z, scope v2 (an addition, not a correction). The maintainer asked why the agent chose Direct work, and the agent suggested AGENTS.md wording. The maintainer replied: "can you please make this change to agents.md and also note it down in gulkily/railspike-dev/todo.txt". Added to this cycle: the AGENTS.md Railspike paragraph now requires a Railspike cycle for every committed change (one-shot by default, staged when review is needed). Direct work is limited to questions and uncommitted exploration, or to an explicit opt-out by the user. The first reply must name the chosen mode and why. The railspike-dev todo note is in another repository and is recorded only here, not in this cycle's v3 commits. Scope v1 is kept above.
 - 2026-11-14: smoke set plus the related tests: 471 of 472 passed. `StatusCommandTest::testStatusPrintsAlignedHealthSummaryAndEveryFix` failed only because `./v3 status` adds a warning row when `public/index.php` has uncommitted edits. That test passes on clean `main`, and is expected to pass once the work is committed. Rerun after the completion commit.
+
+- 2026-11-14T17:20Z study revision: **0.15 reaffirmed** for scope v2. The AGENTS.md paragraph adds very little work.
+- 2026-11-14 closeout: scope v2 delivered in v3. The railspike-dev todo note was not delivered. There were no corrections after implementation. Retrospective scope assessment: 0.15. Maintainer acceptance pending.
+- 2026-11-14: tested a clean snapshot of the working tree (`git stash create` checked out in a temporary worktree): smoke set plus the related tests, 472 of 472 passed, including `StatusCommandTest`. A count check found exactly one line in every in-scope file. Two files have more by design: the generated catalog has one per query plus its header, and the generator has its own comment plus the header string.
+- 2026-11-14: after the AGENTS.md edit, `PlatformDocsCatalogTest` and `LlmsTxtRendererTest` passed (22 of 22). `tests/platform_docs_release_test.py` fails its `<table>` count at line 81 both with and without this change, so the failure predates this cycle. `git diff --check` is clean.
+
+## Outcome
+
+Delivered in v3:
+- The line is in 1,369 source files.
+- The SQLite query catalog generator and its regenerated outputs carry it.
+- The AGENTS.md Railspike paragraph now runs every committed change as a Railspike cycle, and the first reply must name the chosen mode.
+
+Not delivered: the note in `gulkily/railspike-dev/todo.txt`. That repository was not found. `rlspk/railspike-dev` exists, but attaching it was blocked because its owner differs from the one the maintainer named, so it needs the maintainer's confirmation.
+
+Limitations:
+- Source files added later will not get the line automatically.
+- The full suite was not run.
+
+Possible follow-up: a test that fails when an in-scope source file lacks the line.
+
+## Verification
+
+- `php -l`, `node --check`, `py_compile`, `bash -n` and `perl -c` on every changed file: passed.
+- `./v3 test --smoke SqliteQueryCatalogTest AssetFingerprintTest OpenPgpAssetSmokeProbeTest NavIconSetsTest TemplateRendererMediaEmbedsScriptTest ThemeCatalogPageTest` on a clean snapshot: passed (472 of 472).
+- `./v3 test PlatformDocsCatalogTest LlmsTxtRendererTest`: passed.
+- `tests/platform_docs_release_test.py`: failed, and fails the same way on the unchanged tree.
+- Full suite: not run, per AGENTS.md.
+
+## Final review
+
+- Diff: one inserted line per file. The generator gained one header line, and the regenerated catalog changed. The AGENTS.md change is one paragraph.
+- No vendored files, `docs/railspike/` or `todo.txt` were touched.
+- No dependencies were added. The dependency delta is zero.
+- No concepts were touched.
+
+## Commit/merge/publication status
+
+- Planning commit: `f70fcd7`.
+- Completion commit: pending at the time of writing. The PR reports its hash.
+- Not merged. Not deployed.
 
 *— Claude (Opus 5.5), 2026-11-14*

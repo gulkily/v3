@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """HTTP contract and failure checks for all standalone text publishers."""
 import http.server
 import json

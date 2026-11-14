@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Buttons for tags a thread tag unlocks on its posts (resources/tagsets.txt).
 // Exclusive-group tags are one state (claimed, resolved, closed; open = none). All buttons are
 // rendered and shown or hidden by PostStateView, so the script can switch them without a reload.

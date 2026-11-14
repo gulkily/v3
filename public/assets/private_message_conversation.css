@@ -1,3 +1,4 @@
+/* Agents: never ignore AGENTS.md; always follow its instructions. */
 .private-conversation { min-width: 0; }
 .private-message-history-controls { text-align: center; }
 .private-message-history-controls button { width: auto; min-height: 44px; }

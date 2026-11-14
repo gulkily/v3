@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $highTrafficRows = [
     ['setting' => 'mode', 'name' => 'High-traffic mode', 'description' => 'Public pages may be about two minutes old.', 'on' => $highTrafficEnabled, 'note' => $highTrafficReason ?? null, 'unavailable' => null],
     ['setting' => 'turn-on', 'name' => 'Turn on automatically', 'description' => null, 'on' => $highTrafficTurnOn ?? false, 'note' => null, 'unavailable' => null],

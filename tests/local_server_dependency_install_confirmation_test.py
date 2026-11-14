@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """PTY fixtures for a changed transaction after refresh; never executes APT/sudo."""
 import os
 from pathlib import Path

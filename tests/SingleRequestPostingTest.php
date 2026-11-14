@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 require_once __DIR__.'/SignedPostIdentityTest.php';
 require_once __DIR__.'/Support/ReadModelSnapshot.php';
 use ForumRewrite\Write\{LocalWriteService,SignedPostTransaction};

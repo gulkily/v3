@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   "use strict";
   // Staged for a browser holding a key but without a session: sign in where we are, then

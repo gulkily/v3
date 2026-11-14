@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """On-host timing/terminal acceptance; uses eight disposable clones, never live state."""
 import argparse
 from datetime import datetime, timezone

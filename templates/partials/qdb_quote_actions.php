@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $quotePostId = (string) ($quotePostId ?? '');
 $upvote = is_array($upvote ?? null) ? $upvote : ['tag' => 'upvote', 'label' => '+'];
 $downvote = is_array($downvote ?? null) ? $downvote : ['tag' => 'downvote', 'label' => '-'];

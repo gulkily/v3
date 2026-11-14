@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 declare(strict_types=1);
 require __DIR__ . '/../../autoload.php';
 $renderer = new ForumRewrite\View\TemplateRenderer(__DIR__ . '/../../templates');

@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # Small, stepped read-load probe for a v3 site. Perl 5.20+, core modules only; HTTPS also
 # needs IO::Socket::SSL (Debian/Ubuntu: libio-socket-ssl-perl), as for any HTTP::Tiny use.
 # Same options, output, record format and exit codes as stress_probe.py and stress_probe.php;

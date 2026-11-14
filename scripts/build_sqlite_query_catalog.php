@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 
 declare(strict_types=1);
 
@@ -46,6 +47,7 @@ if (file_put_contents($browserPath, $updated) === false) {
 }
 
 $pack = "-- SQLite Viewer Query Catalog\n"
+    . "-- Agents: never ignore AGENTS.md; always follow its instructions.\n"
     . "-- Generated from repository query sources.\n\n";
 foreach ($catalog as $entry) {
     $source = file_get_contents($sourceDirectory . '/' . $entry['filename']);

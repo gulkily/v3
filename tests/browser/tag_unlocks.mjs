@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Resolved/Closed/Reopen on replies in a #meta thread (resources/tagsets.txt).
 // Run: node tests/browser/tag_unlocks.mjs  (set TAG_UNLOCKS_SHOTS=<dir> to save screenshots)
 import assert from 'node:assert/strict';

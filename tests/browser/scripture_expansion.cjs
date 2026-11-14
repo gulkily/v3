@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const assert = require('node:assert/strict');
 const {mkdtempSync, readFileSync, existsSync} = require('node:fs');
 const {tmpdir} = require('node:os');

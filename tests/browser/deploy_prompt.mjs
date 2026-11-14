@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // The header deploy prompt: hidden server HTML, revealed after paint only in a browser
 // that has deployed before, and only when the checkout is behind. It sits by the site
 // name (under it on wider screens), so revealing it never moves the phone tab bar

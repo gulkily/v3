@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   function requestIdle(callback) {
     if (typeof window.requestIdleCallback === "function") {

@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Frozen three-arm revision evaluation. No retries or production-state writes.
 
 rehearse NEW_DIR | regress NEW_DIR | initial DIR | expand DIR

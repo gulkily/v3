@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   function notify(form) { form.dispatchEvent(new CustomEvent('forum:image-state')); }

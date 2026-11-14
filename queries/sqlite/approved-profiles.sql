@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: approved-profiles
 -- label: Approved profiles
 -- description: Show approved profiles in the read model.

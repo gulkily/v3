@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
 const nativeImmediate=setImmediate;
 let now=100000,nextTimer=0,timers=new Map(),calls=[],seen=[],cursor=0,total=25,throttle=false,candidateMode=false,candidatePage=0,sticky=false,flaky=false;

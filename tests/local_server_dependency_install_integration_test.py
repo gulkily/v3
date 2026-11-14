@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Real APT recovery tests in a NEW, disposable Ubuntu Base 22.04 or 24.04 amd64 chroot.
 
 Run as root with --base-image, --sha256 (published Ubuntu checksum), --work-dir.

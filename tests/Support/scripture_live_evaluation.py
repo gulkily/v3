@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Frozen, budget-guarded live trials through ordinary HTTP/browser/worker delivery.
 
 Usage: python tests/Support/scripture_live_evaluation.py NEW_PRIVATE_DIRECTORY

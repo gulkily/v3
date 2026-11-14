@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Chooser state and literal search regression without terminal dependencies."""
 import os
 from pathlib import Path

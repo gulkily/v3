@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Exercise the actual editor and writer with deterministic dialog responses."""
 import os
 from pathlib import Path

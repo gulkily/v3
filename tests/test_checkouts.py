@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Real-Git acceptance tests for the operator checkout command (standard library only)."""
 import json
 import os

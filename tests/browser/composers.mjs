@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/composers.mjs
 // The shared composer: new posts and replies go through from both pages, with and without JavaScript.
 import assert from 'node:assert/strict';

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Serial, matched fresh-process measurements; retains every sample and row output."""
 import pathlib, subprocess, os, statistics, hashlib, shutil, sqlite3, json
 project=pathlib.Path(__file__).resolve().parents[2]

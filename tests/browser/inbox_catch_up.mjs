@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Caught up on Unread saves without a page reload: only the submitted section
 // changes, the other sections stay, and the Unread link's count refreshes.
 // A refused or failed save says so in place and offers Retry. Without

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Drives public/assets/post_retraction.js with a minimal DOM stub and prints JSON results.
 const fs = require("fs");
 const vm = require("vm");

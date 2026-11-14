@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php $conversation = $conversation ?? []; ?>
 <article class="message-list-row" data-conversation-row data-counterpart="<?= $e($conversation['counterpart'] ?? '') ?>" data-message-id="<?= $e($conversation['message_id'] ?? '') ?>" data-sender="<?= $e($conversation['sender_username_token'] ?? '') ?>">
   <a class="message-list-link" href="/messages/conversation/<?= $e(rawurlencode($conversation['counterpart'] ?? '')) ?>">

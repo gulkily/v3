@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Theme hook (inert): a stable hue per person, from their name.
 $personHue = hexdec(substr(hash('crc32b', $counterpartUsernameToken), 0, 4)) % 360;
 ?>

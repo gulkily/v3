@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <div class="theme-menu" data-role="theme-menu">
 <?php foreach ($themePalettes as $paletteTheme => $paletteEntry): ?>
 <?php $paletteLabel = $paletteEntry['label']; ?>

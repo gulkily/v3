@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   const VERSION = 2, BATCH_SIZE = 10, MAX_TRANSFER_BYTES = 65536;

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/tags_toolbar.mjs [screenshot-dir]
 // /tags/ uses the board's toolbar (filter, sort, Tags), with Tags current, in every theme at phone and desktop width.
 import assert from 'node:assert/strict';

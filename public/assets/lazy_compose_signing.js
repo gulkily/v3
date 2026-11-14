@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   const composeRoots = Array.from(document.querySelectorAll("[data-compose-root]"));
   const intentSelector = 'textarea[name="body"], input[name="subject"], input[name="image"]';

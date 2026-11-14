@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   // Reading margins: one row of evenly spaced radios above a page. The left
   // half sets where the text column starts and the right half where it ends.

@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   const MAX_BYTES = 32 * 1024 * 1024, MAX_PIXELS = 40 * 1000 * 1000, MAX_SIDE = 16384;

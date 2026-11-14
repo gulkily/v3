@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/event_when.mjs
 // The When box: Fill reads a phrase into Date, Until and Time in place with JavaScript, by
 // submitting without it, keeps a calendar day page's date, and never posts.

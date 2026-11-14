@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php $event = \ForumRewrite\Activity\AccessHistoryPresenter::present($item); ?>
 <details class="access-history-event" data-access-history-id="<?= $e($item['id']) ?>">
   <summary>

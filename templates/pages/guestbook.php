@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * Guestbook: the guestbook thread's top-level replies as a paper book, two
  * facing pages per spread. See GuestbookPageController.

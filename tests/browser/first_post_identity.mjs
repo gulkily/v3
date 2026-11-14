@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/first_post_identity.mjs
 // A new visitor's key stays in the browser until their first signed action; no dialog ever opens.
 import assert from 'node:assert/strict';

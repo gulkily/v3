@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # Internal helper; release information is data, never executable shell input.
 php_setup_platform() {
   local release_file="$1" kernel line key value

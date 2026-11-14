@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // /themes: a card's Use button picks that theme through the theme menu's own
 // selection path, so it is saved and on a page theme's page leaves it as usual.
 document.addEventListener("click", function (event) {

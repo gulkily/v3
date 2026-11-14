@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 

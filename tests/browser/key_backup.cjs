@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 global.crypto=require('node:crypto').webcrypto;
 vm.runInThisContext(fs.readFileSync('public/assets/'+(process.argv[2]||'openpgp.min.js'),'utf8'));

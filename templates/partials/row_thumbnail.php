@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * The attached image of a board or Recent row, as tall as the row. It repeats
  * the title link, so it stays out of the tab order and the accessibility tree.

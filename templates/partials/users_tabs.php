@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Members | Waiting (N), in the board's filter control: the directory and the people waiting for approval.
 // On the shared Users page the tabs are member-only, shown before paint for a
 // browser remembered as approved; the Waiting page itself is approved-only.

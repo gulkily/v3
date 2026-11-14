@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Reading margins: one row of evenly spaced radios, each drawn at the viewport
 // position it stands for, so the row is a ruler. The left half is one radio
 // group that sets where the text column starts; the right half is another that

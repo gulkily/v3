@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/guestbook.mjs
 // The guestbook: sign the book from its last page, with and without JavaScript, and land back on the book.
 import assert from 'node:assert/strict';

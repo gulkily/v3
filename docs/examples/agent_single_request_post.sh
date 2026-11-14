@@ -1,4 +1,5 @@
 #!/bin/sh
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # For a persistent downloadable client see /frm.py and docs/reference/agent_api.md.
 # One submission request; Python stdlib, curl and GPG only. No automatic retries.
 # New generated keys are unencrypted in a private bundle-local keyring.

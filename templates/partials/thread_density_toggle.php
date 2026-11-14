@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <div class="thread-density-menu" data-role="thread-density-menu">
   <button
     type="button"

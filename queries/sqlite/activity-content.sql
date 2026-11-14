@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: activity-content
 -- label: Activity: Content
 -- description: Reproduce the activity page's visible content-only view.

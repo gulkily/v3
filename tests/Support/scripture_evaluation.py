@@ -1,3 +1,4 @@
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Isolated normal-flow scripture trials. Never imports production state."""
 import hashlib
 import json

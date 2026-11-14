@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto'),os=require('node:os'),path=require('node:path'),cp=require('node:child_process');
 global.window={};global.crypto=crypto.webcrypto;
 vm.runInThisContext(fs.readFileSync('public/assets/starfield.js','utf8'));

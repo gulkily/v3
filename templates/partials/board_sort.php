@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // The board's "Sort by ▾" menu: a <details> whose summary shows the current sort and whose
 // menu lists one link per option. Shared by the board toolbar and the Users directory.
 // account_menu.js closes an open menu when the viewer clicks elsewhere.

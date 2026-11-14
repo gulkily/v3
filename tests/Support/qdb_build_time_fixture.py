@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Prepare fixed Git workloads outside timing; stdlib only, refuses existing roots."""
 import pathlib, subprocess, sys, shutil
 root = pathlib.Path(sys.argv[1]); root.mkdir()

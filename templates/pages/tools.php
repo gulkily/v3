@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack">
   <h1 class="visually-hidden">Tools</h1>
   <article class="card tool-launcher tools-launcher-page">

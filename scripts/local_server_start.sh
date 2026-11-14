@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # Run with ./v3 start; all scripts: scripts/README.md.
 # Bash owns signals; a control pipe lets PHP clean up even without PCNTL.
 local_server_start() {

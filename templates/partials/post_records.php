@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /** @var list<array<string, mixed>> $records rows from ForumRewrite\Canonical\PostRecordList::forPost() */
 $records = $records ?? [];
 $sourceHref = static fn (string $path): string => '/source/current/' . implode('/', array_map('rawurlencode', explode('/', $path)));

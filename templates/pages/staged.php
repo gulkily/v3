@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * Staged: signed posts the site kept but has not published, with why and the post ID to
  * replace them under. Authors see their own; operators see everyone's.

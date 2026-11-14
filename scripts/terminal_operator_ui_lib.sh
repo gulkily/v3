@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # Shared terminal lifecycle helpers. Commands are supplied as argument arrays.
 show_command_output() {
   local title="$1"

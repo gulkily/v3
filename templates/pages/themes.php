@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack theme-catalog">
   <h1>Themes</h1>
 <?php

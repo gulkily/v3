@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $eventDate = (string) ($thread['event_date'] ?? '');
 $eventEndDate = (string) ($thread['event_end_date'] ?? '');
 $eventTime = (string) ($thread['event_time'] ?? '');

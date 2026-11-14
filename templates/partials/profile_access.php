@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php $isReplyAgentProfile = (string) ($profile['username'] ?? '') === 'reply-agent'; ?>
   <article class="card">
     <p><strong>Visible username:</strong> <?= $e($profile['username']) ?></p>

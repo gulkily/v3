@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: recent-posts
 -- label: Recent posts
 -- description: Show the ten newest indexed posts.

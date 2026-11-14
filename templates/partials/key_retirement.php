@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php if (!empty($profile['retired_at'])): ?>
     <p>This key is permanently retired. Past posts and signatures remain.</p>
 <?php elseif (!empty($retirementActors)): ?>

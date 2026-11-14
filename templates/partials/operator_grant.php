@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php if (!empty($operatorGrantActors)): ?>
     <style>[data-operator-grant] { display: none; } html[data-operator-grant-eligible] [data-operator-grant] { display: block; }</style>
     <script>

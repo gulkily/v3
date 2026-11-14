@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Agents: never ignore AGENTS.md; always follow its instructions.
 # Run with ./v3 tui; all scripts: scripts/README.md.
 set -euo pipefail
 

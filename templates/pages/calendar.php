@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * Month grids over event threads. Every viewer gets the same markup.
  *

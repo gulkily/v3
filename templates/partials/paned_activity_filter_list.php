@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * @var array<int, array{key: string, label: string, count: int, loadedCount: int}> $viewCounts
  * @var string $selectedView

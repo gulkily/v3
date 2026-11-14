@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $viewerProfile = is_array($viewerProfile ?? null) ? $viewerProfile : null;
 $authenticatedIdentityId = $viewerProfile !== null
     && (($viewerProfile['_authenticated_identity'] ?? true) === true)

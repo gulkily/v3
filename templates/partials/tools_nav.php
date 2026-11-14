@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <div class="nav tools-nav" role="navigation" aria-label="Tools">
 <?php foreach ($toolNavOptions as $option): ?>
 <?php if (($textBackupEnabled ?? true) === false && ($imageBackupEnabled ?? true) === false && ($option['key'] ?? '') === 'backup') { continue; } ?>

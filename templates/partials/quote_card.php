@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $quoteId = (string) $thread['root_post_id'];
 $permalink = \ForumRewrite\Qdb\QdbQuoteNumbers::displayPermalink($quoteId);
 $displayNumber = $permalink['displayNumber'];

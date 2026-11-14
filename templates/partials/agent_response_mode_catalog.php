@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $agentResponseModes = is_array($agentResponseModes ?? null) ? $agentResponseModes : [];
 $agentResponseModesJson = json_encode(
     $agentResponseModes,

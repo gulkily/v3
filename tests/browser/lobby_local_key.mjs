@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/lobby_local_key.mjs
 // On a members-only site, signing in still registers a key kept in this browser, without dialogs.
 import assert from 'node:assert/strict';

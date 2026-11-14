@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Real HTTP, real CLI worker, isolated state; baseline discovery uses explicit reloads.
 const {chromium} = require('playwright-core');
 const {spawn} = require('node:child_process');

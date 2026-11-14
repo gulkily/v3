@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   document.addEventListener("DOMContentLoaded", function () {
     var folderTree = document.querySelector("[data-paned-folder-tree]");

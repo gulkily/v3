@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * One server-rendered line naming who stands behind a card's visible signals:
  * eligible likers, eligible flaggers and the identity that set the thread title.

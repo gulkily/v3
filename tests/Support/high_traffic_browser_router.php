@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 if (PHP_SAPI !== 'cli-server' || !getenv('HIGH_TRAFFIC_TEST_ROOT')) { http_response_code(404);exit; }
 require dirname(__DIR__,2) . '/autoload.php';
 $project=dirname(__DIR__,2);$root=getenv('HIGH_TRAFFIC_TEST_ROOT');

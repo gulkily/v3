@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   function bindInlineComposer(composer, stateKey) {
     const form = composer.querySelector('[data-compose-form]');

@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // A php -S router for tests/browser/inbox_catch_up.mjs: serves the Unread fixture
 // page and assets, and answers Caught up the way InboxPageController does
 // (303 back to /unread, or 409 with the section's alert). State lives in the

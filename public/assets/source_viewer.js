@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Readable viewer for the site's plain-text source files (/source/current/*,
 // /source/blob/{commit}/*, /source/commits/{commit}). Phone browsers show
 // these raw, with long lines wrapped mid-value; this renders the same text as

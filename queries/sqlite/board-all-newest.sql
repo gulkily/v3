@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: board-all-newest
 -- label: Board: All + Newest
 -- description: Reproduce the all-threads board view with pinned-first newest ordering.

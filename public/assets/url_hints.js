@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   // One-time navigation hints: created_post_id for the thread request after a post, __v for
   // the server cache bypass and the version checker, which loads first. They stay in the

@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $retractViewerIdentityId = is_array($viewerProfile ?? null) ? (string) ($viewerProfile['identity_id'] ?? '') : '';
 $retractAuthorIdentityId = (string) ($post['author_identity_id'] ?? '');
 $retractTags = json_decode((string) ($post['board_tags_json'] ?? '[]'), true);

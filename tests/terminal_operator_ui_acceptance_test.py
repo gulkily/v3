@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Real whiptail keyboard journeys in an isolated WSL-compatible PTY."""
 import errno
 import fcntl

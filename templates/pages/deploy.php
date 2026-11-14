@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $s = $deployState;
 $short = static fn (?string $sha): string => $sha === null ? 'unavailable' : substr($sha, 0, 12);
 $latest = $s['latest'];

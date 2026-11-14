@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $repositoryRows = [
     ['label' => 'Repository', 'value' => $state['repository']['root_label']],
     ['label' => 'Repository head', 'value' => $state['repository']['head'], 'source' => 'git -C state/local_repository rev-parse HEAD'],

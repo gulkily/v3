@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
 const combined=process.argv.includes('--combined'),paired=process.argv.includes('--paired');
 const events={},values=new Map(),requests=[];

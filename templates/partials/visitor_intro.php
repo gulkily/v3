@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // First-visit intro: what the site is, for browsers with no saved identity.
 // layout.php's head script hides it before paint for everyone else; Hide
 // remembers the choice in this browser when storage allows.

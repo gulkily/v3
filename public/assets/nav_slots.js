@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 (function () {
   'use strict';
   // Phone tabs. Every destination tab is a slot earned by use; Board (or Lobby)

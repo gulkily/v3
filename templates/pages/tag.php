@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack thread-list">
   <article class="card">
     <h1>#<?= $e($group['tag']) ?></h1>

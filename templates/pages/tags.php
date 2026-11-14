@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <section class="stack">
 <?= $indent($partial('partials/board_toolbar.php', [
     'viewOptions' => $viewOptions,

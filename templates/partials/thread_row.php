@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 /**
  * One thread in the `list` board: title, reply count, a one-line excerpt
  * when the body adds something beyond the title, and compact metadata.

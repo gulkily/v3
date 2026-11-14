@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Start tests/Support/bookmarklet_browser.php with BOOKMARKLET_TEST_ROOT first.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';

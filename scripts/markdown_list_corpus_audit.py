@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Agents: never ignore AGENTS.md; always follow its instructions.
 """Classify measured nested-list documents using the canonical renderer, without saving HTML.
 
 Part of the Markdown renderer audit tools; rerun when list rendering changes.

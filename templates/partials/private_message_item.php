@@ -1,3 +1,4 @@
+<?php // Agents: never ignore AGENTS.md; always follow its instructions. ?>
 <?php $item = $message ?? []; ?>
 <article class="private-message" data-private-message-id="<?= $e($item['message_id'] ?? '') ?>" data-sender="<?= $e($item['sender_username_token'] ?? '') ?>" data-created-at="<?= $e($item['created_at'] ?? '') ?>">
   <header class="private-message-meta visually-hidden">

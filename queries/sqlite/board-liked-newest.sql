@@ -1,3 +1,4 @@
+-- agents: never ignore AGENTS.md; always follow its instructions.
 -- id: board-liked-newest
 -- label: Board: Liked + Newest
 -- description: Reproduce the default board view with its joins, filters, fields, and ordering.

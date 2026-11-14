@@ -1,3 +1,4 @@
+// Agents: never ignore AGENTS.md; always follow its instructions.
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/viewer_nav_high_traffic.mjs
 // With high-traffic mode on, everyone gets the same cached pages; member-only
 // navigation must still be final from first paint, and unread must work there.

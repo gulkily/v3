@@ -1,4 +1,5 @@
 <?php
+// Agents: never ignore AGENTS.md; always follow its instructions.
 $profileSlug = (string) $profile['profile_slug'];
 $headingLabel = trim((string) ($profile['username'] ?? ''));
 if ($headingLabel === '') {
