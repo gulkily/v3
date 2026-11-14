@@ -76,6 +76,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step2_feature_description.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes, flags and labels by post; follows Pollyanna's `#notext`; behind a new flag; Step 2 approved, Step 3 next.
 - [Post records](post_records/post_records_step3_development_plan.md) — a post's Records section lists every record that targets it, each with its own `/records/<Record-ID>` page, and members (or operators) can retract likes through the existing signed retraction with `Target-ID`; behind a flag; Step 4 complete, release pending.
 - [Retraction target ID](retraction_target_id/retraction_target_id_step3_development_plan.md) — new retraction requests and receipts name what they remove with `Target-ID` instead of `Post-ID`; old files still read, `post_id` stays an API alias, and posts can't use reaction ID prefixes; split from `post_records`; merged in #189.
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — review findings for PF-20261030-B03, the fixes, and the anonymous post ID decision.

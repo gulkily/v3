@@ -1921,3 +1921,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/bubblegum_menu_labels` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; retrospective 0.08) | [One-shot record](./bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md#study-history) | Thread request; acceptance pending |
 
 2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the request post's link). Intake **0.08** after reproduction (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `9122adf0fa97f2e9e1bdee3d1b1bdd5e5fa684d5`; branch `fix/bubblegum-menu-and-tool-labels`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/thread_activity_drawer
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/thread_activity_drawer` | Step 2 approved; Step 3 pending (continues in a new conversation) | v1 / R1 / P2 | 0.55 (intake and Step 1 0.55; Step 2 0.55) | [Step 1](./thread_activity_drawer/thread_activity_drawer_step1_solution_assessment.md#study-checkpoint), [Step 2](./thread_activity_drawer/thread_activity_drawer_step2_feature_description.md#study-checkpoint) | Maintainer request in session; follows on from `v3/post_records`; no implementation |
+
+2026-11-14: standing P2 enrollment, staged cycle with extended estimates. Intake and Step 1 **0.55** for Option A after inspecting Pollyanna's `#notext`, the thread template, the reaction tables and hashtag label writes (no pristine intake); option estimates A 0.55, B 0.25, C 0.70, not summed. Step 1 approved (Option A). Step 2 **0.55 reaffirmed**, scope v1; approved after a mockup review. Baseline `68724f9b7aa51f195754dc2a23209a0aab71993f` for Step 1, `047d00c` for Step 2; planning branch `feat/thread-activity-drawer`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
