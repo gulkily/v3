@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.10**
 
-Status: implemented and verified locally; PR open; next permitted action: maintainer review, merge and a try in Firefox.
+Status: implemented and verified locally; PR #239 open; next permitted action: maintainer review, merge and a try in Firefox.
 
 Predecessor: [`v3/reading_margins_last_two`](../reading_margins_last_two/reading_margins_last_two_one_shot.md) (merged as #236).
 
@@ -93,7 +93,7 @@ Diff limited to the ruler files under reuse decisions plus this record, its inde
 
 ## Commit/merge/publication status
 
-Planning commit `c344c2b`; completion commit pending at time of writing; branch `feat/reading_margins_nearest_edge`; PR pending; not merged or deployed.
+Planning commit `c344c2b`; completion commit `9246819` (confirmed with Git); branch `feat/reading_margins_nearest_edge` pushed; PR #239 open against `main`; not merged or deployed.
 
 Debug log: [reading_margins_nearest_edge_debug_log.md](./reading_margins_nearest_edge_debug_log.md)
 
