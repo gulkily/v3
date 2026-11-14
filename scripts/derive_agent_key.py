@@ -18,7 +18,7 @@ always give the same fingerprint. Ed25519 signing is deterministic, so the whole
 output file is reproducible too. Standard library only (pure-Python Ed25519,
 RFC 8032); this is slow but only signs one self-certification.
 """
-import argparse, base64, hashlib, struct, sys
+import argparse, base64, hashlib, os, struct, sys
 
 DEFAULT_CREATED = 1793923200  # 2026-11-06T00:00:00Z
 OID_ED25519 = bytes.fromhex("2B06010401DA470F01")
@@ -152,8 +152,9 @@ def main():
     if not seed:
         sys.exit("empty seed")
     fpr, secret, public = derive(a.name, seed, a.created)
-    base = "%s/%s" % (a.out_dir.rstrip("/"), a.name)
-    with open(base + "-secret.asc", "w", opener=lambda p, f: __import__("os").open(p, f, 0o600)) as f:
+    os.makedirs(a.out_dir, mode=0o700, exist_ok=True)
+    base = os.path.join(a.out_dir, a.name)
+    with open(base + "-secret.asc", "w", opener=lambda p, f: os.open(p, f, 0o600)) as f:
         f.write(secret)
     with open(base + "-public.asc", "w") as f:
         f.write(public)
