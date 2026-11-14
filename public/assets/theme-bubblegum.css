@@ -1,5 +1,6 @@
 /* Theme: bubblegum
-   Pink pixel desktop: a bubblegum page with faint pixel hearts, cards drawn
+   Pink pixel desktop: a bubblegum page with faint pixel hearts, crosses
+   and sparkles, cards drawn
    as little retro windows (striped title bar, three square buttons, hard
    offset shadow), pill inputs and chunky square buttons. Uses system fonts
    only; ui-rounded gives the bubbly face on Apple devices. */
@@ -12,7 +13,7 @@
   --bubblegum-butter: #ffe873;
   --page-bg: #f7b3d2;
   --body-background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' fill-opacity='0.22'%3E%3Cpath d='M30 24h12v6H30zM48 24h12v6H48zM24 30h42v12H24zM30 42h30v6H30zM36 48h18v6H36zM42 54h6v6h-6z'/%3E%3Cpath d='M138 120h6v6h-6zM132 126h6v6h-6zM144 126h6v6h-6zM126 132h6v6h-6zM150 132h6v6h-6zM132 138h6v6h-6zM144 138h6v6h-6zM138 144h6v6h-6z'/%3E%3Cpath d='M120 30h30v6h-30zM120 36h6v18h-6zM144 36h6v18h-6zM120 54h30v6h-30z'/%3E%3Cpath d='M24 126h6v30h-6zM24 150h30v6H24z'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' fill-opacity='0.22'%3E%3Cpath d='M30 24h12v6H30zM48 24h12v6H48zM24 30h42v12H24zM30 42h30v6H30zM36 48h18v6H36zM42 54h6v6h-6z'/%3E%3Cpath d='M132 18h6v42h-6zM120 30h30v6h-30z'/%3E%3Cpath d='M42 144h4v14h-4zM37 149h14v4H37z'/%3E%3C/g%3E%3Cg fill='%23ffffff' fill-opacity='0.32'%3E%3Cpath d='M142 120h4v40h-4zM124 138h40v4h-40zM138 134h12v12h-12z'/%3E%3Cpath d='M90 92h3v13h-3zM85 97h13v3H85z'/%3E%3C/g%3E%3C/svg%3E"),
     linear-gradient(180deg, #f9c2db 0%, #f39ac4 55%, #ec7fb4 100%),
     #f7b3d2;
   --ink: #4f0f2f;
@@ -64,6 +65,15 @@
   border-radius: 0;
   padding-top: calc(0.9rem + 1.5rem);
   box-shadow: 6px 6px 0 var(--bubblegum-shadow);
+  /* One tile spans a full window's width, so tiles meet only between rows
+     where nothing is drawn (no hairline seams). Large, soft pink waves with a few sparkles over a white-to-blush fade,
+     and a warm light falling from the top of each window. Wide and pale
+     enough to read as a backdrop, never as marks beside the letters. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='960' height='120'%3E%3Cpath d='M-80 60 Q-40 96 0 60 T80 60 T160 60 T240 60 T320 60 T400 60 T480 60 T560 60 T640 60 T720 60 T800 60 T880 60 T960 60 T1040 60' fill='none' stroke='%23e45b9c' stroke-opacity='0.08' stroke-width='12'/%3E%3Cg fill='%23e45b9c' fill-opacity='0.2'%3E%3Cpath transform='translate(250 24) scale(1)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(70 100) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(560 32) scale(0.8)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(820 96) scale(1)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(420 102) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(900 26) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 960px 120px repeat-y,
+    radial-gradient(ellipse 70% 7rem at 50% 0, rgba(255, 232, 115, 0.28), transparent 75%) no-repeat,
+    linear-gradient(180deg, #ffffff 0%, #fff3f9 100%),
+    var(--panel);
 }
 
 :root[data-theme="bubblegum"] .card::before {
@@ -124,6 +134,16 @@
 
 :root[data-theme="bubblegum"] .eyebrow .site-brand {
   text-decoration: none;
+}
+
+:root[data-theme="bubblegum"] .eyebrow .site-brand::after {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-left: 0.15em;
+  vertical-align: 0.45em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-8 -8 16 16'%3E%3Cpath fill='%23ffe873' stroke='%238e2457' stroke-width='1.2' stroke-linejoin='round' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 :root[data-theme="bubblegum"] .site-header:not(.site-header--app)::after {
