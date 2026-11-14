@@ -7,6 +7,7 @@ Effort study: `railspike-effort` / `v3/local_telemetry`; [host ledger](../effort
 Extended estimates: enabled
 
 **Cycle estimate: 0.90** (Step 4 entry, reaffirmed from Step 3)
+**Retrospective cycle scope: 1.00** (see the Stage 7 closeout)
 
 Branch `feat/local_telemetry` from main `459d212d`; planning commit `707d3d99`. Stage originals below are copied from the approved Step 3 (scope v4/B, R1, Claude single exposed rater); copying is not a new rating.
 
@@ -145,5 +146,32 @@ Revision (Stage 5): the smoke result above was wrong. Hiding the usage tools whi
 ## Stage 7 - Exclusion checks, docs and end-to-end
 
 **Original estimate: 0.10**
+**Retrospective stage work: 0.16**
 
-- Status: pending.
+- Changes:
+  - `UsageReportsExportExclusionTest`: the default store path is ignored by Git; Backup archives (tar.gz and zip) leave out reports even when a misconfigured store sits inside the content repository; an offline snapshot built after reports exist holds no report text or `usage*` tables.
+  - `tests/browser/usage_reports_e2e.mjs` with `tests/Support/usage_browser_router.php`: the real front controller under `php -S`. A visitor turns recording on, reads a thread, pauses, takes three clicks to Feature Flags (navbar Tools → Outbox → Tools bar Feature Flags) and uploads for real. The root-only summary, rendered by Application from the same store, lists thread → Feature Flags as a shortcut candidate with three clicks.
+  - Icons for Usage Log and Usage Reports in all three icon families in `theme-nav-icons.css`, following the navigation-icons rule.
+  - `tests/browser/tools_launcher.mjs` runs with the flag on so every registry tool is listed, and skips Usage Reports as a bar page (it refuses signed-out visitors, like Visitor Statistics).
+  - Docs: new concept [`usage_reports.md`](../../concepts/usage_reports.md); [tools launcher](../../concepts/tools_launcher.md) tool count and flag note; production runbook path, writable-directory entry, privacy note and release check. `UsageReportUploadTest` and `UsageJourneysTest` added to `tests/smoke.txt`. The deployment configuration concept lists no individual paths, so it needed no change.
+- Verification:
+  - `./v3 test` on all 14 cycle-touched test classes: 74 run, 73 passed; the failure is `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder`, whose fixture also exits 255 in a clean worktree of main `459d212d` (undefined `$indent` in `tools_nav_card.php`).
+  - `./v3 test` (smoke set, full output checked): 462 run, 461 passed; only `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, which also fails on main.
+  - Browser: `usage_log.mjs`, `usage_reports_e2e.mjs`, `nav_slots.mjs` and `tools_launcher.mjs` (36 theme and width cases, with icons) passed. Screenshots of the launcher in Chicago and Gloss checked by eye.
+  - `git diff --check` clean; local links in the touched docs resolve; final review of the branch diff (44 files) found no debug leftovers or unrelated changes.
+  - Not run: the full suite (left to the maintainer); the production release check (needs the flag on in production).
+- Notes:
+  - Correction to Stage 2: `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder` is not intermittent. It fails on main; it passed once in Stage 2 for a reason I did not find.
+  - The launcher matrix had been failing since Stage 4 (expected order and missing icons); it was only run in Stage 7.
+- Estimate details: original scope as approved; retrospective above the original because of the icon work, which the plan did not foresee, and the launcher test repair.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion Contract: entry, end-to-end and recovery paths are done and tested locally (flag off 404 and no script; 413, 400, 429, 503 and the members-only 403 keep the device log; non-root 403; blocked storage explained). Deployment and release (flag on in production, one real report on the summary, a Backup download free of report data) are **pending** the maintainer, with steps in the production runbook.
+- Retrospective cycle scope: **1.00** against the 0.90 projection. Drivers: icons for the new tools in three theme families, the POST route-order discovery, the label and journey work, and repair of three existing tests the hidden tools affected. Two process slips cost rework: an unregistered test file reported as passing (Stage 1) and discarded Stage 5 edits.
+- Maintainer comfortable-fit judgment: pending.
+- Stage 4 runs used single exposed rater Claude, R1 reference; no measured time is available.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

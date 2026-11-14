@@ -11,9 +11,10 @@ use ForumRewrite\UsageReports\UsageReportResult;
 use ForumRewrite\UsageReports\UsageReportStore;
 
 /**
- * Tools → Usage log (any visitor: record, review, copy, upload) and, from
- * Stage 6, Tools → Usage reports (root operators). Application routes here
- * only while the "Usage reports" flag is on.
+ * Tools → Usage log (any visitor: record, review, copy, upload) and Tools →
+ * Usage reports (root operators: click counts, journeys, shortcut candidates).
+ * Application routes here only while the "Usage reports" flag is on. See
+ * docs/concepts/usage_reports.md.
  */
 final class UsageReportsController
 {

@@ -196,6 +196,7 @@ $testFiles = [
     __DIR__ . '/UsageReportsPageTest.php',
     __DIR__ . '/UsageReportUploadTest.php',
     __DIR__ . '/UsageJourneysTest.php',
+    __DIR__ . '/UsageReportsExportExclusionTest.php',
     __DIR__ . '/VisitorStatisticsObserverTest.php',
     __DIR__ . '/VisitorStatisticsPageTest.php',
     __DIR__ . '/OpenPgpLoaderTest.php',
