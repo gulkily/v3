@@ -36,3 +36,24 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged; no revisions. Retrospective: as planned. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Retract a like through the API
+
+**Original estimate: 0.15**
+**Retrospective estimate: 0.15**
+
+- Changes:
+  - `LocalWriteService::prepareRetraction` and `finalizePreparedRetraction` branch on `RemovalTarget::family()`.
+  - New `requireRetractableReaction()` loads the like from `records/thread-labels/` or `records/post-reactions/`. It accepts only a like, meaning an `add` with exactly `like` and no source post. It resolves the like's thread, and allows the liker or a current approved operator (`RetractionAuthority::currentOperator`).
+  - The request's `Author-Identity-ID` is the liker. An operator adds `Actor-Identity-ID` and `Retraction-Class: operator`, as for posts.
+  - Finalize accepts the like through `AcceptedRetraction::prepareReaction`, commits through `RetractionDeletion`, and then runs a full derived-state refresh. Stage 3 replaces that refresh.
+  - The replay and retry paths are shared with posts.
+  - Tests: `WriteApiSmokeTest::testMembersRetractTheirOwnLikesAndOperatorsRetractAnyLike` covers a thread like: a stranger is refused, the liker retracts, the file is gone, the receipt and commit message are written, `viewer_tags` drops the like, no post row appears, re-liking writes a new like, a replay answers `already_retracted`, an operator retracts someone else's like, and a full `./v3 rebuild` agrees. `testReplyLikesRetractAndOtherReactionsAreRefused` covers a reply like (receipt `Thread-ID` and `Parent-ID`), re-liking, a flag being refused, and a missing record.
+- Verification:
+  - Passed: `./v3 test --smoke ReactionRetractionTest RetractionTargetIdTest RetractionReceiptTest AcceptedRetractionTest ReadModelPostRetractionsTest RetractionTransactionTest WriteApiSmokeTest SingleRequestPostingTest PostRetractionScriptTest`, 704 run, 704 passed, 0 failed.
+  - Not run: the full suite.
+- Notes:
+  - The first draft of the test asserted on `vote_count`. That count includes only approved members, so it was replaced by checking `viewer_tags` directly.
+- Estimate details: original scope as in Step 3, unchanged; no revisions. Retrospective: as planned. Rater: Claude, the same exposed rater.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

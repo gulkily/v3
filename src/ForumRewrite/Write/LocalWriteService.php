@@ -939,13 +939,18 @@ class LocalWriteService
                 $this->staleMarker()->mark(['reason' => 'retraction_retry', 'commit_sha' => $commit]);
                 return $this->retractionResult($postId, $accepted['post']['thread_id'], AcceptedRetraction::requestPath($postId), null, [], hrtime(true) - $totalStartedAt, true, $commit);
             }
-            $post = $this->requireRetractablePost($postId, $authorIdentityId);
-            $threadId = $post->threadId ?? $post->postId;
+            if (RemovalTarget::family($postId) === 'post') {
+                $post = $this->requireRetractablePost($postId, $authorIdentityId);
+                $threadId = $post->threadId ?? $post->postId;
+                $targetAuthor = $post->authorIdentityId;
+            } else {
+                $reaction = $this->requireRetractableReaction($postId, $authorIdentityId);
+                $threadId = $reaction['thread_id'];
+                $targetAuthor = $reaction['author_identity_id'];
+            }
             $recordPath = CanonicalPathResolver::postRetraction(PostRetractionRecordParser::RECORD_ID_PREFIX . $postId);
 
-
             $createdAt = $this->canonicalTimestampNow();
-            $targetAuthor = $post->authorIdentityId;
             $contents = 'Record-ID: ' . PostRetractionRecordParser::RECORD_ID_PREFIX . $postId . "\n"
                 . "Created-At: {$createdAt}\n"
                 . RemovalTarget::ID . ": {$postId}\n"
@@ -1045,11 +1050,19 @@ class LocalWriteService
                 $this->staleMarker()->mark(['reason' => 'retraction_retry', 'commit_sha' => $commit]);
                 return $this->retractionResult($postId, $accepted['post']['thread_id'], AcceptedRetraction::requestPath($postId), null, [], hrtime(true) - $totalStartedAt, true, $commit);
             }
-            $post = $this->requireRetractablePost($postId, $authorIdentityId);
-            if ($record->authorIdentityId !== $post->authorIdentityId) {
+            $isReaction = RemovalTarget::family($postId) !== 'post';
+            if ($isReaction) {
+                $reaction = $this->requireRetractableReaction($postId, $authorIdentityId);
+                $targetAuthor = $reaction['author_identity_id'];
+                $threadId = $reaction['thread_id'];
+            } else {
+                $post = $this->requireRetractablePost($postId, $authorIdentityId);
+                $targetAuthor = $post->authorIdentityId;
+                $threadId = $post->threadId ?? $post->postId;
+            }
+            if ($record->authorIdentityId !== $targetAuthor) {
                 throw new RuntimeException('Retraction target author mismatch.');
             }
-            $threadId = $post->threadId ?? $post->postId;
 
             $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
             [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($authorIdentityId);
@@ -1065,8 +1078,16 @@ class LocalWriteService
                 $record->recordId, $record->createdAt, $record->postId, $record->operation,
                 $record->authorIdentityId, $record->actorIdentityId, $record->classification, true);
             $sourceHash = null;
-            foreach (CanonicalPathResolver::postCandidates($postId) as $candidate) {
+            foreach (RemovalTarget::sourceCandidates($postId) as $candidate) {
                 if (is_file($this->repositoryRoot . '/' . $candidate)) { $sourceHash = hash_file('sha256', $this->repositoryRoot . '/' . $candidate); break; }
+            }
+            if ($isReaction) {
+                $accepted = AcceptedRetraction::prepareReaction($reaction, $acceptedRequest, $canonicalRecord, $signature, $attribution, (string) $sourceHash);
+                $commitSha = RetractionDeletion::commit($this->repositoryRoot, $accepted);
+                $this->deletePreparedPost($prepareToken);
+                $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
+                $failedStep = $this->refreshAfterReactionRetraction($reaction, $commitSha, $timings);
+                return $this->retractionResult($postId, $threadId, AcceptedRetraction::requestPath($postId), $failedStep, $timings, hrtime(true) - $totalStartedAt, false, $commitSha);
             }
             $accepted = AcceptedRetraction::prepare($post, $acceptedRequest, $canonicalRecord, $signature, $attribution, $sourceHash);
             // Decided before the commit: the targeted update needs a read model current at this HEAD.
@@ -1330,6 +1351,72 @@ class LocalWriteService
             // Presentation uncertainty must neither grant authority nor prevent a valid retraction.
         }
         return $username === null ? 'operator' : 'author';
+    }
+
+    /**
+     * A like the actor may retract: their own, or anyone's for a current operator. Other reactions
+     * (flags, labels, labels owned by a post's hashtags) are listed but not retractable yet.
+     *
+     * @return array{record_id: string, thread_id: string, target_post_id: string, created_at: string, author_identity_id: string}
+     */
+    private function requireRetractableReaction(string $recordId, string $actorIdentityId): array
+    {
+        $path = RemovalTarget::sourceCandidates($recordId)[0];
+        if (!is_file($this->repositoryRoot . '/' . $path) || is_link($this->repositoryRoot . '/' . $path)) {
+            throw new RuntimeException('Reaction to retract was not found.');
+        }
+        $bytes = (string) file_get_contents($this->repositoryRoot . '/' . $path);
+        if (RemovalTarget::family($recordId) === 'thread-label') {
+            $label = (new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse($bytes);
+            if ($label->labels !== ['like'] || $label->operation !== 'add' || $label->sourcePostId !== null) {
+                throw new RuntimeException('Only likes can be retracted for now.');
+            }
+            $reaction = ['record_id' => $label->recordId, 'thread_id' => $label->threadId, 'target_post_id' => $label->threadId,
+                'created_at' => $label->createdAt, 'author_identity_id' => (string) $label->authorIdentityId];
+        } else {
+            $like = (new \ForumRewrite\Canonical\PostReactionRecordParser())->parse($bytes);
+            if ($like->tags !== ['like'] || $like->operation !== 'add') {
+                throw new RuntimeException('Only likes can be retracted for now.');
+            }
+            $threadId = $like->postId;
+            foreach (CanonicalPathResolver::postCandidates($like->postId) as $candidate) {
+                if (is_file($this->repositoryRoot . '/' . $candidate)) {
+                    $threadId = $this->canonicalRepository->loadPost($candidate)->threadId ?? $like->postId;
+                    break;
+                }
+            }
+            $reaction = ['record_id' => $like->recordId, 'thread_id' => $threadId, 'target_post_id' => $like->postId,
+                'created_at' => $like->createdAt, 'author_identity_id' => (string) $like->authorIdentityId];
+        }
+        if ($reaction['record_id'] !== $recordId || $reaction['author_identity_id'] === '') {
+            throw new RuntimeException('Only likes with a signing author can be retracted.');
+        }
+        if ($reaction['author_identity_id'] !== $actorIdentityId
+            && !($this->isApprovedIdentity($actorIdentityId) && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, $actorIdentityId))) {
+            throw new RuntimeException('Only the person who liked this can retract it. An approved operator may also retract it.');
+        }
+        return $reaction;
+    }
+
+    /**
+     * Stage 2 refresh: a full derived-state refresh. Stage 3 replaces it with a targeted update.
+     *
+     * @param array<string, string> $reaction
+     * @param array<string, int|float> $timings
+     */
+    private function refreshAfterReactionRetraction(array $reaction, string $commitSha, array &$timings): ?string
+    {
+        try {
+            $timings = array_merge($timings, $this->refreshDerivedStateAfterCommit($commitSha));
+        } catch (RuntimeException) {
+            return 'read_model_refresh';
+        }
+        try {
+            $this->invalidateRetractedPostArtifacts();
+        } catch (\Throwable) {
+            return 'artifact_invalidate';
+        }
+        return null;
     }
 
     private function requireRetractablePost(string $postId, string $authorIdentityId): PostRecord
