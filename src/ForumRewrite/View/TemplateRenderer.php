@@ -278,7 +278,8 @@ final class TemplateRenderer
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'memberApprovalScriptPath' => $this->assetPath('/assets/member_approval.js'),
-            'pendingUserSummaryScriptPath' => $this->assetPath('/assets/pending_user_summary.js'),
+            'pendingUserSummaryScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)
+                ? $this->assetPath('/assets/pending_user_summary.js') : null,
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'readingMarginsScriptPath' => $this->assetPath('/assets/reading_margins.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
@@ -893,6 +894,9 @@ final class TemplateRenderer
 
         if ($unapproved === 0) {
             return implode(' · ', $parts);
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)) {
+            return implode(' · ', $parts) . ' <span class="chip chip--pending">Pending</span>';
         }
 
         // The chip opens an in-page summary with Approve (pending_user_summary.js);

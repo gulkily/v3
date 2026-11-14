@@ -2062,13 +2062,20 @@ pre {
 
 /* The pending author summary (pending_user_summary.js). */
 .pending-user-dialog {
-  width: min(22rem, calc(100vw - 2rem));
-  margin: auto;
+  /* Placed beside the clicked chip by pending_user_summary.js. */
+  position: fixed;
+  inset: auto;
+  top: 0;
+  left: 0;
+  margin: 0;
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 1rem);
+  overflow: auto;
   color: var(--ink);
 }
 
 .pending-user-dialog::backdrop {
-  background: rgb(0 0 0 / 0.35);
+  background: rgb(0 0 0 / 0.15);
 }
 
 .pending-user-dialog__head {
@@ -2087,8 +2094,47 @@ pre {
   overflow-wrap: anywhere;
 }
 
+.pending-user-dialog__head .pending-user-dialog__close {
+  flex: none;
+  width: 2.75rem;
+  min-width: 0;
+  height: 2.75rem;
+  min-height: 0;
+  margin: -0.5rem -0.5rem 0 auto;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
 .pending-user-dialog__key {
   overflow-wrap: anywhere;
+}
+
+.pending-user-dialog__recent {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+}
+
+.pending-user-dialog__recent li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.pending-user-dialog__recent a {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-user-dialog__recent .meta {
+  flex: none;
 }
 
 .pending-user-dialog__actions {
@@ -2106,8 +2152,4 @@ pre {
 
 .pending-user-dialog__actions [data-role="approve"] {
   background: var(--button-bg);
-}
-
-.pending-user-dialog__actions [data-role="close"] {
-  margin-left: auto;
 }

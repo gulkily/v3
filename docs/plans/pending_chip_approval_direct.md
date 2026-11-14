@@ -51,6 +51,34 @@ with the result taking effect in the page.
   `WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages`,
   which fails the same way on `main`. Full suite not run.
 
+## Follow-up (2026-11-14, same PR)
+
+Requested after a first look: a feature flag, the popup beside the chip, a
+top-right close, and a sample of recent participation.
+
+- Flag `FORUM_PENDING_CHIP_APPROVAL_ENABLED` ("Approve from Pending chips",
+  Experience group, on by default, site-mutable). Off, the chip is the old
+  plain `.chip--pending` label and `pending_user_summary.js` is not loaded.
+- Placement: the dialog stays a modal `<dialog>` (Escape, focus, backdrop
+  click) but is positioned in script just below the chip, left edges aligned,
+  or above it when there is more room there, clamped to the viewport and kept
+  there on scroll and resize.
+- Close is an icon button (`×`, `aria-label="Close"`) at the top right.
+- Recent participation: `GET /api/get_profile` now ends with up to three
+  `Recent-Post: <created_at> TAB <thread_id> TAB <post_id> TAB <text>` lines,
+  taken from `AuthoredContentRepository::visibleIdentityPage()` (the profile
+  page's Posts list, so the same visibility rules). Text is a thread's title or
+  a reply's opening words, one line, at most 120 characters. The popup shows
+  each as a one-line link with its date.
+- Checks: browser test extended (recent posts, opens just below the chip,
+  above it near the bottom of the window); `BoardListTest` flag-off case;
+  `AgentApiWorkedExampleTest` asserts the `Recent-Post` line; a live server
+  with the flag off renders plain chips without the script; real approval
+  from `/recent/` repeated; all themes checked again at 375 and 1280 wide
+  (a grid column was letting long titles widen the popup; fixed).
+  `./v3 test --smoke BoardListTest FeatureFlagEvaluatorTest
+  AgentApiWorkedExampleTest`: 454 passed. Full suite not run.
+
 ## Not covered
 
 - Thread pages mark unapproved authors with "(unapproved)" text, not a chip,

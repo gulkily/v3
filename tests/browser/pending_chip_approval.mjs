@@ -40,7 +40,9 @@ try {
         if (url.pathname === '/api/get_profile') {
           calls.profile++;
           const slug = url.searchParams.get('profile_slug');
-          return route.fulfill({ contentType: 'text/plain', body: `Profile-Slug: ${slug}\nUsername: ${slug}\nApproved: no\nPosts: 3\nThreads: 1\n` });
+          return route.fulfill({ contentType: 'text/plain', body: `Profile-Slug: ${slug}\nUsername: ${slug}\nApproved: no\nPosts: 3\nThreads: 1\n`
+            + `Recent-Post: 2026-11-12T10:00:00Z\tt1\tp9\tA reply about vending machines\n`
+            + `Recent-Post: 2026-10-01T10:00:00Z\tt1\tt1\tHello everyone\n` });
         }
         if (url.pathname === '/api/prepare_approval') {
           calls.prepare++;
@@ -63,8 +65,17 @@ try {
       await page.waitForFunction(() => document.querySelector('[data-role="counts"]').textContent === '1 thread · 3 posts');
       assert.equal(await dialog.locator('h2').textContent(), 'mouse');
       assert.equal(await dialog.getByRole('link', { name: 'Profile' }).getAttribute('href'), '/profiles/mouse');
+      const recent = dialog.locator('[data-role="recent"] li');
+      assert.equal(await recent.count(), 2);
+      assert.equal(await recent.nth(0).locator('a').getAttribute('href'), '/posts/p9');
+      assert.equal(await recent.nth(1).locator('a').getAttribute('href'), '/threads/t1');
+      assert.equal(await recent.nth(1).locator('a').textContent(), 'Hello everyone');
+      assert.equal(await recent.nth(1).locator('.meta').textContent(), 'Oct 1');
       const box = await dialog.boundingBox();
+      const chipBox = await page.locator('#one .pending-chip').boundingBox();
       assert.ok(box.x >= 0 && box.x + box.width <= viewport.width, 'dialog fits the viewport');
+      assert.ok(Math.abs(box.y - (chipBox.y + chipBox.height + 6)) <= 2, 'dialog opens just below the chip');
+      assert.ok(box.x <= chipBox.x + 1, 'dialog starts at or left of the chip');
       await page.screenshot({ path: `/tmp/pending-chip-${viewport.width}-${member ? 'member' : 'visitor'}.png` });
 
       const approve = dialog.getByRole('button', { name: 'Approve' });
@@ -72,6 +83,16 @@ try {
         assert.equal(await approve.isVisible(), false, 'non-members see no Approve');
         await dialog.getByRole('button', { name: 'Close' }).click();
         assert.equal(await dialog.isVisible(), false);
+        // A chip near the bottom of the window opens its summary above it.
+        await page.evaluate(() => { document.body.style.paddingTop = (window.innerHeight - 60) + 'px'; });
+        await page.locator('#one .pending-chip').click();
+        await dialog.waitFor({ state: 'visible' });
+        await page.waitForFunction(() => document.querySelectorAll('[data-role="recent"] li').length === 2);
+        await page.waitForTimeout(50);
+        const low = await dialog.boundingBox();
+        const lowChip = await page.locator('#one .pending-chip').boundingBox();
+        assert.ok(low.y + low.height <= lowChip.y, 'dialog sits above a chip near the bottom');
+        await page.keyboard.press('Escape');
         assert.equal(await page.locator('[data-pending-profile]').count(), 3);
         await context.close();
         continue;
@@ -105,5 +126,5 @@ try {
       await context.close();
     }
   }
-  console.log('PASS pending chip: summary, member-only Approve, lazy signing, failure and retry, chips removed, modified click left to the browser; desktop and phone');
+  console.log('PASS pending chip: summary with recent posts beside the chip, member-only Approve, lazy signing, failure and retry, chips removed, modified click left to the browser; desktop and phone');
 } finally { await browser.close(); }
