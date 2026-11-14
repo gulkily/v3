@@ -29,11 +29,28 @@ Branch `feat/local_telemetry` from main `459d212d`; planning commit `707d3d99`. 
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
 
+Revision (Stage 2): the Stage 1 verification above was wrong about `UsageReportStoreTest`. The runner only runs files listed in `tests/run.php`, so it reported "No tests matched" and the store tests did not run in Stage 1. Registered in Stage 2 and run there: all five pass.
+
+*— Revised by Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
 ## Stage 2 - Redacted page kind
 
 **Original estimate: 0.08**
+**Retrospective stage work: 0.08**
 
-- Status: pending.
+- Changes:
+  - `UsagePageKind::fromPath(string $path): string` with `UsagePageKind::WORDS`, an allowlist of fixed route words taken from the router, Tools routes and template links. Every other segment becomes `*`; queries and fragments are dropped.
+  - `TemplateRenderer` passes `usageReportsEnabled`, `usagePageKind` and `usagePageWords`; with the flag on, `layout.php` adds `data-usage-page` and `data-usage-words` to `<html>` beside the existing theme attributes.
+  - Registered `UsageReportStoreTest`, `UsagePageKindTest` and `UsageReportsPageTest` in `tests/run.php`.
+- Verification:
+  - `./v3 test UsageReportStoreTest UsagePageKindTest UsageReportsPageTest TestFileRegistrationTest`: 11 passed. The redaction test covers all 23 parameterized routes in `Application.php` plus `/forte/threads/*/replies` and docs paths; the page test checks attributes appear with the flag on and are absent with it off.
+  - `./v3 test` (smoke set): passes except `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, which also fails on main. `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder` passed this run, so it looks intermittent rather than broken by Stage 1.
+- Notes:
+  - Static and cached pages render without a request path, so they carry only the words; the browser computes the page kind from `location.pathname` (Stage 3).
+  - A username or tag that equals a route word (for example a user named `about`) would survive redaction. Accepted: it is one word and the visitor reviews the log before upload.
+- Estimate details: original scope as approved, plus registering Stage 1's test in the runner; uncertainty low; no revisions.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
 
 ## Stage 3 - Browser recorder
 
