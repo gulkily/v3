@@ -180,7 +180,10 @@
       try {
         // Reading margins (reading_margins.js): the chosen column edges, in vw, restored before paint.
         var readingMargins = (localStorage.getItem(browserRuntime.readingMarginsStorageKey) || '').split(' ');
-        if (['4', '14', '24', '34'].indexOf(readingMargins[0]) !== -1 && ['66', '76', '86', '96'].indexOf(readingMargins[1]) !== -1) {
+        // The stops match partials/reading_margins.php; the left edge is stored first.
+        var readingMarginStops = ['5', '20', '35', '50', '65', '80', '95'];
+        if (readingMargins.length === 2 && readingMarginStops.indexOf(readingMargins[0]) !== -1
+          && readingMarginStops.indexOf(readingMargins[1]) > readingMarginStops.indexOf(readingMargins[0])) {
           document.documentElement.setAttribute('data-reading-margins', readingMargins.join(' '));
           document.documentElement.style.setProperty('--reading-left', readingMargins[0]);
           document.documentElement.style.setProperty('--reading-right', readingMargins[1]);
