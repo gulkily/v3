@@ -2873,6 +2873,9 @@ class LocalWriteService
     }
 
     /**
+     * Writes a site feature flag without a signed record. Tools writes flags through signed
+     * records; this stays (tests only today) as the fallback for when records can't be signed.
+     *
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */

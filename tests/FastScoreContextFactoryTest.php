@@ -52,12 +52,6 @@ final class FastScoreContextFactoryTest
     public function testScoreResultAlwaysIncludesSourceAndNullableProbability(): void
     {
         assertSame([
-            'status' => 'scored',
-            'probability' => 0.5,
-            'source' => 'llm',
-            'signals' => [],
-        ], FastScoreResult::scored(0.5, 'llm'));
-        assertSame([
             'status' => 'disabled',
             'probability' => null,
             'source' => 'none',

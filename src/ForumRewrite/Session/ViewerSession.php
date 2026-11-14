@@ -18,6 +18,7 @@ final class ViewerSession
     ) {
     }
 
+    /** Kept as the named check for a signed-in viewer; few callers hold a ViewerSession today. */
     public function isSignedIn(): bool
     {
         return $this->identityId !== '';

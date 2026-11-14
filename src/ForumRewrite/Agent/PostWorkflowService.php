@@ -757,7 +757,6 @@ final class PostWorkflowService
             $this->postAnalysisService(),
             $this->agentIdentityService(),
             ($this->writerFactory)(),
-            $this->featureFlags,
             $this->fetchPost,
             fn (array $post): array => $this->postAnalysisContext($post),
             fn (array $post, array $analysis): ?array => $this->agentReplyGateFailure($post, $analysis),

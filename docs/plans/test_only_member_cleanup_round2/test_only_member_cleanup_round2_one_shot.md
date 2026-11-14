@@ -10,7 +10,7 @@ Extended estimates: enabled (new enrolled cycle default); no real alternatives o
 
 **Cycle estimate: 0.20 (intake)**
 
-Status: planned; next permitted action: planning commit, then implementation.
+Status: implemented and verified locally; PR open. `buildSingleRoute` and `PresentationSlotRegistry::all` are held for the maintainer's decision.
 
 Parent: `v3/test_only_member_cleanup` ([record](../test_only_member_cleanup/test_only_member_cleanup_one_shot.md), PR #223, unmerged). This is a follow-up with its own identity. Its branch starts from the parent's branch tip `c4126a45`, so it should merge after #223.
 
@@ -65,11 +65,40 @@ None.
 
 Starting revisions and branch: parent branch tip `c4126a45` (on `origin/main` `68724f9b` + #223); branch `chore/test_only_member_cleanup_round2`.
 
-Planning commit: pending.
+Planning commit: `91923ed6` (confirmed with Git; contains only this record and the index entry).
 
 ## Study history
 
 - 2026-11-14 intake: 0.20, scope v1. Prior exposure: the same agent rated and searched these members before planning.
 - 2026-11-14 execution entry: 0.15, revised down because the two held items are out of the executable scope for now.
+- 2026-11-14 closeout: executable scope delivered. Retrospective scope assessment: 0.15. Maintainer acceptance pending; the two held items await a decision.
 
 _Claude (Opus 5.5), 2026-11-14_
+
+## Dated execution history
+
+- 2026-11-14: removed `PrivateMessageStore::markSeenThrough`, `ImageBackup::cachedBytes` and `FastScoreResult::scored`. `PrivateMessageReadStateTest` now calls `PrivateMessageReadState::mark`; its race test's inline script opens its own PDO on the same file, because the store doesn't expose its connection. `ArchiveExportTest` reads `cachedArchive($kind)['bytes']`. `FastScoreContextFactoryTest` drops the one `scored()` shape assertion.
+- 2026-11-14: removed `AgentReplyFulfillmentService::$featureFlags` (constructor parameter and the argument from `PostWorkflowService`, which keeps its own flags) and `FeedbackItem::$sections` (property and the argument from `FeedbackItemCheck`, which still parses sections locally).
+- 2026-11-14: correction during editing. A broad replacement in `ArchiveExportTest` also changed a line that already called `cachedArchive` (`$unbuilt`); restored before any test run.
+- 2026-11-14: notes added on why `setFeatureFlag`, `rendersMarkdown` and `isSignedIn` are kept.
+
+## Outcome
+
+Delivered: 3 members and 2 properties removed, 3 members kept with notes. Held, unchanged: `buildSingleRoute` and `PresentationSlotRegistry::all` (see Authorization).
+
+## Verification
+
+- PHPStan dead-code pass, planning commit vs working tree: **passed**. 39 findings before, 34 after. Nothing new appears; the 5 that disappear are exactly the removed members and properties.
+- `php -l` on touched files and `git diff --check`: **passed**.
+- Smoke set plus PrivateMessageReadState, PrivateMessageStore, ArchiveExport, FastScoreContextFactory, AgentReplyGeneration, FeedbackItemCheck, WriteApiSmoke and TestFileRegistration: 715 run, 713 passed. The 2 failures are the **baseline** ones also failing on `main` (`testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages`, `testThreadCardWrapsMediaEmbedPreviewInDiv`).
+- `./v3 feedback check` on the repository's real items: identical output before and after (220 items, 1 existing problem, 21 to review).
+- Full suite: not run (maintainer runs it). Runtime UI checks: inapplicable.
+
+## Final review
+
+The diff touches only the authorized classes, their two constructor callers, the tests of removed members, this record, the index, the ledger and the debug log. No duplication added.
+
+Commit/merge/publication status: planning commit `91923ed6`; completion commit pending at time of writing; stacked on unmerged PR #223; not merged or deployed.
+
+_Claude (Opus 5.5), 2026-11-14_
+
