@@ -42,7 +42,7 @@ Before starting a fix or feature, search `docs/feedback/items/` for a matching i
 
 ## Navigation icons
 
-When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` in both icon sets: pixel art (Word97, Chicago and Midnight) and smooth lines (Gloss and Engagify). Cover both Tools launcher buttons and Tools subnavigation where applicable; `NavIconSetsTest` checks that the sets match. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.
+When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` in every icon set: pixel art (Word97, Chicago and Midnight), smooth lines (Gloss and Engagify) and cute pixel art (Bubblegum). Cover both Tools launcher buttons and Tools subnavigation where applicable; `NavIconSetsTest` checks that the sets match. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.
 
 ## Third-party code
 

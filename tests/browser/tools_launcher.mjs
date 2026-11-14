@@ -22,7 +22,7 @@ const themes = !process.argv[3] || process.argv[3] === 'all' ? permitted : proce
 const registry = php('ForumRewrite\\Tools\\ToolsPageSupport::registry()');
 const groups = php('ForumRewrite\\Tools\\ToolsPageSupport::groups()');
 const themeKey = php(`ForumRewrite\\BrowserRuntimeProfile::fromProfile(ForumRewrite\\SiteProfileRegistry::all()['${site}'])['themeStorageKey']`);
-const iconThemes = ['word97', 'chicago', 'midnight', 'gloss', 'engagify'];
+const iconThemes = ['word97', 'chicago', 'midnight', 'gloss', 'engagify', 'bubblegum'];
 // Tool pages that render their Tools bar for a visitor who isn't signed in.
 const barPages = registry.filter(tool => !tool.standalone && !['user-access', 'visitor-statistics', 'llm-exchanges'].includes(tool.key));
 if (shots) await mkdir(shots, { recursive: true });
