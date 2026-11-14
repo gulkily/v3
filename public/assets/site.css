@@ -2019,3 +2019,12 @@ pre {
 .outbox-unsent__item {
   border-style: dashed;
 }
+
+/* Post records list (post page) and record page */
+.post-records-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+.post-records-table th, .post-records-table td { text-align: left; padding: 0.25rem 0.5rem 0.25rem 0; vertical-align: top; overflow-wrap: anywhere; }
+.post-record-retracted td { color: var(--muted); }
+.record-fields { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 1rem; margin: 0.5rem 0; }
+.record-fields dt { font-weight: 600; }
+.record-fields dd { margin: 0; overflow-wrap: anywhere; }
+.record-body { white-space: pre-wrap; overflow-wrap: anywhere; }

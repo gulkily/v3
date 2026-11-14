@@ -137,3 +137,25 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged. Retrospective: as planned. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Retract buttons and docs
+
+**Original estimate: 0.15**
+**Retrospective estimate: 0.15**
+
+- Changes:
+  - New `templates/partials/retract_record_control.php`, shown only to the liker or a current operator, with different confirmation text for each. It reuses `post_retraction.js` (`data-action="retract-post"`). `submitSignedRetraction` already sends that ID as `target_id`, so the script and `browser_signing.js` need no changes.
+  - The control appears in a new last column of the Records list for live likes, and on the record page of a live like. That means a `like` add with no `Source-Post-ID`, matching the server rule. The record page loads the signing scripts and `post_retraction.js` and passes `viewerCanRetractOthers`, computed the same way as on the post page.
+  - `public/assets/site.css`: a few rules for the list table, retracted rows and the record page's field list.
+  - Docs: a new concept, `docs/concepts/post_record_list.md`. Dated lines in `post_retraction`, `reaction_record`, `post_presentation` and `incremental_source_removal`. "Reaction targets" sections in `post_retraction_record_v1.md` and `removal_acceptance_record_v1.md`. A like note in `agent_api.md`, and an updated `llms.txt` retraction line with its `LlmsTxtRendererTest` assertion.
+  - Test: `WriteApiSmokeTest::testRetractButtonsShowForTheLikerAndOperatorsOnly`. On both the post page and the record page, the liker and an operator see the button with their own confirmation text, while a stranger and a logged-out viewer don't. The record page loads `post_retraction`, and after retraction neither page shows the button.
+- Verification:
+  - Passed: `./v3 test --smoke LlmsTxtRendererTest WriteApiSmokeTest ReactionRetractionTest RetractionTargetIdTest DeleteRecordCommandTest FeatureFlagEvaluatorTest PostRetractionScriptTest`, 711 run, 711 passed, 0 failed.
+  - Passed: the links in the new concept file resolve.
+  - Inapplicable here: clicking the button in a browser. That needs a signing key in the browser. The click path is the existing `retract-post` handler, which `PostRetractionScriptTest` already exercises. The live check is Stage 8.
+  - Not run: the full suite.
+- Notes:
+  - The first `llms.txt` wording, "a like's Record-ID", put an apostrophe inside a single-quoted PHP string. `php -l` caught it before any test ran, and it was reworded.
+- Estimate details: original scope as in Step 3, unchanged. Retrospective: as planned. Rater: Claude, the same exposed rater.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

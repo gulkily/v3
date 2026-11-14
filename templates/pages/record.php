@@ -19,6 +19,15 @@ $author = (string) ($headers['Author-Identity-ID'] ?? $headers['Actor-Identity-I
     <p class="meta"><a href="/posts/<?= $e(rawurlencode($recordId)) ?>">Read this post</a></p>
 <?php endif; ?>
     <p class="meta">By <span title="<?= $e($author) ?>"><?= $e($author !== '' ? $author : 'unsigned') ?></span></p>
+<?php
+$recordTags = preg_split('/\s+/', trim((string) ($headers['Tags'] ?? $headers['Labels'] ?? '')), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+$recordIsLike = $recordPath !== null && in_array($family, ['post-reaction', 'thread-label'], true) && $recordTags === ['like']
+    && ($headers['Operation'] ?? 'add') === 'add' && !isset($headers['Source-Post-ID']);
+?>
+<?php if ($recordIsLike && !is_array($removal)): ?>
+    <p><?= $partial('partials/retract_record_control.php', ['recordId' => $recordId, 'recordAuthorIdentityId' => $author,
+        'viewerProfile' => $viewerProfile ?? null, 'viewerCanRetractOthers' => $viewerCanRetractOthers ?? false]) ?></p>
+<?php endif; ?>
 <?php if (is_array($removal)): ?>
     <div class="record-removed" role="status">
       <p><strong>Retracted.</strong> Accepted <?= $e((string) ($removal['accepted_at'] ?? '')) ?><?php if (($removal['actor'] ?? '') !== '' && ($removal['actor'] ?? '') !== $author): ?> by <span title="<?= $e((string) $removal['actor']) ?>"><?= $e((string) $removal['actor']) ?></span><?php endif; ?>.</p>

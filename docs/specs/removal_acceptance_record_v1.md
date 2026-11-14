@@ -47,6 +47,14 @@ New receipts always use `Target-ID` and `Target-Created-At`. Application version
 from before the rename reject the new field set, so a rollback must go to a version
 that reads both; see [the rollback note](../reference/v3_cli.md#retraction-target-id-rollback).
 
+## Reaction targets
+
+When `Target-ID` names a like (`post-reaction-…` or `thread-label-…`), the
+structure fields describe where it sat: `Thread-ID` is its thread, `Parent-ID` the
+post it was on (the root for a thread like), `Target-Created-At` its creation time,
+`Author-Identity-ID` the liker, and `Thread-Type` is empty. Readers keep reaction
+receipts apart from post receipts, so they never create placeholder posts.
+
 ## Profiles
 
 Local receipts use `records/post-removals/<post-id>.txt`; operation is `delete` or

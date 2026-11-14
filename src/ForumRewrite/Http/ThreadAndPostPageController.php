@@ -270,9 +270,13 @@ final class ThreadAndPostPageController
                 'removalPath' => $removal === null ? null
                     : (isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($recordId) : \ForumRewrite\Canonical\LabelRemoval::path($recordId)),
                 'viewerProfile' => $viewerProfile,
+                'viewerCanRetractOthers' => $viewerProfile !== null
+                    && (int) ($viewerProfile['is_approved'] ?? 0) === 1
+                    && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, (string) $viewerProfile['identity_id']),
             ],
             'Record ' . $recordId,
-            'board'
+            'board',
+            $this->identityScripts(['/assets/post_retraction.js'])
         );
     }
 

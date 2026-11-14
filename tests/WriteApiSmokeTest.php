@@ -4470,6 +4470,49 @@ NODE;
         }
     }
 
+    public function testRetractButtonsShowForTheLikerAndOperatorsOnly(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'retract-buttons', "A thread with a like\n");
+        $liker = $this->linkSigningIdentity($app, 'button-liker');
+        $stranger = $this->linkSigningIdentity($app, 'button-stranger');
+        $operator = $this->linkSigningIdentity($app, 'button-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+        $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
+        $button = 'data-post-id="' . $likeId . '"'; // only the like's Retract button carries its ID here
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        $cookies = $_COOKIE;
+        try {
+            $as = function (?array $viewer, string $path) use ($root, $db, $artifacts): string {
+                $_COOKIE = $viewer === null ? [] : ['identity_hint' => $viewer['identity_id']];
+                return $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $path);
+            };
+            foreach (['/posts/' . $author['thread_id'], '/records/' . $likeId] as $path) {
+                assertStringContains($button, $as($liker, $path));
+                assertStringContains('Retract your like?', $as($liker, $path));
+                assertStringContains($button, $as($operator, $path));
+                assertStringContains('Retract this like as an operator?', $as($operator, $path));
+                assertStringNotContains($button, $as($stranger, $path));
+                assertStringNotContains($button, $as(null, $path));
+            }
+            assertStringContains('/assets/post_retraction', $as($liker, '/records/' . $likeId)); // fingerprinted name
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            foreach (['/posts/' . $author['thread_id'], '/records/' . $likeId] as $path) {
+                assertStringNotContains($button, $as($liker, $path));
+            }
+        } finally {
+            $_COOKIE = $cookies;
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
     public function testReplyLikesRetractAndOtherReactionsAreRefused(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();

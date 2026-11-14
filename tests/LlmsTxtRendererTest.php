@@ -66,7 +66,7 @@ final class LlmsTxtRendererTest
         assertStringContains('(/api/)', $text);
         assertStringContains('(' . LlmsTxtRenderer::REFERENCE_PATH . ')', $text);
         assertStringContains(LlmsTxtRenderer::REFERENCE_RAW_PATH, $text);
-        assertStringContains('POST /api/prepare_retraction with target_id (the post_id to retract; post_id is still accepted) and author_identity_id', $text);
+        assertStringContains('POST /api/prepare_retraction with target_id (the post_id to retract, or the Record-ID of a like to take it back; post_id is still accepted) and author_identity_id', $text);
         assertStringContains('cleanup_status: pending', $text);
         assertStringContains('Retracted: yes', $text);
     }

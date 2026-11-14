@@ -33,6 +33,16 @@ rejected. New requests always use `Target-ID`.
 The target's record family is read from its ID: posts may not use the
 `post-reaction-` or `thread-label-` prefixes, which belong to reactions.
 
+## Reaction targets
+
+Since 2026-11-14, `Target-ID` may name a like: a reaction record in
+`records/post-reactions/` or `records/thread-labels/` whose only tag is `like`.
+`Author-Identity-ID` is the liker; an operator retracting someone else's like adds
+`Actor-Identity-ID` and `Retraction-Class: operator`, as for posts. A request that
+names a reaction must use `Target-ID`; one that names it with `Post-ID` is rejected.
+Acceptance removes the like and its signature. Other reactions are not retractable
+yet.
+
 The receipt uses the shared [removal acceptance v1 contract](removal_acceptance_record_v1.md),
 with `Format: removal-acceptance-v1`, `Operation: delete` and
 `Authority: signed-retraction`. It retains post/conversation structure, accepted
