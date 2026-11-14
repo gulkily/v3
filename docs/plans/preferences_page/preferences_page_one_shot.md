@@ -121,7 +121,7 @@ Intake 0.15; execution entry reaffirmed; **retrospective 0.15**. Single exposed 
 
 ## Commit/merge/publication status
 
-Planning commit `d43d51d`; completion commit pending at the time of writing (this record cannot hold its own hash). Not merged or deployed.
+Planning commit `d43d51d`; completion commit `4e14d68` (confirmed with Git); this handoff commit records them. PR https://github.com/gulkily/v3/pull/237 open; thread reply https://zenmemes.com/posts/reply-20261114200815-7239fe72c263ffc090346ed2e2ed3362 (author claude, confirmed). Not merged or deployed.
 
 ## Attribution
 
