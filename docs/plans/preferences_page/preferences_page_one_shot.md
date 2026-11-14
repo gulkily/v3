@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/preferences_page` — [host ledger](../effort_estimation_trial.md#cycle-v3preferences_page); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.15**
-Status: planned; next permitted action: implement on `feat/preferences_page`
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -34,6 +34,7 @@ Outcome: one page that lists the settings this browser already keeps, shows each
 - Phone tabs: forget the learned tabs and go back to the starting ones.
 - Page themes: how many pages this browser has left a page theme on, with Show them again.
 - Welcome note: hidden or shown for this browser, with Show again.
+- Table text size (added during implementation, see history): whether any table zoom is saved, with Reset.
 - Usage log recording state, linking to the Usage log, while the usage reports flag is on.
 - Reset all: clears every key above and nothing else (keys, drafts, outbox and message caches stay).
 
@@ -77,13 +78,51 @@ Host `main` at `a4fe61e5744881cc54d042d741dc9c5ef48e866e`; branch `feat/preferen
 
 ## Planning commit
 
-Pending (this record cannot hold the hash of the commit that first contains it).
+`d43d51d` (confirmed with Git).
 
 ## Study history
 
 - 2026-11-14T19:58Z intake: whole-cycle projection **0.15**, scope v1 as above, R1, P2, single exposed rater Claude (claude-opus-5-5). Exposure: rated after reading `theme_toggle.js`, `thread_density_toggle.js`, `nav_slots.js`, `reading_margins.js`, `ToolsPageSupport` and the usage log page; no pristine intake.
 - 2026-11-14T19:58Z execution entry: 0.15 reaffirmed.
+- 2026-11-14T20:45Z retrospective: **0.15**. The table text size row was a small addition inside the estimate.
 
 ## Dated execution history
 
 - 2026-11-14T19:58Z: no existing item for the thread; created PF-20261114-F01. Related items F16, F18 and F22 are left untriaged as follow-ups.
+- 2026-11-14T20:05Z: planning commit `d43d51d`.
+- 2026-11-14T20:20Z: implemented as planned. `ToolsPageSupport::registry()` gains Preferences first in "Your device"; route in `Application`; `ToolsPageController::preferences()` passes the permitted themes and the three flags; `templates/pages/preferences.php` reuses `account-group`/`account-row` rows (account.css, already themed in Word97, Midnight, Chicago and Gloss) with an inline script that fills in values during parsing; `public/assets/preferences.js` saves changes and resets; `public/assets/preferences.css` only sizes the selects and evens out the label title and the Browse link. `reading_margins.js` exposes `forumResetReadingMargins()` over its own `apply(null)`. `UsagePageKind::WORDS` gains `preferences` so usage logs keep the page kind.
+- 2026-11-14T20:20Z: addition (not a correction): a Table text size row. The layout restores `ZoomTable::KINDS` keys before paint, so they are settings this browser keeps; leaving them out would make "every setting" untrue. Within the one-shot authority's bounded outcome.
+- 2026-11-14T20:20Z: the Theme row follows a change made in the header's theme menu (MutationObserver on `data-resolved-theme`), so the two theme controls never disagree.
+- 2026-11-14T20:20Z: Reset all reloads the page so every setting (including theme stylesheet and palettes) shows its default from first paint, instead of re-implementing each feature's in-page reset.
+- 2026-11-14T20:25Z: icons drawn for all three sets (pixel art, smooth lines, cute pixel art): three horizontal sliders, distinct from Fastmod's vertical ones.
+- 2026-11-14T20:30Z: fixed a pre-existing problem in `PF-20261111-F03.txt` (its source line did not use the `- Session:` form), which stopped `./v3 feedback index` from writing; correction outside the feature, needed to keep the index current.
+
+## Outcome
+
+Delivered: Tools → Preferences (`/tools/preferences/`) lists Theme, Thread view (flag), Reading margins (flag), Table text size, Phone tabs (app header only), Page themes, Welcome note and Usage log (flag), each showing this browser's value from first paint, with change or reset in place, and Reset all preferences. Keys, drafts, the outbox, message caches and the usage log's entries are never touched. Excluded as recorded: F18, F16, F22, palette choice on the page, server-side preferences, a You-menu link.
+
+## Verification
+
+- `./v3 test --smoke PreferencesPageTest NavIconSetsTest UsagePageKindTest UsageReportsPageTest LocalAppSmokeTest::testApplicationRendersCoreRoutes`: 472 of 473 pass. The failure, `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, also fails on unchanged `main` here (checked with the changes stashed).
+- `PreferencesPageTest` (new): rows, theme options, table size keys and Tools bar with the flags on; flag rows absent with them off; launcher entry.
+- `node tests/browser/preferences.mjs` (new, Chrome): fresh defaults; saved values shown with `preferences.js` blocked (so they come from the inline script during parsing); theme and thread view changes save; each reset clears only its keys; the Theme row follows the header menu; Reset all keeps identity, draft and usage log keys; no overflow and no page errors in default, Gloss, Gloss Dark, Word97, Midnight, Bubblegum and Chicago at 390px and 1280px; Tools bar icon present in the icon themes. Screenshots reviewed for default 390px, Word97 1280px, Bubblegum 390px and Midnight 1280px.
+- `node tests/browser/tools_launcher.mjs "" gloss,word97,bubblegum,midnight`: passes with the new tool.
+- `node tests/browser/reading_margins.mjs`: passes after the added reset hook.
+- `./v3 feedback check` and `./v3 feedback index`: clean.
+- Full suite not run. Not checked: other themes (Console, LCD, Vapor and the rest), Firefox/WebKit, a physical phone, production.
+
+## Final review
+
+Reuses the Tools registry and bar, the account row component and its theme styles, `forumSelectTheme`, the runtime storage keys and the reading margins script's own reset. No new dependency, schema change or server state. Within the recorded scope plus the recorded Table text size addition.
+
+## Study closeout
+
+Intake 0.15; execution entry reaffirmed; **retrospective 0.15**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
+
+## Commit/merge/publication status
+
+Planning commit `d43d51d`; completion commit pending at the time of writing (this record cannot hold its own hash). Not merged or deployed.
+
+## Attribution
+
+Claude (claude-opus-5-5), 2026-11-14 UTC.

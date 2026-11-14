@@ -38,6 +38,7 @@ final class TemplateRenderer
         'root_approval.php' => ['/assets/identity.css'],
         'username.php' => ['/assets/identity.css', '/assets/account.css', '/assets/thread-list.css'],
         'users.php' => ['/assets/account.css'],
+        'preferences.php' => ['/assets/account.css', '/assets/preferences.css'],
         'private_message_list.php' => ['/assets/private_message_list.css'],
         'private_message_access.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
