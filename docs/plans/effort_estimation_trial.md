@@ -1,5 +1,13 @@
 # Effort estimation trial ledger
 
+## Cycle v3/fastmod_bayes_meta
+
+2026-11-14T19:15:00Z — v3/fastmod_bayes_meta Step 1 approved: maintainer sent "approved step 1" for Revision 1 (Option C in two slices, scope v2). Branch `feat/fastmod-bayes-meta` from `459d212`; Step 1 approval commit follows this entry. Projected total **0.35** reaffirmed. Same R1/P2, single exposed Claude rater.
+
+2026-11-11T22:20:00Z — v3/fastmod_bayes_meta Step 1 Revision 1: maintainer said production has a lot of existing data and the LLM cannot run now. [Checkpoint](./fastmod_bayes_meta/fastmod_bayes_meta_step1_solution_assessment.md#study-checkpoint). Scope v2, recommended Option C in two slices (local scores and agreement report against stored labels; then derived tags and backfill), training on human and stored LLM labels only; Option B fallback moved to follow-up. Projected total 0.40 → **0.35**; option estimates 0.25/0.40/0.30 unchanged, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-11T02:20:00Z — v3/fastmod_bayes_meta Step 1 handoff (standing P2 enrollment, no parent; follows fastmod_meta_score): [assessment/checkpoint](./fastmod_bayes_meta/fastmod_bayes_meta_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option B in two slices (shadow Bayes meta score and agreement report first, then "local, LLM when unsure"). Starting revision `989f478`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing. Intake and projected total **0.40**; option estimates 0.25/0.40/0.30, non-additive. Await Approved Step 1; planning uncommitted.
+
 ## Cycle v3/tag_unlocks
 
 2026-11-12T20:30:00Z — v3/tag_unlocks Step 4 closeout on `tag-unlocks`: Stages 1-7 committed; production verification pending maintainer deploy. [Summary](./tag_unlocks/tag_unlocks_step4_implementation_summary.md#cycle-retrospective). Retrospective cycle assessment **0.65** (projection 0.65); no split, no changed scope. Maintainer judgment pending; study acceptance pending.
