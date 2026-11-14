@@ -92,6 +92,15 @@ final class FrontController
         $approvedMembersOnly = $featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
         $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
+        if (!$approvedMembersOnly && $requestUri !== '/internal/high-traffic/refresh' && HighTrafficAutomation::turnOnEnabled($highTraffic)) {
+            $rate = HighTrafficRate::forCache($highTraffic);
+            // Only the request that opens a new second checks the rate. Pages are still
+            // rendered by the isolated worker, never from this request.
+            if ($rate->record()) {
+                try { HighTrafficAutomation::checkTurnOn(new HighTrafficMode($highTraffic), $rate); }
+                catch (Throwable $error) { $highTraffic->report($error); }
+            }
+        }
         if ($requestUri === '/internal/high-traffic/refresh') {
             header('Cache-Control: no-store');
             if ($approvedMembersOnly || $method !== 'POST' || (int)($_SERVER['CONTENT_LENGTH'] ?? 0)>2048

@@ -13,14 +13,17 @@ $json=in_array('--json',$arguments,true);
 $arguments=array_values(array_filter($arguments,fn ($arg) => $arg!=='--json'));
 $command=$arguments[0] ?? 'status';
 $usage="Usage: ./v3 high-traffic enable|disable|status|restore|purge|prepare [--json]\n"
+    . "       ./v3 high-traffic auto-on on|off       turn the mode on automatically when traffic spikes\n"
+    . "       ./v3 high-traffic auto-off on|off      turn an automatic episode off after a quiet period (needs cron)\n"
     . "       ./v3 high-traffic refresh [/route/] [--json]\n"
     . "       ./v3 high-traffic cron|run [access.log] [--json]\n"
     . "prepare builds/reuses one shared model outside rendering (works while disabled).\ncron prints installation instructions; run refreshes pages once.\n"
     . "prepare/refresh/run stream elapsed progress to stderr; --json keeps results on stdout.\n";
 if (in_array($command,['help','--help','-h'],true)) { echo $usage;exit(0); }
 try {
-    if (!in_array($command,['enable','disable','status','restore','purge','prepare','refresh','cron','run'],true)) throw new RuntimeException('Unknown high-traffic command.');
-    $maximum=in_array($command,['refresh','cron','run'],true) ? 2 : 1;
+    if (!in_array($command,['enable','disable','status','restore','purge','prepare','refresh','cron','run','auto-on','auto-off'],true)) throw new RuntimeException('Unknown high-traffic command.');
+    $maximum=in_array($command,['refresh','cron','run','auto-on','auto-off'],true) ? 2 : 1;
+    if (in_array($command,['auto-on','auto-off'],true) && !in_array($arguments[1] ?? '',['on','off'],true)) throw new RuntimeException('Use on or off.');
     if (count($arguments)>$maximum || (isset($arguments[1]) && str_starts_with($arguments[1],'-'))) throw new RuntimeException('Unexpected argument.');
     $log=$arguments[1] ?? (getenv('FORUM_HIGH_TRAFFIC_ACCESS_LOG') ?: '/path/to/access.log');
     $cron='* * * * * cd ' . escapeshellarg($project) . ' && { ./v3 high-traffic prepare && ./v3 high-traffic run ' . escapeshellarg($log)
@@ -50,6 +53,8 @@ try {
         'run'=>(new \ForumRewrite\Host\HighTrafficRefresh($cache))->run($arguments[1] ?? (getenv('FORUM_HIGH_TRAFFIC_ACCESS_LOG') ?: '')),
         'enable'=>$mode->change(true,'Operator CLI enable'),
         'disable'=>$mode->change(false,'Operator CLI disable'),
+        'auto-on'=>(function () use ($cache,$mode,$arguments) { \ForumRewrite\Host\HighTrafficAutomation::set($cache,$arguments[1]==='on',null,'Operator CLI');return $mode->status(); })(),
+        'auto-off'=>(function () use ($cache,$mode,$arguments) { \ForumRewrite\Host\HighTrafficAutomation::set($cache,null,$arguments[1]==='on','Operator CLI');return $mode->status(); })(),
         'restore'=>$mode->restore(),
         'status'=>$mode->status(),
         'purge'=>(function () use ($mode) { $mode->purge();return $mode->status(); })(),

@@ -23,12 +23,24 @@ final class HighTrafficMode
             && ($state['profile'] ?? \ForumRewrite\SiteProfileRegistry::active()['name'])===\ForumRewrite\SiteProfileRegistry::active()['name'] && is_link($this->cache->publicRoot . '/.high-traffic')
             && realpath($this->cache->publicRoot . '/.high-traffic') === realpath($this->cache->root . '/pages')
             && str_starts_with($rules,self::BEGIN . "\n");
-        return array_merge($state,['effective_mode'=>$effective ? 'high-traffic' : 'normal']);
+        $status=array_merge($state,['effective_mode'=>$effective ? 'high-traffic' : 'normal']);
+        $automation=HighTrafficAutomation::read($this->cache);
+        $status['source']=HighTrafficAutomation::source($status);
+        $status['turn_on_automatically']=($automation['Turn-On'] ?? 'no')==='yes';
+        $status['turn_off_automatically']=($automation['Turn-Off'] ?? 'no')==='yes';
+        $unavailable=HighTrafficAutomation::turnOffUnavailable($this->cache);
+        if ($unavailable!==null) $status['turn_off_unavailable']=$unavailable;
+        return $status;
     }
-    public function change(bool $enable, string $reason): array
+    /**
+     * The only switch for the mode. $source is operator, automatic or withdrawal; an
+     * operator off holds against automatic turn-on until traffic falls below the threshold.
+     */
+    public function change(bool $enable, string $reason, string $source = 'operator'): array
     {
-        return PublicationLock::withLock($this->cache->repositoryRoot, function () use ($enable,$reason): array {
-            return $this->cache->locked(function () use ($enable,$reason): array {
+        if (!in_array($source,['operator','automatic','withdrawal'],true)) throw new RuntimeException('Unknown high-traffic change source.');
+        return PublicationLock::withLock($this->cache->repositoryRoot, function () use ($enable,$reason,$source): array {
+            return $this->cache->locked(function () use ($enable,$reason,$source): array {
             $path=$this->cache->publicRoot . '/.htaccess';
             if (is_link($path) || !is_file($path)) throw new RuntimeException('A regular managed .htaccess file is required.');
             $savedState=$this->cache->state();
@@ -47,7 +59,7 @@ final class HighTrafficMode
                 }
                 $this->cache->atomic($this->cache->root . '/normal.htaccess',$normal);
                 $this->cache->atomic($this->cache->root . '/normal-context.json',json_encode(['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot],JSON_THROW_ON_ERROR));
-                $this->clearPages();
+                $this->keepFreshPages($previous);
                 $this->cache->atomic($this->cache->root . '/pages/.htaccess',"Options -Indexes\n<IfModule mod_headers.c>\nHeader set Cache-Control \"public, no-cache, must-revalidate\"\nHeader set X-Content-Type-Options \"nosniff\"\nHeader set X-V3-High-Traffic \"hit\"\n</IfModule>\n");
                 $link=$this->cache->publicRoot . '/.high-traffic';
                 HighTrafficSafety::detach($this->cache->publicRoot);
@@ -63,9 +75,10 @@ final class HighTrafficMode
                 // requests fall through to the front controller.
                 HighTrafficSafety::detach($this->cache->publicRoot);
             }
-            $state=['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot,'profile'=>\ForumRewrite\SiteProfileRegistry::active()['name'],'enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c')];
+            $state=['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot,'profile'=>\ForumRewrite\SiteProfileRegistry::active()['name'],'enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c'),'source'=>$source];
             try { $this->cache->atomic($this->cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR)); }
             catch (\Throwable $error) { HighTrafficSafety::detach($this->cache->publicRoot); throw $error; }
+            if ($source==='operator') HighTrafficAutomation::write($this->cache,['Manual-Off-Hold'=>$enable ? 'no' : 'yes']);
             return $this->status();
         });
         });
@@ -100,7 +113,25 @@ final class HighTrafficMode
         }
         return $files;
     }
-    private function clearPages(): void { foreach ($this->htmlFiles() as $file) if (!unlink($file)) throw new RuntimeException('Cannot reset old cached pages.'); }
+    /**
+     * On turn-on, keep pages that are still fresh so a spike does not start cold. A page is
+     * kept only when it is younger than keep_seconds and newer than the latest withdrawal or
+     * removal; after a withdrawal everything is cleared. Kept pages are queued for cron.
+     */
+    private function keepFreshPages(array $previous): void
+    {
+        $withdrawn = @filemtime($this->cache->root . '/withdrawn');
+        // Marked, legacy and detached-but-enabled withdrawals all clear every page.
+        $clearAll = HighTrafficAutomation::isWithdrawal($previous + ['effective_mode' => 'normal']);
+        $oldest = max(time() - $this->cache->limits['keep_seconds'], $withdrawn === false ? 0 : $withdrawn);
+        $kept = 0;
+        foreach ($this->htmlFiles() as $file) {
+            clearstatcache(true, $file);
+            if (!$clearAll && filemtime($file) > $oldest) { $kept++; continue; }
+            if (!unlink($file)) throw new RuntimeException('Cannot reset old cached pages.');
+        }
+        if ($kept > 0 && !is_file($this->cache->root . '/dirty')) $this->cache->atomic($this->cache->root . '/dirty', gmdate('c'));
+    }
     private function normalRules(string $current): string
     {
         if (!str_contains($current,self::BEGIN) && !str_contains($current,self::END)) return $current;

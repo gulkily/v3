@@ -35,14 +35,73 @@ final class HighTrafficRefresh
         arsort($counts,SORT_NUMERIC);
         return array_slice(array_keys($counts),0,$this->cache->limits['queue']);
     }
+    /**
+     * Requests per window over the last $windows windows of $windowSeconds each, newest last,
+     * from combined-format timestamps in the bounded log tail. Asset and refresh-hint requests
+     * are not counted. Null when the tail does not reach back that far (busy, or just rotated).
+     * @return list<int>|null
+     */
+    public function recentCounts(string $log, int $windowSeconds, int $windows, ?int $now = null): ?array
+    {
+        $now ??= time();
+        $handle=@fopen($log,'rb');
+        if ($handle===false) throw new RuntimeException('Cannot read access log; check the sysop-configured path and permissions.');
+        try {
+            $size=fstat($handle)['size']; $offset=max(0,$size-$this->cache->limits['read_bytes']);
+            if (fseek($handle,$offset)!==0) throw new RuntimeException('Access log must be a seekable regular file.');
+            $suffix=(string)stream_get_contents($handle,$this->cache->limits['read_bytes']);
+        } finally { fclose($handle); }
+        $lines=explode("\n",rtrim($suffix,"\n"));
+        if ($offset>0) array_shift($lines); // First sampled line is incomplete.
+        $lines=array_slice($lines,-$this->cache->limits['lines']);
+        $counts=array_fill(0,$windows,0); $since=$now-$windowSeconds*$windows; $oldest=null; $parsed=0;
+        foreach ($lines as $line) {
+            if ($line==='' || strlen($line)>$this->cache->limits['line_bytes']) continue;
+            if (!preg_match('~\[(\d{2}/[A-Z][a-z]{2}/\d{4}:\d{2}:\d{2}:\d{2} [+-]\d{4})\] "[A-Z]+ ([^ ]*)~',$line,$m)) continue;
+            $time=\DateTimeImmutable::createFromFormat('d/M/Y:H:i:s O',$m[1]);
+            if ($time===false) continue;
+            $parsed++; $at=$time->getTimestamp(); $oldest=$oldest===null ? $at : min($oldest,$at);
+            if ($at<$since || $at>=$now || str_starts_with($m[2],'/assets/') || str_starts_with($m[2],'/internal/high-traffic/')) continue;
+            $counts[intdiv($at-$since,$windowSeconds)]++;
+        }
+        if ($lines!==[''] && $lines!==[] && $parsed===0) throw new RuntimeException('Access log lines have no combined-format timestamps.');
+        return $oldest!==null && $oldest<=$since ? $counts : null;
+    }
+    /**
+     * Automatic turn-off, run by cron whether or not the mode is on. Records whether the log
+     * was readable; with Turn-Off set, ends an automatic episode once every five-minute window
+     * of the quiet period is below the turn-off rate. Never turns off an operator's on.
+     */
+    public function automation(string $log, ?int $now = null): array
+    {
+        $now ??= time();
+        $mode=new HighTrafficMode($this->cache);
+        $seconds=HighTrafficAutomation::turnOffSeconds(); $windows=max(1,intdiv($seconds,300));
+        try { $counts=$this->recentCounts($log,intdiv($seconds,$windows),$windows,$now); $health='readable'; }
+        catch (\Throwable $error) { $counts=null; $health='unreadable: ' . $error->getMessage(); }
+        $this->cache->locked(fn () => HighTrafficAutomation::write($this->cache,['Cron-Checked-At'=>gmdate('c',$now),'Cron-Log'=>$health]));
+        $result=['log'=>$health,'action'=>'none'];
+        if (!HighTrafficAutomation::turnOffEnabled($this->cache)) return $result;
+        $status=$mode->status();
+        if (($status['effective_mode'] ?? '')!=='high-traffic' || HighTrafficAutomation::source($status)!=='automatic') return $result;
+        $limit=HighTrafficAutomation::turnOffRate()*intdiv($seconds,$windows);
+        if ($counts===null || max($counts)>=$limit) return $result;
+        $mode->change(false,sprintf('Turned off automatically after %d quiet minutes',intdiv($seconds,60)),'automatic');
+        return ['log'=>$health,'action'=>'off'];
+    }
     public function run(string $log): array
     {
         $this->cache->initialize();
-        if (!$this->cache->enabled()) return ['status'=>'disabled','rendered'=>0];
+        $automation=null;
+        if ($log!=='') {
+            try { $automation=$this->automation($log); }
+            catch (\Throwable $e) { $this->cache->report($e); $automation=['log'=>'error: ' . $e->getMessage(),'action'=>'none']; }
+        }
+        if (!$this->cache->enabled()) return ['status'=>'disabled','rendered'=>0] + ($automation===null ? [] : ['automation'=>$automation['action'],'automation_log'=>$automation['log']]);
         $lock=fopen($this->cache->root . '/locks/cron.lock','c');
         if ($lock===false) throw new RuntimeException('Cannot open cron lock.');
         if (!flock($lock,LOCK_EX|LOCK_NB)) { fclose($lock);return ['status'=>'busy','rendered'=>0]; }
-        $start=microtime(true);$report=['status'=>'ok','rendered'=>0,'skipped'=>0,'failed'=>0];
+        $start=microtime(true);$report=['status'=>'ok','rendered'=>0,'skipped'=>0,'failed'=>0] + ($automation===null ? [] : ['automation'=>$automation['action'],'automation_log'=>$automation['log']]);
         try {
             $popular=[];
             try { $popular=$this->popular($log); }

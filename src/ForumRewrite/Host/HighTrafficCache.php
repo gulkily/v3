@@ -19,7 +19,7 @@ final class HighTrafficCache
         private readonly ?\Closure $progressReporter = null,
     ) {
         $this->root = $projectRoot . '/state/high_traffic/' . substr(hash('sha256', realpath($repositoryRoot) ?: $repositoryRoot), 0, 16);
-        $defaults = ['lines'=>10000, 'read_bytes'=>16777216, 'line_bytes'=>16384, 'fresh_seconds'=>60, 'renders'=>50, 'run_seconds'=>45, 'generators'=>2, 'wait_ms'=>250, 'pages'=>1000, 'bytes'=>268435456, 'page_bytes'=>1048576, 'queue'=>1000];
+        $defaults = ['lines'=>10000, 'read_bytes'=>16777216, 'line_bytes'=>16384, 'fresh_seconds'=>60, 'renders'=>50, 'run_seconds'=>45, 'generators'=>2, 'wait_ms'=>250, 'pages'=>1000, 'bytes'=>268435456, 'page_bytes'=>1048576, 'queue'=>1000, 'keep_seconds'=>3600];
         $this->limits = array_map(static function (string $key, int $default): int {
             $value = getenv('FORUM_HIGH_TRAFFIC_' . strtoupper($key));
             return $value !== false && ctype_digit($value) && (int)$value > 0 ? min((int)$value, $default * 10) : $default;
