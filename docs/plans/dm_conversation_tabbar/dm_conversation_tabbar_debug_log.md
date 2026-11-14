@@ -44,3 +44,18 @@
 
 **Uncertain assessments**
 - Theme list in Stage 2 is taken from `public/assets/theme-*.css` at implementation time rather than enumerated now.
+
+## 2026-11-14T19:30Z — Step 4
+
+**Necessary/useful instructions**
+- Step 2's "composer at the bottom edge" success criterion: the first browser run showed a short conversation leaving the composer mid-screen (as before), which the bar removal alone would not fix; the criterion pulled that into Stage 1; retain.
+- `AGENTS.md` baseline comparison: checking Engagify's overlap and the media-embed smoke failure on clean `origin/main` kept both out of this change; retain.
+
+**Redundant/unnecessary instructions**
+- None new.
+
+**Inapplicable instructions**
+- Navigation icon updates (`AGENTS.md` Navigation icons): no destination added or renamed.
+
+**Uncertain assessments**
+- Whether hiding the account menu inside conversations needs a replacement; left as accepted in Step 1.
