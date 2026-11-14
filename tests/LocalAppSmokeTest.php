@@ -2832,7 +2832,7 @@ PHP;
         }
     }
 
-    public function testReadingMarginsAreHiddenByDefaultAndShownOnThreadsWhenFlagEnabled(): void
+    public function testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled(): void
     {
         $previousFlag = getenv('FORUM_READING_MARGINS_ENABLED');
         putenv('FORUM_READING_MARGINS_ENABLED');
@@ -2849,22 +2849,29 @@ PHP;
             @unlink($this->databasePath);
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
             $thread = $this->render($application, '/threads/root-001');
-            $board = $this->render($application, '/');
 
             assertFingerprintedAsset($thread, 'reading_margins.js');
             assertFingerprintedAsset($thread, 'reading-margins.css');
             assertStringContains('data-role="reading-margins"', $thread);
             assertStringContains('localStorage.getItem(browserRuntime.readingMarginsStorageKey)', $thread);
             assertStringContains('"readingMarginsStorageKey":"forum-zenmemes-reading-margins"', $thread);
-            foreach ([5, 20, 35, 50, 65, 80, 95] as $position) {
-                assertStringContains('name="reading-margin-' . $position . '" value="' . $position . '"', $thread);
-                assertStringContains('style="--at: ' . $position . '"', $thread);
+            foreach (['left' => [5, 23, 41], 'right' => [59, 77, 95]] as $edge => $positions) {
+                foreach ($positions as $position) {
+                    assertStringContains('name="reading-margin-' . $edge . '" value="' . $position . '"', $thread);
+                    assertStringContains('style="--at: ' . $position . '"', $thread);
+                }
             }
-            assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
             assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
-            assertStringNotContains('data-role="reading-margins"', $board);
-            assertStringNotContains('reading_margins', $board);
+            // Listing pages get the ruler too; other pages do not.
+            foreach (['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello'] as $listingPath) {
+                $listing = $this->render($application, $listingPath);
+                assertStringContains('data-role="reading-margins"', $listing);
+                assertFingerprintedAsset($listing, 'reading_margins.js');
+            }
+            $about = $this->render($application, '/about/');
+            assertStringNotContains('data-role="reading-margins"', $about);
+            assertStringNotContains('reading_margins', $about);
 
             $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/reading-margins.css');
             assertStringContains(':root[data-reading-margins] .main', $css);
