@@ -1903,3 +1903,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/post_records` | Staged Step 4 technically complete; deployment, live retraction and maintainer acceptance pending | v8 / R1 / P2 | 0.95 (intake 0.60; Step 1 revisions 0.65, 0.80, 0.85; Step 2 0.85, 0.90, 1.10, 1.05; split; scope v8 0.95; Step 3 0.95; retrospective 0.98) | [Step 1](./post_records/post_records_step1_solution_assessment.md#study-checkpoint), [Step 2](./post_records/post_records_step2_feature_description.md#study-checkpoint), [Step 3](./post_records/post_records_step3_development_plan.md#study-checkpoint), [Step 4](./post_records/post_records_step4_implementation_summary.md#cycle-closeout) | Maintainer request in session; split child `v3/retraction_target_id` (merged #189); acceptance pending |
 
 2026-11-14: standing P2 enrollment, staged cycle with extended estimates. Checkpoints from 2026-11-08 to 2026-11-14 were kept in the cycle's planning artifacts while it ran in fresh clones, and are linked here at its planning commit. Scope v7 (1.05) is preserved as the split record; v8 excludes the header rename shipped by the child. Single exposed rater Claude (claude-opus-5-5); no pristine intake. No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/reading_margins_two_clicks
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/reading_margins_two_clicks` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (execution entry 0.10; retrospective 0.10) | [record](./reading_margins_two_clicks/reading_margins_two_clicks_one_shot.md#study-history) | Maintainer request in session (follow-up to the reading margins PRs #182, #214, #215, #221, which ran outside Railspike); acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot. Intake missing: implementation was drafted before the record (disclosed in the record). Execution entry **0.10**, retrospective **0.10**. Baseline `68724f9`; branch `feat/reading_margins_two_clicks`; planning commit `ac7a9ad`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

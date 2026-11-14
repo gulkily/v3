@@ -8,9 +8,9 @@ import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
 // Reading margins (FORUM_READING_MARGINS_ENABLED) on a thread page, in every
-// permitted theme: the radios are evenly spaced in one row, the left half sets
-// the left edge and the right half the right edge, each checked radio sits over
-// the column edge it sets, a choice survives reload without moving after paint,
+// permitted theme: the radios are evenly spaced in one row, any two clicked in
+// either order set the column between them, each checked radio sits over the
+// column edge it sets, a choice survives reload without moving after paint,
 // choosing a checked radio resets, the column never gets narrower than 20rem,
 // other pages share the saved column, and phones show neither the ruler nor a
 // saved column.
@@ -45,8 +45,8 @@ try {
   const themes = await page.evaluate(() => Object.keys(window.forumThemeStylesheetPaths).filter(name => name !== 'auto'));
   assert.ok(themes.length > 1, 'permitted themes listed');
 
-  const stop = at => page.locator(`[data-reading-margin-edge][value="${at}"]`);
-  const checkedStops = () => page.locator('[data-reading-margin-edge]:checked').evaluateAll(all => all.map(each => each.value).join(' '));
+  const stop = at => page.locator(`[data-reading-margin-stop][value="${at}"]`);
+  const checkedStops = () => page.locator('[data-reading-margin-stop]:checked').evaluateAll(all => all.map(each => each.value).join(' '));
   const column = () => page.locator('.main').evaluate(main => { const r = main.getBoundingClientRect(); return { left: r.left, right: r.right }; });
   const stopCentre = async at => { const r = await stop(at).boundingBox(); return r.x + r.width / 2; };
   const fits = async (left, right) => { const c = await column(); return Math.abs(c.left - await stopCentre(left)) <= 2 && Math.abs(c.right - await stopCentre(right)) <= 2; };
@@ -67,10 +67,10 @@ try {
     await page.goto(url);
     assert.equal(await checkedStops(), '', `${theme}: nothing chosen yet`);
     assert.equal(await pageScrollsSideways(), false, `${theme}: ruler adds no sideways scroll`);
-    // One row: same top, equal gaps; the left half and right half are separate groups.
-    const centres = await page.locator('[data-reading-margin-edge]').evaluateAll(all => all.map(each => { const r = each.getBoundingClientRect(); return [r.left + r.width / 2, r.top, each.dataset.readingMarginEdge]; }));
+    // One row: same top, equal gaps, no left or right groups.
+    const centres = await page.locator('[data-reading-margin-stop]').evaluateAll(all => all.map(each => { const r = each.getBoundingClientRect(); return [r.left + r.width / 2, r.top]; }));
     assert.equal(centres.length, 6, `${theme}: six stops`);
-    assert.deepEqual(centres.map(c => c[2]), ['left', 'left', 'left', 'right', 'right', 'right'], `${theme}: left half then right half`);
+    assert.equal(await page.locator('[data-reading-margin-edge]').count(), 0, `${theme}: no left/right groups`);
     const gap = centres[1][0] - centres[0][0];
     centres.forEach(([x, y], i) => {
       assert.ok(Math.abs(y - centres[0][1]) <= 1, `${theme}: stops share one row`);
@@ -78,18 +78,18 @@ try {
     });
     if (shots) await page.screenshot({ path: join(shots, `${theme}-default.png`) });
 
-    // Nothing chosen: a left radio sets the left edge, and the right edge goes to
-    // the right stop nearest the normal column's right side.
-    await stop(23).click();
-    const [firstLeft, firstRight] = (await checkedStops()).split(' ');
-    assert.equal(firstLeft, '23', `${theme}: left radio sets the left edge`);
-    assert.ok(['59', '77', '95'].includes(firstRight), `${theme}: right edge filled in`);
-    assert.ok(await fits(23, firstRight), `${theme}: column between the checked radios`);
-
-    // A right radio only ever moves the right edge, and a left radio the left edge.
+    // The first click only marks its radio; the column stays as it was.
+    const before = await column();
     await stop(95).click();
+    assert.equal(await checkedStops(), '95', `${theme}: first click marks one radio`);
+    assert.equal(await stop(95).evaluate(el => el.hasAttribute('data-reading-margin-marked')), true, `${theme}: marked radio flagged`);
+    assert.deepEqual(await column(), before, `${theme}: first click leaves the column alone`);
+    if (shots) await page.screenshot({ path: join(shots, `${theme}-marked.png`) });
+    // The second click sets the column, right-to-left order included.
+    await stop(23).click();
     assert.equal(await checkedStops(), '23 95');
-    assert.ok(await fits(23, 95), `${theme}: right edge moved`);
+    assert.equal(await page.locator('[data-reading-margin-marked]').count(), 0, `${theme}: mark cleared`);
+    assert.ok(await fits(23, 95), `${theme}: column between the two clicked radios`);
     assert.equal(await page.evaluate(k => localStorage.getItem(k), runtime.readingMarginsStorageKey), '23 95');
     assert.equal(await pageScrollsSideways(), false, `${theme}: wide column adds no sideways scroll`);
 
@@ -100,28 +100,31 @@ try {
     assert.ok(first && Math.abs(first.left - settled.left) <= 1 && Math.abs(first.right - settled.right) <= 1, `${theme}: column final on first paint`);
     if (shots) await page.screenshot({ path: join(shots, `${theme}-23-95.png`) });
 
-    await stop(41).click();
-    assert.equal(await checkedStops(), '41 95', `${theme}: left radio near the centre moves the left edge`);
-    // 41-59 is narrower than 20rem at this width, so the column is 20rem, centred between them.
-    await stop(59).click();
-    assert.equal(await checkedStops(), '41 59');
-    const narrow = await column();
-    const halfway = (await stopCentre(41) + await stopCentre(59)) / 2;
+    // Any radio can be either edge: 59 then 77 puts the column right of centre.
+    await stop(59).click(); await stop(77).click();
+    assert.equal(await checkedStops(), '59 77');
+    // 41-59 and 59-77 are narrower than 20rem at this width, so the column is
+    // 20rem, centred between the two radios.
+    let narrow = await column();
+    let halfway = (await stopCentre(59) + await stopCentre(77)) / 2;
     assert.ok(Math.abs(narrow.right - narrow.left - 320) <= 1, `${theme}: column no narrower than 20rem`);
     assert.ok(Math.abs((narrow.left + narrow.right) / 2 - halfway) <= 2, `${theme}: narrow column centred between the radios`);
-    await stop(5).click();
+    await stop(5).click(); await stop(59).click();
     assert.equal(await checkedStops(), '5 59');
     assert.ok(await fits(5, 59), `${theme}: off-centre column`);
     if (shots) await page.screenshot({ path: join(shots, `${theme}-5-59.png`) });
 
-    // Choosing a checked radio again returns to the site's normal column.
-    await stop(59).click();
+    // Clicking the marked radio again returns to the site's normal column.
+    await stop(41).click();
+    assert.equal(await checkedStops(), '41', `${theme}: new pair started`);
+    assert.ok(await fits(5, 59), `${theme}: column kept while a pair is in progress`);
+    await stop(41).click();
     assert.equal(await checkedStops(), '', `${theme}: reset clears both edges`);
     assert.equal(await page.evaluate(k => localStorage.getItem(k), runtime.readingMarginsStorageKey), null);
     assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-reading-margins')), false);
 
-    // Choices saved by earlier versions of the ruler are ignored.
-    for (const old of ['24 96', '20 95']) {
+    // Saved values that are not two stops in increasing order are ignored.
+    for (const old of ['24 96', '20 95', '95 23']) {
       await page.evaluate(([k, v]) => localStorage.setItem(k, v), [runtime.readingMarginsStorageKey, old]);
       await page.reload();
       assert.equal(await checkedStops(), '', `${theme}: old saved choice ${old} ignored`);
