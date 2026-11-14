@@ -1914,6 +1914,13 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-14: standing P2 enrollment, staged cycle with extended estimates. Checkpoints from 2026-11-08 to 2026-11-14 were kept in the cycle's planning artifacts while it ran in fresh clones, and are linked here at its planning commit. Scope v7 (1.05) is preserved as the split record; v8 excludes the header rename shipped by the child. Single exposed rater Claude (claude-opus-5-5); no pristine intake. No measured effort, independent rating or accepted-count increment.
 
+## Cycle v3/reading_margins_two_clicks
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/reading_margins_two_clicks` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (execution entry 0.10; retrospective 0.10) | [record](./reading_margins_two_clicks/reading_margins_two_clicks_one_shot.md#study-history) | Maintainer request in session (follow-up to the reading margins PRs #182, #214, #215, #221, which ran outside Railspike); acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot. Intake missing: implementation was drafted before the record (disclosed in the record). Execution entry **0.10**, retrospective **0.10**. Baseline `68724f9`; branch `feat/reading_margins_two_clicks`; planning commit `ac7a9ad`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 ## Cycle v3/bubblegum_menu_labels
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
