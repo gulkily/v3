@@ -119,3 +119,24 @@ No supported findings.
 ### Uncertain assessments
 
 No supported findings.
+
+## 2026-11-14T09:30:00Z — Step 4 (Implementation)
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, "Planning Docs Commit Gate": the planning commit `ff7d755` carried Steps 1–3, the folder, the index entry and the parent's ledger entry, which had waited since 2026-11-08. Retain.
+- `implementation_standards.md`, "Keep work within the approved stage/scope": scoping the `delete-record` route to likes, after two existing tests broke, kept non-like reactions on their old path instead of widening the slice. Retain.
+- `step4_implementation_do.md`, "Update the summary in the same commit as its stage": each stage commit carries its own summary section. Retain.
+- `RAILSPIKE.md`, how a task runs, "for high-stakes work, the check is done by a separate agent": an independent review of the code diff ran before closeout, because this branch deletes signed records on the live site and adds an operator permission. Retain.
+
+### Redundant/unnecessary instructions
+
+No supported findings.
+
+### Inapplicable instructions
+
+- `step4_implementation_do.md`, documentation-only verification: this is application work.
+
+### Uncertain assessments
+
+- Adding a test file needs a manual entry in the host's `tests/run.php`. Without it, `./v3 test X` prints "No tests matched", and a run of several classes silently skips it. The previous cycle missed this. Railspike's verification guidance could ask for evidence that a newly added test actually ran (a PASS line naming it), not just a passing summary.
