@@ -986,6 +986,16 @@ pre {
     font-size: 1rem;
   }
 
+  /* Two links to a row, so the whole panel, theme menu included, fits one
+     phone screen without scrolling. */
+  [data-shell="app"] .account-menu__links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-shell="app"] .account-menu__links .nav-link {
+    overflow-wrap: anywhere;
+  }
+
   /* Unread Messages shows on the More tab the same way it shows on the link. */
   [data-shell="app"] .account-menu__trigger[data-unread-count]:not([data-unread-count="0"]) {
     outline: 2px solid var(--active-line);
@@ -2018,4 +2028,19 @@ pre {
 
 .outbox-unsent__item {
   border-style: dashed;
+}
+
+/* Short phone screens (an iPhone SE with Safari's bars): slimmer More links,
+   so the panel still fits without scrolling. */
+@media (max-width: 639px) and (max-height: 520px) {
+  [data-shell="app"] .account-menu__panel {
+    padding-top: 0.6rem;
+    padding-bottom: 0.8rem;
+  }
+
+  [data-shell="app"] .account-menu__more .nav-link,
+  [data-shell="app"] .account-menu__links .nav-link {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
 }
