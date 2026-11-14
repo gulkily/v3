@@ -36,7 +36,7 @@
       <figcaption>Eligible requests over time (<?= $e($periodOptions[$periodKey]['label']) ?>)</figcaption>
       <svg viewBox="0 0 740 210" role="img" aria-labelledby="visitor-statistics-trend-title visitor-statistics-trend-description">
         <title id="visitor-statistics-trend-title">Eligible requests over time</title>
-        <desc id="visitor-statistics-trend-description">Each bar shows the eligible requests in an observed <?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?>. Green is anonymous and dark green is server-authenticated.</desc>
+        <desc id="visitor-statistics-trend-description">Each bar shows the eligible requests in an observed <?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?>. The lower, darker part of each bar is server-authenticated requests; the upper, lighter part is anonymous requests.</desc>
         <line x1="20" y1="180" x2="720" y2="180" class="visitor-statistics-axis" />
 <?php foreach ($buckets as $index => $bucket): ?>
 <?php $height = $maxVisits === 0 ? 0 : (int) round($plotHeight * $bucket['visits'] / $maxVisits); ?>

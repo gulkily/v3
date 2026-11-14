@@ -41,7 +41,10 @@ blank line, in this order:
   such as "maybe" or "explore".
 - `Sources:` (required): one `- <url>` line per supporting post, using the site's
   `/posts/<post-id>` or `/threads/<thread-id>` URL. Several sources live here
-  because headers cannot repeat.
+  because headers cannot repeat. A request with no site post (for example one
+  made in an agent session) may use `- Session: <where and when>` instead; it
+  has no source ID, so it is never listed as a shared source. Prefer a site post
+  when one exists.
 - `Done when:` (optional): observable completion checks.
 - `Notes:` (optional): current evidence, next action and links to history.
   Write file references as repository-relative paths (`docs/plans/...#anchor`),

@@ -130,6 +130,9 @@ final class PrivateMessagePageControllerTest
             assertStringContains('data-role="private-message-template"', $conversation);
             // Restart history is hidden until a stale history position (or a failed restart) needs it.
             assertStringContains('data-role="history-restart" hidden', $conversation);
+            // A conversation drops the phone tab bar; the Messages list keeps it. (Pages inline site.css, so check the shell element.)
+            assertSame(1, preg_match('/<div class="shell"[^>]*data-tabbar-page="none"/', $conversation));
+            assertSame(0, preg_match('/<div class="shell"[^>]*data-tabbar-page=/', $html));
             if (str_contains($conversation, 'data-role="history-more"')) {
                 throw new RuntimeException('The ··· history menu should be gone.');
             }

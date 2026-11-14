@@ -642,6 +642,16 @@ Maintainer request: “I want every future railspike to be part of the same data
 
 2026-11-14: `v3/invite_theme` parked at the maintainer's request; Step 1 committed to main unapproved, to resume later. Scores unchanged.
 
+2026-11-14: standing P2 enrollment for `v3/dm_conversation_tabbar`; baseline `1936c60f`. Intake (after inspection) and Step 1 handoff both 0.30 for Option A; extended estimates A 0.30, B 0.35, C 0.20 (not summed). Claude single exposed rater; R1 hashes not re-verified. Awaiting Approved Step 1.
+
+2026-11-14: `v3/dm_conversation_tabbar` Step 1 approved (Option A). Step 2 0.30 reaffirmed, scope v1. Awaiting Approved Step 2.
+
+2026-11-14: `v3/dm_conversation_tabbar` Step 2 approved. Step 3 0.30 reaffirmed with four stages (0.10, 0.10, 0.05, 0.05). Awaiting Approved Step 3.
+
+2026-11-14: `v3/dm_conversation_tabbar` Step 3 approved; Step 4 entry 0.30 reaffirmed.
+
+2026-11-14: `v3/dm_conversation_tabbar` Stages 1–3 complete (retrospective stage work 0.10, 0.05, 0.05); Stage 4 iPhone Safari acceptance and whole-cycle retrospective pending maintainer.
+
 E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically complete, projected 0.85, retrospective 0.90, maintainer acceptance pending. These counts are unchanged by P2. Append each new cycle here with links to its canonical snapshots; keep unsuccessful/incomplete cycles visible. The historical “0 / 6” is accepted outcomes toward the first review checkpoint, not the number of collected records.
 
 ## Cycle v3/retraction_effects
@@ -1911,3 +1921,10 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/reading_margins_two_clicks` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (execution entry 0.10; retrospective 0.10) | [record](./reading_margins_two_clicks/reading_margins_two_clicks_one_shot.md#study-history) | Maintainer request in session (follow-up to the reading margins PRs #182, #214, #215, #221, which ran outside Railspike); acceptance pending |
 
 2026-11-14: standing P2 enrollment, one-shot. Intake missing: implementation was drafted before the record (disclosed in the record). Execution entry **0.10**, retrospective **0.10**. Baseline `68724f9`; branch `feat/reading_margins_two_clicks`; planning commit `ac7a9ad`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+## Cycle v3/bubblegum_menu_labels
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/bubblegum_menu_labels` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; retrospective 0.08) | [One-shot record](./bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md#study-history) | Thread request; acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the request post's link). Intake **0.08** after reproduction (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `9122adf0fa97f2e9e1bdee3d1b1bdd5e5fa684d5`; branch `fix/bubblegum-menu-and-tool-labels`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No measured effort, independent rating or accepted-count increment.

@@ -36,6 +36,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Railspike for every commit one-shot](railspike_for_every_commit/railspike_for_every_commit_one_shot.md) — AGENTS.md runs every committed change as a Railspike cycle (one-shot by default) and asks the agent to name the mode in its first reply.
 
+[Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
+
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
 [Codebase page sizes](codebase_sizes/codebase_sizes_step3_development_plan.md) — `/tools/codebase/` shows a collapsed Sizes card (database, repositories, downloads) and download sizes next to each link.
@@ -477,3 +479,5 @@ and repair its navigation and affected references. See the
 - [Deploy prompt in the page header](deploy_header_prompt/deploy_header_prompt_step3_development_plan.md) — operator Deploy now button in the header behind `FORUM_DEPLOY_HEADER_PROMPT_ENABLED`; Steps 1–3 approved.
 
 - [DM instant load](dm_instant_load/dm_instant_load_step3_development_plan.md) — conversations show read messages on first paint from an encrypted per-browser cache behind `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`, including Messages list previews; complete and accepted on iPhone ([Step 4](dm_instant_load/dm_instant_load_step4_implementation_summary.md)).
+
+- [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; Steps 1–3 approved.
