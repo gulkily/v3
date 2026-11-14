@@ -378,12 +378,22 @@
   }
 }
 
-/* Control panel: Tools, and the phone More panel, are grids of chunky
-   keypad tiles with a big pixel icon over the label and a little status
-   light in the corner. Each tool keeps its own pastel (data-tone). */
+/* Tools is a classic desktop Control Panel: big pixel icons with their
+   names underneath, no buttons around them; hovering or focusing an item
+   gives it a soft pink highlight. */
 :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-list {
-  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.6rem 0.4rem;
+}
+
+@media (min-width: 640px) {
+  :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-list {
+    grid-template-columns: repeat(auto-fill, minmax(6.75rem, 1fr));
+  }
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item {
+  align-items: stretch;
 }
 
 :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-group-heading {
@@ -401,39 +411,50 @@
   margin-right: 0;
 }
 
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item {
-  --tile-bg: #ffe3f0;
-  align-items: stretch;
-}
-
-@media (min-width: 640px) {
-  :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-list {
-    grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr));
-  }
-}
-
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item:is([data-tone="offline"], [data-tone="docs"], [data-tone="database"], [data-tone="operations"]) {
-  --tile-bg: #efe3ff;
-}
-
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item:is([data-tone="bookmarklets"], [data-tone="statistics"], [data-tone="fastmod"]) {
-  --tile-bg: #fff6c7;
-}
-
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item:is([data-tone="agent"], [data-tone="forte"], [data-tone="backup"], [data-tone="deploy"]) {
-  --tile-bg: #dcf7ec;
-}
-
 :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button {
-  --tile-bg-current: var(--tile-bg);
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  padding: 0.45rem 0.2rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  text-align: center;
 }
 
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button,
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:hover {
+  background: rgba(228, 91, 156, 0.14);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:focus-visible {
+  outline: 2px dotted var(--bubblegum-berry);
+  outline-offset: 0;
+  background: rgba(228, 91, 156, 0.14);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:active {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button::before,
+:root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link::before {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+}
+
 :root[data-theme="bubblegum"] .account-menu__links .nav-link {
   position: relative;
 }
 
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button::after,
 :root[data-theme="bubblegum"] .account-menu__links .nav-link::after {
   content: "";
   position: absolute;
@@ -447,37 +468,6 @@
   box-shadow: 0 0 4px rgba(143, 224, 191, 0.9);
 }
 
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button {
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 5.4rem;
-  padding: 0.7rem 0.45rem 0.6rem;
-  border: 2px solid var(--bubblegum-berry);
-  border-radius: 16px;
-  background: var(--bubblegum-shine), var(--bubblegum-candy), var(--tile-bg-current, #ffe3f0);
-  box-shadow: 0 4px 0 var(--bubblegum-berry);
-  color: var(--bubblegum-berry);
-  font-weight: 800;
-  font-size: 0.92rem;
-  line-height: 1.15;
-  text-align: center;
-}
-
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button::before,
-:root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link::before {
-  width: 32px;
-  height: 32px;
-  margin: 0;
-  background-size: 32px 32px;
-  image-rendering: pixelated;
-}
-
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:hover {
-  filter: brightness(1.03);
-}
-
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:active,
 :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:active {
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--bubblegum-berry);
