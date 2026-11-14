@@ -50,6 +50,7 @@ final class FeatureFlagRegistry
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
     public const POST_RECORDS_ENABLED = 'FORUM_POST_RECORDS_ENABLED';
     public const PENDING_CHIP_APPROVAL_ENABLED = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
+    public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
@@ -64,6 +65,7 @@ final class FeatureFlagRegistry
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED],
+            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED, self::USAGE_REPORTS_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -337,7 +339,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::READING_MARGINS_ENABLED,
                 'Reading margins',
-                'Show a row of radio buttons above threads and thread lists; the left half sets the left edge of the text column and the right half the right edge. The choice stays in their browser and is ignored on phones.',
+                'Show a row of radio buttons at the top of pages; the text column spans the last two a reader clicks. The choice stays in their browser and is ignored on phones.',
                 false,
                 self::READING_MARGINS_ENABLED,
                 siteMutable: true,
@@ -395,6 +397,13 @@ final class FeatureFlagRegistry
                 "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
                 true,
                 self::PENDING_CHIP_APPROVAL_ENABLED,
+            ),
+            new FeatureFlagDefinition(
+                self::USAGE_REPORTS_ENABLED,
+                'Usage reports',
+                'Offer Tools → Usage log, where visitors can record their own page views and clicks in their browser and upload them, and Tools → Usage reports, where root operators see click counts and journeys that could be shorter. Reports are kept in a private file outside exports.',
+                false,
+                self::USAGE_REPORTS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),
