@@ -955,6 +955,12 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/usage-log/' || $path === '/tools/usage-log')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->log();
+            return;
+        }
+
         if ($path === '/tools/codebase/' || $path === '/tools/codebase') {
             $this->sendHtml($this->codebaseStateController()->render(), 200);
             return;
@@ -1665,6 +1671,11 @@ final class Application
             $this->repositoryRoot,
             $this->sourceCommitDetails(...),
         );
+    }
+
+    private function usageReportsController(): \ForumRewrite\Http\UsageReportsController
+    {
+        return new \ForumRewrite\Http\UsageReportsController($this->routeServices());
     }
 
     private function toolsPageController(): ToolsPageController
@@ -2400,6 +2411,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
+            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-reports', '/tools/usage-reports/',
             '/compose/thread', '/compose/reply',
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',

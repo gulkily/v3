@@ -78,8 +78,23 @@ Revision (Stage 2): the Stage 1 verification above was wrong about `UsageReportS
 ## Stage 4 - Usage log tool page
 
 **Original estimate: 0.10**
+**Retrospective stage work: 0.12**
 
-- Status: pending.
+- Changes:
+  - `/tools/usage-log/` (`UsageReportsController::log()`, `templates/pages/usage_log.php`, `public/assets/usage_log_page.js`), routed only with the flag on; otherwise the path falls through to the normal 404.
+  - The page explains what each line holds and that typed text never does, and shows a recording switch (on, off; this is the "Pause"), the log text, and Copy and Clear. Upload is in the markup but hidden until Stage 5. With storage blocked it says recording is unavailable and keeps the switch disabled.
+  - Tools registry: `usage-log` (device group, tone `usage`) and `usage-reports` (operator group, tone `usage-reports`; its page arrives in Stage 6). `TemplateRenderer` now drops both from the launcher and Tools bar while the flag is off, extending the existing Agent Prompts filter.
+  - `isApplicationRoute()` lists both tool paths; `tests/Support/usage_app_page_fixture.php` renders a page through Application for browser checks.
+- Verification:
+  - `./v3 test UsageReportsPageTest ToolsRegistryTest TestFileRegistrationTest`: 5 passed (page 200 with flag on and 404 off; launcher shows both tools only with the flag on; registry count 19).
+  - `tests/browser/usage_log.mjs` extended and passed: switch on and off, the log shows earlier browsing, nothing recorded on the log page, Copy writes the exact text, Clear empties it, blocked storage is explained with the switch disabled.
+  - `./v3 test` (smoke set): only the known `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` failure.
+- Notes:
+  - Two fixes found by the browser test: the page script runs before the layout's recorder, and deferred scripts run while `readyState` is already `interactive`. It now starts once on `DOMContentLoaded`, with `load` as a fallback.
+  - The test stubs `navigator.clipboard` because the plain-http test origin cannot be granted clipboard permission.
+- Estimate details: original scope as approved; retrospective slightly above the original because of the flag filter in the renderer and the start-order fix; no mid-stage revision.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
 
 ## Stage 5 - Upload
 

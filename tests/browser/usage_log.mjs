@@ -13,6 +13,7 @@ import { resolve } from 'node:path';
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const env = { ...process.env, FORUM_USAGE_REPORTS_ENABLED: '1' };
 const pages = {};
+const renderApp = path => pages[path] ??= execFileSync('php', [`${project}/tests/Support/usage_app_page_fixture.php`, path], { encoding: 'utf8', maxBuffer: 1 << 26 });
 const render = section => pages[section] ??= execFileSync('php', [`${project}/tests/Support/app_layout_fixture.php`, section], { encoding: 'utf8', env, maxBuffer: 1 << 26 });
 const paths = { '/': 'board', '/recent/': 'recent', '/users/': 'profiles', '/about/': 'about', '/tools/': 'tools', '/calendar': 'calendar' };
 
@@ -26,6 +27,7 @@ await context.route('http://usage.test/**', async route => {
     catch { return route.fulfill({ status: 404, body: '' }); }
   }
   if (url.pathname.startsWith('/api/')) return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+  if (url.pathname === '/tools/usage-log/') return route.fulfill({ contentType: 'text/html', body: renderApp(url.pathname) });
   const section = paths[url.pathname];
   return route.fulfill(section ? { contentType: 'text/html', body: render(section) } : { contentType: 'text/html', body: render('about') });
 });
@@ -92,6 +94,43 @@ try {
   await page.goto(base + '/recent/');
   assert.deepEqual(await page.evaluate(() => window.forumUsageLog.state()), { recording: false, count: 0 }, 'cleared and stopped');
 
+  // Tools → Usage log: the switch turns recording on, the page shows the log,
+  // records nothing about itself, and Copy and Clear work.
+  await page.goto(base + '/tools/usage-log/');
+  const status = () => page.locator('[data-role="usage-log-status"]').textContent();
+  assert.match(await status(), /Recording is off\. The log has 0 lines\./, 'log page: off and empty');
+  await page.locator('[data-role="usage-log-recording"]').check();
+  assert.match(await status(), /Recording is on\./, 'log page: switch turns recording on');
+  await page.goto(base + '/');
+  await page.locator('.site-header a[data-tab="about"]').first().click();
+  await page.waitForLoadState('load');
+  await page.goto(base + '/tools/usage-log/');
+  const shown = await page.locator('[data-role="usage-log-text"]').inputValue();
+  assert.ok(shown.startsWith('usage-log v1\nview\t0\t/\n'), 'log page shows the log text');
+  assert.ok(!shown.includes('/tools/usage-log'), 'log page records nothing about itself');
+  await page.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { value: { writeText: async text => { window.__copied = text; } } }); });
+  await page.locator('[data-action="usage-log-copy"]').click();
+  assert.equal(await page.evaluate(() => window.__copied), shown, 'Copy puts the exact log on the clipboard');
+  await page.locator('[data-action="usage-log-clear"]').click();
+  assert.equal(await page.locator('[data-role="usage-log-text"]').inputValue(), 'usage-log v1\n', 'Clear empties the log');
+  assert.match(await status(), /Cleared\. Recording is still on\./);
+  await page.locator('[data-role="usage-log-recording"]').uncheck();
+  assert.match(await status(), /Recording is off\./, 'log page: switch turns recording off');
+
+  // Blocked storage: the page says recording is unavailable.
+  const blocked = await browser.newContext({ serviceWorkers: 'block' });
+  await blocked.addInitScript(() => { Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); } }); });
+  const blockedPage = await blocked.newPage();
+  await blocked.route('http://usage.test/**', async route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.startsWith('/assets/')) return route.fulfill({ contentType: 'application/javascript', body: await readFile(`${project}/public${url.pathname.replace(/\.[0-9a-f]{12}\./, '.')}`, 'utf8').catch(() => '') });
+    return route.fulfill({ contentType: 'text/html', body: renderApp('/tools/usage-log/') });
+  });
+  await blockedPage.goto(base + '/tools/usage-log/');
+  assert.match(await blockedPage.locator('[data-role="usage-log-status"]').textContent(), /Recording is unavailable/, 'blocked storage explained');
+  assert.equal(await blockedPage.locator('[data-role="usage-log-recording"]').isDisabled(), true, 'blocked storage: switch stays disabled');
+  await blocked.close();
+
   // The browser's page kinds match the server's.
   const samples = ['/', '/threads/T1/', '/profiles/ilyag/approve/', '/tools/feature-flags/changes/C1/', '/calendar/rapclub/2026-11-14/', '/docs/reference/agent_api.md', '/tags/news?x=1'];
   const server = JSON.parse(execFileSync('php', ['-r', `require '${project}/autoload.php'; echo json_encode(array_map([ForumRewrite\\UsageReports\\UsagePageKind::class, 'fromPath'], json_decode($argv[1], true)));`, JSON.stringify(samples)], { encoding: 'utf8' }));
@@ -99,7 +138,7 @@ try {
   assert.deepEqual(client, server, 'browser and server page kinds agree');
 
   assert.deepEqual(errors, [], 'no page errors');
-  console.log('Usage log: off by default; records views, navbar, menu, labeled links and submits; no typed text or IDs; capped; matches server page kinds.');
+  console.log('Usage log: off by default; records views, navbar, menu, labeled links and submits; no typed text or IDs; capped; log page switch, copy, clear, quiet, blocked storage; matches server page kinds.');
 } finally {
   await browser.close();
 }

@@ -21,6 +21,28 @@ expect(!str_contains($off, '/assets/usage_log.'), 'flag off: recorder script loa
 PHP);
     }
 
+    public function testUsageLogPageAndToolsEntriesExistOnlyWhenTheFlagIsOn(): void
+    {
+        $this->runScript(<<<'PHP'
+putenv('FORUM_USAGE_REPORTS_ENABLED=1');
+$log = page($application(), 'GET', '/tools/usage-log/');
+expect(http_response_code() === 200, 'flag on: usage log status ' . var_export(http_response_code(), true));
+expect(str_contains($log, '<h1>Usage log</h1>') && str_contains($log, 'data-role="usage-log-recording"'), 'flag on: usage log page');
+expect(str_contains($log, '/assets/usage_log_page.'), 'flag on: page script missing');
+expect(str_contains($log, 'It never holds anything you type.'), 'flag on: what is recorded is not explained');
+$tools = page($application(), 'GET', '/tools/');
+expect(str_contains($tools, 'href="/tools/usage-log/"') && str_contains($tools, 'href="/tools/usage-reports/"'), 'flag on: tools launcher entries');
+
+putenv('FORUM_USAGE_REPORTS_ENABLED=0');
+http_response_code(200);
+$off = page($application(), 'GET', '/tools/usage-log/');
+expect(http_response_code() === 404, 'flag off: usage log status ' . var_export(http_response_code(), true));
+expect(!str_contains($off, 'data-usage-log'), 'flag off: usage log page rendered');
+$toolsOff = page($application(), 'GET', '/tools/');
+expect(!str_contains($toolsOff, '/tools/usage-log/') && !str_contains($toolsOff, '/tools/usage-reports/'), 'flag off: tools entries shown');
+PHP);
+    }
+
     /** Runs $body with $application() (fresh Application), page() and expect() helpers. */
     private function runScript(string $body): void
     {

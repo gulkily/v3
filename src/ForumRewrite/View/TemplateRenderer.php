@@ -722,13 +722,21 @@ final class TemplateRenderer
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
-        // The Agent Prompts tool opens /agent/; drop it where that page is off.
+        // Drop tools whose pages are off: Agent Prompts opens /agent/, and the
+        // usage tools exist only while the "Usage reports" flag is on.
+        $hiddenTools = [];
         if (!$data['agentPageEnabled']) {
+            $hiddenTools[] = 'agent-prompts';
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            array_push($hiddenTools, 'usage-log', 'usage-reports');
+        }
+        if ($hiddenTools !== []) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {
                 if (isset($data[$toolListKey]) && is_array($data[$toolListKey])) {
                     $data[$toolListKey] = array_values(array_filter(
                         $data[$toolListKey],
-                        static fn (array $tool): bool => ($tool['key'] ?? '') !== 'agent-prompts',
+                        static fn (array $tool): bool => !in_array($tool['key'] ?? '', $hiddenTools, true),
                     ));
                 }
             }
