@@ -119,7 +119,8 @@ try {
   assert.equal(await page.evaluate(() => window.__copied), shown, 'Copy puts the exact log on the clipboard');
   await page.locator('[data-action="usage-log-upload"]').click();
   await page.waitForFunction(() => /Uploaded/.test(document.querySelector('[data-role="usage-log-status"]').textContent));
-  assert.equal(uploads.at(-1), shown, 'Upload sends exactly the reviewed text');
+  assert.ok(!uploads.at(-1).includes('\n'), 'Upload body has no raw line breaks (hosts may refuse them)');
+  assert.equal(JSON.parse(uploads.at(-1)).log, shown, 'Upload sends exactly the reviewed text');
   assert.match(await status(), /Uploaded anonymously\. Your log is still here/, 'anonymous upload confirmed');
   assert.equal(await page.locator('[data-role="usage-log-text"]').inputValue(), shown, 'the log stays after upload');
   uploadReply.push({ status: 429, headers: { 'Retry-After': '1200' }, contentType: 'application/json', body: JSON.stringify({ status: 'error', code: 'rate_limited', error: 'Too many uploads from here in the last hour. Try again in 20 minutes.', retry_after: 1200 }) });
