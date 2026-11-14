@@ -45,3 +45,24 @@ Verification (2026-11-12):
 Limitations:
 - Only the ZenMemes profile was rendered; other site profiles share the same shell rules.
 - Real devices and Safari were not checked.
+
+Follow-up (2026-11-14): one uniform row
+Request: make the radio buttons go uniformly across the top and drop the separate left
+and right groups.
+- One row of seven stops at 5/20/35/50/65/80/95vw, each with its own name so two can be
+  checked. The two checked radios are the column edges; the further-left one is the left
+  edge.
+- Choosing an unchecked radio moves the nearer edge to it (a stop exactly halfway moves
+  the left edge). With nothing chosen, the radio becomes the edge on its side of the
+  column's centre, and the other edge goes to the stop nearest the column's other side.
+  Choosing a checked radio still resets to the normal column.
+- Same storage key and "L R" format. layout.php only accepts two stops from the new list
+  in increasing order, so choices saved by the old left/right ruler are ignored.
+- Adjacent stops make a 15vw column (about 96px at the 640px breakpoint). Allowed on
+  purpose; it is the reader's choice and one more click undoes it.
+Verification: ./v3 test --smoke
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsWhenFlagEnabled
+(452 passed); full suite not run. node tests/browser/reading_margins.mjs across all 17
+permitted themes at 1280px plus a 390px phone: one row, equal gaps, nearer-edge moves,
+reload restores before paint, reset, old saved values ignored. Screenshots reviewed for
+every theme.
