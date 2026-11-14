@@ -108,6 +108,19 @@
   border-top: 1px solid color-mix(in srgb, var(--line) 68%, transparent 32%);
 }
 
+.post-facts th {
+  width: 7.5rem;
+}
+
+.post-facts td {
+  overflow-wrap: anywhere;
+}
+
+.post-facts tr + tr th,
+.post-facts tr + tr td {
+  border-top: 0;
+}
+
 .codebase-facts code {
   font-family: var(--code-font);
   overflow-wrap: anywhere;
