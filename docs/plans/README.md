@@ -115,6 +115,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Reading margins: two clicks](reading_margins_two_clicks/reading_margins_two_clicks_one_shot.md) — one-shot: any two radios in the reading margins ruler set the column between them, in either order.
 - [Reading margins: last two clicks](reading_margins_last_two/reading_margins_last_two_one_shot.md) — one-shot: every click moves the column at once; it spans the last two radios clicked, and the older one is outlined as the edge that moves next.
 - [Preferences page](preferences_page/preferences_page_one_shot.md) — one-shot: Tools → Preferences lists the settings this browser keeps (theme, thread view, reading margins, phone tabs, page themes, welcome note, usage log) with their current values, to change or reset in one place.
+- [Prompt library](prompt_library/prompt_library_one_shot.md) — one-shot: /agent/ becomes a prompt library of approved `#prompt` threads with copy, search, categories and sharing, linked from the main nav as Prompts.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
