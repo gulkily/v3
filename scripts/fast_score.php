@@ -60,6 +60,28 @@ try {
         }
         exit(0);
     }
+    if ($command === 'local-train') {
+        $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+        if (!is_file($databasePath)) {
+            throw new InvalidArgumentException('Read-model database not found.');
+        }
+        $training = new \ForumRewrite\Scoring\LocalMetaTraining(new PDO('sqlite:' . $databasePath), is_file($scorePath) ? new PDO('sqlite:' . $scorePath) : null);
+        $files = new \ForumRewrite\Scoring\LocalMetaFiles($projectRoot);
+        try {
+            $report = $training->runAndSave($files, ($options['weak-negatives'] ?? false) === true);
+        } catch (\ForumRewrite\Scoring\LocalMetaTrainingRefused $refused) {
+            fwrite(STDERR, $refused->getMessage() . "\n");
+            exit(2);
+        }
+        if ($options['json'] ?? false) {
+            fwrite(STDOUT, json_encode($report, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) . "\n");
+        } else {
+            $text = \ForumRewrite\Scoring\LocalMetaFiles::reportText($report);
+            fwrite(STDOUT, strstr($text, "\n\n", true) ?: $text);
+            fwrite(STDOUT, "\nReport: " . $files->reportPath() . "\n");
+        }
+        exit(0);
+    }
     if ($command === 'audit') {
         if (($options['include-existing'] ?? false) !== true) {
             throw new InvalidArgumentException('--include-existing is required for historical audit. Run: ./v3 fast-score audit --include-existing');
@@ -332,6 +354,7 @@ function fastScoreOptions(string $command, array $arguments): array
 {
     $definitions = [
         'meta-status' => ['repository-root'=>true,'json'=>false],
+        'local-train' => ['weak-negatives'=>false,'json'=>false,'database-path'=>true],
         'meta-remove' => ['post-id'=>true,'repository-root'=>true],
         'meta-rollback' => ['repository-root'=>true],
         'meta-retry' => ['database-path'=>true,'repository-root'=>true],
@@ -437,6 +460,7 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
 function fastScoreUsage($stream): void
 {
     fwrite($stream, "Derived tags: ./v3 fast-score meta-status [--repository-root=PATH] [--json] (read-only)\n");
+    fwrite($stream, "Local meta model: ./v3 fast-score local-train [--weak-negatives] [--json] [--database-path=PATH]\n");
     fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--verbose] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=... [--run]\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
 }
 

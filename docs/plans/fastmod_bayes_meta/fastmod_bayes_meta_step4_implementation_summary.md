@@ -32,3 +32,30 @@ Extended estimates: enabled
 - Estimate details: original scope as Step 3; no revision; uncertainty low.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Train command
+
+**Original estimate: 0.08**
+**Retrospective: 0.09**
+
+- Changes:
+  - New `LocalMetaTraining`: `collect(bool $weakNegatives)`, `run()`, `runAndSave()`, `chooseThreshold()`.
+    - Labels in precedence order: legacy suppression (not meta), authored `meta` in `thread_labels_json`, `board_tags_json` or `post_tags_json` (meta), stored LLM meta score for the root's current content hash, ≥ 0.90 meta and < 0.10 not meta. Scores between are skipped as unsure.
+    - A stored score for older text doesn't count, so edited posts aren't mislabeled.
+    - Reads only `post_fast_scores` rows with source `llm`, never local scores.
+    - Visible, unretracted roots only; replies and mostly Cyrillic roots skipped.
+    - Holdout: one in five roots by post-id hash. The threshold is the widest cut still at 0.95 precision, placed halfway in log-odds between the last kept score and the next one. A cut right at a held-out score was fragile: naive Bayes pushes scores to 0.9999…, and the full model then scored a clear support post just under it.
+  - New `LocalMetaTrainingRefused`: names the counts and suggests `--weak-negatives` when not-meta labels are short. Exit code 2.
+  - New `LocalMetaFiles`: model at `state/private/fastmod_local_meta.json`, report at `state/private/fastmod_local_meta_report.txt`, both written atomically with mode 0600. A refusal leaves the previous model.
+  - Report is `Key: value` lines, then one block per held-out disagreement (post, label and its source, score, top words, subject). The disagreement list lives in the report file rather than a separate file, so Stage 4 has one file to show.
+  - `./v3 fast-score local-train [--weak-negatives] [--json] [--database-path=PATH]` in `scripts/fast_score.php` and the `./v3` usage. Text output is the summary lines plus the report path.
+  - New `tests/LocalMetaTrainingTest.php` (6 tests), registered.
+- Verification:
+  - `./v3 test --smoke LocalMetaTrainingTest LocalMetaModelTest FastmodMetaTest`: 464 run, 463 passed. The one failure, `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, also fails on `459d212` (checked in a temporary worktree), so it isn't from this change.
+  - Full suite not run.
+- Notes:
+  - The CLI test covers only the refusal, because a successful run writes into `state/private/` under the project root. The save path is covered through `LocalMetaFiles` with a temporary root.
+  - Real label counts and accuracy are unknown until Stage 5 runs on production.
+- Estimate details: original scope as Step 3; no revision; retrospective slightly higher for the threshold rework; uncertainty medium until Stage 5.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
