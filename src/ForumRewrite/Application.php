@@ -633,6 +633,11 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/fastmod/' || $path === '/tools/fastmod') && $method === 'POST') {
+            $this->toolsPageController()->fastmodSubmit($query);
+            return;
+        }
+
         if (($path === '/tools/deploy/' || $path === '/tools/deploy') && $method === 'POST') {
             $this->deployController()->submit($query);
             return;

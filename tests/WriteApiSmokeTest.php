@@ -1997,6 +1997,35 @@ CODE;
         }
     }
 
+    public function testPostDetailShowsLocalMetaScoreForCurrentText(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $scorePath = sys_get_temp_dir() . '/forum-local-meta-detail-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousScorePath = getenv('FAST_SCORING_DATABASE_PATH');
+        putenv('FAST_SCORING_DATABASE_PATH=' . $scorePath);
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Bug&body=Button%20broken'), 'post_id');
+            $_COOKIE = [];
+            assertStringNotContains('Local meta', $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId)));
+            $readPdo = new PDO('sqlite:' . $databasePath);
+            $post = $readPdo->query('SELECT post_id, subject, body FROM posts WHERE post_id = ' . $readPdo->quote($postId))->fetch(PDO::FETCH_ASSOC);
+            $hash = (new FastScoreContextFactory(static fn (string $_): ?array => null))->contentHashForPost($post);
+            (new \ForumRewrite\Scoring\LocalMetaScores(new PDO('sqlite:' . $scorePath)))->save($postId, $hash, 'build-not-current',
+                ['probability' => 0.97, 'top_words' => ['bug', 'button'], 'signals' => []]);
+            $page = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            assertStringContains('Local meta (earlier model)', $page);
+            assertStringContains('0.97 · bug, button', $page);
+            (new \ForumRewrite\Scoring\LocalMetaScores(new PDO('sqlite:' . $scorePath)))->save($postId, 'older-text', 'build-not-current',
+                ['probability' => 0.10, 'top_words' => [], 'signals' => []], '2099-01-01T00:00:00Z');
+            assertStringContains('0.97 · bug, button', $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId)));
+        } finally {
+            $previousScorePath === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $previousScorePath);
+            @unlink($scorePath);
+            $_COOKIE = [];
+        }
+    }
+
     public function testUnicodeRiskAnalysisFlagsMixedScriptIdentifierForApprovedViewersOnly(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

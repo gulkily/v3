@@ -82,3 +82,30 @@ Extended estimates: enabled
 - Estimate details: scope as Step 3 Revision 1; uncertainty low.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Post detail, Retrain button and report
+
+**Original estimate: 0.07** (first value 0.03, before Step 3 Revision 1 added Retrain and the report)
+**Retrospective: 0.08**
+
+- Changes:
+  - Post detail: `RouteServices::latestLocalScoreForPost()` reads the score for the post's current text read-only; `templates/pages/post.php` adds a "Local meta" row with score and top words, "(earlier model)" when the model has changed since, and "Russian" for Cyrillic posts. `ThreadAndPostPageController` passes it through `RouteServices`, so its constructor is unchanged.
+  - Task type `local_meta_train` (dedup key `local-meta-train`). `TaskQueueWorker` gains `runLocalMetaTrain`: too few labels fails without retry and keeps the counts in the message; other errors retry. `scripts/task_queue.php` trains without weak negatives, saves, and queues the sweep.
+  - Tools → Fastmod: a Local meta model section shows the last report, the latest training and scoring task states, and, for a signed-in root-approved operator, a Retrain button and the held-out disagreements (linked to their threads).
+  - The Retrain button is a plain form `POST /tools/fastmod/` with `action=retrain`, checked like Deploy: `SameOriginRequest::check()` and `securityReviewAllowed()`. No JavaScript; the reply is the page with a notice. A second press reuses the queued task.
+  - `LocalMetaFiles::parseReport()` reads the saved report back for the page. `LocalMetaFiles::probability()` shows ">0.99" and "<0.01" instead of a rounded 1.00 or 0.00, because naive Bayes scores often land within a hair of either end; the report and post row use it.
+  - Task times show as `YYYY-MM-DD HH:MM` so they don't wrap on a phone.
+  - `docs/concepts/internal_task_queue.md` lists both new task types.
+  - New `tests/LocalMetaPageTest.php` (4 tests) and `WriteApiSmokeTest::testPostDetailShowsLocalMetaScoreForCurrentText`.
+- Verification:
+  - `./v3 test --smoke LocalMetaPageTest LocalMetaSweepTest LocalMetaTrainingTest LocalMetaModelTest FastmodMetaTest TaskQueueWorkerTest DeployPageTest` plus the two post-detail `WriteApiSmokeTest` methods: 492 run, 491 passed; the one failure is the pre-existing `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`.
+  - Retrain refused (403, nothing queued) for signed-out, identity-hint-only, non-operator, cross-site and no-origin requests; unknown action 400.
+  - Rendered the operator page with a sample report and two disagreements at 390 px wide in the Gloss, Word97 and Midnight themes: no horizontal overflow; section screenshots checked. The theme setting didn't visibly change the section's look in the static capture, so per-theme styling is not fully verified.
+  - Sample report and model files removed from `state/private/` afterwards.
+  - Full suite not run.
+- Notes:
+  - The disagreement list and button are decided on the server from the session, as Deploy does; anonymous visitors see the summary only.
+  - No new navigation destination, so no icon changes.
+- Estimate details: scope as Step 3 Revision 1; uncertainty low.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

@@ -22,6 +22,9 @@ $authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
 <?php endif; ?>
         </td></tr>
 <?php endif; ?>
+<?php if (is_array($localScore ?? null)): ?>
+        <tr><th scope="row">Local meta<?= !empty($localScore['stale']) ? ' (earlier model)' : '' ?></th><td><?= $e(\ForumRewrite\Scoring\LocalMetaFiles::probability((float) $localScore['probability'])) ?><?= $localScore['top_words'] !== [] ? ' · ' . $e(implode(', ', $localScore['top_words'])) : '' ?><?= in_array('cyrillic', $localScore['signals'], true) ? ' · Russian' : '' ?></td></tr>
+<?php endif; ?>
 <?= $indent($partial('partials/source_metadata.php', [
     'layout' => 'rows',
     'source_path' => $post['source_path'] ?? '',

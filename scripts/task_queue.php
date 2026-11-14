@@ -349,6 +349,16 @@ try {
                         FastScoreDatabaseConfig::path($projectRoot, PrivateConfig::load($projectRoot)));
                     return $sweep?->run();
                 },
+                runLocalMetaTrain: static function () use ($projectRoot, $databasePath, $store): array {
+                    if (!is_file($databasePath)) {
+                        throw new RuntimeException('Read model database not found: ' . $databasePath);
+                    }
+                    $scorePath = FastScoreDatabaseConfig::path($projectRoot, PrivateConfig::load($projectRoot));
+                    $report = (new \ForumRewrite\Scoring\LocalMetaTraining(new PDO('sqlite:' . $databasePath), is_file($scorePath) ? new PDO('sqlite:' . $scorePath) : null))
+                        ->runAndSave(new \ForumRewrite\Scoring\LocalMetaFiles($projectRoot), false);
+                    $store->enqueue(SqliteTaskQueueStore::LOCAL_SCORE_SWEEP, \ForumRewrite\Scoring\LocalMetaSweep::DEDUPLICATION_KEY);
+                    return $report;
+                },
             );
             $taskStartedAt = [];
             try {
