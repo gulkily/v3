@@ -48,3 +48,14 @@ After the merged theme was live, the maintainer asked for "a little texture to t
 Checked in headless Chrome at 1280px and 390px on board and about: text stays clear, no seams, no errors or overflow. Smoke set not rerun: CSS-only change to one theme's stylesheet.
 
 Same day, the maintainer asked for more subtlety: keep the background crosses, drop the cross from the title bars. Removed; the title bar is stripes and squares again.
+
+## Follow-up: texture on the other white areas (2026-11-13)
+
+From an iPhone screenshot of the board, the maintainer asked for "some texture to the other white areas". The windows already had it; the plain white boxes did not.
+
+- Lists (`.thread-rows`: board, pinned, Unread, Messages, search) get the windows' waves and blush fade. The wave tile moved into one token, `--bubblegum-waves`, shared by windows, lists and the phone tab bar. Lists start half a wave offset so stacked boxes don't line up into one stripe.
+- The phone bottom tab bar gets one wave over a white-to-blush fade.
+- Inputs and text areas get a faint blush fade only, with no pattern behind typed text.
+- `--panel` is still white, so the contrast audit is unchanged.
+
+Checked in headless Chrome at 390px against a static copy of the live board, before and after. Not checked: desktop width, Safari/iPhone, production.
