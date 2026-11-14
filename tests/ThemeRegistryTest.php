@@ -243,6 +243,54 @@ final class ThemeRegistryTest
         assertSame('word97', ThemeRegistry::counterpart('midnight'));
         assertSame(null, ThemeRegistry::counterpart('vapor'));
     }
+    public function testMenuLayoutPairsMutualCounterpartsAndPacksTheRest(): void
+    {
+        $layout = ThemeRegistry::menuLayout(ThemeRegistry::all());
+
+        assertSame(true, $layout['columns']);
+        assertSame('auto', $layout['auto']['name']);
+        assertSame([
+            ['light', 'dark'],
+            ['lcd', 'console'],
+            ['sticker', 'arena'],
+            ['whitehot', 'thermal'],
+            ['word97', 'midnight'],
+            ['gloss', 'glossdark'],
+        ], self::layoutNames($layout));
+        assertSame([
+            ['chicago', 'vapor'],
+            ['bubblegum', 'forge'],
+            ['engagify', 'chouse'],
+            ['qdb', 'mitrapclub'],
+        ], self::layoutNames($layout, 'unpaired'));
+    }
+
+    public function testMenuLayoutKeepsListOrderAndSkipsMissingCounterparts(): void
+    {
+        $layout = ThemeRegistry::menuLayout(ThemeRegistry::permitted(['auto', 'dark', 'light', 'midnight', 'chicago']));
+
+        assertSame([['light', 'dark']], self::layoutNames($layout));
+        assertSame([['chicago', 'midnight']], self::layoutNames($layout, 'unpaired'));
+        // Registry order: auto, light, dark, chicago, midnight.
+        assertSame(2, $layout['rows'][0]['dark']['order']);
+    }
+
+    public function testMenuLayoutKeepsSingleListWhenAllThemesShareAMode(): void
+    {
+        $layout = ThemeRegistry::menuLayout(ThemeRegistry::permitted(['auto', 'light', 'gloss', 'qdb']));
+
+        assertSame(false, $layout['columns']);
+        assertSame([], $layout['rows']);
+    }
+
+    /** @return list<array{0: ?string, 1: ?string}> */
+    private static function layoutNames(array $layout, string $key = 'rows'): array
+    {
+        return array_map(
+            static fn (array $row): array => [$row['light']['name'] ?? null, $row['dark']['name'] ?? null],
+            $layout[$key],
+        );
+    }
 }
 
 if (!function_exists('assertSame')) {
