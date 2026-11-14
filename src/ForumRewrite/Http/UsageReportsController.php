@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Tools\ToolsPageSupport;
+use ForumRewrite\UsageReports\UsageJourneys;
 use ForumRewrite\UsageReports\UsageLogFormat;
 use ForumRewrite\UsageReports\UsageReportResult;
 use ForumRewrite\UsageReports\UsageReportStore;
@@ -16,15 +17,69 @@ use ForumRewrite\UsageReports\UsageReportStore;
  */
 final class UsageReportsController
 {
+    private const FORBIDDEN_MESSAGE = 'Usage reports require a server-authenticated root-approved identity.';
+    private const CLICK_ROWS = 50;
+    private const JOURNEY_ROWS = 50;
+
     /**
      * @param \Closure(): UsageReportStore $store
      * @param \Closure(): ?string $viewerUsername the signed-in viewer's username, or null
+     * @param \Closure(): bool $viewerIsRootOperator
      */
     public function __construct(
         private readonly RouteServices $routeServices,
         private readonly ?\Closure $store = null,
         private readonly ?\Closure $viewerUsername = null,
+        private readonly ?\Closure $viewerIsRootOperator = null,
     ) {
+    }
+
+    /**
+     * Tools → Usage reports, root operators only. `?uploader=<username>` or
+     * `?uploader=anonymous` narrows to one uploader; absent means everyone.
+     *
+     * @param array<string, mixed> $query
+     */
+    public function summary(array $query): void
+    {
+        if ($this->viewerIsRootOperator === null || !($this->viewerIsRootOperator)()) {
+            $this->routeServices->sendHtml(
+                $this->routeServices->renderMessagePage('Usage Reports', 'Usage Reports', self::FORBIDDEN_MESSAGE, 'tools'),
+                403,
+                $this->routeServices->noStoreHeaders(),
+            );
+            return;
+        }
+
+        $store = ($this->store)();
+        $uploaders = $store->uploaders();
+        $uploader = trim((string) ($query['uploader'] ?? ''));
+        $known = array_map(static fn (array $row): string => $row['username'] ?? 'anonymous', $uploaders);
+        if (!in_array($uploader, $known, true)) {
+            $uploader = '';
+        }
+        $rows = $store->reports($uploader === '' ? null : ($uploader === 'anonymous' ? '' : $uploader));
+        $reports = array_map(static fn (array $row): array => UsageLogFormat::entries($row['body']), $rows);
+
+        $this->routeServices->sendHtml(
+            $this->routeServices->renderPageTemplate(
+                'usage_reports.php',
+                [
+                    'uploaders' => $uploaders,
+                    'uploader' => $uploader,
+                    'reportCount' => count($rows),
+                    'entryCount' => array_sum(array_map('count', $reports)),
+                    'journeyGroups' => array_slice(UsageJourneys::groups(UsageJourneys::fromReports($reports)), 0, self::JOURNEY_ROWS),
+                    'clickCounts' => array_slice(UsageJourneys::clickCounts($reports), 0, self::CLICK_ROWS),
+                    'stopSeconds' => UsageJourneys::STOP_SECONDS,
+                    'toolNavOptions' => ToolsPageSupport::navOptions('usage-reports'),
+                ],
+                'Usage Reports',
+                'tools',
+            ),
+            200,
+            $this->routeServices->noStoreHeaders(),
+        );
     }
 
     public function log(): void

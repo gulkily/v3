@@ -982,6 +982,12 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/usage-reports/' || $path === '/tools/usage-reports')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->summary($query);
+            return;
+        }
+
         if ($path === '/tools/fastmod/' || $path === '/tools/fastmod') {
             $this->sendHtml($this->toolsPageController()->fastmod(), 200);
             return;
@@ -1693,6 +1699,7 @@ final class Application
                 $username = trim((string) ($this->authenticatedViewerProfile()['username'] ?? ''));
                 return $username !== '' ? $username : null;
             },
+            fn (): bool => $this->routeServices()->profileIsActiveOperator($this->authenticatedViewerProfile()),
         );
     }
 

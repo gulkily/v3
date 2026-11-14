@@ -126,8 +126,21 @@ Revision (Stage 5): the smoke result above was wrong. Hiding the usage tools whi
 ## Stage 6 - Root-only summary with journeys
 
 **Original estimate: 0.18** (Step 3 revision for Step 2 Revision 1; first value 0.15)
+**Retrospective stage work: 0.16**
 
-- Status: pending.
+- Changes:
+  - `UsageJourneys`: `fromEntries()` splits each report at stops (a pause of 20 seconds or more, or a form submit) and follows where each click led. A journey ends at the last page reached, or at `page › control` when the last click opened something without loading a page (a menu) or submitted a form. `groups()` groups journeys by start and end, keeping only groups that took two or more clicks at least once; for each it shows the usual multi-click path, how often it happened and the fewest clicks seen. A group never reached in one click is a shortcut candidate, and candidates sort first. Loops (start equals end) are skipped. `clickCounts()` counts clicks by page, region and control.
+  - `/tools/usage-reports/` (`UsageReportsController::summary()`, `templates/pages/usage_reports.php`), routed only with the flag on and behind `profileIsActiveOperator()`, the same check as Visitor Statistics, with a 403 message page otherwise. It shows reports, lines and candidate counts; the journeys table; and the 50 most clicked controls, using the site's `ZoomTable` wrappers. `?uploader=<username>` or `?uploader=anonymous` filters (unknown values fall back to everyone).
+- Verification:
+  - New `UsageJourneysTest`: 5 passed (three-click journey from a thread through the account menu and profile to Keys, followed by a one-click journey; the three-click pair is a candidate; one direct click to the same place clears it but keeps the long path visible; menu stops and submits end journeys; click counts).
+  - `UsageReportsPageTest`: summary passes for root (counts, the candidate row, HTML in labels escaped, uploader filter and fallback), signed out gets 403 with nothing leaked, and flag off gets 404. 9 passed together with `UsageJourneysTest`.
+  - `./v3 test` (smoke set, full output checked): 453 run, 452 passed; only the failure that also occurs on main.
+  - Not done: running the maintainer's own real session through the summary. That needs real browsing on a deployed site; Stage 7 replays a scripted session end to end, and the real-session check stays with the release step.
+- Notes:
+  - A real username "anonymous" would share the filter value used for anonymous reports. Left as is.
+- Estimate details: original scope as approved; retrospective slightly under because the root check and table wrappers were reused unchanged; no revisions.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
 
 ## Stage 7 - Exclusion checks, docs and end-to-end
 

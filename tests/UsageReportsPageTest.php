@@ -68,6 +68,41 @@ putenv('FORUM_APPROVED_MEMBERS_ONLY');
 PHP);
     }
 
+    public function testRootSeesJourneysAndShortcutCandidatesOthersGet403(): void
+    {
+        $this->runScript(<<<'PHP'
+$threeClicks = "usage-log v1\nview\t0\t/threads/*\nclick\t40\t/threads/*\tmenu\ttab:account\t-\nclick\t2\t/threads/*\tmenu\tProfile\t/profiles/*\nview\t1\t/profiles/*\nclick\t3\t/profiles/*\tmain\tKeys <b>\t/tools/user-access/profiles/*\nview\t1\t/tools/user-access/profiles/*\n";
+$store = new ForumRewrite\UsageReports\UsageReportStore(new PDO('sqlite:' . $reportsPath));
+$store->add($threeClicks, 'ilyag', 'a', time());
+$store->add($threeClicks, null, 'b', time());
+putenv('FORUM_USAGE_REPORTS_ENABLED=1');
+
+http_response_code(200);
+$denied = page($application(), 'GET', '/tools/usage-reports/');
+expect(http_response_code() === 403 && str_contains($denied, 'root-approved identity'), 'signed out: 403 ' . var_export(http_response_code(), true));
+expect(!str_contains($denied, 'Shortcut candidate'), 'signed out: summary leaked');
+
+TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+http_response_code(200);
+$all = page($application(), 'GET', '/tools/usage-reports/');
+expect(http_response_code() === 200, 'root: status ' . var_export(http_response_code(), true));
+expect(str_contains($all, '<dt>Reports</dt><dd>2</dd>'), 'root: report count');
+expect(str_contains($all, 'tab:account → Profile → Keys &lt;b&gt;') && str_contains($all, '<strong>Shortcut candidate</strong>'), 'root: three-click journey as a shortcut candidate, escaped');
+expect(substr_count($all, 'data-shortcut-candidate') === 1, 'root: one candidate row');
+expect(str_contains($all, '<option value="anonymous">Anonymous (1)</option>') && str_contains($all, '<option value="ilyag">ilyag (1)</option>'), 'root: uploader filter');
+
+$mine = page($application(), 'GET', '/tools/usage-reports/?uploader=ilyag');
+expect(str_contains($mine, '<dt>Reports</dt><dd>1</dd>') && str_contains($mine, '<option value="ilyag" selected>'), 'root: filter by uploader');
+$unknown = page($application(), 'GET', '/tools/usage-reports/?uploader=nobody');
+expect(str_contains($unknown, '<dt>Reports</dt><dd>2</dd>'), 'root: unknown uploader falls back to everyone');
+
+putenv('FORUM_USAGE_REPORTS_ENABLED=0');
+http_response_code(200);
+page($application(), 'GET', '/tools/usage-reports/');
+expect(http_response_code() === 404, 'flag off: summary status ' . var_export(http_response_code(), true));
+PHP);
+    }
+
     /** Runs $body with $application() (fresh Application), page() and expect() helpers. */
     private function runScript(string $body): void
     {
