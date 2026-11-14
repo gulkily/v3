@@ -2,6 +2,10 @@
 
 ## Cycle v3/fastmod_bayes_meta
 
+2026-11-14T20:12:00Z — v3/fastmod_bayes_meta Step 3 approved (Revision 1). Step 3 approval commit follows this entry. Projected total **0.45** reaffirmed. Same R1/P2, single exposed Claude rater.
+
+2026-11-14T20:15:00Z — v3/fastmod_bayes_meta Step 3 Revision 1: sweep task in Stage 3, Retrain button and report in Stage 4, publish failures queue the sweep. [Plan/checkpoint](./fastmod_bayes_meta/fastmod_bayes_meta_step3_development_plan.md#study-checkpoint). Stage work 0.06/0.08/0.08/0.07/0.02/0.10/0.05/0.02, non-additive. Projected total **0.45**. Same R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.
+
 2026-11-14T20:10:00Z — v3/fastmod_bayes_meta Step 2 Revision 2, approved by the maintainer's request ("yes, please both"): local score sweep task and queued Retrain button. [Description](./fastmod_bayes_meta/fastmod_bayes_meta_step2_feature_description.md#study-checkpoint). Projected total 0.40 → **0.45**. Revision commit follows; Step 3 draft revised. Same R1/P2, single exposed Claude rater.
 
 2026-11-14T19:40:00Z — v3/fastmod_bayes_meta Step 3 handoff: Step 2 approved with Revision 1 (Russian always not meta), committed `6b17a17`. [Plan/checkpoint](./fastmod_bayes_meta/fastmod_bayes_meta_step3_development_plan.md#study-checkpoint) eight stages: model, train, score, post detail, production gate, source setting, publish hook and docs, production acceptance. Projected total **0.40** reaffirmed; stage work 0.06/0.08/0.05/0.03/0.02/0.10/0.05/0.02, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.
