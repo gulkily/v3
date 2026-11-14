@@ -17,7 +17,9 @@ export async function checkConversationTabBar(page, base) {
   assert.equal(await barVisible(), false, 'no tab bar inside a conversation');
   // The composer sits at the bottom edge, not where the bar was.
   const composerBottom = () => page.locator('[data-private-message-composer]').evaluate(node => Math.round(innerHeight - node.getBoundingClientRect().bottom));
-  assert.ok(await composerBottom() <= 1, 'composer reaches the bottom edge');
+  // The conversation is one window (card) that reaches the bottom edge, with the composer inside it.
+  assert.ok(await page.locator('.private-conversation').evaluate(node => Math.round(innerHeight - node.getBoundingClientRect().bottom)) <= 1, 'conversation reaches the bottom edge');
+  assert.ok(await composerBottom() >= 0 && await composerBottom() <= 32, 'composer sits at the bottom, inside the conversation');
   // Scrolling and typing never bring it back.
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(150);
