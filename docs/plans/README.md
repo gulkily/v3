@@ -36,6 +36,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Railspike for every commit one-shot](railspike_for_every_commit/railspike_for_every_commit_one_shot.md) — AGENTS.md runs every committed change as a Railspike cycle (one-shot by default) and asks the agent to name the mode in its first reply.
 
+[Fix the #217 merge parse error one-shot](merge_217_fix/merge_217_fix_one_shot.md) — `main` parses again: one EXPERIENCE flag list with both new flags.
 [Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
 
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
