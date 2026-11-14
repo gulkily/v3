@@ -129,6 +129,9 @@ final class ThreadAndPostPageController
                 'collapseSameAuthorPostsEnabled' => $this->routeServices->featureFlags()->isEnabled(
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
                 ),
+                'threadActivityDrawerEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::THREAD_ACTIVITY_DRAWER_ENABLED
+                ),
                 'thread' => $threadRow,
                 'eventState' => ((string) ($threadRow['event_date'] ?? '')) !== ''
                     && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)

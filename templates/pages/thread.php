@@ -33,6 +33,11 @@ foreach ($posts as $post) {
     $replyPosts[] = $post;
 }
 $replyPosts = \ForumRewrite\ReadModel\RetractedLeafFilter::apply($replyPosts);
+// Tag-only leaves leave the conversation for the Activity drawer; filter before runs are computed.
+$movedTagOnlyReplies = [];
+if ($threadActivityDrawerEnabled ?? false) {
+    ['kept' => $replyPosts, 'moved' => $movedTagOnlyReplies] = \ForumRewrite\ReadModel\TagOnlyLeafFilter::split($replyPosts);
+}
 
 // Pre-compute continuation flags so the root card can show a true reply count before the reply loop runs.
 $replyContinuationFlags = [];

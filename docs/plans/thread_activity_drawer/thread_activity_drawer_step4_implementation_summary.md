@@ -36,3 +36,25 @@ Baseline: `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` fails i
 - Estimate details: original scope unchanged; no revision. Retrospective: a smaller refactor than expected, because the rule moved without changes.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Flag and tag-only leaf filter
+
+**Original estimate: 0.15**
+**Retrospective: 0.12**
+
+- Changes:
+  - New flag `FORUM_THREAD_ACTIVITY_DRAWER_ENABLED` ("Thread activity drawer"), off by default, site-mutable, appended to the `RENDERING` group per `CONTRIBUTING.md`. Added to the env-reset lists in `FeatureFlagEvaluatorTest`.
+  - New `ReadModel/TagOnlyLeafFilter.php`: `split()` returns kept and moved replies. It follows `RetractedLeafFilter`: only unanswered replies move, and it repeats so a chain of tag-only replies goes whole.
+  - `ThreadAndPostPageController::thread` passes `threadActivityDrawerEnabled`. `templates/pages/thread.php` splits replies after `RetractedLeafFilter` and before continuation flags; the moved replies wait in `$movedTagOnlyReplies` for Stage 3.
+  - Tests: new `TagOnlyLeafFilterTest` (registered in `tests/run.php`); new `WriteApiSmokeTest::testThreadActivityDrawerFlagMovesTagOnlyLeavesOutOfTheConversation`.
+- Verification:
+  - Passed: `TagOnlyLeafFilterTest`, `RetractedLeafFilterTest`, `PostSignalsTemplateTest`, `FeatureFlagEvaluatorTest` (23 tests) and the new page test.
+  - The page test covers: flag off shows every reply; flag on removes the unanswered tag-only reply; an answered tag-only reply and its answer stay; the reply after the moved one is still a continuation.
+  - Smoke set: 452 of 453 passed; the one failure is the baseline failure.
+  - Full suite not run, per `AGENTS.md`.
+- Notes:
+  - Between Stage 2 and Stage 3, turning the flag on hides tag-only leaves with nowhere to show them. The flag is off by default and the branch is not merged, so no reader sees this.
+  - The root card's reply count now counts shown replies only, as planned.
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
