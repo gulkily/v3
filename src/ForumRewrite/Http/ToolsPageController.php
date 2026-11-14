@@ -161,6 +161,24 @@ final class ToolsPageController
         );
     }
 
+    /** Read-only: which thread tags unlock which post tags, and every post marked claimed, resolved or closed. */
+    public function tagUnlocks(): string
+    {
+        $enabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED);
+
+        return $this->routeServices->renderPageTemplate(
+            'tag_unlocks.php',
+            [
+                'tagsets' => \ForumRewrite\Support\Tagsets::forApplication()->all(),
+                'markedPosts' => $enabled ? \ForumRewrite\Tools\MarkedPostsQuery::byState($this->routeServices->pdo()) : [],
+                'tagUnlocksOn' => $enabled,
+                'toolNavOptions' => ToolsPageSupport::navOptions('tag-unlocks'),
+            ],
+            'Tag Unlocks',
+            'tools',
+        );
+    }
+
     public function outbox(): string
     {
         return $this->routeServices->renderPageTemplate(
