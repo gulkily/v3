@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/merge_217_fix
+
+2026-11-14T20:30:00Z — v3/merge_217_fix one-shot (standing P2 enrollment, no parent): [record](./merge_217_fix/merge_217_fix_one_shot.md). Fix PHP parse error from the #217 merge; cycle estimate **0.03**, retrospective 0.03; maintainer fit judgment pending. PR #242.
+
 ## Cycle v3/local_telemetry
 
 2026-11-09T06:27:32Z — v3/local_telemetry Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./local_telemetry/local_telemetry_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (opt-in browser-only usage log with copy/paste and send as a private message to the operator; in-browser report reader). Starting revision `3ec5a236`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because plans and front-end assets were read before rating. Intake and projected total **0.65**; option estimates A 0.65, B 0.75, C 0.50, non-additive. Await Approved Step 1; planning uncommitted.
