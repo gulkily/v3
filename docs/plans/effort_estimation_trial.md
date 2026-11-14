@@ -1947,3 +1947,12 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/bubblegum_menu_labels` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; retrospective 0.08) | [One-shot record](./bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md#study-history) | Thread request; acceptance pending |
 
 2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the request post's link). Intake **0.08** after reproduction (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `9122adf0fa97f2e9e1bdee3d1b1bdd5e5fa684d5`; branch `fix/bubblegum-menu-and-tool-labels`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/reading_margins_last_two
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/reading_margins_last_two` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (intake 0.10; execution entry 0.10; retrospective 0.10) | [record](./reading_margins_last_two/reading_margins_last_two_one_shot.md#study-history) | Follow-up to `v3/reading_margins_two_clicks` (merged #224) at the maintainer's request; acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot. Intake **0.10** recorded before implementation (not pristine: same rater wrote the predecessor), execution entry reaffirmed, retrospective **0.10**. Baseline `b2c8bf8`; branch `feat/reading_margins_last_two`; planning commit `7a0b857`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
