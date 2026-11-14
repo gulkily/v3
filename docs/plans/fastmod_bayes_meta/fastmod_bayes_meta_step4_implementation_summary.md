@@ -109,3 +109,17 @@ Extended estimates: enabled
 - Estimate details: scope as Step 3 Revision 1; uncertainty low.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Production gate
+
+**Original estimate: 0.02**
+**Retrospective: pending**
+
+- Status: pending, waiting on the maintainer. Slice 1 (Stages 1–4) is on the PR for this branch.
+- To run after merging and deploying:
+  1. Tools → Fastmod → Retrain (or `./v3 fast-score local-train` over SSH).
+  2. After the next worker run, read the report on the same page.
+  3. Gate: precision ≥ 0.95 and recall ≥ 0.75 on held-out roots, or the maintainer accepts the numbers. If training refuses for too few not-meta labels, retry once with `./v3 fast-score local-train --weak-negatives`.
+- Stages 6–8 don't start until this passes.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

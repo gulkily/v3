@@ -61,3 +61,14 @@ Supersedes nothing in the 02:20 entry; adds findings from the revision.
 
 - `RAILSPIKE.md`, approval commit gate, shared ledger hunks: commit `11d1e3d` (Step 2 Revision 2) staged the whole ledger file, so it also carries the then-unapproved Step 3 handoff entry. Completed commits are not amended; disclosed here. A rule to stage ledger hunks with `git add -p` by default would prevent this.
 - `RAILSPIKE.md`, scope change during Step 3 review: the maintainer's request answered a question about scope, so it was recorded as Step 2 Revision 2, approved by the request, and committed before revising Step 3.
+
+## 2026-11-14 20:30 UTC — Step 4 slice 1 handoff
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, stage boundary protocol: one commit per stage kept each stage's tests and summary together. Retain.
+- `AGENTS.md`, human-readable formats: the training report became `Key: value` text while the model stayed JSON as internal state. Retain.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md`: no rule covers a mid-plan gate that only the maintainer can run (Stage 5). Recorded it as pending, committed the summary, and handed off with a PR instead of continuing to Stage 6.
