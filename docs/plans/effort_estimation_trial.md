@@ -633,6 +633,14 @@ Maintainer request: “I want every future railspike to be part of the same data
 
 2026-11-13: DM instant load closed. Stage 6 accepted by the maintainer on iPhone Safari and desktop after follow-ups #177 and #178 (first check found the flag never reached page templates). Stage 6 retrospective 0.15; whole-cycle retrospective 0.85 vs. 0.70 projected.
 
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/invite_theme` | Step 1 drafted; parked | v1 / R1 / P2 | 0.35 | [Step 1](./invite_theme/invite_theme_step1_solution_assessment.md#study-snapshots-and-approval) | New cycle; no implementation |
+
+2026-11-14: standing P2 enrollment for invite landing-page theme selector. Intake (after inspection) and Step 1 handoff both 0.35 for Option A; Claude single exposed rater; R1 hashes not re-verified this session. Extended estimates enabled (A 0.35, B 0.60, A + C 0.40; not summed). Awaiting Approved Step 1.
+
+2026-11-14: `v3/invite_theme` parked at the maintainer's request; Step 1 committed to main unapproved, to resume later. Scores unchanged.
+
 E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically complete, projected 0.85, retrospective 0.90, maintainer acceptance pending. These counts are unchanged by P2. Append each new cycle here with links to its canonical snapshots; keep unsuccessful/incomplete cycles visible. The historical “0 / 6” is accepted outcomes toward the first review checkpoint, not the number of collected records.
 
 ## Cycle v3/retraction_effects
