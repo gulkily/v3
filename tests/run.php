@@ -67,6 +67,7 @@ $testFiles = [
     __DIR__ . '/HistoryPurgePlannerTest.php',
     __DIR__ . '/LegacyTimestampBakeTest.php',
     __DIR__ . '/RetractedLeafFilterTest.php',
+    __DIR__ . '/ThreadLabelsTest.php',
     __DIR__ . '/HistoryPurgeTest.php',
     __DIR__ . '/SourceRouteCommitMapTest.php',
     __DIR__ . '/PurgeHistoryCommandTest.php',
