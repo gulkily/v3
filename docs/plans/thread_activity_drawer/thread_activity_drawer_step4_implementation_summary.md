@@ -85,3 +85,44 @@ Baseline: `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` fails i
 - Estimate details: original scope unchanged; no revision.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Concepts and final checks
+
+**Original estimate: 0.06**
+**Retrospective: 0.05**
+
+- Changes:
+  - New concept entry [thread activity](../../concepts/thread_activity.md).
+  - [Post presentation](../../concepts/post_presentation.md) gains one dated "Activity" line pointing to it.
+  - This summary's closeout, and the ledger row for `v3/thread_activity_drawer`.
+- Verification:
+  - Concept source paths resolve (checked with `test -e` for each linked file).
+  - Final diff review of `4007172..HEAD`: 17 files, all within the plan. No unauthorized scope. One small duplication: the drawer partial has its own profile-link closure, matching the one in `post_signals.php`. Both are four lines; sharing them would mean a new helper for two callers, so I left it.
+  - `git diff --check` passed for every stage commit.
+- Notes:
+  - No feedback item matches this cycle. `PF-20261104-F76` is about hashtag-only title lines, a different feature, so there is no `Feedback:` trailer.
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+Status against the Step 3 Completion Contract:
+
+| Check | Status |
+| --- | --- |
+| Normal entry: `/threads/<id>` with the flag on | Passed locally (page tests and headless Chrome) |
+| End-to-end outcome: tag-only leaves move into the drawer; likes and flags listed by post with links | Passed locally |
+| Recovery: builder failure renders every reply and no drawer | Passed (`ThreadActivityTest::testFailureKeepsEveryReplyAndNoEntries`) |
+| Flag off: thread page unchanged | Passed (page tests show every reply card and no drawer) |
+| Themes: Word97, Gloss, Bubblegum | Passed (screenshots, open drawer) |
+| Deployment: no schema change, rebuild or new dependency | Passed by inspection |
+| Release condition: deployed with the flag on and checked on a real thread | **Pending**, for the maintainer after merge |
+| Full test suite | Not run, per `AGENTS.md` |
+| Baseline smoke failure `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` | Reproduced on `4007172` before any change; unrelated |
+
+Commits: planning `0f456b8` and `4007172`; stages `0e8fd1e`, `f1bbd33`, `b5e2c1d` and the Stage 4 commit. Six commits for four stages meets the `1 + stages` minimum.
+
+## Study closeout
+
+2026-11-14T20:40:00Z, `railspike-effort` / `v3/thread_activity_drawer`, Step 4 closeout. **Retrospective scope assessment: 0.50** (separate from the 0.55 projection; not a measured actual). Delivered scope v1 as approved, with no corrective work or new requests. Starting revision `68724f9` (Step 1); final revision is the Stage 4 commit on `feat/thread-activity-drawer`. Planned and completed stages: 4 of 4. Verification and omissions as in the Closeout table: production check pending, full suite not run. R1, P2, single exposed Claude rater. Maintainer comfortable-fit judgment: **pending**.
