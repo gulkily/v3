@@ -11,8 +11,9 @@ import { chromium } from 'playwright-core';
 // permitted theme: the radios are evenly spaced in one row, the left half sets
 // the left edge and the right half the right edge, each checked radio sits over
 // the column edge it sets, a choice survives reload without moving after paint,
-// choosing a checked radio resets, listing pages share the saved column, and
-// phones show neither the ruler nor a saved column.
+// choosing a checked radio resets, the column never gets narrower than 20rem,
+// other pages share the saved column, and phones show neither the ruler nor a
+// saved column.
 // Usage: node tests/browser/reading_margins.mjs [screenshot-dir]
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
@@ -101,7 +102,14 @@ try {
 
     await stop(41).click();
     assert.equal(await checkedStops(), '41 95', `${theme}: left radio near the centre moves the left edge`);
-    await stop(5).click(); await stop(59).click();
+    // 41-59 is narrower than 20rem at this width, so the column is 20rem, centred between them.
+    await stop(59).click();
+    assert.equal(await checkedStops(), '41 59');
+    const narrow = await column();
+    const halfway = (await stopCentre(41) + await stopCentre(59)) / 2;
+    assert.ok(Math.abs(narrow.right - narrow.left - 320) <= 1, `${theme}: column no narrower than 20rem`);
+    assert.ok(Math.abs((narrow.left + narrow.right) / 2 - halfway) <= 2, `${theme}: narrow column centred between the radios`);
+    await stop(5).click();
     assert.equal(await checkedStops(), '5 59');
     assert.ok(await fits(5, 59), `${theme}: off-centre column`);
     if (shots) await page.screenshot({ path: join(shots, `${theme}-5-59.png`) });
@@ -120,8 +128,9 @@ try {
     }
   }
 
-  // Listing pages: the same ruler, and a saved column applies there on first paint.
-  const listings = ['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello'];
+  // Other pages: the same ruler, and a saved column applies there on first paint.
+  const listings = ['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
+    '/messages/', '/about/', '/tools/', '/tools/bookmarklets', '/docs/', '/docs/reference/agent_api.md'];
   for (const theme of themes) {
     await page.evaluate(([themeKey, theme, marginsKey]) => {
       localStorage.clear(); localStorage.setItem(themeKey, theme); localStorage.setItem(marginsKey, '23 95');
@@ -150,7 +159,7 @@ try {
   if (shots) await page.screenshot({ path: join(shots, 'phone.png') });
 
   assert.deepEqual(errors, []);
-  console.log(`reading margins: ${themes.length} themes at 1280px on a thread and ${listings.length} listing pages, plus phone`);
+  console.log(`reading margins: ${themes.length} themes at 1280px on a thread and ${listings.length} other pages, plus phone`);
 } finally {
   if (browser) await browser.close();
   try { process.kill(-server.pid); } catch {}
