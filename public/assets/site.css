@@ -398,6 +398,9 @@ pre {
   padding: 0.3rem;
   display: grid;
   gap: 4px;
+  /* Fixed so a theme's body line height (Arena's 1.65) doesn't make the
+     menu taller than the screen. */
+  line-height: 1.5;
 }
 
 .theme-menu__popover[hidden] {
