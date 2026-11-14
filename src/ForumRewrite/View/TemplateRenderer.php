@@ -19,7 +19,10 @@ use RuntimeException;
 final class TemplateRenderer
 {
     private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
-    private const READING_MARGINS_PAGE_TEMPLATES = ['thread.php', 'board.php', 'board_list.php', 'board_search.php', 'tag.php', 'recent.php'];
+    // Reading margins show on every page rendered with layout.php except these:
+    // the gallery lays its rows out for the normal column width, and a redirect
+    // page is gone before anyone reads it.
+    private const READING_MARGINS_EXCLUDED_PAGE_TEMPLATES = ['gallery.php', 'redirect.php'];
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
@@ -111,7 +114,7 @@ final class TemplateRenderer
         }
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true)
             && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
-        $showReadingMargins = in_array($pageTemplate, self::READING_MARGINS_PAGE_TEMPLATES, true)
+        $showReadingMargins = !in_array($pageTemplate, self::READING_MARGINS_EXCLUDED_PAGE_TEMPLATES, true)
             && $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED);
         $pageStylesheetPaths = [];
         foreach (self::PAGE_STYLESHEET_PATHS[$pageTemplate] ?? [] as $stylesheetPath) {
