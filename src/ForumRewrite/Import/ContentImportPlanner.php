@@ -49,6 +49,7 @@ final class ContentImportPlanner
             }
         }
         $removals = \ForumRewrite\Canonical\AcceptedRemoval::all($destination);
+        $reactionRemovals = \ForumRewrite\Canonical\AcceptedRemoval::reactions($destination);
         $target = [];
         foreach (self::files($destination) as $path) {
             $key = ArchiveRecordCatalog::identityKey($destination, $path);
@@ -65,6 +66,11 @@ final class ContentImportPlanner
             $postPath = preg_replace('/\.(?:asc|sig)$/D', '', $path);
             if (str_starts_with($postPath, 'records/posts/') && ($removals[basename($postPath, '.txt')]['operation'] ?? null) === 'delete') {
                 $entry = [...$entry, 'state' => 'duplicate', 'reason' => 'Source removed locally; structural placeholder retained', 'dependencies' => []];
+            }
+            // A reaction retracted here stays retracted: an import never brings it back.
+            if ((str_starts_with($postPath, 'records/post-reactions/') || str_starts_with($postPath, 'records/thread-labels/'))
+                && isset($reactionRemovals[basename($postPath, '.txt')])) {
+                $entry = [...$entry, 'state' => 'duplicate', 'reason' => 'Reaction retracted locally', 'dependencies' => []];
             }
             // Directory membership alone also matches detached signatures. Only
             // apply record policy to records; companions follow their parent in

@@ -46,4 +46,22 @@ final class RemovalTarget
         }
         return false;
     }
+
+    /** @return 'post'|'post-reaction'|'thread-label' the record family a target ID belongs to */
+    public static function family(string $id): string
+    {
+        if (str_starts_with($id, 'post-reaction-')) return 'post-reaction';
+        if (str_starts_with($id, 'thread-label-')) return 'thread-label';
+        return 'post';
+    }
+
+    /** @return list<string> repository paths the target's own record may live at */
+    public static function sourceCandidates(string $id): array
+    {
+        return match (self::family($id)) {
+            'post-reaction' => [CanonicalPathResolver::postReaction($id)],
+            'thread-label' => [CanonicalPathResolver::threadLabel($id)],
+            default => CanonicalPathResolver::postCandidates($id),
+        };
+    }
 }
