@@ -407,6 +407,17 @@ NODE;
         assertSame(0, $result['removedUnsupportedCount']);
     }
 
+    public function testNormalizeComposeTextTurnsPastedTabsAndTypographicSpacesIntoSpaces(): void
+    {
+        foreach ([true, false] as $unicode) {
+            $result = $this->runTextHelper("Feature\tPriority\nRead\u{2009}it\u{202F}now\u{3000}ok", $unicode);
+
+            assertSame("Feature    Priority\nRead it now ok", $result['text']);
+            assertSame(true, $result['hadCorrections']);
+            assertSame(0, $result['unsupportedCount']);
+        }
+    }
+
     public function testNormalizeComposeTextStillRejectsUnsafeUnicodeWhenEnabled(): void
     {
         $result = $this->runTextHelper("Привет 🙂\u{200B}\u{202E}\u{E000}", true, true);

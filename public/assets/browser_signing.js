@@ -144,6 +144,15 @@
     ["\u2014", "-"],
     ["\u2026", "..."],
     ["\u00A0", " "],
+    // Pasted tables and indented text carry tabs and typographic spaces, which
+    // the server never accepts; turn them into plain spaces instead of rejecting.
+    ["\t", "    "],
+    ["\u1680", " "],
+    ["\u2000", " "], ["\u2001", " "], ["\u2002", " "], ["\u2003", " "], ["\u2004", " "], ["\u2005", " "],
+    ["\u2006", " "], ["\u2007", " "], ["\u2008", " "], ["\u2009", " "], ["\u200A", " "],
+    ["\u202F", " "],
+    ["\u205F", " "],
+    ["\u3000", " "],
   ]);
   const LATIN_DIACRITIC_REPLACEMENTS = new Map([
     ["À", "A"], ["Á", "A"], ["Â", "A"], ["Ã", "A"], ["Ä", "A"], ["Å", "A"], ["Ā", "A"], ["Ă", "A"], ["Ą", "A"], ["Ǎ", "A"],
