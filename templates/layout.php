@@ -250,6 +250,9 @@
   <script src="<?= $e($tabBarScrollScriptPath) ?>" defer></script>
   <script src="<?= $e($navSlotsScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php if ($usageReportsEnabled ?? false): ?>
+  <script src="<?= $e($usageLogScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>

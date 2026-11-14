@@ -55,8 +55,25 @@ Revision (Stage 2): the Stage 1 verification above was wrong about `UsageReportS
 ## Stage 3 - Browser recorder
 
 **Original estimate: 0.15** (Step 3 revision for Step 2 Revision 1; first value 0.12)
+**Retrospective stage work: 0.15**
 
-- Status: pending.
+- Changes:
+  - `public/assets/usage_log.js`, loaded by `layout.php` only with the flag on. It keeps `forum_usage_log` (recording state and entries) in localStorage behind guarded reads and writes, like `nav_slots.js`.
+  - Records a view per page load (and on back/forward restores), and in the capture phase every click on `a`, `button`, `summary` or `[role=button]` and every form submit. A click holds region, name and destination page kind.
+  - Regions, first match wins: account menu, Tools bar, site header (navbar), list rows, post cards; then composer (a form with a textarea); then footer, main, page. Names come from `data-tab`/`data-tone`/`data-action`, else `aria-label`/`title`/text, cut to 40 characters.
+  - Log text format `usage-log v1`, one tab-separated line per entry with seconds since the previous entry. Capped at 2,000 entries and 30 days. Nothing is recorded on `/tools/usage-log` itself.
+  - `window.forumUsageLog` (`available`, `kind`, `state`, `text`, `setRecording`, `clear`) for the Stage 4 page.
+- Verification:
+  - New `tests/browser/usage_log.mjs` passed: off by default; navbar click with destination `/about`; menu toggle in the menu region; an unhooked post link named by its text with destination `/threads/*`; composer submit; no typed text, IDs or query strings; 2,000-entry and 30-day caps; clear and stop; browser page kinds equal `UsagePageKind` for seven sample paths.
+  - `node tests/browser/nav_slots.mjs` passed (shared header and storage pattern). `./v3 test UsageReportsPageTest AppNavigationPlacementTest`: 12 passed, including script present with the flag on and absent with it off.
+  - `./v3 test` (smoke set): only the known `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` failure.
+  - Environment: browser tests need `playwright-core` resolvable from the repo; here it was linked at `/root/node_modules` (outside the repo) from the preinstalled copy.
+- Notes:
+  - The first run filed composer submits under `main` because the region list checked `main` before forms; composer is now checked before the outer regions.
+  - Pages that swap content without a full load record only their clicks, not a new view.
+- Estimate details: original scope as approved; uncertainty about the browser/server page-kind match resolved by the parity check; no revisions.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
 
 ## Stage 4 - Usage log tool page
 

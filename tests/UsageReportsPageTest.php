@@ -12,10 +12,12 @@ putenv('FORUM_USAGE_REPORTS_ENABLED=1');
 $on = page($application(), 'GET', '/threads/?sort=new');
 expect(str_contains($on, 'data-usage-page="/threads"'), 'flag on: page kind missing');
 expect(str_contains($on, 'data-usage-words="about account key'), 'flag on: words missing');
+expect(str_contains($on, '/assets/usage_log.'), 'flag on: recorder script missing');
 
 putenv('FORUM_USAGE_REPORTS_ENABLED=0');
 $off = page($application(), 'GET', '/threads/');
 expect(!str_contains($off, 'data-usage-'), 'flag off: usage attributes rendered');
+expect(!str_contains($off, '/assets/usage_log.'), 'flag off: recorder script loaded');
 PHP);
     }
 
