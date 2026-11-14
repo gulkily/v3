@@ -67,3 +67,14 @@ The maintainer asked for "some cute icons" in Bubblegum. Bubblegum becomes an ic
 Reuse: the shared sizing and phone tab-bar rules gained `bubblegum` in their theme lists; the glyph rules were generated from the smooth-line set's selectors so the destinations match one for one. The icon-theme lists in `site.css` (account menu) and `tools.css` (bookmarklet fallback) gained it too. `NavIconSetsTest` now checks the cute set against the pixel-art set; `tests/browser/tools_launcher.mjs` includes Bubblegum among its icon themes. AGENTS.md, the theme navigation icons concept and the theme guide name the third set.
 
 Checks: smoke set (includes `NavIconSetsTest`) 451/451; `tests/browser/tools_launcher.mjs` passes with Bubblegum (icons on every tool, bar link and heading, no overflow); headless Chrome at 1280px and 390px on board, Tools and Bookmarklets, no page errors; a 4x preview sheet of every glyph inspected. Full suite not run. Not checked: iPhone Safari, production.
+
+## Follow-up: control panel, button texture, board row (2026-11-14)
+
+Maintainer asks after the icons shipped: the board's All / Liked / Newest / Tags row wrapped to two lines on his iPhone; buttons could use texture; Tools could look like "a cute little control panel"; the phone More menu could look better.
+
+- Board row: on phones Bubblegum tightens the toolbar gaps and pill padding. Measured at 375px: 340px of controls in a 343px row (was 359px), one line at 375 and 390.
+- Texture: pills, New post, the account trigger and buttons carry faint candy stripes under a soft top shine; active and submit (hot pink) use white stripes and a dimmer shine.
+- Tools: first drawn as chunky keypad tiles; the maintainer then asked for no borders, "more like a traditional, like Windows 95 era control panel". Now big 32px pixel icons with the name underneath, no button frame, a soft pink highlight on hover or focus (dotted focus ring), hot pink while pressed, dotted pink rules under group headings. Three columns on phones.
+- Phone More panel: keypad tiles (32px icon over the label, 16px corners, pressable shadow, a little status light), three to a row, cycling pink / lavender / butter / mint, the current page in hot pink with a butter light. This also makes the panel short enough that the theme picker is in view without scrolling, in Bubblegum only; other themes still have the long list (a general fix is separate).
+
+Reuse: Bubblegum-scoped rules only, in `theme-bubblegum.css`; icons are the cute set's glyphs scaled 2x with `image-rendering: pixelated`. Checks: `tests/browser/tools_launcher.mjs` passes (whole labels, no overflow, icons) across its widths; contrast audit OK; headless Chrome at 375 and 1280 on board, Tools and the open More panel. Smoke set not rerun (CSS-only, one theme). Not checked: logged-in More panel with its full item list, iPhone Safari.
