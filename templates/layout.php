@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?>>
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?><?php if ($usageReportsEnabled ?? false): ?><?php if (($usagePageKind ?? null) !== null): ?> data-usage-page="<?= $e($usagePageKind) ?>"<?php endif; ?> data-usage-words="<?= $e($usagePageWords) ?>"<?php endif; ?>>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -180,12 +180,14 @@
       try {
         // Reading margins (reading_margins.js): the chosen column edges, in vw, restored before paint.
         var readingMargins = (localStorage.getItem(browserRuntime.readingMarginsStorageKey) || '').split(' ');
-        // The stops match partials/reading_margins.php; the left edge is stored first.
-        if (readingMargins.length === 2 && ['5', '23', '41'].indexOf(readingMargins[0]) !== -1
-          && ['59', '77', '95'].indexOf(readingMargins[1]) !== -1) {
+        // The stops match partials/reading_margins.php. The pair is stored in
+        // click order (older first); the column runs from the smaller to the larger.
+        var readingMarginStops = ['5', '23', '41', '59', '77', '95'];
+        if (readingMargins.length === 2 && readingMargins[0] !== readingMargins[1]
+          && readingMarginStops.indexOf(readingMargins[0]) !== -1 && readingMarginStops.indexOf(readingMargins[1]) !== -1) {
           document.documentElement.setAttribute('data-reading-margins', readingMargins.join(' '));
-          document.documentElement.style.setProperty('--reading-left', readingMargins[0]);
-          document.documentElement.style.setProperty('--reading-right', readingMargins[1]);
+          document.documentElement.style.setProperty('--reading-left', Math.min(readingMargins[0], readingMargins[1]));
+          document.documentElement.style.setProperty('--reading-right', Math.max(readingMargins[0], readingMargins[1]));
         }
       } catch (error) {
       }
@@ -250,6 +252,9 @@
   <script src="<?= $e($tabBarScrollScriptPath) ?>" defer></script>
   <script src="<?= $e($navSlotsScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php if ($usageReportsEnabled ?? false): ?>
+  <script src="<?= $e($usageLogScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
 <?php endif; ?>
@@ -269,7 +274,7 @@
   </div>
 <?php endif; ?>
   <!-- route-source: <?= $e($routeSource) ?> -->
-  <div class="shell"<?= $navigationSlot === 'app' ? ' data-shell="app"' : '' ?>>
+  <div class="shell"<?= $navigationSlot === 'app' ? ' data-shell="app"' : '' ?><?= ($tabBarHidden ?? false) ? ' data-tabbar-page="none"' : '' ?>>
 <?php if ($navigationSlot === 'app'): ?>
     <div class="shell-sky" aria-hidden="true"></div>
 <?= $indent($partial('partials/app_header.php'), 2) ?>

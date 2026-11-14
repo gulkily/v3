@@ -217,17 +217,23 @@
   }
 }
 
-.fastmod-rubric-label {
+.fastmod-rubric-label,
+.usage-log-switch {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: fit-content;
 }
 
-.fastmod-rubric-label input[type="checkbox"] {
+.fastmod-rubric-label input[type="checkbox"],
+.usage-log-switch input[type="checkbox"] {
   flex: 0 0 auto;
   width: auto;
   margin: 0;
+}
+
+.usage-log-switch {
+  margin: 0.75rem 0 1rem;
 }
 
 /* /tools/ launcher: one list grouped by who uses the tools. Scoped to
@@ -257,4 +263,48 @@
 
 .tools-launcher-page .tool-launcher-button {
   flex: 1 1 auto;
+}
+
+/* /tools/tag-unlocks/: read-only list of tagsets and marked posts. */
+.tag-unlocks-page .tag-unlocks-section {
+  margin-top: 1.25rem;
+}
+.tag-unlocks-page .tag-unlocks-sets,
+.tag-unlocks-page .tag-unlocks-posts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tag-unlocks-page .tag-unlocks-set,
+.tag-unlocks-page .tag-unlocks-post {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.tag-unlocks-page .tag-unlocks-set > p,
+.tag-unlocks-page .tag-unlocks-post > p {
+  margin: 0.15rem 0 0;
+}
+.tag-unlocks-page .tag-unlocks-rule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+.tag-unlocks-page .tag-unlocks-parent {
+  font-weight: 600;
+}
+.tag-unlocks-page .tag-unlocks-arrow {
+  color: var(--ink-soft);
+  font-size: 0.9em;
+}
+.tag-unlocks-page .tag-unlocks-tag {
+  padding: 0 0.4em;
+  border: 1px solid var(--line);
+  border-radius: 0.25em;
+  font-family: var(--ui-font);
+  font-size: 0.9em;
+}
+.tag-unlocks-page .tag-unlocks-post > a {
+  overflow-wrap: anywhere;
 }
