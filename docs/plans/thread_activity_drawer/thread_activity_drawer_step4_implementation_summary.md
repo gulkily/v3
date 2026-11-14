@@ -58,3 +58,30 @@ Baseline: `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` fails i
 - Estimate details: original scope unchanged; no revision.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - The Activity drawer
+
+**Original estimate: 0.20**
+**Retrospective: 0.18**
+
+- Changes:
+  - New `View/ThreadActivity.php`. `build()` makes one "tagged" entry per moved reply, then one group per post with likes or flags, in thread order. The root group uses the thread likes and the root post's flags, as the root signal line does. `partition()` runs `TagOnlyLeafFilter` and `build()`, and on any failure returns every reply and no entries.
+  - New partial `templates/partials/thread_activity_drawer.php`: a collapsed `<details class="card thread-activity" id="activity">` with "Activity (N)" and a list. Profile links follow `post_signals.php`; dates use the existing `$shortDate` helper.
+  - `templates/pages/thread.php` calls `partition()` when the flag is on and renders the drawer after the last reply, before the reply box, only when it has entries.
+  - The controller passes `postRecordsEnabled`, so groups link to `/posts/<id>#records` when Post records is on.
+  - `public/assets/site.css`: two rules for the list, next to the Records styles. No theme-specific CSS was needed.
+  - Tests: new `ThreadActivityTest` (registered); new `PostSignalsTemplateTest::testThreadActivityDrawerListsTagOnlyRepliesAndTheSignalLineActors`; the Stage 2 page test now matches reply cards by `<article>`, because drawer entries also carry `data-post-id`.
+- Verification:
+  - Passed: `ThreadActivityTest`, `PostSignalsTemplateTest`, `TagOnlyLeafFilterTest`, `ThreadLabelsTest`, `FeatureFlagEvaluatorTest`, `AssetFingerprintTest` and the Stage 2 page test (34 tests).
+  - Covered: entry order and counts; both link forms; the drawer after the last reply and before the composer; no drawer when empty or with the flag off; a forced builder failure keeps every reply and shows no drawer.
+  - The drawer's names match the signal lines: the page test reads the same approved actor from both. The browser check showed the same names in the drawer and on the reply card.
+  - Browser check in headless Chrome with a local fixture (two approved actors, two thread likes, a like and a flag on a reply, one tag-only reply): Word97, Gloss and Bubblegum each show the drawer as a normal card, the open list reads cleanly, and the tag-only reply has no card. The scratch script and fixture stayed outside the repository; `playwright-core` 1.58.1 (the version `package.json` already pins) was installed in a scratch folder.
+  - Smoke set: 452 of 453 passed; the one failure is the baseline failure.
+  - Full suite not run, per `AGENTS.md`.
+- Notes:
+  - Likes or flags on a moved tag-only reply appear as a "Reply by e" group, so no reaction goes missing.
+  - A tag-only reply by a guest reads "guest tagged …". That is the same author label the reply card would show.
+  - Forte, static detail pages and the post page are unchanged, as scoped.
+- Estimate details: original scope unchanged; no revision.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

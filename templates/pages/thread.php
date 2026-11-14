@@ -34,9 +34,10 @@ foreach ($posts as $post) {
 }
 $replyPosts = \ForumRewrite\ReadModel\RetractedLeafFilter::apply($replyPosts);
 // Tag-only leaves leave the conversation for the Activity drawer; filter before runs are computed.
-$movedTagOnlyReplies = [];
+$threadActivityEntries = [];
 if ($threadActivityDrawerEnabled ?? false) {
-    ['kept' => $replyPosts, 'moved' => $movedTagOnlyReplies] = \ForumRewrite\ReadModel\TagOnlyLeafFilter::split($replyPosts);
+    ['shown' => $replyPosts, 'entries' => $threadActivityEntries] = \ForumRewrite\View\ThreadActivity::partition(
+        $rootPost, $replyPosts, $signalActors ?? null, $postRecordsEnabled ?? false);
 }
 
 // Pre-compute continuation flags so the root card can show a true reply count before the reply loop runs.
@@ -87,6 +88,9 @@ $showRootMetaExtras = $index === $rootRunTailIndex;
     'trueReplyCount' => $trueReplyCount,
 ]), 1) ?>
 <?php endforeach; ?>
+<?php if ($threadActivityEntries !== []): ?>
+<?= $indent($partial('partials/thread_activity_drawer.php', ['entries' => $threadActivityEntries]), 1) ?>
+<?php endif; ?>
   <article class="card inline-reply-composer" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
     <div class="inline-reply-expanded" data-inline-reply-compose data-inline-reply-expanded="0" data-reply-panel>
         <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>

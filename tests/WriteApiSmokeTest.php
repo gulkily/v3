@@ -6930,7 +6930,7 @@ NODE;
         $answered = $reply('root-001', "> First words\n#answered\n");
         $answer = $reply($answered, "Why answered?\n");
         $last = $reply('root-001', "Last words\n");
-        $card = static fn (string $page, string $id): bool => str_contains($page, 'data-post-id="' . $id . '"');
+        $card = static fn (string $page, string $id): bool => preg_match('/<article[^>]*data-post-id="' . preg_quote($id, '/') . '"/', $page) === 1;
 
         putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
         $off = $this->renderMethod($application, 'GET', '/threads/root-001');
@@ -6945,6 +6945,7 @@ NODE;
             putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
         }
         assertSame(false, $card($on, $leaf));
+        assertStringContains('data-activity-kind="tagged" data-post-id="' . $leaf . '"', $on);
         foreach ([$first, $answered, $answer, $last] as $id) {
             assertSame(true, $card($on, $id));
         }

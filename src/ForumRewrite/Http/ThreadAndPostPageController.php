@@ -132,6 +132,9 @@ final class ThreadAndPostPageController
                 'threadActivityDrawerEnabled' => $this->routeServices->featureFlags()->isEnabled(
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::THREAD_ACTIVITY_DRAWER_ENABLED
                 ),
+                'postRecordsEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED
+                ),
                 'thread' => $threadRow,
                 'eventState' => ((string) ($threadRow['event_date'] ?? '')) !== ''
                     && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)
