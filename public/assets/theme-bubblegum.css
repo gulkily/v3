@@ -338,3 +338,196 @@
     box-shadow: 4px 4px 0 var(--bubblegum-shadow);
   }
 }
+
+/* Texture for pills and buttons: faint candy stripes under a soft top shine,
+   so controls read as glossy candy rather than flat stickers. */
+:root[data-theme="bubblegum"] {
+  --bubblegum-candy: repeating-linear-gradient(135deg, rgba(228, 91, 156, 0.08) 0 5px, transparent 5px 10px);
+  --bubblegum-candy-on-pink: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 5px, transparent 5px 10px);
+  --bubblegum-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0 40%, rgba(255, 255, 255, 0) 60%);
+  --bubblegum-shine-on-pink: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 38%, rgba(255, 255, 255, 0) 58%);
+}
+
+:root[data-theme="bubblegum"] .nav-link,
+:root[data-theme="bubblegum"] [data-shell="app"] .new-post-button,
+:root[data-theme="bubblegum"] .account-menu__trigger,
+:root[data-theme="bubblegum"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button) {
+  background-image: var(--bubblegum-shine), var(--bubblegum-candy);
+}
+
+:root[data-theme="bubblegum"] .nav-link.is-active,
+:root[data-theme="bubblegum"] .board-filter .nav-link[aria-current],
+:root[data-theme="bubblegum"] [data-shell="app"] .new-post-button.is-active,
+:root[data-theme="bubblegum"] button[type="submit"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option),
+:root[data-theme="bubblegum"] button.feature-flags-chip[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background-image: var(--bubblegum-shine-on-pink), var(--bubblegum-candy-on-pink);
+}
+
+/* Phones: the board's All / Liked / Newest / Tags row fits on one line. */
+@media (max-width: 639px) {
+  :root[data-theme="bubblegum"] .board-toolbar {
+    gap: 0.35rem;
+  }
+
+  :root[data-theme="bubblegum"] .board-filter {
+    gap: 0.25rem;
+  }
+
+  :root[data-theme="bubblegum"] .board-toolbar .nav-link {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+/* Control panel: Tools, and the phone More panel, are grids of chunky
+   keypad tiles with a big pixel icon over the label and a little status
+   light in the corner. Each tool keeps its own pastel (data-tone). */
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-list {
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.75rem;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-group-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.35rem;
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+  background: repeating-linear-gradient(90deg, var(--bubblegum-bar) 0 4px, transparent 4px 8px) left bottom / 100% 3px no-repeat;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-group-heading::before {
+  margin-right: 0;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item {
+  --tile-bg: #ffe3f0;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-list {
+    grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr));
+  }
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item:is([data-tone="offline"], [data-tone="docs"], [data-tone="database"], [data-tone="operations"]) {
+  --tile-bg: #efe3ff;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item:is([data-tone="bookmarklets"], [data-tone="statistics"], [data-tone="fastmod"]) {
+  --tile-bg: #fff6c7;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item:is([data-tone="agent"], [data-tone="forte"], [data-tone="backup"], [data-tone="deploy"]) {
+  --tile-bg: #dcf7ec;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button {
+  --tile-bg-current: var(--tile-bg);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button,
+:root[data-theme="bubblegum"] .account-menu__links .nav-link {
+  position: relative;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button::after,
+:root[data-theme="bubblegum"] .account-menu__links .nav-link::after {
+  content: "";
+  position: absolute;
+  top: 0.4rem;
+  right: 0.45rem;
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid var(--bubblegum-berry);
+  border-radius: 50%;
+  background: #8fe0bf;
+  box-shadow: 0 0 4px rgba(143, 224, 191, 0.9);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 5.4rem;
+  padding: 0.7rem 0.45rem 0.6rem;
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 16px;
+  background: var(--bubblegum-shine), var(--bubblegum-candy), var(--tile-bg-current, #ffe3f0);
+  box-shadow: 0 4px 0 var(--bubblegum-berry);
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+  font-size: 0.92rem;
+  line-height: 1.15;
+  text-align: center;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button::before,
+:root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link::before {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:hover {
+  filter: brightness(1.03);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:active,
+:root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--bubblegum-berry);
+}
+
+/* The phone More panel: a pink control-panel window of tiles. */
+@media (max-width: 639px) {
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__panel {
+    border: 0;
+    border-top: 3px solid var(--bubblegum-berry);
+    background: var(--body-background);
+    box-shadow: none;
+    gap: 1rem;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 5rem;
+    padding: 0.65rem 0.3rem 0.55rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 0 var(--bubblegum-berry);
+    font-size: 0.85rem;
+    line-height: 1.15;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 2) {
+    background-color: #efe3ff;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 3) {
+    background-color: #fff6c7;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 4) {
+    background-color: #dcf7ec;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link.is-active::after {
+    background: var(--bubblegum-butter);
+    box-shadow: 0 0 5px rgba(255, 232, 115, 0.95);
+  }
+}
