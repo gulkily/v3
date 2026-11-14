@@ -35,6 +35,25 @@ $entryDate = static function (string $value): string {
         <p class="guestbook__signature">— <?= $author($entry) ?></p>
       </article>
 <?php endforeach; ?>
+<?php if ($side === 1 && $isLastSpread): ?>
+      <div class="guestbook__sign" id="sign" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
+        <h2 class="guestbook__prompt">Leave a note for whoever reads this next</h2>
+        <p class="meta" data-role="compose-identity-status" hidden></p>
+<?= $indent($partial('partials/reply_form.php', [
+    'threadId' => $guestbookThreadId,
+    'parentId' => $guestbookThreadId,
+    'boardTags' => 'general',
+    'body' => '',
+    'bodyRows' => 4,
+    'submitLabel' => 'Sign the book',
+    'showBodyLabel' => false,
+    'bodyPlaceholder' => 'Your note',
+    'returnTo' => '/guestbook/',
+]), 3) ?>
+      </div>
+<?php elseif ($side === 1): ?>
+      <p class="guestbook__sign-link"><a href="/guestbook/#sign">Sign the book</a></p>
+<?php endif; ?>
     </div>
 <?php endforeach; ?>
   </div>

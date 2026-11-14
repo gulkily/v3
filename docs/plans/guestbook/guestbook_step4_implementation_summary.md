@@ -36,3 +36,25 @@ Cycle estimate: 0.60
 - Estimate details: original scope as planned; no revision.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Sign the book
+
+**Original estimate: 0.12**
+**Retrospective: 0.14**
+
+- Changes:
+  - `templates/pages/guestbook.php`: the newest spread's right page carries the shared reply form ("Leave a note for whoever reads this next", "Sign the book", parent = thread root, `return_to` = `/guestbook/`). Earlier spreads link to `/guestbook/#sign`.
+  - `GuestbookPageController.php`: loads the signing and Outbox scripts the thread page uses.
+  - `ComposeAndAccountKeyController::resolveComposeReplyReturnTo`: returns to `/guestbook/` only for a reply to the active site's guestbook thread; any other thread still returns to itself.
+  - `tests/browser/guestbook.mjs` and `tests/Support/guestbook_browser_router.php` (the fixture's `root-001` thread as the guestbook).
+- Verification:
+  - `./v3 test --smoke GuestbookPageTest ComposeAttemptReplayTest`: 468 passed. Full suite not run.
+  - New `testSigningTheBookFromTheLastPageReturnsToIt`: form fields, scripts, earlier-spread link, no-JS POST returns to the book, and `return_to` ignored for another thread.
+  - `node tests/browser/guestbook.mjs`: passed. Signs with JavaScript at 390 px and without it at 1280 px; both land on `/guestbook/?created_post_id=…`, and both entries show in the thread.
+- Notes:
+  - The client already honors `return_to` for replies (`canonicalReplyUrl`), so no script changed.
+  - The book's form is not an inline thread composer, so the thread's optimistic reply insertion does not run there.
+  - Retrospective slightly above the original: the browser fixture needed its own router to name a guestbook thread.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

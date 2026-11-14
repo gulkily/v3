@@ -61,6 +61,55 @@ final class GuestbookPageTest
         });
     }
 
+    public function testSigningTheBookFromTheLastPageReturnsToIt(): void
+    {
+        $this->withBook(function (string $repositoryRoot, Application $application): void {
+            for ($i = 1; $i <= 4; $i++) {
+                $this->writeEntry($repositoryRoot, 'entry-' . $i, 'Note number ' . $i . '.', sprintf('2026-11-01T00:%02d:00Z', $i));
+            }
+            $this->commit($repositoryRoot);
+            $latest = $this->render($application, '/guestbook/');
+            assertStringContains('Leave a note for whoever reads this next', $latest);
+            assertStringContains('name="return_to" value="/guestbook/"', $latest);
+            assertStringContains('name="parent_id" value="' . self::BOOK . '"', $latest);
+            assertStringContains('Sign the book', $latest);
+            assertStringContains('/assets/browser_signing.', $latest);
+            $this->writeEntry($repositoryRoot, 'entry-5', 'Note number 5.', '2026-11-01T00:05:00Z');
+            $this->writeEntry($repositoryRoot, 'entry-6', 'Note number 6.', '2026-11-01T00:06:00Z');
+            $this->writeEntry($repositoryRoot, 'entry-7', 'Note number 7.', '2026-11-01T00:07:00Z');
+            $this->commit($repositoryRoot);
+            $first = $this->render($application, '/guestbook/?page=1');
+            assertStringNotContains('name="return_to"', $first, 'Only the newest spread carries the form.');
+            assertStringContains('href="/guestbook/#sign"', $first);
+
+            // The form as a browser without JavaScript sends it.
+            $previous = $_POST;
+            $_POST = ['thread_id' => self::BOOK, 'parent_id' => self::BOOK, 'board_tags' => 'general', 'author_identity_id' => '',
+                'body' => 'Signed without a script.', 'return_to' => '/guestbook/', 'body_format' => 'plain'];
+            try {
+                ob_start();
+                $application->handle('POST', '/compose/reply');
+                $redirect = (string) ob_get_clean();
+            } finally {
+                $_POST = $previous;
+            }
+            assertStringContains('/guestbook/?created_post_id=', $redirect);
+            assertStringContains('Signed without a script.', $this->render($application, '/guestbook/'));
+
+            // Elsewhere, return_to cannot send a reply to the book.
+            $_POST = ['thread_id' => 'root-001', 'parent_id' => 'root-001', 'board_tags' => 'general', 'author_identity_id' => '',
+                'body' => 'An ordinary reply.', 'return_to' => '/guestbook/', 'body_format' => 'plain'];
+            try {
+                ob_start();
+                $application->handle('POST', '/compose/reply');
+                $other = (string) ob_get_clean();
+            } finally {
+                $_POST = $previous;
+            }
+            assertStringContains('/threads/root-001?created_post_id=', $other);
+        });
+    }
+
     public function testEmptyMissingAndOutOfRangeBooks(): void
     {
         $this->withBook(function (string $repositoryRoot, Application $application): void {

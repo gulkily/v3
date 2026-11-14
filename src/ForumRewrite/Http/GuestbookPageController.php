@@ -49,7 +49,15 @@ final class GuestbookPageController
             'earlierHref' => $left > 1 ? self::href($left - 2, $lastLeft) : null,
             'laterHref' => $left < $lastLeft ? self::href($left + 2, $lastLeft) : null,
             'latestHref' => $left < $lastLeft ? self::href($lastLeft, $lastLeft) : null,
-        ], 'Guestbook', 'guestbook');
+        ], 'Guestbook', 'guestbook', [
+            '/assets/openpgp_loader.js',
+            '/assets/browser_signing.js',
+            '/assets/outbox_store.js',
+            '/assets/outbox_storage.js',
+            '/assets/outbox_compose.js',
+            '/assets/outbox_sender.js',
+            '/assets/private_site_auth.js',
+        ]);
     }
 
     /** The newest spread lives at /guestbook/; every other spread at its left page number. */
