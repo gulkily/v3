@@ -81,6 +81,28 @@
   font-weight: 700;
 }
 
+/* A table with a column per field (LLM exchanges) rather than label and value rows. On
+   phones it is a ZoomTable (site.css), so padding is in em to scale with the text. */
+.codebase-facts--columns {
+  table-layout: auto;
+}
+
+.codebase-facts--columns th {
+  width: auto;
+}
+
+.codebase-facts--columns th,
+.codebase-facts--columns td {
+  padding-right: 0.8em;
+}
+
+@media (max-width: 639px) {
+  .codebase-facts--columns th,
+  .codebase-facts--columns td {
+    padding: 0.35em 0.5em;
+  }
+}
+
 .codebase-facts tr + tr th,
 .codebase-facts tr + tr td {
   border-top: 1px solid color-mix(in srgb, var(--line) 68%, transparent 32%);

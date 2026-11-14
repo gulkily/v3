@@ -1788,8 +1788,8 @@ PHP;
 
             $_COOKIE = [];
             $anonymousForte = $this->render($application, '/forte?selected=root-001');
-            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-001" data-applied-label="Liked" aria-pressed="false">Like</button>', $anonymousForte);
-            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" aria-pressed="false">Like</button>', $anonymousForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-001" data-applied-label="Liked" data-applied-message="Like added" aria-pressed="false">Like</button>', $anonymousForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" data-applied-message="Like added" aria-pressed="false">Like</button>', $anonymousForte);
             assertStringContains('data-action="apply-post-tag" data-tag="flag" data-post-id="reply-001"', $anonymousForte);
 
             file_put_contents(
@@ -1803,7 +1803,7 @@ PHP;
             $_COOKIE = ['identity_hint' => 'guest'];
             $likedForte = $this->render($application, '/forte?selected=root-001');
 
-            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" aria-pressed="true" disabled>Liked</button>', $likedForte);
+            assertStringContains('data-action="apply-post-tag" data-tag="like" data-post-id="reply-002" data-applied-label="Liked" data-applied-message="Like added" aria-pressed="true" disabled>Liked</button>', $likedForte);
         } finally {
             $_COOKIE = [];
             $this->deleteTree($repositoryRoot);
@@ -2301,7 +2301,7 @@ PHP;
         assertStringContains('role="switch"', $featureFlags);
         assertStringContains('About zenmemes', $about);
         assertStringContains('extraordinary people', $about);
-        assertStringContains('Harvard St Commons', $about);
+        assertStringNotContains('Harvard St Commons', $about);
         assertStringContains('continuous social graph', $about);
         assertStringContains('/tools/backup/', $about);
         assertStringNotContains('Identity ID', $profile);
@@ -2350,7 +2350,7 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
@@ -2828,6 +2828,52 @@ PHP;
                 putenv('FORUM_APP_VERSION_NOTIFICATION');
             } else {
                 putenv('FORUM_APP_VERSION_NOTIFICATION=' . $previousFlag);
+            }
+        }
+    }
+
+    public function testReadingMarginsAreHiddenByDefaultAndShownOnThreadsWhenFlagEnabled(): void
+    {
+        $previousFlag = getenv('FORUM_READING_MARGINS_ENABLED');
+        putenv('FORUM_READING_MARGINS_ENABLED');
+
+        try {
+            @unlink($this->databasePath);
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+            $thread = $this->render($application, '/threads/root-001');
+            assertStringNotContains('data-role="reading-margins"', $thread);
+            assertStringNotContains('readingMarginsStorageKey)', $thread);
+            assertStringNotContains('reading_margins', $thread);
+
+            putenv('FORUM_READING_MARGINS_ENABLED=true');
+            @unlink($this->databasePath);
+            $application = new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath);
+            $thread = $this->render($application, '/threads/root-001');
+            $board = $this->render($application, '/');
+
+            assertFingerprintedAsset($thread, 'reading_margins.js');
+            assertFingerprintedAsset($thread, 'reading-margins.css');
+            assertStringContains('data-role="reading-margins"', $thread);
+            assertStringContains('localStorage.getItem(browserRuntime.readingMarginsStorageKey)', $thread);
+            assertStringContains('"readingMarginsStorageKey":"forum-zenmemes-reading-margins"', $thread);
+            foreach (['left' => [4, 14, 24, 34], 'right' => [66, 76, 86, 96]] as $edge => $positions) {
+                foreach ($positions as $position) {
+                    assertStringContains('name="reading-margin-' . $edge . '" value="' . $position . '"', $thread);
+                    assertStringContains('style="--at: ' . $position . '"', $thread);
+                }
+            }
+            // The ruler sits between the header and the column it moves.
+            assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
+            assertStringNotContains('data-role="reading-margins"', $board);
+            assertStringNotContains('reading_margins', $board);
+
+            $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/reading-margins.css');
+            assertStringContains(':root[data-reading-margins] .main', $css);
+        } finally {
+            if ($previousFlag === false) {
+                putenv('FORUM_READING_MARGINS_ENABLED');
+            } else {
+                putenv('FORUM_READING_MARGINS_ENABLED=' . $previousFlag);
             }
         }
     }

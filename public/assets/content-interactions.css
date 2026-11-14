@@ -147,7 +147,8 @@
   .meta-deferred:hover::before {
     opacity: 1;
   }
-  .post-card:has(+ .continuation) > .post-card-actions {
+  .post-card:has(+ .continuation) > .post-card-actions,
+  .post-card:has(+ .continuation) > .post-resolution > .post-card-actions {
     max-height: 0;
     margin-top: 0;
     overflow: hidden;
@@ -155,7 +156,9 @@
     transition: opacity 0.15s ease;
   }
   .post-card:has(+ .continuation):hover > .post-card-actions,
-  .post-card:has(+ .continuation):focus-within > .post-card-actions {
+  .post-card:has(+ .continuation):focus-within > .post-card-actions,
+  .post-card:has(+ .continuation):hover > .post-resolution > .post-card-actions,
+  .post-card:has(+ .continuation):focus-within > .post-resolution > .post-card-actions {
     max-height: none;
     margin-top: 1rem;
     overflow: visible;
@@ -191,3 +194,66 @@
 }
 .post-retraction-control .retraction-feedback,
 .post-retraction-control .retraction-details { flex-basis: 100%; min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; margin: 0; }
+
+/* Tag unlocks: resolved and closed replies in #meta threads fold to one line. */
+/* The fold wraps the card's content, so its first line keeps the card's own spacing. */
+.post-card > .post-resolution:first-child > .post-resolution-summary + * {
+  margin-top: 0;
+}
+.post-card:not([data-resolution="resolved"]):not([data-resolution="closed"]) > .post-resolution > .post-resolution-summary {
+  display: none;
+}
+.post-resolution-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  min-width: 0;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-size: 0.9em;
+  list-style: none;
+}
+.post-resolution-summary::-webkit-details-marker {
+  display: none;
+}
+.post-resolution-header {
+  flex: none;
+}
+.post-resolution-line {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.post-resolution-state {
+  flex: none;
+  padding: 0 0.4em;
+  border: 1px solid currentColor;
+  border-radius: 0.25em;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.post-card[data-resolution="resolved"] .post-resolution-state {
+  color: var(--status-ok);
+}
+.post-card[data-resolution="claimed"] .post-resolution-state {
+  color: var(--status-warning);
+  /* Keeps the claimer's name as written. */
+  text-transform: none;
+  letter-spacing: normal;
+}
+.post-card[data-resolution="closed"] .post-resolution-state {
+  color: var(--ink-soft);
+  border-style: dashed;
+}
+.post-card[data-resolution] > .post-resolution[open] > .post-resolution-summary {
+  margin-bottom: 0.5em;
+}
+.post-card[data-resolution] > .post-resolution:not([open]) ~ .post-card-permalink {
+  display: none;
+}
+.post-resolution-root:has(> [hidden]) {
+  display: none;
+}

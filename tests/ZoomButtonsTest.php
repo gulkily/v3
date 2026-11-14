@@ -10,8 +10,8 @@ final class ZoomButtonsTest
 {
     public function testGroupRendersSmallerFitActualLargerAsLabelledIcons(): void
     {
-        $html = ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in']);
-        zoomAssertContains('<div class="zoom-buttons post-table-zoom" role="group" aria-label="Text size">', $html);
+        $html = ZoomButtons::group('div', 'zoom-table-buttons', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in']);
+        zoomAssertContains('<div class="zoom-buttons zoom-table-buttons" role="group" aria-label="Text size">', $html);
         zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="out" aria-label="Smaller" title="Smaller"><svg', $html);
         zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="fit" aria-label="Fit to screen" title="Fit to screen"><svg', $html);
         zoomAssertContains('<button type="button" class="zoom-button" data-table-zoom="page" aria-label="Same size as page text" title="Same size as page text"><svg', $html);

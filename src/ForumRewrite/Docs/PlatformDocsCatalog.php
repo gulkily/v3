@@ -47,6 +47,12 @@ final class PlatformDocsCatalog
                 'description' => 'Commands, options, and error handling for the v3 CLI.',
             ],
             [
+                'title' => 'Post with an Agent',
+                'category' => 'Extending the Platform',
+                'path' => 'docs/post_with_an_agent.md',
+                'description' => 'Set up any AI agent to post on ZenMemes under one stable account.',
+            ],
+            [
                 'title' => 'Contribute with an Agent',
                 'category' => 'Extending the Platform',
                 'path' => 'docs/contribute_with_an_agent.md',

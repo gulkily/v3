@@ -37,8 +37,17 @@ export async function checkChatLayout(page, artifacts) {
   await page.waitForFunction(() => document.querySelector('.private-conversation').classList.contains('composer-inline'));
   await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 });
   await cdp.detach();
-  await page.getByRole('button', { name: 'Latest message', exact: true }).click();
-  assert.ok(await page.getByRole('button', { name: 'Latest message', exact: true }).evaluate(node => node.getBoundingClientRect().bottom <= innerHeight));
+  // ↓ appears only when the newest message is out of view, and hides once it is back.
+  const latestButton = page.getByRole('button', { name: 'Latest message', exact: true });
+  if (!await latestButton.isVisible()) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+  }
+  if (await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 40)) {
+    await latestButton.waitFor();
+    await latestButton.click();
+  }
+  await latestButton.waitFor({ state: 'hidden' });
+  assert.ok(await page.locator('[data-private-message-composer]').evaluate(node => node.getBoundingClientRect().bottom <= innerHeight));
   await page.screenshot({ path: join(artifacts, 'chat-mobile.png') });
   await page.setViewportSize({ width: 1100, height: 800 });
   await page.screenshot({ path: join(artifacts, 'chat-desktop.png') });
@@ -62,8 +71,10 @@ export async function checkChatLayout(page, artifacts) {
   await page.waitForFunction(expected => document.querySelectorAll('[data-private-message-id]').length === expected, priorCount + 1);
   await page.waitForFunction(() => document.querySelectorAll('[data-role="private-message-verification"]:not([hidden])').length === document.querySelectorAll('[data-private-message-id]').length);
   assert.ok(Math.abs(await page.evaluate(() => scrollY) - priorScroll) < 5, 'Sending must preserve earlier reading position');
-  await page.getByRole('button', { name: 'Latest message', exact: true }).click();
+  await latestButton.waitFor();
+  await latestButton.click();
   assert.ok(await page.evaluate(() => scrollY) > priorScroll);
+  await latestButton.waitFor({ state: 'hidden' });
   await page.evaluate(() => {
     document.querySelectorAll('[data-layout-fixture]').forEach(node => node.remove());
     window.ForumPrivateMessageConversation.format(document.querySelector('.private-conversation'));

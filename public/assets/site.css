@@ -842,10 +842,13 @@ pre {
     display: none;
   }
 
-  /* Personal slots: <html data-nav-slots="recent users"> (set before paint by
-     the head script from the browser's saved choice) shows those More
-     destinations as tabs, after the fixed ones and before New post and More. */
+  /* Phone tabs: <html data-nav-slots="board calendar recent"> (the server's
+     starting tabs, replaced before paint by the browser's saved choice) shows
+     those destinations as tabs, in bar order, before New post and More. */
+  html[data-nav-slots~="board"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="board"],
+  html[data-nav-slots~="lobby"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="lobby"],
   html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
+  html[data-nav-slots~="calendar"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
@@ -878,7 +881,10 @@ pre {
     --more-tab-icon: none;
   }
 
+  html[data-nav-slots~="board"] [data-shell="app"] .account-menu[data-current="board"],
+  html[data-nav-slots~="lobby"] [data-shell="app"] .account-menu[data-current="lobby"],
   html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
+  html[data-nav-slots~="calendar"] [data-shell="app"] .account-menu[data-current="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
@@ -1377,9 +1383,14 @@ pre {
   margin: 0 1.5rem 0 0;
 }
 
+/* Keep each link whole so "Agent prompt" never splits across lines. */
+.visitor-intro p a {
+  white-space: nowrap;
+}
+
 /* `:root` outranks themes' general button sizing. The invisible ::after gives
    the small button a 44px touch target without covering the sentence. */
-:root .visitor-intro button {
+:root .visitor-intro > button {
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
@@ -1390,7 +1401,7 @@ pre {
   line-height: 1;
 }
 
-.visitor-intro button::after {
+.visitor-intro > button::after {
   content: "";
   position: absolute;
   inset: -0.625rem;
@@ -1582,9 +1593,8 @@ pre {
    Cells wrap only between words, without hyphenation: hyphens let a column shrink to one
    syllable ("re-ports"), so a column of short labels lost its width to the longest column. */
 .post-markdown th, .post-markdown td { overflow-wrap: break-word; word-break: normal; hyphens: manual; vertical-align: top; }
-.post-markdown .post-table { margin: 0 0 0.75em; }
-.post-markdown .post-table .docs-table-scroll { margin: 0; }
-/* Smaller/Larger text-size buttons (ZoomButtons.php): Query viewer, post tables. Each place
+.post-markdown .zoom-table { margin: 0 0 0.75em; }
+/* Smaller/Larger text-size buttons (ZoomButtons.php): Query viewer, zoom tables. Each place
    sets the group's display (both are phone-only), because site.css loads asynchronously and
    can arrive after page stylesheets such as sqlite.css. The [type] keeps these metrics ahead of header button rules
    whatever the load order. The Forte toolbar keeps its own toolbar button look. */
@@ -1602,30 +1612,48 @@ pre {
   margin: 0;
   padding: 0.25rem 0.4rem;
 }
-.post-table-zoom { display: none; }
-/* Phones: a table opens fitted to the screen and fills its width; the browser sizes the
-   columns from their content. --table-min (set per table by PublicMarkdownRenderer) is the
-   table's estimated narrowest width in em: each column's longest word plus cell padding. The
-   fitted text size is the largest at which that fits, never above the page's own size, so a
-   short two-column table keeps full-size text and only a really wide table gets small. Past
-   the fitted size the table scrolls sideways. --table-zoom multiplies the fitted size;
-   table_zoom.js sets it from the buttons and from pinching on the table, and layout.php
-   restores the saved value before paint. Pinching outside tables still zooms the page.
-   Links and code in tables (URLs, paths) may break anywhere, so one long token doesn't make
-   the whole table scroll; the renderer counts any word as at most 20 characters. */
+/* Tables with their own text-size controls on phones (ZoomTable.php, table_zoom.js): post
+   tables, Tools tables such as Visitor statistics, and the calendar (text mode, below).
+   Fit mode: a table opens fitted to the screen and
+   fills its width; the browser sizes the columns from their content. --table-min (set per
+   table by ZoomTable) is the table's estimated narrowest width in em: each column's longest
+   word plus cell padding. The fitted text size is the largest at which that fits, never above
+   the page's own size, so a short two-column table keeps full-size text and only a really
+   wide table gets small. Past the fitted size the table scrolls sideways. --table-zoom
+   multiplies the fitted size; each kind of table has its own (--table-zoom-post,
+   --table-zoom-tools), which table_zoom.js sets from the buttons and from pinching on the
+   table and layout.php restores before paint. Actual size (data-table-size-<kind>="page" on
+   <html>) puts that kind at the page's own text size. Pinching outside tables still zooms
+   the page. Links and code in tables (URLs, paths) may break anywhere, so one long token
+   doesn't make the whole table scroll; ZoomTable counts any word as at most 20 characters. */
+.zoom-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* Cards break text anywhere, which lets table columns shrink to a letter wide; zoom table
+   cells wrap only between words (and at hyphens), so a column is never narrower than one. */
+.zoom-table :is(th, td) { overflow-wrap: break-word; word-break: normal; hyphens: manual; }
+.zoom-table-buttons { display: none; }
+.zoom-table--post { --table-zoom: var(--table-zoom-post, 1); }
+.zoom-table--tools { --table-zoom: var(--table-zoom-tools, 1); }
+.zoom-table--calendar { --table-zoom: var(--table-zoom-calendar, 1); }
 @media (max-width: 639px) {
-  .post-table-zoom { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
-  .post-table .docs-table-scroll { container-type: inline-size; touch-action: pan-x pan-y; }
-  .post-table table {
+  .zoom-table-buttons { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
+  .zoom-table-scroll { container-type: inline-size; touch-action: pan-x pan-y; }
+  .zoom-table table {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     width: 100%;
+  }
+  .zoom-table--fit table {
     font-size: calc(1em * var(--table-zoom, 1));
     font-size: calc(min(1em, 100cqw / var(--table-min, 60)) * var(--table-zoom, 1));
   }
-  .post-table :is(a, code) { overflow-wrap: anywhere; }
-  /* Actual size: the page's own text size, for every table (table_zoom.js). */
-  :root[data-table-size="page"] .post-table table { font-size: 1em; }
+  .zoom-table--fit :is(td, th) :is(a, code) { overflow-wrap: anywhere; }
+  :root[data-table-size-post="page"] .zoom-table--post table,
+  :root[data-table-size-tools="page"] .zoom-table--tools table { font-size: 1em; }
+  /* Text mode (the calendar): full width always. The table's own CSS decides which text
+     scales with --table-zoom; Actual size sets --table-zoom to the table's
+     --table-page-scale, a plain number, which table_zoom.js reads back. */
+  .zoom-table--text .zoom-table-scroll { overflow-x: hidden; }
+  :root[data-table-size-calendar="page"] .zoom-table--calendar table { --table-zoom: var(--table-page-scale, 1); }
 }
 .post-markdown .docs-align-center { text-align: center; }
 .post-markdown .docs-align-right { text-align: right; }

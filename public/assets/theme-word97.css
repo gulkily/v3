@@ -250,7 +250,8 @@
 
 :root[data-theme="word97"] .card > h1:first-child,
 :root[data-theme="word97"] .card > h2:first-child,
-:root[data-theme="word97"] .post-card > .meta:first-child {
+:root[data-theme="word97"] .post-card > .meta:first-child,
+:root[data-theme="word97"] .post-card > .post-resolution > .post-resolution-summary + .meta {
   display: block;
   margin: -1.5rem -1.5rem 1.1rem;
   padding: 0.22rem 0.55rem;
@@ -264,13 +265,15 @@
 
 :root[data-theme="word97"] .card > h1:first-child a,
 :root[data-theme="word97"] .card > h2:first-child a,
-:root[data-theme="word97"] .post-card > .meta:first-child a {
+:root[data-theme="word97"] .post-card > .meta:first-child a,
+:root[data-theme="word97"] .post-card > .post-resolution > .post-resolution-summary + .meta a {
   color: #ffffff;
   text-decoration: none;
 }
 
 /* Author marks such as (unapproved) and (unsigned) stay readable on the title bar. */
-:root[data-theme="word97"] .post-card > .meta:first-child .meta {
+:root[data-theme="word97"] .post-card > .meta:first-child .meta,
+:root[data-theme="word97"] .post-card > .post-resolution > .post-resolution-summary + .meta .meta {
   color: #e0e0e0;
   font-weight: 400;
 }

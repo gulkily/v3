@@ -197,6 +197,23 @@ try {
  await page.setViewportSize({width:1280,height:900});
  await page.locator('[name="image"]').setInputFiles({name:'pixel.png',mimeType:'image/png',buffer:png});
  const preparedPng=Buffer.from(await page.evaluate(async()=>Array.from(new Uint8Array(await (await ForumImageUpload.ready(document.querySelector('[data-compose-form]'))).file.arrayBuffer()))));
+ {
+   // Submitting re-checks eligibility while uploading; the composer must keep showing the
+   // attachment (locked), not the "uploading is unavailable" recovery prompt.
+   let release, reached;const gate=new Promise(r=>{release=r;});const started=new Promise(r=>{reached=r;});
+   const hold=async route=>{reached();await gate;await route.continue();};
+   await page.route('**/api/get_profile?*', hold);
+   try {
+     await page.evaluate(()=>{const form=document.querySelector('[data-compose-form]');ForumImageUpload.lock(form,true);window.__submitCheck=ForumImageUpload.assertEligible(form).finally(()=>ForumImageUpload.lock(form,false));});
+     await started;
+     assert.equal(await page.locator('.image-upload-preview').isVisible(),true,'attachment stays visible while uploading');
+     assert.equal(await page.getByRole('button',{name:'Remove image',exact:true}).isDisabled(),true,'remove locked while uploading');
+     assert.equal(await page.locator('.image-upload-recovery').isVisible(),false,'no recovery prompt while uploading');
+   } finally {release();}
+   await page.evaluate(()=>window.__submitCheck);
+   await page.unroute('**/api/get_profile?*', hold);
+   assert.equal(await page.getByRole('button',{name:'Remove image',exact:true}).isDisabled(),false);
+ }
  // Send correctly signed requests that bypass all browser preparation.
  const wide=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=2049;c.height=1;return c.toDataURL('image/png').split(',')[1];}),'base64');
  const chunk=Buffer.alloc(20);chunk.writeUInt32BE(8,0);chunk.write('acTL',4);chunk.writeUInt32BE(2,8);

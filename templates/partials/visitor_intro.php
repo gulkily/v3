@@ -5,7 +5,7 @@
 ?>
 <?php if (($siteDescription ?? '') !== ''): ?>
 <article class="card visitor-intro" data-visitor-intro>
-  <p><?= $e($siteDescription) ?> <a href="/about/">About</a></p>
+  <p><?= $e($siteDescription) ?> <a href="/about/">About</a><?php if ($agentPageEnabled): ?> · <a href="/agent/">Use with your agent</a><?php endif; ?></p>
   <button type="button" data-visitor-intro-hide aria-label="Hide"><span aria-hidden="true">×</span></button>
 </article>
 <script>

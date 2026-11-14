@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?>>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -33,28 +33,38 @@
         }
       } catch (error) {}
       try {
-        // Post table text size (table_zoom.js), restored before paint.
-        var tableZoomSaved = localStorage.getItem('table-zoom');
-        var tableZoom = parseFloat(tableZoomSaved);
-        if (tableZoomSaved === 'page') {
-          document.documentElement.setAttribute('data-table-size', 'page');
-        } else if (tableZoom >= 0.5 && tableZoom <= 8) {
-          document.documentElement.style.setProperty('--table-zoom', String(tableZoom));
-        }
+        // Zoom table text size per kind (ZoomTable, table_zoom.js), restored before paint.
+        var tableZoomKeys = <?= json_encode(\ForumRewrite\View\ZoomTable::KINDS, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+        Object.keys(tableZoomKeys).forEach(function (kind) {
+          var saved = localStorage.getItem(tableZoomKeys[kind]);
+          var zoom = parseFloat(saved);
+          if (saved === 'page') {
+            document.documentElement.setAttribute('data-table-size-' + kind, 'page');
+          } else if (zoom >= 0.5 && zoom <= 8) {
+            document.documentElement.style.setProperty('--table-zoom-' + kind, String(zoom));
+          }
+        });
       } catch (error) {}
 <?php if ($navSlotCount > 0): ?>
       try {
-        // Personal phone tabs, chosen by nav_slots.js and read here before paint.
+        // Phone tabs, earned by use in nav_slots.js and read here before paint. The
+        // server already set the starting tabs; a saved choice replaces them.
         var navSlotCount = <?= (int) $navSlotCount ?>;
         var navSlotSections = <?= json_encode($navSlotSections, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
-        window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections };
+        var navSlotDefaults = <?= json_encode($navSlotDefaults ?? [], JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+        window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections, defaults: navSlotDefaults };
         var navSlotState = JSON.parse(localStorage.getItem('forum_nav_slots') || 'null');
-        var navSlots = navSlotState && Array.isArray(navSlotState.slots) ? navSlotState.slots : [];
-        var navMember = document.documentElement.getAttribute('data-member') === 'approved';
-        navSlots = navSlots.filter(function (section) {
-          return navSlotSections.indexOf(section) !== -1 && ((section !== 'messages' && section !== 'inbox') || navMember);
-        }).slice(0, navSlotCount);
-        if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
+        if (navSlotState && typeof navSlotState === 'object') {
+          var navSlots = Array.isArray(navSlotState.slots) ? navSlotState.slots : [];
+          // Saved while Board and Calendar were fixed: they come first.
+          if (navSlotState.v !== 2) navSlots = navSlotDefaults.concat(navSlots);
+          var navMember = document.documentElement.getAttribute('data-member') === 'approved';
+          navSlots = navSlots.filter(function (section, index, all) {
+            return all.indexOf(section) === index && navSlotSections.indexOf(section) !== -1 && ((section !== 'messages' && section !== 'inbox') || navMember);
+          }).slice(0, navSlotCount);
+          if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
+          else document.documentElement.removeAttribute('data-nav-slots');
+        }
       } catch (error) {}
 <?php endif; ?>
       // Each palette theme's saved colour, or its first palette.
@@ -166,6 +176,18 @@
       } catch (error) {
       }
 <?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+      try {
+        // Reading margins (reading_margins.js): the chosen column edges, in vw, restored before paint.
+        var readingMargins = (localStorage.getItem(browserRuntime.readingMarginsStorageKey) || '').split(' ');
+        if (['4', '14', '24', '34'].indexOf(readingMargins[0]) !== -1 && ['66', '76', '86', '96'].indexOf(readingMargins[1]) !== -1) {
+          document.documentElement.setAttribute('data-reading-margins', readingMargins.join(' '));
+          document.documentElement.style.setProperty('--reading-left', readingMargins[0]);
+          document.documentElement.style.setProperty('--reading-right', readingMargins[1]);
+        }
+      } catch (error) {
+      }
+<?php endif; ?>
     })();
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
@@ -199,6 +221,9 @@
   <script src="<?= $e($memberApprovalScriptPath) ?>" defer></script>
 <?php if ($showThreadDensityToggle): ?>
   <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+  <script src="<?= $e($readingMarginsScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
@@ -257,6 +282,9 @@
 <?= $indent($partial('partials/theme_menu.php'), 4) ?>
       </div>
     </header>
+<?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+<?= $indent($partial('partials/reading_margins.php'), 2) ?>
 <?php endif; ?>
     <main class="main">
 <?= $indent($content, 3) ?>

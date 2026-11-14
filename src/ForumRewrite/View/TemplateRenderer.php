@@ -19,10 +19,12 @@ use RuntimeException;
 final class TemplateRenderer
 {
     private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
+    private const READING_MARGINS_PAGE_TEMPLATES = ['thread.php'];
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
         'themes.php' => ['/assets/themes.css'],
+        'agent.php' => ['/assets/agent.css'],
         'activity.php' => ['/assets/activity.css', '/assets/access-history.css'],
         'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
@@ -108,9 +110,14 @@ final class TemplateRenderer
         }
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true)
             && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
+        $showReadingMargins = in_array($pageTemplate, self::READING_MARGINS_PAGE_TEMPLATES, true)
+            && $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED);
         $pageStylesheetPaths = [];
         foreach (self::PAGE_STYLESHEET_PATHS[$pageTemplate] ?? [] as $stylesheetPath) {
             $pageStylesheetPaths[] = $this->assetPath($stylesheetPath);
+        }
+        if ($showReadingMargins) {
+            $pageStylesheetPaths[] = $this->assetPath('/assets/reading-margins.css');
         }
 
         if ($hasQueryDialog) {
@@ -130,6 +137,7 @@ final class TemplateRenderer
             $publicAuthenticationResume,
             $pageStylesheetPaths,
             is_string($pageData['threadTheme'] ?? null) ? $pageData['threadTheme'] : null,
+            $showReadingMargins,
         );
     }
 
@@ -147,6 +155,7 @@ final class TemplateRenderer
         bool $publicAuthenticationResume = false,
         array $pageStylesheetPaths = [],
         ?string $threadTheme = null,
+        bool $showReadingMargins = false,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
@@ -243,6 +252,7 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'routeSource' => $routeSource,
             'showThreadDensityToggle' => $showThreadDensityToggle,
+            'showReadingMargins' => $showReadingMargins,
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,
@@ -268,6 +278,7 @@ final class TemplateRenderer
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'memberApprovalScriptPath' => $this->assetPath('/assets/member_approval.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
+            'readingMarginsScriptPath' => $this->assetPath('/assets/reading_margins.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'replyViewportScriptPath' => $this->assetPath('/assets/reply_viewport.js'),
             'composeDisclosureScriptPath' => $this->assetPath('/assets/compose_disclosure.js'),
@@ -295,6 +306,7 @@ final class TemplateRenderer
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
             'navSlotCount' => self::navSlotCount($navItems),
+            'navSlotDefaults' => self::navSlotDefaults($navItems),
             'navSlotSections' => array_values(array_map(
                 static fn (array $item): string => $item['section'],
                 array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && ($item['phone'] ?? '') === 'more'),
@@ -413,14 +425,14 @@ final class TemplateRenderer
         if (in_array('inbox', array_column($items, 'section'), true)) {
             array_splice($barOrder, (int) array_search('messages', $barOrder, true), 0, ['inbox']);
         }
-        // Phone tab bar: Board (or Lobby) and Calendar stay; the rest sit in More,
-        // which is the same disclosure as the desktop account menu.
-        $phoneBarSections = ['board', 'lobby', 'calendar'];
+        // Phone tab bar: every main destination sits in More (the same disclosure
+        // as the desktop account menu) and can earn a tab by use; Board (or Lobby)
+        // and Calendar are only the starting tabs (navSlotDefaults()).
         foreach ($items as $index => $item) {
             // Users is main; a personal profile link (members-only mode) belongs in the account menu.
             $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
             $items[$index]['placement'] = !in_array($item['section'], $menuSections, true) && $isUsers ? 'main' : 'menu';
-            $items[$index]['phone'] = in_array($item['section'], $phoneBarSections, true) ? 'bar' : 'more';
+            $items[$index]['phone'] = 'more';
             $items[$index]['_order'] = array_search($item['section'], $barOrder, true);
         }
         usort($items, static fn (array $a, array $b): int => ($a['_order'] === false ? PHP_INT_MAX : $a['_order']) <=> ($b['_order'] === false ? PHP_INT_MAX : $b['_order']));
@@ -431,10 +443,13 @@ final class TemplateRenderer
         return $items;
     }
 
+    /** Destinations a fresh browser shows as phone tabs, before any use is counted. */
+    private const PHONE_DEFAULT_SECTIONS = ['board', 'lobby', 'calendar'];
+
     /**
-     * Personal slots on the phone tab bar: five tabs at most, minus the fixed
-     * ones (bar destinations, New post, More), and never more than two. The
-     * browser fills them before first paint from its own saved choice.
+     * Phone tabs: every destination tab is a slot earned by use. The count keeps
+     * the bar the size it had when Board (or Lobby) and Calendar were fixed: those
+     * starting tabs plus up to two more, within five tabs with New post and More.
      *
      * @param list<array<string, mixed>> $navItems
      */
@@ -443,11 +458,30 @@ final class TemplateRenderer
         if ($navItems === [] || !isset($navItems[0]['phone'])) {
             return 0;
         }
-        $fixed = count(array_filter($navItems, static fn (array $item): bool => ($item['phone'] ?? '') === 'bar'));
+        $defaults = count(self::navSlotDefaults($navItems));
         $canPost = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'board') !== [];
-        $fixed += ($canPost ? 1 : 0) + 1;
+        $fixed = $defaults + ($canPost ? 1 : 0) + 1;
 
-        return max(0, min(2, 5 - $fixed));
+        return $defaults + max(0, min(2, 5 - $fixed));
+    }
+
+    /**
+     * The starting phone tabs, in bar order: what a browser with no saved use shows,
+     * and what the server puts on <html data-nav-slots> for pages without script.
+     *
+     * @param list<array<string, mixed>> $navItems
+     * @return list<string>
+     */
+    public static function navSlotDefaults(array $navItems): array
+    {
+        if ($navItems === [] || !isset($navItems[0]['phone'])) {
+            return [];
+        }
+
+        return array_values(array_map(
+            static fn (array $item): string => $item['section'],
+            array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && in_array($item['section'], self::PHONE_DEFAULT_SECTIONS, true)),
+        ));
     }
 
     /**
@@ -630,6 +664,29 @@ final class TemplateRenderer
     }
 
     /**
+     * /agent/ exists when the flag is on and the profile has prompts.
+     */
+    public function agentPageEnabled(): bool
+    {
+        return $this->featureFlags->isEnabled(FeatureFlagRegistry::AGENT_PROMPT_ENABLED)
+            && \ForumRewrite\ProfilePresentationContent::agentPrompts(SiteProfileRegistry::active(), '') !== [];
+    }
+
+    /**
+     * This request's origin for copy that names the site, such as the agent
+     * prompt. Pages rendered without a request (caches, offline snapshots)
+     * get a placeholder that the page's own script replaces before paint.
+     */
+    public static function requestOrigin(): string
+    {
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        if ($host === '' || preg_match('/^[A-Za-z0-9.\-:\[\]]+$/D', $host) !== 1) {
+            return '{origin}';
+        }
+        return (\ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER) ? 'https://' : 'http://') . $host;
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     private function renderFile(string $relativePath, array $data): string
@@ -649,9 +706,23 @@ final class TemplateRenderer
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
+            'agentPageEnabled' => $this->agentPageEnabled(),
+            'agentPromptOrigin' => self::requestOrigin(),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
+            'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
+        // The Agent Prompts tool opens /agent/; drop it where that page is off.
+        if (!$data['agentPageEnabled']) {
+            foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {
+                if (isset($data[$toolListKey]) && is_array($data[$toolListKey])) {
+                    $data[$toolListKey] = array_values(array_filter(
+                        $data[$toolListKey],
+                        static fn (array $tool): bool => ($tool['key'] ?? '') !== 'agent-prompts',
+                    ));
+                }
+            }
+        }
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $mediaEmbedsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED);

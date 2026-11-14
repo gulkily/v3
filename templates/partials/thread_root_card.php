@@ -29,6 +29,13 @@ $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
 $postAnchorId = 'post-' . (string) $post['post_id'];
 $isRetracted = ($post['retracted_at'] ?? null) !== null;
+$unlockedPostTags = (($tagUnlocksEnabled ?? false) && !$isRetracted)
+    ? \ForumRewrite\Support\Tagsets::forApplication()->unlockedFor(array_merge($thread['board_tags'] ?? [], $thread['thread_labels'] ?? []), \ForumRewrite\Support\Tagsets::TARGET_ROOT)
+    : [];
+$postResolution = $unlockedPostTags !== [] && in_array((string) ($post['resolution_state'] ?? ''), $unlockedPostTags, true)
+    ? (string) $post['resolution_state'] : null;
+$postStateLabel = \ForumRewrite\Support\PostStateView::label($postResolution, (string) ($post['resolution_set_by_username'] ?? ''));
+$rootTakesState = array_filter($unlockedPostTags, static fn (string $tag): bool => \ForumRewrite\Support\Tagsets::forApplication()->exclusiveGroupOf($tag) !== null) !== [];
 $postBody = (string) $post['body'];
 $postBodyFirstLineSegments = preg_split('/\r\n|\r|\n/', $postBody, 2);
 $postBodyFirstLine = trim($postBodyFirstLineSegments[0] ?? '');
@@ -82,7 +89,7 @@ if (!$metaVisible) {
     }
 }
 ?>
-<article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $metaVisible ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>" data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $rootTimeLabel !== '' ? ' data-time="' . $e($rootTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
+<article id="<?= $e($postAnchorId) ?>" class="card post-card thread-root-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $metaVisible ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($thread['last_activity_at'] ?? ($post['created_at'] ?? null), (int) ($thread['reply_count'] ?? 0)) ?>" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $postResolution !== null ? ' data-resolution="' . $e($postResolution) . '"' : '' ?> data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $rootTimeLabel !== '' ? ' data-time="' . $e($rootTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
 <?php if ($isQdbQuoteRoot): ?>
   <p class="quote-card-header">
     <a class="quote-card-permalink" href="<?= $e($quoteRootPermalinkHref) ?>">#<?= $e($quoteRootDisplayNumber) ?></a>
@@ -115,7 +122,10 @@ if (!$metaVisible) {
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
 <?php if ($metaVisible && !$isQdbQuoteRoot): ?>
-  <p class="meta" data-post-byline><?= $contentMeta($post, 'created_at', '') ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $renderLabels($thread['thread_labels']) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
+  <p class="meta" data-post-byline><?= $contentMeta($post, 'created_at', '') ?><?php if ($rootTakesState): ?> <span class="post-resolution-state" data-role="post-state-label"<?= $postStateLabel === '' ? ' hidden' : '' ?>><?= $e($postStateLabel) ?></span><?php endif; ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $renderLabels($thread['thread_labels']) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
+<?php endif; ?>
+<?php if ($rootTakesState && (!$metaVisible || $isQdbQuoteRoot)): ?>
+  <p class="meta post-resolution-root"><span class="post-resolution-state" data-role="post-state-label"<?= $postStateLabel === '' ? ' hidden' : '' ?>><?= $e($postStateLabel) ?></span></p>
 <?php endif; ?>
 <?= $partial('partials/scripture_expansion.php') ?>
 <?= $indent($partial('partials/post_identity_details.php', ['post' => $post]), 1) ?>
@@ -198,6 +208,9 @@ if (!is_array($postAnalysisLabels)) {
       aria-pressed="<?= $viewerHasFlaggedPost ? 'true' : 'false' ?>"
 <?= $viewerHasFlaggedPost ? ' disabled="disabled"' : '' ?>
     ><?= $viewerHasFlaggedPost ? 'Flagged' : 'Flag' ?></button>
+<?php endif; ?>
+<?php if ($unlockedPostTags !== []): ?>
+<?= $indent($partial('partials/post_unlocked_tags.php', ['post' => $post, 'unlockedPostTags' => $unlockedPostTags, 'postResolution' => $postResolution]), 2) ?>
 <?php endif; ?>
 <?php if ($showAgentReplyRequestButton && !$isRetracted): ?>
     <button

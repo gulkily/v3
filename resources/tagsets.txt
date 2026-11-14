@@ -1,0 +1,14 @@
+Schema: tagsets-v1
+
+# A tagset lets a tag on a thread unlock more tags on its replies.
+# Each block names one parent tag:
+#   Parent:    the thread tag that unlocks the set (an authored label or a Fastmod tag)
+#   Target:    where the unlocked tags apply: reply, root (the thread's opening post), or both
+#   Unlocks:   comma-separated tags offered as buttons
+#   Exclusive: yes when the tags are one state (the latest counted mark wins)
+# Lines starting with # are comments. Blocks are separated by blank lines.
+
+Parent: meta
+Target: reply, root
+Unlocks: claimed, resolved, closed, open
+Exclusive: yes

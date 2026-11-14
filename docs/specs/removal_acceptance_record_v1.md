@@ -14,7 +14,7 @@ separated and terminated by a blank line; duplicate label paths are rejected.
 
 ```text
 Format: removal-acceptance-v1
-Post-ID: root
+Target-ID: root
 Operation: resolve
 Authority: local-operator
 Accepted-At: 2026-10-29T00:00:00Z
@@ -22,7 +22,7 @@ Actor: local-operator
 Source-SHA256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 Thread-ID: root
 Parent-ID:
-Post-Created-At: 2026-10-28T00:00:00Z
+Target-Created-At: 2026-10-28T00:00:00Z
 Author-Identity-ID:
 Thread-Type:
 Retraction-Class:
@@ -34,6 +34,20 @@ Label-Path: records/thread-labels/label-a.txt
 Label-SHA256: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 
 ```
+
+`Target-ID` names the removed record and `Target-Created-At` its creation time.
+`Thread-ID` and `Parent-ID` record where it sat in the conversation.
+
+## Target field compatibility
+
+Receipts written before 2026-11-13 use `Post-ID` and `Post-Created-At` in the same
+positions instead of `Target-ID` and `Target-Created-At`. They remain valid and are
+read as stored. A receipt carries exactly one of the two field sets, never a mix.
+New receipts always use `Target-ID` and `Target-Created-At`. Application versions
+from before the rename reject the new field set, so a rollback must go to a version
+that reads both; see [the rollback note](../reference/v3_cli.md#retraction-target-id-rollback).
+
+## Profiles
 
 Local receipts use `records/post-removals/<post-id>.txt`; operation is `delete` or
 `resolve`, actor is `local-operator`, source hash is required, and signature/class/

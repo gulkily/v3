@@ -4583,6 +4583,73 @@ NODE;
 
     }
 
+    public function testRetractionWritesTargetIdAndStillReadsPostIdRetractions(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'target-id', "Retract by target id\n");
+
+        $_POST = ['author_identity_id' => $author['identity_id'], 'target_id' => $author['thread_id'], 'post_id' => 'root-other'];
+        try { $conflict = json_decode($this->renderMethod($app, 'POST', '/api/prepare_retraction'), true); } finally { $_POST = []; }
+        assertSame('error', $conflict['status']);
+        assertStringContains('target_id and post_id name different records', $conflict['message'] ?? $conflict['error'] ?? '');
+
+        $_POST = ['author_identity_id' => $author['identity_id'], 'target_id' => $author['thread_id']];
+        try { $prepared = json_decode($this->renderMethod($app, 'POST', '/api/prepare_retraction'), true); } finally { $_POST = []; }
+        assertSame('ok', $prepared['status']);
+        assertSame($author['thread_id'], $prepared['target_id']);
+        assertSame($author['thread_id'], $prepared['post_id']);
+        assertStringContains("\nTarget-ID: " . $author['thread_id'] . "\n", $prepared['canonical_record']);
+        assertStringNotContains('Post-ID', $prepared['canonical_record']);
+
+        $_POST = ['prepare_token' => $prepared['prepare_token'], 'target_id' => $author['thread_id'],
+            'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        try { $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true); } finally { $_POST = []; }
+        assertSame('ok', $result['status']);
+        assertSame($author['thread_id'], $result['target_id']);
+        $receipt = file_get_contents($root . '/' . $result['acceptance_path']);
+        assertStringContains("\nTarget-ID: " . $author['thread_id'] . "\n", $receipt);
+        assertStringContains("\nTarget-Created-At: ", $receipt);
+        assertStringNotContains('Post-ID', $receipt);
+
+        // A retraction accepted before the rename: Post-ID request and receipt, hand-written as stored then.
+        $old = $this->createAuthoredThread($app, 'post-id', "Retracted before the rename\n");
+        $post = (new \ForumRewrite\Canonical\PostRecordParser())->parse(file_get_contents($root . '/' . $old['record_path']));
+        $request = "Record-ID: post-retraction-{$old['thread_id']}\nCreated-At: 2026-11-01T00:00:00Z\nPost-ID: {$old['thread_id']}\n"
+            . "Operation: retract\nAuthor-Identity-ID: {$old['identity_id']}\n\n";
+        $signature = $this->signCanonicalRecord($old['home'], $request);
+        $legacy = \ForumRewrite\Canonical\RemovalReceipt::encode(['Format' => 'removal-acceptance-v1', 'Post-ID' => $old['thread_id'],
+            'Operation' => 'delete', 'Authority' => 'signed-retraction', 'Accepted-At' => '2026-11-01T00:00:00Z',
+            'Actor' => $old['identity_id'], 'Source-SHA256' => hash('sha256', file_get_contents($root . '/' . $old['record_path'])),
+            'Thread-ID' => $old['thread_id'], 'Parent-ID' => '', 'Post-Created-At' => $post->createdAt,
+            'Author-Identity-ID' => $old['identity_id'], 'Thread-Type' => '', 'Retraction-Class' => 'author',
+            'Retraction-Attribution' => 'author', 'Request-SHA256' => hash('sha256', $request), 'Signature-SHA256' => hash('sha256', $signature)]);
+        foreach ([\ForumRewrite\Canonical\AcceptedRetraction::requestPath($old['thread_id']) => $request,
+            \ForumRewrite\Canonical\AcceptedRetraction::requestPath($old['thread_id']) . '.asc' => $signature,
+            \ForumRewrite\Canonical\AcceptedRetraction::path($old['thread_id']) => $legacy] as $path => $bytes) {
+            if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0775, true);
+            file_put_contents($root . '/' . $path, $bytes);
+        }
+        unlink($root . '/' . $old['record_path']);
+        @unlink($root . '/' . $old['record_path'] . '.asc');
+        assertSame($old['thread_id'], \ForumRewrite\Canonical\AcceptedRetraction::read($root, $old['thread_id'])['post_id']);
+
+        $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
+        $pdo = new PDO('sqlite:' . $db);
+        foreach ([$author['thread_id'], $old['thread_id']] as $id) {
+            assertSame('', $pdo->query("SELECT body FROM posts WHERE post_id='" . $id . "'")->fetchColumn());
+        }
+        $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/threads/' . $old['thread_id']);
+        assertStringNotContains('Retracted before the rename', $page);
+
+        // Replaying with the post_id alias still answers already_retracted.
+        $repeat = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+        assertSame(true, $repeat['already_retracted']);
+        assertSame($author['thread_id'], $repeat['target_id']);
+    }
+
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();

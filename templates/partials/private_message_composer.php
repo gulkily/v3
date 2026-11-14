@@ -18,7 +18,7 @@
     </label>
     <div class="private-message-actions">
 <?php if ($compact ?? false): ?>
-      <button type="button" class="private-message-latest" data-role="private-message-latest" aria-label="Latest message"><span aria-hidden="true">↓</span></button>
+      <button type="button" class="private-message-latest" data-role="private-message-latest" aria-label="Latest message" hidden><span aria-hidden="true">↓</span></button>
       <button type="submit" class="private-message-send">Send</button>
 <?php else: ?>
       <button type="submit">Send</button>

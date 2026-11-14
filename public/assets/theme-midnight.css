@@ -304,7 +304,8 @@
 
 :root[data-theme="midnight"] .card > h1:first-child,
 :root[data-theme="midnight"] .card > h2:first-child,
-:root[data-theme="midnight"] .post-card > .meta:first-child {
+:root[data-theme="midnight"] .post-card > .meta:first-child,
+:root[data-theme="midnight"] .post-card > .post-resolution > .post-resolution-summary + .meta {
   display: block;
   margin: -1.5rem -1.5rem 1.1rem;
   padding: 0.22rem 0.55rem;
@@ -318,7 +319,8 @@
 
 :root[data-theme="midnight"] .card > h1:first-child a,
 :root[data-theme="midnight"] .card > h2:first-child a,
-:root[data-theme="midnight"] .post-card > .meta:first-child a {
+:root[data-theme="midnight"] .post-card > .meta:first-child a,
+:root[data-theme="midnight"] .post-card > .post-resolution > .post-resolution-summary + .meta a {
   color: #ffffff;
   text-decoration: none;
 }

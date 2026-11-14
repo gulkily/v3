@@ -47,9 +47,16 @@
 
 .compose-normalization-inline {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.65rem;
   margin: -0.1rem 0 0;
+}
+/* Keep the message readable on a phone: the action button wraps below it
+   instead of squeezing it to one letter per line. */
+.compose-normalization-inline > [data-role$="normalization-message"] {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 .compose-normalization-inline[hidden] {
   display: none;
@@ -58,7 +65,8 @@
   width: auto;
   margin-top: 0;
   padding: 0.35rem 0.55rem;
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: break-word;
 }
 .compose-form-actions {
   display: flex;

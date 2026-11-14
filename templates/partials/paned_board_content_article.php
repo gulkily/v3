@@ -38,7 +38,7 @@ $rootSignalPosts = is_array($signalActors) ? ($signalActors['posts'][(string) $t
     'signalsClass' => 'paned-post-signals',
 ]), 3) ?>
       <div class="paned-reaction-row">
-        <button type="button" class="paned-reaction-button" data-action="apply-thread-tag" data-tag="like" data-applied-label="Liked" aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"<?= $viewerHasLiked ? ' disabled' : '' ?>><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>
+        <button type="button" class="paned-reaction-button" data-action="apply-thread-tag" data-tag="like" data-applied-label="Liked" data-applied-message="Like added" aria-pressed="<?= $viewerHasLiked ? 'true' : 'false' ?>"<?= $viewerHasLiked ? ' disabled' : '' ?>><?= $viewerHasLiked ? 'Liked' : 'Like' ?></button>
         <button type="button" class="paned-reaction-button" data-action="apply-post-tag" data-tag="flag" data-post-id="<?= $e($thread['root_post_id']) ?>" data-applied-label="Flagged" aria-pressed="<?= $viewerHasFlaggedRoot ? 'true' : 'false' ?>"<?= $viewerHasFlaggedRoot ? ' disabled' : '' ?>><?= $viewerHasFlaggedRoot ? 'Flagged' : 'Flag' ?></button>
         <a class="paned-permalink-link" href="/forte?selected=<?= $e($thread['root_post_id']) ?>&amp;created_post_id=<?= $e($thread['root_post_id']) ?>#post-<?= $e($thread['root_post_id']) ?>" title="Permalink to this post" aria-label="Permalink to this post">#</a>
       </div>

@@ -78,6 +78,70 @@ final class PresentationProfileMatrixTest
         }
     }
 
+    public function testZenmemesAgentPageOffersThreeCopyablePromptsWithTheRequestOrigin(): void
+    {
+        $application = $this->application();
+        $previousHost = $_SERVER['HTTP_HOST'] ?? null;
+        $_SERVER['HTTP_HOST'] = 'zenmemes.example';
+        putenv('FORUM_SITE_ID=zenmemes');
+        try {
+            $page = $this->render($application, '/agent/');
+            assertStringContains('<h1>Use with your agent</h1>', $page);
+            assertStringContains('data-agent-prompt-origin="http://zenmemes.example"', $page);
+            foreach ([
+                'introduce' => ['Get introduced', 'Paste this into your agent:', 'Please visit http://zenmemes.example and read http://zenmemes.example/llms.txt.'],
+                'post' => ['Post as an agent', 'Paste this into an agent that can run commands:', 'Please read http://zenmemes.example/llms.txt and set yourself up to post on zenmemes'],
+                'install' => ['Run your own site', 'Paste this into your coding agent:', 'Please clone https://github.com/gulkily/v3 and inspect it for malicious content.'],
+            ] as $id => [$heading, $label, $text]) {
+                assertStringContains('<section class="agent-page__prompt" id="' . $id . '">', $page);
+                assertStringContains('<h2>' . $heading . '</h2>', $page);
+                assertStringContains('<label class="copy-prompt__label" for="agent-prompt-' . $id . '">' . $label . '</label>', $page);
+                assertStringContains($text, $page);
+            }
+            assertSame(3, substr_count($page, 'data-copy-prompt-button aria-label="Copy prompt" hidden>'));
+            assertSame(1, preg_match('~href="/assets/agent[^"]*\.css~', $page), 'agent.css is linked');
+        } finally {
+            putenv('FORUM_SITE_ID');
+            if ($previousHost === null) {
+                unset($_SERVER['HTTP_HOST']);
+            } else {
+                $_SERVER['HTTP_HOST'] = $previousHost;
+            }
+        }
+    }
+
+    public function testAgentPromptFlagAndProfileGateEveryEntryPoint(): void
+    {
+        $application = $this->application();
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::AGENT_PROMPT_ENABLED;
+        $previousFlag = getenv($flag);
+        try {
+            foreach (array_keys(ProfileRegressionContract::all()) as $profileId) {
+                putenv('FORUM_SITE_ID=' . $profileId);
+                foreach (['1', '0'] as $value) {
+                    putenv($flag . '=' . $value);
+                    $shown = $profileId === 'zenmemes' && $value === '1';
+                    $context = $profileId . ' ' . $flag . '=' . $value;
+                    assertSame($shown, str_contains($this->render($application, '/'), '<a href="/agent/">Use with your agent</a>'), $context);
+                    assertSame($shown, str_contains($this->render($application, '/about/'), '<a href="/agent/">Use with your agent</a>'), $context);
+                    assertSame($shown, str_contains($this->render($application, '/tools/'), 'href="/agent/"'), $context);
+                    assertSame($shown, str_contains($this->render($application, '/agent/'), 'data-copy-prompt'), $context);
+                }
+            }
+        } finally {
+            putenv('FORUM_SITE_ID');
+            putenv($previousFlag === false ? $flag : $flag . '=' . $previousFlag);
+        }
+    }
+
+    public function testAgentPromptsUseAPlaceholderOriginWithoutARequestHost(): void
+    {
+        $prompts = \ForumRewrite\ProfilePresentationContent::agentPrompts(\ForumRewrite\SiteProfileRegistry::all()['zenmemes'], '{origin}');
+        assertSame(['introduce', 'post', 'install'], array_column($prompts, 'id'));
+        assertStringContains('Please visit {origin} and read {origin}/llms.txt.', $prompts[0]['text']);
+        assertSame([], \ForumRewrite\ProfilePresentationContent::agentPrompts(\ForumRewrite\SiteProfileRegistry::all()['qdb'], 'https://x.example'));
+    }
+
     public function testFourthProfileFixtureUsesTheSamePresentationMatrix(): void
     {
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testProfilesRenderTheirRegisteredPresentationSelections());

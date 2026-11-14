@@ -980,10 +980,20 @@
     };
   }
 
-  function postReactionMessage(appliedLabel, wroteRecord) {
+  function postReactionMessage(appliedLabel, wroteRecord, appliedMessage) {
     const label = String(appliedLabel || "Applied").trim() || "Applied";
     const lowerLabel = label.toLowerCase();
-    return wroteRecord ? `${label}.` : `Already ${lowerLabel}.`;
+    if (wroteRecord) {
+      return appliedMessageText(appliedMessage, label);
+    }
+    return `Already ${lowerLabel}.`;
+  }
+
+  // A button may set data-applied-message (e.g. Forte's "Like added") to word
+  // the status line differently from the applied button label.
+  function appliedMessageText(appliedMessage, appliedLabel) {
+    const message = String(appliedMessage || "").trim();
+    return `${message || appliedLabel}.`;
   }
 
   function bindThreadReactions(root) {
@@ -1070,7 +1080,7 @@
         }
 
         const confirmationMessage = wroteRecord
-          ? `${appliedLabel}.`
+          ? appliedMessageText(button.getAttribute("data-applied-message"), appliedLabel)
           : `Already ${appliedLabel.toLowerCase()}.`;
         setFeedback(feedbackNode, confirmationMessage, "ok");
       } catch (error) {
@@ -1101,6 +1111,51 @@
         clearPendingReaction(operationKey);
       }
     });
+  }
+
+  // Show a reply's new state: "open" clears it. State buttons swap so an open reply
+  // offers the states and a marked one offers Reopen; the fold follows data-resolution.
+  function isStateButton(button) {
+    return button.getAttribute("data-state-tag") === "1";
+  }
+
+  function applyPostResolution(root, tag) {
+    const state = tag === "open" ? "" : tag;
+    if (state === "") {
+      root.removeAttribute("data-resolution");
+    } else {
+      root.setAttribute("data-resolution", state);
+    }
+    // Mirrors ForumRewrite\Support\PostStateView.
+    const folds = state === "resolved" || state === "closed";
+    const words = state === "claimed"
+      ? (viewerSignalName() ? `Claimed by ${viewerSignalName()}` : "Claimed by you")
+      : (state === "" ? "" : state.charAt(0).toUpperCase() + state.slice(1));
+    Array.from(root.querySelectorAll("[data-state-tag]")).forEach(function (stateButton) {
+      const buttonTag = stateButton.getAttribute("data-tag");
+      stateButton.hidden = state === "" ? buttonTag === "open" : (folds ? buttonTag !== "open" : buttonTag === state);
+      if (buttonTag === "open") {
+        const openLabel = state === "claimed" ? "Unclaim" : "Reopen";
+        stateButton.textContent = openLabel;
+        stateButton.setAttribute("data-applied-label", openLabel);
+      }
+    });
+    const fold = root.querySelector('[data-role="post-resolution"]');
+    if (fold) {
+      fold.open = !folds;
+    }
+    Array.from(root.querySelectorAll('[data-role="post-resolution-label"]')).forEach(function (label) {
+      if (folds) {
+        label.textContent = words;
+      }
+    });
+    Array.from(root.querySelectorAll('[data-role="post-state-label"]')).forEach(function (label) {
+      label.textContent = words;
+      label.hidden = words === "";
+    });
+    if (typeof root.dispatchEvent === "function" && typeof CustomEvent === "function") {
+      root.dispatchEvent(new CustomEvent("forum:post-resolution", { bubbles: true, detail: { state: state } }));
+    }
   }
 
   function bindPostReactions(root) {
@@ -1162,6 +1217,22 @@
         const isHidden = parseResponseValue(text, "is_hidden") === "yes";
         const viewerIdentityId = reactionIdentityId(parseResponseValue(text, "viewer_identity_id")) || currentReactionIdentityId();
 
+        if (isStateButton(button)) {
+          // A state (resolved/closed/open) can change again, so the button is not kept as applied.
+          restorePostReactionState(root, button, previousState);
+          const approved = parseResponseValue(text, "viewer_is_approved") === "yes";
+          if (approved) {
+            applyPostResolution(root, tag);
+          }
+          setFeedback(feedbackNode, approved
+            ? (tag === "open" ? `${appliedLabel === "Unclaim" ? "Unclaimed" : "Reopened"}.` : (tag === "claimed" ? "Claimed. Others will see you're on it." : `${appliedLabel}.`))
+            : "Saved. Only approved members' marks change a reply's state.", "ok");
+          notifyReactionApplied();
+          markActionTiming(timing, "forum_reconcile_complete");
+          completeActionTiming(timing, "ok");
+          return;
+        }
+
         setConfirmedReactionButton(button, appliedLabel);
         if (wroteRecord && (tag === "like" || tag === "flag") && parseResponseValue(text, "viewer_is_approved") === "yes") {
           appendSignalActor(root.querySelector('[data-role="post-signals"]'), tag, viewerSignalName());
@@ -1180,13 +1251,13 @@
           return;
         }
 
-        setFeedback(feedbackNode, postReactionMessage(appliedLabel, wroteRecord), "ok");
+        setFeedback(feedbackNode, postReactionMessage(appliedLabel, wroteRecord, button.getAttribute("data-applied-message")), "ok");
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
       } catch (error) {
         if (outboxItem) await settleReaction(outboxItem, error);
         const queued = Boolean(outboxItem && error && error.retryable);
-        if (queued) {
+        if (queued && !isStateButton(button)) {
           // Still saved and retried from the Outbox, so the button keeps showing it as applied.
           setConfirmedReactionButton(button, appliedLabel);
         } else {

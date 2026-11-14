@@ -1,5 +1,19 @@
 # Effort estimation trial ledger
 
+## Cycle v3/tag_unlocks
+
+2026-11-12T20:30:00Z — v3/tag_unlocks Step 4 closeout on `tag-unlocks`: Stages 1-7 committed; production verification pending maintainer deploy. [Summary](./tag_unlocks/tag_unlocks_step4_implementation_summary.md#cycle-retrospective). Retrospective cycle assessment **0.65** (projection 0.65); no split, no changed scope. Maintainer judgment pending; study acceptance pending.
+
+2026-11-12T13:20:00Z — v3/tag_unlocks Step 4 entry: Step 3 approved; projection **0.65** reaffirmed after the planning commit.
+
+2026-11-12T06:40:00Z — v3/tag_unlocks Step 3 handoff: Step 2 approved. [Checkpoint](./tag_unlocks/tag_unlocks_step3_development_plan.md#study-checkpoint). Seven stages; projected total **0.65** reaffirmed.
+
+2026-11-12T06:20:00Z — v3/tag_unlocks Step 2 handoff: Step 1 Revision 3 approved (per-reply resolved/closed, approved keys only, fold). [Checkpoint](./tag_unlocks/tag_unlocks_step2_feature_description.md#study-checkpoint). Projected total **0.65** (from 0.60): duplicate-mark guard and per-reply API state.
+
+2026-11-11T07:55:00Z — v3/tag_unlocks Step 1 Revision 1: maintainer pointed to the Agent Accessibility thread; scope v2 is per-reply done/closed with collapse, not thread status. Projected total **0.60** reaffirmed for Option A; options 0.60/0.45/0.50, changed scope.
+
+2026-11-11T06:45:00Z — v3/tag_unlocks Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./tag_unlocks/tag_unlocks_step1_solution_assessment.md#study-snapshots). Scope v1, recommended Option A (tagset file with exclusive groups; `meta` → open/in-progress/closed). Starting revision `6d0f9da1`, R1 hashes verified; extended/debug enabled. Pristine intake missing. Projected total **0.60**; options 0.60/0.45/0.35, non-additive. Single exposed Claude rater.
+
 ## Cycle v3/high_traffic_auto
 
 2026-11-12T17:19:22Z — v3/high_traffic_auto Step 4 closeout: Step 3 explicitly approved; stages 1–6 complete, Stage 7 local verification complete, zenmemes.com log sample and post-deploy replay pending. [Summary/retrospective](./high_traffic_auto/high_traffic_auto_step4_implementation_summary.md#cycle-retrospective). Entry projection 0.70 reaffirmed; stage revision S4 0.08→0.10 (new understanding). Retrospective scope assessment **0.68**; stage retrospectives 0.10/0.10/0.08/0.10/0.10/0.12/0.08. Maintainer comfortable-fit judgment pending. Same R1/P2, single exposed Claude rater.
@@ -607,7 +621,7 @@ Maintainer request: “I want every future railspike to be part of the same data
 
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/dm_instant_load` | Step 4: Stages 1–5 done, Stage 6 pending maintainer | v1 / R1 / P2 | 0.70 | [Step 1](./dm_instant_load/dm_instant_load_step1_solution_assessment.md#study-snapshots); [Step 2](./dm_instant_load/dm_instant_load_step2_feature_description.md#study-snapshots); [Step 3](./dm_instant_load/dm_instant_load_step3_development_plan.md#study-snapshots) | New cycle; no implementation |
+| `v3/dm_instant_load` | Complete; accepted on iPhone Safari | v1 / R1 / P2 | 0.70 | [Step 1](./dm_instant_load/dm_instant_load_step1_solution_assessment.md#study-snapshots); [Step 2](./dm_instant_load/dm_instant_load_step2_feature_description.md#study-snapshots); [Step 3](./dm_instant_load/dm_instant_load_step3_development_plan.md#study-snapshots) | New cycle; no implementation |
 
 2026-11-11: standing P2 enrollment for DM instant load; baseline `6d0f9da1`. Intake (after inspection) and Step 1 handoff both 0.70 for Option B built on Option A; Claude single exposed rater; R1 hashes not re-verified this session. Extended estimates enabled (A 0.30, B 0.70, C 0.40; not summed). Awaiting Approved Step 1.
 
@@ -616,6 +630,8 @@ Maintainer request: “I want every future railspike to be part of the same data
 2026-11-11: Step 2 approved. Step 3 0.70 reaffirmed with six stages (0.15, 0.15, 0.15, 0.10, 0.10, 0.05). Awaiting Approved Step 3.
 
 2026-11-11: Step 3 approved. Step 4 entry 0.70 reaffirmed. Stages 1–5 complete (retrospective stage work 0.10, 0.15, 0.15, 0.15, 0.05); Stage 6 iPhone Safari acceptance and whole-cycle retrospective pending maintainer.
+
+2026-11-13: DM instant load closed. Stage 6 accepted by the maintainer on iPhone Safari and desktop after follow-ups #177 and #178 (first check found the flag never reached page templates). Stage 6 retrospective 0.15; whole-cycle retrospective 0.85 vs. 0.70 projected.
 
 E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically complete, projected 0.85, retrospective 0.90, maintainer acceptance pending. These counts are unchanged by P2. Append each new cycle here with links to its canonical snapshots; keep unsuccessful/incomplete cycles visible. The historical “0 / 6” is accepted outcomes toward the first review checkpoint, not the number of collected records.
 
@@ -1848,3 +1864,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/deploy_header_prompt` | Staged Step 4 technically complete; production replay and maintainer acceptance pending | v2 / R1 / P2 | 0.24 (intake 0.20; Step 2 0.22; retrospective 0.22) | [Step 1](./deploy_header_prompt/deploy_header_prompt_step1_solution_assessment.md#study-snapshot), [Step 2](./deploy_header_prompt/deploy_header_prompt_step2_feature_description.md#study-snapshot), [Step 3](./deploy_header_prompt/deploy_header_prompt_step3_development_plan.md#study-snapshot), [Step 4](./deploy_header_prompt/deploy_header_prompt_step4_implementation_summary.md#cycle-closeout) | Maintainer request in session; feature flag added at Step 1 approval; acceptance pending |
 
 2026-11-10T09:55Z: standing P2 enrollment, staged cycle with extended estimates. Intake **0.20** after source inspection (no pristine intake), Step 2 **0.22** (feature flag), Step 3 **0.24**, Step 4 entry reaffirmed, retrospective **0.22**. Baseline `cdec8702408a82a254633c5107d4b909ef493250`; branch `feat/deploy-header-prompt`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/retraction_target_id
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/retraction_target_id` | Staged Step 4 technically complete; pre-deploy scan, deployment, live retraction check and maintainer acceptance pending | v1 / R1 / P2 | 0.40 (Step 2 0.40; Step 3 0.40; retrospective 0.40) | [Step 2](./retraction_target_id/retraction_target_id_step2_feature_description.md#study-checkpoint), [Step 3](./retraction_target_id/retraction_target_id_step3_development_plan.md#study-checkpoint), [Step 4](./retraction_target_id/retraction_target_id_step4_implementation_summary.md#cycle-closeout) | Child of `v3/post_records` (split at its Step 2 scope v7, 1.05, at the maintainer's request); not an independent outcome; acceptance pending |
+
+2026-11-13: standing P2 enrollment, staged cycle with extended estimates, Step 1 skipped (direction chosen during `v3/post_records`). Step 2 **0.40** after reader inspection (no pristine intake), Step 3 reaffirmed, Step 4 entry reaffirmed, retrospective **0.40**. Stage originals 0.12/0.12/0.08, non-additive. Baseline `273bf937` for planning; branch `feat/retraction-target-id` from `05486f22`. Single exposed rater Claude (claude-opus-5-5), also the parent's rater. Parent `v3/post_records` checkpoints (Steps 1–2 and the on-hold Step 3) are in its uncommitted planning artifacts; its ledger entry is pending until that cycle's planning commit. No measured effort, independent rating or accepted-count increment.

@@ -1856,7 +1856,7 @@ class IncrementalReadModelUpdater
     /**
      * @param list<PostReactionRecord> $records
      * @param array<string, true> $approvedIdentityIds
-     * @return array{tags:list<string>,post_score_total:int,approved_flag_count:int,claimed_post_score_total:int,verified_post_score_total:int,claimed_approved_flag_count:int,verified_approved_flag_count:int,is_hidden:int,hidden_reason:?string}
+     * @return array{tags:list<string>,resolution:array{state:?string,set_at:?string,set_by:?string},post_score_total:int,approved_flag_count:int,claimed_post_score_total:int,verified_post_score_total:int,claimed_approved_flag_count:int,verified_approved_flag_count:int,is_hidden:int,hidden_reason:?string}
      */
     private function derivePostReactionState(string $postId, string $authorLabel, array $records, array $approvedIdentityIds, ?string $cutoffAt, bool $verifiedEnabled): array
     {
@@ -1921,6 +1921,7 @@ class IncrementalReadModelUpdater
 
         return [
             'tags' => $tagList,
+            'resolution' => PostResolution::derive(array_filter($records, static fn (PostReactionRecord $r): bool => $r->postId === $postId), $approvedIdentityIds),
             'post_score_total' => $verifiedEnabled ? $verifiedScoreTotal : $scoreTotal,
             'approved_flag_count' => $approvedFlagCount,
             'claimed_post_score_total' => $scoreTotal,
@@ -1941,6 +1942,9 @@ class IncrementalReadModelUpdater
         $stmt = $pdo->prepare(
             'UPDATE posts
              SET post_tags_json = :post_tags_json,
+                 resolution_state = :resolution_state,
+                 resolution_set_at = :resolution_set_at,
+                 resolution_set_by = :resolution_set_by,
                  post_score_total = :post_score_total,
                  approved_flag_count = :approved_flag_count,
                  claimed_post_score_total = :claimed_post_score_total,
@@ -1953,6 +1957,9 @@ class IncrementalReadModelUpdater
         );
         $stmt->execute([
             'post_tags_json' => json_encode($state['tags'], JSON_THROW_ON_ERROR),
+            'resolution_state' => $state['resolution']['state'],
+            'resolution_set_at' => $state['resolution']['set_at'],
+            'resolution_set_by' => $state['resolution']['set_by'],
             'post_score_total' => $state['post_score_total'],
             'approved_flag_count' => $state['approved_flag_count'],
             'claimed_post_score_total' => $state['claimed_post_score_total'],

@@ -36,7 +36,7 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       <a href="#" role="button" class="calendar-titles-toggle" data-calendar-titles aria-pressed="false" hidden>Show titles</a>
     </nav>
 <?php endif; ?>
-    <div class="calendar-scroll">
+    <?= \ForumRewrite\View\ZoomTable::open('calendar', 0, $month['label'], 'text') ?>
       <table class="calendar-grid">
         <caption><?= $e($month['label']) ?></caption>
         <thead>
@@ -69,7 +69,7 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 <?php endforeach; ?>
         </tbody>
       </table>
-    </div>
+    <?= \ForumRewrite\View\ZoomTable::close() ?>
   </article>
 <?php endforeach; ?>
 <?php endif; ?>
