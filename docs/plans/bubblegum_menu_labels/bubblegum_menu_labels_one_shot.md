@@ -8,7 +8,7 @@ Debug report: [log](bubblegum_menu_labels_debug_log.md)
 
 **Cycle estimate: 0.08**
 
-Status: planning; next permitted action: implement after the planning commit.
+Status: technically complete and committed locally; push and PR blocked (session has no push access to gulkily/v3); thread reply waits for the PR. Next permitted action: push, open the PR, reply in the thread.
 
 ## Original request
 
@@ -54,31 +54,38 @@ None.
 Render before/after in headless Chrome against the current stylesheets: /tools/ at 320 to 660px in 20px steps (check every caption's lines start at a word), at 375 and 499px, and at desktop; the You menu open at 900px and 375px (phone More panel unchanged). Smoke set plus `ThemeRegistryTest` and `NavIconSetsTest`. Full suite not run, per `AGENTS.md`. Real iOS SF Pro Rounded metrics cannot be rendered here.
 
 Starting revisions and branch: `fix/bubblegum-menu-and-tool-labels` from `9122adf0fa97f2e9e1bdee3d1b1bdd5e5fa684d5`.
-Planning commit: pending.
+Planning commit: `6a2f183f` (plan, index link, feedback item only; confirmed with `git log`).
 
 ## Dated execution history
 
 - 2026-11-14: reproduced both bugs in headless Chrome from live page snapshots with the repo stylesheets (desktop You menu at 900px; Bookmarklets caption height doubles at 360-500px and 540-620px widths).
+- 2026-11-14: planning commit `6a2f183f`, then implemented as planned in `public/assets/theme-bubblegum.css`: account-menu 32px icon, `position: relative` and status dot moved into the phone More block (now scoped with `[data-shell="app"]` like the other tile rules); launcher buttons get `overflow-wrap: normal` and no inline padding; phone column minimum 5.5rem to 5.75rem. No deviations from the plan.
+- 2026-11-14: push failed: `access denied by the git proxy: gulkily/v3 is not in this session's authorized repository set` (403). Attaching the repository needs the maintainer's approval; branch kept locally and a patch handed to the maintainer. Thread reply held until the PR exists, per `thread_to_pr.md` recovery.
 
 ## Study history
 
-- Intake: **0.08**, recorded after the reproduction (no pristine intake). Single exposed rater Claude (claude-opus-5-5).
+- Intake: **0.08**, recorded after the reproduction (no pristine intake). Execution entry reaffirmed 0.08; closeout retrospective **0.08**. Single exposed rater Claude (claude-opus-5-5). Not hours or measured labor; maintainer acceptance pending.
 
 ## Outcome
 
-Pending.
+Delivered as bounded. Desktop You menu: Account and Invite are ordinary Bubblegum pills with the 16px icon and a gap before the label, no status dot. Phone More panel: unchanged (32px icons, status dots, coloured tiles). Tools launcher: captions wrap between words only; three columns on a 375px phone as before, four or five at 460-660px. Limitation: real iOS font metrics (SF Pro Rounded) were not rendered; if that font's "Bookmarklets" is wider than the 5.75rem column it overflows a few pixels into the column gap instead of splitting.
 
 ## Verification
 
-Pending.
+- Headless Chrome (Google Chrome, Playwright) against live page snapshots of `/` and `/tools/` with this branch's stylesheets, Bubblegum selected through the theme storage key.
+- Caption check at 320-660px in 20px steps, plus 375 and 1100px: a script finds any line break inside a word and any caption overflowing its tile. Before: 5 mid-word breaks. After: 0 breaks, 0 overflows.
+- Screenshots: You menu open at 900px (Account pill fixed) and 375px (More panel unchanged); /tools/ at 375, 499 and 1100px. Invite was not on screen (logged-out snapshot) but uses the same rule as Account.
+- `./v3 test --smoke ThemeRegistryTest NavIconSetsTest`: 455 run, 454 passed. The one failure, `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, also fails on `main` at `9122adf0` (checked with this change stashed), so it is pre-existing and unrelated to a CSS-only change.
+- `./v3 feedback check`: the new item passes; the one reported problem is pre-existing in `PF-20261111-F03` (a non-URL source line), which also stops `./v3 feedback index` from writing, so the index was not regenerated.
+- Full suite not run, per `AGENTS.md`. Not checked: other themes (untouched files), iOS Safari rendering, live site after deploy.
 
 ## Final review
 
-Pending.
+Diff is one stylesheet plus this record, its index line, the feedback item and the ledger/debug entries. No duplicated rules: the moved account-menu rules exist only in the phone block now; the shared 16px sizing in `theme-nav-icons.css` is reused unchanged. Comment added on the launcher rule explains why `overflow-wrap` is reset.
 
 ## Commit/merge/publication status
 
-Planning commit pending.
+Planning commit `6a2f183f`; completion commit is the one containing this text (hash pending, reported to the maintainer). Not pushed, no PR, not merged, not deployed.
 
 ## Attribution
 
