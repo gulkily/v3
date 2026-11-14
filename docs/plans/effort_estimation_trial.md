@@ -642,6 +642,16 @@ Maintainer request: “I want every future railspike to be part of the same data
 
 2026-11-14: `v3/invite_theme` parked at the maintainer's request; Step 1 committed to main unapproved, to resume later. Scores unchanged.
 
+2026-11-14: standing P2 enrollment for `v3/dm_conversation_tabbar`; baseline `1936c60f`. Intake (after inspection) and Step 1 handoff both 0.30 for Option A; extended estimates A 0.30, B 0.35, C 0.20 (not summed). Claude single exposed rater; R1 hashes not re-verified. Awaiting Approved Step 1.
+
+2026-11-14: `v3/dm_conversation_tabbar` Step 1 approved (Option A). Step 2 0.30 reaffirmed, scope v1. Awaiting Approved Step 2.
+
+2026-11-14: `v3/dm_conversation_tabbar` Step 2 approved. Step 3 0.30 reaffirmed with four stages (0.10, 0.10, 0.05, 0.05). Awaiting Approved Step 3.
+
+2026-11-14: `v3/dm_conversation_tabbar` Step 3 approved; Step 4 entry 0.30 reaffirmed.
+
+2026-11-14: `v3/dm_conversation_tabbar` Stages 1–3 complete (retrospective stage work 0.10, 0.05, 0.05); Stage 4 iPhone Safari acceptance and whole-cycle retrospective pending maintainer.
+
 E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically complete, projected 0.85, retrospective 0.90, maintainer acceptance pending. These counts are unchanged by P2. Append each new cycle here with links to its canonical snapshots; keep unsuccessful/incomplete cycles visible. The historical “0 / 6” is accepted outcomes toward the first review checkpoint, not the number of collected records.
 
 ## Cycle v3/retraction_effects
