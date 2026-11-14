@@ -45,3 +45,20 @@
 
 **Uncertain assessments**
 - The one-page limit and full per-stage fields pull against each other at five stages; this plan runs slightly over a page.
+
+## 2026-11-14T02:30:00Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md` planning-commit gate: kept plans, ledger and summary in separate commits with no judgment calls. Retain.
+- Shared implementation standards, canonical component reuse: found the existing `return_to` and `canonicalReplyUrl`, so the client needed no change. Retain.
+- `AGENTS.md` test scope (smoke plus touched classes): kept each stage's checks short. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Known-user replay: no reported failure to replay.
+
+**Uncertain assessments**
+- A final stage that waits on production (Stage 5) has no clear place in the stage-commit cadence; the summary marks it pending rather than committing an empty stage. The workflow could name this case.
+- The Step 4 commit count rule (`1 + stages`) cannot be met until Stage 5 lands.
