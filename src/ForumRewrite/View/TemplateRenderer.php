@@ -30,7 +30,7 @@ final class TemplateRenderer
         'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
-        'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
+        'post.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/tool-details.css'],
         'profile.php' => ['/assets/identity.css'],
         'root_approval.php' => ['/assets/identity.css'],
         'username.php' => ['/assets/identity.css', '/assets/account.css', '/assets/thread-list.css'],
