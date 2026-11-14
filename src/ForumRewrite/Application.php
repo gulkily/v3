@@ -2408,7 +2408,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|posts/[^/]+|records/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
             $path,
         ) === 1;
     }

@@ -159,3 +159,45 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged. Retrospective: as planned. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Review corrections
+
+An independent agent reviewed the code diff (`523b8171..29fb735`) before closeout. It hadn't seen the planning or the implementation. Corrections:
+
+- **Retracted likes could be replayed back (fixed).** A signed like's bytes stay public in git history. Re-submitting them to `apply_thread_tag` or `apply_post_tag` passed every check once the file was gone, so anyone could make a retracted like count again. The reviewer reproduced it. `signedReactionInput` now refuses a Record-ID that has a signed or local removal receipt; posts already had this guard. New test: `WriteApiSmokeTest::testARetractedSignedLikeCannotBeReplayedBack`.
+- **Record page called a repaired post "Retracted" (fixed).** A `delete-record --repair-labels` receipt (`operation: resolve`) leaves the post in place. `record()` now treats only `delete` as removed, and catches any decode error, not just `RuntimeException`.
+- **Retract button on likes the server refuses (fixed).** The list now calls a record "Like" only for an `add` without `Source-Post-ID`, the same rule as the server. A retracted reaction's receipt row reads "Like", since only likes can be retracted. `ReactionRetractionTest::testPostRecordListFindsExactTargetsOnly` and the post page test check both.
+- **`delete-record` robustness (fixed).** It now refuses a like that isn't committed, and one that already has a signed receipt. On failure it removes the receipt before restoring the files.
+- **Members-only instances (fixed).** `/records/<id>` is allowlisted in `isApplicationRoute` like `/posts/<id>`, so a signed-out visitor gets the lobby rather than a 404.
+- **Known limitations, not fixed in this cycle:**
+  - `./v3 purge-history` still plans only post removals, so a retracted like's bytes stay in history.
+  - `/source/blob/<sha>/records/thread-labels/…` still serves them. Likes carry no prose, and the replay guard removes the harm, so both are left for a later cycle.
+  - The Records list runs about seven `git grep` processes per post view, but only with the flag on. If static detail pages are also on, a full static build pays that for every post.
+- Verification: passed `./v3 test --smoke WriteApiSmokeTest ReactionRetractionTest RetractionTargetIdTest DeleteRecordCommandTest ContentImportPlannerTest LlmsTxtRendererTest PostRetractionScriptTest`, 727 run, 727 passed. The two new web tests were also run by name and passed.
+
+## Cycle closeout
+
+- **Delivered scope:** v8 as approved.
+  - Likes can be retracted through the existing signed retraction, with `Target-ID`, by the liker or a current operator, using a targeted update. Replay can't restore them.
+  - `delete-record` on a like leaves the same local receipt a post gets.
+  - Behind `FORUM_POST_RECORDS_ENABLED`: a Records list on post pages, `/records/<Record-ID>` pages, and Retract buttons.
+  - Docs and `llms.txt` are updated.
+- **Revisions:** start `523b8171`. Planning `ff7d755`, then Stages 1–7 (`f5c0ef2`, `134341a`, `e16bd80`, `38fe695`, `8110882`, `702ace2`, `29fb735`), the debug report, and the review corrections.
+- **Stages:** 8 planned, 7 implemented. Stage 8 is the release: you deploy, turn on the flag, and retract a like on zenmemes.com.
+- **Verification:** focused and smoke tests passed at each stage. The full suite wasn't run. `FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder` fails on `main` too. No browser click-through yet.
+- **Deviations from Step 3:**
+  - The Records lookup uses `git grep`, not a read-model query.
+  - The CLI rebuilds in full rather than with the targeted update.
+  - Timestamp records aren't listed.
+- **Corrective work:**
+  - The review corrections above.
+  - `tests/run.php` was missing two test files, one of them from `retraction_target_id`, which is also corrected there.
+- **New requests:** none.
+- **Enhancement requests still open:**
+  - Retracting flags, labels and other reactions.
+  - Purging retracted likes from history.
+  - A keep-both retraction mode for the presets thread.
+- **Retrospective scope assessment: 0.98.** That's slightly over the projected 0.95. The cause is the `git grep` lookup, the test-registration fix and the review corrections.
+- **Maintainer comfortable-fit judgment and acceptance:** pending.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

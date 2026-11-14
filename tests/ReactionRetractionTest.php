@@ -76,16 +76,19 @@ final class ReactionRetractionTest
         // Look-alikes that must not match: a regex dot, and a longer ID.
         file_put_contents($root . '/records/thread-labels/thread-label-dot.txt', str_replace('root.1', 'rootX1', str_replace('thread-label-like', 'thread-label-dot', $like)));
         file_put_contents($root . '/records/thread-labels/thread-label-long.txt', str_replace('root.1', 'root.10', str_replace('thread-label-like', 'thread-label-long', $like)));
+        // A remove record is listed, but not as a retractable like.
+        file_put_contents($root . '/records/thread-labels/thread-label-unlike.txt', str_replace(['thread-label-like', 'Operation: add'], ['thread-label-unlike', 'Operation: remove'], $like));
         file_put_contents($root . '/records/post-formats/post-format-root.1-1.txt', "Record-ID: post-format-root.1-1\nCreated-At: 2026-11-14T09:00:00Z\nPost-ID: root.1\nBody-Format: markdown\nActor-Identity-ID: {$author}\n\n");
         \ForumRewrite\Canonical\LabelRemoval::git($root, ['init', '-q']);
         \ForumRewrite\Canonical\LabelRemoval::git($root, ['add', '.']);
         \ForumRewrite\Canonical\LabelRemoval::git($root, ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-qm', 'fixture']);
 
         $rows = \ForumRewrite\Canonical\PostRecordList::forPost($root, 'root.1', true);
-        assertSame(['root.1', 'thread-label-like', 'post-format-root.1-1'], array_column($rows, 'record_id'));
-        assertSame(['Post', 'Like', 'Format'], array_column($rows, 'kind'));
-        assertSame('Format: markdown', $rows[2]['summary']);
-        assertSame($author, $rows[2]['author_identity_id']);
+        assertSame(['root.1', 'thread-label-like', 'thread-label-unlike', 'post-format-root.1-1'], array_column($rows, 'record_id'));
+        assertSame(['Post', 'Like', 'Label', 'Format'], array_column($rows, 'kind'));
+        assertSame('remove like', $rows[2]['summary']);
+        assertSame('Format: markdown', $rows[3]['summary']);
+        assertSame($author, $rows[3]['author_identity_id']);
         // A reply's list leaves out thread-level labels.
         assertSame(['root.1', 'post-format-root.1-1'], array_column(\ForumRewrite\Canonical\PostRecordList::forPost($root, 'root.1', false), 'record_id'));
     }

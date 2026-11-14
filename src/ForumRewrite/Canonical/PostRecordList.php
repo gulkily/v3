@@ -72,19 +72,22 @@ final class PostRecordList
         if ($receipt) {
             $target = $headers['Target-ID'] ?? $headers['Post-ID'] ?? '';
             if (RemovalTarget::family($target) === 'post') return null; // a post's own removal is not a record under its parent
-            return ['record_id' => $target, 'kind' => self::label(RemovalTarget::family($target), []), 'family' => RemovalTarget::family($target),
+            // Only likes can be retracted or deleted as reactions, so a reaction receipt is a like's.
+            return ['record_id' => $target, 'kind' => 'Like', 'family' => RemovalTarget::family($target),
                 'path' => $path, 'author_identity_id' => ($headers['Author-Identity-ID'] ?? '') ?: null,
                 'created_at' => $headers['Target-Created-At'] ?? $headers['Post-Created-At'] ?? '', 'summary' => 'Retracted ' . ($headers['Accepted-At'] ?? ''), 'retracted' => true];
         }
         $recordId = $family === 'post' ? ($headers['Post-ID'] ?? $id) : ($headers['Record-ID'] ?? $id);
         $tags = preg_split('/\s+/', trim($headers['Tags'] ?? $headers['Labels'] ?? ''), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        // "Like" (and its Retract button) only for what the server would retract: an add, not owned by a post's hashtag.
+        $plainAdd = ($headers['Operation'] ?? 'add') === 'add' && !isset($headers['Source-Post-ID']);
         $summary = match ($family) {
             'post-formats' => 'Format: ' . ($headers['Body-Format'] ?? $headers['Format'] ?? ''),
             'thread-subjects' => 'Title: ' . ($headers['Subject'] ?? ''),
             'post' => 'The post itself',
             default => ($headers['Operation'] ?? 'add') . ' ' . implode(' ', $tags),
         };
-        return ['record_id' => $recordId, 'kind' => self::label($family, $tags), 'family' => $family, 'path' => $path,
+        return ['record_id' => $recordId, 'kind' => self::label($family, $plainAdd ? $tags : []), 'family' => $family, 'path' => $path,
             'author_identity_id' => ($headers['Author-Identity-ID'] ?? $headers['Actor-Identity-ID'] ?? '') ?: null, 'created_at' => $headers['Created-At'] ?? '',
             'summary' => trim($summary), 'retracted' => false];
     }

@@ -17,7 +17,10 @@ final class ReactionRemoval
     public static function run(string $root, string $recordId, ?string $acceptedAt = null): array
     {
         if (RemovalTarget::family($recordId) === 'post') throw new RuntimeException('Not a reaction record ID.');
-        if (LabelRemoval::read($root, $recordId) !== null) throw new RuntimeException('Reaction already removed: ' . $recordId);
+        if (LabelRemoval::read($root, $recordId) !== null
+            || \ForumRewrite\Canonical\AcceptedRetraction::read($root, $recordId) !== null) {
+            throw new RuntimeException('Reaction already removed: ' . $recordId);
+        }
         $reaction = ReactionTarget::describe($root, $recordId);
         $receiptPath = LabelRemoval::path($recordId);
         $receipt = LabelRemoval::encode(['acceptance_version' => 2, 'source_id' => $recordId, 'operation' => 'delete',
@@ -29,6 +32,9 @@ final class ReactionRemoval
         foreach ([$reaction['path'], $reaction['path'] . '.asc'] as $path) {
             if (trim(LabelRemoval::git($root, ['ls-files', '--', $path])) !== '') $removed[] = $path;
         }
+        if (!in_array($reaction['path'], $removed, true)) {
+            throw new RuntimeException('Reaction is not committed; commit or remove it by hand first: ' . $reaction['path']);
+        }
         if (!is_dir(dirname($root . '/' . $receiptPath))) mkdir(dirname($root . '/' . $receiptPath), 0775, true);
         file_put_contents($root . '/' . $receiptPath, $receipt);
         try {
@@ -38,8 +44,8 @@ final class ReactionRemoval
                 'commit', '-q', '-m', 'Delete ' . str_replace('-', ' ', RemovalTarget::family($recordId)) . ' ' . $recordId . ' (local operator)', '--', $receiptPath], $removed));
         } catch (\Throwable $error) {
             LabelRemoval::git($root, array_merge(['reset', '-q', 'HEAD', '--', $receiptPath], $removed));
-            LabelRemoval::git($root, array_merge(['checkout', '-q', 'HEAD', '--'], $removed));
             if (is_file($root . '/' . $receiptPath)) unlink($root . '/' . $receiptPath);
+            LabelRemoval::git($root, array_merge(['checkout', '-q', 'HEAD', '--'], $removed));
             throw $error;
         }
         return ['record_id' => $recordId, 'receipt_path' => $receiptPath, 'removed' => $removed,

@@ -4636,6 +4636,13 @@ class LocalWriteService
             throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
         }
         $path = $kind === 'thread' ? CanonicalPathResolver::threadLabel($record->recordId) : CanonicalPathResolver::postReaction($record->recordId);
+        // A retracted or deleted like stays gone: its signed bytes are public in history, so a
+        // replay must not write it back. A new like needs a new Record-ID.
+        foreach ([AcceptedRetraction::path($record->recordId), \ForumRewrite\Canonical\LabelRemoval::path($record->recordId)] as $receipt) {
+            if (file_exists($this->repositoryRoot . '/' . $receipt)) {
+                throw new RuntimeException('This reaction was retracted and cannot be restored. Like again to add a new one.');
+            }
+        }
         if (isset($input['prepare_token'])) {
             $token = $this->requireHexToken((string) $input['prepare_token'], 'prepare_token');
             $prepared = $this->loadPreparedPost($token);

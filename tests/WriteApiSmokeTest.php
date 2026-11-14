@@ -4422,6 +4422,7 @@ NODE;
             $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/posts/' . $author['thread_id']);
             assertStringContains('<summary>Records (2)</summary>', $page);
             assertStringContains('class="post-record-retracted" data-record-id="' . $likeId . '"', $page);
+            assertStringContains('href="/records/' . $likeId . '">Like</a>', $page);
             assertStringContains('href="/source/current/records/post-retraction-acceptances/post-retraction-' . $likeId . '.txt">receipt</a>', $page);
         } finally {
             putenv('FORUM_POST_RECORDS_ENABLED');
@@ -4511,6 +4512,32 @@ NODE;
             $_COOKIE = $cookies;
             putenv('FORUM_POST_RECORDS_ENABLED');
         }
+    }
+
+    public function testARetractedSignedLikeCannotBeReplayedBack(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'replayed-like', "A thread someone liked\n");
+        $liker = $this->linkSigningIdentity($app, 'replay-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $likeId = 'thread-label-replayfixture01';
+        $record = \ForumRewrite\Canonical\ReactionRecordParser::build('thread', $likeId, gmdate('Y-m-d\TH:i:s\Z'), $author['thread_id'], ['like'], $liker['identity_id']);
+        $signed = ['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id'],
+            'canonical_record' => $record, 'detached_signature' => $this->signCanonicalRecord($liker['home'], $record)];
+        assertSame('yes', $writer->applyThreadTag($signed)['wrote_record']);
+
+        $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+
+        // Anyone holding the old signed bytes (they stay in history) tries to write the like back.
+        $refused = false;
+        try { $writer->applyThreadTag($signed); }
+        catch (RuntimeException $error) { $refused = str_contains($error->getMessage(), 'was retracted and cannot be restored'); }
+        assertSame(true, $refused);
+        assertSame(false, is_file($root . '/records/thread-labels/' . $likeId . '.txt'));
+        // Liking again with a new record still works.
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
     }
 
     public function testReplyLikesRetractAndOtherReactionsAreRefused(): void

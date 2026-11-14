@@ -228,7 +228,10 @@ final class ThreadAndPostPageController
         try {
             $removal = \ForumRewrite\Canonical\AcceptedRetraction::read($this->repositoryRoot, $recordId)
                 ?? \ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $recordId);
-        } catch (\RuntimeException) { /* unreadable evidence shows as no removal */ }
+        } catch (\Throwable) { /* unreadable evidence shows as no removal */ }
+        if (($removal['operation'] ?? 'delete') !== 'delete') {
+            $removal = null; // a label repair ("resolve") leaves its post in place
+        }
         if ($path === null && $removal === null) {
             return null;
         }
