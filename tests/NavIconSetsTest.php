@@ -5,15 +5,17 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 /**
- * theme-nav-icons.css carries two icon sets keyed to the same links: pixel
- * art (word97, chicago, midnight) and smooth lines (gloss, glossdark, engagify). A
- * destination added to one set and not the other leaves an empty icon slot,
- * because the sizing rules cover all six themes.
+ * theme-nav-icons.css carries three icon sets keyed to the same links: pixel
+ * art (word97, chicago, midnight), smooth lines (gloss, glossdark, engagify)
+ * and cute pink pixel art (bubblegum). A destination added to one set and not
+ * the others leaves an empty icon slot, because the sizing rules cover every
+ * icon theme.
  */
 final class NavIconSetsTest
 {
     private const PIXEL = ':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"])';
     private const SMOOTH = ':root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"])';
+    private const CUTE = ':root:is([data-theme="bubblegum"])';
 
     public function testSmoothLineSetCoversEveryPixelArtDestination(): void
     {
@@ -25,6 +27,17 @@ final class NavIconSetsTest
         assertSame([], $missing, 'Smooth-line set lacks: ' . implode(', ', $missing));
         $extra = array_values(array_diff($smooth, $pixel));
         assertSame([], $extra, 'Smooth-line set has destinations the pixel-art set lacks: ' . implode(', ', $extra));
+    }
+
+    public function testCuteSetCoversEveryPixelArtDestination(): void
+    {
+        $pixel = $this->glyphSelectors(self::PIXEL);
+        $cute = $this->glyphSelectors(self::CUTE);
+
+        $missing = array_values(array_diff($pixel, $cute));
+        assertSame([], $missing, 'Cute set lacks: ' . implode(', ', $missing));
+        $extra = array_values(array_diff($cute, $pixel));
+        assertSame([], $extra, 'Cute set has destinations the pixel-art set lacks: ' . implode(', ', $extra));
     }
 
     /**

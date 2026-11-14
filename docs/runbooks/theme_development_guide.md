@@ -171,6 +171,11 @@ Everything is inline `data:image/svg+xml;utf8,...` URIs in the CSS
   destination is in one set and not the other. Gloss Dark shows the same
   glyphs through `filter: invert(1) hue-rotate(180deg)`, which keeps the hue
   but makes the stroke light and the fill dark.
+- **Cute icons (Bubblegum):** the third set, at the end of
+  `theme-nav-icons.css`: pixel art like the first set but in Bubblegum's
+  palette (berry `#8e2457` outlines, pinks, butter, lavender, mint) with
+  little hearts, sparkles and faces. It keys to the same selectors and
+  `NavIconSetsTest` checks it against the pixel-art set.
 - **Theme-neutral glyphs (all themes):** draw smooth shapes (no
   crispEdges), apply via `mask` + `background-color: currentColor` so the
   glyph inherits each theme's ink automatically:

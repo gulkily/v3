@@ -924,7 +924,7 @@ pre {
 
   /* Themes without their own More glyph (all but the icon themes in theme-nav-icons.css): three bars, drawn in the tab's ink. On a
      renamed tab an arrow replaces them, leaving room for the name. */
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .account-menu__icon {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"]) [data-shell="app"] .account-menu__icon {
     display: var(--more-tab-icon, inline-block);
     border: 0;
     border-radius: 0;
@@ -934,7 +934,7 @@ pre {
       linear-gradient(currentColor, currentColor) 0 85% / 100% 2px no-repeat;
   }
 
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .account-menu__label--current::after {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"]) [data-shell="app"] .account-menu__label--current::after {
     content: "\25B4";
     position: absolute;
     top: -0.05rem;

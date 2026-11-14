@@ -59,3 +59,11 @@ From an iPhone screenshot of the board, the maintainer asked for "some texture t
 - `--panel` is still white, so the contrast audit is unchanged.
 
 Checked in headless Chrome at 390px against a static copy of the live board, before and after. Not checked: desktop width, Safari/iPhone, production.
+
+## Follow-up: cute icons (2026-11-14)
+
+The maintainer asked for "some cute icons" in Bubblegum. Bubblegum becomes an icon theme with its own third set, the "Cute set" at the end of `public/assets/theme-nav-icons.css`: 16px pixel art in Bubblegum's palette (berry outlines, pinks, butter, lavender, mint) with little hearts, sparkles and faces, covering every destination the other two sets cover (main nav, board filters, Tools bar and launcher, group headings, bookmarklet kinds, account menu and phone More).
+
+Reuse: the shared sizing and phone tab-bar rules gained `bubblegum` in their theme lists; the glyph rules were generated from the smooth-line set's selectors so the destinations match one for one. The icon-theme lists in `site.css` (account menu) and `tools.css` (bookmarklet fallback) gained it too. `NavIconSetsTest` now checks the cute set against the pixel-art set; `tests/browser/tools_launcher.mjs` includes Bubblegum among its icon themes. AGENTS.md, the theme navigation icons concept and the theme guide name the third set.
+
+Checks: smoke set (includes `NavIconSetsTest`) 451/451; `tests/browser/tools_launcher.mjs` passes with Bubblegum (icons on every tool, bar link and heading, no overflow); headless Chrome at 1280px and 390px on board, Tools and Bookmarklets, no page errors; a 4x preview sheet of every glyph inspected. Full suite not run. Not checked: iPhone Safari, production.
