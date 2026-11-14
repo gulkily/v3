@@ -30,7 +30,7 @@ Reuse:
 
 Verification (2026-11-12):
 - ./v3 test --smoke FeatureFlagsBehaviorTest SiteProfileRegistryTest
-  LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsWhenFlagEnabled
+  LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled
   FeatureFlagEvaluatorTest. Full suite not run.
 - FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder fails on main
   before this change too (tests/Support/feature_flags_toolbar_fixture.php does not pass
@@ -61,8 +61,22 @@ and right groups.
 - Adjacent stops make a 15vw column (about 96px at the 640px breakpoint). Allowed on
   purpose; it is the reader's choice and one more click undoes it.
 Verification: ./v3 test --smoke
-LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsWhenFlagEnabled
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled
 (452 passed); full suite not run. node tests/browser/reading_margins.mjs across all 17
 permitted themes at 1280px plus a 390px phone: one row, equal gaps, nearer-edge moves,
 reload restores before paint, reset, old saved values ignored. Screenshots reviewed for
 every theme.
+
+Follow-up (2026-11-14): listing pages
+Request: add the ruler to listing pages too.
+- READING_MARGINS_PAGE_TEMPLATES now covers board.php (/), board_list.php (/threads/),
+  board_search.php (/search), tag.php (/tags/<tag>/) and recent.php (/recent/) besides
+  thread.php. The saved choice is shared, so one setting applies to threads and lists.
+- Not included: gallery.php (its justified rows are laid out for the normal width), tag
+  index, profiles, tools and other pages.
+Verification: ./v3 test --smoke
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled
+FeatureFlagEvaluatorTest (452 passed); full suite not run. node tests/browser/reading_margins.mjs
+now also loads all five listing paths in all 17 themes with a saved "20 95": radios checked,
+column between them, final on first paint, no sideways scroll. Board screenshots reviewed
+for every theme, with and without a saved choice.

@@ -19,7 +19,7 @@ use RuntimeException;
 final class TemplateRenderer
 {
     private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
-    private const READING_MARGINS_PAGE_TEMPLATES = ['thread.php'];
+    private const READING_MARGINS_PAGE_TEMPLATES = ['thread.php', 'board.php', 'board_list.php', 'board_search.php', 'tag.php', 'recent.php'];
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],

@@ -335,7 +335,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::READING_MARGINS_ENABLED,
                 'Reading margins',
-                'Show a row of radio buttons above threads; each sits where a text column edge can go. Readers pick the left and right edges; the choice stays in their browser and is ignored on phones.',
+                'Show a row of radio buttons above threads and thread lists; the two a reader checks are the edges of the text column. The choice stays in their browser and is ignored on phones.',
                 false,
                 self::READING_MARGINS_ENABLED,
                 siteMutable: true,

@@ -119,6 +119,26 @@ try {
     assert.equal(await checkedStops(), '', `${theme}: old saved choice ignored`);
   }
 
+  // Listing pages: the same ruler, and a saved column applies there on first paint.
+  const listings = ['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello'];
+  for (const theme of themes) {
+    await page.evaluate(([themeKey, theme, marginsKey]) => {
+      localStorage.clear(); localStorage.setItem(themeKey, theme); localStorage.setItem(marginsKey, '20 95');
+    }, [runtime.themeStorageKey, theme, runtime.readingMarginsStorageKey]);
+    for (const listing of listings) {
+      await page.goto(base + listing);
+      assert.equal(await checkedStops(), '20 95', `${theme} ${listing}: saved choice shown`);
+      assert.ok(await fits(20, 95), `${theme} ${listing}: column between the checked radios`);
+      const settled = await column();
+      const first = await firstPaintColumn();
+      assert.ok(first && Math.abs(first.left - settled.left) <= 1 && Math.abs(first.right - settled.right) <= 1, `${theme} ${listing}: column final on first paint`);
+      assert.equal(await pageScrollsSideways(), false, `${theme} ${listing}: no sideways scroll`);
+      if (shots && listing === '/') await page.screenshot({ path: join(shots, `${theme}-board-20-95.png`) });
+    }
+    if (shots) await page.evaluate(k => localStorage.removeItem(k), runtime.readingMarginsStorageKey);
+    if (shots) { await page.goto(base + '/'); await page.screenshot({ path: join(shots, `${theme}-board-default.png`) }); }
+  }
+
   // Phones: no ruler, and a saved column does not narrow the page.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(k => { localStorage.clear(); localStorage.setItem(k, '35 65'); }, runtime.readingMarginsStorageKey);
@@ -129,7 +149,7 @@ try {
   if (shots) await page.screenshot({ path: join(shots, 'phone.png') });
 
   assert.deepEqual(errors, []);
-  console.log(`reading margins: ${themes.length} themes at 1280px, plus phone`);
+  console.log(`reading margins: ${themes.length} themes at 1280px on a thread and ${listings.length} listing pages, plus phone`);
 } finally {
   if (browser) await browser.close();
   try { process.kill(-server.pid); } catch {}
