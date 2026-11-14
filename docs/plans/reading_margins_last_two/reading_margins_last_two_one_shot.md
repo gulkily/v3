@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.10**
 
-Status: planning; next permitted action: planning commit, then implementation.
+Status: implemented and verified locally; PR open; next permitted action: maintainer review and merge.
 
 Predecessor: [`v3/reading_margins_two_clicks`](../reading_margins_two_clicks/reading_margins_two_clicks_one_shot.md) (merged as #224).
 
@@ -59,15 +59,41 @@ Concepts touched: none.
 
 Starting revisions and branch: `origin/main` `b2c8bf8`; branch `feat/reading_margins_last_two`.
 
-Planning commit: pending.
+Planning commit: `7a0b857` (confirmed with Git before implementation).
 
 ## Dated execution history
 
 - 2026-11-14: `AGENTS.md`, the Railspike entrypoint and the one-shot workflow re-read after fetching `main`; no changes since the predecessor cycle. Plan written before any implementation.
+- 2026-11-14: Planning commit `7a0b857`; implementation followed.
+- 2026-11-14: Implemented as planned. `reading_margins.js` keeps `order` = [older, newer] and resets every radio and the `data-reading-margin-next` outline from it after each click; the partial outlines the older saved radio before paint; `layout.php` accepts any two distinct stops and sorts them for `--reading-left`/`--reading-right`; the CSS outline selector moved from `data-reading-margin-marked` to `data-reading-margin-next`; flag description updated. `tests/LocalAppSmokeTest.php` needed no change (markup unchanged).
+- 2026-11-14: Discovery (no scope change): "95 23" is now a valid saved pair (older 95), where #224 ignored it; the browser test covers it.
+- 2026-11-14: No new requests during execution.
 
 ## Study history
 
 - Intake, 2026-11-14: **0.10**, scope v1, recorded before implementation and after re-reading only the ruler files written in the predecessor cycle (not pristine: same rater wrote them). Baseline `b2c8bf8`; R1 hashes not re-verified. Single exposed rater Claude (claude-opus-5-5).
 - Execution entry, 2026-11-14: **0.10** reaffirmed.
+
+- Closeout, 2026-11-14: delivered scope v1 in full; no corrections or additions. Retrospective scope assessment **0.10**. Maintainer comfortable-fit and acceptance pending.
+
+## Outcome
+
+Every click on an unchecked radio moves the column at once; the column spans the last two radios clicked; the older one carries a dashed outline and is the edge the next click replaces, including after reload; clicking either checked radio resets. From the normal column, the first click pairs the clicked radio with the stop nearest the normal column's other side. Limitation: which edge moves follows click order, not side (accepted; the outline is the cue).
+
+## Verification
+
+- `./v3 test --smoke LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled FeatureFlagEvaluatorTest`: 452 of 453 passed; `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` fails the same way on `main` since #219. Full suite not run.
+- `node tests/browser/reading_margins.mjs`: all 17 permitted ZenMemes themes at 1280px on a thread (first click from the normal column moves it and outlines the filled-in edge; 41 then 77 each replace the older edge; outline and pair restored on reload and final on first paint; 59–77 gives a centred 20rem column; 5–59; newer and outlined radios both reset; "95 23" restored with 95 outlined; invalid values ignored) and with a saved pair on 13 other pages; phone hides the ruler. Screenshots of the 41–77 state reviewed for every theme.
+- Not checked: Safari, real devices, production.
+
+## Final review
+
+Diff limited to the ruler files under reuse decisions plus this record, its index entry, the debug log and the ledger entry. The two-click "marked" state from #224 is removed, not kept alongside. Comments and the flag description describe the new rule.
+
+## Commit/merge/publication status
+
+Planning commit `7a0b857`; completion commit pending at the time of writing; branch `feat/reading_margins_last_two`; PR to `main` pending; not merged or deployed.
+
+Debug log: [reading_margins_last_two_debug_log.md](./reading_margins_last_two_debug_log.md)
 
 *Claude (claude-opus-5-5), 2026-11-14 UTC*

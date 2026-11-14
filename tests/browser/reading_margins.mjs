@@ -8,9 +8,9 @@ import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
 // Reading margins (FORUM_READING_MARGINS_ENABLED) on a thread page, in every
-// permitted theme: the radios are evenly spaced in one row, any two clicked in
-// either order set the column between them, each checked radio sits over the
-// column edge it sets, a choice survives reload without moving after paint,
+// permitted theme: the radios are evenly spaced in one row, the column spans
+// the last two radios clicked and every click moves it at once, the older edge
+// is outlined, each checked radio sits over the column edge it sets, a choice survives reload without moving after paint,
 // choosing a checked radio resets, the column never gets narrower than 20rem,
 // other pages share the saved column, and phones show neither the ruler nor a
 // saved column.
@@ -48,6 +48,7 @@ try {
   const stop = at => page.locator(`[data-reading-margin-stop][value="${at}"]`);
   const checkedStops = () => page.locator('[data-reading-margin-stop]:checked').evaluateAll(all => all.map(each => each.value).join(' '));
   const column = () => page.locator('.main').evaluate(main => { const r = main.getBoundingClientRect(); return { left: r.left, right: r.right }; });
+  const nextStop = () => page.locator('[data-reading-margin-next]').evaluateAll(all => all.map(each => each.value).join(' '));
   const stopCentre = async at => { const r = await stop(at).boundingBox(); return r.x + r.width / 2; };
   const fits = async (left, right) => { const c = await column(); return Math.abs(c.left - await stopCentre(left)) <= 2 && Math.abs(c.right - await stopCentre(right)) <= 2; };
   const pageScrollsSideways = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
@@ -78,56 +79,74 @@ try {
     });
     if (shots) await page.screenshot({ path: join(shots, `${theme}-default.png`) });
 
-    // The first click only marks its radio; the column stays as it was.
+    // From the normal column, the first click moves the column at once: the
+    // clicked radio is one edge, and the stop nearest the normal column's other
+    // side is the other edge, outlined as the one the next click moves.
     const before = await column();
     await stop(95).click();
-    assert.equal(await checkedStops(), '95', `${theme}: first click marks one radio`);
-    assert.equal(await stop(95).evaluate(el => el.hasAttribute('data-reading-margin-marked')), true, `${theme}: marked radio flagged`);
-    assert.deepEqual(await column(), before, `${theme}: first click leaves the column alone`);
-    if (shots) await page.screenshot({ path: join(shots, `${theme}-marked.png`) });
-    // The second click sets the column, right-to-left order included.
-    await stop(23).click();
-    assert.equal(await checkedStops(), '23 95');
-    assert.equal(await page.locator('[data-reading-margin-marked]').count(), 0, `${theme}: mark cleared`);
-    assert.ok(await fits(23, 95), `${theme}: column between the two clicked radios`);
-    assert.equal(await page.evaluate(k => localStorage.getItem(k), runtime.readingMarginsStorageKey), '23 95');
-    assert.equal(await pageScrollsSideways(), false, `${theme}: wide column adds no sideways scroll`);
+    const [other] = (await checkedStops()).split(' ');
+    assert.ok(['5', '23', '41', '59', '77'].includes(other), `${theme}: other edge filled in`);
+    assert.equal(await checkedStops(), `${other} 95`, `${theme}: first click sets a column`);
+    assert.notDeepEqual(await column(), before, `${theme}: first click moves the column`);
+    assert.equal(await nextStop(), other, `${theme}: filled-in edge moves next`);
+    if (shots) await page.screenshot({ path: join(shots, `${theme}-first-click.png`) });
 
+    // Each click replaces the edge clicked longer ago, whichever side it is on.
+    await stop(41).click();
+    assert.equal(await checkedStops(), '41 95');
+    assert.ok(await fits(41, 95), `${theme}: 41 replaced the older edge`);
+    assert.equal(await nextStop(), '95', `${theme}: 95 is now the older edge`);
+    await stop(77).click();
+    assert.equal(await checkedStops(), '41 77', `${theme}: 77 replaced 95`);
+    assert.ok(await fits(41, 77), `${theme}: column 41-77`);
+    assert.equal(await nextStop(), '41');
+    assert.equal(await page.evaluate(k => localStorage.getItem(k), runtime.readingMarginsStorageKey), '41 77');
+    assert.equal(await pageScrollsSideways(), false, `${theme}: no sideways scroll`);
+    if (shots) await page.screenshot({ path: join(shots, `${theme}-41-77.png`) });
+
+    // A reload keeps the pair and which edge moves next, final on first paint.
     await page.reload();
-    assert.equal(await checkedStops(), '23 95', `${theme}: choice restored`);
+    assert.equal(await checkedStops(), '41 77', `${theme}: choice restored`);
+    assert.equal(await nextStop(), '41', `${theme}: outline restored`);
     const settled = await column();
     const first = await firstPaintColumn();
     assert.ok(first && Math.abs(first.left - settled.left) <= 1 && Math.abs(first.right - settled.right) <= 1, `${theme}: column final on first paint`);
-    if (shots) await page.screenshot({ path: join(shots, `${theme}-23-95.png`) });
 
-    // Any radio can be either edge: 59 then 77 puts the column right of centre.
-    await stop(59).click(); await stop(77).click();
-    assert.equal(await checkedStops(), '59 77');
-    // 41-59 and 59-77 are narrower than 20rem at this width, so the column is
+    // 59 replaces 41: 59-77 is narrower than 20rem here, so the column is
     // 20rem, centred between the two radios.
-    let narrow = await column();
-    let halfway = (await stopCentre(59) + await stopCentre(77)) / 2;
+    await stop(59).click();
+    assert.equal(await checkedStops(), '59 77');
+    assert.equal(await nextStop(), '77');
+    const narrow = await column();
+    const halfway = (await stopCentre(59) + await stopCentre(77)) / 2;
     assert.ok(Math.abs(narrow.right - narrow.left - 320) <= 1, `${theme}: column no narrower than 20rem`);
     assert.ok(Math.abs((narrow.left + narrow.right) / 2 - halfway) <= 2, `${theme}: narrow column centred between the radios`);
-    await stop(5).click(); await stop(59).click();
-    assert.equal(await checkedStops(), '5 59');
+    await stop(5).click();
+    assert.equal(await checkedStops(), '5 59', `${theme}: 5 replaced 77`);
     assert.ok(await fits(5, 59), `${theme}: off-centre column`);
     if (shots) await page.screenshot({ path: join(shots, `${theme}-5-59.png`) });
 
-    // Clicking the marked radio again returns to the site's normal column.
-    await stop(41).click();
-    assert.equal(await checkedStops(), '41', `${theme}: new pair started`);
-    assert.ok(await fits(5, 59), `${theme}: column kept while a pair is in progress`);
-    await stop(41).click();
-    assert.equal(await checkedStops(), '', `${theme}: reset clears both edges`);
+    // Clicking either checked radio returns to the site's normal column.
+    await stop(5).click();
+    assert.equal(await checkedStops(), '', `${theme}: newer edge resets`);
     assert.equal(await page.evaluate(k => localStorage.getItem(k), runtime.readingMarginsStorageKey), null);
     assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-reading-margins')), false);
+    assert.equal(await page.locator('[data-reading-margin-next]').count(), 0, `${theme}: outline cleared`);
+    await stop(23).click();
+    const outlined = await nextStop();
+    await stop(outlined).click();
+    assert.equal(await checkedStops(), '', `${theme}: outlined edge resets`);
 
-    // Saved values that are not two stops in increasing order are ignored.
-    for (const old of ['24 96', '20 95', '95 23']) {
-      await page.evaluate(([k, v]) => localStorage.setItem(k, v), [runtime.readingMarginsStorageKey, old]);
+    // A pair saved in either order is restored; anything else is ignored.
+    await page.evaluate(k => localStorage.setItem(k, '95 23'), runtime.readingMarginsStorageKey);
+    await page.reload();
+    assert.equal(await checkedStops(), '23 95', `${theme}: right-to-left pair restored`);
+    assert.equal(await nextStop(), '95', `${theme}: older edge outlined after reload`);
+    assert.ok(await fits(23, 95), `${theme}: restored column`);
+    for (const bad of ['24 96', '20 95', '41 41']) {
+      await page.evaluate(([k, v]) => localStorage.setItem(k, v), [runtime.readingMarginsStorageKey, bad]);
       await page.reload();
-      assert.equal(await checkedStops(), '', `${theme}: old saved choice ${old} ignored`);
+      assert.equal(await checkedStops(), '', `${theme}: saved value ${bad} ignored`);
     }
   }
 

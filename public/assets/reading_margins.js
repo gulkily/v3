@@ -1,11 +1,11 @@
 (function () {
-  // Reading margins: one row of evenly spaced radios above a page. Click any
-  // two radios and the text column goes between them, in either order. The
-  // first click only marks its radio; the second sets the column, and the
-  // click after that starts a new pair. Clicking the marked radio again
-  // returns to the site's normal column. layout.php restores the saved edges
-  // before paint and reading_margins.php checks the matching radios; this
-  // script handles clicks.
+  // Reading margins: one row of evenly spaced radios above a page. The text
+  // column spans the last two radios clicked. Each click on an unchecked radio
+  // moves the column at once by replacing the edge clicked longer ago, which
+  // is outlined so the reader can see which edge moves next. Clicking a
+  // checked radio returns to the site's normal column. layout.php restores the
+  // saved pair before paint and reading_margins.php checks and outlines the
+  // radios; this script handles clicks.
   var runtime = window.forumBrowserRuntime || null;
   var ruler = document.querySelector("[data-role='reading-margins']");
   if (!ruler) {
@@ -17,29 +17,39 @@
   var stops = Array.prototype.slice.call(ruler.querySelectorAll("[data-reading-margin-stop]"));
   var positions = stops.map(function (stop) { return stop.value; });
 
-  // The column's edges as [left, right] strings, or null for the normal column.
-  var edges = (function () {
+  // The column's edges in click order, [older, newer], or null for the normal column.
+  var order = (function () {
     var saved = (root.getAttribute("data-reading-margins") || "").split(" ");
-    return saved.length === 2 && positions.indexOf(saved[0]) !== -1 && positions.indexOf(saved[1]) !== -1 ? saved : null;
+    return saved.length === 2 && saved[0] !== saved[1]
+      && positions.indexOf(saved[0]) !== -1 && positions.indexOf(saved[1]) !== -1 ? saved : null;
   })();
-  // The first radio of a pair, waiting for the second click.
-  var marked = null;
 
-  function show(checkedValues) {
-    stops.forEach(function (stop) {
-      stop.checked = checkedValues.indexOf(stop.value) !== -1;
-      stop.toggleAttribute("data-reading-margin-marked", stop.value === marked);
-    });
+  // The stop nearest the normal column's edge on the side away from `position`.
+  function oppositeStop(position) {
+    var main = document.querySelector(".main");
+    var width = root.clientWidth || window.innerWidth;
+    var rect = main ? main.getBoundingClientRect() : null;
+    var left = rect && width ? (rect.left / width) * 100 : 25;
+    var right = rect && width ? (rect.right / width) * 100 : 75;
+    var clickedIsLeft = Number(position) < (left + right) / 2;
+    var target = clickedIsLeft ? right : left;
+    return positions.filter(function (each) {
+      return clickedIsLeft ? Number(each) > Number(position) : Number(each) < Number(position);
+    }).reduce(function (best, each) {
+      return best === null || Math.abs(each - target) < Math.abs(best - target) ? each : best;
+    }, null);
   }
 
-  function setColumn(next) {
-    edges = next;
-    marked = null;
-    show(edges || []);
-    if (edges) {
-      root.setAttribute("data-reading-margins", edges.join(" "));
-      root.style.setProperty("--reading-left", edges[0]);
-      root.style.setProperty("--reading-right", edges[1]);
+  function apply(next) {
+    order = next;
+    stops.forEach(function (stop) {
+      stop.checked = !!order && order.indexOf(stop.value) !== -1;
+      stop.toggleAttribute("data-reading-margin-next", !!order && stop.value === order[0]);
+    });
+    if (order) {
+      root.setAttribute("data-reading-margins", order.join(" "));
+      root.style.setProperty("--reading-left", Math.min(order[0], order[1]));
+      root.style.setProperty("--reading-right", Math.max(order[0], order[1]));
     } else {
       root.removeAttribute("data-reading-margins");
       root.style.removeProperty("--reading-left");
@@ -47,8 +57,8 @@
     }
     try {
       if (!storageKey) return;
-      if (edges) {
-        localStorage.setItem(storageKey, edges.join(" "));
+      if (order) {
+        localStorage.setItem(storageKey, order.join(" "));
       } else {
         localStorage.removeItem(storageKey);
       }
@@ -56,19 +66,19 @@
     }
   }
 
-  // Radios check themselves before "click" fires; show() then sets every
-  // radio from the state here.
+  // Radios check themselves before "click" fires; apply() then sets every
+  // radio and the outline from the state here.
   ruler.addEventListener("click", function (event) {
     var stop = event.target.closest && event.target.closest("[data-reading-margin-stop]");
     if (!stop) return;
-    if (marked === null) {
-      marked = stop.value;
-      show([marked]);
-    } else if (marked === stop.value) {
-      setColumn(null);
+    var position = stop.value;
+    if (order && order.indexOf(position) !== -1) {
+      apply(null);
+    } else if (order) {
+      apply([order[1], position]);
     } else {
-      var pair = [marked, stop.value].sort(function (a, b) { return a - b; });
-      setColumn(pair);
+      var other = oppositeStop(position);
+      apply(other === null ? null : [other, position]);
     }
   });
 })();
