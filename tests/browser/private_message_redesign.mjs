@@ -218,6 +218,9 @@ try {
     const unreadRow = page.locator('[data-conversation-row].is-unread').first();
     if (await unreadRow.count()) assert.equal(await unreadRow.locator('.message-list-name').evaluate(node => getComputedStyle(node, '::before').content), '""');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: list has no page overflow`);
+    // Messages is one framed window with a visible title, like a conversation.
+    assert.equal(await page.getByRole('heading', { level: 1, name: 'Messages', exact: true }).isVisible(), true, `${label}: Messages title is shown`);
+    assert.equal(await page.locator('[data-conversation-list]').evaluate(node => node.classList.contains('card')), true);
     if (shots) await page.screenshot({ path: join(shots, `list-${theme}-${width}.png`) });
 
     // A failed list load: one line with Retry.
