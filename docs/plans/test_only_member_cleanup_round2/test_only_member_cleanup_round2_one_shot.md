@@ -98,7 +98,7 @@ Delivered: 3 members and 2 properties removed, 3 members kept with notes. Held, 
 
 The diff touches only the authorized classes, their two constructor callers, the tests of removed members, this record, the index, the ledger and the debug log. No duplication added.
 
-Commit/merge/publication status: planning commit `91923ed6`; completion commit pending at time of writing; stacked on unmerged PR #223; not merged or deployed.
+Commit/merge/publication status: planning commit `91923ed6`; completion commit `ff2d73ef` (confirmed with Git); PR #227 open, stacked on unmerged PR #223; not merged or deployed.
 
 _Claude (Opus 5.5), 2026-11-14_
 
