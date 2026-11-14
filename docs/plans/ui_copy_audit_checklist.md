@@ -926,3 +926,8 @@ Verification: Playwright at 375 and 1150 px in light, dark, console, lcd, chicag
 
 Change: the ↓ button beside Send now appears only when the newest message is out of view (you scrolled up, or new messages arrived below), and hides once it is back in view; Send takes the whole row otherwise. Server HTML renders it hidden, matching the opening position at the newest message. Seen-marking is unchanged: it follows scrolling, not the button.
 Verification: Chromium; `checkChatLayout` asserts ↓ appears when scrolled away, returns to the newest message, then hides; messaging suite through `checkHistoryRecovery` with the cache flag on and off; `private_message_redesign.mjs`; 375px screenshot. Later checks that click ↓ (seen windows, unavailable) now click it only when shown; they sit behind baseline failures and did not run. Not checked: iPhone Safari.
+
+## Phone tab bar inside a conversation — 2026-11-14
+
+Change: on phones a single conversation shows no bottom tab bar; the back arrow leads to Messages, which keeps it. The composer sits at the bottom edge, including in a short conversation (the page now fills the screen). Desktop is unchanged. Cycle `dm_conversation_tabbar`.
+Verification: Chromium; `checkConversationTabBar` at 375×667 (no bar after load, scroll and typing; composer at the bottom edge; back arrow returns to Messages with the bar; desktop header intact); `private_message_redesign.mjs` in every theme with 390px screenshots reviewed. Engagify's floating Exit and help buttons overlap the Send row exactly as on main. Not checked yet: iPhone Safari.

@@ -35,3 +35,45 @@ Branch: `feature/dm_conversation_tabbar`, from `origin/main`. Planning commit `a
 **Retrospective stage-work assessment: 0.10**
 
 *— Claude · 2026-11-14 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - Every theme at phone width
+
+**Original estimate: 0.10**
+
+- Changes: none needed.
+- Verification:
+  - `private_message_redesign.mjs` with all 18 themes (Arena, Auto, Bubblegum, Chicago, Console, Dark, Engagify, Forge, Gloss, Gloss Dark, LCD, Light, Midnight, Sticker, Thermal, Vapor, Whitehot, Word97) at 390px and 1280px: passed, including "Not sent stays above the composer".
+  - Reviewed every 390px conversation screenshot: no tab bar, composer at the bottom, nothing left where the bar was.
+  - Engagify: its floating "Exit Engagify" and help buttons overlap the Send row; a clean `origin/main` screenshot shows the same overlap, so it is the parody theme's existing behavior, not a regression.
+- Estimate details: original scope; uncertainty about Gloss offsets resolved with no change.
+
+**Retrospective stage-work assessment: 0.05**
+
+*— Claude · 2026-11-14 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Record and check
+
+**Original estimate: 0.05**
+
+- Changes: navigation slots concept notes that a conversation shows no phone bar; UI checklist entry.
+- Verification:
+  - `git diff --check`: clean.
+  - Smoke set plus `PrivateMessagePageControllerTest`: passed except the baseline `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` (also fails on clean main). Full suite not run.
+  - Messaging browser suite through `checkHistoryRecovery`, cache flag on and off (known baseline steps bypassed): passed.
+  - Final diff review: the bar-free page reuses the existing `--app-tabbar-height` and `--app-tabbar-offset` variables; no second offset system.
+- Estimate details: original scope.
+
+**Retrospective stage-work assessment: 0.05**
+
+*— Claude · 2026-11-14 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - iPhone Safari acceptance
+
+**Original estimate: 0.05**
+
+- Status: pending maintainer. After merge and deploy, on iPhone Safari open a conversation: no tab bar, composer at the bottom edge clear of Safari's toolbar, back arrow returns to Messages with the bar. Desktop or emulated evidence does not satisfy this.
+
+## Cycle closeout (pending Stage 4)
+
+- Technical completion: Stages 1–3 committed on `feature/dm_conversation_tabbar`; Stage 4 pending.
+- Retrospective whole-cycle assessment: pending Stage 4. Stage retrospectives so far: 0.10, 0.05, 0.05.
