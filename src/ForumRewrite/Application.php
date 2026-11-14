@@ -1184,6 +1184,17 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/records/([^/]+)/?$#', $path, $matches) === 1) {
+            $html = $this->threadAndPostPageController()->record(rawurldecode($matches[1]));
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
         if (preg_match('#^/posts/([^/]+)/?$#', $path, $matches) === 1) {
             $html = $this->threadAndPostPageController()->post($matches[1]);
             if ($html === null) {

@@ -118,3 +118,22 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged. Retrospective 0.18, over: the `git grep` lookup instead of a query, and the test-registration problem. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - A page for each record
+
+**Original estimate: 0.15**
+**Retrospective estimate: 0.15**
+
+- Changes:
+  - New route `/records/<Record-ID>` in `Application.php`, handled by the new `ThreadAndPostPageController::record()`. With the flag off, or for an unknown or malformed ID, it returns 404.
+  - Lookup: posts and reactions through `RemovalTarget::sourceCandidates`, plus `records/post-formats/` and `records/thread-subjects/`. A removal is read from `AcceptedRetraction::read` or `LabelRemoval::read`.
+  - New `templates/pages/record.php`: kind and ID; a link to the target post and to its `#records` list; the author; for a removed record, a "Retracted." notice with the time, the actor if it differs from the author, and the receipt link; otherwise every header, the body (not for posts, which link to "Read this post"), the source link, and the signature link with its `reaction_signatures` status where indexed.
+  - Test: `WriteApiSmokeTest::testEachRecordHasAPageAndRetractedOnesShowTheirReceipt` covers flag off (404), a live like's fields and links, a post's page, the like's page after retraction, an unknown ID and a path-traversal ID (both 404). A small `renderStatus()` test helper was added.
+- Verification:
+  - Passed: `./v3 test --smoke WriteApiSmokeTest ReactionRetractionTest RetractionTargetIdTest`, 681 run, 681 passed, 0 failed.
+  - Not run: the full suite.
+- Notes:
+  - The page renderer uses `$path` for the template's own file, so the first draft showed the template path as the record's source. The variable is now `recordPath`.
+- Estimate details: original scope as in Step 3, unchanged. Retrospective: as planned. Rater: Claude, the same exposed rater.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

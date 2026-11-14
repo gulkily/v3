@@ -4428,6 +4428,48 @@ NODE;
         }
     }
 
+    public function testEachRecordHasAPageAndRetractedOnesShowTheirReceipt(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'record-page', "A thread with a record page\n");
+        $liker = $this->linkSigningIdentity($app, 'record-page-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+
+        putenv('FORUM_POST_RECORDS_ENABLED');
+        assertSame(true, $this->renderStatus($app, '/records/' . $likeId) === 404);
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        try {
+            $fresh = fn (): Application => new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $page = $this->renderMethod($fresh(), 'GET', '/records/' . $likeId);
+            assertStringContains('<h1>Thread label ' . $likeId . '</h1>', $page);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">post ' . $author['thread_id'] . '</a>', $page);
+            assertStringContains('<dt>Tags</dt><dd>like</dd>', $page);
+            assertStringContains('href="/source/current/records/thread-labels/' . $likeId . '.txt"', $page);
+            assertStringContains('title="' . $liker['identity_id'] . '"', $page);
+
+            $postPage = $this->renderMethod($fresh(), 'GET', '/records/' . $author['thread_id']);
+            assertStringContains('<h1>Post ' . $author['thread_id'] . '</h1>', $postPage);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">Read this post</a>', $postPage);
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            $removed = $this->renderMethod($fresh(), 'GET', '/records/' . $likeId);
+            assertStringContains('<strong>Retracted.</strong>', $removed);
+            assertStringContains('records/post-retraction-acceptances/post-retraction-' . $likeId . '.txt', $removed);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">post ', $removed);
+            assertStringNotContains('<dt>Tags</dt>', $removed);
+
+            assertSame(true, $this->renderStatus($fresh(), '/records/post-reaction-unknown') === 404);
+            assertSame(true, $this->renderStatus($fresh(), '/records/..%2Fsecret') === 404);
+        } finally {
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
     public function testReplyLikesRetractAndOtherReactionsAreRefused(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -9170,6 +9212,13 @@ NODE;
             'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 600),
         ], $metadata);
         file_put_contents($directory . '/' . $token . '.json', json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n");
+    }
+
+    private function renderStatus(Application $application, string $path): int
+    {
+        http_response_code(200);
+        $this->renderMethod($application, 'GET', $path);
+        return (int) http_response_code();
     }
 
     private function renderMethod(Application $application, string $method, string $path): string
