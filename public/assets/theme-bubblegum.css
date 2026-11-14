@@ -11,6 +11,8 @@
   --bubblegum-bar: #e45b9c;
   --bubblegum-shadow: #b23c74;
   --bubblegum-butter: #ffe873;
+  /* Large, soft pink waves with a few sparkles; shared by windows and lists. */
+  --bubblegum-waves: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='960' height='120'%3E%3Cpath d='M-80 60 Q-40 96 0 60 T80 60 T160 60 T240 60 T320 60 T400 60 T480 60 T560 60 T640 60 T720 60 T800 60 T880 60 T960 60 T1040 60' fill='none' stroke='%23e45b9c' stroke-opacity='0.08' stroke-width='12'/%3E%3Cg fill='%23e45b9c' fill-opacity='0.2'%3E%3Cpath transform='translate(250 24) scale(1)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(70 100) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(560 32) scale(0.8)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(820 96) scale(1)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(420 102) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(900 26) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3C/g%3E%3C/svg%3E");
   --page-bg: #f7b3d2;
   --body-background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' fill-opacity='0.22'%3E%3Cpath d='M30 24h12v6H30zM48 24h12v6H48zM24 30h42v12H24zM30 42h30v6H30zM36 48h18v6H36zM42 54h6v6h-6z'/%3E%3Cpath d='M132 18h6v42h-6zM120 30h30v6h-30z'/%3E%3Cpath d='M42 144h4v14h-4zM37 149h14v4H37z'/%3E%3C/g%3E%3Cg fill='%23ffffff' fill-opacity='0.32'%3E%3Cpath d='M142 120h4v40h-4zM124 138h40v4h-40zM138 134h12v12h-12z'/%3E%3Cpath d='M90 92h3v13h-3zM85 97h13v3H85z'/%3E%3C/g%3E%3C/svg%3E"),
@@ -70,7 +72,7 @@
      and a warm light falling from the top of each window. Wide and pale
      enough to read as a backdrop, never as marks beside the letters. */
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='960' height='120'%3E%3Cpath d='M-80 60 Q-40 96 0 60 T80 60 T160 60 T240 60 T320 60 T400 60 T480 60 T560 60 T640 60 T720 60 T800 60 T880 60 T960 60 T1040 60' fill='none' stroke='%23e45b9c' stroke-opacity='0.08' stroke-width='12'/%3E%3Cg fill='%23e45b9c' fill-opacity='0.2'%3E%3Cpath transform='translate(250 24) scale(1)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(70 100) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(560 32) scale(0.8)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(820 96) scale(1)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(420 102) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(900 26) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 960px 120px repeat-y,
+    var(--bubblegum-waves) 0 0 / 960px 120px repeat-y,
     radial-gradient(ellipse 70% 7rem at 50% 0, rgba(255, 232, 115, 0.28), transparent 75%) no-repeat,
     linear-gradient(180deg, #ffffff 0%, #fff3f9 100%),
     var(--panel);
@@ -90,6 +92,16 @@
     repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
     var(--bubblegum-bar);
   pointer-events: none;
+}
+
+:root[data-theme="bubblegum"] .thread-rows {
+  /* Plain lists (board rows, Unread, Messages, search) get the windows' waves
+     and blush fade too. Offset by half a wave so neighbouring boxes don't line
+     up as one stripe. */
+  background:
+    var(--bubblegum-waves) -40px 30px / 960px 120px repeat-y,
+    linear-gradient(180deg, #ffffff 0%, #fff3f9 100%),
+    var(--panel);
 }
 
 :root[data-theme="bubblegum"] .stack > * + * {
@@ -177,7 +189,8 @@
 :root[data-theme="bubblegum"] select {
   border: 2px solid var(--bubblegum-berry);
   border-radius: 999px;
-  background: var(--input-bg);
+  /* A faint blush fade; no pattern behind the letters. */
+  background: linear-gradient(180deg, #fffafd 0%, #ffeaf4 100%), var(--input-bg);
 }
 
 :root[data-theme="bubblegum"] input[type="checkbox"],
@@ -189,7 +202,7 @@
 :root[data-theme="bubblegum"] textarea {
   border: 2px solid var(--bubblegum-berry);
   border-radius: 1rem;
-  background: var(--input-bg);
+  background: linear-gradient(180deg, #fffafd 0%, #ffeaf4 100%), var(--input-bg);
 }
 
 /* Chunky pixel buttons, like a POST button on an old desktop. */
@@ -299,7 +312,9 @@
 @media (max-width: 639px) {
   :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .site-header-actions {
     border-top: 3px solid var(--bubblegum-berry);
-    background: #ffffff;
+    background:
+      var(--bubblegum-waves) 0 -30px / 960px 120px repeat-x,
+      linear-gradient(180deg, #ffffff 0%, #fff0f7 100%);
   }
 
   :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .nav > .nav-link,
