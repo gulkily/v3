@@ -34,10 +34,14 @@
   cursor: pointer;
 }
 
+/* The column is never narrower than a small phone (20rem), which every page
+   is built to fit. When the chosen edges are closer than that, the column
+   grows evenly on both sides of the point halfway between them. */
 @media (min-width: 640px) {
   :root[data-reading-margins] .main {
-    width: calc((var(--reading-right) - var(--reading-left)) * 1vw);
-    margin-left: calc(50% - 50vw + var(--reading-left) * 1vw);
+    --reading-width: max(20rem, calc((var(--reading-right) - var(--reading-left)) * 1vw));
+    width: var(--reading-width);
+    margin-left: calc(50% - 50vw + (var(--reading-left) + var(--reading-right)) * 0.5vw - var(--reading-width) / 2);
   }
 }
 
