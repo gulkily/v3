@@ -62,6 +62,11 @@
 .private-conversation.composer-inline [data-private-message-composer] { position: static; }
 /* App shell phone tab bar: keep the sticky composer above it, or at the bottom while it is scrolled away (`--app-tabbar-offset` comes from site.css). */
 @media (max-width: 639px) { [data-shell="app"] .private-conversation [data-private-message-composer] { bottom: var(--app-tabbar-offset); } }
+/* Phone conversation without the tab bar: a short conversation still puts the composer at the bottom edge. */
+@media (max-width: 639px) {
+  [data-shell="app"][data-tabbar-page="none"] .private-conversation { flex: 1 0 auto; display: flex; flex-direction: column; }
+  [data-shell="app"][data-tabbar-page="none"] .private-conversation > [data-role="private-message-transcript"] { flex: 1 0 auto; }
+}
 .private-conversation [data-private-message-form] { gap: .35rem; }
 /* One line until you type more; script grows it to the same cap as before. */
 .private-conversation [data-private-message-composer] textarea { margin-top: 0; min-height: 44px; resize: none; font-weight: 400; line-height: 1.35; }

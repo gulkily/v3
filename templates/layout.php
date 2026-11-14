@@ -269,7 +269,7 @@
   </div>
 <?php endif; ?>
   <!-- route-source: <?= $e($routeSource) ?> -->
-  <div class="shell"<?= $navigationSlot === 'app' ? ' data-shell="app"' : '' ?>>
+  <div class="shell"<?= $navigationSlot === 'app' ? ' data-shell="app"' : '' ?><?= ($tabBarHidden ?? false) ? ' data-tabbar-page="none"' : '' ?>>
 <?php if ($navigationSlot === 'app'): ?>
     <div class="shell-sky" aria-hidden="true"></div>
 <?= $indent($partial('partials/app_header.php'), 2) ?>
