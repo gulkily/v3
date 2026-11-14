@@ -278,6 +278,7 @@ final class TemplateRenderer
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'memberApprovalScriptPath' => $this->assetPath('/assets/member_approval.js'),
+            'pendingUserSummaryScriptPath' => $this->assetPath('/assets/pending_user_summary.js'),
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'readingMarginsScriptPath' => $this->assetPath('/assets/reading_margins.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
@@ -890,7 +891,17 @@ final class TemplateRenderer
             $parts[] = $dateHtml;
         }
 
-        return implode(' · ', $parts) . ($unapproved > 0 ? ' <span class="chip chip--pending">Pending</span>' : '');
+        if ($unapproved === 0) {
+            return implode(' · ', $parts);
+        }
+
+        // The chip opens an in-page summary with Approve (pending_user_summary.js);
+        // without script it is a plain link to the profile, which has Approve too.
+        $profileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
+        $authorLabel = trim((string) ($record['author_label'] ?? ''));
+
+        return implode(' · ', $parts)
+            . ' <a class="pending-chip" href="/profiles/' . $escape($profileSlug) . '" data-pending-profile="' . $escape($profileSlug) . '" data-pending-username="' . $escape($authorLabel) . '"><span class="chip chip--pending">Pending</span></a>';
     }
 
     /**

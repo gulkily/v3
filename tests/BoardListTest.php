@@ -295,7 +295,7 @@ final class BoardListTest
             'root_post_created_at' => '2025-10-06T12:37:00Z',
         ], 'root_post_created_at', $escape);
 
-        assertSame('<a href="/profiles/mouse">mouse</a> · <time datetime="2025-10-06T12:37:00Z" title="Oct 6, 2025 at 12:37 UTC">Oct 6, 2025</time> <span class="chip chip--pending">Pending</span>', $meta);
+        assertSame('<a href="/profiles/mouse">mouse</a> · <time datetime="2025-10-06T12:37:00Z" title="Oct 6, 2025 at 12:37 UTC">Oct 6, 2025</time> <a class="pending-chip" href="/profiles/mouse" data-pending-profile="mouse" data-pending-username="mouse"><span class="chip chip--pending">Pending</span></a>', $meta);
     }
 
     /** Text of the rows container with the given class. */

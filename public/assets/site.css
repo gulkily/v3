@@ -1253,6 +1253,12 @@ pre {
   color: var(--status-warning, var(--ink-soft));
 }
 
+/* The Pending chip beside an author opens their summary
+   (pending_user_summary.js); the chip keeps its own colours. */
+.pending-chip {
+  text-decoration: none;
+}
+
 /* Staged: post IDs are long unbroken strings; let them wrap on phones. */
 .staged-item__id code {
   overflow-wrap: anywhere;
@@ -2052,4 +2058,56 @@ pre {
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
   }
+}
+
+/* The pending author summary (pending_user_summary.js). */
+.pending-user-dialog {
+  width: min(22rem, calc(100vw - 2rem));
+  margin: auto;
+  color: var(--ink);
+}
+
+.pending-user-dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.pending-user-dialog__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pending-user-dialog__head .chip {
+  flex: none;
+  overflow-wrap: normal;
+}
+
+.pending-user-dialog__head h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pending-user-dialog__key {
+  overflow-wrap: anywhere;
+}
+
+.pending-user-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pending-user-dialog__actions button {
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+}
+
+.pending-user-dialog__actions [data-role="approve"] {
+  background: var(--button-bg);
+}
+
+.pending-user-dialog__actions [data-role="close"] {
+  margin-left: auto;
 }

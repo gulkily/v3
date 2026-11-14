@@ -221,6 +221,7 @@
 <?php endforeach; ?>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
   <script src="<?= $e($memberApprovalScriptPath) ?>" defer></script>
+  <script src="<?= $e($pendingUserSummaryScriptPath) ?>" defer></script>
 <?php if ($showThreadDensityToggle): ?>
   <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
 <?php endif; ?>
