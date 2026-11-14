@@ -48,7 +48,7 @@ final class GuestbookPageController
             'isLastSpread' => $left === $lastLeft,
             'earlierHref' => $left > 1 ? self::href($left - 2, $lastLeft) : null,
             'laterHref' => $left < $lastLeft ? self::href($left + 2, $lastLeft) : null,
-            'latestHref' => $left < $lastLeft ? self::href($lastLeft, $lastLeft) : null,
+            'latestHref' => $left + 2 < $lastLeft ? self::href($lastLeft, $lastLeft) : null,
         ], 'Guestbook', 'guestbook', [
             '/assets/openpgp_loader.js',
             '/assets/browser_signing.js',

@@ -58,3 +58,27 @@ Cycle estimate: 0.60
 - Estimate details: original scope as planned; no revision.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Paper look
+
+**Original estimate: 0.18**
+**Retrospective: 0.20**
+
+- Changes:
+  - `public/assets/guestbook.css`, loaded only on the book through `TemplateRenderer.php` with `compose.css`. Cream lined pages, a spine shadow, a dark cover edge, italic dates and page numbers, a handwriting-style signature.
+  - The book sets the theme's color and font properties for everything inside it, and outranks the themes' `:root` link, field and button rules. It keeps the same paper in every theme.
+  - Two facing pages when wide; the book widens past the 760 px reading column to fit them. One column on phones.
+  - Page turns moved inside the book, as a footer row on the paper, and render only when there is somewhere to turn. "Latest page" shows only when it differs from "Later pages".
+  - Long entries grow their page; images, tables and code stay inside the page width.
+  - `tests/browser/guestbook.mjs` extended: five more entries (a 2,000-character note, a table), then 17 themes at 390 px and 1280 px with JavaScript, and Light without it.
+- Verification:
+  - `node tests/browser/guestbook.mjs`: passed. In every case: paper and ink colors, no sideways scroll, facing pages only when wide, entries inside the book, both the newest and the first spread.
+  - Screenshots at 390 px and 1280 px compared with the mockup: same structure and palette.
+  - `./v3 test --smoke GuestbookPageTest`: 453 passed; `AssetFingerprintTest`: passed. Full suite not run.
+- Notes:
+  - Deviation: no web fonts. EB Garamond and Caveat would be new third-party assets, which need approval under `CONTRIBUTING.md`. The book uses local font stacks: Garamond, Palatino or Georgia for text; Segoe Print, Bradley Hand or Comic Sans for signatures. Machines without them fall back to serif or cursive.
+  - On phones a spread shows both pages one above the other, so a phone shows up to six entries per screen of pages.
+  - The shared composer keeps its ··· menu and Options row in the book.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

@@ -23,6 +23,7 @@ final class TemplateRenderer
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
+        'guestbook.php' => ['/assets/compose.css', '/assets/guestbook.css'],
         'themes.php' => ['/assets/themes.css'],
         'agent.php' => ['/assets/agent.css'],
         'activity.php' => ['/assets/activity.css', '/assets/access-history.css'],

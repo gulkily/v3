@@ -74,6 +74,7 @@ final class GuestbookPageTest
             assertStringContains('name="parent_id" value="' . self::BOOK . '"', $latest);
             assertStringContains('Sign the book', $latest);
             assertStringContains('/assets/browser_signing.', $latest);
+            assertStringContains('/assets/guestbook.', $latest, 'The book carries its own stylesheet.');
             $this->writeEntry($repositoryRoot, 'entry-5', 'Note number 5.', '2026-11-01T00:05:00Z');
             $this->writeEntry($repositoryRoot, 'entry-6', 'Note number 6.', '2026-11-01T00:06:00Z');
             $this->writeEntry($repositoryRoot, 'entry-7', 'Note number 7.', '2026-11-01T00:07:00Z');

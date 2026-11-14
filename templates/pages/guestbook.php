@@ -56,8 +56,8 @@ $entryDate = static function (string $value): string {
 <?php endif; ?>
     </div>
 <?php endforeach; ?>
-  </div>
-  <nav class="guestbook__turns" aria-label="Pages">
+<?php if ($earlierHref !== null || $laterHref !== null): ?>
+    <nav class="guestbook__turns" aria-label="Pages">
 <?php if ($earlierHref !== null): ?>
     <a class="guestbook__turn" rel="prev" href="<?= $e($earlierHref) ?>">← Earlier pages</a>
 <?php endif; ?>
@@ -67,5 +67,7 @@ $entryDate = static function (string $value): string {
 <?php if ($latestHref !== null): ?>
     <a class="guestbook__turn" href="<?= $e($latestHref) ?>">Latest page</a>
 <?php endif; ?>
-  </nav>
+    </nav>
+<?php endif; ?>
+  </div>
 </section>
