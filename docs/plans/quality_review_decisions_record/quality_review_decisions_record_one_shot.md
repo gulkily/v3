@@ -83,7 +83,7 @@ Both documents now say how each decision ended, what is still open (the two held
 
 Only the two review documents, this record, the index, the ledger and the debug log changed. No code or tests.
 
-Commit/merge/publication status: planning commit `5607aeff`; completion commit pending at time of writing; stacked on open PRs #223 and #227.
+Commit/merge/publication status: planning commit `5607aeff`; completion commit `5d9d02ae` (confirmed with Git); PR #228 open, stacked on open PRs #223 and #227.
 
 _Claude (Opus 5.5), 2026-11-14_
 
