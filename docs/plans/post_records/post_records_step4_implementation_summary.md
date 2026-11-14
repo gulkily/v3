@@ -73,3 +73,24 @@ Tests: per the repository rules, only the smoke set plus the tests for what chan
 - Estimate details: original scope as in Step 3, unchanged. Retrospective 0.08, slightly under: the existing helpers needed no changes. Rater: Claude, the same exposed rater.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - `delete-record` on a like leaves a receipt
+
+**Original estimate: 0.10**
+**Retrospective estimate: 0.12**
+
+- Changes:
+  - New `Canonical/ReactionTarget::describe()` reads either kind of like (thread label or post reaction) and says where it sits and whether it is a like. Stage 2's `requireRetractableReaction` now uses it too, so the site and the CLI agree.
+  - New `Write/ReactionRemoval`: writes a local-operator receipt (`records/post-removals/<id>.txt`, `Target-ID` and `Parent-ID` as for signed retractions), then `git rm`s the record and its `.asc` and commits all of them together, rolling back on failure.
+  - `scripts/delete_record.php`: a like target, by ID or by `records/post-reactions/` or `records/thread-labels/` path, goes through `ReactionRemoval`, followed by the script's usual full rebuild and static build. A target that already has a receipt reports "Reaction already removed".
+  - Other reactions keep the plain `git rm` path. Routing every reaction through the new path broke `LocalAppSmokeTest::testDeleteRecordCommandRemovesRecordCommitsAndRefreshesDerivedState` and `testThreadAttributesCommandResolvesDeletedLabelRecordToThread`, which delete a non-like label. That's consistent with the slice: only likes are retractable.
+  - `docs/reference/v3_cli.md`: new "Deleting a like" section.
+  - Test: `DeleteRecordCommandTest::testDeletingALikeRemovesItsSignatureAndLeavesAReceipt`.
+- Verification:
+  - Passed: `./v3 test --smoke DeleteRecordCommandTest WriteApiSmokeTest ReactionRetractionTest RetractionTargetIdTest ContentImportPlannerTest`, 695 run, 695 passed, 0 failed. That includes the two `LocalAppSmokeTest` cases above.
+  - Not run: the full suite.
+- Notes:
+  - Deviation: Step 3 said to reuse Stage 3's targeted update here. The CLI keeps the script's existing full rebuild instead, because the targeted helpers are private to `LocalWriteService` and the CLI is a rare operator action. The result is the same, just slower.
+- Estimate details: original scope as in Step 3, unchanged. Retrospective 0.12, slightly over: extracting the shared reader and scoping the route to likes. Rater: Claude, the same exposed rater.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

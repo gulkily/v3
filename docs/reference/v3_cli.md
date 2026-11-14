@@ -721,6 +721,16 @@ the site instead; see [Author post retraction](author_post_retraction.md).
 - `database_path` — SQLite file to rebuild after deletion
 - `artifact_root` — static HTML output directory to rebuild after deletion
 
+### Deleting a like
+
+When the target is a like (a `post-reaction-…` or `thread-label-…` record whose only
+tag is `like`), `delete-record` removes the record and its signature in one commit,
+writes the same local receipt a removed post gets at `records/post-removals/<record-id>.txt`
+(`Target-ID` is the like, `Parent-ID` the post it was on), and rebuilds. Imports never
+bring a removed like back. Members and operators can also retract a like from the site;
+see [post retraction](../concepts/post_retraction.md). Other reactions still use the
+plain `git rm` path above.
+
 ### Source-post deletion and label repair
 
 Deleting a post also removes its proven generated thread-label records and their

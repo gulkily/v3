@@ -1361,33 +1361,11 @@ class LocalWriteService
      */
     private function requireRetractableReaction(string $recordId, string $actorIdentityId): array
     {
-        $path = RemovalTarget::sourceCandidates($recordId)[0];
-        if (!is_file($this->repositoryRoot . '/' . $path) || is_link($this->repositoryRoot . '/' . $path)) {
-            throw new RuntimeException('Reaction to retract was not found.');
+        $described = \ForumRewrite\Canonical\ReactionTarget::describe($this->repositoryRoot, $recordId);
+        if (!$described['is_like']) {
+            throw new RuntimeException('Only likes can be retracted for now.');
         }
-        $bytes = (string) file_get_contents($this->repositoryRoot . '/' . $path);
-        if (RemovalTarget::family($recordId) === 'thread-label') {
-            $label = (new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse($bytes);
-            if ($label->labels !== ['like'] || $label->operation !== 'add' || $label->sourcePostId !== null) {
-                throw new RuntimeException('Only likes can be retracted for now.');
-            }
-            $reaction = ['record_id' => $label->recordId, 'thread_id' => $label->threadId, 'target_post_id' => $label->threadId,
-                'created_at' => $label->createdAt, 'author_identity_id' => (string) $label->authorIdentityId];
-        } else {
-            $like = (new \ForumRewrite\Canonical\PostReactionRecordParser())->parse($bytes);
-            if ($like->tags !== ['like'] || $like->operation !== 'add') {
-                throw new RuntimeException('Only likes can be retracted for now.');
-            }
-            $threadId = $like->postId;
-            foreach (CanonicalPathResolver::postCandidates($like->postId) as $candidate) {
-                if (is_file($this->repositoryRoot . '/' . $candidate)) {
-                    $threadId = $this->canonicalRepository->loadPost($candidate)->threadId ?? $like->postId;
-                    break;
-                }
-            }
-            $reaction = ['record_id' => $like->recordId, 'thread_id' => $threadId, 'target_post_id' => $like->postId,
-                'created_at' => $like->createdAt, 'author_identity_id' => (string) $like->authorIdentityId];
-        }
+        $reaction = array_intersect_key($described, array_flip(['record_id', 'thread_id', 'target_post_id', 'created_at', 'author_identity_id']));
         if ($reaction['record_id'] !== $recordId || $reaction['author_identity_id'] === '') {
             throw new RuntimeException('Only likes with a signing author can be retracted.');
         }
