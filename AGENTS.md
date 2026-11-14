@@ -50,7 +50,7 @@ Follow the dependency approval policy in `CONTRIBUTING.md` before adding or upda
 
 ## Railspike
 
-Use Railspike by default when a task would benefit from comparing approaches, staged planning, or work across sessions, unless the user opts out. Read `docs/railspike/RAILSPIKE.md` and begin the appropriate planning step; wait for each required `Approved Step N` before advancing. Small, straightforward changes can proceed directly. Honor a decline for the same task without repeated offers. This guidance does not approve implementation.
+Every change that will be committed runs as a Railspike cycle: one-shot by default, staged when the approach or scope needs review, approaches need comparing, or the work spans sessions. Direct work is only for answering questions, uncommitted exploration, or a task the user explicitly opts out of Railspike; size, mechanical scope and urgency never exempt a change. In your first reply, name the mode you chose and why. Read `docs/railspike/RAILSPIKE.md` and begin the appropriate step; in staged cycles, wait for each required `Approved Step N` before advancing. Honor an opt-out for the same task without repeated offers. This guidance does not approve implementation.
 
 Railspike is already installed as a Git subtree at `docs/railspike/`. Keep project planning artifacts in the host project's `docs/plans/`, outside the vendored tree. See `docs/reference/railspike_workflow.md` for project-specific workflow and update instructions.
 

@@ -10,7 +10,7 @@ Extended estimates: enabled (new enrolled cycle default); no real alternatives o
 
 **Cycle estimate: 0.05 (intake)**
 
-Status: planning; next permitted action: planning commit, then the AGENTS.md edit.
+Status: implemented and verified locally; PR open, awaiting maintainer review and merge.
 
 ## Original request
 
@@ -56,13 +56,38 @@ None.
 
 Starting revisions and branch: `origin/main` at `59d2d64609d8b3ff98b3484df20dd4648a067f8a`; branch `chore/railspike_for_every_commit`.
 
-Planning commit: pending.
+Planning commit: `a27cc98`.
 
 ## Study history
 
 - 2026-11-14T17:34Z intake: **0.05** whole-cycle projection, scope v1, R1, P2. This is below the smallest R1 reference: one paragraph, already drafted in the parent cycle, so the rater (Claude) had full prior exposure. No measured labor.
 - 2026-11-14T17:34Z execution entry: **0.05 reaffirmed**, same scope.
 
+- 2026-11-14 closeout: scope v1 delivered with no corrections. Retrospective scope assessment: 0.05. Maintainer acceptance pending.
+
 ## Dated execution history
+
+- 2026-11-14: replaced the AGENTS.md Railspike paragraph, using the same text as PR #216. Addition, not correction.
+
+## Outcome
+
+AGENTS.md now runs every committed change as a Railspike cycle and requires the first reply to name the mode. PR #216 is left as it is for the maintainer to decide on.
+
+## Verification
+
+- `git diff --check`: passed.
+- `./v3 test PlatformDocsCatalogTest LlmsTxtRendererTest`: passed (22 of 22).
+- Runtime, UI, migration and deployment checks: inapplicable, since this is an instruction-only change.
+- Full suite: not run, per AGENTS.md.
+
+## Final review
+
+The diff is the AGENTS.md paragraph plus this record, the index entry, the ledger row and the debug log. No duplication, no dependencies, no concepts touched.
+
+## Commit/merge/publication status
+
+- Planning commit: `a27cc98`.
+- Completion commit: reported in the PR.
+- Not merged.
 
 *— Claude (Opus 5.5), 2026-11-14*
