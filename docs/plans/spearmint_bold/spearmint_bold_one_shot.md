@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/spearmint_bold` — [host ledger](../effort_estimation_trial.md#cycle-v3spearmint_bold); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.20**
-Status: planned; next permitted action: implement
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 Predecessor: [`v3/spearmint_theme`](../spearmint_theme/spearmint_theme_one_shot.md), merged in PR #252.
 
@@ -60,7 +60,7 @@ Host `origin/main` at `6908aa420cf0db95ab67b1fa8de60202ac89adf0` (includes PR #2
 
 ## Planning commit
 
-Pending (this commit).
+`dc2b916` (confirmed with Git).
 
 ## Study history
 
@@ -70,5 +70,28 @@ Pending (this commit).
 ## Dated execution history
 
 - 2026-11-15T04:53Z: PR #252 is merged, so per AGENTS.md this is a new branch from fresh `origin/main` and a new PR, not a push to `feat/spearmint_theme`. No matching feedback item.
+
+## Study closeout
+
+Intake 0.20; execution entry reaffirmed 0.20; **retrospective 0.20**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
+
+## Outcome
+
+Delivered: deeper mint page with leaf sprigs and fizz bubbles; 3px-outlined cards with a teal-and-white wrapper stripe, frost halo and deep shadow; thread lists to match, with dotted dividers and a hover tint; a bigger outlined wordmark with a coral drop and a leaf that tips on hover; a teal-over-coral double wave under the header; glossy pills and buttons on a solid teal base that bounce and squish; coral Post, submit and New post buttons with dark ink; coral pinned marker and selection; pastel Tools and phone More tiles; a wrapper stripe on the phone tab bar; teal scrollbars. Only `theme-spearmint.css` changed.
+
+## Verification
+
+- `./v3 test --smoke ThemeRegistryTest NavIconSetsTest`: 466 run, 466 passed.
+- `node tests/browser/tools_launcher.mjs <dir> spearmint` (Chromium 1243): pass, no overflow at 1280px and 390px.
+- Ad hoc screenshots (private-message browser fixture) of board, thread list, a thread, compose, More panel and theme menu at 1280px and 390px: no page errors, no horizontal overflow, checked by eye. Computed contrast: ink-soft on the darkest page stop 5.15:1, white on active teal 5.19:1, dark ink on coral 5.95:1.
+- Full suite not run. Not checked: Firefox, WebKit, physical phones, production.
+
+## Final review
+
+One stylesheet changed; no markup, scripts or shared CSS. Theme-menu `:not(...)` guard kept on bare button rules.
+
+## Commit status
+
+Planning commit `dc2b916`; completion commit follows on `feat/spearmint_bold`. Merge and deploy are not covered by this cycle's authority.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
