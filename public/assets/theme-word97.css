@@ -859,7 +859,7 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
 :root[data-theme="word97"] .gallery-tile__caption {
   padding: 0.4rem 0 0;
   font-family: var(--body-font);
-  font-size: 0.86rem;
+  font-size: calc(0.86rem * var(--gallery-text-scale, 1));
   line-height: 1.25;
 }
 
@@ -884,7 +884,7 @@ html[data-theme="word97"] ::-webkit-scrollbar-corner {
   margin-top: 0.15rem;
   color: #404040;
   font-family: var(--ui-font);
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--gallery-text-scale, 1));
 }
 
 @media (max-width: 40rem) {

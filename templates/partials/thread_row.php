@@ -7,8 +7,8 @@
  */
 $subject = $threadTitle($thread);
 $replyCount = (int) $thread['reply_count'];
-// Image references are data, not text; the excerpt skips them.
-$excerpt = trim((string) preg_replace('/^' . preg_quote(\ForumRewrite\Images\ImageReference::PREFIX, '/') . '.*$/m', '', (string) $thread['body_preview']));
+// Image references and their photo details are data, not text; the excerpt skips them.
+$excerpt = trim((string) preg_replace('/^' . preg_quote(\ForumRewrite\Images\ImageReference::PREFIX, '/') . '.*(?:\nPhoto-(?:' . implode('|', \ForumRewrite\Images\ImageReference::PHOTO_DETAIL_LABELS) . '): .*)*$/m', '', (string) $thread['body_preview']));
 $showExcerpt = $excerpt !== '' && $excerpt !== trim($subject) && ($thread['retracted_at'] ?? null) === null;
 ?>
 <?php $thumbnail = $thread['thumbnail'] ?? null; ?>

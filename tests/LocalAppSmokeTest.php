@@ -2355,7 +2355,7 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","spearmint","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
@@ -2788,7 +2788,8 @@ PHP;
     {
         // A <details> embed inside <p> makes the parser close the <p> early and turn the
         // stray </p> into an empty unclassed <p>, which Word 97 and Midnight draw as a box.
-        // Embeds are off by default, so turn them on here rather than relying on the caller's environment.
+        // Media embeds are off by default, so turn them on for this render only.
+        $previous = getenv('FORUM_MEDIA_EMBEDS_ENABLED');
         putenv('FORUM_MEDIA_EMBEDS_ENABLED=true');
         try {
             $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
@@ -2802,7 +2803,7 @@ PHP;
                 'root_post_created_at' => null,
             ]]);
         } finally {
-            putenv('FORUM_MEDIA_EMBEDS_ENABLED');
+            putenv($previous === false ? 'FORUM_MEDIA_EMBEDS_ENABLED' : 'FORUM_MEDIA_EMBEDS_ENABLED=' . $previous);
         }
 
         assertStringContains('media-embed-card', $card);

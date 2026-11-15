@@ -4698,11 +4698,11 @@ NODE;
             }
             $_COOKIE = ['identity_hint' => 'guest'];
             $thread = $this->renderMethod($app, 'GET', '/threads/root-001');
-            assertStringNotContains('LLM exchanges:', $thread);
+            assertStringNotContains('>LLM exchanges</th>', $thread);
             foreach ($ids as $postId => $id) {
                 assertStringNotContains('/tools/llm-exchanges/' . $id . '"', $thread);
                 $post = $this->renderMethod($app, 'GET', '/posts/' . $postId);
-                assertStringContains('LLM exchanges:', $post);
+                assertStringContains('>LLM exchanges</th>', $post);
                 assertStringContains('/tools/llm-exchanges/' . $id . '"', $post);
                 foreach ($ids as $otherPostId => $otherId) {
                     if ($otherPostId !== $postId) {
@@ -4711,14 +4711,14 @@ NODE;
                 }
             }
             $_COOKIE = [];
-            assertStringNotContains('LLM exchanges:', $this->renderMethod($app, 'GET', '/posts/root-001'));
+            assertStringNotContains('>LLM exchanges</th>', $this->renderMethod($app, 'GET', '/posts/root-001'));
             file_put_contents($config, '<?php return ' . var_export([
                 'LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb,
                 'LLM_CONVERSATION_UI_ENABLED' => false,
             ], true) . ';');
             $_COOKIE = ['identity_hint' => 'guest'];
             $disabledApp = new Application(dirname(__DIR__), $root, $db, $artifacts);
-            assertStringNotContains('LLM exchanges:', $this->renderMethod($disabledApp, 'GET', '/posts/root-001'));
+            assertStringNotContains('>LLM exchanges</th>', $this->renderMethod($disabledApp, 'GET', '/posts/root-001'));
         } finally {
             $_COOKIE = $cookies;
             putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
@@ -4775,7 +4775,7 @@ NODE;
             assertSame(false, str_contains($list, '/tools/llm-exchanges/' . $ids[1] . '/'));
             assertStringContains('/tools/llm-exchanges/' . $ids[2] . '/', $list);
             $post = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
-            assertSame(false, str_contains($post, 'LLM exchanges:'));
+            assertSame(false, str_contains($post, '>LLM exchanges</th>'));
             $rootPost = $this->renderMethod($app, 'GET', '/posts/root-001');
             assertSame(false, str_contains($rootPost, '/tools/llm-exchanges/' . $ids[1] . '"'));
             assertStringContains('/tools/llm-exchanges/' . $ids[2] . '"', $rootPost);

@@ -41,7 +41,9 @@ const styles = ['site', 'sqlite', 'thread-list', 'tags'].map(name => `<link rel=
         const box = selector => toolbar.locator(selector).boundingBox();
         const [filter, sort, tags, bar] = [await box('.board-filter'), await box('.board-sort'), await box('.board-tags-link'), await toolbar.boundingBox()];
         assert.equal(Math.round(filter.y), Math.round(sort.y), `${label}: filter and sort share a row`);
-        assert.ok(Math.abs(tags.x + tags.width - (bar.x + bar.width)) < 2, `${label}: Tags at the right`);
+        // Themes that frame the toolbar as a window (Word97) pad it, so measure against its content edge.
+        const inset = await toolbar.evaluate(node => { const style = getComputedStyle(node); return parseFloat(style.paddingRight) + parseFloat(style.borderRightWidth); });
+        assert.ok(Math.abs(tags.x + tags.width - (bar.x + bar.width - inset)) < 2, `${label}: Tags at the right`);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${label}: no page overflow`);
       };
 

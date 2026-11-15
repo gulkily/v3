@@ -50,6 +50,10 @@
         var galleryZoom = parseFloat(localStorage.getItem('gallery-zoom'));
         if (galleryZoom >= 0.5 && galleryZoom <= 2) {
           document.documentElement.style.setProperty('--gallery-zoom', String(galleryZoom));
+          // Far zoomed out, tiles show images only; same threshold as the gallery script.
+          if (galleryZoom < 0.7) {
+            document.documentElement.setAttribute('data-gallery-compact', '');
+          }
         }
       } catch (error) {}
 <?php if ($navSlotCount > 0): ?>

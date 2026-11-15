@@ -11,5 +11,9 @@
     <button type="button" class="image-upload-remove" aria-label="Remove image" title="Remove image" hidden><span aria-hidden="true">×</span></button>
   </div>
   <p class="meta image-upload-status" role="status" aria-live="polite"></p>
+  <details class="compose-disclosure image-photo-details" data-compose-disclosure="photo" hidden>
+    <summary>Photo details <span class="meta" data-role="compose-disclosure-summary"></span></summary>
+    <div class="image-photo-details-list"></div>
+  </details>
 </fieldset>
 <p class="image-upload-recovery" hidden><span role="status">Your attachment is retained, but uploading is unavailable. Reconnect or </span><button type="button">Remove attachment to post text</button></p>

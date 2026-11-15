@@ -7,6 +7,7 @@ namespace ForumRewrite\Http;
 use ForumRewrite\Tools\ToolsPageSupport;
 use ForumRewrite\UsageReports\UsageJourneys;
 use ForumRewrite\UsageReports\UsageLogFormat;
+use ForumRewrite\UsageReports\UsageNames;
 use ForumRewrite\UsageReports\UsageReportResult;
 use ForumRewrite\UsageReports\UsageReportStore;
 
@@ -61,17 +62,37 @@ final class UsageReportsController
         }
         $rows = $store->reports($uploader === '' ? null : ($uploader === 'anonymous' ? '' : $uploader));
         $reports = array_map(static fn (array $row): array => UsageLogFormat::entries($row['body']), $rows);
+        $journeyCards = array_map(self::journeyCard(...), array_slice(UsageJourneys::groups(UsageJourneys::fromReports($reports)), 0, self::JOURNEY_ROWS));
+        $clicks = array_slice(UsageJourneys::clickCounts($reports), 0, self::CLICK_ROWS);
+        $mostClicks = max([1, ...array_column($clicks, 'clicks')]);
+        $uploaderLinks = [['label' => 'Everyone', 'href' => '/tools/usage-reports/', 'current' => $uploader === '', 'count' => null]];
+        foreach ($uploaders as $row) {
+            $value = $row['username'] ?? 'anonymous';
+            $uploaderLinks[] = [
+                'label' => $row['username'] ?? 'Anonymous',
+                'href' => '/tools/usage-reports/?uploader=' . rawurlencode($value),
+                'current' => $value === $uploader,
+                'count' => $row['reports'],
+            ];
+        }
 
         $this->routeServices->sendHtml(
             $this->routeServices->renderPageTemplate(
                 'usage_reports.php',
                 [
-                    'uploaders' => $uploaders,
-                    'uploader' => $uploader,
+                    'hasReports' => $uploaders !== [],
+                    'uploaderLinks' => $uploaderLinks,
                     'reportCount' => count($rows),
                     'entryCount' => array_sum(array_map('count', $reports)),
-                    'journeyGroups' => array_slice(UsageJourneys::groups(UsageJourneys::fromReports($reports)), 0, self::JOURNEY_ROWS),
-                    'clickCounts' => array_slice(UsageJourneys::clickCounts($reports), 0, self::CLICK_ROWS),
+                    'shortcutCount' => count(array_filter($journeyCards, static fn (array $card): bool => $card['shortcut'])),
+                    'journeyCards' => $journeyCards,
+                    'clickRows' => array_map(static fn (array $row): array => [
+                        'name' => UsageNames::control($row['name']),
+                        'raw' => $row['page'] . ' · ' . $row['region'] . ' · ' . $row['name'],
+                        'where' => self::regionPhrase($row['region']) . UsageNames::page($row['page']),
+                        'clicks' => $row['clicks'],
+                        'percent' => (int) round(100 * $row['clicks'] / $mostClicks),
+                    ], $clicks),
                     'stopSeconds' => UsageJourneys::STOP_SECONDS,
                     'toolNavOptions' => ToolsPageSupport::navOptions('usage-reports'),
                 ],
@@ -83,12 +104,69 @@ final class UsageReportsController
         );
     }
 
+    /**
+     * One journey group in words: "Thread → Save on Feature Flags", its usual
+     * clicks as named steps, and each name's raw form for hover.
+     *
+     * @param array{start:string, end:string, times:int, fewest:int, usual:list<string>, usual_clicks:int, shortcut:bool} $group
+     * @return array{from:string, fromRaw:string, to:string, toRaw:string, steps:list<array{name:string, raw:string}>, clicks:int, fewest:int, times:int, shortcut:bool}
+     */
+    private static function journeyCard(array $group): array
+    {
+        return [
+            'from' => self::placeName($group['start']),
+            'fromRaw' => $group['start'],
+            'to' => self::placeName($group['end']),
+            'toRaw' => $group['end'],
+            'steps' => array_map(static fn (string $step): array => [
+                'name' => str_starts_with($step, 'submit ') ? UsageNames::control(substr($step, 7)) : UsageNames::control($step),
+                'raw' => $step,
+            ], $group['usual']),
+            'clicks' => $group['usual_clicks'],
+            'fewest' => $group['fewest'],
+            'times' => $group['times'],
+            'shortcut' => $group['shortcut'],
+        ];
+    }
+
+    /** A journey end: a page kind, or "page › control" for a menu or a submit. */
+    private static function placeName(string $place): string
+    {
+        if ($place === 'another site') {
+            return 'Another site';
+        }
+        $parts = explode(' › ', $place, 2);
+        if (count($parts) === 2) {
+            return UsageNames::control($parts[1]) . ' on ' . UsageNames::page($parts[0]);
+        }
+
+        return UsageNames::page($place);
+    }
+
+    private static function regionPhrase(string $region): string
+    {
+        return match ($region) {
+            'navbar' => 'navbar, on ',
+            'menu' => 'menu, on ',
+            'tools-bar' => 'Tools bar, on ',
+            'list' => 'list, on ',
+            'post' => 'post, on ',
+            'composer' => 'composer, on ',
+            'footer' => 'footer, on ',
+            default => 'on ',
+        };
+    }
+
     public function log(): void
     {
         $this->routeServices->sendHtml(
             $this->routeServices->renderPageTemplate(
                 'usage_log.php',
-                ['toolNavOptions' => ToolsPageSupport::navOptions('usage-log')],
+                [
+                    'toolNavOptions' => ToolsPageSupport::navOptions('usage-log'),
+                    'usageNamesJson' => json_encode(UsageNames::forBrowser(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    'uploaderName' => $this->viewerUsername !== null ? ($this->viewerUsername)() : null,
+                ],
                 'Usage log',
                 'tools',
                 ['/assets/usage_log_page.js'],
