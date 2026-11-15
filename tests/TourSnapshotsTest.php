@@ -269,4 +269,33 @@ PHP;
         ));
         return substr($output, (int) strrpos($output, "---PAGE---\n") + 11);
     }
+
+    public function testRetractionSweepRetiresTourSnapshotsOlderThanTheRetraction(): void
+    {
+        $public = sys_get_temp_dir() . '/v3-tour-sweep-' . bin2hex(random_bytes(6));
+        mkdir($public . '/assets/tour', 0777, true);
+        file_put_contents($public . '/assets/site.css', 'body {}');
+        foreach (['index', 'board', 'calendar'] as $name) {
+            file_put_contents($public . '/assets/tour/' . $name . '.html', $name);
+            touch($public . '/assets/tour/' . $name . '.html', time() - 600);
+        }
+        touch($public . '/assets/tour/calendar.html', time());
+        $previous = getenv('FORUM_PUBLIC_ARTIFACT_ROOT');
+        putenv('FORUM_PUBLIC_ARTIFACT_ROOT=' . $public);
+        try {
+            $sweep = \ForumRewrite\Retraction\RetractionSweepFactory::create(dirname(__DIR__), $public . '/repo', $public . '/static', $public . '/exchanges.sqlite3', $public . '/sweep.json');
+            $roots = (new ReflectionProperty($sweep, 'artifactRoots'))->getValue($sweep);
+            assertSame(true, in_array($public . '/assets/tour', $roots, true));
+
+            $result = \ForumRewrite\Retraction\ArtifactSweep::run($roots, time() - 300);
+            assertSame(2, $result['cleaned']);
+            assertSame(false, is_file($public . '/assets/tour/board.html'));
+            assertSame(false, is_file($public . '/assets/tour/index.html'));
+            assertSame(true, is_file($public . '/assets/tour/calendar.html'), 'newer than the retraction');
+            assertSame(true, is_file($public . '/assets/site.css'));
+        } finally {
+            putenv($previous === false ? 'FORUM_PUBLIC_ARTIFACT_ROOT' : 'FORUM_PUBLIC_ARTIFACT_ROOT=' . $previous);
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($public);
+        }
+    }
 }

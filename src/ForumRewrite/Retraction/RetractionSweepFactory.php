@@ -15,7 +15,8 @@ final class RetractionSweepFactory
         $publicRoot = \ForumRewrite\Support\DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT', $projectRoot) ?: $projectRoot . '/public';
         $key = hash('sha256', json_encode([$repositoryRoot, $exchangePath, $staticRoot, $publicRoot], JSON_THROW_ON_ERROR));
         $statePath ??= getenv('FORUM_RETRACTION_SWEEP_STATE_PATH') ?: $projectRoot . '/state/private/retraction-sweep-' . substr($key, 0, 20) . '.json';
-        return new RetractionSweep($repositoryRoot, $exchangePath, $statePath, [$staticRoot, $publicRoot, $projectRoot . '/state/high_traffic/' . substr(hash('sha256', realpath($repositoryRoot) ?: $repositoryRoot), 0, 16) . '/pages']);
+        // Tour snapshots are their own root: the walk skips folders named assets.
+        return new RetractionSweep($repositoryRoot, $exchangePath, $statePath, [$staticRoot, $publicRoot, $projectRoot . '/state/high_traffic/' . substr(hash('sha256', realpath($repositoryRoot) ?: $repositoryRoot), 0, 16) . '/pages', $publicRoot . '/assets/tour']);
     }
 
     public static function reconcile(RetractionSweep $sweep, SqliteTaskQueueStore $store): void

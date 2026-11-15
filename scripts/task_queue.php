@@ -353,7 +353,15 @@ try {
                 static function (int $failedTaskId, Throwable $throwable) use ($errorLog): void {
                     $errorLog->writeThrowable('task_exception', $throwable, ['task_id' => $failedTaskId]);
                 },
-                runRetractionSweep: static fn (): array => $retractionSweep->run($workLimit),
+                runRetractionSweep: static function () use ($retractionSweep, $workLimit, $projectRoot, $usesInstancePaths): array {
+                    $result = $retractionSweep->run($workLimit);
+                    // Retired tour snapshots come back from the current read model, which no longer has the retracted content.
+                    if ($usesInstancePaths) try {
+                        (new \ForumRewrite\Tour\TourRefreshLauncher($projectRoot))->startIfDue(\ForumRewrite\Tour\TourSnapshots::forProject($projectRoot));
+                    } catch (Throwable) {
+                    }
+                    return $result;
+                },
                 runAppUpdate: static fn (): array => \ForumRewrite\Deploy\AppUpdate::forProject($projectRoot)->runQueued(),
             );
             $taskStartedAt = [];
