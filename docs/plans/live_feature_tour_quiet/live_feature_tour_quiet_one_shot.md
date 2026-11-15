@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/live_feature_tour_quiet` — [host ledger](../effort_estimation_trial.md#cycle-v3live_feature_tour_quiet); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.03**
-Status: planned; next permitted action: implementation
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 Follow-up to [`v3/live_feature_tour`](../live_feature_tour/live_feature_tour_one_shot.md) (PR #255, merged).
 
@@ -47,9 +47,43 @@ Host `main` at `e9720e4fad2dafccdb85e8c56deda20e880b5683`; branch `feat/live_fea
 
 ## Planning commit
 
-Pending.
+`3f329a1e` (confirmed with Git).
+
+## Dated execution history
+
+- 2026-11-15: removed the intro paragraph, the Interact hint and "live" from the heading and title; Open links and Look-mode frame clicks navigate in the same tab (no `target="_blank"`, `window.open` or ↗).
+- 2026-11-15, scope addition (maintainer, same session, while implementing): "scrolling this page on the phone should be smooth… anytime I put my finger on a screenshot, it scrolls the screenshot instead of the page." Added a transparent cover (`.shield`) over each frame in Look mode; touches land on the page, not the frame. Interact mode removes the cover.
+- 2026-11-15, scope addition: "the screenshots are lazy loaded and they should already be loaded in place by the time I scroll to them." Replaced `loading="lazy"` with loading every frame on page load in page order, three at a time (next starts on load or after 8 s); removed the footer note about lazy loading.
+- 2026-11-15, scope addition: "They should be in a form factor that most pages fit within a screenshot, at least the parts that we want to show off." Desktop frames changed from 1024×700 to 820×1100 portrait (the site's content column is narrow, so the wide frame was mostly margins); phone frames from 390×760 to 390×844; grid columns from min 420px to 340px.
 
 ## Study history
 
 - Intake 2026-11-15: **0.03**. Exposed (same rater built the predecessor). Rater Claude (claude-opus-5-5).
 - Execution entry 2026-11-15: 0.03 reaffirmed.
+- Revision 2026-11-15: **0.06** after three in-session additions (touch cover, preloading, frame shape).
+- Closeout 2026-11-15: retrospective scope assessment **0.06**. Maintainer fit/acceptance pending.
+
+## Outcome
+
+Delivered all four requests. Limitation: loading all 16 frames up front is heavier on first visit than lazy loading, by request.
+
+## Verification
+
+- `grep`: no `_blank`, `window.open`, `lazy` or intro copy left in the page.
+- Headless Chrome probe at 390×844 on the dev server: `elementFromPoint` over a frame returns the cover in Look mode and the iframe in Interact mode.
+- Headless Chrome dump after load without scrolling: all 16 frames have `src` set.
+- Renders against production at desktop and phone frame shapes: board, threads, agent, recent, gallery, calendar, tags, users, compose and key pages show their main content within the frame.
+- Not checked on a real iPhone; the touch fix is verified by hit-testing, not a touch scroll.
+- `./v3 test` (smoke set): 464 passed. Full suite not run.
+
+## Final review
+
+Diff is `public/assets/tour.html`, this record, the plans index, ledger entry and debug log. Nothing links to the page.
+
+## Commit/merge/publication status
+
+Planning commit `3f329a1e`; completion commit pending at writing. Not merged or deployed.
+
+## Attribution
+
+Claude (claude-opus-5-5), 2026-11-15 UTC.

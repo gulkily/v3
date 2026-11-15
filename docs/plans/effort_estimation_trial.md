@@ -2052,3 +2052,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/live_feature_tour` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.05 (intake 0.05; execution entry 0.05; retrospective 0.05) | [One-shot record](./live_feature_tour/live_feature_tour_one_shot.md#study-history) | None; acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot authorized in chat ("Can you put it onto Zen Memes? Don't link it from anywhere yet"). Intake **0.05**, exposed (page drafted before the cycle opened). Baseline `b3f7e3e2cefb9a78e3921976208f72a03509aeb2`; branch `feat/live_feature_tour`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/live_feature_tour_quiet
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/live_feature_tour_quiet` | One-shot technically complete; maintainer acceptance pending | v2 / R1 / P2 | 0.06 (intake 0.03; execution entry 0.03; revision 0.06; retrospective 0.06) | [One-shot record](./live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md#study-history) | Follow-up to `v3/live_feature_tour` (PR #255, merged); acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized in chat. Intake **0.03**, exposed (same rater built the predecessor); revised to **0.06** after three in-session additions. Baseline `e9720e4fad2dafccdb85e8c56deda20e880b5683`; branch `feat/live_feature_tour_quiet`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
