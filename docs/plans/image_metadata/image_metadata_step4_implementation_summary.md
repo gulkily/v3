@@ -62,3 +62,27 @@ Branch: `feature/image-metadata`, from `origin/main` at `14beeaaa`. Planning com
 - Estimate details: original scope as Step 3; uncertainty was the reply retry path, now covered by a test; revisions: none.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Show details under the image
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.17** (two shared consumers added: thread titles and board excerpts)
+
+- Changes:
+  - `src/ForumRewrite/Images/ImageReference.php`: `PHOTO_DETAIL_LABELS`, `photoDetails(string $after)` and `withoutReference(string $body)`. Only `Photo-` lines directly after the `Image-v1:` line, with a known label and at most 120 characters, count. Taken shows as "Nov 14, 2026, 4:12 PM" (the camera's own clock time) and Location as "42.3536° N, 71.1167° W".
+  - `src/ForumRewrite/View/MediaEmbedRenderer.php`: the image card ends with a `post-photo-details` grid of label and value; those lines leave the body text. Plain and Markdown posts behave the same.
+  - `public/assets/offline_reader.js`: the offline image placeholder is followed by "Label: value" lines, formatted like the server.
+  - `src/ForumRewrite/Support/ThreadTitle.php` and `templates/partials/thread_row.php`: titles and board excerpts skip photo lines, as they already skip the image line.
+  - `public/assets/site.css`: the `post-photo-details` grid.
+- Verification:
+  - Passed: new `MediaEmbedRendererTest::testPhotoDetailsAfterTheImageLineRenderUnderTheImage`. It covers plain and Markdown, escaping, formatting, no details, a `Photo-` line away from the image, an unknown key, and thread titles.
+  - Passed: `OfflineSnapshotPresentationTest::testThreadDetailRendersPostBodyLineBreaksLikeOnlineView`, extended with a photo-details post.
+  - Passed: `./v3 test --smoke MediaEmbedRendererTest ThreadTitleWithdrawalAndConsumersTest ThreadRootCardRepeatedTitleTest ImageContentTest`, 494/494; `./v3 test --smoke OfflineSnapshotPresentationTest`, 472/472.
+  - Checked by screenshot: the rendered post card in Gloss at 390 pixels.
+  - Inapplicable: RSS and `ApiTextController` show the body as plain text, so the lines read as `Photo-Camera: …`; no code change was needed.
+- Notes:
+  - Reuse: the existing image card, `ImageReference` parsing and the offline `nl2br` mirror.
+- Estimate details: original scope as Step 3, plus the two title and excerpt consumers found during inspection; uncertainty: low; revisions: none.
+
+*— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*

@@ -14,10 +14,31 @@
       .replace(/'/g, "&#039;");
   }
 
+  // Mirrors ImageReference::photoDisplay.
+  function photoDisplay(label, value) {
+    var taken = label === "Taken" && /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):\d\d(?:[+-]\d\d:\d\d)?$/.exec(value);
+    if (taken) {
+      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      var hour = Number(taken[4]), month = months[Number(taken[2]) - 1];
+      if (month && hour < 24) return month + " " + Number(taken[3]) + ", " + taken[1] + ", " + ((hour + 11) % 12 + 1) + ":" + taken[5] + " " + (hour < 12 ? "AM" : "PM");
+    }
+    var place = label === "Location" && /^(-?\d{1,2}\.\d+) (-?\d{1,3}\.\d+)$/.exec(value);
+    if (place && Math.abs(place[1]) <= 90 && Math.abs(place[2]) <= 180) {
+      var lat = Number(place[1]), lon = Number(place[2]);
+      return Math.abs(lat).toFixed(4) + "° " + (lat < 0 ? "S" : "N") + ", " + Math.abs(lon).toFixed(4) + "° " + (lon < 0 ? "W" : "E");
+    }
+    return value;
+  }
+
   function nl2br(value) {
-    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: (\S+))?$/gm, function (line, description) {
-      try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : ""); }
-      catch (error) { return "Image unavailable offline (reference preserved in the snapshot)."; }
+    // Mirrors MediaEmbedRenderer: photo details directly after the image line read as "Label: value".
+    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: (\S+))?((?:\nPhoto-(?:Camera|Lens|Exposure|Taken|Location): [^\x00-\x1f\x7f]{1,120}(?=\n|$))*)$/gm, function (line, description, photo) {
+      const details = (photo || "").split("\n").filter(Boolean).map(function (detail) {
+        const at = detail.indexOf(": ");
+        return detail.slice(6, at) + ": " + photoDisplay(detail.slice(6, at), detail.slice(at + 2));
+      }).map(function (detail) { return "\n" + detail; }).join("");
+      try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : "") + details; }
+      catch (error) { return "Image unavailable offline (reference preserved in the snapshot)." + details; }
     });
     var reader = document.querySelector && document.querySelector("[data-offline-reader]");
     var tagLinks = !reader || reader.getAttribute("data-tag-links") !== "0";
