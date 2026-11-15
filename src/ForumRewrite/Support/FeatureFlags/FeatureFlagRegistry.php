@@ -51,6 +51,7 @@ final class FeatureFlagRegistry
     public const POST_RECORDS_ENABLED = 'FORUM_POST_RECORDS_ENABLED';
     public const PENDING_CHIP_APPROVAL_ENABLED = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
+    public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
@@ -66,7 +67,8 @@ final class FeatureFlagRegistry
             self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
-            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
+            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
+            self::THREAD_ACTIVITY_DRAWER_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
         'FASTMOD' => [self::FAST_SCORING_ENABLED, self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
             self::FASTMOD_AUTOMATIC_TAGGING_ENABLED],
@@ -421,6 +423,15 @@ final class FeatureFlagRegistry
                 'Link hashtags in post bodies to their tag pages.',
                 true,
                 self::TAG_LINKS_ENABLED,
+                siteMutable: true,
+                group: 'RENDERING',
+            ),
+            new FeatureFlagDefinition(
+                self::THREAD_ACTIVITY_DRAWER_ENABLED,
+                'Thread activity drawer',
+                'On thread pages, move replies that are only hashtags out of the conversation and list them, with each post\'s likes and flags, in a collapsed Activity drawer above the reply box.',
+                false,
+                self::THREAD_ACTIVITY_DRAWER_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
             ),
