@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/usage_reports_ui`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/usage_reports_ui`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
 
 Extended estimates: enabled
 
@@ -67,7 +67,7 @@ Extended estimates: enabled
 - Verification approach: the smoke set plus this cycle's tests and `usage_log.mjs`, `usage_reports_e2e.mjs`, `tools_launcher.mjs`; screenshots of both pages at 390 and 1280 px in default, Chicago and Bubblegum, compared with the mock-up; `git diff --check`; final diff review.
 - Estimate details: driver: screenshots across themes; uncertainty: low.
 - Risks or open questions: none beyond the key risks.
-- Canonical components/API contracts touched: [usage reports concept](../concepts/usage_reports.md).
+- Canonical components/API contracts touched: [usage reports concept](../../concepts/usage_reports.md).
 
 ## Concepts touched
 
@@ -77,6 +77,6 @@ Extended estimates: enabled
 
 2026-11-15T05:15:25Z; Step 3 handoff; scope v1/A with the three confirmed mock-up decisions; starting revision `bd2b0fad` (main merged into the branch at Step 4 entry if it moved); R1/P2, single exposed Claude rater. Projected total **0.45 reaffirmed**; stage estimates 0.08, 0.15, 0.14, 0.06 are supplemental and non-additive. Not hours or measured effort; no approval to advance.
 
-Status: Approved Step 2 (maintainer, 2026-11-15T05:15Z, with the three mock-up decisions). Step 3 drafted; awaiting Approved Step 3.
+Status: **Approved Step 3** (maintainer, 2026-11-15T19:38Z).
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*

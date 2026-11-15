@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/usage_reports_ui`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/usage_reports_ui`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
 
 Extended estimates: enabled
 
@@ -10,7 +10,7 @@ Cycle estimate: 0.45
 
 ## Original Query
 
-"Can you please make a new step 1 for improving the UI of this feature?" (the usage reports feature from [local_telemetry](./local_telemetry/local_telemetry_step4_implementation_summary.md), after the upload fix in PR #238).
+"Can you please make a new step 1 for improving the UI of this feature?" (the usage reports feature from [local_telemetry](../local_telemetry/local_telemetry_step4_implementation_summary.md), after the upload fix in PR #238).
 
 ## Understood Intent
 
@@ -29,7 +29,7 @@ Both pages show the data as stored rather than as the person reading them would 
 
 ## Concepts touched
 
-- All options: [usage reports](../concepts/usage_reports.md) (changed: how logs and journeys are shown; recording, storage and journey rules unchanged).
+- All options: [usage reports](../../concepts/usage_reports.md) (changed: how logs and journeys are shown; recording, storage and journey rules unchanged).
 - Options A and B: proposed *readable page name* (a short name for a page kind, such as "Thread" for `/threads/*`), shared by both pages.
 - Option B: proposed *journey detail* view, using readable filter parameters like the existing `?uploader=`.
 

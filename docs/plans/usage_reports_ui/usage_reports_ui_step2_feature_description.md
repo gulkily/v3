@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/usage_reports_ui`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/usage_reports_ui`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
 
 Extended estimates: enabled
 
@@ -61,7 +61,7 @@ Application change, presentation only. In scope: the two templates, their page s
 
 ## Concepts touched
 
-- [Usage reports](../concepts/usage_reports.md) (changed: presentation and the names table).
+- [Usage reports](../../concepts/usage_reports.md) (changed: presentation and the names table).
 - Proposed *readable page name* (created): the names table, documented in the usage reports concept rather than its own file.
 
 ## User flow
