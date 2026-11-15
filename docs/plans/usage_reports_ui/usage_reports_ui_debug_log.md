@@ -26,3 +26,12 @@
 
 **Inapplicable instructions**
 - Planning commit after Step 3 approval: the plans are already committed on this branch at the maintainer's request.
+
+## 2026-11-15T20:45:00Z — Step 4
+
+**Necessary/useful instructions**
+- Stage Boundary Protocol, verification per stage: screenshots in three themes at two widths found four visual defects (step separators inside pills, no column gap, a wrapping switch label, low contrast on Bubblegum) that no test would have caught.
+- Shared standards, reuse: tool names and tones from the Tools registry kept the names table short and self-updating.
+
+**Uncertain assessments**
+- The workflow does not say whether screenshots belong in a stage's verification for UI work; they did more here than the tests.

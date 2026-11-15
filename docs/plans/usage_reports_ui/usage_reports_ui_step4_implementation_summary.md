@@ -7,6 +7,7 @@ Effort study: `railspike-effort` / `v3/usage_reports_ui`; [host ledger](../effor
 Extended estimates: enabled
 
 **Cycle estimate: 0.45** (Step 4 entry, reaffirmed from Step 3)
+**Retrospective cycle scope: 0.46** (see Closeout)
 
 Branch `plan/usage_reports_ui` with main `8314fae9` merged in. Stage originals below are copied from the approved Step 3 (R1, Claude single exposed rater); copying is not a new rating.
 
@@ -84,5 +85,27 @@ Branch `plan/usage_reports_ui` with main `8314fae9` merged in. Stage originals b
 ## Stage 4 - Checks, docs and closeout
 
 **Original estimate: 0.06**
+**Retrospective stage work: 0.08**
 
-- Status: pending.
+- Changes:
+  - [Usage reports concept](../../concepts/usage_reports.md): a Presentation paragraph (names table, the two page layouts), with "shortcut idea" and the readable log in the scenario.
+  - `UsageNamesTest` added to `tests/smoke.txt`.
+- Verification:
+  - `./v3 test` (smoke set, full output checked): 464 run, 464 passed.
+  - `./v3 test UsageReportsPageTest UsageReportUploadTest UsageNamesTest UsageJourneysTest`: 18 passed.
+  - Browser: `usage_log.mjs`, `usage_reports_e2e.mjs` and `tools_launcher.mjs` (38 theme and width cases) passed.
+  - Screenshots of both pages at 390 and 1280 px in default, Chicago and Bubblegum, compared with the mock-up: same structure; colours follow each theme instead of the mock-up's purple.
+  - `git diff --check` clean; final review of the stage diff (16 files) found no debug leftovers or unrelated changes.
+  - Not run: the full suite (left to the maintainer).
+- Estimate details: original scope; slightly over because the screenshot pass ran twice per page after fixes.
+
+*— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion Contract: entry, end-to-end and recovery are done and tested locally. Release (both pages read on the maintainer's phone with the flag on, then merge) is pending the maintainer.
+- Retrospective cycle scope: **0.46** against the 0.45 projection; the visual fixes found by screenshots (step separators, column gap, switch wrapping, Bubblegum contrast) were the only overrun.
+- Differences from the mock-up: colours come from each theme's variables, not the mock-up's fixed purple; the Most clicked "where" text reads "menu, on Thread"; the menu toggle shows as "Menu" (its recorded label) rather than "You menu".
+- Maintainer comfortable-fit judgment: pending.
+
+*— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
