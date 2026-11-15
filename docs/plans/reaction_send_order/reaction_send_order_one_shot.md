@@ -90,6 +90,6 @@ Diff checked: `thread_reactions.js`, the concept entry for the Outbox, one new t
 
 ## Commit/merge/publication status
 
-Completion commit: pending at time of writing. Push and PR authorized; not merged or deployed.
+Completion commit: `c4a50a1a` (confirmed with `git log`). Pushed with a PR; not merged or deployed.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
