@@ -221,7 +221,7 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $errorLog): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $errorLog, $usesInstancePaths): void {
             $startedAt = microtime(true);
             $retractionSweep = \ForumRewrite\Retraction\RetractionSweepFactory::create($projectRoot, $repositoryRoot, $staticHtmlRoot);
             if ($taskId === null) {
