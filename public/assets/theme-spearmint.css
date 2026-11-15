@@ -1,0 +1,359 @@
+/* Theme: spearmint
+   Cool mint sibling of Bubblegum with its own shapes: a mint page with faint
+   leaves and dots, white cards with a deep-teal outline, rounded corners and
+   a soft blurred shadow, a wavy teal line under the header, rounded buttons
+   that lift on hover and squish when pressed, and coral as the one warm pop
+   (unread, pinned, focus, selection). Uses system fonts only; ui-rounded
+   gives the soft face on Apple devices. */
+:root[data-theme="spearmint"],
+.theme-menu__option[data-theme-option="spearmint"] {
+  color-scheme: light;
+  --spearmint-teal: #0e5753;
+  --spearmint-leaf: #3aae96;
+  --spearmint-frost: #e3f8f0;
+  --spearmint-coral: #ff8f78;
+  --spearmint-coral-soft: #ffd6cc;
+  --spearmint-shadow: 0 6px 18px rgba(14, 87, 83, 0.16), 0 1px 3px rgba(14, 87, 83, 0.12);
+  --spearmint-shadow-small: 0 2px 6px rgba(14, 87, 83, 0.18);
+  --spearmint-shadow-lift: 0 5px 12px rgba(14, 87, 83, 0.22);
+  --page-bg: #bfeedd;
+  --body-background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%23ffffff' fill-opacity='0.35'%3E%3Ccircle cx='20' cy='24' r='3'/%3E%3Ccircle cx='108' cy='70' r='2'/%3E%3Ccircle cx='60' cy='132' r='2.5'/%3E%3Ccircle cx='146' cy='140' r='1.8'/%3E%3C/g%3E%3Cg fill='%233aae96' fill-opacity='0.16'%3E%3Cpath d='M118 22c-12 2-18 12-16 24 12-2 18-12 16-24z'/%3E%3Cpath d='M30 92c10 4 14 14 10 24-10-4-14-14-10-24z'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(180deg, #d6f6ea 0%, #bdeedc 55%, #a5e4cd 100%),
+    #bfeedd;
+  --ink: #0b3633;
+  --ink-soft: #24605a;
+  --line: #0e5753;
+  --panel: #ffffff;
+  --input-bg: #f3fcf8;
+  --button-bg: #e3f8f0;
+  --button-alt-bg: #effcf7;
+  --feedback-ok-bg: #e4f8ee;
+  --feedback-error-bg: #ffe9e3;
+  --status-error: #a8261b;
+  --status-ok: #17663a;
+  --status-warning: #7a4a00;
+  --active-bg: #157a70;
+  --active-ink: #ffffff;
+  --active-line: #0e5753;
+  --active-ring: rgba(58, 174, 150, 0.4);
+  --body-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  --ui-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
+.theme-swatch[data-theme="spearmint"] {
+  background:
+    radial-gradient(circle at 70% 30%, #ff8f78 0 18%, transparent 20%),
+    linear-gradient(135deg, #d6f6ea 0 50%, #3aae96 50%);
+  border: 2px solid #0e5753;
+}
+
+.theme-menu__option[data-theme-option="spearmint"] {
+  border: 2px solid #0e5753;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(14, 87, 83, 0.18);
+}
+
+/* site.css paints the page on a fixed body::before with one cover-sized
+   layer; the leaf pattern tiles at its own size instead. */
+:root[data-theme="spearmint"] body::before {
+  background-repeat: repeat, no-repeat;
+  background-size: 160px 160px, cover;
+}
+
+/* Cards: soft rounded tiles, lit from above. */
+:root[data-theme="spearmint"] .card {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 18px;
+  box-shadow: var(--spearmint-shadow);
+  background:
+    radial-gradient(ellipse 70% 6rem at 50% 0, rgba(255, 143, 120, 0.1), transparent 75%) no-repeat,
+    linear-gradient(180deg, #ffffff 0%, #f3fcf8 100%),
+    var(--panel);
+}
+
+:root[data-theme="spearmint"] .thread-rows {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 16px;
+  box-shadow: var(--spearmint-shadow);
+  background: linear-gradient(180deg, #ffffff 0%, #f3fcf8 100%), var(--panel);
+}
+
+/* A list inside a card keeps the card's frame only. */
+:root[data-theme="spearmint"] .card > .thread-rows {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root[data-theme="spearmint"] .stack > * + * {
+  margin-top: 1.2rem;
+}
+
+:root[data-theme="spearmint"] .post-card.continuation {
+  margin-top: 0.5rem;
+}
+
+:root[data-theme="spearmint"] .pending-reply-card,
+:root[data-theme="spearmint"] .pending-thread-shell {
+  border-style: dashed;
+}
+
+:root[data-theme="spearmint"] .post-card:target {
+  box-shadow: var(--spearmint-shadow), 0 0 0 4px var(--spearmint-coral);
+}
+
+:root[data-theme="spearmint"] .card h1,
+:root[data-theme="spearmint"] .card h2,
+:root[data-theme="spearmint"] .card h3 {
+  color: var(--spearmint-teal);
+  font-weight: 800;
+}
+
+/* Wordmark: white letters with a thin teal edge and a soft mint glow,
+   then a small leaf. */
+:root[data-theme="spearmint"] .eyebrow,
+:root[data-theme="spearmint"] .eyebrow .site-brand {
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 1.15rem;
+  text-shadow:
+    -1px -1px 0 var(--spearmint-teal), 1px -1px 0 var(--spearmint-teal),
+    -1px 1px 0 var(--spearmint-teal), 1px 1px 0 var(--spearmint-teal),
+    0 0 10px rgba(58, 174, 150, 0.9);
+}
+
+:root[data-theme="spearmint"] .eyebrow .site-brand {
+  text-decoration: none;
+}
+
+:root[data-theme="spearmint"] .eyebrow .site-brand::after {
+  content: "";
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.2em;
+  vertical-align: 0.35em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%233aae96' stroke='%230e5753' stroke-width='1.2' stroke-linejoin='round' d='M14 2C7 2 2 6 3 13c7 1 11-4 11-11z'/%3E%3Cpath fill='none' stroke='%230e5753' stroke-width='1' stroke-linecap='round' d='M3 13L10 6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* A wavy teal line under the header (Bubblegum uses a dashed one). */
+:root[data-theme="spearmint"] .site-header:not(.site-header--app)::after {
+  content: "";
+  display: block;
+  margin-top: 0.8rem;
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 4 Q6 0 12 4 T24 4' fill='none' stroke='%230e5753' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 24px 8px repeat-x;
+}
+
+/* On the app header (zenmemes) the same wave replaces the straight rule
+   site.css draws across the page; a border-image outset cannot cause
+   sideways scrolling. The html type selector outranks site.css's rule, which
+   loads after theme stylesheets. */
+@media (min-width: 640px) {
+  html:root[data-theme="spearmint"] [data-shell="app"] .site-header--app {
+    border-bottom: 8px solid var(--spearmint-teal);
+    border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 4 Q6 0 12 4 T24 4' fill='none' stroke='%230e5753' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 8 0 / 0 0 8px 0 / 0 100vw round;
+  }
+}
+
+/* Controls: pills and rounded buttons that lift on hover and squish when
+   pressed. */
+:root[data-theme="spearmint"] .nav-link {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--spearmint-teal);
+  box-shadow: var(--spearmint-shadow-small);
+  font-weight: 700;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+:root[data-theme="spearmint"] .nav-link:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--spearmint-shadow-lift);
+}
+
+:root[data-theme="spearmint"] .nav-link[data-unread-count]:not([data-unread-count="0"]) {
+  background: var(--spearmint-coral-soft);
+}
+
+:root[data-theme="spearmint"] .nav-link.is-active {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="spearmint"] input,
+:root[data-theme="spearmint"] select {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 12px;
+  background: var(--input-bg);
+}
+
+:root[data-theme="spearmint"] input[type="checkbox"],
+:root[data-theme="spearmint"] input[type="radio"] {
+  border-radius: revert;
+  accent-color: var(--active-bg);
+}
+
+:root[data-theme="spearmint"] textarea {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 14px;
+  background: var(--input-bg);
+}
+
+:root[data-theme="spearmint"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0 45%, rgba(255, 255, 255, 0) 70%), var(--button-bg);
+  color: var(--spearmint-teal);
+  box-shadow: var(--spearmint-shadow-small);
+  font-family: var(--ui-font);
+  font-weight: 800;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+:root[data-theme="spearmint"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--spearmint-shadow-lift);
+}
+
+:root[data-theme="spearmint"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+  transform: scale(0.96);
+  box-shadow: none;
+}
+
+:root[data-theme="spearmint"] button[type="submit"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option),
+:root[data-theme="spearmint"] button.feature-flags-chip[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0 40%, rgba(255, 255, 255, 0) 65%), var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="spearmint"] .thread-reaction-button {
+  padding: 0.3rem 0.55rem;
+}
+
+:root[data-theme="spearmint"] .thread-reaction-button[disabled] {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
+:root[data-theme="spearmint"] button:not(.theme-menu__option):focus-visible,
+:root[data-theme="spearmint"] input:focus-visible,
+:root[data-theme="spearmint"] textarea:focus-visible,
+:root[data-theme="spearmint"] .nav-link:focus-visible {
+  outline: 3px solid var(--spearmint-coral);
+  outline-offset: 2px;
+}
+
+:root[data-theme="spearmint"] .pinned-thread-marker {
+  background: var(--spearmint-coral-soft);
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 999px;
+  color: var(--spearmint-teal);
+  font-weight: 800;
+}
+
+:root[data-theme="spearmint"] .feedback,
+:root[data-theme="spearmint"] [data-role="public-key-viewer"],
+:root[data-theme="spearmint"] [data-role="private-key-viewer"] {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 14px;
+  box-shadow: var(--spearmint-shadow-small);
+}
+
+:root[data-theme="spearmint"] ::selection {
+  background: var(--spearmint-coral-soft);
+  color: var(--ink);
+}
+
+:root[data-theme="spearmint"] [data-shell="app"] .new-post-button,
+:root[data-theme="spearmint"] .account-menu__trigger {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 14px;
+  background: var(--button-bg);
+  color: var(--spearmint-teal);
+  box-shadow: var(--spearmint-shadow-small);
+  font-weight: 800;
+}
+
+:root[data-theme="spearmint"] [data-shell="app"] .new-post-button:where(.is-active) {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+/* Phones: the app nav is a bottom tab bar; tabs sit flat on a frosted strip
+   under a wavy edge. */
+@media (max-width: 639px) {
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .site-header-actions {
+    border-top: 2px solid var(--spearmint-teal);
+    background: linear-gradient(180deg, #ffffff 0%, var(--spearmint-frost) 100%);
+    box-shadow: 0 -4px 14px rgba(14, 87, 83, 0.12);
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .nav > .nav-link,
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .new-post-button,
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .account-menu__trigger {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    transform: none;
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .new-post-button.is-active {
+    background: var(--active-bg);
+    color: var(--active-ink);
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .account-menu__panel {
+    border: 0;
+    border-top: 2px solid var(--spearmint-teal);
+    background: var(--body-background);
+    box-shadow: none;
+  }
+
+  /* The board's All / Liked / Newest / Tags row fits on one line. */
+  :root[data-theme="spearmint"] .board-toolbar {
+    gap: 0.35rem;
+  }
+
+  :root[data-theme="spearmint"] .board-filter {
+    gap: 0.25rem;
+  }
+
+  :root[data-theme="spearmint"] .board-toolbar .nav-link {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+/* Tools: rounded mint tiles like the buttons. */
+:root[data-theme="spearmint"] .tool-launcher-button {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 12px;
+  color: var(--spearmint-teal);
+  font-weight: 700;
+}
+
+:root[data-theme="spearmint"] .tool-launcher-button:hover {
+  background: #ffffff;
+  box-shadow: var(--spearmint-shadow-small);
+}
+
+@media (max-width: 480px) {
+  :root[data-theme="spearmint"] .card {
+    border-radius: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="spearmint"] .nav-link,
+  :root[data-theme="spearmint"] button {
+    transition: none;
+  }
+}
