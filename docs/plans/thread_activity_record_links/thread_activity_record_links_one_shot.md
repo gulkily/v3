@@ -114,7 +114,7 @@ I reviewed `d81d7ee36..` for scope, duplication and docs.
 
 ## Commit/merge/publication status
 
-Planning `d81d7ee36`; completion commit pending reference; not yet pushed.
+Planning `d81d7ee36`; completion `a47b82dad`; pushed to `origin/feat/thread-activity-record-links`; PR opened (see the handoff).
 
 ## Study history
 
