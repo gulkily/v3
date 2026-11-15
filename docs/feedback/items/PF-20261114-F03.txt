@@ -1,0 +1,20 @@
+ID: PF-20261114-F03
+Title: Deploy celebration
+Kind: feature
+Workflow: blocked
+Created: 2026-11-14
+Evidence: locally-verified
+Estimate: 0.10
+
+Request:
+"The deploy button needs more celebration"
+
+Sources:
+- https://zenmemes.com/threads/thread-20261115003051-544aa720
+
+Done when:
+After Deploy now (header or Tools → Deploy) or a watched queued deploy changes the code, the page that loads next shows confetti and a Deployed banner with the server's message, once; up to date, refusals and failures show nothing; reduced motion shows the banner only.
+
+Notes:
+Related: the deploy_header_prompt cycle (docs/plans/deploy_header_prompt/), which added the header Deploy now button.
+2026-11-14: one-shot on feat/deploy_celebration (record docs/plans/deploy_celebration/deploy_celebration_one_shot.md). Verified locally (DeployPageTest, tests/browser/deploy_celebrate.mjs, tests/browser/deploy_prompt.mjs). Blocked on review, merge and deployment.

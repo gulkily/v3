@@ -88,7 +88,7 @@ try {
     $app = new Application($argv[1], $argv[2], $databasePath);
     $render($app, '/threads/');
     $page = $render($app, '/tools/deploy/');
-    foreach (['<h1>Deploy</h1>', 'Behind origin/main', 'Task worker', 'href="/tools/deploy/"', 'data-deploy-form', 'value="now"', 'value="check"', '>Queue deploy</button>', '/assets/deploy_control', 'tool-details', 'which has not run on this server yet. Deploy now runs immediately.'] as $needle) {
+    foreach (['<h1>Deploy</h1>', 'Behind origin/main', 'Task worker', 'href="/tools/deploy/"', 'data-deploy-form', 'value="now"', 'value="check"', '>Queue deploy</button>', '/assets/deploy_control', '/assets/deploy_celebrate', 'tool-details', 'which has not run on this server yet. Deploy now runs immediately.'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Operator page missing: ' . $needle);
     }
     $tools = $render($app, '/tools/');

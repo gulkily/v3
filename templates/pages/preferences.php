@@ -44,6 +44,11 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
         <span class="account-row__value" data-preference-value="table-size">Site default</span>
         <button type="button" class="account-row__action" data-preference-reset="table-size" hidden>Reset</button>
       </div>
+      <div class="account-row" data-tone="neutral">
+        <span class="account-row__title">Gallery image size</span>
+        <span class="account-row__value" data-preference-value="gallery-size">Site default</span>
+        <button type="button" class="account-row__action" data-preference-reset="gallery-size" hidden>Reset</button>
+      </div>
       <div class="account-row" data-tone="neutral" data-preference-row="phone-tabs" hidden>
         <span class="account-row__title">Phone tabs</span>
         <span class="account-row__value" data-preference-value="phone-tabs"></span>
@@ -85,6 +90,7 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
       density: runtime.threadDensityStorageKey || '',
       margins: runtime.readingMarginsStorageKey || '',
       tableSizes: <?= json_encode($tableZoomKeys, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>,
+      gallerySize: 'gallery-zoom',
       navSlots: 'forum_nav_slots',
       welcome: 'forum_visitor_intro_hidden',
       usageLog: 'forum_usage_log'
@@ -131,6 +137,8 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
       show('reading-margins', margins ? 'Custom' : 'Site default', margins);
       var tableSize = keys.tableSizes.some(function (key) { return get(key) !== null; });
       show('table-size', tableSize ? 'Custom' : 'Site default', tableSize);
+      var gallerySize = get(keys.gallerySize) !== null;
+      show('gallery-size', gallerySize ? 'Custom' : 'Site default', gallerySize);
       var tabsRow = page.querySelector('[data-preference-row="phone-tabs"]');
       if (tabsRow) {
         tabsRow.hidden = !window.__forumNavSlots;

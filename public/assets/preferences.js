@@ -29,6 +29,10 @@
     'table-size': function () {
       keys.tableSizes.forEach(remove);
     },
+    'gallery-size': function () {
+      remove(keys.gallerySize);
+      root.style.removeProperty('--gallery-zoom');
+    },
     'phone-tabs': function () {
       remove(keys.navSlots);
       var defaults = (window.__forumNavSlots && window.__forumNavSlots.defaults) || [];
@@ -55,7 +59,7 @@
         remove(key);
       }
     });
-    [keys.density, keys.margins, keys.navSlots, keys.welcome].forEach(remove);
+    [keys.density, keys.margins, keys.gallerySize, keys.navSlots, keys.welcome].forEach(remove);
     keys.tableSizes.forEach(remove);
     window.location.reload();
   }
