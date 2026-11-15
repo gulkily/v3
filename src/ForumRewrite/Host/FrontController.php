@@ -167,6 +167,14 @@ final class FrontController
             return;
         }
 
+        // Tour snapshots live one folder down, which the raw asset path above
+        // does not serve. A file read, never a render; not on private instances.
+        $tourPath = $approvedMembersOnly ? null : $this->resolveTourSnapshotPath($method, $requestUri);
+        if ($tourPath !== null) {
+            $this->sendAsset($tourPath, $method, false);
+            return;
+        }
+
         if (!$approvedMembersOnly && $cookies === [] && $this->sendStaticDocsResource($method, $requestUri)) {
             return;
         }
@@ -326,6 +334,21 @@ final class FrontController
 
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         return AssetFingerprint::replacementPathForFingerprint($this->publicRoot, $path);
+    }
+
+    private function resolveTourSnapshotPath(string $method, string $requestUri): ?string
+    {
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return null;
+        }
+
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        if (preg_match('#^/assets/tour/(?:([a-z0-9][a-z0-9-]{0,63})\.html)?$#D', $path, $matches) !== 1) {
+            return null;
+        }
+
+        $file = $this->publicRoot . '/assets/tour/' . (($matches[1] ?? '') === '' ? 'index' : $matches[1]) . '.html';
+        return is_file($file) && !is_link($file) ? $file : null;
     }
 
     private function resolveRawPublicAssetPath(string $method, string $requestUri): ?string

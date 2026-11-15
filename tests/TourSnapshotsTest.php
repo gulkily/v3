@@ -107,4 +107,62 @@ final class TourSnapshotsTest
         assertStringContains('<head lang="en"><meta name="robots" content="noindex"><base target="_top">', $html);
         assertSame(1, substr_count($html, 'name="robots"'));
     }
+
+    public function testRefreshWritesSnapshotsKeepsOldOnFailureAndRunsOnce(): void
+    {
+        $root = sys_get_temp_dir() . '/v3-tour-refresh-' . bin2hex(random_bytes(6));
+        mkdir($root . '/repo', 0777, true);
+        exec('cp -R ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1/records') . ' ' . escapeshellarg($root . '/repo/records'));
+        \ForumRewrite\Host\HighTrafficRenderInput::build(\ForumRewrite\Host\HighTrafficPublication::capture($root . '/repo'), $root . '/read.sqlite3');
+        file_put_contents($root . '/tour.txt', "Schema: tour-v1\n---\nName: board\nRoute: /\nTitle: Board\n\nThe board.\n---\nName: gone\nRoute: /threads/no-such-thread\nTitle: Gone\n\nMissing.\n---\nName: private\nRoute: /messages\nTitle: Private\n\nNot for logged-out visitors.\n");
+        $snapshots = new \ForumRewrite\Tour\TourSnapshots(dirname(__DIR__), $root . '/repo', $root . '/read.sqlite3', $root . '/public', null, $root . '/tour.txt');
+        $state = dirname(__DIR__) . '/state/tour/' . substr(hash('sha256', realpath($root . '/repo')), 0, 16);
+        $previous = getenv('VISITOR_STATISTICS_DATABASE_PATH');
+        putenv('VISITOR_STATISTICS_DATABASE_PATH=' . $root . '/visits.sqlite3');
+        try {
+            assertSame(true, $snapshots->needsRefresh());
+            mkdir($root . '/public/assets/tour', 0777, true);
+            file_put_contents($root . '/public/assets/tour/private.html', 'previous snapshot');
+            file_put_contents($root . '/public/assets/tour/gone.html', 'stale snapshot');
+
+            $result = $snapshots->refresh();
+            assertSame('refreshed_with_failures', $result['outcome']);
+            assertSame('ok', $result['routes']['board']);
+            assertSame('not found (left out)', $result['routes']['gone']);
+            assertStringContains('failed (kept previous)', $result['routes']['private']);
+            assertSame(2, $result['shown']);
+
+            $board = (string) file_get_contents($root . '/public/assets/tour/board.html');
+            assertStringContains('<base target="_top">', $board);
+            assertStringContains('content="noindex"', $board);
+            assertSame('previous snapshot', file_get_contents($root . '/public/assets/tour/private.html'));
+            assertSame(false, is_file($root . '/public/assets/tour/gone.html'));
+            $page = (string) file_get_contents($root . '/public/assets/tour/index.html');
+            assertStringContains('data-src="board.html"', $page);
+            assertStringContains('data-src="private.html"', $page);
+            assertSame(false, str_contains($page, 'gone.html'));
+
+            $status = $snapshots->status();
+            assertSame('idle', $status['State']);
+            assertSame('refreshed_with_failures', $status['Outcome']);
+            assertSame('ok', $status['Route-board']);
+            assertSame(false, $snapshots->needsRefresh());
+
+            $lock = fopen($state . '/refresh.lock', 'c');
+            flock($lock, LOCK_EX);
+            try {
+                assertSame(['outcome' => 'already_running'], $snapshots->refresh());
+            } finally {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+            }
+
+            touch($root . '/tour.txt', time() + 5);
+            assertSame(true, $snapshots->needsRefresh());
+        } finally {
+            putenv($previous === false ? 'VISITOR_STATISTICS_DATABASE_PATH' : 'VISITOR_STATISTICS_DATABASE_PATH=' . $previous);
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($root);
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($state);
+        }
+    }
 }

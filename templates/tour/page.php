@@ -55,6 +55,9 @@ $e = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | 
     body { font-size:16px; }
     section, body.phone section { grid-template-columns:1fr; gap:18px; padding:32px 0; }
     .essay { position:static; }
+    header, main { padding-left:16px; padding-right:16px; }
+    .controls { padding-left:16px; padding-right:16px; gap:6px; font-size:14px; }
+    .seg button { padding:8px 12px; }
   }
 </style>
 </head>
