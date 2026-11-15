@@ -99,7 +99,9 @@ final class UsageReportsController
     }
 
     /**
-     * POST the reviewed log text as the body. Refusals keep the visitor's log:
+     * POST the reviewed log as JSON `{"log": "<text>"}` (what the Usage log page
+     * sends, because some hosts refuse raw line breaks in a POST body) or as the
+     * raw text. Refusals keep the visitor's log:
      * 405 wrong method, 403 cross-site, 413 too large, 400 not a usage log,
      * 429 with Retry-After, 503 store full.
      */
@@ -113,6 +115,7 @@ final class UsageReportsController
             $this->refuse(403, 'cross_site', 'Uploads must come from this site\'s Usage log page.');
             return;
         }
+        $body = self::logText($body);
         if (strlen($body) > UsageReportStore::MAX_REPORT_BYTES) {
             $this->refuse(413, 'too_large', 'This log is over 100 KB. Clear it and record a shorter session.');
             return;
@@ -140,6 +143,17 @@ final class UsageReportsController
             ),
             default => $this->refuse(503, 'store_full', 'The site is not taking more usage reports right now. Your log is still here.'),
         };
+    }
+
+    /** The log from a JSON `{"log": ...}` body, or the body itself when it is not that. */
+    private static function logText(string $body): string
+    {
+        if (!str_starts_with(ltrim($body), '{')) {
+            return $body;
+        }
+        $decoded = json_decode($body, true);
+
+        return is_array($decoded) && is_string($decoded['log'] ?? null) ? $decoded['log'] : $body;
     }
 
     /** @param list<string> $headers @param array<string, mixed> $extra */

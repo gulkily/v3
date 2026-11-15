@@ -49,6 +49,7 @@ final class FeatureFlagRegistry
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
     public const POST_RECORDS_ENABLED = 'FORUM_POST_RECORDS_ENABLED';
+    public const PENDING_CHIP_APPROVAL_ENABLED = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
@@ -62,7 +63,8 @@ final class FeatureFlagRegistry
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
-            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED, self::USAGE_REPORTS_ENABLED],
+            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
@@ -309,7 +311,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::AGENT_PROMPT_ENABLED,
                 'Agent prompt',
-                'Offer /agent/, a page of prompts visitors paste into their own agent: to be introduced to the site, to post as an agent, or to run their own copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
+                'Offer /agent/ (Prompts in the main nav): the library of prompts members share as #prompt threads, with copy, search and categories, plus the site\'s own prompts for being introduced, posting as an agent, or running a copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
                 true,
                 self::AGENT_PROMPT_ENABLED,
                 siteMutable: true,
@@ -387,6 +389,13 @@ final class FeatureFlagRegistry
                 self::POST_RECORDS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::PENDING_CHIP_APPROVAL_ENABLED,
+                'Approve from Pending chips',
+                "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
+                true,
+                self::PENDING_CHIP_APPROVAL_ENABLED,
             ),
             new FeatureFlagDefinition(
                 self::USAGE_REPORTS_ENABLED,
