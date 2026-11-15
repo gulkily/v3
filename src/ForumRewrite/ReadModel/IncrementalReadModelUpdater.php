@@ -459,7 +459,12 @@ class IncrementalReadModelUpdater
     /**
      * @return array<string, float>
      */
-    public function applyPostReactionWrite(string $postId, string $commitSha): array
+    /**
+     * @param list<string>|null $writtenPaths reaction records this write added. With them, only
+     *        the post's own records are read: those its activity rows name, plus these. Without
+     *        them, every post reaction record is scanned.
+     */
+    public function applyPostReactionWrite(string $postId, string $commitSha, ?array $writtenPaths = null): array
     {
         $timings = [];
         $pdo = (new ReadModelConnection($this->databasePath))->open();
@@ -467,7 +472,10 @@ class IncrementalReadModelUpdater
 
         try {
             $post = $this->measure($timings, 'load_post', fn (): array => $this->loadPostReactionTarget($pdo, $postId));
-            $records = $this->measure($timings, 'load_post_reaction_records', fn (): array => $this->loadPostReactionRecords($postId));
+            $knownPaths = $writtenPaths === null ? null : $this->knownPostReactionPaths($pdo, $postId, $writtenPaths);
+            $records = $this->measure($timings, 'load_post_reaction_records', fn (): array => $knownPaths === null
+                ? $this->loadPostReactionRecords($postId)
+                : $this->loadPostReactionRecordsFrom($knownPaths, $postId));
             $approvedIdentityIds = $this->measure($timings, 'load_approved_identity_ids', fn (): array => $this->loadApprovedIdentityIds($pdo));
             $state = $this->measure(
                 $timings,
@@ -483,7 +491,7 @@ class IncrementalReadModelUpdater
             $this->measure(
                 $timings,
                 'refresh_post_reaction_viewer_tags',
-                fn (): mixed => $this->refreshViewerTagsForTarget($pdo, 'post-reactions', $postId)
+                fn (): mixed => $this->refreshViewerTagsForTarget($pdo, 'post-reactions', $postId, $knownPaths)
             );
             $this->measure(
                 $timings,
@@ -496,7 +504,9 @@ class IncrementalReadModelUpdater
                 fn (): mixed => $this->refreshPostReactionActivity($pdo, $post, $records, $commitSha)
             );
             $this->measure($timings, 'mark_activity_attribution', fn (): mixed => $this->markActivityAttribution($pdo, $post['thread_id']));
-            ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot, 'post-reactions');
+            $this->measure($timings, 'refresh_post_reaction_signatures', fn (): mixed => $writtenPaths === null
+                ? ReactionSignatureIndex::refresh($pdo, $this->repositoryRoot, 'post-reactions')
+                : ReactionSignatureIndex::refreshPaths($pdo, $this->repositoryRoot, $writtenPaths));
             $this->measure($timings, 'write_metadata', fn (): mixed => $this->writeMetadata($pdo, $commitSha));
             $pdo->commit();
 
@@ -1640,7 +1650,7 @@ class IncrementalReadModelUpdater
      * lookups stay byte-identical to the former file scan after an incremental
      * write. Author identity stored verbatim (no openpgp-/openpgp: normalization).
      */
-    /** @param list<string>|null $paths thread label files to read instead of scanning the directory */
+    /** @param list<string>|null $paths the target's reaction files to read instead of scanning the directory */
     private function refreshViewerTagsForTarget(PDO $pdo, string $recordFamily, string $targetId, ?array $paths = null): void
     {
         $delete = $pdo->prepare(
@@ -1842,6 +1852,59 @@ class IncrementalReadModelUpdater
             $records[] = $record;
         }
 
+        return $this->sortPostReactionRecords($records);
+    }
+
+    /**
+     * One post's reaction files without scanning the family: the files its activity rows
+     * name, plus the files a write just added. Every incremental write and full rebuild
+     * gives each record of a known post one post_reaction_add row. Files that are gone
+     * are left out, as a scan would never see them.
+     *
+     * @param list<string> $writtenPaths
+     * @return list<string>
+     */
+    private function knownPostReactionPaths(PDO $pdo, string $postId, array $writtenPaths): array
+    {
+        $statement = $pdo->prepare('SELECT source_path FROM activity WHERE kind = :kind AND post_id = :post_id');
+        $statement->execute(['kind' => 'post_reaction_add', 'post_id' => $postId]);
+        $paths = array_map(static fn (mixed $path): string => (string) $path, $statement->fetchAll(PDO::FETCH_COLUMN));
+
+        return array_values(array_filter(
+            array_unique(array_merge($paths, $writtenPaths)),
+            fn (string $path): bool => str_starts_with($path, 'records/post-reactions/') && str_ends_with($path, '.txt')
+                && is_file($this->repositoryRoot . '/' . $path),
+        ));
+    }
+
+    /**
+     * @param list<string> $paths
+     * @return list<PostReactionRecord>
+     */
+    private function loadPostReactionRecordsFrom(array $paths, string $postId): array
+    {
+        $repository = new CanonicalRecordRepository($this->repositoryRoot);
+        $records = [];
+        foreach ($paths as $path) {
+            try {
+                $record = $repository->loadPostReaction($path);
+            } catch (CanonicalRecordParseException) {
+                continue;
+            }
+            if ($record->postId === $postId) {
+                $records[] = $record;
+            }
+        }
+
+        return $this->sortPostReactionRecords($records);
+    }
+
+    /**
+     * @param list<PostReactionRecord> $records
+     * @return list<PostReactionRecord>
+     */
+    private function sortPostReactionRecords(array $records): array
+    {
         usort($records, static function (PostReactionRecord $left, PostReactionRecord $right): int {
             if ($left->createdAt !== $right->createdAt) {
                 return $left->createdAt <=> $right->createdAt;

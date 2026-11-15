@@ -8,7 +8,7 @@ Debug report: [log](scoped_post_reaction_update_debug_log.md)
 
 **Cycle estimate: 0.25**
 
-Status: planned; next permitted action: implement on this branch.
+Status: technically complete and committed on the branch; next permitted action: push and open a PR when the maintainer asks.
 
 ## Original request
 
@@ -62,14 +62,42 @@ Excluded: the read-model schema (no new table, column or index); thread label wr
 New test comparing scoped and full-scan updates on one fixture with several posts, signed and unsigned reactions, and a missing file. Smoke set plus the tests that call `applyPostReactionWrite` (`ActivityProjectionTest`, `ReadModelSignalEligibilityTest`, `ReactionRecordFormatParityTest`) and the tag write tests. A timing check on a fixture with many reactions, before and after. Full suite not run, per `AGENTS.md`. Production replay (two quick clicks) is pending until deploy.
 
 Starting revisions and branch: `fix/scoped-post-reaction-update` from `8314fae95ea2b33e16a2e6a1d6e2ca512ef52c4d`.
-Planning commit: pending.
+Planning commit: `e09103d3` (plan and index link only; confirmed with `git log`).
 
 ## Dated execution history
 
 - 2026-11-15: plan written after the diagnosis above. No matching feedback item in `docs/feedback/items/`.
+- 2026-11-15: implemented as planned: `ReactionSignatureIndex::refreshPaths`, `applyPostReactionWrite(..., $writtenPaths)`, and `LocalWriteService::applyPostTag` passing the file it wrote.
+- 2026-11-15, correction within the same outcome: the timing check showed a third full scan the plan missed. `refreshViewerTagsForTarget` globbed every post reaction file when given no paths. It already accepted a path list (used for thread labels), so the scoped write now passes the post's files.
+- 2026-11-15, correction: `WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages` failed on the base revision (`8314fae9`, checked with the change stashed). Commit `0c96cd53` turned the post metadata into a table, so the text "LLM exchanges:" became a `<th>`. The test, and a no-longer-meaningful negative check in `testRetractionMakesDirectAndContextOnlyLlmExchangeDetailsUnavailable`, now look for `>LLM exchanges</th>`. Fixed per the maintainer's rule that tests failing on the base are fixed in the same work.
+- 2026-11-15: left on the full scan, out of scope: reaction retraction (`refreshAfterReactionRetraction`), thread label signature refresh, and `refreshApprovalSensitivePostReactions`. `mark_activity_attribution` is per thread, not per site, so it was left alone.
 
 ## Study history
 
 - Intake: **0.25**, exposed rater Claude (claude-opus-5-5), recorded after the diagnosis and code inspection (no pristine intake).
+- Execution entry: reaffirmed 0.25.
+- Closeout retrospective: **0.25**. The viewer-tag scan and the stale test were corrections, not new scope. Not hours or measured labor; maintainer acceptance pending.
+
+## Outcome
+
+Delivered as bounded. A post reaction write through `/api/apply_post_tag` reads only that post's reaction files (from its `activity` rows plus the new file) and refreshes only the new file's signature row. No schema change. Other callers of `applyPostReactionWrite` keep the full scan. The 5-second lock wait and the page behaviour are unchanged; the page fix is the next one-shot.
+
+Limitations: reaction retraction, thread label writes and approval changes still scan their whole family; time per write still grows with the size of the post's own thread (per-thread attribution marking).
+
+## Verification
+
+- New `ScopedPostReactionUpdateTest`: Close then Resolve through the scoped and the full-scan paths on copies of one read model give identical `posts`, `activity`, `viewer_tags` and `reaction_signatures` rows, including a record whose signature does not verify; a listed file that is gone is skipped. Passed.
+- Timing (script outside the repo, unsigned records, this workspace): one write with 5 reactions on the target post and the rest on other posts. 2,000 reactions: full scan 183 ms, scoped 41 ms. 8,000 reactions: full scan 626 ms, scoped 57 ms. Production adds gpg signature checks to the full scan, so the saving there should be larger; not measured.
+- `./v3 test --smoke ScopedPostReactionUpdateTest ActivityProjectionTest ReadModelSignalEligibilityTest ReactionRecordFormatParityTest ReactionOutboxTest TagUnlocksTest ReadModelPostReactionsTest ReactionRetractionTest ViewerTagLookupParityTest ReadModelViewerTagsProjectionTest BrowserSigningNormalizationTest WriteApiSmokeTest`: 808 run, 808 passed.
+- Full suite not run, per `AGENTS.md`.
+- Pending: production replay (Close then Resolve quickly, no busy message), and the maintainer's log check for the original incident.
+
+## Final review
+
+Diff checked: three source files, one new test, the test runner list, a stale test fix, this record, its debug log, the plans index and the study ledger. No duplicated status logic: signature status stays in `ReactionSignature::status` through one `row()` helper; record sorting is one helper. Concept entries checked; none describe the per-write scan, so no inventory change.
+
+## Commit/merge/publication status
+
+Completion commit: pending at time of writing. Not pushed; no PR; not merged or deployed.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
