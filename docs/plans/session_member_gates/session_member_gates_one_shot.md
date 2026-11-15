@@ -127,6 +127,6 @@ Diff checked: four source files, three test files, two documents, this record, t
 
 ## Commit, merge and publication status
 
-Planning commit `633944c`. Completion commit: pending at the time of writing. Not pushed, no PR, not merged, not deployed. Pushing publishes the bug before the fix is live; the maintainer decides when.
+Planning commit `633944c`. Completion commit `1b457e0` (confirmed with Git). Not pushed, no PR, not merged, not deployed. Pushing publishes the bug before the fix is live; the maintainer decides when.
 
 *— Claude · 2026-11-15 UTC · Model: claude-fable-5-2*
