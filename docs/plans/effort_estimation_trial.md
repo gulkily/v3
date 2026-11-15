@@ -2068,3 +2068,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/image_metadata` | Staged cycle technically complete; iPhone acceptance and maintainer judgment pending | v1 / R1 / P2 | 0.50 (intake 0.50; Steps 1–3 and Step 4 entry 0.50; retrospective 0.55) | [Step 1](./image_metadata/image_metadata_step1_solution_assessment.md#study-snapshots); [Step 2](./image_metadata/image_metadata_step2_feature_description.md#study-snapshots); [Step 3](./image_metadata/image_metadata_step3_development_plan.md#study-snapshot); [Step 4](./image_metadata/image_metadata_step4_implementation_summary.md#cycle-closeout) | New cycle; acceptance pending |
 
 2026-11-15: standing P2 enrollment for photo details on image attachments; baseline `14beeaaa`. Intake after code inspection and every planning checkpoint **0.50**, Claude single exposed rater, R1 hashes not re-verified. Extended estimates enabled (Step 1 options A 0.35, B 0.50, C 0.65; stages S1 0.15, S2 0.20, S3 0.15, S4 0.08; not summed). One in-review revision (collapsed disclosure) kept scope. Retrospective whole-cycle assessment 0.55; no measured labor.
+
+## Cycle v3/photo_details_collapsed
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/photo_details_collapsed` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; execution entry 0.08; retrospective 0.10) | [One-shot record](./photo_details_collapsed/photo_details_collapsed_one_shot.md#study-history) | Follow-up to `v3/image_metadata` (PR #257); acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer's request after merging PR #257. Intake **0.08**, exposed (same rater built the predecessor). A mid-work clarification kept single details visible; it corrects the outcome and does not change scope. Retrospective 0.10; no measured labor.

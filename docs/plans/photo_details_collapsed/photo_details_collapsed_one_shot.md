@@ -7,7 +7,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.08**
 
-Status: planning; next permitted action: planning commit, then implementation.
+Status: technically complete on `feature/photo-details-collapsed`; next action: maintainer review of the PR.
 
 ## Original request
 
@@ -51,10 +51,35 @@ Application change. On the post page, photo details under an image are in a coll
 - Inapplicable: composer tests, because the composer is unchanged.
 
 Starting revision and branch: `43388a8` (origin/main after PR #257), branch `feature/photo-details-collapsed`.
-Planning commit: pending.
+Planning commit: `0cb3200` (confirmed with `git log`).
+
+## Dated execution history
+
+- 2026-11-15, clarification (correction to the outcome, not an addition): mid-implementation the maintainer added "Unless there's only one detail, then you can leave it expanded." Outcome is now: two or more details fold behind a closed "Photo details" row; a single detail shows without the row. Recorded before the rendering code was written.
+- 2026-11-15: `MediaEmbedRenderer` wraps the list in `<details class="post-photo-details-disclosure">` with a "Photo details" summary when there are two or more details. `site.css` styles the summary with a 44-pixel touch height and a focus outline.
+- 2026-11-15: `offline_reader.js` marks folded details with a NUL-delimited index before escaping. After line breaks are added, it swaps the marker for the escaped `<details>` markup. A stray marker with no matching entry renders nothing.
+- 2026-11-15: concept entry [photo details](../../concepts/photo_details.md) updated.
+
+## Outcome
+
+Delivered as clarified. The composer, post format and `frm.py` are unchanged.
+
+## Verification
+
+- Passed: `./v3 test --smoke MediaEmbedRendererTest OfflineSnapshotPresentationTest`, 491/491. The tests now cover two or more details collapsed, a single detail visible, and the offline reader for both cases.
+- Passed: Chromium DOM check in Gloss and Word97 at 390 pixels. The `<details>` stays inside the `post-image` card, starts closed, the summary is 44 pixels tall, and one tap opens it. Screenshots taken closed and open.
+- Not run: the full suite; Safari. The maintainer checks on zenmemes.com after merge.
+
+## Final review
+
+Diff limited to the renderer, offline mirror, `site.css`, two tests, the concept entry and this cycle's records. No duplication: the list markup is built once and wrapped only when needed.
+
+Commit/merge/publication status: completion commit pending at the time of writing; to be pushed as a new PR. Not merged.
 
 ## Study history
 
 - 2026-11-15, intake (after reading the renderer and offline mirror written in the predecessor cycle): 0.08. Claude, single exposed rater.
+- 2026-11-15, execution entry: 0.08 reaffirmed. The single-detail clarification arrived after the planning commit; it is a correction to the outcome and leaves the estimate unchanged.
+- 2026-11-15, retrospective scope assessment: 0.10. The offline marker swap took a little more than planned. Maintainer judgment pending.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
