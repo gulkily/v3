@@ -32,6 +32,7 @@ final class GalleryPageTest
             assertStringContains('data-gallery-zoom="in" aria-label="Larger"', $page);
             assertTrue(preg_match('#<script src="/assets/gallery_zoom[^"]*\.js" defer>#', $page) === 1, 'The page loads the gallery zoom script.');
             assertStringContains("localStorage.getItem('gallery-zoom')", $page, 'The saved tile size is restored before paint.');
+            assertStringContains("if (galleryZoom < 0.7) {\n            document.documentElement.setAttribute('data-gallery-compact', '');", $page, 'Far zoomed out, captions are hidden before paint.');
             assertStringContains('href="/threads/gallery-wide#post-gallery-reply" style="--ratio: 0.6"', $page, 'Newest first; a tall image is clamped.');
             assertStringContains('<img src="/images/' . ImageReference::filename($tall) . '" alt="Tall test image" width="200" height="400"', $page, 'An image that already fits a tile is shown as is.');
             assertStringContains('<img src="/images/thumbs/' . ThumbnailStore::filename($wide, 'tile') . '"', $page);

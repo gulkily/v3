@@ -1990,3 +1990,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/deploy_celebration` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (intake 0.10; execution entry 0.10; retrospective 0.10) | [record](./deploy_celebration/deploy_celebration_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.10** recorded before implementation (not pristine: rated after reading the two deploy scripts), execution entry reaffirmed, retrospective **0.10**. Baseline `bd2b0fad`; branch `feat/deploy_celebration`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/gallery_compact_captions
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/gallery_compact_captions` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.06 (intake 0.06; execution entry 0.06; retrospective 0.07) | [record](./gallery_compact_captions/gallery_compact_captions_one_shot.md#study-history) | Follow-up to `v3/gallery_zoom`; maintainer request in chat; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot. Intake **0.06** (not pristine: rated after reading the gallery zoom code), execution entry reaffirmed, retrospective **0.07**. Baseline `90d3b0f`; branch `feat/gallery_compact_captions`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

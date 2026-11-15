@@ -9,6 +9,8 @@
   var KEY = "gallery-zoom";
   var MIN = 0.5;
   var MAX = 2;
+  // Below this the tiles show images only (captions visually hidden); layout.php uses the same value.
+  var COMPACT = 0.7;
   var root = document.documentElement;
 
   function clamp(value) {
@@ -27,6 +29,7 @@
     } else {
       root.style.setProperty("--gallery-zoom", String(value));
     }
+    root.toggleAttribute("data-gallery-compact", value < COMPACT);
   }
 
   function save() {

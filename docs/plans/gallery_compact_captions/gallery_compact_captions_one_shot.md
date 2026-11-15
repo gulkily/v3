@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); log: [gallery_compac
 Effort study: `railspike-effort` / `v3/gallery_compact_captions` — [host ledger](../effort_estimation_trial.md#cycle-v3gallery_compact_captions); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.06**
-Status: planned; next permitted action: implement
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -49,7 +49,7 @@ Host `main` at `90d3b0f`; branch `feat/gallery_compact_captions`.
 
 ## Planning commit
 
-Pending.
+`ff48697` (plan only, before implementation).
 
 ## Study history
 
@@ -59,5 +59,24 @@ Pending.
 ## Dated execution history
 
 - 2026-11-14: no separate feedback item; recorded as a follow-up note on PF-20261114-F02.
+- 2026-11-14: implemented as planned (`gallery_zoom.js`, `layout.php`, `site.css`, `GalleryPageTest`). Correction: the first head-script comment named `gallery_zoom.js`, which put that string on every page and broke `GalleryPageTest::testGalleryIsEmptyThenHiddenWhenTurnedOff`; reworded.
+- 2026-11-14: addition under the standing rule to fix tests failing on the base commit: `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` failed on `main` because media embeds are off by default; the test now turns `FORUM_MEDIA_EMBEDS_ENABLED` on for its render and restores it.
+
+## Verification
+
+- `./v3 test --smoke GalleryPageTest LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`: smoke set and both changed tests pass. Full suite not run.
+- Browser (Chrome, 390px, static page with the real `site.css`, theme CSS, head restore snippet and `gallery_zoom.js`) in Gloss Dark, Word97 and Midnight: captions visible at default and one Smaller step; hidden (1px, visually hidden) after two; still hidden after reload; back after one Larger. No page errors. Not checked on a real iPhone or against the live app.
+
+## Final review
+
+Diff limited to the three files above, the gallery test, the pre-existing failing test, this record, the plans index, PF-20261114-F02 and the ledger. No duplicated components; the hiding declarations repeat `.visually-hidden` because they apply by root attribute (with `!important` over theme caption rules).
+
+## Study closeout
+
+Intake 0.06; execution entry reaffirmed; **retrospective 0.07** (the extra pre-existing test fix). Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending.
+
+## Outcome
+
+Gallery tiles show images only below 0.7 zoom; awaiting review, merge and deployment.
 
 _Claude (claude-opus-5-5), 2026-11-15_
