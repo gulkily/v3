@@ -1555,6 +1555,18 @@ pre {
   display: none !important;
 }
 
+/* Gallery zoomed far out (gallery_zoom.js, restored before paint in layout.php):
+   images only. Captions stay readable to screen readers, as .visually-hidden. */
+:root[data-gallery-compact] .gallery-tile__caption {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
 /* critical-css-end */
 
 .post-card {
