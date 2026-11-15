@@ -29,7 +29,14 @@ $log = page($application(), 'GET', '/tools/usage-log/');
 expect(http_response_code() === 200, 'flag on: usage log status ' . var_export(http_response_code(), true));
 expect(str_contains($log, '<h1>Usage log</h1>') && str_contains($log, 'data-role="usage-log-recording"'), 'flag on: usage log page');
 expect(str_contains($log, '/assets/usage_log_page.'), 'flag on: page script missing');
-expect(str_contains($log, 'It never holds anything you type.'), 'flag on: what is recorded is not explained');
+expect(str_contains($log, 'never what you type.'), 'flag on: what is recorded is not explained');
+expect(str_contains($log, '<summary>Show exact text (what Upload sends)</summary>') && !str_contains($log, '<details class="usage-log-exact" open'), 'flag on: exact text behind a closed disclosure');
+expect(str_contains($log, 'anonymously (you are not signed in)'), 'signed out: uploads attributed anonymously');
+expect(str_contains($log, 'data-usage-names="{&quot;pages&quot;:{&quot;/&quot;:&quot;Board&quot;'), 'flag on: names table published');
+TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+$signedIn = page($application(), 'GET', '/tools/usage-log/');
+expect(preg_match('#Uploads go to this site.s operators as <strong>[^<]+</strong>\.#', $signedIn) === 1, 'signed in: uploads attributed to the username');
+$_COOKIE = [];
 $tools = page($application(), 'GET', '/tools/');
 expect(str_contains($tools, 'href="/tools/usage-log/"') && str_contains($tools, 'href="/tools/usage-reports/"'), 'flag on: tools launcher entries');
 

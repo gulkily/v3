@@ -162,7 +162,11 @@ final class UsageReportsController
         $this->routeServices->sendHtml(
             $this->routeServices->renderPageTemplate(
                 'usage_log.php',
-                ['toolNavOptions' => ToolsPageSupport::navOptions('usage-log')],
+                [
+                    'toolNavOptions' => ToolsPageSupport::navOptions('usage-log'),
+                    'usageNamesJson' => json_encode(UsageNames::forBrowser(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    'uploaderName' => $this->viewerUsername !== null ? ($this->viewerUsername)() : null,
+                ],
                 'Usage log',
                 'tools',
                 ['/assets/usage_log_page.js'],

@@ -48,8 +48,38 @@ Branch `plan/usage_reports_ui` with main `8314fae9` merged in. Stage originals b
 ## Stage 3 - Usage Log page
 
 **Original estimate: 0.14**
+**Retrospective stage work: 0.15**
 
-- Status: pending.
+- Changes:
+  - `usage_log.php` rebuilt:
+    - a status card ("Recording" / "Not recording" / "Recording is unavailable", steps saved, the Record switch beside it);
+    - one plain sentence on what is kept;
+    - "Latest steps";
+    - the textarea inside a closed "Show exact text (what Upload sends)" disclosure, with the format explanation;
+    - Upload as the primary full-width button, Copy and Clear beneath;
+    - an attribution line ("as ilyag", or "anonymously (you are not signed in)").
+  - `data-usage-names` publishes `UsageNames::forBrowser()`.
+  - `usage_log_page.js` builds the steps as sentences ("Opened Thread", "Clicked Tools in the navbar", "Pressed Save on Feature Flags") from `forumUsageLog.entries()` and the shared names. It adds "paused N s/min" dividers at gaps of 20 s or more, shows the latest 10 with "Show all N steps", and labels Upload "Upload N steps". The status line now carries only action messages. If Copy is blocked, it opens the disclosure and selects the text.
+  - `usage_log.js`: new read-only `entries()` (a copy of the entries `text()` is made from, each with `dt`). Recording and `text()` are unchanged.
+  - `UsageReportsController::log()` passes the names table and the viewer's username. New `usage-status`, `usage-log-*` rules in `tools.css`, on theme variables.
+- Verification:
+  - `tests/browser/usage_log.mjs` extended and passed:
+    - status card off, on and unavailable;
+    - one readable step per line of exact text, in words;
+    - disclosure closed by default;
+    - "Upload 3 steps";
+    - the upload still equals the exact text;
+    - Clear empties the steps;
+    - a 245 s gap shows "paused 4 min";
+    - latest 10 of 14, then "Show all";
+    - names from the shared table ("You menu", "Feature Flags", "Usage Log").
+  - `UsageReportsPageTest`: the disclosure, the anonymous and signed-in attribution, and the published names table. 18 passed with `UsageReportUploadTest`, `UsageNamesTest` and `UsageJourneysTest`.
+  - `usage_reports_e2e.mjs` passed.
+  - `./v3 test` (smoke set, full output checked): 464 run, 464 passed.
+  - Screenshots at 390 and 1280 px in default, Chicago and Bubblegum. The first pass showed the switch label wrapping ("Recor/d") on phones and low-contrast card text on Bubblegum's dark active background; both were fixed and re-shot.
+- Estimate details: original scope as approved; slightly over because of the two visual fixes; no revisions.
+
+*— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
 
 ## Stage 4 - Checks, docs and closeout
 

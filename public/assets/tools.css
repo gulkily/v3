@@ -454,3 +454,126 @@
   border-radius: 3px;
   background: var(--active-line);
 }
+.usage-status {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0.75rem 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.usage-status[data-state="on"] {
+  background: var(--active-bg);
+  border-color: var(--active-line);
+  color: var(--active-ink);
+}
+.usage-status[data-state="on"] .meta {
+  color: inherit;
+  opacity: 0.85;
+}
+.usage-status__dot {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-soft);
+}
+.usage-status[data-state="on"] .usage-status__dot {
+  border-color: var(--status-error);
+  background: var(--status-error);
+  box-shadow: 0 0 0 4px var(--active-ring);
+}
+.usage-status__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-family: var(--ui-font);
+}
+.usage-status__text strong {
+  font-size: 1.05rem;
+}
+.usage-status__switch {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  min-height: 44px;
+  margin: 0;
+  font-family: var(--ui-font);
+}
+.usage-log-heading {
+  margin-bottom: 0.5rem;
+}
+.usage-log-steps {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: var(--ui-font);
+}
+.usage-log-steps:empty {
+  display: none;
+}
+.usage-log-steps li {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.55rem 0.8rem;
+  border-top: 1px solid var(--line);
+}
+.usage-log-steps li:first-child {
+  border-top: 0;
+}
+.usage-log-steps__when {
+  flex: 0 0 4.5rem;
+  font-size: 0.8rem;
+}
+.usage-log-steps__pause {
+  justify-content: center;
+  background: var(--panel);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+.usage-log-more {
+  min-height: 44px;
+}
+.usage-log-exact {
+  margin: 1rem 0;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.usage-log-exact summary {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-family: var(--ui-font);
+}
+.usage-log-exact textarea {
+  font-family: var(--code-font);
+  font-size: 0.8rem;
+}
+.usage-log-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.usage-log-actions button {
+  min-height: 44px;
+}
+.usage-log-actions .usage-log-upload {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  background: var(--active-bg);
+  border-color: var(--active-line);
+  color: var(--active-ink);
+  font-weight: 700;
+}
+.usage-log-who {
+  text-align: center;
+}

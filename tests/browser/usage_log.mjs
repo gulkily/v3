@@ -104,9 +104,14 @@ try {
   // records nothing about itself, and Copy and Clear work.
   await page.goto(base + '/tools/usage-log/');
   const status = () => page.locator('[data-role="usage-log-status"]').textContent();
-  assert.match(await status(), /Recording is off\. The log has 0 lines\./, 'log page: off and empty');
+  const cardState = () => page.locator('[data-role="usage-log-status-card"]').getAttribute('data-state');
+  const cardText = async () => (await page.locator('[data-role="usage-log-status-card"]').textContent()).replace(/\s+/g, ' ').trim();
+  assert.equal(await cardState(), 'off', 'log page: off');
+  assert.match(await cardText(), /Not recording 0 steps saved in this browser/, 'log page: off and empty');
+  assert.equal(await page.locator('[data-role="usage-log-empty"]').isVisible(), true, 'empty log explained');
   await page.locator('[data-role="usage-log-recording"]').check();
-  assert.match(await status(), /Recording is on\./, 'log page: switch turns recording on');
+  assert.equal(await cardState(), 'on', 'log page: switch turns recording on');
+  assert.match(await cardText(), /^Recording 0 steps/);
   await page.goto(base + '/');
   await page.locator('.site-header a[data-tab="about"]').first().click();
   await page.waitForLoadState('load');
@@ -114,6 +119,14 @@ try {
   const shown = await page.locator('[data-role="usage-log-text"]').inputValue();
   assert.ok(shown.startsWith('usage-log v1\nview\t0\t/\n'), 'log page shows the log text');
   assert.ok(!shown.includes('/tools/usage-log'), 'log page records nothing about itself');
+  // The latest steps in words, from the same entries as the exact text.
+  const steps = await page.locator('.usage-log-steps__step').allTextContents();
+  assert.equal(steps.length, shown.trim().split('\n').length - 1, 'one readable step per line of exact text');
+  assert.match(steps[0], /ago\s*Opened Board$/, 'view in words');
+  assert.match(steps[1], /Clicked About in the navbar$/, 'navbar click in words');
+  assert.match(steps[2], /Opened About$/);
+  assert.equal(await page.locator('.usage-log-exact').evaluate(details => details.open), false, 'exact text closed by default');
+  assert.equal(await page.locator('[data-action="usage-log-upload"]').textContent(), 'Upload 3 steps', 'Upload names the step count');
   await page.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { value: { writeText: async text => { window.__copied = text; } } }); });
   await page.locator('[data-action="usage-log-copy"]').click();
   assert.equal(await page.evaluate(() => window.__copied), shown, 'Copy puts the exact log on the clipboard');
@@ -133,8 +146,26 @@ try {
   await page.locator('[data-action="usage-log-clear"]').click();
   assert.equal(await page.locator('[data-role="usage-log-text"]').inputValue(), 'usage-log v1\n', 'Clear empties the log');
   assert.match(await status(), /Cleared\. Recording is still on\./);
+  assert.equal(await page.locator('.usage-log-steps__step').count(), 0, 'Clear empties the steps');
   await page.locator('[data-role="usage-log-recording"]').uncheck();
-  assert.match(await status(), /Recording is off\./, 'log page: switch turns recording off');
+  assert.equal(await cardState(), 'off', 'log page: switch turns recording off');
+
+  // Pauses of 20 s or more show as dividers; only the latest 10 steps show until "Show all".
+  await page.evaluate(() => {
+    const now = Math.floor(Date.now() / 1000);
+    const entries = [];
+    for (let i = 0; i < 12; i++) entries.push({ t: now - 400 + i * 5, type: 'click', page: '/threads/*', region: 'menu', name: 'tab:account', to: '-' });
+    entries.push({ t: now - 100, type: 'submit', page: '/tools/feature-flags', region: 'main', name: 'Save' });
+    entries.push({ t: now - 98, type: 'click', page: '/tools', region: 'tools-bar', name: 'tool:usage', to: '/tools/usage-log' });
+    localStorage.setItem('forum_usage_log', JSON.stringify({ recording: false, entries }));
+  });
+  await page.reload();
+  assert.equal(await page.locator('.usage-log-steps__step').count(), 10, 'latest 10 steps');
+  assert.deepEqual(await page.locator('.usage-log-steps__pause').allTextContents(), ['paused 4 min'], 'pause divider (245 s)');
+  assert.match((await page.locator('.usage-log-steps__step').allTextContents()).join('|'), /Clicked You menu in the menu\|.*Pressed Save on Feature Flags\|.*Clicked Usage Log in the Tools bar$/, 'names from the shared table');
+  await page.locator('[data-action="usage-log-show-all"]').click();
+  assert.equal(await page.locator('.usage-log-steps__step').count(), 14, 'Show all steps');
+  await page.evaluate(() => window.forumUsageLog.clear());
 
   // Blocked storage: the page says recording is unavailable.
   const blocked = await browser.newContext({ serviceWorkers: 'block' });
@@ -146,7 +177,8 @@ try {
     return route.fulfill({ contentType: 'text/html', body: renderApp('/tools/usage-log/') });
   });
   await blockedPage.goto(base + '/tools/usage-log/');
-  assert.match(await blockedPage.locator('[data-role="usage-log-status"]').textContent(), /Recording is unavailable/, 'blocked storage explained');
+  assert.match(await blockedPage.locator('[data-role="usage-log-status-card"]').textContent(), /Recording is unavailable/, 'blocked storage explained');
+  assert.equal(await blockedPage.locator('[data-role="usage-log-status-card"]').getAttribute('data-state'), 'unavailable');
   assert.equal(await blockedPage.locator('[data-role="usage-log-recording"]').isDisabled(), true, 'blocked storage: switch stays disabled');
   await blocked.close();
 
