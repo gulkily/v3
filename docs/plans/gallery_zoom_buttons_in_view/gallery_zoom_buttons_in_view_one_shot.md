@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); log: [gallery_zoom_b
 Effort study: `railspike-effort` / `v3/gallery_zoom_buttons_in_view` — [host ledger](../effort_estimation_trial.md#cycle-v3gallery_zoom_buttons_in_view); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.04**
-Status: planned; next permitted action: implement
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -44,7 +44,7 @@ Host `main` at `0443804`; branch `fix/gallery_zoom_buttons_in_view`.
 
 ## Planning commit
 
-Pending.
+`9eb79f8` (plan only, before implementation).
 
 ## Study history
 
@@ -52,5 +52,24 @@ Pending.
 - Execution entry: 0.04 reaffirmed.
 
 ## Dated execution history
+
+- 2026-11-14: implemented as planned in `gallery_zoom.js`.
+
+## Verification
+
+- `./v3 test --smoke GalleryPageTest`: all pass. Full suite not run.
+- Browser harness (Chrome, 390x500, page scrolled so buttons are mid-screen), button top in px across 3 Larger then 4 Smaller taps. Before: Gloss Dark 158 123 92 0 193 181 168 164; Word97 158 158 46 46 0 108 108 124. After: 158 158 158 158 (Larger) and 106 106 106 106 (Smaller) in both. No page errors. Not checked on a real iPhone.
+
+## Final review
+
+Diff is one handler in `gallery_zoom.js` plus this record, the plans index, PF-20261114-F02 and the ledger.
+
+## Study closeout
+
+Intake 0.04; execution entry reaffirmed; **retrospective 0.04**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending.
+
+## Outcome
+
+Smaller / Larger no longer scroll the buttons away; awaiting review, merge and deployment.
 
 _Claude (claude-opus-5-5), 2026-11-15_

@@ -1998,3 +1998,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/gallery_compact_captions` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.06 (intake 0.06; execution entry 0.06; retrospective 0.07) | [record](./gallery_compact_captions/gallery_compact_captions_one_shot.md#study-history) | Follow-up to `v3/gallery_zoom`; maintainer request in chat; acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot. Intake **0.06** (not pristine: rated after reading the gallery zoom code), execution entry reaffirmed, retrospective **0.07**. Baseline `90d3b0f`; branch `feat/gallery_compact_captions`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/gallery_zoom_buttons_in_view
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/gallery_zoom_buttons_in_view` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.04 (intake 0.04; execution entry 0.04; retrospective 0.04) | [record](./gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md#study-history) | Follow-up to `v3/gallery_zoom`; maintainer request in chat; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot. Intake **0.04** (not pristine), execution entry reaffirmed, retrospective **0.04**. Baseline `0443804`; branch `fix/gallery_zoom_buttons_in_view`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
