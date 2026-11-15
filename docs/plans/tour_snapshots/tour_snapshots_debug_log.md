@@ -54,3 +54,23 @@
 **Uncertain assessments**
 
 - Unread's route name and logged-out behaviour were not checked yet; Stage 1 settles it.
+
+## 2026-11-15T21:25Z — Step 4 completed
+
+**Necessary/useful instructions**
+
+- Risk-first Stage 1: the high-traffic allowlist refusal surfaced in the first stage, before anything depended on it.
+- AGENTS.md "replay the condition or report it unverified": checking how production actually routes `/assets/` (Apache rule plus PHP raw-asset path) found that the snapshots would 404 in production despite working on the dev server.
+- Running the smoke set plus every touched test at the end caught an out-of-scope variable in the task worker that per-stage runs had missed.
+
+**Redundant/unnecessary instructions**
+
+- No supported findings.
+
+**Inapplicable instructions**
+
+- Nav icon mapping (no navigation destination added); migrations.
+
+**Uncertain assessments**
+
+- Replacing the planned queue task type with a detached process is recorded as a deviation rather than sent back for approval; the Step 2 requirement it serves is unchanged.

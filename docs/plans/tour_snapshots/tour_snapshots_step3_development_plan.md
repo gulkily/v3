@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./tour_snapshots_step1_solution_assessment.md) · [Step 2](./tour_snapshots_step2_feature_description.md) · [Step 3](./tour_snapshots_step3_development_plan.md)
+> **Feature plan:** [Step 1](./tour_snapshots_step1_solution_assessment.md) · [Step 2](./tour_snapshots_step2_feature_description.md) · [Step 3](./tour_snapshots_step3_development_plan.md) · [Step 4](./tour_snapshots_step4_implementation_summary.md)
 
 Debug mode: enabled
 

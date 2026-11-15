@@ -2116,6 +2116,8 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/tour_snapshots` | Step 3 approved; implementation in progress | v1 / R1 / P2 | 0.6 (Step 1 0.45; Step 2 0.6; Step 3 0.6) | [Step 1](./tour_snapshots/tour_snapshots_step1_solution_assessment.md) · [Step 2](./tour_snapshots/tour_snapshots_step2_feature_description.md) · [Step 3](./tour_snapshots/tour_snapshots_step3_development_plan.md) | Follows `v3/live_feature_tour_quiet` (PR #256, merged); acceptance pending |
+| `v3/tour_snapshots` | Technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.6 (Step 1 0.45; Step 2 0.6; Step 3 0.6; retrospective 0.75) | [Step 1](./tour_snapshots/tour_snapshots_step1_solution_assessment.md) · [Step 2](./tour_snapshots/tour_snapshots_step2_feature_description.md) · [Step 3](./tour_snapshots/tour_snapshots_step3_development_plan.md) · [Step 4](./tour_snapshots/tour_snapshots_step4_implementation_summary.md) | Follows `v3/live_feature_tour_quiet` (PR #256, merged); acceptance pending |
 
 2026-11-15: standing P2 enrollment, staged. Step 1 0.45 (recommended Option A); Step 2 0.6 after the maintainer's two conditions (automatic creation, Tools trigger); Step 3 0.6 (stage work 0.08 / 0.12 / 0.12 / 0.1 / 0.08 / 0.06, not summed). Baseline `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `feat/tour_snapshots`. Single exposed rater Claude (claude-opus-5-5).
+
+2026-11-15 closeout: retrospective scope assessment **0.75** (production serving path, extra triggers and a scope fix beyond plan). No measured effort, independent rating or accepted-count increment.
