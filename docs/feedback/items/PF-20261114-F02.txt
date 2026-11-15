@@ -19,3 +19,4 @@ Notes:
 Related: PF-20261105-F01 (the Gallery page itself); PF-20261030-F20 (browser zoom is shared across the whole domain).
 2026-11-14: one-shot on feat/gallery_zoom (record docs/plans/gallery_zoom/gallery_zoom_one_shot.md). Verified locally (GalleryPageTest, ZoomButtonsTest, PreferencesPageTest, tests/browser/preferences.mjs; buttons, reload and pinch checked in Gloss, Light, Word97 and Midnight at 390px and 1200px). Blocked on review, merge and deployment.
 2026-11-14: follow-up one-shot feat/gallery_compact_captions (docs/plans/gallery_compact_captions/gallery_compact_captions_one_shot.md): captions hide when zoomed below 0.7. Verified locally; blocked on review, merge and deployment.
+2026-11-14: bug fix one-shot fix/gallery_zoom_buttons_in_view (docs/plans/gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md): Smaller / Larger keep the buttons on screen. Verified locally; blocked on review, merge and deployment.
