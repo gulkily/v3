@@ -30,8 +30,20 @@ Branch `plan/usage_reports_ui` with main `8314fae9` merged in. Stage originals b
 ## Stage 2 - Usage Reports page
 
 **Original estimate: 0.15**
+**Retrospective stage work: 0.15**
 
-- Status: pending.
+- Changes:
+  - `UsageReportsController::summary()` shapes the data in words. Each journey card has a "From → To" heading ("Thread → Save on Feature Flags"; a menu or submit end reads "Save on Feature Flags"), its usual clicks as named steps, click count, times and whether it is a shortcut idea; every name keeps its raw form. Most clicked rows read "Menu — menu, on Thread" with a bar width relative to the top row. Uploader links are plain `?uploader=` URLs, with the current one marked `aria-current`.
+  - `usage_reports.php` rewritten: uploader pills, three tiles (Reports, Steps, Shortcut ideas), "Shortcut ideas" cards first, then Most clicked as a ranked list with bars. Raw forms are in `title`. It no longer uses Visitor Statistics classes or `ZoomTable`.
+  - `TemplateRenderer` loads `tools.css` on `usage_reports.php` (the missing stylesheet). New `usage-*` rules in `tools.css` use only existing theme variables (`--ink`, `--line`, `--panel`, `--active-*`, `--status-warning`). One column on phones; journeys and Most clicked side by side from 720 px.
+- Verification:
+  - `UsageReportsPageTest` updated for the new markup: headings and steps in words with raw forms on hover, HTML in labels escaped, one shortcut idea, tiles, pills and the filtered pill current, stylesheet loaded; 403 and flag off unchanged. With `UsageReportUploadTest` and `UsageNamesTest`: 13 passed.
+  - `usage_reports_e2e.mjs` updated to find the card. It passed: a real three-click upload shows as "Thread → Feature Flags", three named steps, "never in one click".
+  - Screenshots at 390 and 1280 px in the default, Chicago and Bubblegum themes: no horizontal overflow. The first pass showed "›" drawn inside each step pill and no gap between the columns; both fixed and re-shot.
+  - `./v3 test` (smoke set, full output checked): 464 run, 464 passed.
+- Estimate details: original scope as approved; no revisions.
+
+*— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
 
 ## Stage 3 - Usage Log page
 
