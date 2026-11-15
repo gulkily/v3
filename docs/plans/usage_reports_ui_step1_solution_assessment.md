@@ -83,6 +83,6 @@ None.
 
 - Intake after inspection and Step 1 handoff: **0.45 projected total**, Option A. Alternatives B 0.65 and C 0.15, non-additive. Not hours or measured labor; no implementation, accepted outcome or approval to advance.
 
-Status: Step 1 drafted; awaiting Approved Step 1. Committed on branch `plan/usage_reports_ui` at the maintainer's request (ahead of the usual planning commit after Step 3).
+Status: **Approved Step 1** (maintainer, 2026-11-15T04:54Z), after reviewing the Option A mock-up. Committed on branch `plan/usage_reports_ui` at the maintainer's request (ahead of the usual planning commit after Step 3).
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*

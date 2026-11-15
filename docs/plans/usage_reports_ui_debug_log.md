@@ -10,3 +10,11 @@
 
 **Uncertain assessments**
 - The maintainer asked to add this to an existing PR whose branch was already merged; it went on a new branch and PR instead. The workflow has no guidance for where a follow-up cycle's Step 1 goes when the previous cycle's PR is merged.
+
+## 2026-11-15T04:54:33Z — Step 2
+
+**Necessary/useful instructions**
+- `implementation_standards.md` "Inspect existing implementations before creating": the names table is published to the browser the same way `UsagePageKind::WORDS` already is, instead of a second hand-kept map in JavaScript.
+
+**Uncertain assessments**
+- A mock-up made between Step 1 and its approval introduced choices the approved Step 1 text did not state (a renamed label, pills instead of a dropdown, raw names on hover). The workflow has no place for a design review between steps; Step 2 lists them as decisions to confirm.
