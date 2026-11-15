@@ -7,7 +7,8 @@ Extended estimates: enabled (no alternatives or stages, so only the cycle estima
 
 **Cycle estimate: 0.03**
 
-Status: plan written; planning commit pending. Next permitted action: planning commit, then write the checklist.
+Status: checklist written and committed; PR pending. Not merged.
+Debug report: [log](browsing_tree_checklist_debug_log.md)
 
 ## Original request
 
@@ -52,10 +53,32 @@ Check links with a script and check file scope with `git diff --stat`. Runtime, 
 
 Starting revision and branch: `c54c3375d33f388b6b76ce34aabfb47843040d81` on `main`; branch `docs/browsing-tree-checklist`.
 
-Planning commit: pending.
+Planning commit: `04b2d8c`.
+
+## Execution history
+
+- 2026-11-15: wrote [the checklist](../browsing_tree_checklist.md) and its index entry; replaced the planning index entry with one that links both files. Added the ledger entry.
+- Addition beyond the plan: whole-cycle estimates for `tree_history` (0.50) and `filmstrip` (0.60) in the checklist, following the board search checklist. They are annotations, not those cycles' snapshots.
+
+## Outcome
+
+The checklist lists the three cycles in order with estimates, status, decisions so far, a reuse inventory and open questions.
+
+## Verification
+
+- Links: a script resolved every relative link in the checklist, this record and the index entry. Passed.
+- File scope: `git diff --stat main` shows only the allowed files. Passed.
+- Runtime, UI and tests: inapplicable to documentation-only work; none run.
+
+## Final review
+
+The diff adds no duplicate checklist; the read-model and board search checklists cover other stories. No concept inventory edits.
+
+Commit/merge status: completion commit pending at the time of writing; see the PR.
 
 ## Study history
 
 2026-11-15T21:00:50Z; scope v1; starting revision `c54c3375`; reference R1, hashes not re-verified. Claude, single exposed rater. Intake **0.03**.
+- Closeout: retrospective scope assessment **0.03**; maintainer comfortable-fit judgment pending.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
