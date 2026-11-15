@@ -103,6 +103,12 @@ final class Tagsets
         return $out;
     }
 
+    /** @return list<array{parent:string,targets:list<string>,unlocks:list<string>,exclusive:bool}> every tagset, in file order */
+    public function all(): array
+    {
+        return $this->sets;
+    }
+
     /** True when some tagset can unlock $tag. */
     public function isUnlockable(string $tag): bool
     {
