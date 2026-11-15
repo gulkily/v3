@@ -491,3 +491,5 @@ and repair its navigation and affected references. See the
 - [Gallery zoom](gallery_zoom/gallery_zoom_one_shot.md) — one-shot: Smaller / Larger buttons and phone pinch resize Gallery tiles, remembered per browser and resettable on Preferences.
 
 - [Deploy celebration](deploy_celebration/deploy_celebration_one_shot.md) — one-shot: confetti and a Deployed banner on the page that loads after a deploy that changed the code.
+
+- [One ledger file per cycle](per_cycle_effort_ledger/per_cycle_effort_ledger_one_shot.md) — one-shot: effort-study entries go in `effort_ledger/<cycle>.md`, so open PRs stop conflicting on the shared ledger.
