@@ -49,6 +49,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
 
+[Bubblegum open More tab one-shot](bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md) — in Bubblegum on phones, the open More tab gets the selected look instead of a white label on a pale bar.
+
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
 [Codebase page sizes](codebase_sizes/codebase_sizes_step3_development_plan.md) — `/tools/codebase/` shows a collapsed Sizes card (database, repositories, downloads) and download sizes next to each link.
