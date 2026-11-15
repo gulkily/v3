@@ -46,6 +46,7 @@ final class ToolsPageSupport
     public static function registry(): array
     {
         return [
+            ['key' => 'preferences', 'label' => 'Preferences', 'href' => '/tools/preferences/', 'group' => 'device', 'tone' => 'preferences', 'standalone' => false],
             ['key' => 'outbox', 'label' => 'Outbox', 'href' => '/tools/outbox/', 'group' => 'device', 'tone' => 'outbox', 'standalone' => false],
             ['key' => 'offline-reading', 'label' => 'Offline Reading', 'href' => '/offline/', 'group' => 'device', 'tone' => 'offline', 'standalone' => true],
             ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],

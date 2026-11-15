@@ -45,6 +45,13 @@
           }
         });
       } catch (error) {}
+      try {
+        // Gallery tile size (Smaller / Larger on the Gallery), restored before paint; same range as its script.
+        var galleryZoom = parseFloat(localStorage.getItem('gallery-zoom'));
+        if (galleryZoom >= 0.5 && galleryZoom <= 2) {
+          document.documentElement.style.setProperty('--gallery-zoom', String(galleryZoom));
+        }
+      } catch (error) {}
 <?php if ($navSlotCount > 0): ?>
       try {
         // Phone tabs, earned by use in nav_slots.js and read here before paint. The
@@ -249,6 +256,9 @@
 <?php endif; ?>
 <?php if ($navigationSlot === 'app' && ($deployPromptScriptPath ?? null) !== null): ?>
   <script src="<?= $e($deployPromptScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if (($deployCelebrateScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($deployCelebrateScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php if ($navigationSlot === 'app'): ?>
   <script src="<?= $e($accountMenuScriptPath) ?>" defer></script>
