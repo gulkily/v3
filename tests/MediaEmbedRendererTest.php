@@ -24,6 +24,36 @@ final class MediaEmbedRendererTest
         }
     }
 
+    public function testPhotoDetailsAfterTheImageLineRenderUnderTheImage(): void
+    {
+        $renderer = new \ForumRewrite\View\MediaEmbedRenderer();
+        $image = "Image-v1: " . str_repeat('a', 64) . " jpg 1 1 1";
+        foreach ([false, true] as $markdown) {
+            $body = "Sunset\n\n$image\nPhoto-Camera: Apple <iPhone> 15 Pro\nPhoto-Taken: 2026-11-14T16:12:08-05:00\nPhoto-Location: 42.353600 -71.116700\nAfter";
+            $html = $renderer->render($body, true, markdown: $markdown);
+            assertStringContains('<details class="post-photo-details-disclosure"><summary class="meta">Photo details</summary><span class="post-photo-details"><span class="meta">Camera</span><span>Apple &lt;iPhone&gt; 15 Pro</span>', $html);
+            assertStringNotContains('<details class="post-photo-details-disclosure" open', $html);
+            assertStringContains('<span>Nov 14, 2026, 4:12 PM</span>', $html);
+            assertStringContains('<span>42.3536° N, 71.1167° W</span>', $html);
+            assertStringNotContains('Photo-', $html);
+            assertStringContains('After', $html);
+        }
+        // A single detail stays visible without a disclosure.
+        $single = $renderer->render("$image\nPhoto-Camera: Cam", true);
+        assertStringContains('<span class="post-photo-details"><span class="meta">Camera</span><span>Cam</span></span>', $single);
+        assertStringNotContains('<details', $single);
+        // Without details the card is unchanged; a Photo- line elsewhere stays ordinary text.
+        $plain = $renderer->render("$image\nText", true);
+        assertStringNotContains('post-photo-details', $plain);
+        $quoted = $renderer->render("$image\nText\nPhoto-Camera: quoted", true);
+        assertStringNotContains('post-photo-details', $quoted);
+        assertStringContains('Photo-Camera: quoted', $quoted);
+        $unknown = $renderer->render("$image\nPhoto-Secret: x", true);
+        assertStringContains('Photo-Secret: x', $unknown);
+        assertSame('Hello', \ForumRewrite\Support\ThreadTitle::displayTitle('', "$image\nPhoto-Camera: Cam\nHello", 'id'));
+        assertSame('Image', \ForumRewrite\Support\ThreadTitle::displayTitle('', "$image\nPhoto-Camera: Cam", 'id'));
+    }
+
     public function testPlainHashtagsLinkWithoutChangingCodeUrlsOrEscaping(): void
     {
         $renderer = new MediaEmbedRenderer();

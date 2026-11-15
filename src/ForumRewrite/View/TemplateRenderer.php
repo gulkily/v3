@@ -336,6 +336,7 @@ final class TemplateRenderer
             'usageLogScriptPath' => $this->assetPath('/assets/usage_log.js'),
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
+            'deployCelebrateScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_celebrate.js') : null,
         ]);
     }
 
@@ -435,7 +436,7 @@ final class TemplateRenderer
 
         // Desktop bar order. The account menu keeps only the viewer's own items:
         // Profile, Account and Invite. Everything else is a main destination.
-        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'profiles', 'messages', 'search', 'about', 'tools'];
+        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'agent', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
         // Inbox sits just before Messages on the bar. Messages stays on the bar: its
         // link is where the unread count and history sync start.
@@ -560,6 +561,17 @@ final class TemplateRenderer
             $after = array_search('calendar', $sections, true);
             $after = $after === false ? array_search('recent', $sections, true) : $after;
             array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/gallery/', 'label' => 'Gallery', 'section' => 'gallery']]);
+        }
+
+        // Prompts (/agent/) follows the content destinations while the agent page is on.
+        if (!$isQdbNavigation && $this->agentPageEnabled()) {
+            $sections = array_column($items, 'section');
+            $after = false;
+            foreach (['gallery', 'calendar', 'recent'] as $section) {
+                $after = array_search($section, $sections, true);
+                if ($after !== false) break;
+            }
+            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/agent/', 'label' => 'Prompts', 'section' => 'agent']]);
         }
 
         // Tools stays reachable by direct URL even when hidden from the nav,

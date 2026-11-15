@@ -669,6 +669,61 @@ pre {
   display: none;
 }
 
+/* After a deploy that changed the code (deploy_celebrate.js): a banner and a
+   short burst of confetti on the page that loads next. */
+.deploy-celebration {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 1001;
+  max-width: calc(100vw - 2rem);
+  padding: 0.55rem 1rem;
+  border: 2px solid var(--active-line, var(--line));
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 0.95rem/1.3 var(--ui-font);
+  box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 0.18);
+  cursor: pointer;
+  transform: translateX(-50%);
+  animation: deploy-celebration-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+.deploy-celebration.is-leaving {
+  opacity: 0;
+  transform: translate(-50%, -1rem);
+}
+
+.deploy-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.deploy-confetti i {
+  position: absolute;
+  top: -1rem;
+  width: 0.5rem;
+  height: 0.8rem;
+  animation: deploy-confetti-fall 3s cubic-bezier(0.25, 0.6, 0.5, 1) both;
+}
+
+@keyframes deploy-celebration-in {
+  from { opacity: 0; transform: translate(-50%, -1.5rem) scale(0.8); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
+@keyframes deploy-confetti-fall {
+  to { transform: translate(var(--drift, 0), 110vh) rotate(var(--spin, 720deg)); opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deploy-celebration { animation: none; transition: none; }
+}
+
 .new-post-button__icon {
   font-size: 1.1em;
   line-height: 1;
@@ -909,6 +964,7 @@ pre {
   html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
   html[data-nav-slots~="calendar"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
+  html[data-nav-slots~="agent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="agent"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
   html[data-nav-slots~="inbox"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="inbox"],
@@ -945,6 +1001,7 @@ pre {
   html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
   html[data-nav-slots~="calendar"] [data-shell="app"] .account-menu[data-current="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
+  html[data-nav-slots~="agent"] [data-shell="app"] .account-menu[data-current="agent"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
   html[data-nav-slots~="inbox"] [data-shell="app"] .account-menu[data-current="inbox"],
@@ -983,7 +1040,7 @@ pre {
 
   /* Themes without their own More glyph (all but the icon themes in theme-nav-icons.css): three bars, drawn in the tab's ink. On a
      renamed tab an arrow replaces them, leaving room for the name. */
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"]) [data-shell="app"] .account-menu__icon {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"], [data-theme="spearmint"]) [data-shell="app"] .account-menu__icon {
     display: var(--more-tab-icon, inline-block);
     border: 0;
     border-radius: 0;
@@ -993,7 +1050,7 @@ pre {
       linear-gradient(currentColor, currentColor) 0 85% / 100% 2px no-repeat;
   }
 
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"]) [data-shell="app"] .account-menu__label--current::after {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"], [data-theme="spearmint"]) [data-shell="app"] .account-menu__label--current::after {
     content: "\25B4";
     position: absolute;
     top: -0.05rem;
@@ -1386,6 +1443,8 @@ pre {
 
 .gallery-grid {
   --gallery-row: calc(12rem * var(--gallery-zoom, 1));
+  /* Caption text follows the zoom too, within readable bounds (themes use it). */
+  --gallery-text-scale: clamp(0.75, var(--gallery-zoom, 1), 1.25);
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -1428,7 +1487,8 @@ pre {
 .gallery-tile__caption {
   display: flex;
   flex-direction: column;
-  padding: 0.3rem 0.5rem 0.4rem;
+  padding: 0.3em 0.5em 0.4em;
+  font-size: calc(var(--gallery-caption-size, 1rem) * var(--gallery-text-scale, 1));
   line-height: 1.3;
 }
 
@@ -1447,6 +1507,7 @@ pre {
 @media (max-width: 40rem) {
   .gallery-grid {
     --gallery-row: calc(7rem * var(--gallery-zoom, 1));
+    --gallery-caption-size: 0.8rem;
     /* Two fingers on the grid resize the tiles instead of zooming the page. */
     touch-action: pan-x pan-y;
     gap: 0.35rem;
@@ -1496,6 +1557,18 @@ pre {
    script marks a browser remembered as approved before paint. */
 :root:not([data-member="approved"]) [data-member-only] {
   display: none !important;
+}
+
+/* Gallery zoomed far out (gallery_zoom.js, restored before paint in layout.php):
+   images only. Captions stay readable to screen readers, as .visually-hidden. */
+:root[data-gallery-compact] .gallery-tile__caption {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
 }
 
 /* critical-css-end */
@@ -2187,3 +2260,11 @@ pre {
 .pending-user-dialog__actions [data-role="approve"] {
   background: var(--button-bg);
 }
+
+/* Photo details the poster chose to attach, under the post's image (ImageReference::photoDetails).
+   Two or more fold behind a closed "Photo details" row; one stays visible. */
+.post-photo-details-disclosure { display: block; }
+.post-photo-details-disclosure > summary { cursor: pointer; padding: .7rem 0; font-size: .9em; }
+.post-photo-details-disclosure > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.post-photo-details-disclosure > .post-photo-details { margin-top: 0; }
+.post-photo-details { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .75rem; row-gap: .15rem; margin: .35rem 0; font-size: .9em; overflow-wrap: anywhere; }

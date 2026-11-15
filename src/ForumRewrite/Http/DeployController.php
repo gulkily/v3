@@ -42,7 +42,7 @@ final class DeployController
             ],
             'Deploy',
             'tools',
-            $canDeploy ? ['/assets/deploy_control.js'] : [],
+            $canDeploy ? ['/assets/deploy_control.js', '/assets/deploy_celebrate.js'] : [],
         );
     }
 

@@ -1968,6 +1968,14 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-14: standing P2 enrollment, one-shot. Intake **0.10** recorded before implementation (not pristine: same rater wrote the predecessor), execution entry reaffirmed, retrospective **0.10**. Baseline `b2c8bf8`; branch `feat/reading_margins_last_two`; planning commit `7a0b857`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
+
+## Cycle v3/reading_margins_nearest_edge
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/reading_margins_nearest_edge` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (intake 0.10; execution entry 0.10; retrospective 0.10) | [record](./reading_margins_nearest_edge/reading_margins_nearest_edge_one_shot.md#study-history) | Follow-up to `v3/reading_margins_last_two` (merged #236) after the maintainer's recorded session; acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot. Intake **0.10** recorded before implementation, after a click analysis of the maintainer's recording (not pristine: same rater wrote the predecessors), execution entry reaffirmed, retrospective **0.10**. Baseline `a4fe61e`; branch `feat/reading_margins_nearest_edge`; planning commit `c344c2b`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 ## Cycle v3/preferences_page
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
@@ -1976,6 +1984,13 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.15** recorded before implementation (not pristine: rated after reading the affected scripts), execution entry reaffirmed, retrospective **0.15**. Baseline `a4fe61e`; branch `feat/preferences_page`; planning commit `d43d51d`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
+## Cycle v3/prompt_library
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/prompt_library` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.25 (intake 0.25; retrospective 0.25) | [One-shot record](./prompt_library/prompt_library_one_shot.md#study-history) | In-session request; acceptance pending |
+
+2026-11-14T22:10Z: standing P2 enrollment, one-shot on the maintainer's in-session request. Intake **0.25** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**. Baseline `26dd2fbff07b1e99b30d2429cd9d322a02318683`; branch `feat/prompt_library`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 ## Cycle v3/gallery_zoom
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
@@ -1983,3 +1998,97 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/gallery_zoom` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.12 (intake 0.12; execution entry 0.12; retrospective 0.12) | [record](./gallery_zoom/gallery_zoom_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
 
 2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.12** recorded before implementation (not pristine: rated after reading the gallery and zoom components), execution entry reaffirmed, retrospective **0.12**. Baseline `26dd2fb`; branch `feat/gallery_zoom`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/deploy_celebration
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/deploy_celebration` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (intake 0.10; execution entry 0.10; retrospective 0.10) | [record](./deploy_celebration/deploy_celebration_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.10** recorded before implementation (not pristine: rated after reading the two deploy scripts), execution entry reaffirmed, retrospective **0.10**. Baseline `bd2b0fad`; branch `feat/deploy_celebration`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/gallery_compact_captions
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/gallery_compact_captions` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.06 (intake 0.06; execution entry 0.06; retrospective 0.07) | [record](./gallery_compact_captions/gallery_compact_captions_one_shot.md#study-history) | Follow-up to `v3/gallery_zoom`; maintainer request in chat; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot. Intake **0.06** (not pristine: rated after reading the gallery zoom code), execution entry reaffirmed, retrospective **0.07**. Baseline `90d3b0f`; branch `feat/gallery_compact_captions`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/gallery_zoom_buttons_in_view
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/gallery_zoom_buttons_in_view` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.04 (intake 0.04; execution entry 0.04; retrospective 0.04) | [record](./gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md#study-history) | Follow-up to `v3/gallery_zoom`; maintainer request in chat; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot. Intake **0.04** (not pristine), execution entry reaffirmed, retrospective **0.04**. Baseline `0443804`; branch `fix/gallery_zoom_buttons_in_view`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+## Cycle v3/spearmint_theme
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/spearmint_theme` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.30 (intake 0.30; retrospective 0.30) | [One-shot record](./spearmint_theme/spearmint_theme_one_shot.md#study-history) | Chat request; acceptance pending |
+
+2026-11-15T04:40Z: standing P2 enrollment, one-shot authorized in chat ("Just make spearmint. For now, please."). Intake **0.30** quoted in chat from Bubblegum's CSS before repository inspection (no pristine intake), execution entry reaffirmed, retrospective **0.30**. Baseline `0443804d0c01b3b82a873551131282d16756351b`; branch `feat/spearmint_theme`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/gallery_caption_zoom
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/gallery_caption_zoom` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.05 (intake 0.05; execution entry 0.05; retrospective 0.05) | [record](./gallery_caption_zoom/gallery_caption_zoom_one_shot.md#study-history) | Follow-up to `v3/gallery_compact_captions`; maintainer request in chat; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot. Intake **0.05** (not pristine), execution entry reaffirmed, retrospective **0.05**. Baseline `0443804`; branch `feat/gallery_caption_zoom`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/spearmint_icons
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/spearmint_icons` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.12 (intake 0.12; retrospective 0.12) | [One-shot record](./spearmint_icons/spearmint_icons_one_shot.md#study-history) | Related to `v3/spearmint_theme` and `v3/spearmint_bold`; acceptance pending |
+
+2026-11-15T05:15Z: standing P2 enrollment, one-shot authorized in chat ("can you please add icons"). Intake **0.12** by the related cycles' rater (no pristine intake), execution entry reaffirmed, retrospective **0.12**. Baseline `6908aa420cf0db95ab67b1fa8de60202ac89adf0`; branch `feat/spearmint_icons`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+## Cycle v3/spearmint_bold
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/spearmint_bold` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.20 (intake 0.20; retrospective 0.20) | [One-shot record](./spearmint_bold/spearmint_bold_one_shot.md#study-history) | Follow-up to `v3/spearmint_theme` (PR #252, merged); acceptance pending |
+
+2026-11-15T05:15Z: standing P2 enrollment, one-shot authorized in chat ("can you turn it up to 8 please"). Intake **0.20** by the predecessor's rater (no pristine intake), execution entry reaffirmed, retrospective **0.20**. Baseline `6908aa420cf0db95ab67b1fa8de60202ac89adf0`; branch `feat/spearmint_bold`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/live_feature_tour
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/live_feature_tour` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.05 (intake 0.05; execution entry 0.05; retrospective 0.05) | [One-shot record](./live_feature_tour/live_feature_tour_one_shot.md#study-history) | None; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized in chat ("Can you put it onto Zen Memes? Don't link it from anywhere yet"). Intake **0.05**, exposed (page drafted before the cycle opened). Baseline `b3f7e3e2cefb9a78e3921976208f72a03509aeb2`; branch `feat/live_feature_tour`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/live_feature_tour_quiet
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/live_feature_tour_quiet` | One-shot technically complete; maintainer acceptance pending | v2 / R1 / P2 | 0.06 (intake 0.03; execution entry 0.03; revision 0.06; retrospective 0.06) | [One-shot record](./live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md#study-history) | Follow-up to `v3/live_feature_tour` (PR #255, merged); acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized in chat. Intake **0.03**, exposed (same rater built the predecessor); revised to **0.06** after three in-session additions. Baseline `e9720e4fad2dafccdb85e8c56deda20e880b5683`; branch `feat/live_feature_tour_quiet`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/image_metadata
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/image_metadata` | Staged cycle technically complete; iPhone acceptance and maintainer judgment pending | v1 / R1 / P2 | 0.50 (intake 0.50; Steps 1–3 and Step 4 entry 0.50; retrospective 0.55) | [Step 1](./image_metadata/image_metadata_step1_solution_assessment.md#study-snapshots); [Step 2](./image_metadata/image_metadata_step2_feature_description.md#study-snapshots); [Step 3](./image_metadata/image_metadata_step3_development_plan.md#study-snapshot); [Step 4](./image_metadata/image_metadata_step4_implementation_summary.md#cycle-closeout) | New cycle; acceptance pending |
+
+2026-11-15: standing P2 enrollment for photo details on image attachments; baseline `14beeaaa`. Intake after code inspection and every planning checkpoint **0.50**, Claude single exposed rater, R1 hashes not re-verified. Extended estimates enabled (Step 1 options A 0.35, B 0.50, C 0.65; stages S1 0.15, S2 0.20, S3 0.15, S4 0.08; not summed). One in-review revision (collapsed disclosure) kept scope. Retrospective whole-cycle assessment 0.55; no measured labor.
+
+## Cycle v3/photo_details_collapsed
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/photo_details_collapsed` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; execution entry 0.08; retrospective 0.10) | [One-shot record](./photo_details_collapsed/photo_details_collapsed_one_shot.md#study-history) | Follow-up to `v3/image_metadata` (PR #257); acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer's request after merging PR #257. Intake **0.08**, exposed (same rater built the predecessor). A mid-work clarification kept single details visible; it corrects the outcome and does not change scope. Retrospective 0.10; no measured labor.
+
+## Cycle v3/bubblegum_more_tab_open
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/bubblegum_more_tab_open` | One-shot technically complete; PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.05 (intake 0.05; retrospective 0.05) | [One-shot record](./bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md#study-history) | Thread request; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link, then "Pr please"). Intake **0.05** after locating the cause (no pristine intake), execution entry reaffirmed, retrospective **0.05**. Baseline `ec70987d5f05f8d4bfa0266da929a0ea7dbcaa8b`; branch `fix/bubblegum-more-tab-open`; planning commit `eb726578`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

@@ -26,6 +26,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
 
+[Photo details](image_metadata/image_metadata_step3_development_plan.md) — when attaching a photo, a collapsed Photo details row lets the poster attach camera, exposure, time taken and (opt-in) location as signed text shown under the image.
+
+[Photo details collapsed one-shot](photo_details_collapsed/photo_details_collapsed_one_shot.md) — photo details under a post image start collapsed behind a "Photo details" row.
+
 [frm.py image attachments one-shot](frm_image/frm_image_one_shot.md) — `thread` and `reply` take `--image` and `--image-description` to publish one screenshot with a post.
 
 [Agent intro prompt one-shot](agent_intro_prompt/agent_intro_prompt_one_shot.md) — `/agent/` offers copyable prompts for a visitor's agent: get introduced, post as an agent, run your own site; About, the first-visit intro and Tools link to it.
@@ -38,7 +42,14 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Fix the #217 merge parse error one-shot](merge_217_fix/merge_217_fix_one_shot.md) — `main` parses again: one EXPERIENCE flag list with both new flags.
 
+[Spearmint theme one-shot](spearmint_theme/spearmint_theme_one_shot.md) — a light mint sibling of Bubblegum with its own shapes: rounded soft-shadow cards, a wavy header line, lifting buttons and coral accents.
+
+[Spearmint icons one-shot](spearmint_icons/spearmint_icons_one_shot.md) — Spearmint joins the smooth-line icon set, turned teal.
+[Bolder Spearmint one-shot](spearmint_bold/spearmint_bold_one_shot.md) — Spearmint turned up: deeper mint, gum-wrapper stripes on cards, a teal-and-coral double wave, coral Post buttons and bouncier controls.
+
 [Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
+
+[Bubblegum open More tab one-shot](bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md) — in Bubblegum on phones, the open More tab gets the selected look instead of a white label on a pale bar.
 
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
@@ -114,7 +125,9 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Gloss default](gloss_default/gloss_default_one_shot.md) — one-shot: on ZenMemes, Auto/System shows Gloss on a light device setting and Gloss Dark on a dark one.
 - [Reading margins: two clicks](reading_margins_two_clicks/reading_margins_two_clicks_one_shot.md) — one-shot: any two radios in the reading margins ruler set the column between them, in either order.
 - [Reading margins: last two clicks](reading_margins_last_two/reading_margins_last_two_one_shot.md) — one-shot: every click moves the column at once; it spans the last two radios clicked, and the older one is outlined as the edge that moves next.
+- [Reading margins: the nearer edge moves](reading_margins_nearest_edge/reading_margins_nearest_edge_one_shot.md) — one-shot: a click moves the column edge nearer to it, so the column never flips; ties move the edge clicked longer ago.
 - [Preferences page](preferences_page/preferences_page_one_shot.md) — one-shot: Tools → Preferences lists the settings this browser keeps (theme, thread view, reading margins, phone tabs, page themes, welcome note, usage log) with their current values, to change or reset in one place.
+- [Prompt library](prompt_library/prompt_library_one_shot.md) — one-shot: /agent/ becomes a prompt library of approved `#prompt` threads with copy, search, categories and sharing, linked from the main nav as Prompts.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
@@ -488,3 +501,10 @@ and repair its navigation and affected references. See the
 - [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; Steps 1–3 approved.
 
 - [Gallery zoom](gallery_zoom/gallery_zoom_one_shot.md) — one-shot: Smaller / Larger buttons and phone pinch resize Gallery tiles, remembered per browser and resettable on Preferences.
+- [Gallery compact captions](gallery_compact_captions/gallery_compact_captions_one_shot.md) — one-shot: Gallery tile captions hide when zoomed far out.
+- [Gallery zoom buttons in view](gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md) — one-shot: Smaller / Larger keep the buttons on screen.
+- [Gallery caption zoom](gallery_caption_zoom/gallery_caption_zoom_one_shot.md) — one-shot: Gallery caption text scales with the gallery zoom.
+
+- [Deploy celebration](deploy_celebration/deploy_celebration_one_shot.md) — one-shot: confetti and a Deployed banner on the page that loads after a deploy that changed the code.
+- [Live feature tour](live_feature_tour/live_feature_tour_one_shot.md) — one-shot: unlinked page of live, scaled-down frames of the main ZenMemes pages.
+- [Live feature tour, quiet](live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md) — one-shot: no intro copy and no new tabs on the tour page.

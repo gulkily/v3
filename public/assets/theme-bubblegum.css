@@ -327,7 +327,8 @@
   }
 
   :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
-  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button.is-active {
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button.is-active,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .account-menu[open] > .account-menu__trigger {
     background: var(--active-bg);
     color: var(--active-ink);
   }
