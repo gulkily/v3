@@ -41,6 +41,31 @@ $highTrafficRows = [
 <?php endif; ?>
       </div>
 <?php endforeach; ?>
+<?php
+$tour = $tourStatus ?? [];
+$tourState = $tour['State'] ?? null;
+$tourFailed = count(array_filter($tour, static fn (string $value, string $key): bool => str_starts_with($key, 'Route-') && str_starts_with($value, 'failed'), ARRAY_FILTER_USE_BOTH));
+?>
+      <div class="feature-flag-row feature-flag-row--action" data-tour-snapshots>
+        <div class="feature-flag-info">
+          <div class="feature-flag-name">Tour snapshots</div>
+          <p class="feature-flag-description meta"><?php
+if ($tourState === null): ?>Never refreshed<?php
+elseif ($tourState === 'running'): ?>Refreshing&hellip;<?php
+elseif ($tourState === 'interrupted'): ?>Last refresh stopped before finishing<?php
+elseif (($tour['Outcome'] ?? '') === 'failed'): ?>Last refresh failed: <?= $e($tour['Error'] ?? '') ?><?php
+else: ?>Refreshed <?= $relativeTimestamp($tour['Finished'] ?? '') ?> &middot; <?= $e($tour['Shown'] ?? '0') ?> pages<?= $tourFailed > 0 ? ' &middot; ' . $tourFailed . ' failed' : '' ?><?php
+endif; ?></p>
+<?php if (($tourNotice ?? null) !== null): ?>
+          <p class="meta" role="status" aria-live="polite"><?= $e($tourNotice) ?></p>
+<?php endif; ?>
+        </div>
+<?php if ($canManageOperations): ?>
+        <form class="feature-flag-control" method="post" action="/tools/operations/">
+          <button type="submit" name="action" value="refresh-tour"<?= $tourState === 'running' ? ' disabled' : '' ?>>Refresh now</button>
+        </form>
+<?php endif; ?>
+      </div>
     </div>
   </article>
 <?= $indent($partial('partials/tools_nav_card.php'), 2) ?>

@@ -203,4 +203,70 @@ final class TourSnapshotsTest
             \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($root);
         }
     }
+
+    public function testOperationsRefreshNeedsASameOriginOperatorSession(): void
+    {
+        $operator = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+        $same = ['HTTP_SEC_FETCH_SITE' => 'same-origin', 'HTTP_ORIGIN' => 'http://forum.test'];
+        $repository = sys_get_temp_dir() . '/v3-tour-ops-' . bin2hex(random_bytes(6));
+        mkdir($repository);
+        $state = dirname(__DIR__) . '/state/tour/' . substr(hash('sha256', realpath($repository)), 0, 16);
+        mkdir($state, 0777, true);
+        file_put_contents($state . '/status.txt', "Schema: tour-status-v1\nState: running\nStarted: 2026-11-15T20:00:00Z\n");
+        $lock = fopen($state . '/refresh.lock', 'c');
+        flock($lock, LOCK_EX);
+        try {
+            foreach ([
+                'signed out' => [null, $same, 'requires a signed-in root-approved operator'],
+                'non-operator session' => ['openpgp:' . str_repeat('ab', 20), $same, 'requires a signed-in root-approved operator'],
+                'cross-site' => [$operator, ['HTTP_SEC_FETCH_SITE' => 'cross-site', 'HTTP_ORIGIN' => 'https://evil.test'], 'Same-origin request required'],
+            ] as $name => [$identity, $server, $message]) {
+                $page = $this->operationsRequest('POST', $identity, $server, $repository);
+                assertStringContains($message, $page, $name);
+                assertSame(false, str_contains($page, 'Refresh started'), $name);
+            }
+            // A refresh is running (this test holds its lock), so the operator's press starts nothing new.
+            $page = $this->operationsRequest('POST', $operator, $same, $repository);
+            assertStringContains('A refresh is already running.', $page);
+            assertStringContains('Refreshing&hellip;', $page);
+
+            assertStringContains('value="refresh-tour" disabled', $this->operationsRequest('GET', null, [], $repository, $operator));
+            assertSame(false, str_contains($this->operationsRequest('GET', null, [], $repository), 'refresh-tour'));
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($state);
+            @rmdir($repository);
+        }
+    }
+
+    /** One request per process, as on a server. */
+    private function operationsRequest(string $method, ?string $identity, array $server, string $tourRepository, ?string $hint = null): string
+    {
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
+[$method, $identity, $server, $tourRepository, $hint] = json_decode($argv[3], true);
+putenv('FORUM_REPOSITORY_ROOT=' . $tourRepository);
+$databasePath = sys_get_temp_dir() . '/tour-ops-' . bin2hex(random_bytes(6)) . '.sqlite3';
+$_COOKIE = [];
+if ($identity !== null) TestViewerSession::signIn($identity);
+if ($hint !== null) $_COOKIE['identity_hint'] = $hint;
+$_SERVER = array_merge($_SERVER, ['HTTP_HOST' => 'forum.test'], $server);
+$_POST = $method === 'POST' ? ['action' => 'refresh-tour'] : [];
+$app = new \ForumRewrite\Application($argv[1], $argv[2], $databasePath);
+ob_start();
+$app->handle($method, '/tools/operations/');
+echo "\n---PAGE---\n" . ob_get_clean();
+@unlink($databasePath);
+PHP;
+        $output = (string) shell_exec(sprintf(
+            'php -r %s %s %s %s 2>&1',
+            escapeshellarg($script),
+            escapeshellarg(dirname(__DIR__)),
+            escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1'),
+            escapeshellarg((string) json_encode([$method, $identity, $server, $tourRepository, $hint])),
+        ));
+        return substr($output, (int) strrpos($output, "---PAGE---\n") + 11);
+    }
 }
