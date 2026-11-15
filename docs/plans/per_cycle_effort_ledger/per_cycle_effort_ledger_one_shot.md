@@ -7,7 +7,8 @@ Extended estimates: enabled (no alternatives or stages, so only the cycle estima
 
 **Cycle estimate: 0.10**
 
-Status: planning; next permitted action: implement after the planning commit.
+Status: technically complete; PR open. Not merged.
+Debug report: [log](per_cycle_effort_ledger_debug_log.md)
 
 ## Original request
 
@@ -52,8 +53,17 @@ None.
 Link check of changed Markdown, `git check-attr`, trial merges of the open PRs. Runtime tests inapplicable (no application change). Recovery: revert the PR; no data moves.
 
 Starting revision and branch: `chore/per_cycle_effort_ledger` from `90d3b0f`.
-Planning commit: pending.
+Planning commit: `616e7bf`.
 
 ## Dated execution history
+
+- 2026-11-15: implementation committed (`0b438af`): `effort_ledger/README.md`, this cycle's ledger file, notices in the old ledger (top and P2 section; no entries changed), `AGENTS.md`, `docs/reference/railspike_workflow.md`, `.gitattributes`.
+- Verification: `git check-attr` reports `union`. Links in the new files resolve (the README's template placeholder excepted). `git merge-tree` of this branch with #239, #240, #241 and #246 shows no ledger conflict; #239 and #240 still conflict on `docs/plans/README.md`, which is out of scope here and resolved by hand in those PRs. Runtime tests not run: no application change. Full suite not run.
+- Limitation: GitHub's merge button ignores `merge=union`, so PRs opened before this change still need one local merge of `main`.
+
+## Retrospective
+
+Work matched the 0.10 estimate. Maintainer's judgment of fit: pending. Follow-up candidate: upstream the per-cycle layout into Railspike's effort-estimation contract, and give `docs/plans/README.md` the same treatment if its conflicts keep recurring.
+
 
 *Claude (claude-opus-5-5)*
