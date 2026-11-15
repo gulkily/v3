@@ -98,6 +98,6 @@ Diff checked: three source files, one new test, the test runner list, a stale te
 
 ## Commit/merge/publication status
 
-Completion commit: pending at time of writing. Not pushed; no PR; not merged or deployed.
+Completion commit: `7c5c2608` (confirmed with `git log`). Not pushed; no PR; not merged or deployed.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
