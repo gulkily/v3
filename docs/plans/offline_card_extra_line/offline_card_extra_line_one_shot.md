@@ -1,9 +1,9 @@
 Cycle: `v3/offline_card_extra_line`; Mode: one-shot; Record: this file; Index: [plans index](../README.md)
-Debug mode: enabled (project marker `.railspike_debug_on`)
+Debug mode: enabled (project marker `.railspike_debug_on`); [debug log](offline_card_extra_line_debug_log.md)
 Effort study: `railspike-effort` / `v3/offline_card_extra_line` — [host ledger](../effort_estimation_trial.md#cycle-v3offline_card_extra_line); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.06**
-Status: planned; next permitted action: implement on `feat/offline_card_extra_line`
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -60,14 +60,42 @@ Host `main` at `8314fae95ea2b33e16a2e6a1d6e2ca512ef52c4d`; branch `feat/offline_
 
 ## Planning commit
 
-Pending.
+`ce52a065` (confirmed with Git).
 
 ## Study history
 
 - 2026-11-15T19:45Z intake: whole-cycle projection **0.06**, scope v1 as above, R1, P2, single exposed rater Claude (claude-opus-5-5). Exposure: the rater investigated the offline reader in chat before the cycle existed; no pristine intake.
+- 2026-11-15T19:50Z execution entry: reaffirmed **0.06** after the planning commit.
 
 ## Dated execution history
 
 - 2026-11-15T19:45Z: no matching feedback item (searched `docs/feedback/items/` for offline; F59 and F78 are unrelated). Request came from chat; no item created.
+- 2026-11-15T19:55Z: implemented in `public/assets/offline_reader.js`: `boardRows` joins the root post and keeps `nextLine` (only when `body_preview` is non-empty, so excluded threads stay blank); new `nextBodyLine` returns the second non-empty, non-image body line; `appendThreadCards` renders the shown lines with a `<br>` inside the existing `thread-card__preview` paragraph. No CSS was needed (screenshots at 390px and 1280px).
+- 2026-11-15T19:55Z: added `tests/browser/offline_card_extra_line.cjs` (real snapshot plus a one-line and an image-line thread). It fails on the base commit at "first and second lines" and passes after the change.
+- 2026-11-15T20:00Z: addition (pre-existing failure, fixed per the maintainer's standing rule): `tests/browser/offline_board_toolbar.cjs` failed at "word97 390px: Tags at the right" on the base commit too (also recorded as a baseline failure in `offline_compose`). Word97 deliberately pads the toolbar as a window frame (`theme-word97.css`), so the check now measures against the toolbar's content edge (padding plus border). Passes for all four themes at both widths.
+
+## Study closeout
+
+Intake 0.06; execution entry reaffirmed 0.06; **retrospective 0.07** (the pre-existing toolbar test fix was a small addition). Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending; no accepted-count increment.
+
+## Outcome
+
+Delivered: offline board cards (board, Liked view and tag results, which share `appendThreadCards`) show the root post's second non-empty line under the first. A card whose first line repeats the title now shows the second line instead of nothing. Image reference lines are skipped. The online list board is unchanged. Limitation: the extra line of a Markdown post is raw text, as on the offline thread page.
+
+## Verification
+
+- `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/offline_card_extra_line.cjs` at 390px and 1280px: pass (fails on base, as expected).
+- `node tests/browser/offline_board_toolbar.cjs` (Default, Word97, Chicago, Midnight at 390px and 1280px): pass after the test fix; failed on base before it.
+- `./v3 test --smoke AbsentRetractionSnapshotTest OfflineOutboxStateTest OfflineNavigationWorkerTest OfflineSnapshotPresentationTest OfflineSnapshotThreadPresentationTest`: 492 run, 492 passed.
+- Screenshots of the offline board at 390px and 1280px checked by eye.
+- Full suite not run (maintainer runs it). Not checked: physical phones, real airplane mode, production. `playwright-core` was installed from the existing `package.json` devDependency (`npm install --no-save`), nothing committed.
+
+## Final review
+
+Diff limited to `offline_reader.js`, the two browser tests and this cycle's docs. No duplicated component: the existing preview paragraph is reused. No service worker cache bump: earlier `offline_reader.js` changes did not need one.
+
+## Commit, merge and publication status
+
+Implementation commit pending at time of writing; branch to be pushed and a PR opened. Not merged or deployed.
 
 *Claude (claude-opus-5-5), 2026-11-15*
