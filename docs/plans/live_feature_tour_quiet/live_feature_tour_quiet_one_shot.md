@@ -82,7 +82,7 @@ Diff is `public/assets/tour.html`, this record, the plans index, ledger entry an
 
 ## Commit/merge/publication status
 
-Planning commit `3f329a1e`; completion commit pending at writing. Not merged or deployed.
+Planning commit `3f329a1e`; completion commit `952f5fdb` (confirmed with Git). Pushed as `feat/live_feature_tour_quiet`; PR pending at writing. Not merged or deployed.
 
 ## Attribution
 
