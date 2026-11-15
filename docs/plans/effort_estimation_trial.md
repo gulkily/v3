@@ -2060,3 +2060,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/live_feature_tour_quiet` | One-shot technically complete; maintainer acceptance pending | v2 / R1 / P2 | 0.06 (intake 0.03; execution entry 0.03; revision 0.06; retrospective 0.06) | [One-shot record](./live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md#study-history) | Follow-up to `v3/live_feature_tour` (PR #255, merged); acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot authorized in chat. Intake **0.03**, exposed (same rater built the predecessor); revised to **0.06** after three in-session additions. Baseline `e9720e4fad2dafccdb85e8c56deda20e880b5683`; branch `feat/live_feature_tour_quiet`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/image_metadata
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/image_metadata` | Staged cycle technically complete; iPhone acceptance and maintainer judgment pending | v1 / R1 / P2 | 0.50 (intake 0.50; Steps 1–3 and Step 4 entry 0.50; retrospective 0.55) | [Step 1](./image_metadata/image_metadata_step1_solution_assessment.md#study-snapshots); [Step 2](./image_metadata/image_metadata_step2_feature_description.md#study-snapshots); [Step 3](./image_metadata/image_metadata_step3_development_plan.md#study-snapshot); [Step 4](./image_metadata/image_metadata_step4_implementation_summary.md#cycle-closeout) | New cycle; acceptance pending |
+
+2026-11-15: standing P2 enrollment for photo details on image attachments; baseline `14beeaaa`. Intake after code inspection and every planning checkpoint **0.50**, Claude single exposed rater, R1 hashes not re-verified. Extended estimates enabled (Step 1 options A 0.35, B 0.50, C 0.65; stages S1 0.15, S2 0.20, S3 0.15, S4 0.08; not summed). One in-review revision (collapsed disclosure) kept scope. Retrospective whole-cycle assessment 0.55; no measured labor.

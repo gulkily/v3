@@ -2260,3 +2260,6 @@ pre {
 .pending-user-dialog__actions [data-role="approve"] {
   background: var(--button-bg);
 }
+
+/* Photo details the poster chose to attach, under the post's image (ImageReference::photoDetails). */
+.post-photo-details { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .75rem; row-gap: .15rem; margin: .35rem 0; font-size: .9em; overflow-wrap: anywhere; }
