@@ -6,6 +6,8 @@
 
 2026-11-15T04:54:33Z — v3/usage_reports_ui Approved Step 1 (Option A, after a mock-up); Step 2 handoff: [feature description/checkpoint](./usage_reports_ui_step2_feature_description.md#study-checkpoint). Scope v1/A plus three presentation decisions from the mock-up. Projected total **0.45 reaffirmed**. Same R1/P2, single exposed Claude rater. Await Approved Step 2.
 
+2026-11-15T05:15:25Z — v3/usage_reports_ui Approved Step 2 (with the three mock-up decisions); Step 3 handoff: [plan/checkpoint](./usage_reports_ui_step3_development_plan.md#study-checkpoint). Four stages, supplemental 0.08, 0.15, 0.14, 0.06, non-additive. Projected total **0.45 reaffirmed**. Same R1/P2, single exposed Claude rater. Await Approved Step 3.
+
 ## Cycle v3/merge_217_fix
 
 2026-11-14T20:30:00Z — v3/merge_217_fix one-shot (standing P2 enrollment, no parent): [record](./merge_217_fix/merge_217_fix_one_shot.md). Fix PHP parse error from the #217 merge; cycle estimate **0.03**, retrospective 0.03; maintainer fit judgment pending. PR #242.

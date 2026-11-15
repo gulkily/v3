@@ -18,3 +18,11 @@
 
 **Uncertain assessments**
 - A mock-up made between Step 1 and its approval introduced choices the approved Step 1 text did not state (a renamed label, pills instead of a dropdown, raw names on hover). The workflow has no place for a design review between steps; Step 2 lists them as decisions to confirm.
+
+## 2026-11-15T05:15:25Z — Step 3
+
+**Necessary/useful instructions**
+- `step3_development_plan_do.md` "Canonical components/API contracts": named `window.forumUsageLog` as the one contract that grows (`entries()`), which put the upload-equals-shown-text check into the stage that touches it.
+
+**Inapplicable instructions**
+- Planning commit after Step 3 approval: the plans are already committed on this branch at the maintainer's request.

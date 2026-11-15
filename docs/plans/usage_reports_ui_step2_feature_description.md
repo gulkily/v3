@@ -86,6 +86,6 @@ None pending.
 
 2026-11-15T04:54:33Z; Step 2 handoff; scope v1/A plus the mock-up's three presentation decisions; starting revision `bd2b0fad`; R1/P2, single exposed Claude rater. Projected total **0.45 reaffirmed**: the shared names table published to the browser replaces a server-only map, offset by reusing the existing stylesheet and data unchanged. Not hours or measured effort; no approval to advance.
 
-Status: Approved Step 1 (maintainer, 2026-11-15T04:54Z). Step 2 drafted; awaiting Approved Step 2.
+Status: **Approved Step 2** (maintainer, 2026-11-15T05:15Z), including the three decisions above.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
