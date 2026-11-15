@@ -44,3 +44,20 @@
 
 ### Uncertain assessments
 - Mockup request between Steps 2 and 3: recorded as an enhancement request with no scope change; the guidance does not say where design artifacts belong.
+
+## 2026-11-15T19:30Z — Step 4
+
+### Necessary/useful instructions
+- `implementation_standards.md`, shared consumers: led to fixing thread titles and board excerpts, which would otherwise show raw `Photo-` lines.
+- `step4_implementation_do.md`, stage boundary protocol: per-stage commits made the two mid-stage fixes easy to place.
+- Step 2 known-environment rule: kept the iPhone Safari replay marked pending instead of counting Chromium as acceptance.
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Documentation-only verification: application change.
+- Nav icon mapping (`AGENTS.md`): no navigation destination added.
+
+### Uncertain assessments
+- Step 3 said to store detail keys for retries. Stage 2 stored final lines instead, because the stored attachment carries no metadata. It is recorded as a deviation; the instructions do not say whether this needed renewed approval.
