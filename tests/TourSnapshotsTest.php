@@ -53,4 +53,58 @@ final class TourSnapshotsTest
             \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($root);
         }
     }
+
+    public function testTourFileParsesSectionsAndExplainsMistakes(): void
+    {
+        $sections = \ForumRewrite\Tour\TourFile::parse("Schema: tour-v1\n# comment\n\n---\nName: board\nRoute: /\nTitle: A board\n\nFirst line\ncontinues.\n\nSecond paragraph.\n---\nName: key\nRoute: /account/key/\nTitle: No password\n\nOne.\n");
+        assertSame(2, count($sections));
+        assertSame(['name' => 'board', 'route' => '/', 'title' => 'A board', 'paragraphs' => ['First line continues.', 'Second paragraph.']], $sections[0]);
+        assertSame('/account/key/', $sections[1]['route']);
+
+        $refusals = [
+            "Name: x\n" => "expected 'Schema: tour-v1'",
+            "# no schema\n---\n" => "missing 'Schema: tour-v1'",
+            "Schema: tour-v1\n---\nName: a\nRoute: /\n\nBody\n" => "line 3: missing 'Title'",
+            "Schema: tour-v1\n---\nName: a\nRoute: /\nTitle: T\nColour: red\n\nBody\n" => "line 6: unknown key 'Colour'",
+            "Schema: tour-v1\n---\nName: a\nRoute: /\nTitle: T\n\nBody\n---\nName: a\nRoute: /tags/\nTitle: U\n\nBody\n" => "duplicate Name 'a'",
+            "Schema: tour-v1\n---\nName: Big Name\nRoute: /\nTitle: T\n\nBody\n" => 'lowercase letters',
+            "Schema: tour-v1\n---\nName: a\nRoute: /tools/\nTitle: T\n\nBody\n" => 'plain public path',
+            "Schema: tour-v1\n---\nName: a\nRoute: /\nTitle: T\n\n\n" => 'essay is empty',
+        ];
+        foreach ($refusals as $text => $message) {
+            try {
+                \ForumRewrite\Tour\TourFile::parse($text);
+                throw new RuntimeException('Expected a refusal: ' . $message);
+            } catch (RuntimeException $error) {
+                assertStringContains($message, $error->getMessage());
+            }
+        }
+    }
+
+    public function testShippedTourFileIsValid(): void
+    {
+        $sections = \ForumRewrite\Tour\TourFile::fromFile(dirname(__DIR__) . '/resources/tour.txt');
+        assertSame(true, count($sections) >= 5);
+    }
+
+    public function testPageHasOneRowPerSectionAndNeverOpensNewTabs(): void
+    {
+        $sections = \ForumRewrite\Tour\TourFile::fromFile(dirname(__DIR__) . '/resources/tour.txt');
+        $html = \ForumRewrite\Tour\TourPage::render(dirname(__DIR__), array_slice($sections, 0, 3), 'Example <Site>');
+        assertSame(3, substr_count($html, '<section id="'));
+        assertSame(3, substr_count($html, 'data-src="'));
+        assertStringContains('data-src="board.html"', $html);
+        assertStringContains('<title>Example &lt;Site&gt;</title>', $html);
+        assertStringContains('<meta name="robots" content="noindex">', $html);
+        foreach (['_blank', 'window.open', 'loading="lazy"'] as $forbidden) {
+            assertSame(false, str_contains($html, $forbidden), $forbidden);
+        }
+    }
+
+    public function testSnapshotsOpenLinksInTheSameTabAndStayUnindexed(): void
+    {
+        $html = \ForumRewrite\Tour\TourPage::prepareSnapshot('<!DOCTYPE html><html><head lang="en"><meta name="robots" content="index"><title>T</title></head><body><a href="/x">x</a></body></html>');
+        assertStringContains('<head lang="en"><meta name="robots" content="noindex"><base target="_top">', $html);
+        assertSame(1, substr_count($html, 'name="robots"'));
+    }
 }
