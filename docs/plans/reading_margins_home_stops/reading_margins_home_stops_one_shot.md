@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.30**
 
-Status: implemented and verified locally; PR open; next permitted action: maintainer review, merge and a try in his browser.
+Status: implemented and verified locally; PR #263 open; next permitted action: maintainer review, merge and a try in his browser.
 
 Predecessor: [`v3/reading_margins_nearest_edge`](../reading_margins_nearest_edge/reading_margins_nearest_edge_one_shot.md) (merged as #239).
 
@@ -112,7 +112,7 @@ Diff limited to the files under reuse decisions plus this record, its index entr
 
 ## Commit/merge/publication status
 
-Planning commit `1fa3578`; completion commit pending at the time of writing (reported in the PR); not merged or deployed.
+Planning commit `1fa3578`; completion commit `0dfd5fa` (confirmed with Git); branch `feat/reading_margins_home_stops` pushed; PR #263 open against `main`; not merged or deployed.
 
 Debug log: [reading_margins_home_stops_debug_log.md](./reading_margins_home_stops_debug_log.md)
 
