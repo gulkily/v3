@@ -1,5 +1,17 @@
 # Effort estimation trial ledger
 
+## Cycle v3/usage_reports_ui
+
+2026-11-15T02:17:36Z — v3/usage_reports_ui Step 1 handoff (standing P2 enrollment, no parent; follow-up to v3/local_telemetry): [assessment/checkpoint](./usage_reports_ui/usage_reports_ui_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (readable page and control names, phone-first journey cards, styled summary, readable Usage Log with exact text behind a disclosure). Starting revision `bd2b0fad`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because both pages were rendered and inspected before rating. Intake and projected total **0.45**; option estimates A 0.45, B 0.65, C 0.15, non-additive. Await Approved Step 1; Step 1 committed at the maintainer's request.
+
+2026-11-15T04:54:33Z — v3/usage_reports_ui Approved Step 1 (Option A, after a mock-up); Step 2 handoff: [feature description/checkpoint](./usage_reports_ui/usage_reports_ui_step2_feature_description.md#study-checkpoint). Scope v1/A plus three presentation decisions from the mock-up. Projected total **0.45 reaffirmed**. Same R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-15T05:15:25Z — v3/usage_reports_ui Approved Step 2 (with the three mock-up decisions); Step 3 handoff: [plan/checkpoint](./usage_reports_ui/usage_reports_ui_step3_development_plan.md#study-checkpoint). Four stages, supplemental 0.08, 0.15, 0.14, 0.06, non-additive. Projected total **0.45 reaffirmed**. Same R1/P2, single exposed Claude rater. Await Approved Step 3.
+
+2026-11-15T19:40:00Z — v3/usage_reports_ui Approved Step 3; main `8314fae9` merged into `plan/usage_reports_ui`; plans moved to `usage_reports_ui/`. Step 4 entry: [summary](./usage_reports_ui/usage_reports_ui_step4_implementation_summary.md). Projected total **0.45 reaffirmed** at entry; stage originals copied unchanged. Same R1/P2, single exposed Claude rater.
+
+2026-11-15T20:45:00Z — v3/usage_reports_ui Step 4 closeout: four stages committed on `plan/usage_reports_ui` ([summary](./usage_reports_ui/usage_reports_ui_step4_implementation_summary.md#closeout)). Retrospective stage work 0.08, 0.15, 0.15, 0.08 against originals 0.08, 0.15, 0.14, 0.06 (supplemental, non-additive). Retrospective cycle scope **0.46** against the 0.45 projection; driver: visual fixes found by screenshots. Release on the maintainer's phone pending; comfortable-fit judgment pending.
+
 ## Cycle v3/merge_217_fix
 
 2026-11-14T20:30:00Z — v3/merge_217_fix one-shot (standing P2 enrollment, no parent): [record](./merge_217_fix/merge_217_fix_one_shot.md). Fix PHP parse error from the #217 merge; cycle estimate **0.03**, retrospective 0.03; maintainer fit judgment pending. PR #242.
@@ -2092,3 +2104,10 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/offline_card_extra_line` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.07 (intake 0.06; retrospective 0.07) | [One-shot record](./offline_card_extra_line/offline_card_extra_line_one_shot.md#study-history) | Chat request; acceptance pending |
 
 2026-11-15T20:00Z: standing P2 enrollment, one-shot authorized in chat ("for the offline view, we want to add one more line of body text for each card"). Intake **0.06** after chat investigation (no pristine intake), execution entry reaffirmed, retrospective **0.07** (added the pre-existing toolbar test fix). Baseline `8314fae95ea2b33e16a2e6a1d6e2ca512ef52c4d`; branch `feat/offline_card_extra_line`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+## Cycle v3/scoped_post_reaction_update
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/scoped_post_reaction_update` | One-shot technically complete; push, PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.25 (intake 0.25; execution entry 0.25; retrospective 0.25) | [One-shot record](./scoped_post_reaction_update/scoped_post_reaction_update_one_shot.md#study-history) | Maintainer bug report (busy message on quick Close then Resolve); first of two split fixes; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer ("Yes, don't change the schema") after the diagnosis. Intake **0.25** after the diagnosis and code inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**; the viewer-tag scan found mid-work is a correction within the same outcome. Also fixed a stale `WriteApiSmokeTest` assertion that failed on the base revision. Baseline `8314fae95ea2b33e16a2e6a1d6e2ca512ef52c4d`; branch `fix/scoped-post-reaction-update`; planning commit `e09103d3`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

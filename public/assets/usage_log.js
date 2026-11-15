@@ -141,6 +141,16 @@
       return { recording: state.recording, count: state.entries.length };
     },
     text() { const state = read(); return text(state ? trim(state, Math.floor(Date.now() / 1000)).entries : []); },
+    // A copy of the entries the text is made from, each with dt (seconds since the previous one).
+    entries() {
+      const state = read();
+      let previous = null;
+      return (state ? trim(state, Math.floor(Date.now() / 1000)).entries : []).map(entry => {
+        const dt = previous === null ? 0 : Math.max(0, entry.t - previous);
+        previous = entry.t;
+        return { ...entry, dt };
+      });
+    },
     setRecording(on) {
       const state = read() || { recording: false, entries: [] };
       state.recording = on === true;

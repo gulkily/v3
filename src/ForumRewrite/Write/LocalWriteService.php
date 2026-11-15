@@ -1736,7 +1736,7 @@ class LocalWriteService
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
-            $timings = array_merge($timings, $this->synchronizePostReactionDerivedState($postId, $commitSha));
+            $timings = array_merge($timings, $this->synchronizePostReactionDerivedState($postId, $commitSha, [$recordPath]));
 
             $phaseStartedAt = hrtime(true);
             if ($post->isReply()) {
@@ -3628,7 +3628,8 @@ class LocalWriteService
     /**
      * @return array<string, float>
      */
-    private function synchronizePostReactionDerivedState(string $postId, string $commitSha): array
+    /** @param list<string>|null $writtenPaths reaction records this write added; null scans them all */
+    private function synchronizePostReactionDerivedState(string $postId, string $commitSha, ?array $writtenPaths = null): array
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
@@ -3645,7 +3646,7 @@ class LocalWriteService
         }
 
         try {
-            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha);
+            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha, $writtenPaths);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
             $this->logRebuildFallback('post reaction update', $throwable->getMessage());
