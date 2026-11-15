@@ -189,13 +189,15 @@
 <?php endif; ?>
 <?php if ($showReadingMargins ?? false): ?>
       try {
-        // Reading margins (reading_margins.js): the chosen column edges, in vw, restored before paint.
+        // Reading margins (reading_margins.js): the chosen column's edges, restored before paint.
         var readingMargins = (localStorage.getItem(browserRuntime.readingMarginsStorageKey) || '').split(' ');
-        // The stops match partials/reading_margins.php. The pair is stored in
+        // Stops are numbered as in partials/reading_margins.php (-8 to 13; 0 and
+        // 5 are the normal column, which is never stored). The pair is stored in
         // click order (older first); the column runs from the smaller to the larger.
-        var readingMarginStops = ['5', '23', '41', '59', '77', '95'];
+        var readingMarginStop = function (value) { return /^-?\d+$/.test(value) && value >= -8 && value <= 13; };
         if (readingMargins.length === 2 && readingMargins[0] !== readingMargins[1]
-          && readingMarginStops.indexOf(readingMargins[0]) !== -1 && readingMarginStops.indexOf(readingMargins[1]) !== -1) {
+          && readingMarginStop(readingMargins[0]) && readingMarginStop(readingMargins[1])
+          && [readingMargins[0], readingMargins[1]].sort().join(' ') !== '0 5') {
           document.documentElement.setAttribute('data-reading-margins', readingMargins.join(' '));
           document.documentElement.style.setProperty('--reading-left', Math.min(readingMargins[0], readingMargins[1]));
           document.documentElement.style.setProperty('--reading-right', Math.max(readingMargins[0], readingMargins[1]));
