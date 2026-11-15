@@ -30,7 +30,7 @@ Reuse:
 
 Verification (2026-11-12):
 - ./v3 test --smoke FeatureFlagsBehaviorTest SiteProfileRegistryTest
-  LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled
+  LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled
   FeatureFlagEvaluatorTest. Full suite not run.
 - FeatureFlagsBehaviorTest::testRenderedOrderIgnoresRegistryInputOrder fails on main
   before this change too (tests/Support/feature_flags_toolbar_fixture.php does not pass
@@ -61,7 +61,7 @@ and right groups.
 - Adjacent stops make a 15vw column (about 96px at the 640px breakpoint). Allowed on
   purpose; it is the reader's choice and one more click undoes it.
 Verification: ./v3 test --smoke
-LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled
 (452 passed); full suite not run. node tests/browser/reading_margins.mjs across all 17
 permitted themes at 1280px plus a 390px phone: one row, equal gaps, nearer-edge moves,
 reload restores before paint, reset, old saved values ignored. Screenshots reviewed for
@@ -75,7 +75,7 @@ Request: add the ruler to listing pages too.
 - Not included: gallery.php (its justified rows are laid out for the normal width), tag
   index, profiles, tools and other pages.
 Verification: ./v3 test --smoke
-LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled
 FeatureFlagEvaluatorTest (452 passed); full suite not run. node tests/browser/reading_margins.mjs
 now also loads all five listing paths in all 17 themes with a saved "20 95": radios checked,
 column between them, final on first paint, no sideways scroll. Board screenshots reviewed
@@ -91,8 +91,32 @@ across the top but split them into left and right again.
 - The narrowest column is 41-59 (18vw). Saved values from both earlier rulers are
   ignored because they are not in the new lists.
 Verification: ./v3 test --smoke
-LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled
 FeatureFlagEvaluatorTest; full suite not run. node tests/browser/reading_margins.mjs across 17
 themes on a thread and five listing pages plus a phone: one row with equal gaps, left half then
 right half, each side moves only its edge, restore before paint, reset, old values ignored.
 Screenshots reviewed for every theme.
+
+Follow-up (2026-11-14): every page
+Request: add the ruler to the other pages too (users, unread, messages, about, tools,
+platform docs, bookmarklets were examples).
+- TemplateRenderer now shows the ruler on every page rendered with layout.php except
+  READING_MARGINS_EXCLUDED_PAGE_TEMPLATES: gallery.php (rows laid out for the normal
+  width) and redirect.php. Standalone pages (standalone_layout.php, e.g. /forte) have no
+  ruler; they do not use the shared shell.
+- The column is never narrower than 20rem, the small-phone width pages are built for.
+  At 1280px the 41-59 choice (18vw, about 230px) broke the bookmarklets page and
+  overflowed profile tabs; when the chosen edges are closer than 20rem the column now
+  grows evenly around the point halfway between them.
+Verification: ./v3 test --smoke
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled
+FeatureFlagEvaluatorTest (452 of 453; LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv
+fails the same way on main since #219); full suite not run. A scratch crawl of 90 pages reachable from the
+board, Tools, Users, Unread, Messages, About, Docs and Bookmarklets (light theme, 1280px,
+edges 23-95 and 41-59): ruler on every layout page, column aligned with the checked radios
+(or 20rem and centred for 41-59), no sideways page scroll; only pre-existing overflow left
+(the board sort menu, feature-flag chip row, and code blocks that scroll in place).
+node tests/browser/reading_margins.mjs now loads 13 pages in all 17 themes, plus the 20rem
+minimum check.
+Not checked: pages that need a signed-in member (Unread and Messages were seen only in their
+signed-out state), Safari, real devices.

@@ -51,3 +51,7 @@ OfflineSnapshotPublisherTest
 # CLI and the test runner itself
 StatusCommandTest
 TestRunnerBehaviorTest
+
+# Usage reports (local_telemetry)
+UsageReportUploadTest
+UsageJourneysTest

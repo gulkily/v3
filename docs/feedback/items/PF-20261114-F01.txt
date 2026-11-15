@@ -1,0 +1,22 @@
+ID: PF-20261114-F01
+Title: Client-side preferences page
+Kind: feature
+Workflow: blocked
+Created: 2026-11-14
+Evidence: locally-verified
+Estimate: 0.15
+
+Request:
+"i think it is about time we had a client-side preferences page?" Earlier: "speaking of user/client preferences, we need those."
+
+Sources:
+- https://zenmemes.com/posts/thread-20261114195441-c17a855d
+- https://zenmemes.com/posts/thread-20261110165717-b0ca1d92
+
+Done when:
+One page lists the settings this browser keeps, shows each current value from first paint, and lets the visitor change or reset them there without touching keys, drafts or the outbox.
+
+Notes:
+Related, separate outcomes: PF-20261104-F18 (localStorage browser/editor), PF-20261104-F16 (remember expanded sections), PF-20261104-F22 (sign-in debug display).
+2026-11-14: one-shot started on feat/preferences_page (record docs/plans/preferences_page/preferences_page_one_shot.md).
+2026-11-14: implemented on feat/preferences_page: Tools → Preferences (/tools/preferences/). Verified locally (PreferencesPageTest, tests/browser/preferences.mjs, tools_launcher.mjs in four themes). Blocked on review, merge and deployment.

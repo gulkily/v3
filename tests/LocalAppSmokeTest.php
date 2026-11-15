@@ -2224,6 +2224,11 @@ PHP;
         assertStringNotContains('class="nav tools-nav"', $tools);
         assertStringNotContains('tool-launcher-description', $tools);
         foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
+            // The usage tools appear only while the "Usage reports" flag is on (off by default).
+            if (in_array($tool['key'], ['usage-log', 'usage-reports'], true)) {
+                assertSame(0, substr_count($tools, 'href="' . $tool['href'] . '"'), $tool['href']);
+                continue;
+            }
             assertSame(1, substr_count($tools, 'class="tool-launcher-button" href="' . $tool['href'] . '"'), $tool['href']);
             assertStringContains('data-tone="' . $tool['tone'] . '"', $tools);
         }
@@ -2852,7 +2857,7 @@ PHP;
         }
     }
 
-    public function testReadingMarginsAreHiddenByDefaultAndShownOnThreadsAndListingsWhenFlagEnabled(): void
+    public function testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled(): void
     {
         $previousFlag = getenv('FORUM_READING_MARGINS_ENABLED');
         putenv('FORUM_READING_MARGINS_ENABLED');
@@ -2875,23 +2880,32 @@ PHP;
             assertStringContains('data-role="reading-margins"', $thread);
             assertStringContains('localStorage.getItem(browserRuntime.readingMarginsStorageKey)', $thread);
             assertStringContains('"readingMarginsStorageKey":"forum-zenmemes-reading-margins"', $thread);
-            foreach (['left' => [5, 23, 41], 'right' => [59, 77, 95]] as $edge => $positions) {
-                foreach ($positions as $position) {
-                    assertStringContains('name="reading-margin-' . $edge . '" value="' . $position . '"', $thread);
-                    assertStringContains('style="--at: ' . $position . '"', $thread);
-                }
+            foreach ([5, 23, 41, 59, 77, 95] as $position) {
+                assertStringContains('name="reading-margin-' . $position . '" value="' . $position . '"', $thread);
+                assertStringContains('style="--at: ' . $position . '"', $thread);
             }
+            assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
             assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
-            // Listing pages get the ruler too; other pages do not.
-            foreach (['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello'] as $listingPath) {
-                $listing = $this->render($application, $listingPath);
-                assertStringContains('data-role="reading-margins"', $listing);
-                assertFingerprintedAsset($listing, 'reading_margins.js');
+            // Every page in the main layout gets the ruler, except the gallery.
+            foreach (['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
+                '/messages/', '/about/', '/tools/', '/docs/', '/tools/bookmarklets'] as $rulerPath) {
+                $page = $this->render($application, $rulerPath);
+                assertStringContains('data-role="reading-margins"', $page);
+                assertFingerprintedAsset($page, 'reading_margins.js');
             }
-            $about = $this->render($application, '/about/');
-            assertStringNotContains('data-role="reading-margins"', $about);
-            assertStringNotContains('reading_margins', $about);
+            // The gallery needs image content on as well.
+            putenv('FORUM_IMAGE_CONTENT_ENABLED=true');
+            putenv('FORUM_IMAGE_GALLERY_ENABLED=true');
+            try {
+                $gallery = $this->render(new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath), '/gallery/');
+            } finally {
+                putenv('FORUM_IMAGE_CONTENT_ENABLED');
+                putenv('FORUM_IMAGE_GALLERY_ENABLED');
+            }
+            assertStringContains('<main class="main">', $gallery);
+            assertStringNotContains('data-role="reading-margins"', $gallery);
+            assertStringNotContains('reading_margins', $gallery);
 
             $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/reading-margins.css');
             assertStringContains(':root[data-reading-margins] .main', $css);

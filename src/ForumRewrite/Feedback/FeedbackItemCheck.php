@@ -113,18 +113,23 @@ final class FeedbackItemCheck
             $this->problems[] = $name . ': ' . $problem;
         }
         $sources = [];
+        $sessionSources = 0;
         foreach (explode("\n", $sections['Sources:'] ?? '') as $line) {
             if (trim($line) === '') {
                 continue;
             }
             $url = str_starts_with($line, '- ') ? substr($line, 2) : '';
+            if (preg_match('/^Session: \S/', $url) === 1) {
+                $sessionSources++;
+                continue;
+            }
             if (FeedbackItem::sourceId($url) === null) {
-                $this->problems[] = $name . ': source must be "- <site>/posts/<id>" or "/threads/<id>": ' . $line;
+                $this->problems[] = $name . ': source must be "- <site>/posts/<id>", "/threads/<id>" or "- Session: <where and when>": ' . $line;
                 continue;
             }
             $sources[] = $url;
         }
-        if (isset($sections['Sources:']) && $sources === [] && count($this->problems) === $before) {
+        if (isset($sections['Sources:']) && $sources === [] && $sessionSources === 0 && count($this->problems) === $before) {
             $this->problems[] = $name . ': Sources: lists no source';
         }
 
