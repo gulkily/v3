@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/live_feature_tour` — [host ledger](../effort_estimation_trial.md#cycle-v3live_feature_tour); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.05**
-Status: planned; next permitted action: implementation
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -52,13 +52,43 @@ Host `main` at `b3f7e3e2cefb9a78e3921976208f72a03509aeb2`; branch `feat/live_fea
 
 ## Planning commit
 
-Pending.
+`e8eafa5c` (confirmed with Git).
 
 ## Dated execution history
 
 - 2026-11-15: cycle opened; plan written before implementation. The page itself was drafted earlier in the same chat as a standalone file against production URLs (prior exposure).
+- 2026-11-15: added `public/assets/tour.html` from the draft. Changed absolute zenmemes.com URLs to same-origin paths and the address bars to `location.host`. Addition within the "don't link it" boundary: `<meta name="robots" content="noindex">` so search engines don't surface the page before it is linked.
 
 ## Study history
 
 - Intake 2026-11-15: **0.05**. Exposed: the page had already been drafted before the cycle opened. Rater Claude (claude-opus-5-5).
 - Execution entry 2026-11-15: 0.05 reaffirmed.
+- Closeout 2026-11-15: retrospective scope assessment **0.05**; delivered as planned. Maintainer fit/acceptance pending.
+
+## Outcome
+
+`/assets/tour.html` serves a grid of 16 live, scaled-down frames of the main pages, with Desktop/Phone and Look/Interact toggles. Not linked from anywhere; `noindex`.
+
+Limitation: the two thread frames and the "ZenMemes" wording are specific to zenmemes.com; on another instance or a dev database those thread frames show Not Found, and Gallery/Calendar show their off states when those flags are off.
+
+## Verification
+
+- `php -S` dev server with `public/router.php`: `/assets/tour.html` returns 200, `text/html; charset=UTF-8`.
+- Headless Chrome render against the dev server (desktop): all frames load same-origin; thread and Gallery frames show Not Found on dev data, as expected.
+- Headless Chrome render of the same file against production URLs, phone view: all frames load with real content. Production sends no `X-Frame-Options` or CSP `frame-ancestors`.
+- `grep` for `tour.html` outside `docs/plans/`: no references, so nothing links to it.
+- `./v3 test` (smoke set): 464 run, 464 passed. Full suite not run.
+- `public/**/*.html` is git-ignored (generated static pages); the file is force-added like `public/assets/1111.html`.
+- Not checked: the deployed URL itself (needs merge and deploy); Apache serving `.html` under `/assets/` is assumed from `/assets/1111.html` returning 200 in production.
+
+## Final review
+
+Diff is one new flat asset plus this record, the plans index, the ledger entry and the debug log. No duplicate components: the page is standalone like `1111.html`. No concepts touched.
+
+## Commit/merge/publication status
+
+Planning commit `e8eafa5c`; completion commit pending at writing. Not merged or deployed.
+
+## Attribution
+
+Claude (claude-opus-5-5), 2026-11-15 UTC.

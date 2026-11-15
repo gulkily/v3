@@ -2044,3 +2044,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/spearmint_bold` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.20 (intake 0.20; retrospective 0.20) | [One-shot record](./spearmint_bold/spearmint_bold_one_shot.md#study-history) | Follow-up to `v3/spearmint_theme` (PR #252, merged); acceptance pending |
 
 2026-11-15T05:15Z: standing P2 enrollment, one-shot authorized in chat ("can you turn it up to 8 please"). Intake **0.20** by the predecessor's rater (no pristine intake), execution entry reaffirmed, retrospective **0.20**. Baseline `6908aa420cf0db95ab67b1fa8de60202ac89adf0`; branch `feat/spearmint_bold`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/live_feature_tour
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/live_feature_tour` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.05 (intake 0.05; execution entry 0.05; retrospective 0.05) | [One-shot record](./live_feature_tour/live_feature_tour_one_shot.md#study-history) | None; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized in chat ("Can you put it onto Zen Memes? Don't link it from anywhere yet"). Intake **0.05**, exposed (page drafted before the cycle opened). Baseline `b3f7e3e2cefb9a78e3921976208f72a03509aeb2`; branch `feat/live_feature_tour`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
