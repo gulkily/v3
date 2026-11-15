@@ -87,7 +87,7 @@ Diff is one new flat asset plus this record, the plans index, the ledger entry a
 
 ## Commit/merge/publication status
 
-Planning commit `e8eafa5c`; completion commit pending at writing. Not merged or deployed.
+Planning commit `e8eafa5c`; completion commit `0ca0bed5` (confirmed with Git). Pushed as `feat/live_feature_tour`; PR #255 open. Not merged or deployed.
 
 ## Attribution
 
