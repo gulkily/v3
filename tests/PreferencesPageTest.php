@@ -18,7 +18,7 @@ expect(str_contains($on, '/assets/preferences.') && str_contains($on, '/assets/a
 foreach (ForumRewrite\View\ThemeRegistry::permitted(ForumRewrite\SiteProfileRegistry::active()['permittedThemes']) as $theme) {
     expect(str_contains($on, '<option value="' . $theme['name'] . '">'), 'theme option ' . $theme['name']);
 }
-foreach (['id="preference-thread-view"', 'data-preference-reset="reading-margins"', 'data-preference-reset="table-size"',
+foreach (['id="preference-thread-view"', 'data-preference-reset="reading-margins"', 'data-preference-reset="table-size"', 'data-preference-reset="gallery-size"',
     'data-preference-reset="phone-tabs"', 'data-preference-reset="page-themes"', 'data-preference-reset="welcome-note"',
     'href="/tools/usage-log/"', 'data-preference-reset="all"', 'window.forumPreferences'] as $hook) {
     expect(str_contains($on, $hook), 'missing ' . $hook);
