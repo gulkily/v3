@@ -7823,6 +7823,8 @@ vm.runInThisContext(source);
     target: secondButton,
     preventDefault() {}
   });
+  // Reactions are sent through one queue, so the first fetch starts a few ticks after the click.
+  while (!resolveFirstFetch) await new Promise((done) => setImmediate(done));
   const fetchesWhilePending = fetchCount;
   resolveFirstFetch();
   await firstClick;
