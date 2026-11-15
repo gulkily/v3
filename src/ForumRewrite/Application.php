@@ -1773,8 +1773,7 @@ final class Application
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
 
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
-            && $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+            && RouteServices::signedInApproved($viewerProfile);
     }
 
     private function renderLlmsTxt(): string

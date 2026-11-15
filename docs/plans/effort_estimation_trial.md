@@ -2162,3 +2162,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-16T02:40Z: Approved Step 1 (Option A). Step 2 handoff 0.45 → **0.50** projected total: new understanding, same scope v1 (number rules, counted/unverified/unnamed display states, the author's "not counted" reason). Same baseline, R1/P2, single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Await Approved Step 2; Step 2 uncommitted.
 
 2026-11-16T02:30Z: standing P2 enrollment for pledge campaigns, staged. Intake **0.45** after a first code read (no pristine intake) and Step 1 handoff **0.45** for Option A (lines read when shown). Extended estimates enabled (A 0.45, B 0.80, C 0.60; not summed). Baseline `9e5aa010ddff888248ca670c932e3b5f7ec69274`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Planning committed early on `plan/pledge-campaigns` at the maintainer's request for session handoff; Step 1 not yet approved.
+
+## Cycle v3/session_member_gates
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/session_member_gates` | One-shot technically complete; push, PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.15 (intake 0.15; execution entry 0.15; retrospective 0.25) | [One-shot record](./session_member_gates/session_member_gates_one_shot.md#study-history) | Security audit finding; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer in chat ("Yes, that's exactly what I want") after the audit. Intake **0.15** after the audit and call-site inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**: two pre-existing test defects were fixed on the way (parallel isolation in `WriteApiSmokeTest`; a browser test stale since the retraction simplification). Baseline `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `fix/member-gates-need-session`; planning commit `633944c`. Single exposed rater Claude (claude-fable-5-2). R1 hashes not re-verified this session. No measured effort, independent rating or accepted-count increment.

@@ -2,8 +2,8 @@ Cycle: `v3/session_member_gates`; Mode: one-shot; Record: this file; Index: [pla
 Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/session_member_gates` — [host ledger](../effort_estimation_trial.md#cycle-v3session_member_gates); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
-**Cycle estimate: 0.15**
-Status: planned; next permitted action: implement and verify locally (push, PR, merge and deploy need the maintainer)
+**Cycle estimate: 0.15 (retrospective 0.25)**
+Status: implemented and verified locally; next permitted action: push and PR on the maintainer's word (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -76,11 +76,57 @@ Host `main` at `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `fix/member-ga
 
 ## Planning commit
 
-Pending.
+`633944c` (confirmed with Git).
 
 ## Study history
 
 - Intake, 2026-11-15: **0.15**. Scope v1, reference R1, protocol P2. Rated after the audit and call-site inspection, so there is no pristine intake. Single exposed rater: Claude.
 - Execution entry, 2026-11-15: **0.15** reaffirmed against this plan.
+
+- Closeout, 2026-11-15: retrospective scope assessment **0.25**. The planned change was as sized. Two pre-existing test defects found on the way were fixed under the maintainer's standing rule, and they account for the difference. No measured effort, no independent rating; maintainer acceptance pending.
+
+## Dated execution history
+
+2026-11-15, all by Claude:
+
+- Added `RouteServices::signedInApproved`. `PostWorkflowApiController` (agent reply, expansion, analysis, and the retired score route's unreachable gate), `ThreadAndPostPageController` (analysis and agent-reply controls on thread and post pages) and `Application::viewerCanInspectLlmExchanges` now call it.
+- `RouteServices::renderPageTemplate` also sets the public resume marker when the viewer profile's `_authenticated_identity` is `false`. A profile without the mark counts as signed in, so pages that pass their own profile do not change.
+- Discovery: 41 `WriteApiSmokeTest` tests passed these gates with `identity_hint=guest` alone. That is the reported bug, exercised by the suite. They now call a `signInApprovedGuest()` helper built on `TestViewerSession`. Three tests gained hint-only assertions; with `src/` reverted, all three fail.
+- Correction, pre-existing (maintainer's standing rule on base-commit failures): with `--jobs=4`, `WriteApiSmokeTest` failed 2 to 6 tests per run on unmodified `main` (3 of 3 runs; a different set each time, one with "Timed out waiting for execution lock: /tmp/forum-rewrite.lock"). `createTempEnvironment()` put the read-model database directly in the temp folder, so every test shared the rebuild lock beside it. Each test now gets its own database directory, as `CONTRIBUTING.md` asks. After: 3 of 3 parallel runs clean.
+- Correction, pre-existing (same rule): `tests/browser/llm_exchange_privacy.mjs` failed on unmodified `main` at its first legacy-exchange assertion. It still expected the fail-closed visibility checks that the retraction simplification removed (`docs/reference/llm_exchange_privacy.md`, `docs/plans/retraction_simplification_handoff.md`). The test now runs `scripts/retraction_sweep.php run` where the cron worker would, expects exchanges to stay readable until then, and no longer expects a malformed retraction record to hide an unrelated exchange. `WriteApiSmokeTest::testRetractionMakesDirectAndContextOnlyLlmExchangeDetailsUnavailable` already describes the same behavior. No application code changed for this. The maintainer should confirm the removed malformed-evidence assertion matches his intent.
+- The same browser test's review step used the hint alone. It now asserts 403 for the hint, then signs in.
+- New `tests/browser/hint_only_resume.mjs`: a browser with a registered key and a hint, but no session, signs in on a public thread page; a signed-in page carries no resume marker. Fails with `src/` reverted.
+- Docs: `docs/reference/authentication_modes.md` and the viewer session concept entry.
+
+Enhancement requests: none.
+
+## Outcome
+
+Delivered as bounded. With only a hint cookie naming an approved member: `generate_agent_reply` and `expand_agent_reply` answer 403, `analyze_post` gives the anonymous view, LLM Exchanges answer 403, and thread and post pages show no analysis or agent-reply controls. A signed-in approved member sees and does what he did before.
+
+Limitations and next actions:
+
+- `tests/browser/scripture_trial.cjs` and `tests/browser/scripture_quality.cjs` drive paid provider trials with `identity_hint=guest` alone. They were not run and not changed. Before their next use they need a sign-in step, for example `tests/Support/test_viewer_session_cookie.php <trial directory>/app signed-in <identity>`.
+- An approved member with a hint but no session sees the member tools one page load later than before. A browser with no saved key must sign in on Account.
+- Not verified on the live site or on a phone. Production acceptance is the maintainer's.
+- Operator gates still read the hint before asking for a signature. Excluded here; harmless while every such action verifies a signature.
+
+## Verification
+
+- Passed: `./v3 test --smoke --jobs=4 WriteApiSmokeTest PrivateSiteAuthTest RetractionSweepTest RootApprovalPageTest VisitorStatisticsPageTest QuoteCardDisplayNumberTest BrowserSigningNormalizationTest DeployPageTest FastmodAuditCommandTest DedalusPostAnalyzerTest LlmExchangeRecorderTest SqliteLlmExchangeStoreTest UsagePageKindTest AuthNavigationTest`: 862 run, 862 passed.
+- Passed: `./v3 test WriteApiSmokeTest` serial, 219 of 219; `--jobs=4` three times, 219 of 219 each.
+- Passed: `./v3 agent-reply test-local`, 22 of 22.
+- Passed (Chromium): `node tests/browser/llm_exchange_privacy.mjs`, `node tests/browser/scripture_expansion.cjs`, `node tests/browser/hint_only_resume.mjs`.
+- Reproduced baseline failures, now fixed: the parallel `WriteApiSmokeTest` failures and `llm_exchange_privacy.mjs`, both on `ed22daed`.
+- Not run: the full suite (the maintainer runs it), the other browser tests that set `identity_hint`, and the paid scripture trials.
+- Inapplicable: migrations and read-model schema (none), theme checks (no markup or CSS change), deployment (not authorized).
+
+## Final review
+
+Diff checked: four source files, three test files, two documents, this record, the index and the ledger. No duplicated gate logic remains at the changed call sites. No dependency change; `node_modules/` from the local `npm install` is ignored by Git. The viewer session concept entry matches the code paths it names.
+
+## Commit, merge and publication status
+
+Planning commit `633944c`. Completion commit: pending at the time of writing. Not pushed, no PR, not merged, not deployed. Pushing publishes the bug before the fix is live; the maintainer decides when.
 
 *— Claude · 2026-11-15 UTC · Model: claude-fable-5-2*
