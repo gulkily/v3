@@ -54,6 +54,26 @@ final class FeedbackItemCheckTest
         assertContainsLine('PF-20261103-B02.txt: missing or empty section Sources:', $check->problems);
     }
 
+    public function testSessionSourceIsAcceptedWithoutASourceId(): void
+    {
+        $item = str_replace(
+            "- https://zenmemes.com/posts/reply-20261103051823-6a0ec599\n",
+            "- Session: maintainer request in a Claude session, 2026-11-11\n",
+            self::VALID
+        );
+        $onlySession = str_replace(
+            ["F01", "- https://zenmemes.com/threads/thread-20261103051750-7f138dfb\n"],
+            ["F02", ""],
+            $item
+        );
+        $empty = str_replace(["F01", "maintainer request in a Claude session, 2026-11-11"], ["F03", ""], $item);
+        $check = $this->check(['PF-20261103-F01.txt' => $item, 'PF-20261103-F02.txt' => $onlySession, 'PF-20261103-F03.txt' => $empty]);
+
+        assertSame(1, count($check->problems));
+        assertContainsLine('PF-20261103-F03.txt: source must be', $check->problems);
+        assertSame(['thread-20261103051750-7f138dfb'], $check->items[0]->sourceIds());
+    }
+
     public function testMissingDuplicateTargetFails(): void
     {
         $duplicate = str_replace('Workflow: untriaged', "Workflow: duplicate\nDuplicate-Of: PF-20261103-F09", self::VALID);

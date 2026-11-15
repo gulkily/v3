@@ -1,0 +1,18 @@
+/* /tools/preferences/: account-row lists (account.css) with a select as the value. */
+.preferences-page__select {
+  width: auto;
+  max-width: 55%;
+  min-height: 2.25rem;
+  margin: 0;
+}
+
+/* A label as the row title reads like the other rows' titles. */
+.preferences-page label.account-row__title {
+  font-weight: inherit;
+}
+
+/* Browse is a link; line it up with the select like the row's other actions. */
+.preferences-page a.account-row__action {
+  display: inline-flex;
+  align-items: center;
+}

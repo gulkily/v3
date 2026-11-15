@@ -46,15 +46,18 @@ final class ToolsPageSupport
     public static function registry(): array
     {
         return [
+            ['key' => 'preferences', 'label' => 'Preferences', 'href' => '/tools/preferences/', 'group' => 'device', 'tone' => 'preferences', 'standalone' => false],
             ['key' => 'outbox', 'label' => 'Outbox', 'href' => '/tools/outbox/', 'group' => 'device', 'tone' => 'outbox', 'standalone' => false],
             ['key' => 'offline-reading', 'label' => 'Offline Reading', 'href' => '/offline/', 'group' => 'device', 'tone' => 'offline', 'standalone' => true],
             ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],
             ['key' => 'agent-prompts', 'label' => 'Agent Prompts', 'href' => '/agent/', 'group' => 'device', 'tone' => 'agent', 'standalone' => true],
+            ['key' => 'usage-log', 'label' => 'Usage Log', 'href' => '/tools/usage-log/', 'group' => 'device', 'tone' => 'usage', 'standalone' => false],
             ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
             ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
             ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],
             ['key' => 'user-access', 'label' => 'User Access', 'href' => '/tools/user-access/', 'group' => 'community', 'tone' => 'access', 'standalone' => false],
             ['key' => 'visitor-statistics', 'label' => 'Visitor Statistics', 'href' => '/tools/visitor-statistics/', 'group' => 'community', 'tone' => 'statistics', 'standalone' => false],
+            ['key' => 'tag-unlocks', 'label' => 'Tag Unlocks', 'href' => '/tools/tag-unlocks/', 'group' => 'community', 'tone' => 'unlocks', 'standalone' => false],
             ['key' => 'feature-flags', 'label' => 'Feature Flags', 'href' => '/tools/feature-flags/', 'group' => 'operator', 'tone' => 'flags', 'standalone' => false],
             ['key' => 'codebase', 'label' => 'System status', 'href' => '/tools/codebase/', 'group' => 'operator', 'tone' => 'status', 'standalone' => false],
             ['key' => 'sqlite', 'label' => 'SQLite Viewer', 'href' => '/tools/sqlite/', 'group' => 'operator', 'tone' => 'database', 'standalone' => false],
@@ -63,6 +66,7 @@ final class ToolsPageSupport
             ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/', 'group' => 'operator', 'tone' => 'fastmod', 'standalone' => false],
             ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/', 'group' => 'operator', 'tone' => 'operations', 'standalone' => false],
             ['key' => 'deploy', 'label' => 'Deploy', 'href' => '/tools/deploy/', 'group' => 'operator', 'tone' => 'deploy', 'standalone' => false],
+            ['key' => 'usage-reports', 'label' => 'Usage Reports', 'href' => '/tools/usage-reports/', 'group' => 'operator', 'tone' => 'usage-reports', 'standalone' => false],
         ];
     }
 

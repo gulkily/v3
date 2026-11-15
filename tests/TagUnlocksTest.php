@@ -218,6 +218,33 @@ final class TagUnlocksTest
         });
     }
 
+    public function testToolsPageListsTagsetsAndMarkedPosts(): void
+    {
+        $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
+            $app = new Application(dirname(__DIR__), $root, $database, dirname($database, 2) . '/public');
+            $html = $this->render($app, '/tools/tag-unlocks/');
+            assertStringContains('<h1>Tag Unlocks</h1>', $html);
+            assertStringContains('href="/tags/meta">#meta</a>', $html);
+            foreach (['claimed', 'resolved', 'closed', 'open'] as $tag) {
+                assertStringContains('<span class="tag-unlocks-tag">' . $tag . '</span>', $html);
+            }
+            assertStringContains('On replies and the opening post.', $html);
+            assertStringContains('Nobody has claimed anything.', $html);
+            assertStringContains('href="/tools/tag-unlocks/"', $html, 'listed in the Tools bar');
+            assertStringNotContains('data-action="apply-post-tag"', $html, 'view only');
+
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'claimed', 'author_identity_id' => self::APPROVED, 'action_at' => '2026-11-14T10:00:00Z']);
+            $writer->applyPostTag(['post_id' => 'root-001', 'tag' => 'closed', 'author_identity_id' => self::APPROVED, 'action_at' => '2026-11-14T10:01:00Z']);
+            $html = $this->render($app, '/tools/tag-unlocks/');
+            assertSame(1, preg_match('/<ul class="tag-unlocks-posts" data-state="claimed">.*?href="\/threads\/root-001#post-reply-001">Reply body\..*?claimed by [^<]* · Nov 14, 2026/s', $html));
+            assertSame(1, preg_match('/<ul class="tag-unlocks-posts" data-state="closed">.*?href="\/threads\/root-001">.*?Opening post/s', $html));
+            assertStringContains('Nothing resolved yet.', $html);
+
+            $tools = $this->render($app, '/tools/');
+            assertStringContains('href="/tools/tag-unlocks/"', $tools);
+        });
+    }
+
     private function card(string $html, string $postId): string
     {
         $start = strpos($html, 'id="post-' . $postId . '"');
