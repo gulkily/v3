@@ -35,3 +35,30 @@ Branch: `feature/image-metadata`, from `origin/main` at `14beeaaa`. Planning com
 - Estimate details: original scope as Step 3; uncertainty: low; revisions: none.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Choose details at attach time and sign them
+
+**Original estimate: 0.20**
+
+**Retrospective stage work: 0.22** (one rendering fix and a secure-context test harness)
+
+- Changes:
+  - `templates/partials/image_compose_fields.php`: a `details.compose-disclosure` with `data-compose-disclosure="photo"` under the preview, hidden until a prepared photo has details. Every composer gets it through this partial.
+  - `public/assets/image_upload.js`: builds one unticked checkbox per detail, with the value in plain words and a warning on Location. Collapses again for each new photo. New `ForumImageUpload.chosenLines(form)`.
+  - `public/assets/compose_disclosure.js`: the `photo` kind summarises ticked labels, like Options.
+  - `public/assets/browser_signing.js`: `imageSignedFields(fields, image, description, photoLines)` checks each line against the five known keys and adds them after `Image-v1:`. Thread, board and reply submits pass the chosen lines.
+  - `public/assets/reply_continuation.js`: the reply item stores `photoLines` in its saved record, and every prepare, including Retry, sends them.
+  - `public/assets/compose.css`: row styles for the checklist.
+- Verification:
+  - Passed: new `node tests/browser/image_photo_details.mjs` (Chromium). It covers collapsed and unticked by default, the Location warning, the summary, chosen lines, a photo without metadata, and a reply whose first prepare fails then retries with the same lines.
+  - Passed: `node tests/browser/image_compose_transport.cjs`, extended. Nothing ticked still gives today's body; two ticked lines follow `Image-v1:`; an injected newline or unknown key is refused.
+  - Passed: `node tests/browser/compose_disclosure.mjs` and `node tests/browser/image_prepare.mjs`.
+  - Passed: `./v3 test` smoke set, 464/464.
+  - Checked by screenshot: Gloss, Light, Dark and Word97 at 390 and 1280 pixels, collapsed and open. Values first rendered bold through theme label styles; fixed in `compose.css`.
+  - Not run: WebKit and a live server upload; Stage 4 covers the iPhone replay.
+- Notes:
+  - Deviation from the Step 3 wording: the reply item stores the final lines, not the detail keys. The stored attachment is the prepared file, which has no metadata, so keys could not be resolved again on retry. The lines are already validated text.
+  - Reuse: the existing compose disclosure, its summary hook and the image partial. No new composer or disclosure style.
+- Estimate details: original scope as Step 3; uncertainty was the reply retry path, now covered by a test; revisions: none.
+
+*— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
