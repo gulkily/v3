@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); log: [deploy_celebra
 Effort study: `railspike-effort` / `v3/deploy_celebration` — [host ledger](../effort_estimation_trial.md#cycle-v3deploy_celebration); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.10**
-Status: planned; next permitted action: implement on `feat/deploy_celebration`
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -50,14 +50,42 @@ None.
 Smoke set plus `DeployPageTest` and the layout/asset tests. Browser check with Playwright on the layout fixture: banner and confetti appear when the session key is set, not otherwise, and not twice; reduced motion skips confetti; phone and desktop widths in a couple of themes. `tests/browser/deploy_prompt.mjs` re-run if Chromium is available. Full suite not run, per `AGENTS.md`. The live deploy cannot be exercised here.
 
 Starting revisions and branch: `feat/deploy_celebration` from `bd2b0fad`.
-Planning commit: pending
+Planning commit: `6dc658c2` (plan and index only, before implementation)
 
 ## Study history
 
 - 2026-11-15T02:13Z intake: whole-cycle projection **0.10**, scope v1 as above, R1, P2, single exposed rater Claude (claude-opus-5-5). Exposure: rated after reading `deploy_prompt.js` and `deploy_control.js`; no pristine intake.
+- Execution entry: 0.10 reaffirmed.
+
+## Study closeout
+
+Retrospective **0.10**: one new script, a line in each deploy script, one CSS block, two loading points, one browser test. No scope revision, corrections or splits. No measured effort, independent rating or accepted-count increment; maintainer acceptance pending.
 
 ## Dated execution history
 
 - 2026-11-14: no existing feedback item for deploy celebration; created PF-20261114-F03. No open branch for it on origin.
+- 2026-11-14: reading of the request: the root post has no body, so "more celebration" was read as a visible celebration when a deploy lands. Chose confetti plus a banner on the page after the reload; kept it to deploys that changed the code so "Already up to date" stays quiet. No requester questions needed (the paste said to go ahead).
+- 2026-11-14: implemented as planned. The Deploy page's queued-deploy path takes the message from the latest attempt's `Message` field, which the status reply already carries.
+- 2026-11-14: browser test fixture inlines `site.css`, so the "flag off" check matches script tags only.
+
+## Outcome
+
+Delivered: after a deploy started in this browser changes the code (header Deploy now, Tools → Deploy now or Queue while the page watches), the next page shows about three seconds of confetti and a "Deployed! Updated to <commit>." banner that leaves after five seconds or on a tap. Once per deploy; up to date, refusals and failures show nothing; reduced motion shows the banner only. No known limitations beyond the live check below.
+
+## Verification
+
+- `./v3 test --smoke DeployPageTest AssetFingerprintTest`: 471/472; the one failure, `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, also fails on `main` (recorded in the gallery_zoom cycle) and is unrelated.
+- `tests/browser/deploy_celebrate.mjs` (new): ok. Clicks the header Deploy now with a mocked `deployed` reply and checks the reloaded page in the default theme at 390px and 1200px, Word97 at 390px and Midnight at 1200px: banner text, confetti, banner within the screen, no page errors, nothing on a further reload; up to date shows nothing; reduced motion shows banner without confetti and a tap dismisses it; both leave on their own. Screenshots inspected for the default theme on phone and Midnight on desktop.
+- `tests/browser/deploy_prompt.mjs`: ok (header prompt unchanged).
+- `./v3 feedback check`: 0 problems.
+- Not verified: the Tools → Deploy page path in a browser (covered by the same `ForumDeployCelebrate.remember` call and the server-side script assertion only); a real deploy on the live server; Gloss, Bubblegum and Engagify themes; full suite not run, per `AGENTS.md`.
+
+## Final review
+
+Diff checked for scope: one new script, two one-line hooks, layout and controller loading, one CSS block, one test assertion, one browser test, this record, the index, the ledger, the debug log and the feedback item. No dependency added (`playwright-core` was already the project's dev dependency, installed locally without saving). No duplicated components: no toast/banner existed to reuse.
+
+Commit/merge/publication status: completion commit pending at time of writing; PR to be opened; not merged or deployed.
+
+Attribution: Claude (claude-opus-5-5), 2026-11-15 UTC.
 
 *Claude (claude-opus-5-5), 2026-11-15 UTC*
