@@ -13,14 +13,16 @@
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink);
          font:15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-  header { max-width:1400px; margin:0 auto; padding:40px 24px 16px; }
+  header { max-width:1400px; margin:0 auto; padding:40px 24px 0; }
   h1 { font-size:30px; margin:0 0 6px; letter-spacing:-.01em; }
-  .controls { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; align-items:center; }
+  .controls { position:sticky; top:0; z-index:10; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+              max-width:1400px; margin:0 auto; padding:12px 24px; padding-top:max(12px, env(safe-area-inset-top));
+              background:color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
   .seg { display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:var(--card); }
   .seg button { border:0; background:none; color:var(--ink); padding:7px 14px; font:inherit; cursor:pointer; }
   .seg button[aria-pressed="true"] { background:var(--ink); color:var(--bg); }
 
-  main { max-width:1400px; margin:0 auto; padding:8px 24px 64px;
+  main { max-width:1400px; margin:0 auto; padding:12px 24px 64px;
          display:grid; gap:28px; grid-template-columns:repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
   body.phone main { grid-template-columns:repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 
@@ -50,17 +52,18 @@
 <body>
 <header>
   <h1>ZenMemes</h1>
-  <div class="controls">
-    <div class="seg" role="group" aria-label="Viewport">
-      <button data-view="desktop" aria-pressed="true">Desktop</button>
-      <button data-view="phone" aria-pressed="false">Phone</button>
-    </div>
-    <div class="seg" role="group" aria-label="Mode">
-      <button data-mode="look" aria-pressed="true">Look</button>
-      <button data-mode="interactive" aria-pressed="false">Interact</button>
-    </div>
-  </div>
 </header>
+<div class="controls">
+  <div class="seg" role="group" aria-label="Viewport">
+    <button data-view="desktop" aria-pressed="true">Desktop</button>
+    <button data-view="phone" aria-pressed="false">Phone</button>
+  </div>
+  <div class="seg" role="group" aria-label="Mode">
+    <button data-mode="look" aria-pressed="true">Look</button>
+    <button data-mode="interactive" aria-pressed="false">Interact</button>
+  </div>
+</div>
+
 
 <main id="grid"></main>
 

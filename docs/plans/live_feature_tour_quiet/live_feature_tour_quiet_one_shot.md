@@ -55,17 +55,18 @@ Host `main` at `e9720e4fad2dafccdb85e8c56deda20e880b5683`; branch `feat/live_fea
 - 2026-11-15, scope addition (maintainer, same session, while implementing): "scrolling this page on the phone should be smooth… anytime I put my finger on a screenshot, it scrolls the screenshot instead of the page." Added a transparent cover (`.shield`) over each frame in Look mode; touches land on the page, not the frame. Interact mode removes the cover.
 - 2026-11-15, scope addition: "the screenshots are lazy loaded and they should already be loaded in place by the time I scroll to them." Replaced `loading="lazy"` with loading every frame on page load in page order, three at a time (next starts on load or after 8 s); removed the footer note about lazy loading.
 - 2026-11-15, scope addition: "They should be in a form factor that most pages fit within a screenshot, at least the parts that we want to show off." Desktop frames changed from 1024×700 to 820×1100 portrait (the site's content column is narrow, so the wide frame was mostly margins); phone frames from 390×760 to 390×844; grid columns from min 420px to 340px.
+- 2026-11-15, scope addition: "that mode should be switchable throughout my scrolling page on my phone, and also the look mode does not seem to work right now. The tabs are still scrollable in look mode." The report is against merged #255, where Look mode relied on `pointer-events:none`, which iOS does not honour for iframe scrolling; the cover above addresses it. Moved the Desktop/Phone and Look/Interact toggles out of the header into a sticky bar (blurred background, safe-area top padding) so they stay reachable while scrolling.
 
 ## Study history
 
 - Intake 2026-11-15: **0.03**. Exposed (same rater built the predecessor). Rater Claude (claude-opus-5-5).
 - Execution entry 2026-11-15: 0.03 reaffirmed.
-- Revision 2026-11-15: **0.06** after three in-session additions (touch cover, preloading, frame shape).
+- Revision 2026-11-15: **0.06** after three in-session additions (touch cover, preloading, frame shape); sticky toggles absorbed without changing the total.
 - Closeout 2026-11-15: retrospective scope assessment **0.06**. Maintainer fit/acceptance pending.
 
 ## Outcome
 
-Delivered all four requests. Limitation: loading all 16 frames up front is heavier on first visit than lazy loading, by request.
+Delivered all five requests. Limitation: loading all 16 frames up front is heavier on first visit than lazy loading, by request.
 
 ## Verification
 
@@ -73,6 +74,7 @@ Delivered all four requests. Limitation: loading all 16 frames up front is heavi
 - Headless Chrome probe at 390×844 on the dev server: `elementFromPoint` over a frame returns the cover in Look mode and the iframe in Interact mode.
 - Headless Chrome dump after load without scrolling: all 16 frames have `src` set.
 - Renders against production at desktop and phone frame shapes: board, threads, agent, recent, gallery, calendar, tags, users, compose and key pages show their main content within the frame.
+- Headless probe at 390×844 scrolled to 3000px: toggle bar top stays at 0.
 - Not checked on a real iPhone; the touch fix is verified by hit-testing, not a touch scroll.
 - `./v3 test` (smoke set): 464 passed. Full suite not run.
 
@@ -82,7 +84,7 @@ Diff is `public/assets/tour.html`, this record, the plans index, ledger entry an
 
 ## Commit/merge/publication status
 
-Planning commit `3f329a1e`; completion commit `952f5fdb` (confirmed with Git). Pushed as `feat/live_feature_tour_quiet`; PR pending at writing. Not merged or deployed.
+Planning commit `3f329a1e`; completion commit `952f5fdb` (confirmed with Git). Pushed as `feat/live_feature_tour_quiet`; follow-up commit for the sticky toggles follows; PR opened after. Not merged or deployed.
 
 ## Attribution
 
