@@ -114,6 +114,10 @@ The operator-only on-site workflow that queued a Codex Step 1 assessment from a 
 
 Standing enrollment under [protocol P2](../plans/effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2) supersedes the individual-selection-only wording above for future cycles. All future Railspike cycles join the same `railspike-effort` study; R1 and historical records are preserved. The installed experiment contract now recognizes standing enrollment and worktree deduplication. This remains a local patch pending the next minor upstream beta; upstream Ref/Commit metadata has not changed. There was no subtree sync, upload or application change.
 
+## Per-cycle ledger files — 2026-11-15
+
+Ledger entries now go in one file per cycle under [`docs/plans/effort_ledger/`](../plans/effort_ledger/README.md), so open PRs no longer conflict on the shared ledger. `effort_estimation_trial.md` keeps its protocol and history and is frozen for appends; `.gitattributes` marks it `merge=union` for local merges of PRs opened before the change. Vendored Railspike still describes a single host ledger; this host splits it by cycle ID.
+
 ## Upgrade — 2026-10-21
 
 Upgraded to `v0.2.1-beta.1` (`b6c399424f75dc2e94af496411467480487cc319`) through a squash subtree merge. The release incorporates the installed effort-estimation contract and all eight checkpoint instruction files unchanged, so no local experiment patch remains. The historical patch notes above describe the pre-upgrade installation. Resolved the two README conflicts to the reviewed release versions; the product tree matches upstream except for the host installation record. Updated the CLI default pin and source record, and migrated the legacy `railspike` remote to `https://github.com/rlspk/railspike.git`.

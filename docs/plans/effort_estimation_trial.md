@@ -1,5 +1,7 @@
 # Effort estimation trial ledger
 
+> **2026-11-15: new entries go in [`effort_ledger/`](effort_ledger/README.md), one file per cycle.** This file is frozen for appends: its protocol text and every entry below stay as they are. A cycle with a section here continues in its own file, which links back. Reason: every open PR appended here, so any two conflicted.
+
 ## Cycle v3/merge_217_fix
 
 2026-11-14T20:30:00Z — v3/merge_217_fix one-shot (standing P2 enrollment, no parent): [record](./merge_217_fix/merge_217_fix_one_shot.md). Fix PHP parse error from the #217 merge; cycle estimate **0.03**, retrospective 0.03; maintainer fit judgment pending. PR #242.
@@ -619,6 +621,8 @@ Maintainer request: “I want every future railspike to be part of the same data
 - Keep projections, retrospective scope assessment, verification and maintainer comfortable-fit/acceptance separate. Record stage counts, corrections versus new requests, omissions, revisions/diffs and splits. Unknown active work and absent independent ratings remain unknown. Technical completion does not increment accepted outcomes.
 - Six accepted outcomes now trigger a review checkpoint, not the end of collection or a size quota. Freeze R1 until an explicit reference revision; protocol P2 changes enrollment only. Retain every scope/version and related child cycle; no extra independent outcomes from cloned files or split children.
 - This checkout's ledger and artifacts are local copies of one dataset. Integrate updates through normal Git review; merge by stable cycle ID/checkpoint and retain conflicting snapshots, rather than overwriting or summing checkouts. Collection is local; no automatic upload is authorized. Repair source paths by recorded content hash/Git revision, never by silently changing references.
+
+2026-11-15 amendment: the ledger index row and dated lines described above now go in the cycle's own file under [`effort_ledger/`](effort_ledger/README.md), not in this file. Everything else in P2 is unchanged.
 
 ### Enrollment index after P2
 
