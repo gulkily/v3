@@ -313,7 +313,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::AGENT_PROMPT_ENABLED,
                 'Agent prompt',
-                'Offer /agent/, a page of prompts visitors paste into their own agent: to be introduced to the site, to post as an agent, or to run their own copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
+                'Offer /agent/ (Prompts in the main nav): the library of prompts members share as #prompt threads, with copy, search and categories, plus the site\'s own prompts for being introduced, posting as an agent, or running a copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
                 true,
                 self::AGENT_PROMPT_ENABLED,
                 siteMutable: true,

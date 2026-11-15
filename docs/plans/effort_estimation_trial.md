@@ -1968,6 +1968,13 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.15** recorded before implementation (not pristine: rated after reading the affected scripts), execution entry reaffirmed, retrospective **0.15**. Baseline `a4fe61e`; branch `feat/preferences_page`; planning commit `d43d51d`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
+## Cycle v3/prompt_library
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/prompt_library` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.25 (intake 0.25; retrospective 0.25) | [One-shot record](./prompt_library/prompt_library_one_shot.md#study-history) | In-session request; acceptance pending |
+
+2026-11-14T22:10Z: standing P2 enrollment, one-shot on the maintainer's in-session request. Intake **0.25** after source inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**. Baseline `26dd2fbff07b1e99b30d2429cd9d322a02318683`; branch `feat/prompt_library`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 ## Cycle v3/gallery_zoom
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
@@ -1983,3 +1990,10 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/thread_activity_drawer` | Step 4 complete; production check and acceptance pending | v1 / R1 / P2 | 0.55 (intake and Step 1 0.55; Step 2 0.55; Step 3 0.55; Step 4 entry 0.55); retrospective 0.50 | [Step 1](./thread_activity_drawer/thread_activity_drawer_step1_solution_assessment.md#study-checkpoint), [Step 2](./thread_activity_drawer/thread_activity_drawer_step2_feature_description.md#study-checkpoint), [Step 3](./thread_activity_drawer/thread_activity_drawer_step3_development_plan.md#study-checkpoint), [Step 4 entry](./thread_activity_drawer/thread_activity_drawer_step4_implementation_summary.md#step-4-entry), [closeout](./thread_activity_drawer/thread_activity_drawer_step4_implementation_summary.md#study-closeout) | Maintainer request in session; follows on from `v3/post_records`; maintainer judgment pending |
 
 2026-11-14: standing P2 enrollment, staged cycle with extended estimates. Intake and Step 1 **0.55** for Option A after inspecting Pollyanna's `#notext`, the thread template, the reaction tables and hashtag label writes (no pristine intake); option estimates A 0.55, B 0.25, C 0.70, not summed. Step 1 approved (Option A). Step 2 **0.55 reaffirmed**, scope v1; approved after a mockup review. Step 3 **0.55 reaffirmed** in a new conversation from `0f456b8`; stage estimates 0.10, 0.15, 0.20, 0.06, not summed. Step 3 approved; Step 4 entry 0.55 reaffirmed. Four stages delivered as planned (stage retrospectives 0.08, 0.12, 0.18, 0.05); cycle retrospective **0.50**, not a measured actual. Production check, full suite and maintainer judgment pending; no accepted-count increment. Baseline `68724f9b7aa51f195754dc2a23209a0aab71993f` for Step 1, `047d00c` for Step 2; planning branch `feat/thread-activity-drawer`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+## Cycle v3/deploy_celebration
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/deploy_celebration` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (intake 0.10; execution entry 0.10; retrospective 0.10) | [record](./deploy_celebration/deploy_celebration_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.10** recorded before implementation (not pristine: rated after reading the two deploy scripts), execution entry reaffirmed, retrospective **0.10**. Baseline `bd2b0fad`; branch `feat/deploy_celebration`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
