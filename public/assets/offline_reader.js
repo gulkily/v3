@@ -151,8 +151,9 @@
     },
     boardRows: function (database) {
       var result = database.exec(
-        "SELECT root_post_id, subject, body_preview, reply_count, last_activity_at, author_label, "
-        + "root_post_created_at, thread_labels_json, board_tags_json, score_total FROM threads"
+        "SELECT t.root_post_id, t.subject, t.body_preview, t.reply_count, t.last_activity_at, t.author_label, "
+        + "t.root_post_created_at, t.thread_labels_json, t.board_tags_json, t.score_total, p.body "
+        + "FROM threads t LEFT JOIN posts p ON p.post_id = t.root_post_id"
       )[0];
       return (result && result.values ? result.values : []).map(function (row) {
         return {
@@ -165,9 +166,21 @@
           createdAt: String(row[6] || ""),
           labels: snapshotPresentation.threadLabels(row[7]),
           boardTags: snapshotPresentation.tagsFromJson(row[8]),
-          score: Number(row[9] || 0)
+          score: Number(row[9] || 0),
+          nextLine: row[2] ? snapshotPresentation.nextBodyLine(row[10]) : ""
         };
       });
+    },
+    // The body line after the one the read model keeps as body_preview (its first non-empty line).
+    // Image references are data, not text, and are skipped as the online thread row does.
+    nextBodyLine: function (body) {
+      var lines = String(body || "").split(/\r\n|\r|\n/).filter(function (line) {
+        return line.trim() !== "";
+      });
+      for (var index = 1; index < lines.length; index += 1) {
+        if (!/^Image-v1: /.test(lines[index])) return lines[index].trim();
+      }
+      return "";
     },
     threadLabels: function (value) {
       return snapshotPresentation.tagsFromJson(value);
@@ -448,10 +461,17 @@
         meta.className = "meta";
         meta.textContent = "by " + thread.author + (thread.createdAt ? " on " + thread.createdAt : "");
         card.appendChild(meta);
-        if (thread.preview.trim() !== snapshotPresentation.threadTitle(thread.subject, thread.preview).trim()) {
+        // Offline cards show one more body line than the first (the online list stays one line).
+        var previewLines = [];
+        if (thread.preview.trim() !== snapshotPresentation.threadTitle(thread.subject, thread.preview).trim()) previewLines.push(thread.preview);
+        if (thread.nextLine) previewLines.push(thread.nextLine);
+        if (previewLines.length) {
           var preview = document.createElement("p");
           preview.className = "thread-card__preview";
-          preview.textContent = thread.preview;
+          previewLines.forEach(function (line, index) {
+            if (index) preview.appendChild(document.createElement("br"));
+            preview.appendChild(document.createTextNode(line));
+          });
           card.appendChild(preview);
         }
         if (thread.replyCount > 0) {
