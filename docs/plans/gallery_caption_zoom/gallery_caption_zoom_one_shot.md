@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); log: [gallery_captio
 Effort study: `railspike-effort` / `v3/gallery_caption_zoom` — [host ledger](../effort_estimation_trial.md#cycle-v3gallery_caption_zoom); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.05**
-Status: planned; next permitted action: implement
+Status: implemented and verified locally; next permitted action: push and PR (merge and deploy need the maintainer)
 
 ## Original request
 
@@ -46,7 +46,7 @@ Host `main` at `0443804`; branch `feat/gallery_caption_zoom`.
 
 ## Planning commit
 
-Pending.
+`fd909f9` (plan only; see chronology note below).
 
 ## Study history
 
@@ -56,5 +56,24 @@ Pending.
 ## Dated execution history
 
 - 2026-11-14: chronology disclosure: the CSS edits were first written before this plan was committed; they were stashed, this plan committed, then restored. No implementation was committed before the plan.
+
+- 2026-11-14: implemented as planned in `site.css`, `theme-word97.css`, `theme-midnight.css`.
+
+## Verification
+
+- `./v3 test --smoke GalleryPageTest`: 467/467 pass. Full suite not run.
+- Browser (Chrome, static harness with the real CSS, head restore and `gallery_zoom.js`), title font size at zoom 0.8 / 1 / 1.25 / 2: Gloss Dark 390px 10.2 / 12.8 / 16 / 16px; 1200px 12.8 / 16 / 20 / 20px; Word97 and Midnight 11 / 13.8 / 17.2 / 17.2px at both widths. No page errors. Not checked on a real iPhone.
+
+## Final review
+
+Diff limited to the three CSS files, this record, the plans index, PF-20261114-F02 and the ledger. No new components.
+
+## Study closeout
+
+Intake 0.05; execution entry reaffirmed; **retrospective 0.05**. Single exposed rater Claude (claude-opus-5-5), R1/P2. Maintainer acceptance pending.
+
+## Outcome
+
+Caption text follows the gallery zoom; awaiting review, merge and deployment.
 
 _Claude (claude-opus-5-5), 2026-11-15_

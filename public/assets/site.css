@@ -1443,6 +1443,8 @@ pre {
 
 .gallery-grid {
   --gallery-row: calc(12rem * var(--gallery-zoom, 1));
+  /* Caption text follows the zoom too, within readable bounds (themes use it). */
+  --gallery-text-scale: clamp(0.75, var(--gallery-zoom, 1), 1.25);
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -1485,7 +1487,8 @@ pre {
 .gallery-tile__caption {
   display: flex;
   flex-direction: column;
-  padding: 0.3rem 0.5rem 0.4rem;
+  padding: 0.3em 0.5em 0.4em;
+  font-size: calc(var(--gallery-caption-size, 1rem) * var(--gallery-text-scale, 1));
   line-height: 1.3;
 }
 
@@ -1504,6 +1507,7 @@ pre {
 @media (max-width: 40rem) {
   .gallery-grid {
     --gallery-row: calc(7rem * var(--gallery-zoom, 1));
+    --gallery-caption-size: 0.8rem;
     /* Two fingers on the grid resize the tiles instead of zooming the page. */
     touch-action: pan-x pan-y;
     gap: 0.35rem;
