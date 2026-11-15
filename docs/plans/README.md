@@ -490,5 +490,6 @@ and repair its navigation and affected references. See the
 
 - [Gallery zoom](gallery_zoom/gallery_zoom_one_shot.md) — one-shot: Smaller / Larger buttons and phone pinch resize Gallery tiles, remembered per browser and resettable on Preferences.
 - [Gallery compact captions](gallery_compact_captions/gallery_compact_captions_one_shot.md) — one-shot: Gallery tile captions hide when zoomed far out.
+- [Gallery zoom buttons in view](gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md) — one-shot: Smaller / Larger keep the buttons on screen.
 
 - [Deploy celebration](deploy_celebration/deploy_celebration_one_shot.md) — one-shot: confetti and a Deployed banner on the page that loads after a deploy that changed the code.
