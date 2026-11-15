@@ -12,6 +12,8 @@
   // A deploy from this page turns on the header prompt in this browser (deploy_prompt.js).
   let startedHere = false;
   const remember = () => { try { window.localStorage.setItem('forum_deploy_prompt', '1'); } catch { /* storage unavailable */ } };
+  // deploy_celebrate.js plays on the page that loads after a deploy that changed the code.
+  const celebrate = (message) => { if (window.ForumDeployCelebrate) window.ForumDeployCelebrate.remember(message); };
   const post = async (action) => {
     const response = await fetch('/tools/deploy/', {
       method: 'POST',
@@ -54,7 +56,10 @@
       const deploying = task === 'queued' || task === 'running' || data.state.busy;
       const rebuilding = rebuild === 'queued' || rebuild === 'running';
       if (!deploying && !rebuilding) {
-        if (startedHere && data.state.latest && data.state.latest.Outcome === 'deployed') remember();
+        if (startedHere && data.state.latest && data.state.latest.Outcome === 'deployed') {
+          remember();
+          celebrate(data.state.latest.Message || '');
+        }
         window.location.reload();
         return;
       }
@@ -95,6 +100,7 @@
     }
     if (result.outcome === 'refused' || result.outcome === 'failed') { say(result.message); return; }
     if (result.outcome === 'deployed' || result.outcome === 'up_to_date') remember();
+    if (result.outcome === 'deployed') celebrate(result.message);
     if (data.state && (data.state.rebuild_status === 'queued' || data.state.rebuild_status === 'running')) {
       say(result.message);
       poll();

@@ -295,7 +295,30 @@ final class BoardListTest
             'root_post_created_at' => '2025-10-06T12:37:00Z',
         ], 'root_post_created_at', $escape);
 
-        assertSame('<a href="/profiles/mouse">mouse</a> · <time datetime="2025-10-06T12:37:00Z" title="Oct 6, 2025 at 12:37 UTC">Oct 6, 2025</time> <span class="chip chip--pending">Pending</span>', $meta);
+        assertSame('<a href="/profiles/mouse">mouse</a> · <time datetime="2025-10-06T12:37:00Z" title="Oct 6, 2025 at 12:37 UTC">Oct 6, 2025</time> <a class="pending-chip" href="/profiles/mouse" data-pending-profile="mouse" data-pending-username="mouse"><span class="chip chip--pending">Pending</span></a>', $meta);
+    }
+
+    public function testPendingChipIsAPlainLabelWhenItsFlagIsOff(): void
+    {
+        $flag = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
+        $old = getenv($flag);
+        putenv($flag . '=0');
+        try {
+            $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
+            $method = new ReflectionMethod($renderer, 'renderRowMeta');
+            $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES);
+            $meta = $method->invoke($renderer, [
+                'author_label' => 'mouse',
+                'author_profile_slug' => 'mouse',
+                'author_is_approved' => 0,
+                'root_post_created_at' => '2025-10-06T12:37:00Z',
+            ], 'root_post_created_at', $escape);
+
+            assertStringContains('</time> <span class="chip chip--pending">Pending</span>', $meta);
+            assertStringNotContains('data-pending-profile', $meta);
+        } finally {
+            putenv($old === false ? $flag : $flag . '=' . $old);
+        }
     }
 
     /** Text of the rows container with the given class. */

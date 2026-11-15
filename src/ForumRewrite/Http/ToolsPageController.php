@@ -130,6 +130,28 @@ final class ToolsPageController
         );
     }
 
+    /**
+     * /tools/preferences/: the settings this browser keeps, in one place. The
+     * page is the same for everyone; preferences.php reads storage before
+     * paint and preferences.js saves changes.
+     */
+    public function preferences(): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'preferences.php',
+            [
+                'preferenceThemes' => \ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::active()['permittedThemes']),
+                'threadDensityEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED),
+                'readingMarginsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED),
+                'usageLogEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
+                'toolNavOptions' => ToolsPageSupport::navOptions('preferences'),
+            ],
+            'Preferences',
+            'tools',
+            ['/assets/preferences.js'],
+        );
+    }
+
     public function bookmarklets(): string
     {
         return $this->routeServices->renderPageTemplate(

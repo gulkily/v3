@@ -66,6 +66,10 @@
     }
   }
 
+  // Preferences (preferences.js) returns to the normal column through here, so
+  // this script's own state stays in step.
+  window.forumResetReadingMargins = function () { apply(null); };
+
   // Radios check themselves before "click" fires; apply() then sets every
   // radio and the outline from the state here.
   ruler.addEventListener("click", function (event) {
