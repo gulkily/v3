@@ -38,6 +38,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Fix the #217 merge parse error one-shot](merge_217_fix/merge_217_fix_one_shot.md) — `main` parses again: one EXPERIENCE flag list with both new flags.
 
+[Spearmint theme one-shot](spearmint_theme/spearmint_theme_one_shot.md) — a light mint sibling of Bubblegum with its own shapes: rounded soft-shadow cards, a wavy header line, lifting buttons and coral accents.
+
 [Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
 
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.

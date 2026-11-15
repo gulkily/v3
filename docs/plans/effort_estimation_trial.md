@@ -2006,3 +2006,10 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/gallery_zoom_buttons_in_view` | One-shot technically complete; PR and maintainer acceptance pending | v1 / R1 / P2 | 0.04 (intake 0.04; execution entry 0.04; retrospective 0.04) | [record](./gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md#study-history) | Follow-up to `v3/gallery_zoom`; maintainer request in chat; acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot. Intake **0.04** (not pristine), execution entry reaffirmed, retrospective **0.04**. Baseline `0443804`; branch `fix/gallery_zoom_buttons_in_view`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+## Cycle v3/spearmint_theme
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/spearmint_theme` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.30 (intake 0.30; retrospective 0.30) | [One-shot record](./spearmint_theme/spearmint_theme_one_shot.md#study-history) | Chat request; acceptance pending |
+
+2026-11-15T04:40Z: standing P2 enrollment, one-shot authorized in chat ("Just make spearmint. For now, please."). Intake **0.30** quoted in chat from Bubblegum's CSS before repository inspection (no pristine intake), execution entry reaffirmed, retrospective **0.30**. Baseline `0443804d0c01b3b82a873551131282d16756351b`; branch `feat/spearmint_theme`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
