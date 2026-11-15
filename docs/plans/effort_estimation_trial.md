@@ -2029,3 +2029,10 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/spearmint_icons` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.12 (intake 0.12; retrospective 0.12) | [One-shot record](./spearmint_icons/spearmint_icons_one_shot.md#study-history) | Related to `v3/spearmint_theme` and `v3/spearmint_bold`; acceptance pending |
 
 2026-11-15T05:15Z: standing P2 enrollment, one-shot authorized in chat ("can you please add icons"). Intake **0.12** by the related cycles' rater (no pristine intake), execution entry reaffirmed, retrospective **0.12**. Baseline `6908aa420cf0db95ab67b1fa8de60202ac89adf0`; branch `feat/spearmint_icons`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+## Cycle v3/spearmint_bold
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/spearmint_bold` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.20 (intake 0.20; retrospective 0.20) | [One-shot record](./spearmint_bold/spearmint_bold_one_shot.md#study-history) | Follow-up to `v3/spearmint_theme` (PR #252, merged); acceptance pending |
+
+2026-11-15T05:15Z: standing P2 enrollment, one-shot authorized in chat ("can you turn it up to 8 please"). Intake **0.20** by the predecessor's rater (no pristine intake), execution entry reaffirmed, retrospective **0.20**. Baseline `6908aa420cf0db95ab67b1fa8de60202ac89adf0`; branch `feat/spearmint_bold`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

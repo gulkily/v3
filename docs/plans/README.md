@@ -41,6 +41,7 @@ checklists, and proposals remain at the top level or in the collections below.
 [Spearmint theme one-shot](spearmint_theme/spearmint_theme_one_shot.md) — a light mint sibling of Bubblegum with its own shapes: rounded soft-shadow cards, a wavy header line, lifting buttons and coral accents.
 
 [Spearmint icons one-shot](spearmint_icons/spearmint_icons_one_shot.md) — Spearmint joins the smooth-line icon set, turned teal.
+[Bolder Spearmint one-shot](spearmint_bold/spearmint_bold_one_shot.md) — Spearmint turned up: deeper mint, gum-wrapper stripes on cards, a teal-and-coral double wave, coral Post buttons and bouncier controls.
 
 [Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
 
