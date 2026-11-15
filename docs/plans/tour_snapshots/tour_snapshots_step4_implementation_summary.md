@@ -63,3 +63,7 @@ Deploy, then open `/assets/tour/` on the phone after a minute (or press Tools â†
 Step 3 projected 0.6; retrospective scope assessment 0.75: the production serving path, extra triggers and the scope fix were not in the plan. Not measured effort.
 
 Debug log: [tour_snapshots_debug_log.md](./tour_snapshots_debug_log.md)
+
+## Publication
+
+Branch `feat/tour_snapshots` pushed; PR #264 open. Not merged or deployed.
