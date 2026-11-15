@@ -28,6 +28,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Photo details](image_metadata/image_metadata_step3_development_plan.md) — when attaching a photo, a collapsed Photo details row lets the poster attach camera, exposure, time taken and (opt-in) location as signed text shown under the image.
 
+[Photo details collapsed one-shot](photo_details_collapsed/photo_details_collapsed_one_shot.md) — photo details under a post image start collapsed behind a "Photo details" row.
+
 [frm.py image attachments one-shot](frm_image/frm_image_one_shot.md) — `thread` and `reply` take `--image` and `--image-description` to publish one screenshot with a post.
 
 [Agent intro prompt one-shot](agent_intro_prompt/agent_intro_prompt_one_shot.md) — `/agent/` offers copyable prompts for a visitor's agent: get introduced, post as an agent, run your own site; About, the first-visit intro and Tools link to it.

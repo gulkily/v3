@@ -31,18 +31,27 @@
   }
 
   function nl2br(value) {
-    // Mirrors MediaEmbedRenderer: photo details directly after the image line read as "Label: value".
+    // Mirrors MediaEmbedRenderer: photo details directly after the image line read as "Label: value";
+    // two or more fold behind a closed "Photo details" row, inserted after escaping through a marker.
+    const folded = [];
     const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: (\S+))?((?:\nPhoto-(?:Camera|Lens|Exposure|Taken|Location): [^\x00-\x1f\x7f]{1,120}(?=\n|$))*)$/gm, function (line, description, photo) {
-      const details = (photo || "").split("\n").filter(Boolean).map(function (detail) {
+      const lines = (photo || "").split("\n").filter(Boolean).map(function (detail) {
         const at = detail.indexOf(": ");
         return detail.slice(6, at) + ": " + photoDisplay(detail.slice(6, at), detail.slice(at + 2));
-      }).map(function (detail) { return "\n" + detail; }).join("");
+      });
+      let details = lines.map(function (detail) { return "\n" + detail; }).join("");
+      if (lines.length > 1) { folded.push(lines); details = "\u0000" + (folded.length - 1) + "\u0000"; }
       try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : "") + details; }
       catch (error) { return "Image unavailable offline (reference preserved in the snapshot)." + details; }
     });
     var reader = document.querySelector && document.querySelector("[data-offline-reader]");
     var tagLinks = !reader || reader.getAttribute("data-tag-links") !== "0";
-    return (tagLinks ? linkEscapedHashtags(escapeHtml(text)) : escapeHtml(text)).replace(/(\r\n|\r|\n)/g, "<br>$1");
+    return (tagLinks ? linkEscapedHashtags(escapeHtml(text)) : escapeHtml(text)).replace(/(\r\n|\r|\n)/g, "<br>$1")
+      .replace(/\u0000(\d+)\u0000/g, function (marker, index) {
+        if (!folded[Number(index)]) return "";
+        return '<details class="post-photo-details-disclosure"><summary class="meta">Photo details</summary>'
+          + folded[Number(index)].map(function (detail) { return escapeHtml(detail); }).join("<br>") + "</details>";
+      });
   }
 
   // Mirrors View/PostHashtags.php; only escaped post text is passed here.

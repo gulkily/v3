@@ -47,11 +47,14 @@ final class MediaEmbedRenderer
             $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable' . ($description === '' ? '' : ' — ')) . $description . '</span>';
             ['details' => $details, 'rest' => $after] = \ForumRewrite\Images\ImageReference::photoDetails($after);
             if ($details !== []) {
-                $html .= '<span class="post-photo-details">';
+                $list = '<span class="post-photo-details">';
                 foreach ($details as $detail) {
-                    $html .= '<span class="meta">' . $this->escape($detail['label']) . '</span><span>' . $this->escape($detail['display']) . '</span>';
+                    $list .= '<span class="meta">' . $this->escape($detail['label']) . '</span><span>' . $this->escape($detail['display']) . '</span>';
                 }
-                $html .= '</span>';
+                $list .= '</span>';
+                // One detail stays visible; two or more fold behind a closed "Photo details" row.
+                $html .= count($details) === 1 ? $list
+                    : '<details class="post-photo-details-disclosure"><summary class="meta">Photo details</summary>' . $list . '</details>';
             }
             $html .= '</span>';
             return $this->render($before, $enabled, $inlinePlayerEnabled, false, $markdown, $tagLinks) . $html . $this->render($after, $enabled, $inlinePlayerEnabled, false, $markdown, $tagLinks);
