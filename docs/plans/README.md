@@ -488,3 +488,5 @@ and repair its navigation and affected references. See the
 - [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; Steps 1–3 approved.
 
 - [Gallery zoom](gallery_zoom/gallery_zoom_one_shot.md) — one-shot: Smaller / Larger buttons and phone pinch resize Gallery tiles, remembered per browser and resettable on Preferences.
+
+- [Deploy celebration](deploy_celebration/deploy_celebration_one_shot.md) — one-shot: confetti and a Deployed banner on the page that loads after a deploy that changed the code.
