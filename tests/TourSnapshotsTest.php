@@ -165,4 +165,42 @@ final class TourSnapshotsTest
             \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($state);
         }
     }
+
+    public function testLauncherStartsOnlyWhenDueAndFailuresRetryHourly(): void
+    {
+        $root = sys_get_temp_dir() . '/v3-tour-due-' . bin2hex(random_bytes(6));
+        mkdir($root . '/public/assets/tour', 0777, true);
+        mkdir($root . '/repo', 0777, true);
+        file_put_contents($root . '/tour.txt', "Schema: tour-v1\n---\nName: board\nRoute: /\nTitle: Board\n\nThe board.\n");
+        $snapshots = new \ForumRewrite\Tour\TourSnapshots($root . '/project', $root . '/repo', $root . '/read.sqlite3', $root . '/public', null, $root . '/tour.txt');
+        $state = $root . '/project/state/tour/' . substr(hash('sha256', realpath($root . '/repo')), 0, 16);
+        $started = [];
+        $launcher = new \ForumRewrite\Tour\TourRefreshLauncher($root . '/project', static function (array $arguments) use (&$started): bool {
+            $started[] = $arguments;
+            return true;
+        });
+        $writeStatus = static function (string $finished, string $board) use ($state): void {
+            @mkdir($state, 0777, true);
+            file_put_contents($state . '/status.txt', "Schema: tour-status-v1\nState: idle\nFinished: {$finished}\nOutcome: refreshed_with_failures\nRoute-board: {$board}\n");
+        };
+        try {
+            assertSame('started', $launcher->startIfDue($snapshots));
+            assertSame('refresh', end($started[0]));
+
+            file_put_contents($root . '/public/assets/tour/index.html', 'page');
+            touch($root . '/tour.txt', time() - 60);
+            $writeStatus(gmdate('Y-m-d\TH:i:s\Z'), 'ok');
+            file_put_contents($root . '/public/assets/tour/board.html', 'snapshot');
+            assertSame('current', $launcher->startIfDue($snapshots));
+
+            unlink($root . '/public/assets/tour/board.html');
+            $writeStatus(gmdate('Y-m-d\TH:i:s\Z'), 'failed (left out): renderer timed out');
+            assertSame('current', $launcher->startIfDue($snapshots), 'a fresh failure waits');
+            $writeStatus(gmdate('Y-m-d\TH:i:s\Z', time() - 3700), 'failed (left out): renderer timed out');
+            assertSame('started', $launcher->startIfDue($snapshots), 'an hour-old failure is retried');
+            assertSame(2, count($started));
+        } finally {
+            \ForumRewrite\Host\HighTrafficCache::removeTemporaryTree($root);
+        }
+    }
 }

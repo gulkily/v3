@@ -5,8 +5,6 @@ declare(strict_types=1);
 // Run with ./v3 tour; all scripts: scripts/README.md.
 require dirname(__DIR__) . '/autoload.php';
 
-use ForumRewrite\Support\DeploymentSettings;
-use ForumRewrite\Support\LocalRepositoryBootstrap;
 use ForumRewrite\Tour\TourSnapshots;
 
 $usage = "Usage: ./v3 tour refresh|status [--json]\n"
@@ -27,13 +25,7 @@ $startedAt = microtime(true);
 $progress = $command === 'refresh'
     ? static function (string $message) use ($startedAt): void { fwrite(STDERR, sprintf('[%6.2fs] %s' . "\n", microtime(true) - $startedAt, $message)); }
     : null;
-$snapshots = new TourSnapshots(
-    $project,
-    DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: LocalRepositoryBootstrap::defaultRepositoryRoot($project),
-    DeploymentSettings::value('FORUM_DATABASE_PATH') ?: LocalRepositoryBootstrap::defaultDatabasePath($project),
-    DeploymentSettings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $project . '/public',
-    $progress,
-);
+$snapshots = TourSnapshots::forProject($project, $progress);
 
 try {
     if ($command === 'refresh') {

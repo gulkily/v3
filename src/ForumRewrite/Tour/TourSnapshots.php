@@ -22,6 +22,8 @@ use Throwable;
  */
 final class TourSnapshots
 {
+    private const RETRY_SECONDS = 3600;
+
     public readonly string $directory;
     private readonly string $stateRoot;
 
@@ -35,6 +37,19 @@ final class TourSnapshots
     ) {
         $this->directory = $publicRoot . '/assets/tour';
         $this->stateRoot = $projectRoot . '/state/tour/' . substr(hash('sha256', realpath($repositoryRoot) ?: $repositoryRoot), 0, 16);
+    }
+
+    /** The instance's tour, with paths resolved the way the other ./v3 commands resolve them. */
+    public static function forProject(string $projectRoot, ?\Closure $progressReporter = null): self
+    {
+        $settings = \ForumRewrite\Support\DeploymentSettings::class;
+        return new self(
+            $projectRoot,
+            $settings::value('FORUM_REPOSITORY_ROOT') ?: \ForumRewrite\Support\LocalRepositoryBootstrap::defaultRepositoryRoot($projectRoot),
+            $settings::value('FORUM_DATABASE_PATH') ?: \ForumRewrite\Support\LocalRepositoryBootstrap::defaultDatabasePath($projectRoot),
+            $settings::value('FORUM_PUBLIC_ARTIFACT_ROOT') ?: $projectRoot . '/public',
+            $progressReporter,
+        );
     }
 
     /** @return array<string, mixed> */
@@ -125,10 +140,16 @@ final class TourSnapshots
         $head = $this->codeVersionTime();
         if ($head !== null && $head > $built) return true;
         $status = $this->status();
+        // A failure is retried after an hour, not every cron minute.
+        $finished = strtotime($status['Finished'] ?? '') ?: 0;
+        $retry = time() - $finished >= self::RETRY_SECONDS;
+        if (($status['Outcome'] ?? '') === 'failed') return $retry;
         foreach ($sections as $section) {
             $result = $status['Route-' . $section['name']] ?? null;
+            $exists = is_file($this->directory . '/' . $section['name'] . '.html');
             if ($result === null) return true;
-            if ($result === 'ok' && !is_file($this->directory . '/' . $section['name'] . '.html')) return true;
+            if ($result === 'ok' && !$exists) return true;
+            if (str_starts_with($result, 'failed') && !$exists && $retry) return true;
         }
         return false;
     }
