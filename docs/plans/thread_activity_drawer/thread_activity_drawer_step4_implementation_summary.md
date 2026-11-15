@@ -126,3 +126,9 @@ Commits: planning `0f456b8` and `4007172`; stages `0e8fd1e`, `f1bbd33`, `b5e2c1d
 ## Study closeout
 
 2026-11-14T20:40:00Z, `railspike-effort` / `v3/thread_activity_drawer`, Step 4 closeout. **Retrospective scope assessment: 0.50** (separate from the 0.55 projection; not a measured actual). Delivered scope v1 as approved, with no corrective work or new requests. Starting revision `68724f9` (Step 1); final revision is the Stage 4 commit on `feat/thread-activity-drawer`. Planned and completed stages: 4 of 4. Verification and omissions as in the Closeout table: production check pending, full suite not run. R1, P2, single exposed Claude rater. Maintainer comfortable-fit judgment: **pending**.
+
+## Merge and baseline test fix (2026-11-15)
+
+- Merged `origin/main` (`bd2b0fa`) into the branch before opening the PR. Conflicts were additive, and both sides were kept: the flag constants (`PENDING_CHIP_APPROVAL_ENABLED`, `USAGE_REPORTS_ENABLED`, then `THREAD_ACTIVITY_DRAWER_ENABLED`), the plans index and the ledger's cycle sections.
+- Fixed the baseline failure `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, as the maintainer asks for pre-existing failures. Cause: the test expects a media-embed card, but `FORUM_MEDIA_EMBEDS_ENABLED` is off by default and the test never turned it on, so it passed only where the environment had the flag on. It now sets the flag itself and restores it afterwards, as `MediaEmbedBeaconTemplatesTest` does. Product code is unchanged.
+- Verification after the merge: smoke set plus this cycle's tests, 475 of 475 passed. Full suite not run, per `AGENTS.md`.
