@@ -96,6 +96,6 @@ Diff limited to `offline_reader.js`, the two browser tests and this cycle's docs
 
 ## Commit, merge and publication status
 
-Implementation commit pending at time of writing; branch to be pushed and a PR opened. Not merged or deployed.
+Planning commit `ce52a065`; implementation commit `88fe4296` (confirmed with Git); this record-only handoff commit follows. Branch pushed for a PR. Not merged or deployed.
 
 *Claude (claude-opus-5-5), 2026-11-15*
