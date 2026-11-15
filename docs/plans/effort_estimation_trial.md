@@ -1967,3 +1967,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/preferences_page` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.15 (intake 0.15; execution entry 0.15; retrospective 0.15) | [record](./preferences_page/preferences_page_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
 
 2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.15** recorded before implementation (not pristine: rated after reading the affected scripts), execution entry reaffirmed, retrospective **0.15**. Baseline `a4fe61e`; branch `feat/preferences_page`; planning commit `d43d51d`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/gallery_zoom
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/gallery_zoom` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.12 (intake 0.12; execution entry 0.12; retrospective 0.12) | [record](./gallery_zoom/gallery_zoom_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.12** recorded before implementation (not pristine: rated after reading the gallery and zoom components), execution entry reaffirmed, retrospective **0.12**. Baseline `26dd2fb`; branch `feat/gallery_zoom`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

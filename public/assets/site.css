@@ -1375,9 +1375,17 @@ pre {
 }
 
 /* Gallery: justified rows. Each tile's basis is its (clamped) aspect ratio
-   times the row height, so rows fill the width and images keep their shape. */
+   times the row height, so rows fill the width and images keep their shape.
+   --gallery-zoom (Smaller / Larger and pinching on phones, gallery_zoom.js;
+   layout.php restores it before paint) multiplies the row height. */
+.gallery-zoom {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -0.5rem;
+}
+
 .gallery-grid {
-  --gallery-row: 12rem;
+  --gallery-row: calc(12rem * var(--gallery-zoom, 1));
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -1438,7 +1446,9 @@ pre {
 
 @media (max-width: 40rem) {
   .gallery-grid {
-    --gallery-row: 7rem;
+    --gallery-row: calc(7rem * var(--gallery-zoom, 1));
+    /* Two fingers on the grid resize the tiles instead of zooming the page. */
+    touch-action: pan-x pan-y;
     gap: 0.35rem;
   }
 }

@@ -58,6 +58,7 @@ const saved = {
   forum_nav_slots: JSON.stringify({ v: 2, slots: ['board', 'calendar', 'recent'], visits: {} }),
   forum_visitor_intro_hidden: '1',
   forum_usage_log: JSON.stringify({ recording: true, entries: [] }),
+  'gallery-zoom': '1.563',
   forum_pki_fingerprint: 'keep-me',
   forum_recently_cleared_compose_draft: 'keep-me-too',
 };
@@ -72,9 +73,10 @@ try {
     assert.equal(await page.locator('#preference-thread-view').inputValue(), 'comfortable');
     assert.equal(await value(page, 'reading-margins'), 'Site default');
     assert.equal(await value(page, 'table-size'), 'Site default');
+    assert.equal(await value(page, 'gallery-size'), 'Site default');
     assert.equal(await value(page, 'page-themes'), 'Shown');
     assert.equal(await value(page, 'welcome-note'), 'Shown');
-    for (const name of ['reading-margins', 'table-size', 'page-themes', 'welcome-note']) {
+    for (const name of ['reading-margins', 'table-size', 'gallery-size', 'page-themes', 'welcome-note']) {
       assert.equal(await resetVisible(page, name), false, `${name}: no reset on a fresh browser`);
     }
     assert.deepEqual(errors, []);
@@ -95,12 +97,13 @@ try {
     assert.equal(await page.locator('#preference-thread-view').inputValue(), 'compact');
     assert.equal(await value(page, 'reading-margins'), 'Custom');
     assert.equal(await value(page, 'table-size'), 'Custom');
+    assert.equal(await value(page, 'gallery-size'), 'Custom');
     assert.equal(await value(page, 'page-themes'), 'Left on 2 pages');
     assert.equal(await value(page, 'welcome-note'), 'Hidden');
     assert.equal(await value(page, 'usage-log'), 'Recording');
     assert.equal(await page.locator('[data-preference-row="phone-tabs"]').isHidden(), false, 'phone tabs row shows in the app header');
     assert.match(await value(page, 'phone-tabs'), /^Board, Recent/);
-    for (const name of ['reading-margins', 'table-size', 'phone-tabs', 'page-themes', 'welcome-note']) {
+    for (const name of ['reading-margins', 'table-size', 'gallery-size', 'phone-tabs', 'page-themes', 'welcome-note']) {
       assert.equal(await resetVisible(page, name), true, `${name}: reset shown`);
     }
     assert.deepEqual(errors, []);
@@ -130,6 +133,11 @@ try {
 
     await page.locator('[data-preference-reset="table-size"]').click();
     for (const key of tableKeys) assert.equal((await storage(page))[key], undefined, key);
+
+    await page.locator('[data-preference-reset="gallery-size"]').click();
+    assert.equal((await storage(page))['gallery-zoom'], undefined);
+    assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue('--gallery-zoom')), '');
+    assert.equal(await value(page, 'gallery-size'), 'Site default');
 
     await page.locator('[data-preference-reset="page-themes"]').click();
     assert.deepEqual(Object.keys(await storage(page)).filter(key => key.includes('-page-exit:')), []);
