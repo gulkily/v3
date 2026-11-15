@@ -49,6 +49,8 @@ final class FeatureFlagRegistry
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
     public const POST_RECORDS_ENABLED = 'FORUM_POST_RECORDS_ENABLED';
+    public const PENDING_CHIP_APPROVAL_ENABLED = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
+    public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
@@ -62,7 +64,8 @@ final class FeatureFlagRegistry
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
-            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED],
+            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -337,7 +340,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::READING_MARGINS_ENABLED,
                 'Reading margins',
-                'Show a row of radio buttons at the top of pages; the left half sets the left edge of the text column and the right half the right edge. The choice stays in their browser and is ignored on phones.',
+                'Show a row of radio buttons at the top of pages; the text column spans the last two a reader clicks. The choice stays in their browser and is ignored on phones.',
                 false,
                 self::READING_MARGINS_ENABLED,
                 siteMutable: true,
@@ -386,6 +389,22 @@ final class FeatureFlagRegistry
                 'Show a Records section on post pages listing every signed record that targets the post (likes, flags, labels, title and format changes), each with its own page, and let members retract their own likes and operators any like.',
                 false,
                 self::POST_RECORDS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::PENDING_CHIP_APPROVAL_ENABLED,
+                'Approve from Pending chips',
+                "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
+                true,
+                self::PENDING_CHIP_APPROVAL_ENABLED,
+            ),
+            new FeatureFlagDefinition(
+                self::USAGE_REPORTS_ENABLED,
+                'Usage reports',
+                'Offer Tools → Usage log, where visitors can record their own page views and clicks in their browser and upload them, and Tools → Usage reports, where root operators see click counts and journeys that could be shorter. Reports are kept in a private file outside exports.',
+                false,
+                self::USAGE_REPORTS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

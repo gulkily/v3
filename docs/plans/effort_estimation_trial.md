@@ -1,5 +1,28 @@
 # Effort estimation trial ledger
 
+## Cycle v3/merge_217_fix
+
+2026-11-14T20:30:00Z — v3/merge_217_fix one-shot (standing P2 enrollment, no parent): [record](./merge_217_fix/merge_217_fix_one_shot.md). Fix PHP parse error from the #217 merge; cycle estimate **0.03**, retrospective 0.03; maintainer fit judgment pending. PR #242.
+
+## Cycle v3/local_telemetry
+
+2026-11-09T06:27:32Z — v3/local_telemetry Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](./local_telemetry/local_telemetry_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (opt-in browser-only usage log with copy/paste and send as a private message to the operator; in-browser report reader). Starting revision `3ec5a236`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because plans and front-end assets were read before rating. Intake and projected total **0.65**; option estimates A 0.65, B 0.75, C 0.50, non-additive. Await Approved Step 1; planning uncommitted.
+
+2026-11-10T07:10:00Z — v3/local_telemetry Step 1 Revision 1: maintainer chose Option B (private report store, kept out of message data and the public export). [Checkpoint](./local_telemetry/local_telemetry_step1_solution_assessment.md#study-checkpoint). Scope v2/B; projected total 0.65 → **0.75** (changed scope). A 0.65 and C 0.50 reaffirmed, non-additive. Starting revision moved to `40c49e76` after syncing main; same R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-10T07:55:00Z — v3/local_telemetry Step 1 Revision 2: open uploads, session username or anonymous, indefinite retention with a total cap, one SQLite file in `state/private/`, root-only summary. [Checkpoint](./local_telemetry/local_telemetry_step1_solution_assessment.md#study-checkpoint). Scope v3/B; **0.75** reaffirmed. Same R1/P2, single exposed Claude rater. Await Approved Step 1; planning uncommitted.
+
+2026-11-10T17:26:43Z — v3/local_telemetry Approved Step 1 (Option B, Revisions 1–2); Step 2 handoff: [feature description/checkpoint](./local_telemetry/local_telemetry_step2_feature_description.md#study-checkpoint). Scope v3/B with caps, flag (off by default) and exclusions; starting revision `b50af911`. Projected total **0.75 reaffirmed**. Same R1/P2, single exposed Claude rater. Await Approved Step 2; planning uncommitted.
+
+2026-11-11T06:30:00Z — v3/local_telemetry Approved Step 2; Step 3 handoff: [plan/checkpoint](./local_telemetry/local_telemetry_step3_development_plan.md#study-checkpoint). Scope v3/B unchanged; starting revision `6d0f9da1`. Projected total 0.75 → **0.85** (new understanding: server-side page-kind redaction, recorder browser test). Seven stages with supplemental stage work 0.10, 0.08, 0.12, 0.10, 0.12, 0.15, 0.10, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.
+
+2026-11-11T22:20:00Z — v3/local_telemetry Step 2 Revision 1 after approval (maintainer: primary test subject, find 3-click paths that could be 1): every link and button click recorded; journeys table with shortcut candidates. [Step 2](./local_telemetry/local_telemetry_step2_feature_description.md#study-checkpoint), [Step 3](./local_telemetry/local_telemetry_step3_development_plan.md#study-checkpoint). Scope v4/B; projected total 0.85 → **0.90** (changed scope); Stage 3 0.15, Stage 6 0.18. Same R1/P2, single exposed Claude rater. Await renewed Approved Step 2 and Approved Step 3; planning uncommitted.
+
+2026-11-14T19:15:00Z — v3/local_telemetry Approved Step 3 (and Step 2 Revision 1, read from the same reply); planning commit `707d3d99` on `feat/local_telemetry` from main `459d212d`. Step 4 entry: [summary](./local_telemetry/local_telemetry_step4_implementation_summary.md). Projected total **0.90 reaffirmed** at entry; stage originals copied unchanged. Same R1/P2, single exposed Claude rater.
+
+2026-11-14T20:10:00Z — v3/local_telemetry Step 4 closeout: seven stages committed on `feat/local_telemetry` ([summary](./local_telemetry/local_telemetry_step4_implementation_summary.md#closeout)). Retrospective stage work 0.10, 0.08, 0.15, 0.12, 0.15, 0.16, 0.16 against originals 0.10, 0.08, 0.15, 0.10, 0.12, 0.18, 0.10 (supplemental, non-additive). Retrospective cycle scope **1.00** against the 0.90 projection; drivers: icons for new tools, POST route order, label and journey work, existing-test repair, two process slips. Release check pending in production; maintainer comfortable-fit judgment pending.
+
+
 ## Cycle v3/tag_unlocks
 
 2026-11-12T20:30:00Z — v3/tag_unlocks Step 4 closeout on `tag-unlocks`: Stages 1-7 committed; production verification pending maintainer deploy. [Summary](./tag_unlocks/tag_unlocks_step4_implementation_summary.md#cycle-retrospective). Retrospective cycle assessment **0.65** (projection 0.65); no split, no changed scope. Maintainer judgment pending; study acceptance pending.
@@ -1914,6 +1937,13 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-14: standing P2 enrollment, staged cycle with extended estimates. Checkpoints from 2026-11-08 to 2026-11-14 were kept in the cycle's planning artifacts while it ran in fresh clones, and are linked here at its planning commit. Scope v7 (1.05) is preserved as the split record; v8 excludes the header rename shipped by the child. Single exposed rater Claude (claude-opus-5-5); no pristine intake. No measured effort, independent rating or accepted-count increment.
 
+## Cycle v3/reading_margins_two_clicks
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/reading_margins_two_clicks` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (execution entry 0.10; retrospective 0.10) | [record](./reading_margins_two_clicks/reading_margins_two_clicks_one_shot.md#study-history) | Maintainer request in session (follow-up to the reading margins PRs #182, #214, #215, #221, which ran outside Railspike); acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot. Intake missing: implementation was drafted before the record (disclosed in the record). Execution entry **0.10**, retrospective **0.10**. Baseline `68724f9`; branch `feat/reading_margins_two_clicks`; planning commit `ac7a9ad`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 ## Cycle v3/bubblegum_menu_labels
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
@@ -1921,6 +1951,30 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/bubblegum_menu_labels` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; retrospective 0.08) | [One-shot record](./bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md#study-history) | Thread request; acceptance pending |
 
 2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the request post's link). Intake **0.08** after reproduction (no pristine intake), execution entry reaffirmed, retrospective **0.08**. Baseline `9122adf0fa97f2e9e1bdee3d1b1bdd5e5fa684d5`; branch `fix/bubblegum-menu-and-tool-labels`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/reading_margins_last_two
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/reading_margins_last_two` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.10 (intake 0.10; execution entry 0.10; retrospective 0.10) | [record](./reading_margins_last_two/reading_margins_last_two_one_shot.md#study-history) | Follow-up to `v3/reading_margins_two_clicks` (merged #224) at the maintainer's request; acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot. Intake **0.10** recorded before implementation (not pristine: same rater wrote the predecessor), execution entry reaffirmed, retrospective **0.10**. Baseline `b2c8bf8`; branch `feat/reading_margins_last_two`; planning commit `7a0b857`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/preferences_page
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/preferences_page` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.15 (intake 0.15; execution entry 0.15; retrospective 0.15) | [record](./preferences_page/preferences_page_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.15** recorded before implementation (not pristine: rated after reading the affected scripts), execution entry reaffirmed, retrospective **0.15**. Baseline `a4fe61e`; branch `feat/preferences_page`; planning commit `d43d51d`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/gallery_zoom
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/gallery_zoom` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.12 (intake 0.12; execution entry 0.12; retrospective 0.12) | [record](./gallery_zoom/gallery_zoom_one_shot.md#study-history) | Thread request (maintainer pasted the thread); acceptance pending |
+
+2026-11-14: standing P2 enrollment, one-shot under the thread-to-PR procedure. Intake **0.12** recorded before implementation (not pristine: rated after reading the gallery and zoom components), execution entry reaffirmed, retrospective **0.12**. Baseline `26dd2fb`; branch `feat/gallery_zoom`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
 ## Cycle v3/thread_activity_drawer
 

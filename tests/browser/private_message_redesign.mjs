@@ -159,7 +159,7 @@ try {
     assert.equal(await page.title().then(title => title.startsWith('bob')), true, `${label}: the tab is titled by the person`);
     assert.equal(await page.locator('.conversation-head h1').innerText(), 'bob');
     assert.equal(await page.getByRole('link', { name: 'Back to Messages' }).isVisible(), true);
-    assert.equal(await page.getByText('Only you and bob can read these, on your approved devices.').isVisible(), true);
+    assert.equal(await page.getByText('can read these, on your approved devices', { exact: false }).count(), 0, `${label}: no privacy line in the conversation`);
     assert.equal(await page.getByText('Conversation with', { exact: false }).count(), 0);
     assert.equal(await page.locator('[data-role="private-message-verification"]:visible').count(), 0, `${label}: no check marks`);
     assert.deepEqual(await page.locator('[data-role="message-date"]').allInnerTexts(), [
@@ -218,6 +218,9 @@ try {
     const unreadRow = page.locator('[data-conversation-row].is-unread').first();
     if (await unreadRow.count()) assert.equal(await unreadRow.locator('.message-list-name').evaluate(node => getComputedStyle(node, '::before').content), '""');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${label}: list has no page overflow`);
+    // Messages is one framed window with a visible title, like a conversation.
+    assert.equal(await page.getByRole('heading', { level: 1, name: 'Messages', exact: true }).isVisible(), true, `${label}: Messages title is shown`);
+    assert.equal(await page.locator('[data-conversation-list]').evaluate(node => node.classList.contains('card')), true);
     if (shots) await page.screenshot({ path: join(shots, `list-${theme}-${width}.png`) });
 
     // A failed list load: one line with Retry.

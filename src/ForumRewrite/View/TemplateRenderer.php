@@ -38,6 +38,7 @@ final class TemplateRenderer
         'root_approval.php' => ['/assets/identity.css'],
         'username.php' => ['/assets/identity.css', '/assets/account.css', '/assets/thread-list.css'],
         'users.php' => ['/assets/account.css'],
+        'preferences.php' => ['/assets/account.css', '/assets/preferences.css'],
         'private_message_list.php' => ['/assets/private_message_list.css'],
         'private_message_access.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
@@ -63,6 +64,8 @@ final class TemplateRenderer
         'calendar_day.php' => ['/assets/compose.css', '/assets/calendar.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'usage_log.php' => ['/assets/tools.css'],
+        'tag_unlocks.php' => ['/assets/tools.css'],
         'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
@@ -283,6 +286,8 @@ final class TemplateRenderer
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'memberApprovalScriptPath' => $this->assetPath('/assets/member_approval.js'),
+            'pendingUserSummaryScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)
+                ? $this->assetPath('/assets/pending_user_summary.js') : null,
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'readingMarginsScriptPath' => $this->assetPath('/assets/reading_margins.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
@@ -301,6 +306,9 @@ final class TemplateRenderer
             'autoThemes' => $autoThemes,
             'pageTheme' => $pageTheme,
             'pagePath' => $pagePath,
+            'usageReportsEnabled' => $usageReportsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
+            'usagePageKind' => $usageReportsEnabled && $this->requestPath !== null ? \ForumRewrite\UsageReports\UsagePageKind::fromPath((string) ($this->requestPath)()) : null,
+            'usagePageWords' => $usageReportsEnabled ? implode(' ', \ForumRewrite\UsageReports\UsagePageKind::WORDS) : '',
             'themeStylesheetPaths' => $themeStylesheetPaths,
             'themeScriptPaths' => $themeScriptPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
@@ -325,6 +333,7 @@ final class TemplateRenderer
             'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
+            'usageLogScriptPath' => $this->assetPath('/assets/usage_log.js'),
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
         ]);
@@ -722,13 +731,21 @@ final class TemplateRenderer
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
-        // The Agent Prompts tool opens /agent/; drop it where that page is off.
+        // Drop tools whose pages are off: Agent Prompts opens /agent/, and the
+        // usage tools exist only while the "Usage reports" flag is on.
+        $hiddenTools = [];
         if (!$data['agentPageEnabled']) {
+            $hiddenTools[] = 'agent-prompts';
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            array_push($hiddenTools, 'usage-log', 'usage-reports');
+        }
+        if ($hiddenTools !== []) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {
                 if (isset($data[$toolListKey]) && is_array($data[$toolListKey])) {
                     $data[$toolListKey] = array_values(array_filter(
                         $data[$toolListKey],
-                        static fn (array $tool): bool => ($tool['key'] ?? '') !== 'agent-prompts',
+                        static fn (array $tool): bool => !in_array($tool['key'] ?? '', $hiddenTools, true),
                     ));
                 }
             }
@@ -897,7 +914,20 @@ final class TemplateRenderer
             $parts[] = $dateHtml;
         }
 
-        return implode(' · ', $parts) . ($unapproved > 0 ? ' <span class="chip chip--pending">Pending</span>' : '');
+        if ($unapproved === 0) {
+            return implode(' · ', $parts);
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)) {
+            return implode(' · ', $parts) . ' <span class="chip chip--pending">Pending</span>';
+        }
+
+        // The chip opens an in-page summary with Approve (pending_user_summary.js);
+        // without script it is a plain link to the profile, which has Approve too.
+        $profileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
+        $authorLabel = trim((string) ($record['author_label'] ?? ''));
+
+        return implode(' · ', $parts)
+            . ' <a class="pending-chip" href="/profiles/' . $escape($profileSlug) . '" data-pending-profile="' . $escape($profileSlug) . '" data-pending-username="' . $escape($authorLabel) . '"><span class="chip chip--pending">Pending</span></a>';
     }
 
     /**
