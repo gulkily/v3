@@ -2118,3 +2118,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/scoped_post_reaction_update` | One-shot technically complete; push, PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.25 (intake 0.25; execution entry 0.25; retrospective 0.25) | [One-shot record](./scoped_post_reaction_update/scoped_post_reaction_update_one_shot.md#study-history) | Maintainer bug report (busy message on quick Close then Resolve); first of two split fixes; acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer ("Yes, don't change the schema") after the diagnosis. Intake **0.25** after the diagnosis and code inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**; the viewer-tag scan found mid-work is a correction within the same outcome. Also fixed a stale `WriteApiSmokeTest` assertion that failed on the base revision. Baseline `8314fae95ea2b33e16a2e6a1d6e2ca512ef52c4d`; branch `fix/scoped-post-reaction-update`; planning commit `e09103d3`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/thread_activity_record_links
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/thread_activity_record_links` | One-shot technically complete; push, PR and maintainer acceptance pending | v1 / R1 / P2 | 0.12 (intake 0.12; execution entry 0.12); retrospective 0.15 | [record](./thread_activity_record_links/thread_activity_record_links_one_shot.md#study-history) | Follow-up to `v3/thread_activity_drawer` (merged #246) at the maintainer's request; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot. Intake **0.12** recorded before implementation (not pristine: rated after reading the lookup code and describing the option), execution entry reaffirmed, retrospective **0.15** after a lookup-speed rewrite. Baseline `c54c3375d`; branch `feat/thread-activity-record-links`; planning commit `d81d7ee36`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.

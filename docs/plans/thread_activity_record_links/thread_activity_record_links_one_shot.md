@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/thread_activity_record_links`; [host ledger](../effort_estimation_trial.md#cycle-v3thread_activity_record_links); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.12**
-Status: planned; next permitted action: implement after the planning commit
+Status: implemented and verified locally; next permitted action: push and PR (merging and deploying are the maintainer's)
 
 Predecessor: [`v3/thread_activity_drawer`](../thread_activity_drawer/thread_activity_drawer_step4_implementation_summary.md), merged in #246.
 
@@ -70,10 +70,56 @@ Host `main` at `c54c3375d` (merge of #246); branch `feat/thread-activity-record-
 
 ## Planning commit
 
-Pending.
+`d81d7ee36` (plan and index entry only; confirmed with `git log` before implementation).
+
+## Dated execution history
+
+- 2026-11-15, planning commit `d81d7ee36`, then implementation on `feat/thread-activity-record-links`.
+- **Discovery (correction to the approach):** the planned lookup, one anchored-regex `git grep` per directory with a pattern per post ID, was slow on a synthetic repository of 13,000 reaction and thread-label records. It took 132 ms for a 10-post thread and 1,085 ms for a 200-post thread; the regex was the cost, not parsing (50 records parse in about 1 ms). A fixed-string search with a pattern per post ID was still about 620 ms at 200 posts. The final lookup makes a single `git grep -F` call for the header names alone (`Target-ID: `, `Post-ID: `, `Thread-ID: `) across both directories, then keeps whole-line matches in PHP. It took **85 ms at 10 posts and 110 ms at 200**. About 50 ms of that is Git scanning the directory, so the cost grows with the total number of records, not the thread's size. `PostRecordList::grep` is unchanged; the new helper `grepHeaderLines` is used only by the batch lookup.
+- Recovery addition: the controller wraps the lookup in a `try`, so any failure leaves profile links. `grepHeaderLines` already returns nothing when Git finds no match or fails.
+- No enhancement requests.
+
+## Changes
+
+- `Canonical/PostRecordList.php`: `reactionRecordIds()` (batch lookup; `add` only, newest wins, targets limited to the thread's posts), `reactionKey()`, and the private `grepHeaderLines()`.
+- `Http/ThreadAndPostPageController.php` (`thread`): computes the map only when the drawer and Post records flags are on and a like or flag is shown, and passes `threadReactionRecordIds`. It reads both flags once.
+- `View/ThreadActivity.php`: `partition()`/`build()` take the map and add `record_id` to matching actors.
+- `templates/partials/thread_activity_drawer.php`: like and flag names link to `/records/<Record-ID>` when there is a record, otherwise to the profile.
+- `templates/pages/thread.php`: passes the map.
+- Tests: `PostSignalsTemplateTest::testThreadActivityDrawerLinksEachReactorToTheRecordThatAddedIt` (new), `ThreadActivityTest` (record assertions).
+- Concepts: [thread activity](../../concepts/thread_activity.md) and [post record list](../../concepts/post_record_list.md).
+
+## Outcome
+
+Delivered as scoped. With both flags on, each name in "Liked by"/"Flagged by" opens the record that added it. With Post records off, or with no record found, names link to profiles as before. Tag-only entries and post-card signal lines are unchanged.
+
+Limitation: about 85–110 ms per thread view against 13,000 records, when both flags are on and the thread has a like or flag to show. The cost grows with the size of the record directories. If that is too slow in production, the next step is to store `record_id` in `viewer_tags` (option 2), or to load the links when the drawer is opened.
+
+## Verification
+
+- New lookup test: thread like, post like, post flag, an older and a newer like by the same actor (newer wins), a like on a post outside the thread (ignored), and a later `remove` record (ignored). The empty post list returns nothing.
+- Page test: with both flags on, the drawer links each name to its record, never the older like, and `/records/post-reaction-link-new` opens. With Post records off, the drawer has no `/records/` links.
+- `ThreadActivityTest`: record IDs attach only to the matching actor and tag, and no map means no `record_id`.
+- Smoke set plus `PostSignalsTemplateTest`, `ThreadActivityTest`, `TagOnlyLeafFilterTest`, `ThreadLabelsTest` and the drawer page test: 478 of 478 passed. The full suite was not run, per `AGENTS.md`.
+- Timing on the synthetic repository, as above; the repository was removed afterwards.
+- No browser check: the change adds `href`s to existing links inside the drawer's list, with no new markup, CSS or script. The predecessor's theme checks cover the list.
+- No production check: that is the maintainer's after merge.
+
+## Final review
+
+I reviewed `d81d7ee36..` for scope, duplication and docs.
+- All files are within the plan.
+- `grepHeaderLines` overlaps with `grep`, but it searches differently (fixed header names, whole lines checked in PHP). I didn't switch `grep`'s other callers to it, because that would change the post page outside this scope.
+- No feedback item matches, so there is no `Feedback:` trailer.
+
+## Commit/merge/publication status
+
+Planning `d81d7ee36`; completion commit pending reference; not yet pushed.
 
 ## Study history
 
 - 2026-11-15T20:58:00Z, intake: **0.12**, recorded before implementation. Not pristine: I rated it after reading `PostRecordList`, `SignalActors` and `viewer_tags`, and after describing option 1 at 0.10–0.15. Scope v1 as above. R1, P2, single exposed Claude rater.
+- Execution entry: 0.12 reaffirmed after the planning commit.
+- 2026-11-15T21:40:00Z, closeout: retrospective **0.15** (not a measured actual), up from intake because of the timing discovery and the rewritten lookup. Scope v1 delivered unchanged. Production check, full suite and maintainer judgment are pending, so there is no accepted-count increment.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*

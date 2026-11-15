@@ -50,6 +50,80 @@ final class PostRecordList
         return $rows;
     }
 
+    /**
+     * The record behind each current like or flag in a thread, for linking a reactor's name to
+     * `/records/<Record-ID>`: likes and flags on the given posts, and likes on the thread itself
+     * (keyed by the root's ID). One `git grep` for the whole thread. Only `add`
+     * records count; when an actor added the same tag more than once, the newest record wins.
+     * Retracted records are deleted, so they are never returned.
+     *
+     * @param list<string> $postIds
+     * @return array<string, string> self::reactionKey(target, tag, identity) => Record-ID
+     */
+    public static function reactionRecordIds(string $root, array $postIds, string $rootPostId): array
+    {
+        $postIds = array_values(array_unique(array_filter(array_map('strval', $postIds), static fn (string $id): bool => $id !== '')));
+        if ($postIds === []) return [];
+        $sources = [
+            'records/post-reactions' => array_merge(...array_map(static fn (string $id): array => ["Target-ID: {$id}", "Post-ID: {$id}"], $postIds)),
+            'records/thread-labels' => ["Target-ID: {$rootPostId}", "Thread-ID: {$rootPostId}"],
+        ];
+        $found = [];
+        foreach (self::grepHeaderLines($root, $sources, ['Target-ID', 'Post-ID', 'Thread-ID']) as $dir => $paths) {
+            foreach ($paths as $path) {
+                try { $headers = (new GenericTextRecordParser())->parse((string) RecordLimits::read($root . '/' . $path))->headers; }
+                catch (\RuntimeException) { continue; }
+                if (($headers['Operation'] ?? 'add') !== 'add') continue;
+                $target = $dir === 'records/thread-labels' ? $rootPostId : (string) ($headers['Target-ID'] ?? $headers['Post-ID'] ?? '');
+                $identity = (string) ($headers['Author-Identity-ID'] ?? $headers['Actor-Identity-ID'] ?? '');
+                if ($target === '' || $identity === '' || ($dir === 'records/post-reactions' && !in_array($target, $postIds, true))) continue;
+                $recordId = (string) ($headers['Record-ID'] ?? basename($path, '.txt'));
+                $createdAt = (string) ($headers['Created-At'] ?? '');
+                $tags = preg_split('/\s+/', trim($headers['Tags'] ?? $headers['Labels'] ?? ''), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                foreach (array_intersect($tags, ['like', 'flag']) as $tag) {
+                    $key = self::reactionKey($target, $tag, $identity);
+                    if (!isset($found[$key]) || [$createdAt, $recordId] > $found[$key]) $found[$key] = [$createdAt, $recordId];
+                }
+            }
+        }
+        return array_map(static fn (array $pair): string => $pair[1], $found);
+    }
+
+    public static function reactionKey(string $targetId, string $tag, string $identityId): string
+    {
+        return $targetId . "\t" . $tag . "\t" . $identityId;
+    }
+
+    /**
+     * Like grep(), for many directories and lines at once, in one Git call. It searches for the
+     * header names alone (a fixed-string search stays fast however long the thread is; an anchored
+     * regex per post ID does not) and keeps files where a whole line equals one of $lines.
+     *
+     * @param array<string, list<string>> $linesByDir @return array<string, list<string>> dir => paths
+     */
+    private static function grepHeaderLines(string $root, array $linesByDir, array $headerNames): array
+    {
+        $dirs = array_values(array_filter(array_keys($linesByDir), static fn (string $dir): bool => is_dir($root . '/' . $dir)));
+        if ($dirs === []) return [];
+        $args = ['grep', '-F', '--full-name'];
+        foreach ($headerNames as $name) array_push($args, '-e', $name . ': ');
+        $args[] = '--';
+        foreach ($dirs as $dir) $args[] = $dir . '/*.txt';
+        try { $out = LabelRemoval::git($root, $args); }
+        catch (\RuntimeException) { return []; } // git grep exits non-zero when nothing matches
+        $wanted = [];
+        foreach ($linesByDir as $dir => $lines) foreach ($lines as $line) $wanted[$dir][$line] = true;
+        $paths = [];
+        foreach (explode("\n", $out) as $hit) {
+            $end = strpos($hit, '.txt:');
+            if ($end === false) continue;
+            $path = substr($hit, 0, $end + 4);
+            $dir = dirname($path);
+            if (isset($wanted[$dir][rtrim(substr($hit, $end + 5), "\r")])) $paths[$dir][$path] = true;
+        }
+        return array_map('array_keys', $paths);
+    }
+
     /** @return list<string> repository-relative paths of tracked .txt records in $dir with any of $lines */
     private static function grep(string $root, string $dir, array $lines): array
     {

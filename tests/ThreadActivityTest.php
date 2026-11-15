@@ -33,6 +33,15 @@ final class ThreadActivityTest
         assertSame(['r2', 'Reply by f', '/posts/r2'], [$entries[3]['post_id'], $entries[3]['label'], $entries[3]['href']]);
         assertSame('/posts/r2#records', ThreadActivity::partition($root, $replies, $actors, true)['entries'][3]['href']);
 
+        // Record IDs attach to the matching actor only; names without one keep their profile link.
+        $recordIds = [\ForumRewrite\Canonical\PostRecordList::reactionKey('root', 'like', 'openpgp:b') => 'thread-label-b',
+            \ForumRewrite\Canonical\PostRecordList::reactionKey('r2', 'flag', 'openpgp:h') => 'post-reaction-h'];
+        $linked = ThreadActivity::partition($root, $replies, $actors, true, $recordIds)['entries'];
+        assertSame([null, 'thread-label-b'], array_map(static fn (array $a): ?string => $a['record_id'] ?? null, $linked[1]['like']));
+        assertSame(false, isset($linked[1]['flag'][0]['record_id']));
+        assertSame('post-reaction-h', $linked[3]['flag'][0]['record_id']);
+        assertSame(false, isset($entries[1]['like'][1]['record_id']));
+
         assertSame([], ThreadActivity::partition($root, [$post('r1', 'Hi', 1)], ['thread_likes' => [], 'posts' => []], false)['entries']);
     }
 
