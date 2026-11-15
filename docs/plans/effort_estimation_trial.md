@@ -2076,3 +2076,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/photo_details_collapsed` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; execution entry 0.08; retrospective 0.10) | [One-shot record](./photo_details_collapsed/photo_details_collapsed_one_shot.md#study-history) | Follow-up to `v3/image_metadata` (PR #257); acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer's request after merging PR #257. Intake **0.08**, exposed (same rater built the predecessor). A mid-work clarification kept single details visible; it corrects the outcome and does not change scope. Retrospective 0.10; no measured labor.
+
+## Cycle v3/bubblegum_more_tab_open
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/bubblegum_more_tab_open` | One-shot technically complete; PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.05 (intake 0.05; retrospective 0.05) | [One-shot record](./bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md#study-history) | Thread request; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot under the thread-to-PR procedure (maintainer pasted the thread link, then "Pr please"). Intake **0.05** after locating the cause (no pristine intake), execution entry reaffirmed, retrospective **0.05**. Baseline `ec70987d5f05f8d4bfa0266da929a0ea7dbcaa8b`; branch `fix/bubblegum-more-tab-open`; planning commit `eb726578`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
