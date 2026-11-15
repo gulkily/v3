@@ -86,3 +86,35 @@ Branch: `feature/image-metadata`, from `origin/main` at `14beeaaa`. Planning com
 - Estimate details: original scope as Step 3, plus the two title and excerpt consumers found during inspection; uncertainty: low; revisions: none.
 
 *— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Document and verify the whole flow
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - New concept entry `docs/concepts/photo_details.md`: purpose, scenario, line format, sources and boundary.
+  - `docs/concepts/shared_composer.md` and `docs/concepts/post_body_formatting.md`: one dated line each, linking to it.
+  - `docs/plans/effort_estimation_trial.md`: ledger index row and dated note for `v3/image_metadata`.
+- Verification:
+  - Passed: `./v3 test --smoke MediaEmbedRendererTest OfflineSnapshotPresentationTest ThreadTitleWithdrawalAndConsumersTest ThreadRootCardRepeatedTitleTest ImageContentTest ImageUploadValidatorTest`, 504/504 (smoke set plus affected classes).
+  - Passed: `node tests/browser/image_prepare.mjs`, `image_photo_details.mjs`, `compose_disclosure.mjs` and `image_compose_transport.cjs` (Chromium).
+  - Passed: `git diff --check` against `origin/main`.
+  - Not run: the full suite (`./v3 fulltest`); the maintainer runs it.
+  - **Pending:** iPhone Safari replay on zenmemes.com with a real camera photo. This is the Step 2 known-environment check. Chromium results do not satisfy it.
+  - Final diff review: 27 files, all within the approved stages. No dependency, schema, read-model or feature-flag change. No navigation destination added, so nav icons are inapplicable.
+  - Feedback items: none in `docs/feedback/items/` mention photo metadata, EXIF or location, so no `Feedback:` trailer applies.
+- Notes: concept entries match the delivered behavior; their source links resolve.
+- Estimate details: original scope as Step 3; uncertainty: the iPhone replay; revisions: none.
+
+*— Claude · 2026-11-15 UTC · Model: claude-opus-5-5*
+
+## Cycle closeout
+
+- Technical status: Stages 1–4 complete and committed on `feature/image-metadata`. Not merged or deployed.
+- Delivered scope: Option B as approved, plus the collapsed-disclosure revision. Two shared consumers, thread titles and board excerpts, were added in Stage 3 because they would otherwise show raw `Photo-` lines.
+- Corrective work during the cycle: the checklist rebuilt too early, before preparation finished (Stage 2), and values rendered bold under theme label styles (Stage 2). Both were fixed before their stage commits.
+- Retrospective whole-cycle scope assessment: **0.55**. This is not a measured actual; no labor measurement was recorded.
+- Pending: iPhone Safari acceptance and the maintainer's comfortable-fit judgment. Study acceptance stays pending.
+- Follow-ups not in this cycle: `frm.py` photo details, keeping metadata inside the image file (Option A), and editing details after posting.
