@@ -43,7 +43,7 @@
     } catch (error) {}
   }
 
-  // Keep the given point (default: the middle of the screen) over the same part of the grid.
+  // Pinch: keep the point between the fingers over the same part of the grid.
   function zoomAround(value, grid, y) {
     var before = grid.getBoundingClientRect();
     var fy = (y - before.top) / (before.height || 1);
@@ -57,7 +57,10 @@
     var grid = document.querySelector(".gallery-grid");
     if (!button || !grid) { return; }
     var step = button.getAttribute("data-gallery-zoom") === "in" ? 1.25 : 0.8;
-    zoomAround(current() * step, grid, window.innerHeight / 2);
+    // Keep the tapped button where it is, so repeated taps don't chase it off screen.
+    var before = button.getBoundingClientRect().top;
+    apply(current() * step);
+    window.scrollBy(0, button.getBoundingClientRect().top - before);
     save();
   });
 
