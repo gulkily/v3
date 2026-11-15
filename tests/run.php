@@ -298,6 +298,7 @@ $testFiles = [
     __DIR__ . '/LocalWriteServiceTitleDirectiveTest.php',
     __DIR__ . '/ReadModelThreadTitleRebuildTest.php',
     __DIR__ . '/ReadModelSignalEligibilityTest.php',
+    __DIR__ . '/ScopedPostReactionUpdateTest.php',
     __DIR__ . '/PostSignalsTemplateTest.php',
     __DIR__ . '/ThreadTitleWithdrawalAndConsumersTest.php',
     __DIR__ . '/ResumeTargetTest.php',
