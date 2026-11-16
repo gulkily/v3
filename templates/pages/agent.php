@@ -1,7 +1,8 @@
 <?php
 // Prompts: the library of shared #prompt threads, then the site's own prompts.
 // Sort and category are plain links (?sort=new, ?tag=coding); search filters
-// the cards already on the page and appears only with script.
+// the cards already on the page and appears only with script. Like on a card
+// is the thread page's Like (thread_reactions.js); the count is its score node.
 $promptHref = static function (string $sort, string $tag): string {
     $query = array_filter(['sort' => $sort === 'new' ? 'new' : '', 'tag' => $tag], static fn (string $value): bool => $value !== '');
     return '/agent/' . ($query === [] ? '' : '?' . http_build_query($query));
@@ -41,7 +42,7 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
     $replies = (int) $shared['reply_count'];
     $search = strtolower((string) preg_replace('/\s+/', ' ', $title . ' ' . implode(' ', $shared['prompt_tags']) . ' ' . (string) $shared['body']));
 ?>
-      <section class="prompt-card" id="prompt-<?= $e($threadId) ?>" data-prompt-card data-prompt-text="<?= $e($search) ?>">
+      <section class="prompt-card" id="prompt-<?= $e($threadId) ?>" data-thread-reactions-root data-thread-id="<?= $e($threadId) ?>" data-prompt-card data-prompt-text="<?= $e($search) ?>">
         <h2 class="prompt-card__title"><a href="/threads/<?= $e($threadId) ?>"><?= $e($title) ?></a></h2>
 <?= $partial('partials/agent_prompt.php', ['prompt' => [
     'id' => 'shared-' . $threadId,
@@ -54,8 +55,9 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
 <?php if ($shared['prompt_tags'] !== []): ?>
           <p class="prompt-card__tags"><?php foreach ($shared['prompt_tags'] as $category): ?><a class="chip" href="<?= $e($promptHref($promptSort, (string) $category)) ?>">#<?= $e($category) ?></a> <?php endforeach; ?></p>
 <?php endif; ?>
-          <p class="meta prompt-card__meta"><?= $rowMeta($shared, 'root_post_created_at') ?><?php if ($likes > 0): ?> · <?= $e($plural($likes, 'like', 'likes')) ?><?php endif; ?> · <a href="/threads/<?= $e($threadId) ?>"><?= $replies > 0 ? $e($plural($replies, 'reply', 'replies')) : 'Discuss' ?></a></p>
+          <p class="meta prompt-card__meta"><?= $rowMeta($shared, 'root_post_created_at') ?><span class="prompt-card__likes" data-role="thread-score" data-score-format="likes"><?= $likes > 0 ? $e($plural($likes, 'like', 'likes')) : '' ?></span> · <a href="/threads/<?= $e($threadId) ?>"><?= $replies > 0 ? $e($plural($replies, 'reply', 'replies')) : 'Discuss' ?></a> <button type="button" class="thread-reaction-button prompt-card__like" data-action="apply-thread-tag" data-tag="like" data-applied-label="Liked" aria-pressed="false">Like</button></p>
         </div>
+        <p class="meta prompt-card__feedback" data-role="thread-reaction-feedback" hidden></p>
       </section>
 <?php endforeach; ?>
     </div>

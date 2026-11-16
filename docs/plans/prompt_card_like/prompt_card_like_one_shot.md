@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); no separate log unle
 Effort study: `railspike-effort` / `v3/prompt_card_like` — [host ledger](../effort_estimation_trial.md#cycle-v3prompt_card_like); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.2**
-Status: planned; next permitted action: implement
+Status: implemented and verified locally; pushed with a PR; merge and deploy need the maintainer
 
 ## Original request
 
@@ -47,14 +47,36 @@ Prompt library card: changed (gains Like). Thread like / reaction: used unchange
 `./v3 test --smoke PromptLibraryTest PresentationProfileMatrixTest` plus the tests that read `thread_reactions.js`. A browser test, `tests/browser/prompt_card_like.mjs`, on the signed-reactions fixture with a prompt thread added: like from the card, check the record, the count and the reloaded state. Screenshots across themes at phone and desktop widths. Full suite not run (maintainer runs it).
 
 Starting revision and branch: `c13e187ac3b783f6c877582b19c7bff29223ba3f`; `feat/prompt_card_like`
-Planning commit: pending
+Planning commit: `fe3a852565297e1c3cc0501236f9481511f44604`
 
 ## Dated execution history
 
 - 2026-11-16T04:25Z: no matching item in `docs/feedback/items/`.
+- 2026-11-16T04:35Z: implemented as planned. The page loads the reaction scripts only when a prompt card is shown.
+- 2026-11-16T04:40Z: discovery while writing the browser test: a newcomer's like does not move the thread score, so the card's count is approved members' likes, as it already was before this change. Correction to the plan's wording "its like count"; no code change.
+- 2026-11-16T04:45Z: themes give the button their own button look (pill in Gloss, bevel in Word97 and Chicago, and so on), matching Copy on the same card. Left as is; a quieter text-link look would need a per-theme override and is the maintainer's call.
 
 ## Study history
 
 - 2026-11-16T04:25Z intake: **0.2**, scope v1, R1, P2, single exposed rater Claude (claude-fable-5-2), rated after reading `thread_reactions.js`, `thread_root_card.php` and `AgentPageController` (no pristine intake).
+
+- 2026-11-16T04:50Z closeout: retrospective **0.2**. Maintainer acceptance pending; no accepted-count increment.
+
+## Verification
+
+- Passed: `./v3 test --smoke PromptLibraryTest PresentationProfileMatrixTest ReactionOutboxTest BrowserSigningNormalizationTest QuoteCardDisplayNumberTest ReactionRecordFormatParityTest ForteBoardReaderTest`: 608/608.
+- Passed: `node tests/browser/prompt_card_like.mjs` (local Chrome, signed-reactions fixture with root-001 labeled #prompt by an approved member): nothing shown at zero; a failed save restores the button and count and shows the error; Like writes the signed thread-label record, the button reads Liked and the count reads "1 like"; after reload the count and Liked remain; Copy still works.
+- Looked at: the card in Gloss, Gloss Dark, Light, Dark, Word97, Chicago, Midnight, Bubblegum, Spearmint, Sticker and Engagify at 390px and 1280px (screenshots from the same script). The line stays bottom right with the button at its end in each.
+- Not run: full suite (maintainer runs it); a visitor with no key pressing Like on this page (it goes through the same account setup as the thread page, not replayed here); the live site, which needs the deploy.
+
+## Outcome
+
+Delivered as scoped. Sort needed no change (see Outcome and work type). Next action: maintainer merges and deploys.
+
+## Final review
+
+Diff: `templates/pages/agent.php`, `public/assets/agent.css`, `public/assets/thread_reactions.js` (the `likes` score format only), `AgentPageController.php`, the browser test and its fixture, this record, the plans index and the ledger. No duplicate of the reaction code. No debug findings beyond the two notes in the history.
+
+Commit/merge/publication status: completion commit pending at time of writing; pushed with a PR; not merged or deployed.
 
 Attribution: Claude (claude-fable-5-2), 2026-11-16 UTC.

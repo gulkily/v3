@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/prompt_card_like
+
+2026-11-16T04:50Z — v3/prompt_card_like one-shot (standing P2 enrollment; follows v3/prompt_card_meta_corner): [record](./prompt_card_like/prompt_card_like_one_shot.md#study-history). Like button on each /agent/ prompt card, reusing the thread page's Like; intake **0.2** after source inspection (no pristine intake), retrospective 0.2, single exposed Claude rater. Baseline `c13e187ac3b783f6c877582b19c7bff29223ba3f`; maintainer fit judgment pending; no accepted-count change.
+
 ## Cycle v3/prompt_card_meta_corner
 
 2026-11-16T04:18Z — v3/prompt_card_meta_corner one-shot (standing P2 enrollment, no parent): [record](./prompt_card_meta_corner/prompt_card_meta_corner_one_shot.md#study-history). Move each /agent/ prompt card's author/date/likes/Discuss line to the card's bottom right; intake **0.05** after source inspection (no pristine intake), retrospective 0.05, single exposed Claude rater. Baseline `9e5aa010ddff888248ca670c932e3b5f7ec69274`; maintainer fit judgment pending; no accepted-count change.
