@@ -45,3 +45,25 @@ Step 4 entry: 0.65 whole-cycle projection reaffirmed, scope v3 unchanged; stage-
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Tools → Import page shows state
+**Original estimate: 0.14**
+**Retrospective: 0.16**
+- Changes:
+  - Flag `FORUM_INSTANCE_IMPORT_PAGE_ENABLED` ("Import page", off, site-mutable, EXPERIENCE group).
+  - `ImportController` (`src/ForumRewrite/Http/ImportController.php`), modeled on `DeployController`. It renders `templates/pages/tools_import.php` and shows state only to `securityReviewAllowed()` viewers. Others see one line saying who can import.
+  - `InstanceImportStatus` (`src/ForumRewrite/Import/InstanceImportStatus.php`) reads the runner's `.git/instance-import/` state: a pending run, plus the newest finished (`report.json`) or canceled (`canceled.json`) run. It is read-only.
+  - `SqliteTaskQueueStore::taskProgress(taskId, limit)` returns one task's newest lines, oldest first.
+  - Route `/tools/import/` behind the flag, in `isApplicationRoute`. Import sits in the Tools operator group after Deploy and is hidden from Tools while the flag is off (`TemplateRenderer` hidden-tools list).
+  - Icons for `/tools/import/` (a down arrow into a tray, the inverse of Deploy) in all three sets and the shared Tools-bar list in `public/assets/theme-nav-icons.css`.
+- Verification:
+  - `./v3 test --smoke ImportPageTest NavIconSetsTest LocalAppSmokeTest FeatureFlagEvaluatorTest DeployPageTest`: passed after adding the flag to the evaluator's registry lists and treating Import as flag-hidden in the launcher test.
+  - New tests: root sees state and the launcher entry; a viewer with only an identity hint sees no state; flag off gives a 404 and no launcher entry; status reading covers pending, canceled, broken JSON and newest-first order.
+  - Rendering in each theme is deferred to Stage 6.
+  - Full suite not run.
+- Notes:
+  - Correction: the runner's run IDs use `gmdate('YmdTHis')`, where `T` prints the timezone (`20261116UTC…`), so status parsing accepts letters between the date and time.
+  - Stage 3 ran over its estimate because of the flag lists in tests.
+- Estimate details: original scope unchanged; retrospective slightly higher.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*

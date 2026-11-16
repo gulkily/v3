@@ -214,6 +214,27 @@ final class SqliteTaskQueueStore
         return $event === false ? null : $event;
     }
 
+    /**
+     * One task's newest progress lines, oldest first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function taskProgress(int $taskId, int $limit = 40): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, task_id, message, created_at
+             FROM task_queue_progress_events
+             WHERE task_id = :task_id
+             ORDER BY id DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('task_id', $taskId, PDO::PARAM_INT);
+        $stmt->bindValue('limit', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_reverse($stmt->fetchAll());
+    }
+
     /** @return list<array<string, mixed>> */
     public function recentTaskProgress(int $limit = 25): array
     {
