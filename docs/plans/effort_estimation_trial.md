@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/prompt_plain_text
+
+2026-11-16T10:25Z — v3/prompt_plain_text one-shot (standing P2 enrollment; split from the staged v3/prompt_plain_text_and_revise at the maintainer's request): [record](./prompt_plain_text/prompt_plain_text_one_shot.md#study-history). /agent/ prompts become selectable text with Copy in the corner; tall shared prompts cut off with Show all; intake **0.15** after source inspection (no pristine intake), retrospective 0.15, single exposed Claude rater. Baseline `6685625`; maintainer fit judgment pending; no accepted-count change.
+
 ## Cycle v3/prompt_copy_quiet
 
 2026-11-16T05:40Z — v3/prompt_copy_quiet one-shot (standing P2 enrollment; follows v3/prompt_copy_icon): [record](./prompt_copy_quiet/prompt_copy_quiet_one_shot.md#study-history). The icon-only Copy button drops its theme button chrome in Gloss, Gloss Dark, Engagify, Bubblegum and (scope v2) Spearmint; intake **0.06** after source inspection (no pristine intake), retrospective 0.08, single exposed Claude rater. Baseline `b9ffa6b`; maintainer fit judgment pending; no accepted-count change.
