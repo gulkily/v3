@@ -27,11 +27,13 @@ Found on a first read at `9e5aa010`. Each cycle re-checks its own part before pl
   - Checks: `PledgeCampaignTest` (7 tests) with the smoke set, and `tests/browser/pledge_campaign.mjs` in 17 themes at 375 and 1280 px. The full suite was not run. Outbox and offline sending were not exercised.
   - Left out: no field on the separate Reply page or in paned layouts; the Pledge/Reply switch from the mock-up became one optional field.
 - [ ] **2. `pledge_withdraw`** — a pledger withdraws a pledge; it stays visible, marked withdrawn, and stops counting.
-  - Status: Step 1 written 2026-11-16 on branch `plan/pledge-withdraw` (based on `feat/pledge-campaigns`), awaiting the maintainer's `Approved Step 1`. [Step 1](./pledge_withdraw/pledge_withdraw_step1_solution_assessment.md)
-  - Open: the mechanism. Plain retraction does not fit (see inventory). Step 1 compares four and recommends a `withdraw` line in a reply to the pledge, read when the thread is shown.
-  - If chosen, the spec's decided line "Withdrawal reuses the existing retraction method" needs rewording, and cycle 3 can use the same reply-line mechanism for fills with amounts.
+  - Status: Steps 1 (Option A) and 2 approved by the maintainer 2026-11-16. Step 3 written 2026-11-16, awaiting `Approved Step 3`. The maintainer approves every step of this cycle. Planning is on `plan/pledge-withdraw` (contains `feat/pledge-campaigns`; level with `origin/main` at `9e5aa010`). [Step 1](./pledge_withdraw/pledge_withdraw_step1_solution_assessment.md) · [Step 2](./pledge_withdraw/pledge_withdraw_step2_feature_description.md) · [Step 3](./pledge_withdraw/pledge_withdraw_step3_development_plan.md)
+  - Decided: a `withdraw` line in a reply to the pledge, read when the thread is shown; retracting that reply undoes it. A bare withdraw reply folds into the pledge; one with a note or an answer stays in the conversation. Only the pledger withdraws; operators can still retract. The line takes no number. Nothing is built for part-filled pledges.
+  - Found before Step 3: the button can follow the Retract control's viewer test. "Same author" is per key, so a pledge made with one key cannot be withdrawn with another key of the same username; Step 3 keeps that and states it.
+  - Needs the maintainer's word at Step 4: PR #268 is open, so implementation either stacks on `feat/pledge-campaigns` or waits for the merge.
 - [ ] **3. `pledge_fills`** — the pledger marks a pledge delivered; the author confirms or disputes; the author and operators mark fills directly; partial fills add up. Totals gain filled and confirmed.
-  - Open: whether tagset states can carry an amount for partial fills, and who may mark when the pledger's key is not approved.
+  - Open: whether tagset states can carry an amount for partial fills, and who may mark when the pledger's key is not approved. Cycle 2 chose reply lines, which can carry an amount (`filled: 200`); its fold and "not counted" rules are meant to be reused here.
+  - From cycle 2 Step 2: decide here how withdrawing a part-filled pledge works (spec rule 4); cycle 2 withdraws whole pledges only. Also decide whether the author or an operator needs a way to stop someone else's pledge counting without deleting it, beyond Dispute. It would need its own word ("Released"), not "Withdrawn".
 - [ ] **4. `pledge_stages`** — Open, Fully pledged, Cushioned and Complete in the header; the Fully pledged celebration that still shows the pledge box; marker posts; the optional `cushion:` line.
   - Open: what the celebration looks like; it must work without JavaScript.
 - [ ] **5. `pledge_board_rows`** — campaign rows on the board show the bar and "1300 / 1000 coffees".
@@ -60,5 +62,7 @@ Cycles 2 and 3 need 1. Cycle 4 needs 3. Cycles 5 and 6 need 1 and gain detail af
 - 2026-11-16: the maintainer delegated step approval to Claude for cycle 1 only, as an experiment. Steps 2 and 3 approved on that basis; plans moved to `docs/plans/pledge_campaigns/`; implementation started on `feat/pledge-campaigns`.
 - 2026-11-16: cycle 1 built in four stages and pushed as a PR. Release check on zenmemes.com pending.
 - 2026-11-16: cycle 2 Step 1 written and pushed on `plan/pledge-withdraw` for a new session to resume. Cycle 1's delegated approval does not apply to cycle 2.
+- 2026-11-16: new session. PR #268 checked: open, not merged, so `plan/pledge-withdraw` needed no update (0 commits behind `origin/main`). Maintainer approved cycle 2 Step 1 (Option A). Step 2 written and shared as a file; awaiting `Approved Step 2`. Spec's withdrawal lines reworded.
+- 2026-11-16: maintainer cut Step 2's part-filled groundwork by review comment, then approved Step 2. Step 3 written in four stages and shared as a file; awaiting `Approved Step 3`.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
