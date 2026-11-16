@@ -43,7 +43,6 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
 ?>
       <section class="prompt-card" id="prompt-<?= $e($threadId) ?>" data-prompt-card data-prompt-text="<?= $e($search) ?>">
         <h2 class="prompt-card__title"><a href="/threads/<?= $e($threadId) ?>"><?= $e($title) ?></a></h2>
-        <p class="meta prompt-card__meta"><?= $rowMeta($shared, 'root_post_created_at') ?><?php if ($likes > 0): ?> · <?= $e($plural($likes, 'like', 'likes')) ?><?php endif; ?> · <a href="/threads/<?= $e($threadId) ?>"><?= $replies > 0 ? $e($plural($replies, 'reply', 'replies')) : 'Discuss' ?></a></p>
 <?= $partial('partials/agent_prompt.php', ['prompt' => [
     'id' => 'shared-' . $threadId,
     'label' => $title,
@@ -51,9 +50,12 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
     'variant' => 'library',
     'text' => (string) $shared['body'],
 ]]) ?>
+        <div class="prompt-card__footer">
 <?php if ($shared['prompt_tags'] !== []): ?>
-        <p class="prompt-card__tags"><?php foreach ($shared['prompt_tags'] as $category): ?><a class="chip" href="<?= $e($promptHref($promptSort, (string) $category)) ?>">#<?= $e($category) ?></a> <?php endforeach; ?></p>
+          <p class="prompt-card__tags"><?php foreach ($shared['prompt_tags'] as $category): ?><a class="chip" href="<?= $e($promptHref($promptSort, (string) $category)) ?>">#<?= $e($category) ?></a> <?php endforeach; ?></p>
 <?php endif; ?>
+          <p class="meta prompt-card__meta"><?= $rowMeta($shared, 'root_post_created_at') ?><?php if ($likes > 0): ?> · <?= $e($plural($likes, 'like', 'likes')) ?><?php endif; ?> · <a href="/threads/<?= $e($threadId) ?>"><?= $replies > 0 ? $e($plural($replies, 'reply', 'replies')) : 'Discuss' ?></a></p>
+        </div>
       </section>
 <?php endforeach; ?>
     </div>
