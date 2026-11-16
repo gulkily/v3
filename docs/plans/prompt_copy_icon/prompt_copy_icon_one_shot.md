@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); no separate log unle
 Effort study: `railspike-effort` / `v3/prompt_copy_icon` — [host ledger](../effort_estimation_trial.md#cycle-v3prompt_copy_icon); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.1**
-Status: planned; next permitted action: implement
+Status: implemented and verified locally; pushed with a PR; merge and deploy need the maintainer
 
 ## Original request
 
@@ -44,14 +44,34 @@ Copyable prompt field: changed (button position and feedback). No inventory chan
 `./v3 test --smoke PresentationProfileMatrixTest PromptLibraryTest`; `node tests/browser/prompt_card_like.mjs` (its copy step updated to the new feedback) with screenshots across themes at phone and desktop widths. Full suite not run (maintainer runs it).
 
 Starting revision and branch: `0b18578` (origin/main after PR #270); `fix/prompt_copy_icon`
-Planning commit: pending
+Planning commit: `c8f1cdf`
 
 ## Dated execution history
 
 - 2026-11-16T05:06Z: no matching item in `docs/feedback/items/`.
+- 2026-11-16T05:15Z: implemented as planned. No shared check icon exists in the templates, so the check is inline SVG in the partial. The script's hidden "Copy"/"Copied" word is gone; the button's `data-copied` attribute and accessible name carry the state.
 
 ## Study history
 
 - 2026-11-16T05:06Z intake: **0.1**, scope v1, R1, P2, single exposed rater Claude (claude-fable-5-2), rated with the partial, stylesheet and script already read in the two preceding cycles (no pristine intake).
+
+- 2026-11-16T05:20Z closeout: retrospective **0.1**. Maintainer acceptance pending; no accepted-count increment.
+
+## Verification
+
+- Passed: `./v3 test --smoke PresentationProfileMatrixTest PromptLibraryTest`: 480/480.
+- Passed: `node tests/browser/prompt_card_like.mjs` (local Chrome), copy step extended: the clipboard holds the prompt, the button shows the copied state and name then returns, sits within 12px of the field's top right corner and is at least 44px square.
+- Looked at: the card in Gloss, Gloss Dark, Light, Dark, Word97, Chicago, Midnight, Bubblegum, Spearmint, Sticker and Engagify at 390px and 1280px, plus the check state in Gloss.
+- Not run: full suite (maintainer runs it); the failed-copy path in a browser without clipboard access (script path unchanged apart from the feedback lines); the site's own three prompts were not screenshotted separately (same partial and CSS); the live site, which needs the deploy.
+
+## Outcome
+
+Delivered as scoped. Next action: maintainer merges and deploys.
+
+## Final review
+
+Diff: `templates/partials/agent_prompt.php`, `templates/pages/agent.php` (copy feedback lines), `public/assets/agent.css`, `tests/browser/prompt_card_like.mjs`, this record, the plans index and the ledger. No debug findings.
+
+Commit/merge/publication status: completion commit pending at time of writing; pushed with a PR; not merged or deployed.
 
 Attribution: Claude (claude-fable-5-2), 2026-11-16 UTC.

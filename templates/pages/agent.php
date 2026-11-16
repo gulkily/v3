@@ -115,7 +115,6 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
     page.querySelectorAll('[data-copy-prompt]').forEach(function (prompt) {
       var field = prompt.querySelector('textarea');
       var button = prompt.querySelector('[data-copy-prompt-button]');
-      var label = button.querySelector('[data-copy-prompt-text]');
       var status = prompt.querySelector('[data-copy-prompt-status]');
       var timer;
       if (from && from !== location.origin) {
@@ -130,9 +129,14 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
       button.addEventListener('click', function () {
         status.textContent = '';
         clearTimeout(timer);
+        // The icon becomes a check for 1.5 s; the name follows for screen readers.
         var copied = function () {
-          label.textContent = 'Copied';
-          timer = setTimeout(function () { label.textContent = 'Copy'; }, 1500);
+          button.setAttribute('data-copied', '');
+          button.setAttribute('aria-label', 'Copied');
+          timer = setTimeout(function () {
+            button.removeAttribute('data-copied');
+            button.setAttribute('aria-label', 'Copy prompt');
+          }, 1500);
         };
         var manual = function () {
           field.focus();

@@ -19,24 +19,38 @@
   min-height: 8rem;
   /* Show the whole prompt where supported; rows="5" elsewhere. */
   field-sizing: content;
-  padding-bottom: 3.6rem;
+  /* Room for Copy in the top right corner, so text never runs under it. */
+  padding-right: 3.6rem;
   resize: vertical;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.85em;
   line-height: 1.5;
 }
 
-/* `:root` outranks themes that stretch buttons on phones. */
+/* Icon only, in the field's top right corner. `:root` outranks themes that
+   stretch buttons on phones. */
 :root .copy-prompt__button {
   position: absolute;
-  right: 0.6rem;
-  bottom: 0.6rem;
+  top: 0.4rem;
+  right: 0.4rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  width: auto;
-  min-height: 44px;
+  justify-content: center;
+  width: 44px;
+  min-width: 0;
+  height: 44px;
+  min-height: 0;
   margin: 0;
+  padding: 0;
+}
+
+.copy-prompt__icon--copied,
+.copy-prompt__button[data-copied] .copy-prompt__icon {
+  display: none;
+}
+
+.copy-prompt__button[data-copied] .copy-prompt__icon--copied {
+  display: inline;
 }
 
 :root .copy-prompt__button[hidden] {

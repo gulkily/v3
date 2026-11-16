@@ -81,7 +81,15 @@ try {
   // Copy still works beside the new scripts.
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
   await card.locator('[data-copy-prompt-button]').click();
-  await page.waitForFunction(() => document.querySelector('#prompt-root-001 [data-copy-prompt-text]').textContent === 'Copied');
+  await page.waitForFunction(() => document.querySelector('#prompt-root-001 [data-copy-prompt-button]').hasAttribute('data-copied'));
+  assert.equal(await card.locator('[data-copy-prompt-button]').getAttribute('aria-label'), 'Copied');
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await card.locator('textarea').inputValue());
+  if (shots) await card.screenshot({ path: join(shots, 'copied.png') });
+  await page.waitForFunction(() => !document.querySelector('#prompt-root-001 [data-copy-prompt-button]').hasAttribute('data-copied'));
+  const field = await card.locator('textarea').boundingBox();
+  const copy = await card.locator('[data-copy-prompt-button]').boundingBox();
+  assert.ok(copy.y - field.y < 12 && field.x + field.width - (copy.x + copy.width) < 12, 'Copy sits in the top right corner of the field');
+  assert.ok(copy.width >= 44 && copy.height >= 44, 'Copy keeps a 44px tap target');
 
   if (shots) {
     for (const width of [390, 1280]) {
