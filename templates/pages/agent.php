@@ -49,7 +49,8 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
     'label' => $title,
     'label_hidden' => true,
     'variant' => 'library',
-    'text' => (string) $shared['body'],
+    // Without the body's closing newline, so the field ends in one empty line, not two.
+    'text' => rtrim((string) $shared['body']),
 ]]) ?>
         <div class="prompt-card__footer">
 <?php if ($shared['prompt_tags'] !== []): ?>
@@ -112,15 +113,29 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
       scratch.remove();
       return ok;
     };
+    // Where CSS can't size a field to its text (no field-sizing), do it here:
+    // the text's height plus the borders. A hidden card measures 0; skip it.
+    var cssSizesFields = window.CSS && CSS.supports && CSS.supports('field-sizing', 'content');
+    var sizeField = function (field) {
+      if (cssSizesFields) return;
+      field.style.height = 'auto';
+      if (field.scrollHeight > 0) {
+        field.style.height = (field.scrollHeight + field.offsetHeight - field.clientHeight) + 'px';
+      }
+    };
+    var sizeFields = function () {
+      page.querySelectorAll('[data-copy-prompt] textarea').forEach(sizeField);
+    };
+    if (!cssSizesFields) window.addEventListener('resize', sizeFields);
     page.querySelectorAll('[data-copy-prompt]').forEach(function (prompt) {
       var field = prompt.querySelector('textarea');
       var button = prompt.querySelector('[data-copy-prompt-button]');
-      var label = button.querySelector('[data-copy-prompt-text]');
       var status = prompt.querySelector('[data-copy-prompt-status]');
       var timer;
       if (from && from !== location.origin) {
         field.value = field.value.split(from).join(location.origin);
       }
+      sizeField(field);
       field.addEventListener('focus', function () { field.select(); });
       field.addEventListener('mouseup', function (event) {
         event.preventDefault();
@@ -130,9 +145,14 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
       button.addEventListener('click', function () {
         status.textContent = '';
         clearTimeout(timer);
+        // The icon becomes a check for 1.5 s; the name follows for screen readers.
         var copied = function () {
-          label.textContent = 'Copied';
-          timer = setTimeout(function () { label.textContent = 'Copy'; }, 1500);
+          button.setAttribute('data-copied', '');
+          button.setAttribute('aria-label', 'Copied');
+          timer = setTimeout(function () {
+            button.removeAttribute('data-copied');
+            button.setAttribute('aria-label', 'Copy prompt');
+          }, 1500);
         };
         var manual = function () {
           field.focus();
@@ -176,6 +196,7 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
           if (match) shown++;
         });
         if (none) none.hidden = shown !== 0;
+        sizeFields();
       });
     }
   })(document.currentScript.previousElementSibling);

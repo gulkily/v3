@@ -81,9 +81,50 @@ try {
   // Copy still works beside the new scripts.
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
   await card.locator('[data-copy-prompt-button]').click();
-  await page.waitForFunction(() => document.querySelector('#prompt-root-001 [data-copy-prompt-text]').textContent === 'Copied');
+  await page.waitForFunction(() => document.querySelector('#prompt-root-001 [data-copy-prompt-button]').hasAttribute('data-copied'));
+  assert.equal(await card.locator('[data-copy-prompt-button]').getAttribute('aria-label'), 'Copied');
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await card.locator('textarea').inputValue());
+  if (shots) await card.screenshot({ path: join(shots, 'copied.png') });
+  await page.waitForFunction(() => !document.querySelector('#prompt-root-001 [data-copy-prompt-button]').hasAttribute('data-copied'));
+  const field = await card.locator('textarea').boundingBox();
+  const copy = await card.locator('[data-copy-prompt-button]').boundingBox();
+  assert.ok(copy.y - field.y < 12 && field.x + field.width - (copy.x + copy.width) < 12, 'Copy sits in the top right corner of the field');
+  assert.ok(copy.width >= 44 && copy.height >= 44, 'Copy keeps a 44px tap target');
+
+  // Fields are as tall as their text plus one empty line, with and without
+  // CSS field sizing (the script sizes them where it is missing).
+  const fieldFit = () => page.evaluate(() => Array.from(document.querySelectorAll('[data-copy-prompt] textarea')).map(field => {
+    const style = getComputedStyle(field);
+    const line = parseFloat(style.lineHeight);
+    const lines = Math.round((field.scrollHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)) / line);
+    const text = field.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    return { id: field.id, capped: field.scrollHeight > field.clientHeight + 1, slack: text - lines * line, spare: parseFloat(style.paddingBottom) / line };
+  }));
+  const assertFit = async (label) => {
+    const fields = await fieldFit();
+    assert.ok(fields.length >= 4, label + ': library card and the three site prompts');
+    for (const field of fields) {
+      assert.ok(field.capped || field.slack < 2, `${label}: ${field.id} has ${field.slack}px of empty room`);
+      assert.ok(field.spare >= 1 && field.spare < 2, `${label}: ${field.id} leaves about one empty line`);
+    }
+  };
+  assert.equal(await card.locator('textarea').inputValue(), 'First line preview.\nSecond line body.', "the body's closing newline is not shown");
+  await assertFit('field-sizing');
+  const fallback = await context.newPage();
+  await fallback.addInitScript(() => { CSS.supports = () => false; });
+  await fallback.goto(base + '/agent/');
+  await fallback.addStyleTag({ content: '[data-copy-prompt] textarea { field-sizing: fixed !important; }' });
+  await fallback.setViewportSize({ width: 500, height: 900 });
+  await fallback.waitForTimeout(200);
+  for (const field of await fallback.evaluate(() => Array.from(document.querySelectorAll('[data-copy-prompt] textarea')).map(field => ({ id: field.id, inline: field.style.height, gap: field.scrollHeight - field.clientHeight })))) {
+    assert.match(field.inline, /px$/, 'script fallback sized ' + field.id);
+    assert.ok(field.gap <= 1 || field.id.includes('shared-'), 'script fallback shows all of ' + field.id);
+  }
+  await fallback.close();
 
   if (shots) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.screenshot({ path: join(shots, 'page-1280.png'), fullPage: true });
     for (const width of [390, 1280]) {
       await page.setViewportSize({ width, height: 900 });
       for (const theme of (process.env.THEMES || 'gloss,gloss-dark,light,dark,word97,chicago,midnight,bubblegum,spearmint,sticker,engagify').split(',')) {
