@@ -121,6 +121,7 @@ if (!$metaVisible) {
 <?php endif; ?>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
+<?= $partial('partials/pledge_totals.php') ?>
 <?php if ($metaVisible && !$isQdbQuoteRoot): ?>
   <p class="meta" data-post-byline><?= $contentMeta($post, 'created_at', '') ?><?php if ($rootTakesState): ?> <span class="post-resolution-state" data-role="post-state-label"<?= $postStateLabel === '' ? ' hidden' : '' ?>><?= $e($postStateLabel) ?></span><?php endif; ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $renderLabels($thread['thread_labels']) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?php endif; ?>

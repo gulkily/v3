@@ -2130,3 +2130,17 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/prompt_library_notprompt` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.1 (intake 0.1; retrospective 0.1) | [One-shot record](./prompt_library_notprompt/prompt_library_notprompt_one_shot.md#study-history) | In-session request; acceptance pending |
 
 2026-11-16T01:36Z: standing P2 enrollment, one-shot on the maintainer's in-session request. Intake **0.1** after source inspection (no pristine intake), retrospective **0.1**. Baseline `c54c3375d33f388b6b76ce34aabfb47843040d81`; branch `fix/prompt_library_notprompt`. Single exposed rater Claude (claude-fable-5-2). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/pledge_campaigns
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/pledge_campaigns` | Technically complete; release check and maintainer acceptance pending (steps approved by Claude under one-time delegation) | v1 / R1 / P2 | 0.50 (intake 0.45; Step 1 0.45; Step 2 0.50; Step 3 0.50; retrospective 0.45) | [Intake and Step 1](./pledge_campaigns/pledge_campaigns_step1_solution_assessment.md#study-snapshots); [Step 2](./pledge_campaigns/pledge_campaigns_step2_feature_description.md#study-snapshots); [Step 3](./pledge_campaigns/pledge_campaigns_step3_development_plan.md#study-checkpoint) | New cycle; first of seven in [pledges checklist](./pledges_checklist.md); no implementation |
+
+2026-11-16T03:10Z: Step 4 closeout for `v3/pledge_campaigns`: four stages complete on `feat/pledge-campaigns`. Entry projection 0.50 reaffirmed; no revisions. Retrospective scope assessment **0.45**; stage retrospectives 0.08, 0.12, 0.16, 0.08, not summed. Release check on zenmemes.com pending. Maintainer comfortable-fit judgment pending; step approvals were delegated to Claude, so this cycle has no independent plan review. Same R1/P2, single exposed rater Claude (claude-fable-5-2). [Summary](./pledge_campaigns/pledge_campaigns_step4_implementation_summary.md#cycle-retrospective).
+
+2026-11-16T03:00Z: maintainer delegated step approval to Claude for this cycle only (recorded in Step 2). Step 2 and Step 3 approved by Claude under that delegation; no independent plan review. Step 3 handoff **0.50** reaffirmed; four stages, stage work 0.10, 0.18, 0.14, 0.08, not summed. Same baseline, R1/P2, single exposed rater Claude (claude-fable-5-2).
+
+2026-11-16T02:40Z: Approved Step 1 (Option A). Step 2 handoff 0.45 → **0.50** projected total: new understanding, same scope v1 (number rules, counted/unverified/unnamed display states, the author's "not counted" reason). Same baseline, R1/P2, single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Await Approved Step 2; Step 2 uncommitted.
+
+2026-11-16T02:30Z: standing P2 enrollment for pledge campaigns, staged. Intake **0.45** after a first code read (no pristine intake) and Step 1 handoff **0.45** for Option A (lines read when shown). Extended estimates enabled (A 0.45, B 0.80, C 0.60; not summed). Baseline `9e5aa010ddff888248ca670c932e3b5f7ec69274`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Planning committed early on `plan/pledge-campaigns` at the maintainer's request for session handoff; Step 1 not yet approved.

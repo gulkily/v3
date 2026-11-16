@@ -123,6 +123,10 @@ final class ThreadAndPostPageController
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
 
+        $pledgeCampaign = $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_ENABLED)
+            ? \ForumRewrite\View\PledgeCampaign::fromPosts($posts, $threadId)
+            : null;
+
         return $this->routeServices->renderPageTemplate(
             'thread.php',
             [
@@ -141,6 +145,7 @@ final class ThreadAndPostPageController
                     ? \ForumRewrite\Calendar\EventStatus::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId)
                     : null,
                 'threadTheme' => \ForumRewrite\View\ThreadTheme::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId),
+                'pledgeCampaign' => $pledgeCampaign,
                 'posts' => $posts,
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
@@ -180,6 +185,7 @@ final class ThreadAndPostPageController
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
                 '/assets/private_site_auth.js',
+                ...($pledgeCampaign !== null ? ['/assets/pledge_field.js'] : []),
             ]),
         );
     }
