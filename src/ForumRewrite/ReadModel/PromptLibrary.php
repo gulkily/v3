@@ -11,10 +11,14 @@ use PDO;
  * (author's tag or a label): the title names it and the root body is the
  * prompt. It is approved when its author is an approved member (signed post)
  * or an approved member has labeled the thread #prompt; the rest wait.
+ * An approved member's #notprompt label takes a thread out of both lists:
+ * a hashtag in passing, or a post made through the prefilled composer, can
+ * tag a thread that is not a prompt.
  */
 final class PromptLibrary
 {
     public const TAG = 'prompt';
+    public const NOT_TAG = 'notprompt';
     public const LIMIT = 200;
 
     /**
@@ -44,11 +48,15 @@ final class PromptLibrary
             . ThreadKeysetPage::listedRootsSql()
             . " AND (EXISTS (SELECT 1 FROM json_each($board) WHERE type = 'text' AND lower(value) = :tag)
                   OR EXISTS (SELECT 1 FROM json_each($labels) WHERE type = 'text' AND lower(value) = :tag))
+              AND NOT (EXISTS (SELECT 1 FROM json_each($labels) WHERE type = 'text' AND lower(value) = :not_tag)
+                  AND EXISTS (SELECT 1 FROM viewer_tags JOIN profiles AS removers ON removers.identity_id = viewer_tags.author_identity_id
+                      WHERE viewer_tags.record_family = 'thread-labels' AND viewer_tags.target_id = threads.root_post_id
+                        AND viewer_tags.tag = :not_tag AND removers.is_approved = 1 AND removers.retired_at IS NULL))
             ORDER BY prompt_approved DESC, $order
             LIMIT " . (self::LIMIT * 2);
 
         $statement = $pdo->prepare($sql);
-        $statement->execute(['tag' => self::TAG]);
+        $statement->execute(['tag' => self::TAG, 'not_tag' => self::NOT_TAG]);
         $approved = [];
         $waiting = [];
         foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -79,7 +87,7 @@ final class PromptLibrary
             foreach ($decoded as $tag) {
                 if (!is_string($tag)) continue;
                 $tag = strtolower(trim($tag));
-                if ($tag === '' || in_array($tag, [self::TAG, 'general', 'like', 'upvote', 'downvote', 'flag'], true)) continue;
+                if ($tag === '' || in_array($tag, [self::TAG, self::NOT_TAG, 'general', 'like', 'upvote', 'downvote', 'flag'], true)) continue;
                 $tags[$tag] = true;
             }
         }

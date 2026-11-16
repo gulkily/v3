@@ -2118,3 +2118,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/scoped_post_reaction_update` | One-shot technically complete; push, PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.25 (intake 0.25; execution entry 0.25; retrospective 0.25) | [One-shot record](./scoped_post_reaction_update/scoped_post_reaction_update_one_shot.md#study-history) | Maintainer bug report (busy message on quick Close then Resolve); first of two split fixes; acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer ("Yes, don't change the schema") after the diagnosis. Intake **0.25** after the diagnosis and code inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**; the viewer-tag scan found mid-work is a correction within the same outcome. Also fixed a stale `WriteApiSmokeTest` assertion that failed on the base revision. Baseline `8314fae95ea2b33e16a2e6a1d6e2ca512ef52c4d`; branch `fix/scoped-post-reaction-update`; planning commit `e09103d3`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/prompt_library_notprompt
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/prompt_library_notprompt` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.1 (intake 0.1; retrospective 0.1) | [One-shot record](./prompt_library_notprompt/prompt_library_notprompt_one_shot.md#study-history) | In-session request; acceptance pending |
+
+2026-11-16T01:36Z: standing P2 enrollment, one-shot on the maintainer's in-session request. Intake **0.1** after source inspection (no pristine intake), retrospective **0.1**. Baseline `c54c3375d33f388b6b76ce34aabfb47843040d81`; branch `fix/prompt_library_notprompt`. Single exposed rater Claude (claude-fable-5-2). No measured effort, independent rating or accepted-count increment.
