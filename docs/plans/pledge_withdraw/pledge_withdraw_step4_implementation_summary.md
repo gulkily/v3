@@ -43,3 +43,25 @@ Status: Steps 1 to 3 approved by the maintainer 2026-11-16. Step 4 in progress o
 - Estimate details: original scope as Step 3 Stage 1; no revision. Retrospective judged 2026-11-16T05:37Z, Claude single exposed rater.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+
+## Stage 2 - A bare withdrawal folds into the pledge
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.06**
+
+- Changes:
+  - New `src/ForumRewrite/ReadModel/WithdrawLeafFilter.php`: drops a reply from the conversation when it is the `withdraw` line alone, took effect and no shown reply answers it. It repeats until stable, as `TagOnlyLeafFilter` does.
+  - `templates/pages/thread.php` applies it after `RetractedLeafFilter` and before the activity drawer, only on a campaign.
+- Verification:
+  - Passed: `./v3 test PledgeCampaignTest WithdrawLeafFilterTest ThreadActivityTest RetractedLeafFilterTest`, 14 run, 14 passed.
+  - New `WithdrawLeafFilterTest`: bare, noted, answered, not counted, a chain of two, and a `withdraw` reply the campaign did not read.
+  - New page test with the activity drawer flag on: the bare withdrawal has no card, the pledge's "Withdrawn" links to its page, the reply's own page still shows it, and noted and answered withdrawals keep their cards. With the pledges flag off nothing folds.
+  - Undo: after the withdraw reply is retracted, the pledge counts again and no "retracted" stub shows. The test marks the read-model row retracted; the signed retraction request itself was not replayed.
+- Notes:
+  - The reply count on the opening post is taken after the filters, so it matches the cards shown. The risk named in Step 3 did not occur.
+  - A third filter was added because the rule needs the campaign's reading of each reply, which the other two filters do not have.
+  - Reply pages, paned layouts and Forte are unchanged, as planned.
+- Estimate details: original scope as Step 3 Stage 2; no revision.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*

@@ -394,6 +394,51 @@ final class PledgeCampaignTest
         pledgeAssertSame(true, $stranger !== '');
     }
 
+    public function testABareWithdrawalFoldsIntoThePledgeAndUndoLeavesNoStub(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Fold campaign', 'goal: 1000 coffees');
+        $first = $this->reply($service, $thread, 'pledge: 300');
+        $second = $this->reply($service, $thread, 'pledge: 200');
+        $third = $this->reply($service, $thread, 'pledge: 100');
+        $bare = $this->replyTo($service, $thread, $first, 'withdraw');
+        $noted = $this->replyTo($service, $thread, $second, "withdraw\n\nThe order fell through.");
+        $answered = $this->replyTo($service, $thread, $third, 'withdraw');
+        $this->replyTo($service, $thread, $answered, 'Sorry to hear that.');
+        $application = fn (): Application => new Application(dirname(__DIR__), $root, $database);
+        $card = static fn (string $postId): string => 'data-post-id="' . $postId . '"';
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED=1');
+        try {
+            $page = $this->render($application(), '/threads/' . rawurlencode($thread));
+            pledgeAssertContains('<strong>0</strong> of 1000 coffees pledged', $page);
+            // The bare withdrawal has no card; the pledge links to its page, which still shows it.
+            pledgeAssertNotContains($card($bare), $page);
+            pledgeAssertContains('<a href="/posts/' . $bare . '">Withdrawn</a>', $page);
+            pledgeAssertContains($card($noted), $page);
+            pledgeAssertContains($card($answered), $page);
+            pledgeAssertContains('withdraw', $this->render($application(), '/posts/' . rawurlencode($bare)));
+        } finally {
+            putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+        }
+        try {
+            // With the flag off nothing folds: the line is an ordinary reply.
+            putenv('FORUM_PLEDGES_ENABLED');
+            pledgeAssertContains($card($bare), $this->render($application(), '/threads/' . rawurlencode($thread)));
+
+            // Undo: retracting the withdraw reply restores the pledge and leaves no "retracted" stub.
+            putenv('FORUM_PLEDGES_ENABLED=1');
+            (new PDO('sqlite:' . $database))->prepare("UPDATE posts SET retracted_at = '2026-11-16T09:00:00Z', body = '' WHERE post_id = ?")->execute([$bare]);
+            $undone = $this->render($application(), '/threads/' . rawurlencode($thread));
+            pledgeAssertContains('<strong>300</strong> of 1000 coffees pledged', $undone);
+            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees</p>', $undone);
+            pledgeAssertNotContains($card($bare), $undone);
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+    }
+
     /** @return array{string,string,LocalWriteService,string} */
     private function environment(): array
     {
