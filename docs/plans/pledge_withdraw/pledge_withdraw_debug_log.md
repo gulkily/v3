@@ -69,3 +69,25 @@ Revision of the Step 2 entry above, after the maintainer's review comment on dec
 - "<=50 lines of change" per stage: Stage 1 and Stage 3 may pass it once tests are counted.
 - Steps 2 and 3 and the bookkeeping edits remain uncommitted in a cloud workspace; whether that survives to Step 4 depends on the session.
 - R1 reference hashes were not re-verified this session.
+
+## 2026-11-16T05:44Z — Step 4
+
+**Necessary/useful instructions**
+- `AGENTS.md` "before any push to an existing branch, check that its PR is still open": the check found PR #268 merged between Step 3's handoff and its approval, which settled Step 3's Branch question and moved the work to a new branch from `origin/main`. Retain.
+- `step4_implementation_before.md` planning commit gate: kept Steps 1 to 3 and the folder move apart from code. Retain.
+- Stage Boundary Protocol: each stage's tests and summary went into its own commit; the summary was easy to write while the stage was fresh. Retain.
+- `implementation_standards.md` "complete the outcome through its ordinary entry": led to extending the browser check with a real signed press and a forced failure, not only PHP rendering tests. Retain.
+- Shared standards "inspect existing implementations": found that `submitSignedReplyFormToApi` is not exposed and that the Outbox's prepare and finalize pair is, so no signing code changed. Retain.
+
+**Redundant/unnecessary instructions**
+- The organization rule and the planning-commit allowance say in three places (Planning Artifacts, Commit discipline, Step 4 Before) what may be in the planning commit. One statement with two links would do.
+
+**Inapplicable instructions**
+- Follow-up Cycles Before Merge: prepared for in Step 3, then not needed because the parent PR merged.
+- Navigation icon rule; dependency approval; schema change requirements.
+
+**Uncertain assessments**
+- The planning commit may not include the ledger, but this cycle's Step 1 commit (made earlier at the maintainer's request) already did. The later ledger, checklist and spec edits were held back from the planning commit and went in with Stage 1. The rule does not say what to do with non-Railspike planning files such as a multi-cycle checklist.
+- The main branch gained a related flag (count pledges with no name) after Step 3 was written. It was treated as new understanding within scope and recorded at entry. The instructions do not name a checkpoint for "the base moved between approval and Step 4".
+- A ledger edit failed silently in the Stage 1 commit script; the Step 4 entry line is therefore folded into the closeout entry.
+- R1 reference hashes were not re-verified this session.
