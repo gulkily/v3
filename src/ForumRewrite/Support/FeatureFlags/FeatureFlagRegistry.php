@@ -52,6 +52,7 @@ final class FeatureFlagRegistry
     public const PENDING_CHIP_APPROVAL_ENABLED = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
+    public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
@@ -65,7 +66,7 @@ final class FeatureFlagRegistry
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
-            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED],
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -405,6 +406,15 @@ final class FeatureFlagRegistry
                 'Offer Tools → Usage log, where visitors can record their own page views and clicks in their browser and upload them, and Tools → Usage reports, where root operators see click counts and journeys that could be shorter. Reports are kept in a private file outside exports.',
                 false,
                 self::USAGE_REPORTS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::PLEDGES_ENABLED,
+                'Pledges',
+                'A thread whose opening post has a line "goal: 1000 coffees" shows a running total, and replies with a line "pledge: 300" add to it. No money moves through the site. Off leaves the lines as plain text.',
+                false,
+                self::PLEDGES_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

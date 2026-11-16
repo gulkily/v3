@@ -25,6 +25,7 @@ $testFiles = [
     __DIR__ . '/EventWhenRecordTest.php',
     __DIR__ . '/EventStatusTest.php',
     __DIR__ . '/ThreadThemeTest.php',
+    __DIR__ . '/PledgeCampaignTest.php',
     __DIR__ . '/CalendarPageTest.php',
     __DIR__ . '/PersonIdentityOrderTest.php',
     __DIR__ . '/QdbPageTest.php',
