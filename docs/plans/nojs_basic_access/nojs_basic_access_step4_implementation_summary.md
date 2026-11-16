@@ -52,3 +52,46 @@ Branch `feat/nojs-basic-access` from `main` `32f884b1`; planning commit `58eefd2
   - Hiding Like/Flag without scripts follows Step 2's "script-dependent actions must not misrepresent availability". Reactions without scripts remain deferred.
 
 *— Claude (claude-opus-5-5) · 2026-11-16 UTC*
+
+## Stage 3 - Acceptance, Lynx replay and closeout
+
+- Changes:
+  - `docs/concepts/no_script_presentation.md`: new concept entry. It merges the two proposed entries (page-shell no-script presentation; members-only resume) because they share one mechanism. Its source links were checked.
+  - Ledger closeout (`docs/plans/effort_estimation_trial.md`, nojs section only; the uncommitted Windows ME section stays out of this commit).
+- Verification:
+  - No-script journey (`nojs_basic_access.mjs`), composers and members-only scripts-on checks: PASS (Stage 2 runs on the final code; Stage 3 changed only docs).
+  - Lynx 2.9.0dev.10 against an isolated fixture:
+    - `lynx -dump -number_fields /compose/thread` shows the textarea (fields 12–18) and Post (19) in server HTML.
+    - Lynx submitted the form's fields to its action (`-post_data`), followed the 303 and rendered "Posted from Lynx … by guest". A fresh Lynx load of the thread shows it again, and the record exists in the fixture repository. **Passed in this narrower form.**
+    - Keyboard-driven discovery: **not achieved.** Lynx arrow navigation stops on about 26 unlabeled "(Script button)" theme and palette buttons before the textarea, and scripted keystrokes (`-cmd_script`, also under a pseudo-terminal) kept landing in Lynx's command mode. Handed to the Windows ME cycle, which owns the old-engine clutter.
+  - Theme sweep: 13 themes, scripts on and off, recorded in Stage 2.
+  - Deployment, migration and roles: not applicable (no schema, authentication or deployment change; members-only gate unchanged and still 401).
+- Notes:
+  - Baseline failure kept: `board_compose_focus.mjs:61` (see Stage 1). It still fails on this branch exactly as on `main`; follow-up.
+  - Smoke 159/162: three tracked long-standing failures reproduced, unrelated.
+  - No full-suite run is claimed.
+
+*— Claude (claude-opus-5-5) · 2026-11-16 UTC*
+
+## Final verification
+
+| Check | Status |
+| --- | --- |
+| All three stages completed with stage-scoped commits that include summary updates | Passed (`19c2930c`, `15d5d529`, final stage commit) |
+| Planning commit holds only approved plans and organization (`58eefd2c`); summary created afterward | Passed |
+| Contract: entry, page 2, thread, inline and standalone threads and replies, drafts kept, reload, honest members-only denial, scripts off | Passed in Chromium (`nojs_basic_access.mjs`) |
+| Script-enabled behavior unchanged (composers, members-only sign-in flow, View query and Like in 13 themes) | Passed |
+| Lynx posting replay | Passed via Lynx form submission; keyboard discovery blocked (see Stage 3) |
+| `board_compose_focus.mjs` | Failed: baseline failure reproduced, cause partly diagnosed, follow-up |
+| `LocalAppSmokeTest` | 159/162; three tracked long-standing failures reproduced |
+| Full test suite | Not run |
+| Deployment, production, real old browsers | Not applicable or pending (Windows ME cycle) |
+
+## Study closeout
+
+- Entry projection 0.35 (reaffirmed). **Retrospective scope assessment: 0.40.** The extra came from the Like/Flag finding, the Lynx replay attempts and partial diagnosis of the baseline test timeout. This is a judgment, not measured labor.
+- Delivered scope: v1 as planned, with Like/Flag added under Step 2's existing "must not misrepresent availability" requirement (new understanding, not new scope).
+- Corrections vs new requests: none from the user during Step 4.
+- Maintainer comfortable-fit judgment and acceptance: pending. Merge: pending.
+
+*— Claude (claude-opus-5-5) · 2026-11-16 UTC*
