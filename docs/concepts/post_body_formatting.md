@@ -6,3 +6,5 @@ Sources: [record header](../specs/canonical_post_record_v1.md) (`Body-Format`), 
 Boundary: Formatting is display only: signatures, record bytes, search and retraction are unchanged. Raw HTML never renders and post links are http(s) only. The public offline snapshot and `scripts/publish_text.*` do not yet carry the format, so their posts stay plain.
 
 Automatic hashtags in bodies and labels in post metadata link to `/tags/{tag}`. Header and footer labels always remain linked. Operators can turn off body hashtag links with “Hashtag links in posts” in Feature flags (Site rendering), or override it with `FORUM_TAG_LINKS_ENABLED=false`. The flag defaults to on and does not affect tag assignment, authored Markdown links or stored content. Regenerate static pages and refresh saved offline reader shells after changing rendering flags.
+
+Photo details (2026-11-15): `Photo-` lines directly after an `Image-v1:` line render as a label and value list under the image in both plain and Markdown posts; see [photo details](photo_details.md).

@@ -123,11 +123,25 @@ final class ThreadAndPostPageController
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
 
+        $pledgeCampaign = $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_ENABLED)
+            ? \ForumRewrite\View\PledgeCampaign::fromPosts(
+                $posts,
+                $threadId,
+                $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED),
+            )
+            : null;
+
         return $this->routeServices->renderPageTemplate(
             'thread.php',
             [
                 'collapseSameAuthorPostsEnabled' => $this->routeServices->featureFlags()->isEnabled(
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
+                ),
+                'threadActivityDrawerEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::THREAD_ACTIVITY_DRAWER_ENABLED
+                ),
+                'postRecordsEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED
                 ),
                 'thread' => $threadRow,
                 'eventState' => ((string) ($threadRow['event_date'] ?? '')) !== ''
@@ -135,6 +149,7 @@ final class ThreadAndPostPageController
                     ? \ForumRewrite\Calendar\EventStatus::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId)
                     : null,
                 'threadTheme' => \ForumRewrite\View\ThreadTheme::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId),
+                'pledgeCampaign' => $pledgeCampaign,
                 'posts' => $posts,
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
@@ -174,6 +189,7 @@ final class ThreadAndPostPageController
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
                 '/assets/private_site_auth.js',
+                ...($pledgeCampaign !== null ? ['/assets/pledge_field.js'] : []),
             ]),
         );
     }

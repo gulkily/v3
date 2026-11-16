@@ -2355,7 +2355,7 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","spearmint","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
@@ -2788,16 +2788,23 @@ PHP;
     {
         // A <details> embed inside <p> makes the parser close the <p> early and turn the
         // stray </p> into an empty unclassed <p>, which Word 97 and Midnight draw as a box.
-        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
-        $card = $renderer->renderFragment('partials/thread_card.php', ['thread' => [
-            'root_post_id' => 'card-preview-embed-001',
-            'subject' => 'Artist - Title',
-            'body_preview' => "https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj  #rapclub",
-            'thread_labels' => ['rapclub'],
-            'reply_count' => 0,
-            'last_activity_at' => null,
-            'root_post_created_at' => null,
-        ]]);
+        // Media embeds are off by default, so turn them on for this render only.
+        $previous = getenv('FORUM_MEDIA_EMBEDS_ENABLED');
+        putenv('FORUM_MEDIA_EMBEDS_ENABLED=true');
+        try {
+            $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
+            $card = $renderer->renderFragment('partials/thread_card.php', ['thread' => [
+                'root_post_id' => 'card-preview-embed-001',
+                'subject' => 'Artist - Title',
+                'body_preview' => "https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj  #rapclub",
+                'thread_labels' => ['rapclub'],
+                'reply_count' => 0,
+                'last_activity_at' => null,
+                'root_post_created_at' => null,
+            ]]);
+        } finally {
+            putenv($previous === false ? 'FORUM_MEDIA_EMBEDS_ENABLED' : 'FORUM_MEDIA_EMBEDS_ENABLED=' . $previous);
+        }
 
         assertStringContains('media-embed-card', $card);
         assertStringContains('<div class="thread-card__preview">', $card);

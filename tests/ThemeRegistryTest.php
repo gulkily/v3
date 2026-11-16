@@ -260,8 +260,9 @@ final class ThemeRegistryTest
         assertSame([
             ['chicago', 'vapor'],
             ['bubblegum', 'forge'],
-            ['engagify', 'chouse'],
-            ['qdb', 'mitrapclub'],
+            ['spearmint', 'chouse'],
+            ['engagify', 'mitrapclub'],
+            ['qdb', null],
         ], self::layoutNames($layout, 'unpaired'));
     }
 

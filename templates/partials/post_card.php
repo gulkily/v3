@@ -105,6 +105,7 @@ if ($isRunTail) {
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
 <?php else: ?>
   <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post) ?></div>
+<?= $partial('partials/pledge_amount.php', ['post' => $post]) ?>
 <?php endif; ?>
 <?php if ($metaLine !== '' && $isContinuation): ?>
   <?= $metaLine ?>

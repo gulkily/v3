@@ -65,13 +65,15 @@ try {
     (new ForumRewrite\\Application(${JSON.stringify(project)}, ${JSON.stringify(project + '/tests/fixtures/parity_minimal_v1')}, ${JSON.stringify(join(root, 'summary-read.sqlite3'))}))->handle('GET', '/tools/usage-reports/');
   `], { encoding: 'utf8', maxBuffer: 1 << 26 });
   assert.match(summary, /<dt>Reports<\/dt><dd>1<\/dd>/, 'summary counts the upload');
-  const row = summary.split('<tr').find(part => part.includes('data-shortcut-candidate') && part.includes('<code>/threads/*</code>') && part.includes('<code>/tools/feature-flags</code>'));
-  assert.ok(row, 'thread → Feature Flags listed as a shortcut candidate');
-  assert.match(row, /tab:tools → [^<]+ → [^<]+<\/td>/, 'three clicks shown');
-  assert.match(row, /<td>3<\/td>/, 'fewest clicks is three');
+  const card = summary.split('<section class="usage-journey').map(part => part.split('</section>')[0]).find(part => part.includes('data-shortcut-idea') && part.includes('title="/threads/*">Thread</span>') && part.includes('title="/tools/feature-flags">Feature Flags</span>'));
+  assert.ok(card, 'Thread → Feature Flags listed as a shortcut idea, in words');
+  assert.equal((card.match(/<li title=/g) || []).length, 3, 'three steps shown');
+  assert.match(card, /<li title="tab:tools">Tools<\/li>/, 'first step named Tools');
+  assert.match(card, />3 clicks</, 'three clicks');
+  assert.match(card, /never in one click/, 'never in one click');
 
   assert.deepEqual(errors, [], 'no page errors');
-  console.log('Usage reports end to end: recorded three clicks from a thread to Feature Flags, uploaded through the real app, and the root summary lists it as a shortcut candidate.');
+  console.log('Usage reports end to end: recorded three clicks from a thread to Feature Flags, uploaded through the real app, and the root summary lists it as a shortcut idea in words.');
 } catch (error) {
   console.error(logs.slice(-2000));
   throw error;

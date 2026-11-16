@@ -1,0 +1,515 @@
+/* Theme: spearmint
+   Loud mint sibling of Bubblegum with its own shapes: a deep mint page with
+   leaf sprigs and fizz bubbles, white cards with a thick deep-teal outline,
+   a teal-and-white "gum wrapper" stripe across the top, a white frost halo
+   and a deep soft shadow; a teal-over-coral double wave under the header;
+   glossy candy buttons that bounce on hover and squish when pressed, with
+   coral for the primary action and for unread, pinned, focus and selection.
+   Uses system fonts only; ui-rounded gives the soft face on Apple devices. */
+:root[data-theme="spearmint"],
+.theme-menu__option[data-theme-option="spearmint"] {
+  color-scheme: light;
+  --spearmint-teal: #0e5753;
+  --spearmint-leaf: #2fa88d;
+  --spearmint-frost: #e3f8f0;
+  --spearmint-coral: #ff8f78;
+  --spearmint-coral-soft: #ffd6cc;
+  --spearmint-sky: #dff2ff;
+  --spearmint-lemon: #fff6c7;
+  --spearmint-wrapper: repeating-linear-gradient(135deg, #0e5753 0 7px, #ffffff 7px 14px);
+  --spearmint-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0 32%, rgba(255, 255, 255, 0) 55%);
+  --spearmint-shine-on-dark: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 32%, rgba(255, 255, 255, 0) 55%);
+  --spearmint-shadow: 0 0 0 5px rgba(255, 255, 255, 0.55), 0 12px 26px rgba(14, 87, 83, 0.28), 0 2px 4px rgba(14, 87, 83, 0.2);
+  --spearmint-shadow-small: 0 3px 0 var(--spearmint-teal);
+  --spearmint-shadow-lift: 0 5px 0 var(--spearmint-teal), 0 8px 14px rgba(14, 87, 83, 0.25);
+  --page-bg: #a9e9d2;
+  --body-background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.7' stroke-width='2'%3E%3Ccircle cx='28' cy='30' r='7'/%3E%3Ccircle cx='44' cy='18' r='3.5'/%3E%3Ccircle cx='168' cy='176' r='9'/%3E%3Ccircle cx='188' cy='160' r='4'/%3E%3Ccircle cx='96' cy='120' r='3'/%3E%3C/g%3E%3Cg fill='%23ffffff' fill-opacity='0.55'%3E%3Ccircle cx='31' cy='27' r='1.8'/%3E%3Ccircle cx='171' cy='172' r='2.2'/%3E%3C/g%3E%3Cg transform='translate(150 30) rotate(25)'%3E%3Cpath d='M0 0v44' stroke='%230e5753' stroke-opacity='0.28' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M0 14c-16-2-22-14-18-24 12 0 20 10 18 24z' fill='%232fa88d' fill-opacity='0.42'/%3E%3Cpath d='M0 26c16-2 22-14 18-24-12 0-20 10-18 24z' fill='%232fa88d' fill-opacity='0.42'/%3E%3C/g%3E%3Cg transform='translate(56 150) rotate(-30)'%3E%3Cpath d='M0 0v36' stroke='%230e5753' stroke-opacity='0.28' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M0 12c-13-2-18-11-15-20 10 0 17 8 15 20z' fill='%232fa88d' fill-opacity='0.42'/%3E%3Cpath d='M0 22c13-2 18-11 15-20-10 0-17 8-15 20z' fill='%232fa88d' fill-opacity='0.42'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(255, 255, 255, 0.55), transparent 70%),
+    linear-gradient(180deg, #c9f3e2 0%, #a9e9d2 50%, #8fe0c4 100%),
+    #a9e9d2;
+  --ink: #0b3633;
+  --ink-soft: #1d5a55;
+  --line: #0e5753;
+  --panel: #ffffff;
+  --input-bg: #f3fcf8;
+  --button-bg: #e3f8f0;
+  --button-alt-bg: #effcf7;
+  --feedback-ok-bg: #e4f8ee;
+  --feedback-error-bg: #ffe9e3;
+  --status-error: #a8261b;
+  --status-ok: #17663a;
+  --status-warning: #7a4a00;
+  --active-bg: #157a70;
+  --active-ink: #ffffff;
+  --active-line: #0e5753;
+  --active-ring: rgba(255, 143, 120, 0.55);
+  --body-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  --ui-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
+.theme-swatch[data-theme="spearmint"] {
+  background:
+    radial-gradient(circle at 68% 66%, #ff8f78 0 20%, transparent 22%),
+    repeating-linear-gradient(135deg, #0e5753 0 3px, #ffffff 3px 6px) top / 100% 38% no-repeat,
+    #a9e9d2;
+  border: 2px solid #0e5753;
+}
+
+.theme-menu__option[data-theme-option="spearmint"] {
+  border: 2px solid #0e5753;
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(135deg, #0e5753 0 4px, #ffffff 4px 8px) top / 100% 4px no-repeat,
+    #e3f8f0;
+  box-shadow: 0 3px 0 #0e5753;
+}
+
+/* site.css paints the page on a fixed body::before with one cover-sized
+   layer; the sprig pattern tiles at its own size instead. */
+:root[data-theme="spearmint"] body::before {
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-size: 220px 220px, cover, cover;
+}
+
+/* Cards: thick-outlined tiles with a gum-wrapper stripe on top, a frost
+   halo and a deep shadow. */
+:root[data-theme="spearmint"] .card {
+  border: 3px solid var(--spearmint-teal);
+  border-radius: 20px;
+  padding-top: calc(0.9rem + 12px);
+  box-shadow: var(--spearmint-shadow);
+  background:
+    var(--spearmint-wrapper) top / 100% 10px no-repeat,
+    linear-gradient(var(--spearmint-teal), var(--spearmint-teal)) 0 10px / 100% 2px no-repeat,
+    radial-gradient(ellipse 70% 6rem at 50% 12px, rgba(255, 143, 120, 0.16), transparent 75%) no-repeat,
+    linear-gradient(180deg, #ffffff 0%, #ecfaf4 100%),
+    var(--panel);
+}
+
+:root[data-theme="spearmint"] .thread-rows {
+  border: 3px solid var(--spearmint-teal);
+  border-radius: 18px;
+  box-shadow: var(--spearmint-shadow);
+  background: linear-gradient(180deg, #ffffff 0%, #ecfaf4 100%), var(--panel);
+}
+
+/* A list inside a card keeps the card's frame only. */
+:root[data-theme="spearmint"] .card > .thread-rows {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root[data-theme="spearmint"] .thread-row {
+  transition: background-color 120ms ease;
+}
+
+:root[data-theme="spearmint"] .thread-row:hover {
+  background-color: rgba(47, 168, 141, 0.12);
+}
+
+:root[data-theme="spearmint"] .thread-row + .thread-row {
+  border-top: 2px dotted rgba(14, 87, 83, 0.45);
+}
+
+:root[data-theme="spearmint"] .stack > * + * {
+  margin-top: 1.4rem;
+}
+
+:root[data-theme="spearmint"] .post-card.continuation {
+  margin-top: 0.6rem;
+}
+
+:root[data-theme="spearmint"] .pending-reply-card,
+:root[data-theme="spearmint"] .pending-thread-shell {
+  border-style: dashed;
+}
+
+:root[data-theme="spearmint"] .post-card:target {
+  box-shadow: var(--spearmint-shadow), 0 0 0 9px var(--spearmint-coral);
+}
+
+:root[data-theme="spearmint"] .card h1,
+:root[data-theme="spearmint"] .card h2,
+:root[data-theme="spearmint"] .card h3 {
+  color: var(--spearmint-teal);
+  font-weight: 900;
+}
+
+:root[data-theme="spearmint"] .card h1 {
+  text-shadow: 2px 2px 0 var(--spearmint-coral-soft);
+}
+
+/* The intro card's Hide button sits below the wrapper stripe. */
+:root[data-theme="spearmint"] .visitor-intro > button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  top: calc(12px + 0.35rem);
+}
+
+/* Wordmark: big white letters with a teal outline, a coral drop and a
+   large leaf. */
+:root[data-theme="spearmint"] .eyebrow,
+:root[data-theme="spearmint"] .eyebrow .site-brand {
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  font-size: 1.4rem;
+  text-shadow:
+    -2px -2px 0 var(--spearmint-teal), 0 -2px 0 var(--spearmint-teal),
+    2px -2px 0 var(--spearmint-teal), 2px 0 0 var(--spearmint-teal),
+    2px 2px 0 var(--spearmint-teal), 0 2px 0 var(--spearmint-teal),
+    -2px 2px 0 var(--spearmint-teal), -2px 0 0 var(--spearmint-teal),
+    4px 4px 0 var(--spearmint-coral);
+}
+
+:root[data-theme="spearmint"] .eyebrow .site-brand {
+  text-decoration: none;
+}
+
+:root[data-theme="spearmint"] .eyebrow .site-brand::after {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-left: 0.2em;
+  vertical-align: 0.25em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%232fa88d' stroke='%230e5753' stroke-width='1.3' stroke-linejoin='round' d='M14 2C7 2 2 6 3 13c7 1 11-4 11-11z'/%3E%3Cpath fill='none' stroke='%230e5753' stroke-width='1.1' stroke-linecap='round' d='M3 13L10 6'/%3E%3Cpath fill='none' stroke='%23ffffff' stroke-opacity='0.8' stroke-width='1.2' stroke-linecap='round' d='M8 4.5c-1.5 0.6-2.6 1.6-3.2 3'/%3E%3C/svg%3E") center / contain no-repeat;
+  transform-origin: 20% 80%;
+  transition: transform 200ms ease;
+}
+
+:root[data-theme="spearmint"] .eyebrow .site-brand:hover::after {
+  transform: rotate(-18deg);
+}
+
+/* A teal-over-coral double wave under the header. */
+:root[data-theme="spearmint"] .site-header:not(.site-header--app)::after {
+  content: "";
+  display: block;
+  margin-top: 0.8rem;
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='14'%3E%3Cpath d='M0 4.5 Q6 0.5 12 4.5 T24 4.5' fill='none' stroke='%230e5753' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M0 10 Q6 6 12 10 T24 10' fill='none' stroke='%23ff8f78' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 24px 14px repeat-x;
+}
+
+/* On the app header (zenmemes) the same wave replaces the straight rule
+   site.css draws across the page; a border-image outset cannot cause
+   sideways scrolling. The html type selector outranks site.css's rule, which
+   loads after theme stylesheets. */
+@media (min-width: 640px) {
+  html:root[data-theme="spearmint"] [data-shell="app"] .site-header--app {
+    border-bottom: 14px solid var(--spearmint-teal);
+    border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='14'%3E%3Cpath d='M0 4.5 Q6 0.5 12 4.5 T24 4.5' fill='none' stroke='%230e5753' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M0 10 Q6 6 12 10 T24 10' fill='none' stroke='%23ff8f78' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 14 0 / 0 0 14px 0 / 0 100vw round;
+  }
+}
+
+/* Controls: glossy candy pills and buttons with a solid teal "base" that
+   bounce up on hover and squish when pressed. */
+:root[data-theme="spearmint"] .nav-link {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 999px;
+  background: var(--spearmint-shine), #ffffff;
+  color: var(--spearmint-teal);
+  box-shadow: var(--spearmint-shadow-small);
+  font-weight: 800;
+  transition: transform 140ms cubic-bezier(0.3, 1.6, 0.6, 1), box-shadow 140ms ease;
+}
+
+:root[data-theme="spearmint"] .nav-link:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--spearmint-shadow-lift);
+}
+
+:root[data-theme="spearmint"] .nav-link:active {
+  transform: translateY(2px) scale(0.97);
+  box-shadow: 0 1px 0 var(--spearmint-teal);
+}
+
+:root[data-theme="spearmint"] .nav-link[data-unread-count]:not([data-unread-count="0"]) {
+  background: var(--spearmint-shine), var(--spearmint-coral-soft);
+}
+
+:root[data-theme="spearmint"] .nav-link.is-active,
+:root[data-theme="spearmint"] .board-filter .nav-link[aria-current] {
+  background: var(--spearmint-shine-on-dark), var(--active-bg);
+  color: var(--active-ink);
+  box-shadow: 0 3px 0 var(--spearmint-coral);
+}
+
+:root[data-theme="spearmint"] input,
+:root[data-theme="spearmint"] select {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 14px;
+  background: var(--input-bg);
+  box-shadow: inset 0 2px 0 rgba(14, 87, 83, 0.08);
+}
+
+:root[data-theme="spearmint"] input[type="checkbox"],
+:root[data-theme="spearmint"] input[type="radio"] {
+  border-radius: revert;
+  box-shadow: none;
+  accent-color: var(--active-bg);
+}
+
+:root[data-theme="spearmint"] textarea {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 16px;
+  background: var(--input-bg);
+  box-shadow: inset 0 2px 0 rgba(14, 87, 83, 0.08);
+}
+
+:root[data-theme="spearmint"] input:focus,
+:root[data-theme="spearmint"] textarea:focus,
+:root[data-theme="spearmint"] select:focus {
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(47, 168, 141, 0.35);
+}
+
+:root[data-theme="spearmint"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 16px;
+  background: var(--spearmint-shine), var(--button-bg);
+  color: var(--spearmint-teal);
+  box-shadow: var(--spearmint-shadow-small);
+  font-family: var(--ui-font);
+  font-weight: 900;
+  transition: transform 140ms cubic-bezier(0.3, 1.6, 0.6, 1), box-shadow 140ms ease;
+}
+
+:root[data-theme="spearmint"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--spearmint-shadow-lift);
+}
+
+:root[data-theme="spearmint"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+  transform: translateY(2px) scale(0.95);
+  box-shadow: 0 1px 0 var(--spearmint-teal);
+}
+
+/* The primary action is coral. */
+:root[data-theme="spearmint"] button[type="submit"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--spearmint-shine), var(--spearmint-coral);
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="spearmint"] button.feature-flags-chip[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--spearmint-shine-on-dark), var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="spearmint"] .thread-reaction-button {
+  padding: 0.3rem 0.6rem;
+}
+
+/* Copy inside a prompt field (/agent/): a bare icon, since a candy button with
+   a solid base crowds the field's rounded corner. Fill on hover; no bounce. */
+:root[data-theme="spearmint"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border-color: transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="spearmint"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover,
+:root[data-theme="spearmint"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):focus-visible {
+  background: var(--button-bg);
+  box-shadow: none;
+  transform: none;
+}
+
+:root[data-theme="spearmint"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+  box-shadow: none;
+  transform: none;
+}
+
+:root[data-theme="spearmint"] .thread-reaction-button[disabled] {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
+:root[data-theme="spearmint"] button:not(.theme-menu__option):focus-visible,
+:root[data-theme="spearmint"] input:focus-visible,
+:root[data-theme="spearmint"] textarea:focus-visible,
+:root[data-theme="spearmint"] .nav-link:focus-visible {
+  outline: 3px solid var(--spearmint-coral);
+  outline-offset: 3px;
+}
+
+:root[data-theme="spearmint"] .pinned-thread-marker {
+  background: var(--spearmint-coral);
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 999px;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+:root[data-theme="spearmint"] .feedback,
+:root[data-theme="spearmint"] [data-role="public-key-viewer"],
+:root[data-theme="spearmint"] [data-role="private-key-viewer"] {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 16px;
+  box-shadow: var(--spearmint-shadow-small);
+}
+
+:root[data-theme="spearmint"] ::selection {
+  background: var(--spearmint-coral);
+  color: var(--ink);
+}
+
+:root[data-theme="spearmint"] [data-shell="app"] .new-post-button,
+:root[data-theme="spearmint"] .account-menu__trigger {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 16px;
+  background: var(--spearmint-shine), var(--button-bg);
+  color: var(--spearmint-teal);
+  box-shadow: var(--spearmint-shadow-small);
+  font-weight: 900;
+}
+
+:root[data-theme="spearmint"] [data-shell="app"] .new-post-button {
+  background: var(--spearmint-shine), var(--spearmint-coral);
+  color: var(--ink);
+}
+
+:root[data-theme="spearmint"] [data-shell="app"] .new-post-button:where(.is-active) {
+  background: var(--spearmint-shine-on-dark), var(--active-bg);
+  color: var(--active-ink);
+}
+
+/* Tools: pastel candy tiles. */
+:root[data-theme="spearmint"] .tool-launcher-button {
+  border: 2px solid var(--spearmint-teal);
+  border-radius: 14px;
+  background: var(--spearmint-shine), var(--spearmint-frost);
+  color: var(--spearmint-teal);
+  box-shadow: var(--spearmint-shadow-small);
+  font-weight: 800;
+  transition: transform 140ms cubic-bezier(0.3, 1.6, 0.6, 1), box-shadow 140ms ease;
+}
+
+:root[data-theme="spearmint"] .tool-launcher-item:nth-child(4n + 2) .tool-launcher-button {
+  background: var(--spearmint-shine), var(--spearmint-coral-soft);
+}
+
+:root[data-theme="spearmint"] .tool-launcher-item:nth-child(4n + 3) .tool-launcher-button {
+  background: var(--spearmint-shine), var(--spearmint-sky);
+}
+
+:root[data-theme="spearmint"] .tool-launcher-item:nth-child(4n + 4) .tool-launcher-button {
+  background: var(--spearmint-shine), var(--spearmint-lemon);
+}
+
+:root[data-theme="spearmint"] .tool-launcher-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--spearmint-shadow-lift);
+}
+
+/* Phones: the app nav is a bottom tab bar on a frosted strip; the More
+   panel is a grid of pastel candy tiles. */
+@media (max-width: 639px) {
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .site-header-actions {
+    border-top: 3px solid var(--spearmint-teal);
+    background:
+      var(--spearmint-wrapper) top / 100% 5px no-repeat,
+      linear-gradient(180deg, #ffffff 0%, var(--spearmint-frost) 100%);
+    box-shadow: 0 -6px 16px rgba(14, 87, 83, 0.18);
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .nav > .nav-link,
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .new-post-button,
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .account-menu__trigger {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    color: var(--spearmint-teal);
+    transform: none;
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root[data-theme="spearmint"] [data-shell="app"] .site-header--app .new-post-button.is-active {
+    background: var(--spearmint-shine-on-dark), var(--active-bg);
+    color: var(--active-ink);
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .account-menu__panel {
+    border: 0;
+    border-top: 3px solid var(--spearmint-teal);
+    background: var(--body-background);
+    box-shadow: none;
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .account-menu__links .nav-link {
+    border-radius: 18px;
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 2) {
+    background: var(--spearmint-shine), var(--spearmint-coral-soft);
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 3) {
+    background: var(--spearmint-shine), var(--spearmint-sky);
+  }
+
+  :root[data-theme="spearmint"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 4) {
+    background: var(--spearmint-shine), var(--spearmint-lemon);
+  }
+
+  /* The board's All / Liked / Newest / Tags row fits on one line. */
+  :root[data-theme="spearmint"] .board-toolbar {
+    gap: 0.35rem;
+  }
+
+  :root[data-theme="spearmint"] .board-filter {
+    gap: 0.25rem;
+  }
+
+  :root[data-theme="spearmint"] .board-toolbar .nav-link {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root[data-theme="spearmint"] .card {
+    border-radius: 16px;
+  }
+}
+
+/* Scrollbars: a teal candy thumb on a mint track. The html form is
+   required (theme development guide). */
+@supports not selector(::-webkit-scrollbar) {
+  html[data-theme="spearmint"] {
+    scrollbar-color: #157a70 #c9f3e2;
+  }
+}
+
+html[data-theme="spearmint"]::-webkit-scrollbar,
+html[data-theme="spearmint"] ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+html[data-theme="spearmint"]::-webkit-scrollbar-track,
+html[data-theme="spearmint"] ::-webkit-scrollbar-track {
+  background: #c9f3e2;
+}
+
+html[data-theme="spearmint"]::-webkit-scrollbar-thumb,
+html[data-theme="spearmint"] ::-webkit-scrollbar-thumb {
+  border: 3px solid #c9f3e2;
+  border-radius: 999px;
+  background: #157a70;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="spearmint"] .nav-link,
+  :root[data-theme="spearmint"] button,
+  :root[data-theme="spearmint"] .tool-launcher-button,
+  :root[data-theme="spearmint"] .thread-row,
+  :root[data-theme="spearmint"] .eyebrow .site-brand::after {
+    transition: none;
+  }
+}

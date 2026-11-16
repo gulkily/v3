@@ -63,7 +63,15 @@ final class AgentPageController
             ],
             'Prompts',
             'agent',
-            [],
+            // Like on a prompt card is the thread page's Like, so the same scripts.
+            $shown === [] ? [] : [
+                '/assets/openpgp_loader.js',
+                '/assets/browser_signing.js',
+                '/assets/outbox_store.js',
+                '/assets/outbox_storage.js',
+                '/assets/outbox_sender.js',
+                '/assets/thread_reactions.js',
+            ],
         );
     }
 }

@@ -1736,7 +1736,7 @@ class LocalWriteService
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
-            $timings = array_merge($timings, $this->synchronizePostReactionDerivedState($postId, $commitSha));
+            $timings = array_merge($timings, $this->synchronizePostReactionDerivedState($postId, $commitSha, [$recordPath]));
 
             $phaseStartedAt = hrtime(true);
             if ($post->isReply()) {
@@ -3631,7 +3631,8 @@ class LocalWriteService
     /**
      * @return array<string, float>
      */
-    private function synchronizePostReactionDerivedState(string $postId, string $commitSha): array
+    /** @param list<string>|null $writtenPaths reaction records this write added; null scans them all */
+    private function synchronizePostReactionDerivedState(string $postId, string $commitSha, ?array $writtenPaths = null): array
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
@@ -3648,7 +3649,7 @@ class LocalWriteService
         }
 
         try {
-            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha);
+            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha, $writtenPaths);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
             $this->logRebuildFallback('post reaction update', $throwable->getMessage());
@@ -4503,28 +4504,7 @@ class LocalWriteService
      */
     private function extractThreadLabelsFromBody(string $body): array
     {
-        $labels = [];
-        foreach (explode("\n", $body) as $line) {
-            if (preg_match('/^\s*>/', $line) === 1) {
-                continue;
-            }
-
-            if (preg_match_all('/(^|[^A-Za-z0-9-])#([A-Za-z0-9-]+)/', $line, $matches) < 1) {
-                continue;
-            }
-
-            foreach ($matches[2] as $label) {
-                if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $label)) {
-                    continue;
-                }
-
-                if (!in_array($label, $labels, true)) {
-                    $labels[] = $label;
-                }
-            }
-        }
-
-        return $labels;
+        return \ForumRewrite\Support\ThreadLabels::fromBody($body);
     }
 
     private function reactionJournalDirectory(): string
