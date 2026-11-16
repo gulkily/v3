@@ -638,6 +638,12 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/import/' || $path === '/tools/import') && $method === 'POST'
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $this->importController()->submit($query);
+            return;
+        }
+
         if (($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') && $method === 'POST') {
             $this->toolsPageController()->submitFeatureFlagSubmit($query);
             return;

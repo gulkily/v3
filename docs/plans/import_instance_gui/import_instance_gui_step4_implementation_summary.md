@@ -67,3 +67,21 @@ Step 4 entry: 0.65 whole-cycle projection reaffirmed, scope v3 unchanged; stage-
 - Estimate details: original scope unchanged; retrospective slightly higher.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Import, Resume and Cancel with live progress
+**Original estimate: 0.14**
+**Retrospective: 0.14**
+- Changes:
+  - `ImportController::submit` handles `POST /tools/import/` (behind the flag) with `status`, `import`, `resume` and `cancel`. It runs `SameOriginRequest::check()` and the root gate, answers JSON for `X-Requested-With: ForumImport`, and falls back to the page with a notice for a plain form. It refuses a request while one is queued or running, a new import while a run is pending, resume or cancel with nothing pending, and cancel once the content is committed (409). Bad input gets a 400.
+  - `templates/pages/tools_import.php`: a source field filled with the newest remembered source and a `datalist` of the rest, plus Import. With a pending run it shows Resume and Cancel import (Resume only once committed). It also shows progress lines, the last failed request, a worker-not-running line, and a live status line.
+  - `public/assets/import_control.js`, modeled on `deploy_control.js`: posts JSON, polls `status` every 3 seconds, shows progress lines, and reloads when the task finishes. A lost reply falls back to polling.
+  - `tool-details.css` loads for the page, with small rules for the form row and the progress list.
+- Verification:
+  - `./v3 test --smoke ImportPageTest`: passed. New tests: refusals (signed out, identity hint only, non-operator, cross-site, no origin evidence), status, unknown action, resume with nothing pending, empty source, queue, remembered source, second request refused, plain-form fallback, and the page's idle, running and failed states.
+  - `node --check public/assets/import_control.js`: passed.
+  - Phone and desktop rendering is deferred to Stage 6.
+  - Full suite not run.
+- Notes: the controller-level resume and cancel paths with a real pending run are covered end to end in Stage 6, because the test fixture repository has no `.git`.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
