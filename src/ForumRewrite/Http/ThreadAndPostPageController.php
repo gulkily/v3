@@ -124,7 +124,11 @@ final class ThreadAndPostPageController
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
 
         $pledgeCampaign = $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_ENABLED)
-            ? \ForumRewrite\View\PledgeCampaign::fromPosts($posts, $threadId)
+            ? \ForumRewrite\View\PledgeCampaign::fromPosts(
+                $posts,
+                $threadId,
+                $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED),
+            )
             : null;
 
         return $this->routeServices->renderPageTemplate(

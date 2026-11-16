@@ -15,7 +15,8 @@ use ForumRewrite\Support\PledgeDirective;
  *
  * A pledge counts when its post is unretracted, names its author, has counted
  * attribution (so an unverified post counts only while Verified attribution is off),
- * and reads as a number, optionally followed by the campaign's unit. Every other
+ * and reads as a number, optionally followed by the campaign's unit. An instance can
+ * choose to count posts with no name too (FORUM_PLEDGES_COUNT_UNNAMED_ENABLED). Every other
  * pledge line stays visible with the reason it is not counted.
  */
 final class PledgeCampaign
@@ -27,12 +28,13 @@ final class PledgeCampaign
 
     /**
      * @param array<int, array<string, mixed>> $posts thread rows, root included
+     * @param bool $countUnnamed count pledges whose post names no author
      * @return array{
      *     goal: string, unit: string, pledged: string, count: int, fill_percent: float, goal_percent: ?float,
      *     pledges: array<string, array{state: string, amount: ?string, note: string}>
      * }|null null when the thread is not a campaign
      */
-    public static function fromPosts(array $posts, string $rootPostId): ?array
+    public static function fromPosts(array $posts, string $rootPostId, bool $countUnnamed = false): ?array
     {
         $goal = null;
         foreach ($posts as $post) {
@@ -64,7 +66,7 @@ final class PledgeCampaign
                 continue;
             }
             $state = match (true) {
-                (string) ($post['author_identity_id'] ?? '') === '' => self::UNNAMED,
+                !$countUnnamed && (string) ($post['author_identity_id'] ?? '') === '' => self::UNNAMED,
                 (int) ($post['attribution_counted'] ?? 1) !== 1 => self::UNVERIFIED,
                 default => self::COUNTED,
             };

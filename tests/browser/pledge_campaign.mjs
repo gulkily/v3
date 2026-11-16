@@ -15,10 +15,12 @@ import { chromium } from 'playwright-core';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = (process.argv.find(a => a.startsWith('--screenshots=')) || '').slice('--screenshots='.length);
+// --count-unnamed runs with "Count pledges with no name" on: the no-JavaScript pledge then counts.
+const countUnnamed = process.argv.includes('--count-unnamed');
 runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
 const keys = await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'seed' }], format: 'armored' });
 const root = await mkdtemp(join(tmpdir(), 'pledges-'));
-const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', SIGNED_REACTION_TEST_ROOT: root, FORUM_PLEDGES_ENABLED: '1',
+const env = { ...process.env, FORUM_SITE_ID: 'zenmemes', SIGNED_REACTION_TEST_ROOT: root, FORUM_PLEDGES_ENABLED: '1', ...(countUnnamed ? { FORUM_PLEDGES_COUNT_UNNAMED_ENABLED: '1' } : {}),
   FORUM_SECRETS_PATH: join(root, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') };
 const seeded = spawnSync('php', [join(project, 'tests/Support/signed_reaction_browser_fixture.php'), root], { input: JSON.stringify(keys), encoding: 'utf8', env });
 assert.equal(seeded.status, 0, seeded.stderr);
@@ -93,7 +95,7 @@ try {
   assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
   assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
 
-  // Without JavaScript the server writes the line. The post has no name, so it shows and is not counted.
+  // Without JavaScript the server writes the line. The post has no name, so it counts only with --count-unnamed.
   const plain = await open(false);
   await plain.page.goto(base + '/threads/' + threadId);
   await plain.page.locator('[data-compose-kind="reply"] [data-role="pledge-amount"]').fill('12.5');
@@ -101,9 +103,16 @@ try {
   await plain.page.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]').click();
   await plain.page.waitForLoadState('load');
   await plain.page.goto(base + '/threads/' + threadId);
-  assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').textContent()).trim(), '12.5 coffees · Not counted: no name');
+  if (countUnnamed) {
+    assert.equal(await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').count(), 0);
+    assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="counted"]').last().textContent()).trim(), '12.5 coffees');
+    assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1312.5 of 1000 coffees pledged');
+    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges');
+  } else {
+    assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').textContent()).trim(), '12.5 coffees · Not counted: no name');
+    assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+  }
   assert.equal(await plain.page.getByText('pledge: 12.5').first().isVisible(), true);
-  assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
   // A line that is not a number stays a reply and says why.
   await plain.page.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('pledge: a few');
   await plain.page.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]').click();
@@ -113,7 +122,7 @@ try {
   await plain.context.close();
 
   // Every theme: nothing overflows, and the sum, bar and field are on the page.
-  for (const theme of ['light', 'dark', 'gloss', 'glossdark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'bubblegum', 'spearmint']) {
+  for (const theme of countUnnamed ? [] : ['light', 'dark', 'gloss', 'glossdark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'bubblegum', 'spearmint']) {
     for (const [width, height] of [[375, 667], [1280, 900]]) {
       const view = await open(true, width, height);
       await view.page.addInitScript(theme => {
