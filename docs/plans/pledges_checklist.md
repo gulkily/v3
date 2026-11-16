@@ -27,7 +27,7 @@ Found on a first read at `9e5aa010`. Each cycle re-checks its own part before pl
   - Checks: `PledgeCampaignTest` (7 tests) with the smoke set, and `tests/browser/pledge_campaign.mjs` in 17 themes at 375 and 1280 px. The full suite was not run. Outbox and offline sending were not exercised.
   - Left out: no field on the separate Reply page or in paned layouts; the Pledge/Reply switch from the mock-up became one optional field.
 - [ ] **2. `pledge_withdraw`** — a pledger withdraws a pledge; it stays visible, marked withdrawn, and stops counting.
-  - Status: Step 1 written 2026-11-16 on branch `plan/pledge-withdraw` (based on `feat/pledge-campaigns`), awaiting the maintainer's `Approved Step 1`. [Step 1](./pledge_withdraw_step1_solution_assessment.md)
+  - Status: Step 1 written 2026-11-16 on branch `plan/pledge-withdraw` (based on `feat/pledge-campaigns`), awaiting the maintainer's `Approved Step 1`. [Step 1](./pledge_withdraw/pledge_withdraw_step1_solution_assessment.md)
   - Open: the mechanism. Plain retraction does not fit (see inventory). Step 1 compares four and recommends a `withdraw` line in a reply to the pledge, read when the thread is shown.
   - If chosen, the spec's decided line "Withdrawal reuses the existing retraction method" needs rewording, and cycle 3 can use the same reply-line mechanism for fills with amounts.
 - [ ] **3. `pledge_fills`** — the pledger marks a pledge delivered; the author confirms or disputes; the author and operators mark fills directly; partial fills add up. Totals gain filled and confirmed.

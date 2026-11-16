@@ -2,17 +2,17 @@
 
 Debug mode: enabled ([debug log](./pledge_withdraw_debug_log.md))
 
-Effort study: `railspike-effort` / `v3/pledge_withdraw`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment. Parent: `v3/pledge_campaigns`.
+Effort study: `railspike-effort` / `v3/pledge_withdraw`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment. Parent: `v3/pledge_campaigns`.
 
 Extended estimates: enabled
 
-Status: Step 1 written 2026-11-16, awaiting `Approved Step 1`. Approval is the maintainer's; the one-time delegation in cycle 1 does not carry over.
+Status: Step 1 approved by the maintainer 2026-11-16 (Option A). Approval is the maintainer's; the one-time delegation in cycle 1 does not carry over.
 
 **Cycle estimate: 0.35**
 
 # Step 1: Solution Assessment — Pledge withdraw
 
-Second of seven cycles in [pledges_checklist.md](./pledges_checklist.md). Design: [pledges_spec.md](./pledges_spec.md). Builds on cycle 1, [pledge campaigns](./pledge_campaigns/pledge_campaigns_step4_implementation_summary.md) (PR #268, not merged when this was written).
+Second of seven cycles in [pledges_checklist.md](../pledges_checklist.md). Design: [pledges_spec.md](../pledges_spec.md). Builds on cycle 1, [pledge campaigns](../pledge_campaigns/pledge_campaigns_step4_implementation_summary.md) (PR #268, not merged when this was written).
 
 ## Original Query
 
@@ -28,7 +28,7 @@ The spec's decided list says "Withdrawal reuses the existing retraction method."
 
 A pledger cannot take a pledge back in a way that leaves it visible: retracting the reply removes its text and amount, and nothing else marks a pledge as withdrawn.
 
-Concepts touched: [pledge campaign](../concepts/pledge_campaign.md), changed in every option. [Post retraction](../concepts/post_retraction.md): used unchanged in A and B, changed in C, relabelled in D. [Tagset](../concepts/tagset.md) and [reaction record](../concepts/reaction_record.md): changed in B only. [Shared composer](../concepts/shared_composer.md): used unchanged.
+Concepts touched: [pledge campaign](../../concepts/pledge_campaign.md), changed in every option. [Post retraction](../../concepts/post_retraction.md): used unchanged in A and B, changed in C, relabelled in D. [Tagset](../../concepts/tagset.md) and [reaction record](../../concepts/reaction_record.md): changed in B only. [Shared composer](../../concepts/shared_composer.md): used unchanged.
 
 No matching item exists in `docs/feedback/items/`.
 
