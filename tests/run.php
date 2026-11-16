@@ -126,6 +126,7 @@ $testFiles = [
     __DIR__ . '/InboxPageTest.php',
     __DIR__ . '/InboxFeedTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',
+    __DIR__ . '/ApprovalRootSuggestionsCommandTest.php',
     __DIR__ . '/ApprovalPolicyTest.php',
     __DIR__ . '/ApprovalAcceptanceTest.php',
     __DIR__ . '/ApprovalReceiptMaintenanceTest.php',

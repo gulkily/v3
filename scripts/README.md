@@ -14,6 +14,7 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `inject_approval.php` | `./v3 approve`, `./v3 approval seed`, `./v3 approval approve` | Seed or grant key approval from the server ([approval](../docs/concepts/approval_acceptance.md)) |
 | `approval_receipts.php` | `./v3 approval receipts` | Inspect or convert approval receipts |
 | `audit_approvals.php` | `./v3 approval audit` | Audit who approved whom |
+| `suggest_approval_roots.php` | `./v3 approval suggest-roots` | Suggest which keys to seed as roots after an import without seeds |
 | `archive_thread.php` | `./v3 archive-thread` | Archive one thread out of the live repository |
 | `bake_legacy_timestamps.php` | `./v3 bake-timestamps` | Write explicit timestamps into legacy records |
 | `build_static_artifacts.php` | `./v3 build-static` | Build static HTML pages |
