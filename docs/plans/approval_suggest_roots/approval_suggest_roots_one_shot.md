@@ -10,7 +10,7 @@ Extended estimates: enabled (new enrolled cycle default); no real alternatives o
 
 **Cycle estimate: 0.30 (intake)**
 
-Status: planned; next permitted action: implement on `feat/approval-suggest-roots`.
+Status: implemented and verified locally; not pushed (push access to the repository was denied in this session). Next action: the maintainer applies the patch or grants push so a PR can be opened.
 
 ## Original request
 
@@ -63,15 +63,42 @@ Approval graph / root seeds: used unchanged. No inventory changes proposed.
 
 Base `65b98d00501abd914902e73bc3be75ba9797b4c6` (origin/main); branch `feat/approval-suggest-roots`.
 
-Planning commit: pending.
+Planning commit: `5565314b` (confirmed with `git log`; precedes implementation).
 
 ## Study history
 
 - 2026-11-16 intake: 0.30, scope v1. Prior exposure: before planning, the agent read `ApprovalPolicy`, `ReadModelBuilder::deriveApprovalState`, `ApprovalAcceptance`, `ApprovalReceiptText`, `ApprovalAudit` and `ApprovalHistory` to answer the original question.
 - 2026-11-16 execution entry: 0.30 reaffirmed.
+- 2026-11-16 closeout: scope v1 delivered. Retrospective scope assessment: 0.25 (edge rules and receipt reading were reusable as planned). Maintainer acceptance pending.
 
 _Claude (Opus 5.5), 2026-11-16_
 
 ## Dated execution history
 
 - 2026-11-16: plan written.
+- 2026-11-16: added `Security\ApprovalTarget::fromPost`; `ReadModelBuilder::extractApprovalTargetIdentityId` now delegates to it (behaviour unchanged).
+- 2026-11-16: correction during editing. The first scripted extraction cut the builder method at the wrong closing brace; restored from Git before any test run and redone.
+- 2026-11-16: added `Support\ApprovalRootSuggestions` (edges, iterative Tarjan components, source detection, coverage by existing seeds, per-suggestion evidence and ranking), `scripts/suggest_approval_roots.php`, the `./v3 approval suggest-roots` route and usage line, and the scripts index row. Retracted approval posts are skipped. Seed commands are built in the script so they carry `--repository-root`/`--database-path` when given; the class returns data only, for a later welcome-screen caller.
+- 2026-11-16: maintainer noted, mid-task, that this will probably move into the GUI later (welcome screen). Disposition: future follow-up, not in this scope; the class boundary was kept CLI-free for it.
+- 2026-11-16: `add_repo` with push access was denied by the session's permission check, so no branch push or PR. Delivered as a patch instead.
+
+## Outcome
+
+Delivered scope v1. Limitations: a root that never approved anyone is not found (no edge); forged approvals by never-approved keys surface as `unverified` suggestions; signatures are not reverified; not run against a real imported production snapshot. Next: welcome-screen surfacing (separate cycle).
+
+## Verification
+
+- `./v3 test --smoke ApprovalRootSuggestionsCommandTest ApprovalAuditCommandTest ApprovalHistoryTest UserAccessTest`: 477 run, 477 passed.
+- `./v3 test --smoke ApprovalPolicyTest ApprovalSeedCommandTest ApprovalAcceptanceTest WriteApiSmokeTest ScriptsIndexTest RootApprovalPageTest ApprovedUserKeyResolverTest`: 722 run, 722 passed.
+- Full suite not run (maintainer runs it).
+- New test fixture covers: existing seed covering its tree, receipt-backed operator, unverified tree, a two-key cycle, a receipt contradicting root status, an approval outside the target's bootstrap thread, an isolated key, text output, read-only snapshot, and input errors.
+
+## Final review
+
+Diff checked: builder change is a pure extraction; no approval state is written anywhere; new files limited to the class, script, test, route, usage, scripts index, plan and indexes.
+
+## Commit/merge/publication status
+
+Planning commit `5565314b`; completion commit follows this record (hash reported in the handoff). Not pushed; no PR; not merged.
+
+_Claude (Opus 5.5), 2026-11-16_
