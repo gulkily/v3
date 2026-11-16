@@ -1367,7 +1367,16 @@ pre {
   margin: 0;
 }
 @media (scripting: none) {
-  .board-toolbar__search[data-users-search] {
+  .board-toolbar__search[data-users-search],
+  [data-view-query],
+  .thread-reaction-button,
+  .requires-script {
+    display: none;
+  }
+}
+/* Copy that is true only when scripts cannot run (e.g. "Members only" instead of "Reconnecting"). */
+@media (scripting: enabled) {
+  .without-script {
     display: none;
   }
 }

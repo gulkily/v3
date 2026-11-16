@@ -12,8 +12,8 @@ Visitors need useful browsing and basic participation with JavaScript disabled, 
 
 ## Current footing
 
-- [Board navigation](../../templates/pages/board.php) already renders links and pagination; [thread](../../templates/partials/thread_compose_form.php) and [reply](../../templates/partials/reply_form.php) composers already use HTML POST forms. This provides a foundation, not proof that complete journeys work without scripts.
-- [Existing access rules](../reference/authentication_modes.md) allow anonymous attribution but retain members-only gates and action-specific signatures; automatic identity recovery currently requires browser signing.
+- [Board navigation](../../../templates/pages/board.php) already renders links and pagination; [thread](../../../templates/partials/thread_compose_form.php) and [reply](../../../templates/partials/reply_form.php) composers already use HTML POST forms. This provides a foundation, not proof that complete journeys work without scripts.
+- [Existing access rules](../../reference/authentication_modes.md) allow anonymous attribution but retain members-only gates and action-specific signatures; automatic identity recovery currently requires browser signing.
 - “Basic features” and “fingerprinting” remain scope choices: a browser/network fingerprint is a weak continuity or abuse signal; an OpenPGP fingerprint identifies a public key. Neither proves control of that key.
 
 ## Option A — Progressively enhance the existing site

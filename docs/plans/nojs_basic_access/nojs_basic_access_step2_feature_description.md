@@ -53,3 +53,5 @@ The visitor starts with scripts disabled and no saved identity or authenticated 
 Both posting journeys and board pagination pass in the disabled-script browser; at least one recoverable validation error per posting journey retains entered text and context, then succeeds after correction. Content remains readable after reload, with anonymous attribution. Protected access stays denied without authentication, and focused existing script-enabled signing checks pass. Record browser evidence and any unverified boundary explicitly.
 
 Approval status: Approved Step 2 received 2026-10-19; implementation awaits approval of the completed Step 3 artifact.
+
+Reconfirmed 2026-11-16 ("approved step 2") after 1,124 commits; requirements unchanged. Step 3 rebuilt from a fresh baseline.

@@ -945,3 +945,10 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 
 Change: /messages is now one card with a visible "Messages" title, matching a conversation's window (Bubblegum draws its title bar; Word97 and Midnight render the title as a window title bar). This is a maintainer-requested exception to the rule that main-nav pages show no visible title (PR #142); the active nav item still names the page too.
 Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390px screenshots reviewed (asserts the visible title and the card); messaging suite through `checkHistoryRecovery`, cache flag on and off; `PrivateMessagePageControllerTest`. Not checked: iPhone Safari.
+
+
+## No-JavaScript truthful controls — 2026-11-16
+
+- [x] Members-only page without scripts: "Reconnecting / Verifying this browser identity…" is replaced by "Members only" and "Check your browser key or go to the lobby." Removed copy that can't come true; no new explanation. With scripts the page is unchanged ("If this does not complete automatically, check your browser key…"; the link text is now "your browser key").
+- [x] Without scripts, "View query" and Like/Flag no longer show (they need scripts); with scripts they are unchanged. Verified in 13 themes in Chromium with scripts on and off ([nojs Step 4](nojs_basic_access/nojs_basic_access_step4_implementation_summary.md)).
+- [ ] Browsers without support for the `scripting` media feature (e.g. Firefox before 113) show both the scripted and no-script copy on the members-only page; not verified.
