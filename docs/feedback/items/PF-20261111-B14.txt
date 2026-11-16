@@ -1,0 +1,16 @@
+ID: PF-20261111-B14
+Title: High-traffic mode turns itself off
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+High-traffic mode keeps turning itself off; the maintainer asked whether deploys were doing it.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261106224157-743c40fe
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Claude's code reading (main 0f424560) suggests silent symlink detaches on username changes, retractions and similar invalidations leave state saying enabled while serving normally. Server check not yet done.

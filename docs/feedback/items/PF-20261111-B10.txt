@@ -1,0 +1,16 @@
+ID: PF-20261111-B10
+Title: Untitled posts show their first line twice
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+When a post has no subject the generated title is the truncated first line, and the body repeats that line in full right below.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261106062035-bacc3870
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude). PR #142 (merged 39ce6389) reports that a thread with no subject no longer shows its first line twice; not verified here. Related: large type for short posts (F27 in this run).

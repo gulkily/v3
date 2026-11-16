@@ -1,0 +1,15 @@
+ID: PF-20261111-F31
+Title: Background audio playback
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+SoundCloud lets me play music in the browser out of focus; want that here too.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109114726-487fba7f
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,16 @@
+ID: PF-20261111-F57
+Title: Keep and show all of a post's times
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Keep when an offline post was written, and show a post's several times (Created-At, signature, Received-At, commit, written/sent).
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111143240-ef27f061
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Written up by Claude.

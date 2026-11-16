@@ -1,0 +1,16 @@
+ID: PF-20261111-F61
+Title: Compact #like replies
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Likes added via #like show up as full comments which take too much space.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Point 7 of the like-button post.

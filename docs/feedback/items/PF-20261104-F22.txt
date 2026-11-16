@@ -11,6 +11,8 @@ For debugging, display the current logged-in state and identity; off by default 
 Sources:
 - https://zenmemes.com/posts/thread-20261103040413-a008e701
 - https://zenmemes.com/posts/thread-20261103082445-475cead1
+- https://zenmemes.com/posts/thread-20261104212700-00c63699
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 1 source(s): Split repost; no new content.
