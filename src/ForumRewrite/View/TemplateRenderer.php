@@ -338,6 +338,11 @@ final class TemplateRenderer
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
             'deployCelebrateScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_celebrate.js') : null,
+            // Key bootstrap loads the signing scripts only on the rare page load that needs them.
+            'keyBootstrapScriptPath' => ($keyBootstrap = $this->featureFlags->isEnabled(FeatureFlagRegistry::SESSION_KEY_BOOTSTRAP_ENABLED))
+                ? $this->assetPath('/assets/key_bootstrap.js') : null,
+            'keyBootstrapIdentityScriptPaths' => $keyBootstrap ? array_map(fn (string $path): string => $this->assetPath($path),
+                ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js']) : [],
         ]);
     }
 
