@@ -59,3 +59,22 @@
 **Uncertain assessments**
 - Whether "refinements within scope" (amount field instead of a switch; reason shown to all readers) should have returned to Step 2. Both were named or allowed by Step 2 text, so they were recorded in Step 3. With a self-approving agent this judgment has no second reader.
 - The plan runs over one page.
+
+## 2026-11-16T03:15Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_do.md` Stage Boundary Protocol (verify, update summary, commit, then next stage): kept four reviewable commits in an unattended run with no human between stages. Retain.
+- `implementation_standards.md` "Complete the recorded outcome through its ordinary entry": running the flow in a browser found the amount field hidden in the collapsed reply box, which every PHP test had passed. Retain.
+- `implementation_standards.md` "Open the handoff with unverified outcomes": shaped the PR and the checklist around the pending iPhone check and the no-name finding. Retain.
+- `AGENTS.md` Tests: the smoke set plus named classes ran in about a minute per stage. Retain.
+
+**Redundant/unnecessary instructions**
+- `step4_implementation_before.md` "Do not add the ledger or summary to the planning commit" while the organization rule asks for repaired references: the ledger's links to moved plans had to wait for the Stage 1 commit. Suggest allowing link-only ledger fixes in the planning commit.
+
+**Inapplicable instructions**
+- Documentation-only verification rules.
+- `AGENTS.md` navigation icons, third-party code and retraction coordination: no navigation item, dependency or retraction change. (`npm install` fetched only the already declared `playwright-core` into the ignored `node_modules/`.)
+
+**Uncertain assessments**
+- Delegated self-approval: every gate in this cycle after Step 1 was passed by its author. The gates still forced written decisions and a recorded boundary, but they did not supply a second reader. One consequential finding (a no-JavaScript pledge has no name, so it is not counted) follows from a Step 2 decision the author approved alone. Whether Railspike should name this mode, and require the handoff to list self-approved decisions, is for the maintainer.
+- The separate log-only commit after the final stage: followed as written.
