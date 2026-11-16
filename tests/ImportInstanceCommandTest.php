@@ -253,6 +253,37 @@ final class ImportInstanceCommandTest
         assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
     }
 
+    public function testCliCancelRefusesCommittedImportAndReportsMissingJournal(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($source . '/records/posts/cancel-thread.txt', $w->post('cancel-thread'));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $static = $w->root . '/static';
+        $w->put($static, 'File blocking publication directory creation');
+        $options = ['--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3'];
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, ...$options, '--static-html-root=' . $static]);
+        assertSame(1, $code, $output);
+        assertStringContains('or --cancel to discard it', $output);
+        unset($server);
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--cancel', ...$options]);
+        assertSame(1, $code, $output);
+        assertStringContains('already committed its content', $output);
+        assertTrue(is_file($target . '/.git/instance-import/pending.json'));
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--cancel', '--resume', ...$options]);
+        assertSame(1, $code, $output);
+        unlink($static);
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--resume', ...$options, '--static-html-root=' . $static]);
+        assertSame(0, $code, $output);
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--cancel', ...$options]);
+        assertSame(1, $code, $output);
+        assertStringContains('No interrupted import to cancel.', $output);
+    }
+
     public function testImageFailuresKeepTextAndRerunOrResumeRecovers(): void
     {
         $w = new ImportTestWorkspace();

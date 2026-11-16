@@ -2873,6 +2873,9 @@ class LocalWriteService
     }
 
     /**
+     * Writes a site feature flag without a signed record. Tools writes flags through signed
+     * records; this stays (tests only today) as the fallback for when records can't be signed.
+     *
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
@@ -4501,28 +4504,7 @@ class LocalWriteService
      */
     private function extractThreadLabelsFromBody(string $body): array
     {
-        $labels = [];
-        foreach (explode("\n", $body) as $line) {
-            if (preg_match('/^\s*>/', $line) === 1) {
-                continue;
-            }
-
-            if (preg_match_all('/(^|[^A-Za-z0-9-])#([A-Za-z0-9-]+)/', $line, $matches) < 1) {
-                continue;
-            }
-
-            foreach ($matches[2] as $label) {
-                if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $label)) {
-                    continue;
-                }
-
-                if (!in_array($label, $labels, true)) {
-                    $labels[] = $label;
-                }
-            }
-        }
-
-        return $labels;
+        return \ForumRewrite\Support\ThreadLabels::fromBody($body);
     }
 
     private function reactionJournalDirectory(): string

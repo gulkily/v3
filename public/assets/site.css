@@ -1367,7 +1367,17 @@ pre {
   margin: 0;
 }
 @media (scripting: none) {
-  .board-toolbar__search[data-users-search] {
+  .board-toolbar__search[data-users-search],
+  [data-view-query],
+  [data-visitor-intro-hide],
+  .thread-reaction-button,
+  .requires-script {
+    display: none;
+  }
+}
+/* Copy that is true only when scripts cannot run (e.g. "Members only" instead of "Reconnecting"). */
+@media (scripting: enabled) {
+  .without-script {
     display: none;
   }
 }
@@ -2149,6 +2159,10 @@ pre {
 .post-record-retracted td { color: var(--muted); }
 .record-fields { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 1rem; margin: 0.5rem 0; }
 .record-fields dt { font-weight: 600; }
+
+/* Thread activity drawer (thread page) */
+.thread-activity-list { margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.9em; }
+.thread-activity-list li { margin-block: 0.15rem; overflow-wrap: anywhere; }
 .record-fields dd { margin: 0; overflow-wrap: anywhere; }
 .record-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 
@@ -2268,3 +2282,19 @@ pre {
 .post-photo-details-disclosure > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .post-photo-details-disclosure > .post-photo-details { margin-top: 0; }
 .post-photo-details { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .75rem; row-gap: .15rem; margin: .35rem 0; font-size: .9em; overflow-wrap: anywhere; }
+
+/* Pledge campaign (thread page): totals under the opening post, amount on each pledge reply */
+.pledge-totals { margin: 0.75rem 0; }
+.pledge-totals__sum { margin: 0 0 0.4rem; }
+.pledge-totals__sum strong { font-size: 1.5em; }
+.pledge-totals__count { margin: 0.3rem 0 0; }
+.pledge-bar { position: relative; height: 0.9rem; border: 1px solid var(--line); background: var(--input-bg); overflow: hidden; }
+.pledge-bar__fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
+.pledge-bar__goal { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--input-bg); }
+.pledge-amount { margin: 0.4rem 0 0; }
+.pledge-amount strong { font-size: 1.25em; }
+.pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
+.pledge-withdraw { margin: 0.3rem 0 0; }
+.pledge-field { display: flex; align-items: center; gap: 0.5rem; }
+.pledge-field input { flex: 0 1 8rem; min-width: 0; width: 8rem; }
+.pledge-field__unit { color: var(--ink-soft); overflow-wrap: anywhere; }

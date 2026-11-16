@@ -49,7 +49,7 @@ final class ContentImportRunner
                 \ForumRewrite\Host\HighTrafficSafety::beforeWrite($this->repositoryRoot, $this->databasePath, "records/post-retractions/import.txt");
                 if (is_file($pending)) {
                     if ($source !== null) {
-                        throw new RuntimeException('An interrupted import needs recovery. Run import-instance --resume with the same destination options first.');
+                        throw new RuntimeException('An interrupted import needs recovery. Run import-instance --resume with the same destination options first, or --cancel to discard it.');
                     }
                     $run = json_decode((string) file_get_contents($pending), true, 512, JSON_THROW_ON_ERROR);
                     if (($run['repository'] ?? null) !== $this->repositoryRoot || ($run['database'] ?? null) !== $this->databasePath
@@ -187,6 +187,77 @@ final class ContentImportRunner
                     throw new RuntimeException('Published successfully, but recovery journal could not be cleared.');
                 }
                 return $run['report'];
+            });
+        });
+    }
+
+    /**
+     * Discard an interrupted import instead of resuming it. Only a run whose content is not yet
+     * committed can be canceled: record files it installed are removed (a file that no longer
+     * matches the import's bytes is kept), and the journal moves into the run's saved directory
+     * as `canceled.json`, so the saved copies and the report stay available for review.
+     *
+     * @return array{id: string, removed: list<string>, kept: list<string>, saved: string}
+     */
+    public function cancel(): array
+    {
+        return (new ExecutionLock(dirname($this->databasePath) . '/forum-rewrite.lock'))->withExclusiveLock(function (): array {
+            return (new ExecutionLock($this->repositoryRoot . '/.git/instance-import.lock'))->withExclusiveLock(function (): array {
+                $pending = $this->stateRoot . '/pending.json';
+                if (!is_file($pending)) {
+                    throw new RuntimeException('No interrupted import to cancel.');
+                }
+                $run = json_decode((string) file_get_contents($pending), true, 512, JSON_THROW_ON_ERROR);
+                if (($run['repository'] ?? null) !== $this->repositoryRoot) {
+                    throw new RuntimeException('Cancel destination does not match the saved import.');
+                }
+                // Other writes may have committed since the interruption; only the import's own
+                // commit (the crash window resume also recovers) means its content is in.
+                $head = trim($this->git(['rev-parse', 'HEAD']));
+                $committed = ($run['phase'] ?? '') !== 'prepared'
+                    || ($head !== ($run['base_head'] ?? '')
+                        && trim($this->git(['log', '-1', '--format=%s'])) === 'Import instance content (' . $run['id'] . ')');
+                if ($committed) {
+                    throw new RuntimeException('The interrupted import already committed its content; only publication is left. Use --resume to finish it.');
+                }
+                $removed = [];
+                $kept = [];
+                foreach (array_keys($run['writes'] ?? []) as $path) {
+                    $path = (string) $path;
+                    $this->assertSafeParents($path);
+                    $target = $this->repositoryRoot . '/' . $path;
+                    if (!file_exists($target) && !is_link($target)) {
+                        continue;
+                    }
+                    if (trim($this->git(['ls-tree', '--name-only', 'HEAD', '--', $path])) !== '') {
+                        $kept[] = $path;
+                        continue;
+                    }
+                    if (is_link($target) || !is_file($target) || hash_file('sha256', $target) !== $run['writes'][$path]) {
+                        $kept[] = $path;
+                        continue;
+                    }
+                    $this->git(['rm', '--cached', '--quiet', '--ignore-unmatch', '--', $path]);
+                    if (!unlink($target)) {
+                        throw new RuntimeException('Unable to remove import-owned file: ' . $path);
+                    }
+                    $removed[] = $path;
+                }
+                $temporary = $this->stateRoot . '/copy.tmp';
+                if (is_file($temporary)) {
+                    unlink($temporary);
+                }
+                $directory = $this->stateRoot . '/' . $run['id'];
+                $this->directory($directory);
+                $run['phase'] = 'canceled';
+                $run['canceled_at'] = gmdate('Y-m-d\TH:i:s\Z');
+                $run['kept'] = $kept;
+                $this->save($directory . '/canceled.json', $run);
+                if (!unlink($pending)) {
+                    throw new RuntimeException('Canceled, but the recovery journal could not be cleared.');
+                }
+                $this->say('Canceled interrupted import ' . $run['id'] . '; removed ' . count($removed) . ' installed record file(s).');
+                return ['id' => (string) $run['id'], 'removed' => $removed, 'kept' => $kept, 'saved' => $directory];
             });
         });
     }

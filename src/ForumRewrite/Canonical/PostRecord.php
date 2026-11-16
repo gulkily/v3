@@ -48,6 +48,7 @@ final class PostRecord
     ) {
     }
 
+    /** Kept for callers that hold a PostRecord; most code reads the read model's body format instead. */
     public function rendersMarkdown(): bool
     {
         return $this->bodyFormat === self::FORMAT_MARKDOWN;

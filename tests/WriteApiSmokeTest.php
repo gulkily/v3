@@ -2326,8 +2326,8 @@ PHP);
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
-            $claimed = $store->claimNextRequested();
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
+            $claimed = $store->claimRequestedForPost($postId);
+            $result = $application->fulfillAgentReplyRequest($claimed);
             $row = $store->findByTarget($postId, $contentHash);
 
             assertSame('ok', $response['status']);
@@ -2520,18 +2520,18 @@ PHP);
             $_COOKIE = [];
             $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
-            $claimed = $store->claimNextRequested();
+            $claimed = $store->claimRequestedForPost($postId);
 
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
+            $result = $application->fulfillAgentReplyRequest($claimed);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
-            $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
-            $second = $application->fulfillAgentReplyRequest($claimed[0]);
+            $row = $store->findByTarget($postId, $claimed['target_content_hash']);
+            $second = $application->fulfillAgentReplyRequest($claimed);
             $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
                 ->query('SELECT COUNT(*) FROM post_analyses')
                 ->fetchColumn();
 
             assertSame('requested', $request['generation_status']);
-            assertSame(1, count($claimed));
+            assertSame(true, is_array($claimed));
             assertSame('generated', $result['generation_status']);
             assertSame(true, $result['posted']);
             assertSame(true, $postCountAfter > $postCountBefore);
@@ -2565,10 +2565,10 @@ PHP);
             ], [
                 'requested_by_identity_id' => 'openpgp:legacy-requester',
             ]);
-            $claimed = $store->claimNextRequested();
+            $claimed = $store->claimRequestedForPost($postId);
 
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
-            $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
+            $result = $application->fulfillAgentReplyRequest($claimed);
+            $row = $store->findByTarget($postId, $claimed['target_content_hash']);
 
             assertSame('requested', $request['status']);
             assertSame('not_recommended', $result['generation_status']);
@@ -6914,6 +6914,46 @@ NODE;
         $label = (new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse((string) file_get_contents($matchingRecords[0]));
         assertSame($this->extractValue($response, 'post_id'), $label->sourcePostId);
         assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect($label, $repositoryRoot)['status']);
+    }
+
+    public function testThreadActivityDrawerFlagMovesTagOnlyLeavesOutOfTheConversation(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $reply = function (string $parentId, string $body) use ($application): string {
+            $response = $this->renderMethod($application, 'POST', '/api/create_reply?thread_id=root-001&parent_id=' . rawurlencode($parentId) . '&body=' . rawurlencode($body));
+            assertStringContains('status=ok', $response);
+            return $this->extractValue($response, 'post_id');
+        };
+        $first = $reply('root-001', "First words\n");
+        $leaf = $reply('root-001', "#bug #ux\n");
+        $answered = $reply('root-001', "> First words\n#answered\n");
+        $answer = $reply($answered, "Why answered?\n");
+        $last = $reply('root-001', "Last words\n");
+        $card = static fn (string $page, string $id): bool => preg_match('/<article[^>]*data-post-id="' . preg_quote($id, '/') . '"/', $page) === 1;
+
+        putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+        $off = $this->renderMethod($application, 'GET', '/threads/root-001');
+        foreach ([$first, $leaf, $answered, $answer, $last] as $id) {
+            assertSame(true, $card($off, $id));
+        }
+
+        putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED=1');
+        try {
+            $on = $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/threads/root-001');
+        } finally {
+            putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+        }
+        assertSame(false, $card($on, $leaf));
+        assertStringContains('data-activity-kind="tagged" data-post-id="' . $leaf . '"', $on);
+        foreach ([$first, $answered, $answer, $last] as $id) {
+            assertSame(true, $card($on, $id));
+        }
+        // The same-author run around the moved reply still groups: the reply after it stays a continuation.
+        $classOf = static fn (string $page, string $id): string =>
+            preg_match('/<article id="[^"]*" class="([^"]*)"[^>]*data-post-id="' . preg_quote($id, '/') . '"/', $page, $m) === 1 ? $m[1] : '';
+        assertSame(true, str_contains($classOf($off, $answered), 'continuation'));
+        assertSame(true, str_contains($classOf($on, $answered), 'continuation'));
     }
 
     public function testLabeledWritesUseIncrementalReadModelAndPublishLabelActivityImmediately(): void

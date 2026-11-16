@@ -98,10 +98,12 @@ final class PresentationProfileMatrixTest
             ] as $id => [$heading, $label, $text]) {
                 assertStringContains('<section class="agent-page__prompt" id="' . $id . '">', $page);
                 assertStringContains('<h3>' . $heading . '</h3>', $page);
-                assertStringContains('<label class="copy-prompt__label" for="agent-prompt-' . $id . '">' . $label . '</label>', $page);
+                assertStringContains('<p class="copy-prompt__label" id="agent-prompt-' . $id . '-label">' . $label . '</p>', $page);
+                assertStringContains('<pre class="copy-prompt__text" id="agent-prompt-' . $id . '" aria-labelledby="agent-prompt-' . $id . '-label" data-copy-prompt-source>', $page);
                 assertStringContains($text, $page);
             }
             assertSame(3, substr_count($page, 'data-copy-prompt-button aria-label="Copy prompt" hidden>'));
+            assertSame(false, str_contains($page, '<textarea'), 'prompts are text, not form fields');
             assertSame(1, preg_match('~href="/assets/agent[^"]*\.css~', $page), 'agent.css is linked');
         } finally {
             putenv('FORUM_SITE_ID');

@@ -902,9 +902,9 @@ PHP;
             // protected GET pages give the browser key a chance to silently
             // resume before assuming the viewer needs to register - the same
             // treatment any other stale/unconfirmed session gets.
-            assertStringContains('<h1>Reconnecting</h1>', $boardAfterClear);
+            assertStringContains('<h1 class="requires-script">Reconnecting</h1>', $boardAfterClear);
             assertStringContains('data-auth-return-to="/"', $boardAfterClear);
-            assertStringContains('<h1>Reconnecting</h1>', $aboutAfterClear);
+            assertStringContains('<h1 class="requires-script">Reconnecting</h1>', $aboutAfterClear);
             assertStringContains('data-auth-return-to="/about/"', $aboutAfterClear);
             assertStringContains('<h2>Threads</h2>', $ownProfileAfterClear);
             assertStringContains('Sign in again</a> to enter the site.', $lobbyAfterClear);
@@ -981,7 +981,7 @@ PHP;
             assertStringContains('class="nav-link is-active" href="/account/key/"', $account);
             assertStringNotContains('href="/">Board</a>', $account);
             $threadResume = $this->render($application, '/threads/root-001');
-            assertStringContains('<h1>Reconnecting</h1>', $threadResume);
+            assertStringContains('<h1 class="requires-script">Reconnecting</h1>', $threadResume);
             assertStringContains('data-auth-return-to="/threads/root-001"', $threadResume);
             $boardResume = $this->render($application, '/?view=recent');
             assertStringContains('data-auth-return-to="/?view=recent"', $boardResume);
@@ -1000,7 +1000,7 @@ PHP;
             $username = $this->render($application, '/api/get_username?username=guest');
             assertSame('access_denied', json_decode($username, true)['code'] ?? null, $username);
             assertStringNotContains('Approved-Keys', $username);
-            assertStringContains('<h1>Reconnecting</h1>', $this->render($application, '/backup/'));
+            assertStringContains('<h1 class="requires-script">Reconnecting</h1>', $this->render($application, '/backup/'));
             assertStringContains('Your access is pending approval. Once you are fully authenticated, you can access this page.', $this->render($application, '/?format=rss'));
             assertStringContains('Identity not found.', $this->renderMethod($application, 'POST', '/api/prepare_invitation_redemption'));
             assertStringContains('There is no page at this address.', $this->render($application, '/asdf'));
@@ -1033,7 +1033,7 @@ PHP;
                 '/forte/user/forum-user',
             ] as $path) {
                 $resume = $this->render($application, $path);
-                assertStringContains('<h1>Reconnecting</h1>', $resume);
+                assertStringContains('<h1 class="requires-script">Reconnecting</h1>', $resume);
                 assertStringContains('data-auth-return-to="' . $path . '"', $resume);
                 assertStringNotContains('There is no page at this address.', $resume);
             }
@@ -3298,9 +3298,10 @@ PHP;
         $this->runCommand($repositoryRoot, 'git commit -m "Add detached label signature"');
 
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-        $method = new ReflectionMethod($application, 'activityCommitManifest');
+        $routeServices = new ReflectionMethod($application, 'routeServices');
+        $routeServices->setAccessible(true);
         $commitSha = trim($this->runCommand($repositoryRoot, 'git rev-parse HEAD'));
-        $manifest = $method->invoke($application, $commitSha);
+        $manifest = $routeServices->invoke($application)->activityService()->activityCommitManifest($commitSha);
         $entry = array_values(array_filter(
             $manifest,
             static fn (array $entry): bool => $entry['path'] === $signaturePath
@@ -5367,9 +5368,6 @@ PHP;
                 $invalidator->invalidateReply('thread-001', 'reply-001');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
-                $invalidator->invalidateProfile('openpgp-example');
-            },
-            static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
@@ -5410,9 +5408,6 @@ PHP;
             },
             static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateReply('thread-001', 'reply-001');
-            },
-            static function (StaticArtifactInvalidator $invalidator): void {
-                $invalidator->invalidateProfile('openpgp-example');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');

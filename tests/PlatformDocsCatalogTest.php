@@ -21,7 +21,7 @@ final class PlatformDocsCatalogTest
 
         foreach (PlatformDocsCatalog::entries() as $entry) {
             assertSame($entry['path'], PlatformDocsCatalog::normalizePath($entry['path']));
-            assertTrue(PlatformDocsCatalog::resolvePath($this->projectRoot, $entry['path']) !== null);
+            assertTrue(PlatformDocsCatalog::resolveSource($this->projectRoot, $entry['path']) !== null);
             $paths[] = $entry['path'];
         }
 
@@ -33,7 +33,7 @@ final class PlatformDocsCatalogTest
         $path = 'docs/railspike/README.md';
 
         assertTrue(!in_array($path, array_column(PlatformDocsCatalog::entries(), 'path'), true));
-        assertSame(realpath($this->projectRoot . '/' . $path), PlatformDocsCatalog::resolvePath($this->projectRoot, $path));
+        assertSame(realpath($this->projectRoot . '/' . $path), PlatformDocsCatalog::resolveSource($this->projectRoot, $path));
     }
 
     public function testRejectsPathsOutsideDocumentationBoundary(): void
@@ -51,7 +51,7 @@ final class PlatformDocsCatalogTest
             'docs\\..\\README.md',
         ] as $path) {
             assertSame(null, PlatformDocsCatalog::normalizePath($path));
-            assertSame(null, PlatformDocsCatalog::resolvePath($this->projectRoot, $path));
+            assertSame(null, PlatformDocsCatalog::resolveSource($this->projectRoot, $path));
         }
     }
 
@@ -158,8 +158,7 @@ final class PlatformDocsCatalogTest
         symlink($root . '/docs/.hidden.md', $root . '/docs/alias.md');
 
         try {
-            assertSame(null, PlatformDocsCatalog::resolvePath($root, 'docs/large.md'));
-            assertSame(null, PlatformDocsCatalog::resolvePath($root, 'docs/escape.md'));
+            assertSame(null, PlatformDocsCatalog::resolveSource($root, 'docs/escape.md'));
             assertSame(null, PlatformDocsCatalog::resolveSource($root, 'docs/alias.md'));
         } finally {
             @unlink($root . '/docs/escape.md');

@@ -618,6 +618,7 @@ controlled operator workflow.
 ```
 ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
 ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
+./v3 import-instance --cancel [--repository-root=/path/repository] [--database-path=/path/index.sqlite3]
 ```
 
 Downloads the source's public repository archive, merges supported public forum
@@ -661,7 +662,9 @@ Exit codes are 0 for complete supported-content results, 2 for partial results
 requiring review (including images that could not be copied), and 1 for failures.
 Rerun the same command to retry missing images. Reports group exclusions and rejected
 records; `--verbose` includes per-file details. `--resume` recovers a saved interrupted run without another download;
-use the original destination options and site profile. The destination must be
+use the original destination options and site profile. `--cancel` discards an
+interrupted run that has not committed its content, removing the record files it
+installed and keeping its saved copies for review. The destination must be
 initialized with a clean Git checkout. Scheduling, authenticated sources, and
 web controls are deferred.
 

@@ -23,6 +23,8 @@ $composerAnonymousLabel = (string) ($composerAnonymousLabel ?? 'Post anonymously
 $composerMenuExtra = (string) ($composerMenuExtra ?? '');
 $composerFormAttributes = (string) ($composerFormAttributes ?? '');
 $composerHiddenFields = (string) ($composerHiddenFields ?? '');
+// Fields a placement puts above the body, such as the pledge amount on a campaign thread.
+$composerLeadFields = (string) ($composerLeadFields ?? '');
 // Shown on the closed Tags tool as "#general #art"; compose_disclosure.js keeps it current.
 $composerTagsSummary = implode(' ', array_map(static fn (string $tag): string => '#' . ltrim($tag, '#'), preg_split('/[\s,]+/', trim((string) $boardTags), -1, PREG_SPLIT_NO_EMPTY) ?: []));
 $composerTagsOpen = $composerFull && ((string) $boardTags !== 'general' || ($error ?? null) !== null);
@@ -68,7 +70,7 @@ HTML;
     </details>
 <?php $composerOptions = (string) ob_get_clean(); ?>
 <form method="post"<?= $composerAction !== '' ? ' action="' . $e($composerAction) . '"' : '' ?> class="<?= $e($composerFormClass) ?>" data-compose-form data-compose-kind="<?= $e($composerKind) ?>"<?= $composerFormAttributes ?>>
-  <textarea name="body" data-compose-field-label="Body" rows="<?= $e($composerBodyRows) ?>" placeholder="<?= $e($composerBodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
+<?= $composerLeadFields ?>  <textarea name="body" data-compose-field-label="Body" rows="<?= $e($composerBodyRows) ?>" placeholder="<?= $e($composerBodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
 <?= $composerNormalizationStatus('body') ?>
   <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
     <span data-role="compose-normalization-message"></span>

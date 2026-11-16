@@ -292,6 +292,15 @@ file. It verifies import-owned bytes, recognizes an already-created import
 commit, and rebuilds/publishes even when there are no new records. A new source
 import is refused while a recovery journal is pending.
 
+To discard an interrupted import instead of resuming it, run
+`./v3 import-instance --cancel` with the same `--repository-root` and
+`--database-path`. Cancel removes the record files the import installed and
+unstages them. It keeps any import-owned file whose bytes changed since, and it
+moves the journal to `canceled.json` in the run's saved directory, beside the
+saved copies, so the run stays reviewable. Cancel is refused once the import has
+committed its content; `--resume` then only finishes publication. A new import
+can start after a cancel.
+
 The CLI emits resume guidance only when the selected destination already has
 `.git/instance-import/pending.json`. A download failure without that journal
 requires source repair and retry, not `--resume`. Preserve an independently

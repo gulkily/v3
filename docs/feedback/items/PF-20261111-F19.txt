@@ -1,0 +1,16 @@
+ID: PF-20261111-F19
+Title: Midnight Like and Flag match Word 97
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Bring the button styling (Like/Flag) in Midnight in line with the Word 97 theme.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261107024511-eda36827
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Compare PF-20261104-F48 and PF-20261104-F66.

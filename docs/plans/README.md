@@ -12,6 +12,16 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Import cancel one-shot](import_cancel/import_cancel_one_shot.md) — `./v3 import-instance --cancel` discards an interrupted import that has not committed its content; prerequisite for the import-instance GUI.
+
+[Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
+
+[Pledge fills](pledge_fills/pledge_fills_step3_development_plan.md) — the pledger, the campaign author or an operator marks a pledge delivered or filled with a `filled` reply; partial fills add up and the block shows what arrived.
+
+[Pledge withdraw](pledge_withdraw/pledge_withdraw_step3_development_plan.md) — a pledger takes a pledge back with a `withdraw` reply; the pledge stays visible, marked withdrawn, and leaves the sum.
+
+[Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
+
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
 [Tag unlocks](tag_unlocks/tag_unlocks_step3_development_plan.md) — a thread's tag unlocks extra tags on its replies; first use: Resolved and Closed on replies in `#meta` threads, which fold to one line.
@@ -40,6 +50,11 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Railspike for every commit one-shot](railspike_for_every_commit/railspike_for_every_commit_one_shot.md) — AGENTS.md runs every committed change as a Railspike cycle (one-shot by default) and asks the agent to name the mode in its first reply.
 
+[Test-only member cleanup one-shot](test_only_member_cleanup/test_only_member_cleanup_one_shot.md) — removes the 13 lowest-rated test-only members and the two single-implementation store interfaces from the code quality review; marks the five test hooks kept on purpose.
+
+[Test-only member cleanup, round 2 one-shot](test_only_member_cleanup_round2/test_only_member_cleanup_round2_one_shot.md) — follow-up: removes markSeenThrough, cachedBytes, FastScoreResult::scored and two unread properties; keeps setFeatureFlag, rendersMarkdown and isSignedIn with notes.
+
+[Quality review decisions record one-shot](quality_review_decisions_record/quality_review_decisions_record_one_shot.md) — records how each code quality review decision ended, which items are still open, and the lessons for the next pass.
 [Fix the #217 merge parse error one-shot](merge_217_fix/merge_217_fix_one_shot.md) — `main` parses again: one EXPERIENCE flag list with both new flags.
 
 [Spearmint theme one-shot](spearmint_theme/spearmint_theme_one_shot.md) — a light mint sibling of Bubblegum with its own shapes: rounded soft-shadow cards, a wavy header line, lifting buttons and coral accents.
@@ -75,6 +90,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Rebuild triggers checklist](rebuild_triggers_checklist.md) — every remaining write or command that still runs a full read-model rebuild, most frequent first, to remove one at a time.
 
+[Browsing tree checklist](browsing_tree_checklist.md) — three cycles for tree history, tree bookmarks and a filmstrip of recent screens: `nav_tree`, `tree_history`, `filmstrip`. Written in the [browsing tree checklist one-shot](browsing_tree_checklist/browsing_tree_checklist_one_shot.md).
+
 ## Production feedback
 
 [Retraction simplification handoff](retraction_simplification_handoff.md) — current user direction, canceled sweep diagnostics plan, and coordination with registration and high-traffic work.
@@ -91,6 +108,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes and flags by post; follows Pollyanna's `#notext`; behind a new flag; Step 4 complete, release pending.
 - [Usage reports UI](usage_reports_ui/usage_reports_ui_step3_development_plan.md) — readable page and control names, phone-first Usage Reports with shortcut-idea cards, and a readable Usage Log with the exact upload text behind a disclosure; follow-up to the local usage log; Step 4 in progress.
 - [Local usage log](local_telemetry/local_telemetry_step3_development_plan.md) — opt-in, browser-only log of page views and clicks that a visitor reviews and uploads to a private report store kept out of exports; a root-only summary shows click counts and multi-click journeys that could be one click; behind a flag; Step 4 in progress.
 - [Post records](post_records/post_records_step3_development_plan.md) — a post's Records section lists every record that targets it, each with its own `/records/<Record-ID>` page, and members (or operators) can retract likes through the existing signed retraction with `Target-ID`; behind a flag; Step 4 complete, release pending.
@@ -131,6 +149,12 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Reading margins: the nearer edge moves](reading_margins_nearest_edge/reading_margins_nearest_edge_one_shot.md) — one-shot: a click moves the column edge nearer to it, so the column never flips; ties move the edge clicked longer ago.
 - [Preferences page](preferences_page/preferences_page_one_shot.md) — one-shot: Tools → Preferences lists the settings this browser keeps (theme, thread view, reading margins, phone tabs, page themes, welcome note, usage log) with their current values, to change or reset in one place.
 - [Prompt library](prompt_library/prompt_library_one_shot.md) — one-shot: /agent/ becomes a prompt library of approved `#prompt` threads with copy, search, categories and sharing, linked from the main nav as Prompts.
+- [Prompt library: #notprompt](prompt_library_notprompt/prompt_library_notprompt_one_shot.md) — one-shot: an approved member's `#notprompt` label takes a thread out of the /agent/ library.
+- [Prompt card byline corner](prompt_card_meta_corner/prompt_card_meta_corner_one_shot.md) — one-shot: each /agent/ prompt's author/date/likes/Discuss line moves to the card's bottom right.
+- [Prompt card Like](prompt_card_like/prompt_card_like_one_shot.md) — one-shot: a Like button on each /agent/ prompt card, reusing the thread page's Like.
+- [Prompt copy icon](prompt_copy_icon/prompt_copy_icon_one_shot.md) — one-shot: the Copy button on /agent/ prompt fields moves to the top right and shows only its icon.
+- [Prompt copy button, quiet in Gloss and Bubblegum](prompt_copy_quiet/prompt_copy_quiet_one_shot.md) — one-shot: the icon-only Copy button drops its theme button chrome in Gloss, Gloss Dark, Engagify and Bubblegum.
+- [Prompts as plain text](prompt_plain_text/prompt_plain_text_one_shot.md) — one-shot: /agent/ prompts are selectable text with Copy in the corner; long ones cut off with Show all.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
@@ -180,6 +204,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [UI messages](ui_messages/)
 - [UI tools launcher](ui_tools_launcher/)
 - [Compose keyboard fit](compose_keyboard_fit/)
+- [No-JavaScript basic access](nojs_basic_access/nojs_basic_access_step3_development_plan.md) — reading and anonymous posting with scripts off; resumed 2026-11-16, in progress. Prerequisite for [Windows ME compatibility](windows_me_compat_step1_solution_assessment.md).
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
@@ -513,3 +538,4 @@ and repair its navigation and affected references. See the
 - [Live feature tour, quiet](live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md) — one-shot: no intro copy and no new tabs on the tour page.
 - [Offline card extra line](offline_card_extra_line/offline_card_extra_line_one_shot.md) — one-shot: offline board cards show one more line of the post body.
 - [Tour snapshots](tour_snapshots/tour_snapshots_step1_solution_assessment.md) — staged: the feature tour as one row per feature with essays, served from pre-rendered HTML snapshots refreshed by deploy, cron or Tools → Operations.
+- [Approval root suggestions](approval_suggest_roots/approval_suggest_roots_one_shot.md) — one-shot: read-only `./v3 approval suggest-roots` that finds which keys to seed as roots after importing a site without its approval seeds.
