@@ -111,25 +111,6 @@ final class TagGrouping
 
     /**
      * @param array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}> $groups
-     * @return array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>,preview_threads:array<int, array<string, mixed>>,href:string,has_more:bool}>
-     */
-    public static function limitPreview(array $groups, int $limit): array
-    {
-        $limited = [];
-
-        foreach ($groups as $group) {
-            $threads = $group['threads'];
-            $group['preview_threads'] = array_slice($threads, 0, $limit);
-            $group['has_more'] = count($threads) > $limit;
-            $group['href'] = '/tags/' . $group['tag'];
-            $limited[] = $group;
-        }
-
-        return $limited;
-    }
-
-    /**
-     * @param array<int, array{tag:string,count:int,threads:array<int, array<string, mixed>>}> $groups
      * @return array{tag:string,count:int,threads:array<int, array<string, mixed>>}|null
      */
     public static function find(array $groups, string $tag): ?array

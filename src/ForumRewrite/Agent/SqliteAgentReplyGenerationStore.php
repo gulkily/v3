@@ -6,7 +6,7 @@ namespace ForumRewrite\Agent;
 
 use PDO;
 
-final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
+final class SqliteAgentReplyGenerationStore
 {
     public function __construct(
         private readonly PDO $pdo,
@@ -185,49 +185,6 @@ final class SqliteAgentReplyGenerationStore implements AgentReplyGenerationStore
                 WHERE target_post_id = :post AND target_content_hash = :hash AND status = 'failed' AND agent_post_id IS NULL");
             $stmt->execute(['post' => $postId, 'hash' => $contentHash]);
             return $this->findByTarget($postId, $contentHash);
-        });
-    }
-
-    public function claimNextRequested(int $limit = 1): array
-    {
-        $limit = max(1, $limit);
-
-        return $this->withImmediateTransaction(function () use ($limit): array {
-            $stmt = $this->pdo->prepare(
-                'SELECT id, target_post_id, target_content_hash
-                 FROM post_generated_responses
-                 WHERE status = :status
-                 ORDER BY requested_at ASC, id ASC
-                 LIMIT :limit'
-            );
-            $stmt->bindValue('status', 'requested');
-            $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
-            $stmt->execute();
-
-            $claimed = [];
-            foreach ($stmt->fetchAll() as $row) {
-                $update = $this->pdo->prepare(
-                    'UPDATE post_generated_responses
-                     SET status = :pending
-                     WHERE id = :id AND status = :requested'
-                );
-                $update->execute([
-                    'pending' => 'pending',
-                    'id' => (int) $row['id'],
-                    'requested' => 'requested',
-                ]);
-                if ($update->rowCount() < 1) {
-                    continue;
-                }
-
-                $claimedRow = $this->findByTarget((string) $row['target_post_id'], (string) $row['target_content_hash']);
-                if ($claimedRow !== null) {
-                    $claimedRow['claimed'] = true;
-                    $claimed[] = $claimedRow;
-                }
-            }
-
-            return $claimed;
         });
     }
 

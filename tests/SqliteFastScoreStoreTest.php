@@ -113,10 +113,10 @@ final class SqliteFastScoreStoreTest
         $store->save('post-1', 'current-content', 'rubric-a', ['status' => 'scored', 'probability' => 0.6, 'source' => 'llm', 'signals' => []]);
         $store->save('post-1', 'current-content', 'rubric-b', ['status' => 'scored', 'probability' => 0.8, 'source' => 'llm', 'signals' => []]);
 
-        $current = $store->latestScoredForPostContent('post-1', 'current-content');
+        $current = $store->latestForPostContent('post-1', 'current-content');
 
         assertSame(0.8, $current['probability']);
-        assertSame(null, $store->latestScoredForPostContent('post-1', 'missing-content'));
+        assertSame(null, $store->latestForPostContent('post-1', 'missing-content'));
     }
 
     public function testPruneRemovesExpiredBackfillMetadataAndCannotReleaseHistoricalWork(): void

@@ -20,7 +20,7 @@ final class AgentReplyFulfillmentService
      * @param null|callable(array<string, mixed>): array<string, mixed> $generationForContext
      */
     public function __construct(
-        private readonly AgentReplyGenerationStore $generationStore,
+        private readonly SqliteAgentReplyGenerationStore $generationStore,
         private readonly PostAnalysisStore $analysisStore,
         private readonly PostAnalysisService $analysisService,
         private readonly AgentIdentityService $identityService,

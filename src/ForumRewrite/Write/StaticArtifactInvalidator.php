@@ -61,17 +61,6 @@ final class StaticArtifactInvalidator
         ]);
     }
 
-    public function invalidateProfile(string $profileSlug): void
-    {
-        $this->deletePaths([
-            '/recent.html', '/recent/index.html',
-            '/users.html',
-            '/users/index.html',
-            '/profiles/' . $profileSlug . '.html',
-            '/profiles/' . $profileSlug . '/index.html',
-        ]);
-    }
-
     public function invalidateIdentityLink(string $profileSlug, string $threadId, string $postId): void
     {
         $this->deletePaths([

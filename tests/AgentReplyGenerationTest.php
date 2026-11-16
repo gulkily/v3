@@ -191,20 +191,6 @@ final class AgentReplyGenerationTest
         assertSame('reply-123', $requested['agent_post_id']);
     }
 
-    public function testStoreClaimsRequestedRowsOnce(): void
-    {
-        $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));
-        $store->requestForTarget($this->context(), ['requested_by_identity_id' => 'openpgp:requester']);
-
-        $first = $store->claimNextRequested();
-        $second = $store->claimNextRequested();
-
-        assertSame(1, count($first));
-        assertSame('pending', $first[0]['status']);
-        assertSame(true, $first[0]['claimed']);
-        assertSame([], $second);
-    }
-
     public function testStoreClaimsRequestedRowForSpecificPost(): void
     {
         $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite::memory:'));

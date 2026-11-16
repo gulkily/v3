@@ -2821,25 +2821,6 @@ final class Application
     }
 
     /**
-     * @param array<string, float|int> $timings
-     * @return list<string>
-     */
-    private function noStoreTimingHeaders(array $timings): array
-    {
-        return array_merge($this->noStoreHeaders(), $this->serverTimingHeaders(['timings' => $timings]));
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     * @param array<string, float|int> $timings
-     * @return array<string, mixed>
-     */
-    private function mergeResultTimings(array $result, array $timings, int $totalStartedAt): array
-    {
-        return $this->routeServices()->mergeResultTimings($result, $timings, $totalStartedAt);
-    }
-
-    /**
      * @param array<string, mixed> $query
      */
     private function handleApproveUserSubmit(string $slug, array $query): void
@@ -3008,14 +2989,6 @@ final class Application
         }
 
         return implode("\n", $lines) . "\n";
-    }
-
-    /**
-     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>|null
-     */
-    private function activityCommitManifest(string $commitSha): ?array
-    {
-        return $this->routeServices()->activityService()->activityCommitManifest($commitSha);
     }
 
     /**

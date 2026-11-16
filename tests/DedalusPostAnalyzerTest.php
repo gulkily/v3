@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Analysis\DedalusPostAnalyzer;
+use ForumRewrite\Llm\StructuredChatCompletionDecoder;
 use ForumRewrite\Analysis\PostAnalyzer;
 use ForumRewrite\Analysis\PostAnalysisService;
 use ForumRewrite\Analysis\ProviderRequestException;
@@ -17,7 +18,7 @@ final class DedalusPostAnalyzerTest
 {
     public function testDecodeCompletionPayloadAcceptsStringJsonContent(): void
     {
-        $decoded = DedalusPostAnalyzer::decodeCompletionPayload([
+        $decoded = StructuredChatCompletionDecoder::decodeOpenAiCompatiblePayload([
             'choices' => [
                 [
                     'message' => [
@@ -36,7 +37,7 @@ final class DedalusPostAnalyzerTest
 
     public function testDecodeCompletionPayloadAcceptsStructuredMessageContent(): void
     {
-        $decoded = DedalusPostAnalyzer::decodeCompletionPayload([
+        $decoded = StructuredChatCompletionDecoder::decodeOpenAiCompatiblePayload([
             'choices' => [
                 [
                     'message' => [
@@ -51,7 +52,7 @@ final class DedalusPostAnalyzerTest
 
     public function testDecodeCompletionPayloadAcceptsTextBlockContent(): void
     {
-        $decoded = DedalusPostAnalyzer::decodeCompletionPayload([
+        $decoded = StructuredChatCompletionDecoder::decodeOpenAiCompatiblePayload([
             'choices' => [
                 [
                     'message' => [
@@ -74,7 +75,7 @@ final class DedalusPostAnalyzerTest
         $payload = $this->analysisPayload();
         $payload['moderation']['severity'] = 'low';
 
-        $decoded = DedalusPostAnalyzer::decodeCompletionPayload([
+        $decoded = StructuredChatCompletionDecoder::decodeOpenAiCompatiblePayload([
             'choices' => [
                 [
                     'message' => [

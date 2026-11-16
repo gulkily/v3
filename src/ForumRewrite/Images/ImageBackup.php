@@ -317,17 +317,6 @@ final class ImageBackup
         return $size;
     }
 
-    public static function copyTree(string $source, string $target, bool $excludeGit = false): void
-    {
-        if (!mkdir($target, 0700, true)) { throw new RuntimeException('Unable to create snapshot directory.'); }
-        foreach (new \RecursiveIteratorIterator(self::entries($source, $excludeGit), \RecursiveIteratorIterator::SELF_FIRST) as $file) {
-            if ($file->isLink()) { throw new RuntimeException('Snapshot cannot contain symlinks.'); }
-            $destination = $target . substr($file->getPathname(), strlen($source));
-            if ($file->isDir()) { if (!mkdir($destination, 0700)) { throw new RuntimeException('Unable to copy snapshot directory.'); } }
-            elseif (!$file->isFile() || !copy($file->getPathname(), $destination) || !chmod($destination, $file->getPerms() & 0777)) { throw new RuntimeException('Unable to copy snapshot file.'); }
-        }
-    }
-
     private static function entries(string $root, bool $excludeGit): \RecursiveIterator
     {
         $entries = new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS);
