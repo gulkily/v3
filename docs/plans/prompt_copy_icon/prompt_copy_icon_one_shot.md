@@ -50,23 +50,33 @@ Planning commit: `c8f1cdf`
 
 - 2026-11-16T05:06Z: no matching item in `docs/feedback/items/`.
 - 2026-11-16T05:15Z: implemented as planned. No shared check icon exists in the templates, so the check is inline SVG in the partial. The script's hidden "Copy"/"Copied" word is gone; the button's `data-copied` attribute and accessible name carry the state.
+- 2026-11-16T05:22Z: completion commit `63f16a4` pushed; PR #272 open.
+- 2026-11-16T05:25Z: scope v2 (addition), maintainer with a screenshot of a library card whose field had a wide empty strip under the text: "also, a lot of the textareas have empty space, can we shrink them down to the text size (plus one empty line to indicate it's eof)". PR #272 was still open and the change is to the same field, so it continues this cycle and branch. Scope v1 is retained above.
+  - `agent.css`: the 8rem and 5rem minimum heights are gone (the minimum is now Copy's own height); the field ends in one empty line of padding. The strip in the screenshot was the room once kept for Copy at the bottom, already removed in v1.
+  - `agent.php` script: where the browser lacks `field-sizing: content`, each field is sized to its text before paint, and again on resize and after a search. Without script and without `field-sizing`, `rows="5"` remains.
+  - `agent.php` template: a library prompt's body is shown without its closing newline, which otherwise read as a second empty line. The copied text loses that trailing newline too.
+  - Kept: the library fields' 16rem cap with scrolling, so one long prompt does not push the rest down the page. Not asked about; flagged in the handoff.
 
 ## Study history
 
 - 2026-11-16T05:06Z intake: **0.1**, scope v1, R1, P2, single exposed rater Claude (claude-fable-5-2), rated with the partial, stylesheet and script already read in the two preceding cycles (no pristine intake).
 
-- 2026-11-16T05:20Z closeout: retrospective **0.1**. Maintainer acceptance pending; no accepted-count increment.
+- 2026-11-16T05:20Z closeout (scope v1): retrospective **0.1**. Maintainer acceptance pending; no accepted-count increment.
+- 2026-11-16T05:25Z revision: scope v2 adds field sizing; estimate revised to **0.15**.
+- 2026-11-16T05:40Z closeout (scope v2): retrospective **0.15**.
 
 ## Verification
 
 - Passed: `./v3 test --smoke PresentationProfileMatrixTest PromptLibraryTest`: 480/480.
 - Passed: `node tests/browser/prompt_card_like.mjs` (local Chrome), copy step extended: the clipboard holds the prompt, the button shows the copied state and name then returns, sits within 12px of the field's top right corner and is at least 44px square.
 - Looked at: the card in Gloss, Gloss Dark, Light, Dark, Word97, Chicago, Midnight, Bubblegum, Spearmint, Sticker and Engagify at 390px and 1280px, plus the check state in Gloss.
+- Scope v2, passed: the same two commands again (480/480; browser test ok). The browser test now checks that every field on the page has under 2px of unused room beyond its text unless capped, leaves between one and two lines of bottom padding, and that with `field-sizing` switched off the script sizes each field to its text. Looked at the whole page at 1280px in Gloss and the card in the 11 themes at 390px.
+- Scope v2, not run: Firefox or Safari themselves (the fallback was exercised in Chrome with `field-sizing` disabled).
 - Not run: full suite (maintainer runs it); the failed-copy path in a browser without clipboard access (script path unchanged apart from the feedback lines); the site's own three prompts were not screenshotted separately (same partial and CSS); the live site, which needs the deploy.
 
 ## Outcome
 
-Delivered as scoped. Next action: maintainer merges and deploys.
+Delivered as scoped, v1 and v2. Next action: maintainer merges and deploys.
 
 ## Final review
 

@@ -49,7 +49,8 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
     'label' => $title,
     'label_hidden' => true,
     'variant' => 'library',
-    'text' => (string) $shared['body'],
+    // Without the body's closing newline, so the field ends in one empty line, not two.
+    'text' => rtrim((string) $shared['body']),
 ]]) ?>
         <div class="prompt-card__footer">
 <?php if ($shared['prompt_tags'] !== []): ?>
@@ -112,6 +113,20 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
       scratch.remove();
       return ok;
     };
+    // Where CSS can't size a field to its text (no field-sizing), do it here:
+    // the text's height plus the borders. A hidden card measures 0; skip it.
+    var cssSizesFields = window.CSS && CSS.supports && CSS.supports('field-sizing', 'content');
+    var sizeField = function (field) {
+      if (cssSizesFields) return;
+      field.style.height = 'auto';
+      if (field.scrollHeight > 0) {
+        field.style.height = (field.scrollHeight + field.offsetHeight - field.clientHeight) + 'px';
+      }
+    };
+    var sizeFields = function () {
+      page.querySelectorAll('[data-copy-prompt] textarea').forEach(sizeField);
+    };
+    if (!cssSizesFields) window.addEventListener('resize', sizeFields);
     page.querySelectorAll('[data-copy-prompt]').forEach(function (prompt) {
       var field = prompt.querySelector('textarea');
       var button = prompt.querySelector('[data-copy-prompt-button]');
@@ -120,6 +135,7 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
       if (from && from !== location.origin) {
         field.value = field.value.split(from).join(location.origin);
       }
+      sizeField(field);
       field.addEventListener('focus', function () { field.select(); });
       field.addEventListener('mouseup', function (event) {
         event.preventDefault();
@@ -180,6 +196,7 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
           if (match) shown++;
         });
         if (none) none.hidden = shown !== 0;
+        sizeFields();
       });
     }
   })(document.currentScript.previousElementSibling);

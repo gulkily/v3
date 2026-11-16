@@ -16,9 +16,12 @@
   display: block;
   width: 100%;
   box-sizing: border-box;
-  min-height: 8rem;
-  /* Show the whole prompt where supported; rows="5" elsewhere. */
+  /* As tall as the prompt (agent.php's script sizes it where field-sizing is
+     missing; rows="5" without script), never shorter than Copy. */
   field-sizing: content;
+  min-height: calc(44px + 0.8rem);
+  /* One empty line after the text shows where the prompt ends. */
+  padding-bottom: 2.1em;
   /* Room for Copy in the top right corner, so text never runs under it. */
   padding-right: 3.6rem;
   resize: vertical;
@@ -138,7 +141,6 @@
 }
 
 .copy-prompt--library textarea {
-  min-height: 5rem;
   max-height: 16rem;
   overflow-y: auto;
 }

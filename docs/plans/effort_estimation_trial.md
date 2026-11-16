@@ -4,6 +4,8 @@
 
 2026-11-16T05:20Z — v3/prompt_copy_icon one-shot (standing P2 enrollment; follows v3/prompt_card_like): [record](./prompt_copy_icon/prompt_copy_icon_one_shot.md#study-history). Copy on /agent/ prompt fields moves to the top right, icon only, with a check after copying; intake **0.1** after source inspection in the preceding cycles (no pristine intake), retrospective 0.1, single exposed Claude rater. Baseline `0b18578`; maintainer fit judgment pending; no accepted-count change.
 
+2026-11-16T05:40Z — v3/prompt_copy_icon scope v2 (maintainer addition while PR #272 was open): prompt fields shrink to their text plus one empty line. Estimate revised **0.15**, retrospective 0.15, same rater; acceptance pending.
+
 ## Cycle v3/prompt_card_like
 
 2026-11-16T04:50Z — v3/prompt_card_like one-shot (standing P2 enrollment; follows v3/prompt_card_meta_corner): [record](./prompt_card_like/prompt_card_like_one_shot.md#study-history). Like button on each /agent/ prompt card, reusing the thread page's Like; intake **0.2** after source inspection (no pristine intake), retrospective 0.2, single exposed Claude rater. Baseline `c13e187ac3b783f6c877582b19c7bff29223ba3f`; maintainer fit judgment pending; no accepted-count change.
