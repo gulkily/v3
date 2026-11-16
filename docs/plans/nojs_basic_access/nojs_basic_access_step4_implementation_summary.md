@@ -95,3 +95,14 @@ Branch `feat/nojs-basic-access` from `main` `32f884b1`; planning commit `58eefd2
 - Maintainer comfortable-fit judgment and acceptance: pending. Merge: pending.
 
 *— Claude (claude-opus-5-5) · 2026-11-16 UTC*
+
+## Maintainer merge — 2026-11-16
+
+- The user said "Yes please merge into main and push". Local `main` was fast-forwarded to `origin/main` (`65b98d00`, 1,052 commits newer than the branch base), then merged as `c7bdd707`.
+- Conflicts resolved by keeping both sides: `site.css`'s no-script block (main had narrowed the search rule to `.board-toolbar__search[data-users-search]`), plus the appended sections in the copy audit checklist and the study ledger.
+- Integration fix `d0bb6986`: the visitor intro's "Hide" button (new on main) is script-only and was caught by the no-script check; it is now hidden without scripts.
+- Combined tree:
+  - `nojs_basic_access.mjs` PASS.
+  - `LocalAppSmokeTest` 168/168.
+  - `composers.mjs` and `image_content_browser.mjs` fail identically on plain `origin/main` in a separate worktree, so they are pre-existing and unrelated.
+- Pushed `main` `65b98d00..d0bb6986`. Maintainer comfortable-fit judgment and study acceptance remain pending; scores unchanged.
