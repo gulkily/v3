@@ -545,6 +545,10 @@ final class PledgeCampaignTest
             pledgeAssertContains('data-pledge-state="fill-capped"><span class="meta">Counted 300 of 500</span>', $on);
             pledgeAssertContains('data-pledge-state="fill-uncounted"><span class="meta">Not counted: no name</span>', $on);
             pledgeAssertSame(true, $nameless !== '');
+            // The bare fill folds into its pledge; fills with an amount or a reason stay.
+            pledgeAssertNotContains('data-post-id="' . $delivered . '"', $on);
+            pledgeAssertContains('data-post-id="' . $filled . '"', $on);
+            pledgeAssertContains('data-post-id="' . $nameless . '"', $on);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
             putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');

@@ -54,3 +54,21 @@ Status: Steps 1 (Option B), 2 and 3 approved by the maintainer 2026-11-16. Step 
   - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Fold bare fill replies
+
+**Original estimate: 0.05**
+
+**Retrospective: 0.04**
+
+- Changes:
+  - `src/ForumRewrite/ReadModel/WithdrawLeafFilter.php`: `apply()` takes the fills map as a third argument and folds a bare `filled` reply by the withdraw rule (took effect, line alone, no shown answer). The class keeps its name; its comment names both lines.
+  - `templates/pages/thread.php` passes the fills map.
+- Verification:
+  - Passed: `./v3 test WithdrawLeafFilterTest` (2 tests, 1 new): bare, partial, noted, answered and uncounted fill replies; a withdrawal answered only by a folded fill; a withdrawal map alone does not fold fill replies.
+  - Passed: `./v3 test PledgeCampaignTest` (16): the thread page folds the bare fill and keeps a partial fill and an uncounted one.
+  - Passed: `./v3 test ThreadActivityTest RetractedLeafFilterTest TagOnlyLeafFilterTest` (4).
+- Notes:
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
