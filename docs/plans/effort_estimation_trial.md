@@ -2149,6 +2149,14 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-16T04:30Z: standing P2 enrollment, one-shot. Intake and execution entry **0.08**; retrospective scope assessment **0.07**; no revisions. Baseline `9bdd4b39`. Single exposed rater Claude (claude-fable-5-2), who wrote the parent cycle; R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
 
+## Cycle v3/pledge_withdraw
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/pledge_withdraw` | Step 1 written; awaiting approval | v1 / R1 / P2 | 0.35 (intake 0.35; Step 1 0.35) | [Intake and Step 1](./pledge_withdraw_step1_solution_assessment.md#study-snapshots) | Follow-up to `v3/pledge_campaigns`; second of seven in [pledges checklist](./pledges_checklist.md); no implementation |
+
+2026-11-16T03:00Z: standing P2 enrollment for pledge withdraw, staged. Intake **0.35** after cycle 1's code and a read of the retraction, tagset and reaction concepts (no pristine intake) and Step 1 handoff **0.35** for Option A (a `withdraw` reply line read when shown). Extended estimates enabled (A 0.35, B 0.50, C 0.85, D 0.10; not summed). Baseline `c1572e57` on `feat/pledge-campaigns`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Step 1 committed and pushed on `plan/pledge-withdraw` at the maintainer's request for session handoff; not yet approved.
+
 ## Cycle v3/pledge_campaigns
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
