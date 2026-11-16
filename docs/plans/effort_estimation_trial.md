@@ -2219,3 +2219,14 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-16 UTC Step 4 entry and closeout: Approved Step 3 received. Branch `feat/nojs-basic-access` from `32f884b1`; planning `58eefd2c`; stages `19c2930c` / `15d5d529` / final stage commit with this ledger. **0.35 reaffirmed at entry; 0.40 retrospective scope assessment.** That covers more than projected: a new Like/Flag finding, the Lynx replay attempts, and partial diagnosis of the baseline `board_compose_focus` timeout. All three stages complete. Verification: new no-script journey check PASS; `composers.mjs` PASS; `image_content_browser.mjs` PASS; smoke 159/162 with three tracked long-standing failures; 13-theme sweep scripts on and off. Lynx posting was verified through Lynx's own form submission and redirect; scripted keyboard discovery was not achieved (blocked by script-button clutter, which belongs to Windows ME). Merge, deployment and maintainer fit pending; no dependency added; no measured labor or accepted-count increment.
 
 2026-11-16 UTC merge for `v3/nojs_basic_access`: the user said "merge into main and push". Merged into current `main` as `c7bdd707`, with integration fix `d0bb6986` (visitor intro Hide button). Combined tree: no-script check PASS, smoke 168/168. `composers.mjs` and `image_content_browser.mjs` failures reproduce on plain `origin/main`. Pushed. Study comfortable-fit judgment and acceptance pending; scores and accepted-count unchanged.
+
+## Cycle v3/local_start_import
+
+Cycle ID: v3/local_start_import
+Mode: one-shot; standing enrollment under P2
+Scope/reference: v1 / R1 / P2
+Status: locally verified MVP; PR, merge, deployment and maintainer acceptance pending
+Projection: unavailable; frozen external calibration sources were not recovered
+Canonical checkpoints: [record](local_start_import/local_start_import_one_shot.md)
+Relationship: new local-start outcome; related PF-20261111-F09 speed and PF-20261104-B14 availability remain separate
+2026-11-16: Codex, single exposed rater; intake and execution-entry snapshot record prior source exposure and missing pristine intake. Closeout retains unavailable numeric projection/retrospective; no reconstructed score, measured labor or accepted-count increment. Fresh checkout/native browser flow passed; smoke 482/486 with the four failures reproduced on untouched origin/main. Full suite not run.

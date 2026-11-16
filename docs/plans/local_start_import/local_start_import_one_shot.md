@@ -5,7 +5,7 @@ Debug mode: enabled; project marker .railspike_debug_on
 Effort study: railspike-effort; R1; P2; [ledger](../effort_estimation_trial.md)
 Extended estimates: enabled; no separate work units
 **Cycle estimate: unavailable**
-Status: planned; next action: planning commit, then implementation
+Status: locally implemented and verified; next action: completion commit and PR
 
 Original request: http://127.0.0.1:8000/threads/thread-20261116191346-32ffe183; PF-20261116-F01. Clone, ./v3 start, browse something useful, then import production content in 1–3 clicks.
 Authorization: User, 2026-11-16: “can we one-shot an mvp please?” This follows the investigation and proposed local start page and existing importer. The thread-to-PR procedure authorizes push, PR and a thread reply. No merge or deployment.
@@ -17,7 +17,7 @@ Completion conditions: From an isolated fresh checkout, run ./v3 start, open /, 
 Verification and recovery plan: Smoke plus focused local-development/import tests; real isolated HTTP source and destination; normal ./v3 start entry; phone/desktop, JavaScript on/off, representative themes and overflow; reject remote/proxied/bad-host/cross-origin/tokenless requests. Replay failed source then successful retry and repeated import. Inspect diff, feedback checker and syntax. Full suite will not run. Production, physical device and maintainer acceptance remain pending.
 Concepts touched: Propose docs/concepts/local_development_import.md for local exploration and importing public content. Existing content snapshot export is used unchanged.
 Starting revisions and branch: f13ed6763962c92f89a36ed74b6f7b35b51316be; feat/local-start-import, freshly fetched origin/main.
-Planning commit: pending
+Planning commit: 3ddc7219
 
 Dated execution history:
 2026-11-16: Read the thread (no replies), searched feedback sources and outcomes. PF-20261111-F09 and PF-20261104-B14 are related performance/availability work, outside this MVP. No matching first-run item; allocate PF-20261116-F01.
@@ -26,9 +26,16 @@ Dated execution history:
 Study history:
 2026-11-16: Intake and execution entry: Codex, single exposed rater; prior investigation/source exposure disclosed. Pristine intake missing. R1 frozen external sources have not been recovered, so numeric ratings remain unavailable. Same scope v1, baseline above, P2 standing enrollment. No independent rating or measured labor; maintainer fit pending.
 
-Outcome: pending
-Verification: pending
-Final review: pending
-Commit/merge/publication status: planning commit pending; no implementation, merge or deployment.
+Outcome: Local-only development homepage, one-click prefilled public import and ordinary All-threads browsing are implemented. Existing test fixtures and deployed homepages remain unchanged. No live synchronization, destructive replacement or dependency change.
+Implementation commit: pending; the completion commit will contain this record.
+Limitations: Import runs as a bounded native request, up to five minutes, with pending feedback rather than streamed stages. Detailed output appears after completion. Actual zenmemes.com archive import, physical devices and production acceptance were not checked. Source failures and partial results use the existing importer contract. Read the retraction handoff before reviewing the cache bypass; no retraction or publication semantics were changed.
+Verification: ./v3 test --smoke LocalDevelopmentImportTest ImportInstanceCommandTest ContentImportRecoveryTest BackupPageTest: 486 run, 482 passed, four failed. All affected import/backup tests passed. The failures are AgentPostingApiTest::testSignedControlDiagnosticsBeforeGenericParserFailure, AgentPostingApiTest::testRulesErrorsAndLegacyCompatibility, SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection and SignedPostBundleValidatorTest::testStrictSubsetAndExactBytes. All four reproduced on untouched f13ed676 in /tmp/local-start-baseline; PCRE emits an unsupported Unicode-property warning.
+Verification: ./v3 test LocalDevelopmentImportTest HighTrafficTest HighTrafficAutomationTest: 19/19 passed after the cache-path refinement and pending-source recovery change. New HTTP tests cover ordinary and query-bearing homepages/RSS, host/proxy/CSRF/origin guards, download retry, publication resume after repairing a blocked offline directory, duplicate-free repeat, and conflicts retaining local records.
+Verification: python3 tests/browser/local_development.py passed on final runtime code. It unpacks a clean Git checkout, overlays this cycle's runtime files, runs ./v3 start with default bootstrap paths, and uses an isolated HTTP source. Checks: all offered themes at 390/1280, scripts on/off, links to sample threads, failed download and retained source, native retry, imported thread, expanded output and overflow. Pending feedback was isolated through a real submit event with navigation prevented; a subsequent native request checked the result. Browser testing initially passed native flows, then a pending-state test raced navigation; the corrected probe passed. Screenshots under /tmp/local-start-* were captured; light initial and Engagify failed/imported images were visually reviewed.
+Verification: Final focused LocalDevelopmentImportTest rerun: 2/2 passed, including the exact import-count assertion. PHP syntax, node --check, Python compilation and git diff --check passed. Feedback check: 322 items, zero problems, 34 existing shared-source reviews; index regenerated (including stale pre-existing derived counts). Full suite was not run.
+Final review: Reused shared layout/card/form/details styling and the CLI's source/import/publication/recovery contracts; zero new CSS, dependencies, schemas or navigation icons. Existing root query URLs and deployed behavior are preserved. No todo.txt, unrelated marker or fixture changes. Concept links and source paths were checked. Browser import guards precede mutation; CLI arguments are an array, logs use a temporary file, and output is bounded/escaped. Completion follows the planning commit 3ddc7219; no history rewrite or amendments.
+2026-11-16 discoveries: The board defaults to Liked; all new browse links explicitly select All to expose both sample and imported content. A publication-failure test originally blocked the configured static root and hit the existing configuration error before import; it now blocks only offline publication, proving the intended journal/resume path. The local page bypasses public caches while retaining ordinary host error recovery. Pending-source display reads the existing journal so a revisit resumes the actual source. These are in-scope corrections.
+Study closeout: Same v1/R1/P2 baseline, no numeric revision or retrospective without recovered calibration sources. Codex single exposed rater; no independent rating, measured labor or maintainer fit. No accepted-count increment.
+Commit/merge/publication status: planning commit 3ddc7219; completion commit pending; push, PR and thread reply follow. No merge or deployment.
 
 *— Codex · 2026-11-16 UTC*

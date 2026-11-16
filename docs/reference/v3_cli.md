@@ -90,6 +90,13 @@ repair. The marker file is not created by installation or tracked in Git.
 ```
 
 Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
+Loopback browsers get a local exploration homepage with a prefilled public-content
+Import form. `/local/` returns to that page; `/threads/?view=all` opens all local
+threads. Import uses the existing `import-instance` command and its recovery
+journal. Failures retain the source; Resume finishes interrupted publication.
+These controls require a loopback peer and Host without proxy headers. Remote
+clients and deployed servers keep their existing homepage. Imports merge content;
+they do not copy private messages, settings or approval authority.
 Checks local-server prerequisites before application loading, logs, or bootstrap.
 Missing required capabilities produce runtime-specific recovery guidance.
 On Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution packages, terminal input/output

@@ -193,6 +193,16 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
+                new \ForumRewrite\Support\LocalDevelopmentImport(
+                    $this->projectRoot, $this->repositoryRoot, $this->databasePath,
+                    $this->staticHtmlRoot ?? \ForumRewrite\PresentationPathResolver::staticHtmlRoot($this->projectRoot, \ForumRewrite\SiteProfileRegistry::active()),
+                )
+            ))->handle($method);
+            return;
+        }
+
         if ($securityReviewRequest) {
             if (!$this->routeServices()->securityReviewAllowed()) {
                 if (!str_starts_with($path, '/api/') && ($query['format'] ?? '') !== 'rss') {

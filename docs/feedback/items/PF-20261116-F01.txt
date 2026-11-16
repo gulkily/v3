@@ -1,0 +1,19 @@
+ID: PF-20261116-F01
+Title: Useful local first page and browser import
+Kind: feature
+Workflow: blocked
+Created: 2026-11-16
+Evidence: locally-verified
+
+Request:
+After git clone and ./v3 start, the first browser page should offer something useful to explore and a 1–3-click path to import production content. Build an MVP.
+
+Sources:
+- http://127.0.0.1:8000/threads/thread-20261116191346-32ffe183
+
+Done when:
+A fresh local launch offers exploration and public-content import. Imported threads open through ordinary pages. Download failures support retry; interrupted publication supports resume. Remote clients and deployed sites do not gain import controls.
+
+Notes:
+2026-11-16: User authorized one-shot MVP in the agent session. Branch feat/local-start-import; record docs/plans/local_start_import/local_start_import_one_shot.md. Related PF-20261111-F09 performance and PF-20261104-B14 archive availability remain separate. No deployment or production acceptance yet.
+2026-11-16: Fresh-checkout browser flow, all offered themes at phone/desktop sizes, native JS-on/off import failure and retry passed. HTTP checks verified journal resume, duplicate-free repeat and conflicts. Review, merge and deployment remain pending. Smoke: 482/486; four failures reproduced on origin/main. Full suite not run.
