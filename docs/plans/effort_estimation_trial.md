@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/bookmarklet_host_prefix
+
+2026-11-16T19:05Z — v3/bookmarklet_host_prefix one-shot (standing P2 enrollment, no parent): [record](./bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md#study-history). Every bookmarklet's address starts `javascript:/*<host>*/` so a bookmark editor shows its server; also fixed the pre-existing `bookmarklet_copy_ui.mjs` Auto-theme wait. Intake **0.05** after source inspection (no pristine intake), retrospective 0.07, single exposed Claude rater. Baseline `f13ed676`; maintainer fit judgment pending; no accepted-count change.
+
 ## Cycle v3/prompt_plain_text
 
 2026-11-16T10:25Z — v3/prompt_plain_text one-shot (standing P2 enrollment; split from the staged v3/prompt_plain_text_and_revise at the maintainer's request): [record](./prompt_plain_text/prompt_plain_text_one_shot.md#study-history). /agent/ prompts become selectable text with Copy in the corner; tall shared prompts cut off with Show all; intake **0.15** after source inspection (no pristine intake), retrospective 0.15, single exposed Claude rater. Baseline `6685625`; maintainer fit judgment pending; no accepted-count change.
