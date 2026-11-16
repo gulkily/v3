@@ -20,3 +20,4 @@ Notes:
 2026-11-16: one-shot started on fix/agent_write_readback (record docs/plans/agent_write_readback/agent_write_readback_one_shot.md).
 2026-11-16: fixed and verified locally on fix/agent_write_readback (HTTP replay of the reported request); awaiting PR review and deployment. The seven existing guest threads are not repaired by this.
 2026-11-16: PR #276 open.
+2026-11-16: maintainer correction applied: when the key cannot be recovered, agents post as guest and repair later instead of stopping to ask.

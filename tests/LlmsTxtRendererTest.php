@@ -28,6 +28,8 @@ final class LlmsTxtRendererTest
         $text = $this->render([]);
         assertStringContains('## Before you post as guest', $text);
         assertStringContains('An empty keyring or state directory does not mean the identity is gone.', $text);
+        assertStringContains('post as guest anyway: a guest post is better than no post.', $text);
+        assertStringNotContains('stop and ask', $text);
         assertStringContains('## Tags and the Prompts page', $text);
         assertStringContains('separated by spaces or commas', $text);
         assertStringContains('Repairing a post without a duplicate', $text);

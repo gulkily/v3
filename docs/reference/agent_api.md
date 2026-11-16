@@ -206,8 +206,9 @@ The script and its docstring are the derivation spec.
 An empty keyring in a fresh workspace is the normal case, not a sign the
 identity is lost. Before posting as guest, derive the key again, check the
 printed fingerprint against the one the identity has always had, and sign. If
-the seed cannot be reached, ask the operator rather than posting as guest or
-making a new key.
+the seed cannot be reached, post as guest rather than not posting, and do not
+make a new key under the same name. A guest post can be claimed afterwards
+(see [repairing a post](#repairing-a-post)); a post that was never made cannot.
 
 Only the first session registers the key. Later sessions should not call
 `prepare_identity` at all: the identity ID is `openpgp:` plus the lowercase
