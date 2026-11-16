@@ -2159,6 +2159,14 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-16T04:30Z: standing P2 enrollment, one-shot. Intake and execution entry **0.08**; retrospective scope assessment **0.07**; no revisions. Baseline `9bdd4b39`. Single exposed rater Claude (claude-fable-5-2), who wrote the parent cycle; R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
 
+## Cycle v3/pledge_fills
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/pledge_fills` | Step 1 written; awaiting approval | v1 / R1 / P2 | 0.50 (intake 0.50; Step 1 0.50) | [Intake and Step 1](./pledge_fills_step1_solution_assessment.md#study-snapshots) | Parent `v3/pledge_withdraw`; acceptance pending |
+
+2026-11-16T09:31Z: standing P2 enrollment for pledge fills, staged. Intake **0.50** for Option B after cycle 2's code and a read of the spec's fill rules and the tagset state code; no pristine intake. Step 1 handoff **0.50**; option estimates A 0.85, B 0.50, C 0.70, D 0.35, not summed. Baseline `66856253`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation.
+
 ## Cycle v3/pledge_withdraw
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
