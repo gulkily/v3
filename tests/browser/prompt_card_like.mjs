@@ -127,10 +127,18 @@ try {
     await page.screenshot({ path: join(shots, 'page-1280.png'), fullPage: true });
     for (const width of [390, 1280]) {
       await page.setViewportSize({ width, height: 900 });
-      for (const theme of (process.env.THEMES || 'gloss,gloss-dark,light,dark,word97,chicago,midnight,bubblegum,spearmint,sticker,engagify').split(',')) {
+      for (const theme of (process.env.THEMES || 'gloss,glossdark,light,dark,word97,chicago,midnight,bubblegum,spearmint,sticker,engagify').split(',')) {
         await page.evaluate(theme => localStorage.setItem('forum-zenmemes-theme', theme), theme);
         await page.reload();
+        assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), theme, 'theme id is real');
         await card.screenshot({ path: join(shots, `${theme}-${width}.png`) });
+        if (width === 390) {
+          await card.locator('[data-copy-prompt-button]').hover();
+          await card.screenshot({ path: join(shots, `${theme}-hover.png`) });
+          await card.locator('[data-copy-prompt-button]').click();
+          await card.screenshot({ path: join(shots, `${theme}-copied.png`) });
+          await page.mouse.move(0, 0);
+        }
       }
     }
   }
