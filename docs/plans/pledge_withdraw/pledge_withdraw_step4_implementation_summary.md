@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/pledge_withdraw`; [host ledger](../effort
 
 Extended estimates: enabled
 
-Status: Steps 1 to 3 approved by the maintainer 2026-11-16. Step 4 in progress on `feat/pledge-withdraw`.
+Status: Steps 1 to 3 approved by the maintainer 2026-11-16. Step 4 technically complete on `feat/pledge-withdraw`; release check and maintainer acceptance pending.
 
 **Cycle estimate: 0.40**
 
@@ -86,5 +86,53 @@ Status: Steps 1 to 3 approved by the maintainer 2026-11-16. Step 4 in progress o
   - The server refuses nothing. The rule that only the pledger withdraws is applied when the thread is read (Stage 1).
   - Playwright was resolved from the workspace's own install through a link outside the repository; nothing was added to the project.
 - Estimate details: original scope as Step 3 Stage 3; no revision.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+
+## Stage 4 - Theme check, documentation and closeout
+
+**Original estimate: 0.06**
+
+**Retrospective stage work: 0.05**
+
+- Changes:
+  - `docs/concepts/pledge_campaign.md` gains withdrawal: the line, the button, the same-key limit, the reasons, the fold and undo. "Not yet" now starts at fills.
+  - `docs/concepts/thread_activity.md` gains one line naming the withdraw fold.
+  - `docs/plans/pledges_checklist.md` marks cycle 2 built and lists what to review first; `pledges_spec.md` carries the reworded withdrawal lines; the effort ledger has the closeout entry.
+- Verification:
+  - Passed: `./v3 test --smoke PledgeCampaignTest WithdrawLeafFilterTest ThreadActivityTest RetractedLeafFilterTest`, 483 run, 483 passed.
+  - Passed: `tests/browser/pledge_campaign.mjs` rerun in headless Chrome, with and without `--count-unnamed`. 17 themes at 375 and 1280 px each show the Withdrawn label with no page overflow. Four phone-width screenshots (Gloss, Word97, Bubblegum, Midnight) and the pledger's view with the button were looked at.
+  - Passed: `git diff --check`; local links in the touched concept entries, this folder and the checklist resolve.
+  - Diff review: 11 code and test files, all in Step 3's list except `site.css` (one spacing rule) and the controller's script list. No schema change, no new flag, no dependency.
+  - Not run: the full suite.
+  - Pending: the release check on zenmemes.com from the maintainer's iPhone SE. It cannot be done from this session.
+  - Not exercised: a real signed retraction of a withdraw reply (undo was tested by marking the read-model row retracted); Outbox and offline sending of a withdrawal; a baked page for a signed-in viewer.
+- Notes:
+  - No navigation destination was added, so no icon mapping changed.
+- Estimate details: original scope as Step 3 Stage 4; no revision.
+
+## Completion Contract check
+
+- Entry: passed. Button on the pledger's own pledge, and a typed `withdraw` reply.
+- End-to-end outcome: passed in a browser. Struck amount, "Withdrawn", lower sum and count, no new card.
+- Recovery: failed press and second press passed in a browser. Undo by retraction passed at the read-model level only. Flag off passed.
+- Deployment: no schema change, rebuild, flag or dependency.
+- Release condition: pending.
+
+## Enhancement requests
+
+- **Request:** an author's or operator's way to stop someone else's pledge counting without deleting it. **Disposition:** separate work, listed under cycle 3 in the checklist. **Approval:** pending. **Outcome:** not built.
+- **Request:** drop the part-filled groundwork (maintainer's review comment on Step 2). **Disposition:** in-scope refinement. **Approval:** approved with Step 2. **Outcome:** nothing was built for part-filled pledges.
+
+## Cycle retrospective
+
+**Retrospective cycle scope: 0.35**
+
+- Delivered scope: Step 2 as approved, with the refinements recorded in Step 3 and Stage 3. Four planned stages, four completed.
+- Starting revision `b9ffa6b8`; planning commit `fc318f72`; stage commits `1a842424`, `7f7b86e2`, `0a8004c9` and this stage's commit.
+- Entry projection 0.40, no revisions. The fold and the button each reused more than expected: the reply count already follows the filters, and the Outbox's signing pair needed no change.
+- Corrective work: none. New requests during Step 4: none.
+- Maintainer comfortable-fit judgment: pending. Study acceptance: pending.
+- Stage retrospectives 0.10, 0.06, 0.12, 0.05 are separate judgments and are not summed. No measured time was recorded.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
