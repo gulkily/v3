@@ -145,6 +145,30 @@ try {
   await reader.context.close();
   assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
 
+  // Fill: the pledger marks the 300 pledge delivered with one press; a failed first press says so.
+  const fillForms = writer.page.locator('[data-role="pledge-line"]');
+  assert.equal(await fillForms.count(), 2, 'each open pledge has Mark delivered for its pledger');
+  const fillForm = fillForms.first();
+  const fillCards = await writer.page.locator('article.post-card').count();
+  await writer.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await fillForm.getByRole('button', { name: 'Mark delivered' }).click();
+  const fillFailure = fillForm.locator('[data-role="pledge-withdraw-feedback"]');
+  await fillFailure.waitFor({ state: 'visible' });
+  assert.match((await fillFailure.textContent()).trim(), /^Marking failed\. Try again\./);
+  assert.equal(await fillForm.getByRole('button', { name: 'Mark delivered' }).isEnabled(), true);
+  const filledReply = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
+  await fillForm.getByRole('button', { name: 'Mark delivered' }).click();
+  assert.equal((await filledReply).status(), 200);
+  await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').waitFor({ timeout: 30000 });
+  await settled(writer.page);
+  assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').textContent()).trim(), /^Delivered by \S+$/);
+  assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges · 300 filled · 0 confirmed');
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+  assert.equal(await writer.page.locator('article.post-card').count(), fillCards, 'the bare fill adds no card');
+  assert.equal(await writer.page.locator('[data-role="pledge-line"]').count(), 1, 'a filled pledge has no fill button');
+  assert.equal(await writer.page.locator('[data-role="pledge-withdraw"]').count(), 1, 'a filled pledge cannot be withdrawn');
+  assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
+
   // Without JavaScript the server writes the line. The post has no name, so it counts only with --count-unnamed.
   const plain = await open(false);
   await plain.page.goto(base + '/threads/' + threadId);
@@ -157,7 +181,7 @@ try {
     assert.equal(await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').count(), 0);
     assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="counted"]').last().textContent()).trim(), '12.5 coffees');
     assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1312.5 of 1000 coffees pledged');
-    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges');
+    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges · 300 filled · 0 confirmed');
   } else {
     assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').textContent()).trim(), '12.5 coffees · Not counted: no name');
     assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
@@ -191,6 +215,8 @@ try {
       assert.equal(await view.page.locator('[data-role="pledge-amount"]').count(), 1);
       const mark = await view.page.locator('.pledge-amount[data-pledge-state="withdrawn"] a').boundingBox();
       assert.ok(mark && mark.width > 20 && mark.height > 8, `${theme} ${width}px: the Withdrawn label is drawn`);
+      const fillMark = await view.page.locator('.pledge-amount[data-pledge-state="fill"] a').boundingBox();
+      assert.ok(fillMark && fillMark.width > 40 && fillMark.height > 8, `${theme} ${width}px: the Delivered label is drawn`);
       if (shots) {
         await mkdir(shots, { recursive: true });
         await view.page.locator('[data-pledge-totals]').scrollIntoViewIfNeeded();
@@ -201,6 +227,6 @@ try {
     }
   }
   await writer.context.close();
-  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, no-JavaScript pledge, uncounted reason, themes');
+  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, fill with a failed first press, no-JavaScript pledge, uncounted reason, themes');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }

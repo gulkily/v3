@@ -1,8 +1,9 @@
-// The "Withdraw pledge" button on the pledger's own pledge. A withdrawal is an ordinary reply
-// to the pledge whose body is the line "withdraw", so this script only signs and sends that
-// reply through the same prepare and finalize calls the Outbox uses. On failure the button
-// comes back with a message; pressing again is safe, because a second withdrawal changes
-// nothing. Without JavaScript the form posts as any reply form does.
+// The pledge buttons: "Withdraw pledge", "Mark delivered" and "Mark filled". Each is an ordinary
+// reply to the pledge whose body is one line ("withdraw" or "filled"), so this script only signs
+// and sends that reply through the same prepare and finalize calls the Outbox uses. On failure
+// the button comes back with the form's message; pressing again is safe, because a second
+// withdrawal changes nothing and a fill on a filled pledge does not count. Without JavaScript
+// the form posts as any reply form does.
 (function () {
   "use strict";
 
@@ -36,7 +37,7 @@
 
   document.addEventListener("submit", function (event) {
     var form = event.target;
-    if (!form || !form.matches || !form.matches('[data-role="pledge-withdraw"]')) return;
+    if (!form || !form.matches || !form.matches('[data-role="pledge-withdraw"], [data-role="pledge-line"]')) return;
     event.preventDefault();
     var button = form.querySelector('button[type="submit"]');
     if (button && button.disabled) return;
@@ -50,7 +51,7 @@
         return;
       }
       if (button) button.disabled = false;
-      feedback(form, "Withdrawal failed. Try again." + (result && result.error ? " " + result.error : ""));
+      feedback(form, (form.getAttribute("data-failure") || "Withdrawal failed. Try again.") + (result && result.error ? " " + result.error : ""));
     });
   });
 })();
