@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/pledge_campaigns`; [host ledger](../effor
 
 Extended estimates: enabled
 
-Status: Step 4 in progress on branch `feat/pledge-campaigns`. Planning commit `613cef37`. Steps 2 and 3 were approved by Claude under the maintainer's one-time delegation ([record](./pledge_campaigns_step2_feature_description.md#delegated-approval)).
+Status: Step 4 Stages 1–4 complete on branch `feat/pledge-campaigns`; release check pending maintainer. Planning commit `613cef37`. Steps 2 and 3 were approved by Claude under the maintainer's one-time delegation ([record](./pledge_campaigns_step2_feature_description.md#delegated-approval)).
 
 **Cycle estimate: 0.50**
 
@@ -81,5 +81,46 @@ Status: Step 4 in progress on branch `feat/pledge-campaigns`. Planning commit `6
   - The first browser run found the amount field hidden while the reply box was collapsed; fixed in `compose.css`.
   - Outbox and offline sending were not exercised in a browser. They read the same body field, which the browser check shows carries the line.
 - Estimate details: original scope unchanged. Slightly higher in retrospect: the collapsed-composer rule and the both-ways sync were not foreseen.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+
+## Stage 4 - Themes and documentation
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - `docs/concepts/pledge_campaign.md` created; one line each added to `shared_composer.md` and `post_presentation.md`.
+  - `docs/plans/pledges_checklist.md`: cycle 1 marked built, with checks, omissions and notes for later cycles.
+  - Ledger closeout in `docs/plans/effort_estimation_trial.md`.
+- Verification:
+  - `node tests/browser/pledge_campaign.mjs --screenshots=/tmp/pledges`: passed in 17 themes (light, dark, gloss, glossdark, console, lcd, chicago, vapor, forge, sticker, arena, thermal, whitehot, word97, midnight, bubblegum, spearmint) at 375 and 1280 px: no page overflow, the bar drawn and distinct from the card, the amount field present.
+  - Screenshots looked at by eye: gloss, glossdark, midnight, chicago, bubblegum, console, lcd, word97, vapor and thermal at 375 px; gloss at 1280 px. Sum, bar, goal mark, amounts, reasons and the field were readable in each. The other themes passed the automated check only.
+  - `git diff --check` on the branch: passed.
+  - Whole-branch diff read for duplication and scope: only pledge files, the two template hooks, the composer slot, the controller wiring, tests and docs.
+- Notes:
+  - Engagify, chouse, qdb and mitrapclub themes were not checked.
+- Estimate details: original scope unchanged; no revisions.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+
+## Completion against the Step 3 contract
+
+- Entry and end-to-end outcome: **passed** in a local browser. An author posted a campaign from New post; a signed pledge from the reply form changed the sum.
+- Recovery: uncounted pledges show a reason, **passed**. Flag off removes the block and field, **passed**. "A refused pledge keeps its number and text" was **not exercised**: a refused reply redraws the Reply page with the body, which holds the line when JavaScript is on; without JavaScript the amount itself is not redrawn.
+- Deployment: no schema change, rebuild or dependency. **Passed** by inspection.
+- Release condition (Ilya, iPhone SE, zenmemes.com, flag on): **pending**. Not reachable from this session.
+- Full test suite: **not run**, per `AGENTS.md`.
+
+## Enhancement requests
+
+- **Request:** the plain theme drawn for the mock-ups. **Disposition:** separate work. **Approval:** pending. **Follow-up:** listed under "Still open" in the checklist.
+
+## Cycle retrospective
+
+- Retrospective scope assessment: **0.45** (not a projection, not measured time). The thread rows already carried every value the totals needed, which removed the expected query work; the collapsed reply box and the no-name finding added some.
+- Delivered: stages 1–4 as planned, 4 stage commits after the planning commit. No scope added. Three refinements recorded in Step 3 and one change in Stage 3.
+- Process note: this cycle's Steps 2 and 3 were approved by the agent that wrote them. No one else read the plans before implementation. The decisions that most need a second reader are listed in the checklist.
+- Maintainer comfortable-fit judgment: pending.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
