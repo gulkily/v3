@@ -304,6 +304,27 @@
   padding: 0.3rem 0.6rem;
 }
 
+/* Copy inside a prompt field (/agent/): a bare icon, since a candy button with
+   a solid base crowds the field's rounded corner. Fill on hover; no bounce. */
+:root[data-theme="spearmint"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border-color: transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="spearmint"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover,
+:root[data-theme="spearmint"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):focus-visible {
+  background: var(--button-bg);
+  box-shadow: none;
+  transform: none;
+}
+
+:root[data-theme="spearmint"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+  box-shadow: none;
+  transform: none;
+}
+
 :root[data-theme="spearmint"] .thread-reaction-button[disabled] {
   border-color: transparent;
   box-shadow: none;

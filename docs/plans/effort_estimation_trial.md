@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/prompt_copy_quiet
+
+2026-11-16T05:40Z — v3/prompt_copy_quiet one-shot (standing P2 enrollment; follows v3/prompt_copy_icon): [record](./prompt_copy_quiet/prompt_copy_quiet_one_shot.md#study-history). The icon-only Copy button drops its theme button chrome in Gloss, Gloss Dark, Engagify, Bubblegum and (scope v2) Spearmint; intake **0.06** after source inspection (no pristine intake), retrospective 0.08, single exposed Claude rater. Baseline `b9ffa6b`; maintainer fit judgment pending; no accepted-count change.
+
 ## Cycle v3/prompt_copy_icon
 
 2026-11-16T05:20Z — v3/prompt_copy_icon one-shot (standing P2 enrollment; follows v3/prompt_card_like): [record](./prompt_copy_icon/prompt_copy_icon_one_shot.md#study-history). Copy on /agent/ prompt fields moves to the top right, icon only, with a check after copying; intake **0.1** after source inspection in the preceding cycles (no pristine intake), retrospective 0.1, single exposed Claude rater. Baseline `0b18578`; maintainer fit judgment pending; no accepted-count change.

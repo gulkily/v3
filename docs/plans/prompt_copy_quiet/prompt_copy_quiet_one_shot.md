@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); no separate log unle
 Effort study: `railspike-effort` / `v3/prompt_copy_quiet` — [host ledger](../effort_estimation_trial.md#cycle-v3prompt_copy_quiet); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.06**
-Status: planned; next permitted action: implement
+Status: implemented and verified locally; pushed with a PR; merge and deploy need the maintainer
 
 ## Original request
 
@@ -42,14 +42,36 @@ Copyable prompt field: used; themed look changed in four themes. No inventory ch
 `./v3 test --smoke PresentationProfileMatrixTest PromptLibraryTest` plus any test that reads the two theme files; `node tests/browser/prompt_card_like.mjs` with screenshots in all themes at phone and desktop widths, and hover and copied states in the changed themes. Full suite not run (maintainer runs it).
 
 Starting revision and branch: `b9ffa6b` (origin/main after PR #272); `fix/prompt_copy_quiet`
-Planning commit: pending
+Planning commit: `80b7a69`
 
 ## Dated execution history
 
 - 2026-11-16T05:16Z: no matching item in `docs/feedback/items/`.
+- 2026-11-16T05:18Z: scope v2 (addition), maintainer: "also a bit odd in spearmint". Spearmint gets the same bare icon in `public/assets/theme-spearmint.css`; this replaces the v1 line above that left Spearmint alone. Estimate unchanged.
+- 2026-11-16T05:30Z: implemented in the three theme files as planned.
+- 2026-11-16T05:35Z: correction to the two earlier records (prompt_card_like, prompt_copy_icon): the browser test asked for theme `gloss-dark`, which is not a theme id, so those "Gloss Dark" screenshots were the fallback light look and Gloss Dark had not been seen. The test's default theme list now says `glossdark`, and Gloss Dark was looked at for real in this cycle.
 
 ## Study history
 
 - 2026-11-16T05:16Z intake: **0.06**, scope v1, R1, P2, single exposed rater Claude (claude-fable-5-2), rated after reading the two themes' button rules (no pristine intake).
+
+- 2026-11-16T05:40Z closeout: retrospective **0.08** (Spearmint added; the theme-id correction).
+
+## Verification
+
+- Passed: `./v3 test --smoke PresentationProfileMatrixTest PromptLibraryTest LocalAppSmokeTest`: 480/480.
+- Passed: `node tests/browser/prompt_card_like.mjs` (local Chrome), which also confirms the button keeps its corner position and 44px target.
+- Looked at, at 390px: rest, hover and copied states in Gloss, Gloss Dark, Engagify, Bubblegum and Spearmint (bare icon, light fill on hover, check after copying), and the unchanged Light, Word97 and Sticker for comparison.
+- Not run: full suite (maintainer runs it); keyboard focus ring by eye (the themes' focus rules are untouched); the live site, which needs the deploy.
+
+## Outcome
+
+Delivered: v1 plus Spearmint. Next action: maintainer merges and deploys.
+
+## Final review
+
+Diff: `public/assets/theme-gloss.css`, `theme-bubblegum.css`, `theme-spearmint.css`, `tests/browser/prompt_card_like.mjs` (theme id fix; hover and copied screenshots), this record, the plans index and the ledger. Debug note: a screenshot labelled with a theme name proves nothing unless the theme id is real; worth asserting `data-theme` after switching.
+
+Commit/merge/publication status: completion commit pending at time of writing; pushed with a PR; not merged or deployed.
 
 Attribution: Claude (claude-fable-5-2), 2026-11-16 UTC.
