@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/pledge_fills`; [host ledger](../effort_es
 
 Extended estimates: enabled
 
-Status: Steps 1 (Option B), 2 and 3 approved by the maintainer 2026-11-16. Step 4 in progress on `feat/pledge-fills`, cut from `origin/main` at `c98b5221`.
+Status: Steps 1 (Option B), 2 and 3 approved by the maintainer 2026-11-16. Step 4 complete on `feat/pledge-fills`, cut from `origin/main` at `c98b5221`. Release check on zenmemes.com pending.
 
 **Cycle estimate: 0.50**
 
@@ -91,5 +91,37 @@ Status: Steps 1 (Option B), 2 and 3 approved by the maintainer 2026-11-16. Step 
 - Notes:
   - "Mark filled" is not shown to the author on the author's own pledge; there the author is the pledger and sees "Mark delivered".
   - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 5 - Checks in every theme, and documentation
+
+**Original estimate: 0.06**
+
+**Retrospective: 0.07**
+
+- Changes:
+  - [Pledge campaign](../../concepts/pledge_campaign.md) concept: fills, the button rules, the reasons, the fold and "fills before withdrawals"; the fill line and script added to Sources; "Not yet" now names cycle 8.
+  - [Spec](../pledges_spec.md) rule 4: a fully filled pledge cannot be withdrawn, and fills are read before withdrawals.
+  - `tests/run.php`: `WithdrawLeafFilterTest.php` added to the runner's file list. Cycle 2 added the test but not the list entry, so `./v3 test WithdrawLeafFilterTest` reported "No tests matched" and the test never ran in any suite. Fixed here, as a test found not running on the base commit.
+  - Checklist, ledger and debug log; this closeout.
+- Verification:
+  - Passed: `tests/browser/pledge_campaign.mjs` in 17 themes (light, dark, gloss, glossdark, console, lcd, chicago, vapor, forge, sticker, arena, thermal, whitehot, word97, midnight, bubblegum, spearmint) at 375 and 1280 px: no overflow, the bar, the Withdrawn label and the Delivered label are drawn. Gloss at 375 px was looked at by eye.
+  - Passed: `./v3 test --smoke` (468); `PledgeCampaignTest` (17), `WithdrawLeafFilterTest` (2), `ThreadActivityTest` (2), `RetractedLeafFilterTest` (1), `TagOnlyLeafFilterTest` (1), each run on its own. The full suite was not run.
+  - Passed: concept links resolve; `git diff --check`; the whole diff against `origin/main` reviewed for duplication and scope.
+  - Inapplicable: navigation icons (no new destination); schema, rebuild and migration (nothing stored); dependency approval (`playwright-core` is the repository's own pinned dev dependency, installed with `--no-save`).
+  - Pending: the release check on zenmemes.com from the maintainer's iPhone SE. Outbox and offline sending of a fill were not exercised.
+- Notes:
+  - Estimate details: original scope as in Step 3; slightly over because of the runner fix.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Cycle retrospective
+
+- Completion Contract: entry by button and by typed line, labels, totals, fold, failed-press recovery and undo by retraction are verified locally. The release condition on zenmemes.com is **pending**.
+- Commits: planning `c7c6d6c`, then one per stage (Stages 1–5), on `feat/pledge-fills` from `c98b5221`.
+- Retrospective scope assessment: **0.45**, against a projection of 0.50 held from intake to entry. Stage retrospectives 0.12, 0.08, 0.04, 0.10, 0.07, not summed. Scope delivered as approved, plus two in-scope refinements (filled hidden at zero; fully filled pledges lose Withdraw) and the runner fix.
+- Not in this cycle: confirm, dispute and Released (cycle 8, `pledge_fill_review`); buttons on the Reply page and in paned layouts; fills in the text output and agent API (cycle 6).
+- Maintainer comfortable-fit judgment: pending.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
