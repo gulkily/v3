@@ -38,6 +38,11 @@ final class InstanceImportTask
         return new self(dirname($queueDatabasePath) . '/instance_import');
     }
 
+    public function sources(): InstanceImportSources
+    {
+        return new InstanceImportSources($this->stateDirectory);
+    }
+
     public function stateDirectory(): string
     {
         return $this->stateDirectory;
@@ -70,6 +75,9 @@ final class InstanceImportTask
             'Requested-At' => gmdate('Y-m-d\TH:i:s\Z'),
         ]);
         $task = $store->enqueue(SqliteTaskQueueStore::INSTANCE_IMPORT, $key, 1);
+        if ($action === 'import') {
+            $this->sources()->remember((string) $source);
+        }
 
         return ['enqueued' => ($task['enqueued'] ?? false) === true, 'task_id' => (int) $task['id'], 'message' => 'Queued for the task worker.'];
     }

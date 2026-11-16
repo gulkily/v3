@@ -78,6 +78,31 @@ final class InstanceImportTaskTest
         assertSame(null, $task->request('../etc/passwd'));
     }
 
+    public function testQueuedImportsAreRememberedNewestFirstAndCapped(): void
+    {
+        $w = new ImportTestWorkspace();
+        [$store, $task] = $this->queueStore($w->root . '/private/tasks.sqlite3');
+        $queued = $task->queue($store, 'import', 'one.example', 'openpgp:operator');
+        $store->claimNext(1); $store->markCompleted($queued['task_id']);
+        $queued = $task->queue($store, 'import', 'https://two.example', 'openpgp:operator');
+        $store->claimNext(1); $store->markCompleted($queued['task_id']);
+        $queued = $task->queue($store, 'import', 'one.example', 'openpgp:operator');
+        $store->claimNext(1); $store->markCompleted($queued['task_id']);
+        $task->queue($store, 'cancel', null, 'openpgp:operator');
+        assertSame(['one.example', 'https://two.example'], array_column($task->sources()->all(), 'source'));
+        for ($i = 0; $i < 25; $i++) $task->sources()->remember('host' . $i . '.example');
+        $all = $task->sources()->all();
+        assertSame(\ForumRewrite\Import\InstanceImportSources::LIMIT, count($all));
+        assertSame('host24.example', $all[0]['source']);
+        $file = $task->stateDirectory() . '/sources.txt';
+        assertStringContains("Source: host24.example\nLast-Used: ", (string) file_get_contents($file));
+        assertSame('0600', substr(sprintf('%o', fileperms($file)), -4));
+        assertTrue(!str_starts_with(realpath($file), realpath(dirname(__DIR__)) . '/state/local_repository'));
+        chmod($file, 0000);
+        if (!is_readable($file)) assertSame([], $task->sources()->all());
+        chmod($file, 0600);
+    }
+
     /** @return array{0: SqliteTaskQueueStore, 1: InstanceImportTask} */
     private function queueStore(string $queuePath): array
     {

@@ -30,3 +30,18 @@ Step 4 entry: 0.65 whole-cycle projection reaffirmed, scope v3 unchanged; stage-
 - Estimate details: original scope unchanged; no revision.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - Remembered sources
+**Original estimate: 0.06**
+**Retrospective: 0.05**
+- Changes:
+  - `InstanceImportSources` (`src/ForumRewrite/Import/InstanceImportSources.php`): blank-line-separated `Source:` / `Last-Used:` blocks in `sources.txt` beside the import requests, newest first, capped at 20 entries, mode 0600. It reuses `InstanceImportTask::parse` for the `Key: value` lines.
+  - `InstanceImportTask::queue` remembers the source of each queued import. Resume and cancel add nothing.
+- Verification:
+  - `./v3 test --smoke InstanceImportTaskTest`: passed, with new test `testQueuedImportsAreRememberedNewestFirstAndCapped` (order, dedupe, cap, file format and mode, unreadable file).
+  - Privacy: the file sits beside the queue database (`state/private/` by default, per `TaskQueueDatabaseConfig`). Downloads archive only the content repository, so the file never enters them.
+  - Full suite not run.
+- Notes: none.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
