@@ -1,9 +1,9 @@
 <?php
 require_once __DIR__.'/AgentPostingApiTest.php';
-final class FrmClientTest
+final class QuillClientTest
 {
     /**
-     * frm.py keeps its keyring at <state-dir>/<64-hex site hash>/keyring. Under a long test root the
+     * quill.py keeps its keyring at <state-dir>/<64-hex site hash>/keyring. Under a long test root the
      * gpg-agent socket paths (the longest is S.gpg-agent.browser) pass the ~107-byte Unix socket limit and the agent cannot start unless
      * /run/user/<uid> exists (it does on desktop Linux, not in containers). With a 64-character site
      * hash and /keyring, the state dir itself must stay within 13 characters (/tmp/f + 6 hex).
@@ -37,7 +37,7 @@ final class FrmClientTest
                 $hook='if ($_SERVER["REQUEST_URI"] === '.var_export($route,true).') ob_start(function($body) { if (is_file('.var_export($marker,true).')) { unlink('.var_export($marker,true).'); http_response_code(502); return "response lost"; } return $body; });';
                 if ($legacy) $hook.='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body));';
                 file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-                $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+                $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
                 file_put_contents($root.'/body.txt',"Recovery body.\n");
                 $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client'),'--retries','0'];
                 $write=['thread','--subject','Recovery','--body-file',$root.'/body.txt'];
@@ -59,7 +59,7 @@ final class FrmClientTest
             $counter=$root.'/attempts';$hashes=$root.'/hashes';
             $hook='if ($_SERVER["REQUEST_URI"] === "/api/create_signed_post") { $n=is_file('.var_export($counter,true).')?(int)file_get_contents('.var_export($counter,true).'):0; file_put_contents('.var_export($counter,true).', $n+1); file_put_contents('.var_export($hashes,true).',hash("sha256",file_get_contents("php://input"))."\n",FILE_APPEND); if($n<3) {http_response_code(503);header("Retry-After: 0");echo json_encode(["status"=>"busy","error"=>"busy","retry_after"=>0]);return;} }';
             $router=$server->directory.'/public/router.php';file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
             file_put_contents($root.'/body.txt',"Busy body.\n");
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Busy','--body-file',$root.'/body.txt']));
@@ -75,7 +75,7 @@ final class FrmClientTest
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
         try {
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
             // A no-break space is still rejected; arrows were accepted in c90eea84.
             $body="  Cafe\u{0301}\r\nx\u{00A0}\n";file_put_contents($root.'/body.txt',$body);
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
@@ -92,7 +92,7 @@ final class FrmClientTest
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true','FORUM_EMOJI_AUTHORED_TEXT'=>'false']);
         try {
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'staged')];
             file_put_contents($root.'/first.txt',"Registering this key.\n");
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','First','--body-file',$root.'/first.txt'])); assertSame(0,$code,$out);
@@ -139,7 +139,7 @@ final class FrmClientTest
             $router=$server->directory.'/public/router.php';
             $hook='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body)); if($_SERVER["REQUEST_URI"] === "/api/create_identity") ob_start(function($body) { if(is_file('.var_export($marker,true).')) {unlink('.var_export($marker,true).');http_response_code(502);return "lost";}return $body;});';
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
             file_put_contents($root.'/body.txt',"Registered then resumed.\n");
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             $before=count(glob($repo.'/records/identity/*'));
@@ -159,7 +159,7 @@ final class FrmClientTest
             $router=$server->directory.'/public/router.php';
             $hook='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body)); if($_SERVER["REQUEST_URI"] === "/api/create_prepared_post" && is_file('.var_export($marker,true).')) {http_response_code(503);echo "busy";return;}';
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
             file_put_contents($root.'/body.txt',"Uncertain.\n");
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client'),'--retries','0'];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Recovery','--body-file',$root.'/body.txt']));assertSame(2,$code,$out);
@@ -178,7 +178,7 @@ final class FrmClientTest
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_APPROVED_MEMBERS_ONLY'=>'true']);
         try {
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
             $body="Retained draft.\n";file_put_contents($root.'/body.txt',$body);
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             $before=(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']);
@@ -204,7 +204,7 @@ final class FrmClientTest
             $router=$server->directory.'/public/router.php';
             $hook='if($_SERVER["REQUEST_URI"] === "/api/create_signed_post") { if(is_file('.var_export($marker,true).')) {http_response_code(302);header("Location: /api/create_thread");return;} ob_start(function($body) {$p=json_decode($body,true); if(is_array($p)&&($p["status"]??"")==="ok") {$p["refresh_pending"]=true;return json_encode($p);}return $body;});}';
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));file_put_contents($root.'/body.txt',"Redirect draft.\n");
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));file_put_contents($root.'/body.txt',"Redirect draft.\n");
             $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$before=$tx->git(['rev-parse','HEAD']);
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Redirect','--body-file',$root.'/body.txt']));assertSame(2,$code,$out);
@@ -229,7 +229,7 @@ final class FrmClientTest
                     $source=str_replace('<?php', '<?php if (str_starts_with($_SERVER["REQUEST_URI"],"/api/text_rules")) { http_response_code(404); echo "not found"; return; } ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body));', $source);
                     file_put_contents($router,$source);
                 }
-                $script=$root.'/frm.py'; file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+                $script=$root.'/quill.py'; file_put_contents($script,file_get_contents($server->url.'/quill.py'));
                 file_put_contents($root.'/body.txt', "Café — 5 µg, “quoted”, Привет\n");
                 $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
                 [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Example','--body-file',$root.'/body.txt']));
@@ -261,7 +261,7 @@ final class FrmClientTest
             $context=stream_context_create(['http'=>['method'=>'POST','ignore_errors'=>true,'header'=>"Content-Type: application/x-www-form-urlencoded\r\n",'content'=>http_build_query(['subject'=>'Agent trouble reports','body'=>"Reports land here.\n"]),'timeout'=>40]]);
             $created=file_get_contents($server->url.'/api/create_thread',false,$context);
             preg_match('/^thread_id=(\S+)$/m',(string)$created,$match); $thread=$match[1]??''; assertTrue($thread!=='',(string)$created);
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
             file_put_contents($root.'/body.txt',"Secret draft text.\n");
             $state=self::stateDir($root,'report');
             $write=['--site',$server->url,'--state-dir',$state,'reply','--thread','thread-missing','--body-file',$root.'/body.txt','--report-thread',$thread];
@@ -283,7 +283,7 @@ final class FrmClientTest
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_IMAGE_CONTENT_ENABLED'=>'true']);
         try {
-            $script=$root.'/frm.py';file_put_contents($script,file_get_contents($server->url.'/frm.py'));
+            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
             file_put_contents($root.'/pixel.png',ImageContentTest::png());
             file_put_contents($root.'/body.txt',"Screenshot attached.\n");
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'image'),'--retries','0'];
@@ -294,8 +294,8 @@ final class FrmClientTest
             preg_match('/Identity-ID: (openpgp:[0-9a-f]{40})/',$out,$m); $identity=$m[1];
             $seed=\ForumRewrite\Canonical\CanonicalPathResolver::approvalSeed(substr($identity,8));
             @mkdir(dirname($repo.'/'.$seed),0777,true);
-            file_put_contents($repo.'/'.$seed,"Approved-Identity-ID: {$identity}\nSeed-Reason: frm image test\n\n");
-            $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$tx->git(['add',$seed]);$tx->git(['commit','-qm','Approve frm image author']);
+            file_put_contents($repo.'/'.$seed,"Approved-Identity-ID: {$identity}\nSeed-Reason: Quill image test\n\n");
+            $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$tx->git(['add',$seed]);$tx->git(['commit','-qm','Approve Quill image author']);
             (new \ForumRewrite\ReadModel\ReadModelBuilder($repo,$db,new \ForumRewrite\Canonical\CanonicalRecordRepository($repo)))->rebuild();
             // python3 -S hides site-packages, so this is the standard-library path: the prepared PNG goes as is.
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Picture','--body-file',$root.'/body.txt'],$image),'python3 -S');
@@ -324,9 +324,11 @@ final class FrmClientTest
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
         try {
-            [$h,$script]=AgentPostingApiTest::request($server,'/frm.py');
+            [$h,$script]=AgentPostingApiTest::request($server,'/quill.py');
             assertStringContains('200',$h[0]); assertTrue(in_array('Content-Type: text/plain; charset=utf-8',$h,true));
-            assertSame(file_get_contents(dirname(__DIR__).'/public/frm.py'),$script);
+            assertSame(file_get_contents(dirname(__DIR__).'/public/quill.py'),$script);
+            [$h,$old]=AgentPostingApiTest::request($server,'/frm.py');
+            assertStringContains('200',$h[0]); assertSame($script,$old);
             $path=$root.'/downloaded.py'; file_put_contents($path,$script);
             [$code,$out]=self::run($path,['--site',$server->url,'index']); assertSame(0,$code,$out);
             $input=SignedPostIdentityTest::bundle(); [, $post]=SingleRequestHttpTest::request($server,$input);
@@ -336,12 +338,57 @@ final class FrmClientTest
             }
             [$code,$out]=self::run($path,['--site',$server->url,'check','missing']); assertSame(1,$code,$out);
             assertStringContains('Status: missing',$out);
-            [$h,$body]=AgentPostingApiTest::request($server,'/frm.py','HEAD'); assertSame('',$body);
+            [$h,$body]=AgentPostingApiTest::request($server,'/quill.py','HEAD'); assertSame('',$body);
         } finally {$server->close();}
         [$server]=SingleRequestHttpTest::server(['FORUM_APPROVED_MEMBERS_ONLY'=>'true']);
         try {
-            [$h,$body]=AgentPostingApiTest::request($server,'/frm.py'); assertStringContains('200',$h[0]);
+            [$h,$body]=AgentPostingApiTest::request($server,'/quill.py'); assertStringContains('200',$h[0]);
             [$code,$out]=self::run($path,['--site',$server->url,'check','missing']); assertSame(2,$code,$out); assertStringContains('Status: unknown',$out);
+        } finally {$server->close();}
+    }
+    public function testUpdateNoticeComparesVersions(): void
+    {
+        $public=dirname(__DIR__).'/public';
+        $current=\ForumRewrite\Http\ClientDownload::currentVersion($public);
+        assertTrue($current!==null && preg_match('/^\d{4}-\d{2}-\d{2}(\.\d+)?$/',$current)===1, 'public/quill.py needs a QUILL_VERSION line');
+        $notice=\ForumRewrite\Http\ClientDownload::notice('quill/2000-01-01',$public);
+        assertSame('You are running Quill 2000-01-01; this site serves '.$current.'. Fetch it from /quill.py.',$notice);
+        foreach (['quill/'.$current,'quill/'.$current.'.2','quill/2999-01-01','quill/unknown','Python-urllib/3.12','curl/8.5.0',''] as $agent) {
+            assertSame(null,\ForumRewrite\Http\ClientDownload::notice($agent,$public),$agent);
+        }
+        $root=sys_get_temp_dir().'/quill-version-'.bin2hex(random_bytes(4)); mkdir($root);
+        try {
+            file_put_contents($root.'/quill.py',"#!/usr/bin/env python3\n\"\"\"Quill.\"\"\"\nQUILL_VERSION = \"2026-11-16.2\"\n");
+            assertSame('2026-11-16.2',\ForumRewrite\Http\ClientDownload::currentVersion($root));
+            assertTrue(\ForumRewrite\Http\ClientDownload::notice('quill/2026-11-16',$root)!==null);
+            assertSame(null,\ForumRewrite\Http\ClientDownload::notice('quill/2026-11-16.2',$root));
+            assertSame(null,\ForumRewrite\Http\ClientDownload::notice('quill/2026-11-16',$root.'/missing'));
+        } finally { @unlink($root.'/quill.py'); @rmdir($root); }
+    }
+    public function testOutdatedCopyIsToldOnEveryResponse(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+        try {
+            $get=static function (string $path, string $agent) use ($server): array {
+                $context=stream_context_create(['http'=>['ignore_errors'=>true,'header'=>'User-Agent: '.$agent."\r\n",'timeout'=>40]]);
+                $body=file_get_contents($server->url.$path,false,$context);
+                return [$http_response_header,$body];
+            };
+            foreach (['/api/','/api/list_index','/quill.py','/no-such-page'] as $path) {
+                [$h]=$get($path,'quill/2000-01-01');
+                assertTrue((bool) preg_grep('/^X-Quill-Update: You are running Quill 2000-01-01; /i',$h),$path);
+                [$h]=$get($path,'curl/8.5.0');
+                assertSame([],preg_grep('/^X-Quill-Update:/i',$h),$path);
+            }
+            [, $script]=$get('/quill.py','curl/8.5.0');
+            $current=\ForumRewrite\Http\ClientDownload::currentVersion(dirname(__DIR__).'/public');
+            [$h]=$get('/api/','quill/'.$current); assertSame([],preg_grep('/^X-Quill-Update:/i',$h));
+            $path=$root.'/frm.py'; file_put_contents($path,preg_replace('/^QUILL_VERSION = "[^"]+"/m','QUILL_VERSION = "2000-01-01"',$script,1));
+            [$code,$out]=self::run($path,['--site',$server->url,'index']); assertSame(0,$code,$out);
+            assertSame(1,substr_count($out,'Update: You are running Quill 2000-01-01; this site serves '.$current.'. Fetch it from /quill.py.'),$out);
+            file_put_contents($path,$script);
+            [$code,$out]=self::run($path,['--site',$server->url,'index']); assertSame(0,$code,$out);
+            assertTrue(!str_contains($out,'Update:'),$out);
         } finally {$server->close();}
     }
 }

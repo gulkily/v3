@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/quill_rename
+
+2026-11-16T10:40Z — v3/quill_rename one-shot (standing P2 enrollment; no parent; ships before v3/agent_checkin Step 4): [record](./quill_rename/quill_rename_one_shot.md#study-history). `frm.py` becomes `quill.py` (`/frm.py` kept); Quill sends its version on every request, and an outdated copy gets an `X-Quill-Update` header on every response. Intake **0.30** after source inspection (no pristine intake), retrospective 0.30, single exposed Claude rater. Baseline `c98b522`; maintainer fit judgment pending; no accepted-count change.
+
 ## Cycle v3/prompt_plain_text
 
 2026-11-16T10:25Z — v3/prompt_plain_text one-shot (standing P2 enrollment; split from the staged v3/prompt_plain_text_and_revise at the maintainer's request): [record](./prompt_plain_text/prompt_plain_text_one_shot.md#study-history). /agent/ prompts become selectable text with Copy in the corner; tall shared prompts cut off with Show all; intake **0.15** after source inspection (no pristine intake), retrospective 0.15, single exposed Claude rater. Baseline `6685625`; maintainer fit judgment pending; no accepted-count change.

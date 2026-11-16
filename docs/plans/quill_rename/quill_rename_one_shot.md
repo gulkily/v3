@@ -10,7 +10,7 @@ Extended estimates: disabled (one approach, no alternatives or stages)
 
 **Cycle estimate: 0.30 (intake after source inspection; no pristine intake)**
 
-Status: authorized; planning commit next, then implementation. Nothing is merged or deployed.
+Status: implemented and verified locally; PR open, awaiting maintainer review, merge and deploy. Production replay pending.
 
 ## Original request
 
@@ -37,7 +37,13 @@ Exclusions, kept as follow-ups:
 - PHP and Perl clients.
 - The installed claude.ai skill text. After merge it is updated through a skill proposal; the repo copy in `docs/agents/claude_zenmemes_skill.md` changes here.
 
-Each follow-up gets a feedback item in `docs/feedback/items/`, the place this repository tracks requested work (`AGENTS.md`): PF-20261116-F02 to PF-20261116-F05.
+Each follow-up gets a feedback item in `docs/feedback/items/`, the place this repository tracks requested work (`AGENTS.md`):
+
+- [PF-20261116-F02](../../feedback/items/PF-20261116-F02.txt): versioned download URLs.
+- [PF-20261116-F03](../../feedback/items/PF-20261116-F03.txt): Quill versions in use, shown in Tools.
+- [PF-20261116-F04](../../feedback/items/PF-20261116-F04.txt): PHP and Perl versions of Quill.
+- [PF-20261116-F05](../../feedback/items/PF-20261116-F05.txt): the default key name (found during implementation).
+- [PF-20261116-O01](../../feedback/items/PF-20261116-O01.txt): install the updated skill text in Claude's account after deploy.
 
 ## Approach and risks
 
@@ -83,7 +89,7 @@ Starting revision `c98b522` (main; the draft was written at `66856253`). Branch 
 
 ## Planning commit
 
-Pending; this record is in the planning commit.
+`7ccf625` (record and plans index only).
 
 ## Feedback items
 
@@ -92,10 +98,27 @@ No existing item asks for this; a search for Quill, client renames and version c
 ## Study history
 
 - 2026-11-16: intake **0.30**, rated after reading `frm.py`, `ClientDownload.php` and the references. Single exposed Claude rater. Baseline `c98b522`.
+- 2026-11-16: retrospective **0.30**. Scope unchanged except one addition: Claude's skill text gained a line about `Update:`. No split. Maintainer fit judgment pending; no accepted-count change.
 
 ## Dated execution history
 
 - 2026-11-16: record drafted. Names considered: `v3quill.py`, `quill_signer.py`, `quill_post.py` and `quill_signpost.py`. The maintainer chose plain `quill.py`. A versioned filename was rejected because it breaks permanent URLs and detects nothing.
 - 2026-11-16: authorized. Branch `feat/quill-rename` from `c98b522`.
+
+- 2026-11-16, implementation (correction versus plan noted where it applies):
+  - `git mv public/frm.py public/quill.py`. `QUILL_VERSION = "2026-11-16"`; `FRM_VERSION` stays as an alias. Every curl call sends `--user-agent quill/<version>`, and `request()` prints an `X-Quill-Update` header once per run as `Update:`.
+  - Printed `--resume`, `Replace:` and `Check:` commands use the name the copy runs under (`program()`), so a copy saved as `frm.py` prints working commands. This is a correction: a fixed `quill.py` would have broken them for old downloads.
+  - `setting()` reads `QUILL_` then `FRM_`. The state directory is chosen when it is first used, not at startup, so read-only commands print no "kept from frm.py" note.
+  - Decision: the default `--name` stays `frm-agent`, because changing it would change the username new default keys claim. Filed as PF-20261116-F05.
+  - `ClientDownload` serves `/quill.py` and `/frm.py` from `public/quill.py`. Its `serve()` already runs first in `Application::handle` and `Host\FrontController::handleRequest`, so the notice header is added there and reaches every response, including 404s and members-only denials. `.htaccess` already sends every request to PHP, so no server rule changes.
+  - The docs listed under reuse decisions were renamed. `docs/reference/agent_api.md` gained "Version and update notice" and a new quickstart anchor (`#quickstart-with-quill`; `README.md` link updated). The concept entry gained "Client update notice".
+  - Historical plans, feedback items and triage files still say `frm.py`, because they describe what was true then.
+- 2026-11-16, verification:
+  - `python3 tests/quill_client_test.py`: 33 run, 33 passed. New tests cover the User-Agent, a notice printed once, no notice without the header, the old state directory kept, an explicit state directory winning, setting order and printed command names.
+  - `./v3 test --smoke QuillClientTest LlmsTxtRendererTest PlatformDocsCatalogTest AgentApiWorkedExampleTest WebServerRoutingTest`: 496 run, 496 passed. `./v3 test AgentApiWorkedExampleTest`: 1 passed. New PHP tests: `testUpdateNoticeComparesVersions` and `testOutdatedCopyIsToldOnEveryResponse`; the second runs a 2000-01-01 copy saved as `frm.py` against a live test server. Full suite not run.
+  - No test failed on the base commit, so there was no pre-existing failure to fix.
+  - `./v3 feedback check`: 0 problems. `git diff --check`: clean. A search for `frm` outside historical files finds only the intended aliases and tests of them.
+  - Pending: production replay after deploy. Both URLs should serve the same bytes on zenmemes.com, and a fresh Claude workspace should post with `quill.py` as "claude".
+- 2026-11-16: completion commit pending at the time of writing; its hash goes in the PR description.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
