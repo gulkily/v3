@@ -173,6 +173,60 @@ final class PledgeCampaignTest
         }
     }
 
+    public function testAmountFieldWritesTheLineOnceAndOnlyWithTheFlagOn(): void
+    {
+        pledgeAssertSame("pledge: 300\n\nI'll order these.", PledgeDirective::withAmount("  I'll order these.\n", ' 300 '));
+        pledgeAssertSame('pledge: 12.5', PledgeDirective::withAmount('', '12.5'));
+        pledgeAssertSame('pledge: a few', PledgeDirective::withAmount('', "a\nfew"));
+        // A body that already has the line is left alone, and an empty amount adds nothing.
+        pledgeAssertSame("pledge: 300\n\nNote", PledgeDirective::withAmount("pledge: 300\n\nNote", '300'));
+        pledgeAssertSame('Just a reply', PledgeDirective::withAmount('Just a reply', '  '));
+
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Form campaign', 'goal: 1000 coffees');
+        $plain = $this->thread($service, 'No campaign', 'Just talking.');
+        $application = fn (): Application => new Application(dirname(__DIR__), $root, $database);
+        $post = function (array $fields) use ($application, $thread): void {
+            $_POST = $fields + ['thread_id' => $thread, 'parent_id' => $thread, 'board_tags' => 'general'];
+            try {
+                $this->render($application(), 'POST /compose/reply');
+            } finally {
+                $_POST = [];
+            }
+        };
+        $bodies = fn (): array => (new PDO('sqlite:' . $database))
+            ->query("SELECT body FROM posts WHERE thread_id = '" . $thread . "' AND post_id != thread_id ORDER BY sequence_number")->fetchAll(PDO::FETCH_COLUMN);
+
+        putenv('FORUM_PLEDGES_ENABLED');
+        pledgeAssertNotContains('name="pledge_amount"', $this->render($application(), '/threads/' . rawurlencode($thread)));
+        $post(['body' => 'Flag off', 'pledge_amount' => '5']);
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $page = $this->render($application(), '/threads/' . rawurlencode($thread));
+            pledgeAssertContains('<label class="pledge-field">Pledge<input type="text" name="pledge_amount" inputmode="decimal"', $page);
+            pledgeAssertContains('<span class="pledge-field__unit">coffees</span>', $page);
+            pledgeAssertContains('/assets/pledge_field.', $page);
+            $other = $this->render($application(), '/threads/' . rawurlencode($plain));
+            pledgeAssertNotContains('name="pledge_amount"', $other);
+            pledgeAssertNotContains('pledge_field.', $other);
+            // The separate Reply page has no amount field in this cycle.
+            pledgeAssertNotContains('name="pledge_amount"', $this->render($application(), '/compose/reply?thread_id=' . rawurlencode($thread) . '&parent_id=' . rawurlencode($thread)));
+
+            $post(['body' => "I'll order these.", 'pledge_amount' => '300']);
+            $post(['body' => '', 'pledge_amount' => '12.5']);
+            $post(['body' => "pledge: 40\n\nSent by the script too.", 'pledge_amount' => '40']);
+            $post(['body' => 'No amount', 'pledge_amount' => '']);
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+
+        pledgeAssertSame(
+            ["Flag off\n", "pledge: 300\n\nI'll order these.\n", "pledge: 12.5\n", "pledge: 40\n\nSent by the script too.\n", "No amount\n"],
+            $bodies()
+        );
+    }
+
     /** @return array{string,string,LocalWriteService,string} */
     private function environment(): array
     {

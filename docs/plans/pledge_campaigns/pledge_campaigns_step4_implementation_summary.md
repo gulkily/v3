@@ -59,3 +59,27 @@ Status: Step 4 in progress on branch `feat/pledge-campaigns`. Planning commit `6
 - Estimate details: original scope unchanged; no revisions. Lower in retrospect because the thread rows already carried every needed value.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+
+## Stage 3 - Pledge amount on the reply form
+
+**Original estimate: 0.14**
+**Retrospective: 0.16**
+
+- Changes:
+  - `templates/partials/reply_form.php`: on a campaign's thread page the form gains one optional field, "Pledge [amount] coffees", above the body. `composer.php` gains a `$composerLeadFields` slot for it.
+  - `PledgeDirective::withAmount()` and `ComposeAndAccountKeyController::submitComposeReply`: without JavaScript the server writes `pledge: N` as the first line of the body. A body that already has the line is left alone.
+  - `public/assets/pledge_field.js`, loaded only on campaign threads: keeps the line in the body field and the amount field in step, both ways. Signed, unsigned and Outbox sending read the body as before.
+  - `public/assets/compose.css`: the amount field stays visible while the reply box is collapsed. Field styles in `site.css`.
+  - `tests/browser/pledge_campaign.mjs`: the whole flow in a browser.
+- Verification:
+  - `./v3 test --smoke PledgeCampaignTest ThreadThemeTest PostSignalsTemplateTest`: passed, 486 of 486. The full suite was not run.
+  - `node tests/browser/pledge_campaign.mjs`: passed. A signed pledge posted from the amount field at 375 px; a pledge past the goal showed the goal mark; a no-JavaScript pledge posted through the form.
+  - `node tests/browser/composers.mjs`: passed, so composers outside campaigns are unchanged.
+- Notes:
+  - **A no-JavaScript pledge posts but is not counted.** Without JavaScript there is no browser key, so the post has no name, and Step 2 decided that unnamed pledges stay out of the sum. The reply shows "Not counted: no name". This follows the approved rule, but it is the decision most worth the maintainer's second look. Counting unnamed pledges is a one-line change in `PledgeCampaign::fromPosts()`.
+  - Change from Step 3: an amount that is not a number is not refused. The line is written as typed and the reply shows why it is not counted. The Reply page the refusal would have redrawn has no amount field, so the number would have been lost.
+  - The first browser run found the amount field hidden while the reply box was collapsed; fixed in `compose.css`.
+  - Outbox and offline sending were not exercised in a browser. They read the same body field, which the browser check shows carries the line.
+- Estimate details: original scope unchanged. Slightly higher in retrospect: the collapsed-composer rule and the both-ways sync were not foreseen.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*

@@ -30,6 +30,22 @@ final class PledgeDirective
     /** The line a composer writes for an amount. */
     public static function line(string $amount): string
     {
-        return 'pledge: ' . trim($amount);
+        return 'pledge: ' . trim((string) preg_replace('/\s+/', ' ', $amount));
+    }
+
+    /**
+     * The body a reply form's amount field asks for: the pledge line first, then the
+     * text as the note. A body that already has a pledge line is left as it is, so the
+     * browser script and the server never both add one. The amount is written as typed;
+     * whether it counts is decided when the thread is shown.
+     */
+    public static function withAmount(string $body, string $amount): string
+    {
+        if (trim($amount) === '' || self::extract($body) !== null) {
+            return $body;
+        }
+        $note = trim($body);
+
+        return self::line(substr(trim($amount), 0, 80)) . ($note === '' ? '' : "\n\n" . $note);
     }
 }
