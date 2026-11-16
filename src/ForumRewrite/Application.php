@@ -633,6 +633,11 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/operations/' || $path === '/tools/operations') && $method === 'POST') {
+            $this->toolsPageController()->operationsSubmit($query);
+            return;
+        }
+
         if (($path === '/tools/deploy/' || $path === '/tools/deploy') && $method === 'POST') {
             $this->deployController()->submit($query);
             return;

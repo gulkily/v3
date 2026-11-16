@@ -89,6 +89,7 @@ $testFiles = [
     __DIR__ . '/AbsentRetractionSnapshotTest.php',
     __DIR__ . '/AssetFingerprintTest.php',
     __DIR__ . "/HighTrafficTest.php",
+    __DIR__ . "/TourSnapshotsTest.php",
     __DIR__ . "/HighTrafficPostRefreshTest.php",
     __DIR__ . "/HighTrafficAutomationTest.php",
     __DIR__ . "/AccessHistoryPresenterTest.php",

@@ -52,6 +52,7 @@ try {
 
     $repositoryRoot = (string) ($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
     $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $usesInstancePaths = !isset($options['repository-root']) && !isset($options['database-path']);
     $profile = SiteProfileRegistry::active();
     $staticHtmlRoot = (string) ($options['static-html-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile)));
     $queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
@@ -111,6 +112,14 @@ try {
             }
         }
         if (is_array($metadata) && \ForumRewrite\ReadModel\ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {
+            // Tour snapshots need a current read model; after a rebuild, its completion starts them instead.
+            // Printed before the read-model line: the deploy reads that line last. Only for the
+            // instance's own paths, which are the ones ./v3 tour refresh renders from.
+            if ($usesInstancePaths) try {
+                fwrite(STDOUT, 'Tour: ' . (new \ForumRewrite\Tour\TourRefreshLauncher($projectRoot))->startIfDue(\ForumRewrite\Tour\TourSnapshots::forProject($projectRoot)) . "\n");
+            } catch (Throwable $error) {
+                fwrite(STDOUT, 'Tour: not checked (' . $error->getMessage() . ")\n");
+            }
             fwrite(STDOUT, "Read model: current; no rebuild needed\n");
             exit(0);
         }
@@ -212,7 +221,7 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $errorLog): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $errorLog, $usesInstancePaths): void {
             $startedAt = microtime(true);
             $retractionSweep = \ForumRewrite\Retraction\RetractionSweepFactory::create($projectRoot, $repositoryRoot, $staticHtmlRoot);
             if ($taskId === null) {
@@ -246,8 +255,13 @@ try {
                 new ReadModelRebuildTaskHandler(
                     $repositoryRoot,
                     $databasePath,
-                    static function () use ($store): void {
+                    static function () use ($store, $projectRoot, $usesInstancePaths): void {
                         $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
+                        if ($usesInstancePaths) try {
+                            (new \ForumRewrite\Tour\TourRefreshLauncher($projectRoot))->startIfDue(\ForumRewrite\Tour\TourSnapshots::forProject($projectRoot));
+                        } catch (Throwable) {
+                            // The tour is optional; a rebuild never fails because of it.
+                        }
                     },
                     static function (int $taskId, string $message) use ($store, $quiet): void {
                         $store->recordTaskProgress($taskId, $message);
@@ -339,7 +353,15 @@ try {
                 static function (int $failedTaskId, Throwable $throwable) use ($errorLog): void {
                     $errorLog->writeThrowable('task_exception', $throwable, ['task_id' => $failedTaskId]);
                 },
-                runRetractionSweep: static fn (): array => $retractionSweep->run($workLimit),
+                runRetractionSweep: static function () use ($retractionSweep, $workLimit, $projectRoot, $usesInstancePaths): array {
+                    $result = $retractionSweep->run($workLimit);
+                    // Retired tour snapshots come back from the current read model, which no longer has the retracted content.
+                    if ($usesInstancePaths) try {
+                        (new \ForumRewrite\Tour\TourRefreshLauncher($projectRoot))->startIfDue(\ForumRewrite\Tour\TourSnapshots::forProject($projectRoot));
+                    } catch (Throwable) {
+                    }
+                    return $result;
+                },
                 runAppUpdate: static fn (): array => \ForumRewrite\Deploy\AppUpdate::forProject($projectRoot)->runQueued(),
             );
             $taskStartedAt = [];

@@ -12,6 +12,7 @@ Usage:
   ./v3 test [--smoke] [--all] [--jobs=N] [Class[::method] ...]
   ./v3 fulltest [--jobs=N] (full suite on every core)
   ./v3 high-traffic enable|disable|status|restore|purge|prepare|refresh [/route/] [--json]
+  ./v3 tour refresh|status [--json]
   ./v3 high-traffic cron|run [access.log] [--json]
   ./v3 status [--summary] [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--queue-database-path=/private/path/tasks.sqlite3] [--url=http://127.0.0.1:8000]
   ./v3 tui
@@ -90,6 +91,10 @@ case "${COMMAND}" in
   high-traffic)
     shift
     exec php "${ROOT}/scripts/high_traffic.php" "$@"
+    ;;
+  tour)
+    shift
+    exec php "${ROOT}/scripts/tour.php" "$@"
     ;;
   retraction-sweep)
     shift

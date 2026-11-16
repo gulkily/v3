@@ -4652,6 +4652,31 @@ PHP;
         }
     }
 
+    public function testFrontControllerServesTourSnapshotsFromTheirFolder(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($publicRoot . '/assets/tour', 0777, true);
+        file_put_contents($publicRoot . '/assets/tour/index.html', '<!doctype html><title>Tour page</title>');
+        file_put_contents($publicRoot . '/assets/tour/board.html', '<!doctype html><title>Board snapshot</title>');
+        file_put_contents($publicRoot . '/assets/secret.html', 'must not be served as a snapshot');
+
+        try {
+            foreach (['/assets/tour/' => 'Tour page', '/assets/tour/board.html' => 'Board snapshot'] as $requestUri => $expected) {
+                http_response_code(200);
+                $response = $this->renderFrontController($controller, 'GET', $requestUri, []);
+                assertStringContains($expected, $response);
+                assertSame(200, http_response_code());
+            }
+            foreach (['/assets/tour/missing.html', '/assets/tour/../secret.html', '/assets/tour/Board.html'] as $requestUri) {
+                $response = $this->renderFrontController($controller, 'GET', $requestUri, []);
+                assertStringNotContains('snapshot', $response);
+            }
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerServesStaticArtifactForBackupAlias(): void
     {
         @unlink($this->databasePath);
