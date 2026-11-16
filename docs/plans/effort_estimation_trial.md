@@ -2162,3 +2162,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-16T02:40Z: Approved Step 1 (Option A). Step 2 handoff 0.45 → **0.50** projected total: new understanding, same scope v1 (number rules, counted/unverified/unnamed display states, the author's "not counted" reason). Same baseline, R1/P2, single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Await Approved Step 2; Step 2 uncommitted.
 
 2026-11-16T02:30Z: standing P2 enrollment for pledge campaigns, staged. Intake **0.45** after a first code read (no pristine intake) and Step 1 handoff **0.45** for Option A (lines read when shown). Extended estimates enabled (A 0.45, B 0.80, C 0.60; not summed). Baseline `9e5aa010ddff888248ca670c932e3b5f7ec69274`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Planning committed early on `plan/pledge-campaigns` at the maintainer's request for session handoff; Step 1 not yet approved.
+
+## Cycle v3/session_key_bootstrap
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/session_key_bootstrap` | Step 1 written; approval pending | v1 / R1 / P2 | 0.60 (Step 1 snapshot) | [Step 1](./session_key_bootstrap/session_key_bootstrap_step1_solution_assessment.md#study-history) | Security audit follow-up; not accepted |
+
+2026-11-16: standing P2 enrollment. Step 1 snapshot **0.60** for the recommended scope, rated after design discussion (no pristine intake). Starting revision `9bdd4b3`; branch `plan/session-key-bootstrap`. Single exposed rater Claude (claude-fable-5-2). R1 hashes not re-verified.
