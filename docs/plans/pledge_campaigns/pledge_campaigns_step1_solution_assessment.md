@@ -4,7 +4,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/pledge_campaigns`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment; extended estimates enabled.
+Effort study: `railspike-effort` / `v3/pledge_campaigns`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment; extended estimates enabled.
 
 **Cycle estimate: 0.45**
 
@@ -16,13 +16,13 @@ Later in the same conversation: "I think the pledge should be in units, and you 
 
 ## Understood Intent
 
-Build the first slice of the design in [pledges_spec.md](./pledges_spec.md): a campaign thread with a goal, pledge replies that add up, and a way to pledge from the page. Withdrawal, fills, stages, board rows and configuration are later cycles in [pledges_checklist.md](./pledges_checklist.md).
+Build the first slice of the design in [pledges_spec.md](../pledges_spec.md): a campaign thread with a goal, pledge replies that add up, and a way to pledge from the page. Withdrawal, fills, stages, board rows and configuration are later cycles in [pledges_checklist.md](../pledges_checklist.md).
 
 ## Problem
 
 A thread cannot state a goal in a unit, replies cannot carry an amount toward it, and nothing adds them up.
 
-Concepts touched: [thread title](../concepts/thread_title.md) and [page theme](../concepts/page_theme.md) (the directive-line pattern, used unchanged); [shared composer](../concepts/shared_composer.md) (changed: pledge box); [post presentation](../concepts/post_presentation.md) (changed: amount on a reply, totals block). A "pledge campaign" concept is proposed for the inventory. Option B would also change [post event metadata](../concepts/post_event_metadata.md)'s neighbour, the canonical post record.
+Concepts touched: [thread title](../../concepts/thread_title.md) and [page theme](../../concepts/page_theme.md) (the directive-line pattern, used unchanged); [shared composer](../../concepts/shared_composer.md) (changed: pledge box); [post presentation](../../concepts/post_presentation.md) (changed: amount on a reply, totals block). A "pledge campaign" concept is proposed for the inventory. Option B would also change [post event metadata](../../concepts/post_event_metadata.md)'s neighbour, the canonical post record.
 
 No matching item exists in `docs/feedback/items/`.
 

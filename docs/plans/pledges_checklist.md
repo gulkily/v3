@@ -21,7 +21,8 @@ Found on a first read at `9e5aa010`. Each cycle re-checks its own part before pl
 ## Cycles
 
 - [ ] **1. `pledge_campaigns`** — a thread with a `goal:` line shows a totals block; replies with a `pledge:` line show their amount and add to the total; a pledge box writes the line. Adds the `pledges` flag.
-  - Status: Step 1 written 2026-11-16, awaiting `Approved Step 1`. [Step 1](./pledge_campaigns_step1_solution_assessment.md)
+  - Status: Step 1 approved 2026-11-16 (Option A: lines in the post, read when shown). Steps 2 and 3 approved 2026-11-16 by Claude under the maintainer's one-time delegation. Step 4 in progress on `feat/pledge-campaigns`. [Step 1](./pledge_campaigns/pledge_campaigns_step1_solution_assessment.md) · [Step 2](./pledge_campaigns/pledge_campaigns_step2_feature_description.md)
+  - Decided in Step 2 (self-approved; open to the maintainer's overrule in PR review): unverified and unnamed pledges show their amount and stay out of the sum; approval is not required; decimals to two places.
 - [ ] **2. `pledge_withdraw`** — a pledger withdraws a pledge; it stays visible, marked withdrawn, and stops counting.
   - Open: the mechanism. Plain retraction does not fit (see inventory).
 - [ ] **3. `pledge_fills`** — the pledger marks a pledge delivered; the author confirms or disputes; the author and operators mark fills directly; partial fills add up. Totals gain filled and confirmed.
@@ -39,13 +40,16 @@ Cycles 2 and 3 need 1. Cycle 4 needs 3. Cycles 5 and 6 need 1 and gain detail af
 
 - Quiet campaigns: suggested answer is to show the last activity date and build nothing else.
 - Closing a campaign to new pledges.
-- Whole numbers only, or decimals. Suggested: allow decimals.
-- Whether an unverified or unapproved post's pledge counts. Step 2 of cycle 1 decides.
+- Whole numbers only, or decimals. Cycle 1 Step 2: decimals to two places (self-approved under delegation).
+- Whether an unverified or unapproved post's pledge counts. Cycle 1 Step 2: unverified and unnamed pledges do not count, unapproved keys do (self-approved under delegation).
+- The plain theme drawn for the mock-ups: requested, not in any cycle yet.
 
 ## Log
 
 - 2026-11-15: design discussion; spec and mock-ups drafted outside the repository.
 - 2026-11-16: spec copied to `docs/plans/pledges_spec.md` with a code check; this checklist created; cycle 1 Step 1 written.
 - 2026-11-16: at the maintainer's request, the Step 1 draft, this checklist, the spec, the debug log and the ledger entry were committed on branch `plan/pledge-campaigns` before Step 1 approval, so a new session can resume. This is an explicit exception to keeping Steps 1 to 3 uncommitted. Step 1 is still awaiting `Approved Step 1`.
+- 2026-11-16: maintainer approved cycle 1 Step 1 (Option A). Step 2 written with answers to the two Step 1 questions; awaiting `Approved Step 2`. Mock-ups are on the [design canvas](https://claude.ai/artifact/GaT42e25otTieeNpiFawch).
+- 2026-11-16: the maintainer delegated step approval to Claude for cycle 1 only, as an experiment. Steps 2 and 3 approved on that basis; plans moved to `docs/plans/pledge_campaigns/`; implementation started on `feat/pledge-campaigns`.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
