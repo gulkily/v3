@@ -10,7 +10,7 @@ Extended estimates: enabled (new enrolled cycle default); no real alternatives o
 
 **Cycle estimate: 0.30 (intake)**
 
-Status: implemented and verified locally; not pushed (push access to the repository was denied in this session). Next action: the maintainer applies the patch or grants push so a PR can be opened.
+Status: implemented, verified, PR opened; next action: maintainer review and merge.
 
 ## Original request
 
@@ -63,7 +63,7 @@ Approval graph / root seeds: used unchanged. No inventory changes proposed.
 
 Base `65b98d00501abd914902e73bc3be75ba9797b4c6` (origin/main); branch `feat/approval-suggest-roots`.
 
-Planning commit: `5565314b` (confirmed with `git log`; precedes implementation).
+Planning commit: `1e540606` (confirmed with `git log`; precedes implementation).
 
 ## Study history
 
@@ -99,6 +99,7 @@ Diff checked: builder change is a pure extraction; no approval state is written 
 
 ## Commit/merge/publication status
 
-Planning commit `5565314b`; completion commit follows this record (hash reported in the handoff). Not pushed; no PR; not merged.
+Planning commit `1e540606`; completion commit follows this record (hash reported in the handoff). Not pushed; no PR; not merged.
 
 _Claude (Opus 5.5), 2026-11-16_
+- 2026-11-16: push access granted on request; rebased onto `c98b5221` (planning commit now `1e540606`), reran the new test, pushed `feat/approval-suggest-roots` and opened a PR.
