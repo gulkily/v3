@@ -439,6 +439,61 @@ final class PledgeCampaignTest
         }
     }
 
+    public function testWithdrawButtonShowsOnlyOnThePledgersOwnCountedPledge(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Button campaign', 'goal: 1000 coffees');
+        $mine = $this->reply($service, $thread, 'pledge: 300');
+        $withdrawn = $this->reply($service, $thread, 'pledge: 200');
+        $this->replyTo($service, $thread, $withdrawn, 'withdraw');
+        $nameless = $this->reply($service, $thread, 'pledge: 40', null);
+        $this->reply($service, $thread, 'pledge: a few');
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        $form = static fn (string $postId): string => '<input type="hidden" name="parent_id" value="' . $postId . '">';
+        $oldCookies = $_COOKIE;
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED=1');
+        try {
+            // No viewer: no button anywhere, so a page drawn for everyone carries none.
+            $_COOKIE = [];
+            pledgeAssertNotContains('data-role="pledge-withdraw"', $page());
+
+            $_COOKIE = ['identity_hint' => self::MEMBER];
+            $own = $page();
+            pledgeAssertSame(1, substr_count($own, 'data-role="pledge-withdraw"'));
+            pledgeAssertContains('<form class="pledge-withdraw" method="post" action="/compose/reply" data-role="pledge-withdraw">', $own);
+            pledgeAssertContains($form($mine), $own);
+            pledgeAssertContains('<input type="hidden" name="body" value="withdraw">', $own);
+            pledgeAssertContains('>Withdraw pledge</button>', $own);
+            pledgeAssertContains('/assets/pledge_withdraw.', $own);
+            // Not on a withdrawn pledge, a counted pledge with no name, or a line that is not counted.
+            pledgeAssertNotContains($form($withdrawn), $own);
+            pledgeAssertNotContains($form($nameless), $own);
+
+            // Another viewer sees no button on this member's pledge.
+            $_COOKIE = ['identity_hint' => 'openpgp:' . str_repeat('b', 40)];
+            pledgeAssertNotContains('data-role="pledge-withdraw"', $page());
+
+            // Without JavaScript the form posts a reply with no name: it does not withdraw, and says why.
+            $_COOKIE = ['identity_hint' => self::MEMBER];
+            $_POST = ['thread_id' => $thread, 'parent_id' => $mine, 'board_tags' => 'general', 'body' => 'withdraw', 'return_to' => '/threads/' . $thread];
+            try {
+                $this->render(new Application(dirname(__DIR__), $root, $database), 'POST /compose/reply');
+            } finally {
+                $_POST = [];
+            }
+            $after = $page();
+            pledgeAssertContains('<strong>340</strong> of 1000 coffees pledged', $after);
+            pledgeAssertContains('data-pledge-state="withdraw-uncounted"><span class="meta">Not counted: no name</span>', $after);
+            pledgeAssertContains($form($mine), $after);
+        } finally {
+            $_COOKIE = $oldCookies;
+            putenv('FORUM_PLEDGES_ENABLED');
+            putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
+        }
+    }
+
     /** @return array{string,string,LocalWriteService,string} */
     private function environment(): array
     {

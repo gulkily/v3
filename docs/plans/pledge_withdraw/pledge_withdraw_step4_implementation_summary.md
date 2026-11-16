@@ -65,3 +65,26 @@ Status: Steps 1 to 3 approved by the maintainer 2026-11-16. Step 4 in progress o
 - Estimate details: original scope as Step 3 Stage 2; no revision.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+
+## Stage 3 - Withdraw pledge button
+
+**Original estimate: 0.14**
+
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - `templates/partials/pledge_amount.php` shows a "Withdraw pledge" form under a counted pledge when the viewer is its author. The test is the one `retract_post_control.php` uses. The form is a reply to the pledge with the body `withdraw`.
+  - New `public/assets/pledge_withdraw.js` signs and sends that reply, disables the button while sending, shows "Withdrawal failed. Try again." beside it on failure, and reloads on success. `ThreadAndPostPageController` loads it on campaign thread pages. One spacing rule in `site.css`.
+- Verification:
+  - Passed: `./v3 test --smoke PledgeCampaignTest WithdrawLeafFilterTest ThreadActivityTest RetractedLeafFilterTest`, 483 run, 483 passed. A new test checks the form shows once, for the pledger, on the counted pledge only; not for no viewer or another viewer; not on a withdrawn pledge or a counted pledge with no name.
+  - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/pledge_campaign.mjs --screenshots=/tmp/pledges` in headless Chrome. The pledger posts a signed pledge of 5 with a note and presses the button. The first press is made to fail: the message shows, the button returns and the sum stays. The second press works: 1305 becomes 1300, the count drops to 2, the amount is struck through with "Withdrawn" and the date, the note stays, no card is added, the button is gone, the label opens the reply's page, and a second reader sees the mark and no button. The 17 themes at 375 and 1280 px then passed with the Withdrawn label drawn in each.
+  - Without JavaScript (form post in the PHP test): the reply has no name, the pledge still counts, and the reply shows "Not counted: no name".
+  - Not run: the full suite. Outbox and offline sending were not exercised.
+- Notes:
+  - Refinement: Step 3 named `submitSignedReplyFormToApi`. That function is not exposed to other scripts and expects a composer form. The script uses `ForumBrowserSigning.prepareOutboxPost` and `finalizeOutboxPost`, the exposed pair the Outbox sender uses. `browser_signing.js` is unchanged.
+  - A second press after a failure cannot do harm: a second withdrawal changes nothing and folds.
+  - The server refuses nothing. The rule that only the pledger withdraws is applied when the thread is read (Stage 1).
+  - Playwright was resolved from the workspace's own install through a link outside the repository; nothing was added to the project.
+- Estimate details: original scope as Step 3 Stage 3; no revision.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
