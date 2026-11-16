@@ -173,6 +173,71 @@ PHP;
         assertSame(0, $exitCode, implode("\n", $output));
     }
 
+    public function testResultShowsCountsCausesAndFoldsPerFileDetails(): void
+    {
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
+
+use ForumRewrite\Application;
+use ForumRewrite\Http\ImportController;
+use ForumRewrite\Import\InstanceImportTask;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+
+$base = sys_get_temp_dir() . '/import-result-' . bin2hex(random_bytes(6));
+$run = $base . '/repo/.git/instance-import/20261116UTC120000-aaaaaaaaaaaa';
+mkdir($run, 0700, true);
+$entries = ['records/posts/a.txt' => ['state' => 'import']];
+for ($i = 0; $i < 10000; $i++) $entries['records/posts/c' . $i . '.txt'] = ['state' => 'conflict', 'reason' => 'local <b>differs</b>'];
+file_put_contents($run . '/report.json', json_encode([
+    'status' => 'partial', 'source' => 'https://forum.example', 'review_path' => $run,
+    'counts' => ['import' => 1, 'duplicate' => 0, 'conflict' => 10000, 'invalid' => 0, 'unsupported' => 0, 'excluded' => 0],
+    'review_causes' => [['path' => 'records/posts/c0.txt', 'state' => 'conflict', 'reason' => 'local <b>differs</b>', 'affected_count' => 3]],
+    'exclusion_reasons' => ['private record' => 2],
+    'entries' => $entries,
+]));
+$queuePath = $base . '/private/tasks.sqlite3';
+mkdir(dirname($queuePath), 0700, true);
+$store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+$queued = InstanceImportTask::forQueue($queuePath)->queue($store, 'import', 'https://forum.example', 'openpgp:x');
+$store->claimNext();
+$store->recordTaskProgress($queued['task_id'], 'Images: partial');
+$store->markCompleted($queued['task_id']);
+try {
+    $_COOKIE = [];
+    TestViewerSession::signIn($argv[3]);
+    $application = new Application($argv[1], $argv[2], $base . '/index.sqlite3');
+    ob_start();
+    $application->handle('GET', '/threads/');
+    ob_end_clean();
+    $routeServices = (fn () => $this->routeServices())->call($application);
+    $started = hrtime(true);
+    $page = (new ImportController($routeServices, $base . '/repo', $queuePath))->render();
+    $seconds = (hrtime(true) - $started) / 1e9;
+    foreach (['<strong>needs review</strong>', 'from https://forum.example', 'imported 1 · conflict 10000', 'images partial', '<th scope="row">Review</th>',
+        '<code>records/posts/c0.txt</code> conflict: local &lt;b&gt;differs&lt;/b&gt; <span class="meta">(3 affected)</span>', 'excluded: private record',
+        '<details class="import-advanced">', '<summary>Advanced</summary>', '9500 more in <code>' . $run . '/report.json</code>'] as $needle) {
+        if (!str_contains($page, $needle)) throw new RuntimeException('Result page missing: ' . $needle);
+    }
+    if (str_contains($page, '<details class="import-advanced" open')) throw new RuntimeException('Advanced must start closed.');
+    if (substr_count(substr($page, (int) strpos($page, '<summary>Advanced')), '<li><code>records/posts/c') !== 500) throw new RuntimeException('Per-file list should stop at 500.');
+    if ($seconds > 3) throw new RuntimeException('Large report rendered slowly: ' . $seconds);
+} finally {
+    TestViewerSession::reset();
+}
+PHP;
+        $command = sprintf(
+            'php -r %s %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(dirname(__DIR__)),
+            escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1'),
+            escapeshellarg(self::OPERATOR),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+
+        assertSame(0, $exitCode, implode("\n", $output));
+    }
+
     /**
      * One request per process, as on a server.
      *

@@ -625,3 +625,26 @@ form.feature-flag-control,
   font-size: 0.85em;
   overflow-wrap: anywhere;
 }
+
+.import-causes {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.import-advanced {
+  margin-top: 1rem;
+}
+
+.import-advanced summary {
+  cursor: pointer;
+}
+
+.import-advanced ul {
+  margin: 0.5rem 0 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}

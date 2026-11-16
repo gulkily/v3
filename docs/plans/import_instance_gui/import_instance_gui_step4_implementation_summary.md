@@ -85,3 +85,19 @@ Step 4 entry: 0.65 whole-cycle projection reaffirmed, scope v3 unchanged; stage-
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 5 - Readable result with details under Advanced
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+- Changes:
+  - The Last import row adds the non-zero counts ("imported 1 · conflict 3"; "nothing new" when all are zero) and the image status. The command reports image status only in its output, so `ImportController::state` reads the last `Images: …` line of the finished task.
+  - A Review row lists grouped review causes with their affected counts, plus exclusion reasons.
+  - An Advanced section, closed by default, lists per-file conflict, invalid, unsupported and excluded entries with root causes. It stops at 500 entries and points to the saved `report.json` for the rest.
+  - Small `tool-details.css` rules for the two lists.
+- Verification:
+  - `./v3 test --smoke ImportPageTest`: passed. New `testResultShowsCountsCausesAndFoldsPerFileDetails` uses a partial report with 10,000 conflicts. It checks counts, image status, escaped causes, exclusions, that Advanced starts closed, the 500-entry cap with the "more in" pointer, and render time under 3 seconds.
+  - Full suite not run.
+- Notes: correction during the stage: the first assertion counted the Review list's entry too; it now counts inside Advanced only.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*

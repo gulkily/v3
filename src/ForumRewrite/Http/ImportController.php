@@ -179,6 +179,15 @@ final class ImportController
             }
         }
         $state['busy'] = in_array($state['task']['status'] ?? null, ['queued', 'running'], true);
+        // Image copying happens after the merge and is reported only in the command output.
+        $state['images'] = null;
+        if (($state['task']['status'] ?? null) === 'completed') {
+            foreach ($state['progress'] as $line) {
+                if (preg_match('/^Images: (\S+)$/', (string) $line, $match) === 1) {
+                    $state['images'] = $match[1];
+                }
+            }
+        }
 
         return $state;
     }
