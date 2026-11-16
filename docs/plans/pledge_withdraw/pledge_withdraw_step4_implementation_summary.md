@@ -136,3 +136,9 @@ Status: Steps 1 to 3 approved by the maintainer 2026-11-16. Step 4 technically c
 - Stage retrospectives 0.10, 0.06, 0.12, 0.05 are separate judgments and are not summed. No measured time was recorded.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+
+## Handoff
+
+- [PR #275](https://github.com/gulkily/v3/pull/275), opened 2026-11-16 from `feat/pledge-withdraw`. `origin/main` had moved 20 commits past `b9ffa6b8` by then; a trial merge was clean and touched no pledge file. The branch was not rebased or merged.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
