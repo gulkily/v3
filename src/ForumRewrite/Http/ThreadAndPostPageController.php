@@ -141,6 +141,9 @@ final class ThreadAndPostPageController
                     ? \ForumRewrite\Calendar\EventStatus::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId)
                     : null,
                 'threadTheme' => \ForumRewrite\View\ThreadTheme::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId),
+                'pledgeCampaign' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_ENABLED)
+                    ? \ForumRewrite\View\PledgeCampaign::fromPosts($posts, $threadId)
+                    : null,
                 'posts' => $posts,
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,

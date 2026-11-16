@@ -35,3 +35,27 @@ Status: Step 4 in progress on branch `feat/pledge-campaigns`. Planning commit `6
 - Estimate details: original scope unchanged; no revisions.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+
+## Stage 2 - Totals block and amounts on the thread page
+
+**Original estimate: 0.18**
+**Retrospective: 0.12**
+
+- Changes:
+  - `src/ForumRewrite/View/PledgeCampaign.php`: `fromPosts()` derives goal, unit, sum, count, bar positions and each reply's state from the rows `fetchThreadPosts()` already returns. No query and no stored value is added.
+  - `ThreadAndPostPageController.php` passes `pledgeCampaign` to the thread page when `FORUM_PLEDGES_ENABLED` is on.
+  - `templates/partials/pledge_totals.php`, included by `thread_root_card.php` after the event block.
+  - `templates/partials/pledge_amount.php`, included by `post_card.php` under the reply body.
+  - Styles at the end of `public/assets/site.css`, using only `--line`, `--input-bg` and `--ink`.
+- Verification:
+  - `./v3 test --smoke PledgeCampaignTest PostSignalsTemplateTest ThreadThemeTest EventStatusTest TagUnlocksTest`: passed, 500 of 500. The full suite was not run.
+  - `PledgeCampaignTest` covers counted, unverified, unnamed, unreadable, wrong-unit, quoted and retracted pledges; flag off; a pledge line outside a campaign; and a baked thread page before and after a pledge.
+- Notes:
+  - Reuse: reply rows, `attribution_counted` and the event block's placement were used as they are. The two partials are new because no existing block shows a sum or a per-reply amount.
+  - An uncounted amount is struck through and followed by its reason. Every reader sees the reason.
+  - "coffee" and "coffees" are read as the same unit; any other trailing word leaves the pledge uncounted.
+  - The goal mark appears only once pledges pass the goal. Under the goal, the end of the bar is the goal.
+  - Not checked in a browser yet; Stage 4 owns the theme check.
+- Estimate details: original scope unchanged; no revisions. Lower in retrospect because the thread rows already carried every needed value.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
