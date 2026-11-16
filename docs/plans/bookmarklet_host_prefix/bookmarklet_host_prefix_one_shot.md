@@ -53,6 +53,7 @@ Planning commit: `cb33b367`
 ## Study history
 
 - 2026-11-16T18:53Z intake: **0.05**, scope v1, R1, P2, single exposed rater Claude (claude-opus-5-5), rated after reading `tools_bookmarklets.js` and its test (no pristine intake).
+- 2026-11-16T19:10Z: completion commit `e14d8f5b` pushed; PR #283 open.
 - 2026-11-16T19:05Z closeout: retrospective **0.07** (the pre-existing UI test fix added a little). Maintainer acceptance pending; no accepted-count increment.
 
 ## Verification
@@ -72,6 +73,6 @@ Delivered as scoped. Existing bookmarks keep working but don't gain the prefix; 
 
 Diff: `public/assets/tools_bookmarklets.js`, `tests/browser/bookmarklet_copy.cjs`, `tests/browser/bookmarklet_copy_ui.mjs` (pre-existing failure fix), this record, the plans index and the ledger. No duplication; no debug findings.
 
-Commit/merge/publication status: completion commit pending at time of writing; pushed with a PR; not merged or deployed.
+Commit/merge/publication status: completion commit `e14d8f5b`; PR #283 open; not merged or deployed.
 
 Attribution: Claude (claude-opus-5-5), 2026-11-16 UTC.
