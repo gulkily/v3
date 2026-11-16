@@ -2,17 +2,17 @@
 
 Debug mode: enabled ([debug log](./pledge_fills_debug_log.md))
 
-Effort study: `railspike-effort` / `v3/pledge_fills`; [host ledger](./effort_estimation_trial.md). Standing P2 enrollment. Parent: `v3/pledge_withdraw`.
+Effort study: `railspike-effort` / `v3/pledge_fills`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment. Parent: `v3/pledge_withdraw`.
 
 Extended estimates: enabled
 
-Status: Step 1 written 2026-11-16, awaiting `Approved Step 1`. Approval is the maintainer's at every step, as in cycle 2.
+Status: Step 1 approved by the maintainer 2026-11-16 (Option B). Approval is the maintainer's at every step, as in cycle 2.
 
 **Cycle estimate: 0.50**
 
 # Step 1: Solution Assessment — Pledge fills
 
-Third of seven cycles in [pledges_checklist.md](./pledges_checklist.md). Design: [pledges_spec.md](./pledges_spec.md). Builds on cycle 2, [pledge withdraw](./pledge_withdraw/pledge_withdraw_step4_implementation_summary.md) ([PR #275](https://github.com/gulkily/v3/pull/275), merged 2026-11-16). This plan sits on `plan/pledge-fills`, cut from `origin/main` at `66856253`.
+Third of seven cycles in [pledges_checklist.md](../pledges_checklist.md). Design: [pledges_spec.md](../pledges_spec.md). Builds on cycle 2, [pledge withdraw](../pledge_withdraw/pledge_withdraw_step4_implementation_summary.md) ([PR #275](https://github.com/gulkily/v3/pull/275), merged 2026-11-16). This plan sits on `plan/pledge-fills`, cut from `origin/main` at `66856253`.
 
 ## Original Query
 
@@ -28,7 +28,7 @@ That is four record kinds (fill, partial fill, confirm, dispute) and three kinds
 
 A campaign shows what was promised and nothing about what arrived, so nobody can tell a pledge that came through from one that did not, and the campaign can never be complete.
 
-Concepts touched: [pledge campaign](../concepts/pledge_campaign.md), changed in every option. [Thread activity](../concepts/thread_activity.md) and [post retraction](../concepts/post_retraction.md): used unchanged in A, B and D. [Tagset](../concepts/tagset.md) and [reaction record](../concepts/reaction_record.md): changed in C only. [Operator grant](../concepts/operator_grant.md): read in every option, to know who is an operator.
+Concepts touched: [pledge campaign](../../concepts/pledge_campaign.md), changed in every option. [Thread activity](../../concepts/thread_activity.md) and [post retraction](../../concepts/post_retraction.md): used unchanged in A, B and D. [Tagset](../../concepts/tagset.md) and [reaction record](../../concepts/reaction_record.md): changed in C only. [Operator grant](../../concepts/operator_grant.md): read in every option, to know who is an operator.
 
 No matching item exists in `docs/feedback/items/`.
 

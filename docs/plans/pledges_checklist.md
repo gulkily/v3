@@ -32,11 +32,13 @@ Found on a first read at `9e5aa010`. Each cycle re-checks its own part before pl
   - For review first: "the pledger" is the same key, so a pledge made with one key cannot be withdrawn with another key of the same username. A counted pledge with no name cannot be withdrawn by anyone. Undo has no button: open the withdraw reply from "Withdrawn" and retract it.
   - Checks: `PledgeCampaignTest` (12 tests) and `WithdrawLeafFilterTest` with the smoke set; `tests/browser/pledge_campaign.mjs` in headless Chrome, including a failed first press, in 17 themes at 375 and 1280 px. The full suite was not run. The signed retraction used for undo, Outbox and offline sending were not exercised.
   - Left out: no button on the separate Reply page or in paned layouts; the text output and agent API do not report the withdrawn state (cycle 6).
-- [ ] **3. `pledge_fills`** — the pledger marks a pledge delivered; the author confirms or disputes; the author and operators mark fills directly; partial fills add up. Totals gain filled and confirmed.
-  - Status: Step 1 written 2026-11-16 on branch `plan/pledge-fills` (from `origin/main` at `66856253`), awaiting the maintainer's `Approved Step 1`. [Step 1](./pledge_fills_step1_solution_assessment.md)
-  - Step 1 compares four options and recommends building the `filled` reply line now (pledger, author and operators; partial amounts; a filled total) and moving confirm and dispute to a new cycle `pledge_fill_review` straight after. If approved, add that cycle to this list and let cycle 4 depend on cycle 3 only.
-  - Open: whether tagset states can carry an amount for partial fills, and who may mark when the pledger's key is not approved. Cycle 2 chose reply lines, which can carry an amount (`filled: 200`); its fold and "not counted" rules are meant to be reused here.
-  - From cycle 2 Step 2: decide here how withdrawing a part-filled pledge works (spec rule 4); cycle 2 withdraws whole pledges only. Also decide whether the author or an operator needs a way to stop someone else's pledge counting without deleting it, beyond Dispute. It would need its own word ("Released"), not "Withdrawn".
+- [ ] **3. `pledge_fills`** — the pledger marks a pledge delivered; the author and operators mark fills directly; partial fills add up. Totals gain filled and confirmed. (Confirm and dispute moved to cycle 8.)
+  - Status: on branch `plan/pledge-fills` (from `origin/main` at `66856253`, rebased onto `origin/main` at `c98b5221` on 2026-11-16, locally). The maintainer approved Step 1 (Option B) and Step 2 on 2026-11-16. Step 3 written in five stages, awaiting `Approved Step 3`. [Step 1](./pledge_fills/pledge_fills_step1_solution_assessment.md) · [Step 2](./pledge_fills/pledge_fills_step2_feature_description.md) · [Step 3](./pledge_fills/pledge_fills_step3_development_plan.md)
+  - Scope (Option B): a `filled` reply line from the pledger, the author or an operator; partial amounts add up to the pledge; a filled total and a confirmed share. Confirm and dispute moved to cycle 8, `pledge_fill_review`.
+  - Decided in Step 2 (approved): withdrawing a part-filled pledge withdraws only the unfilled part; a fill larger than what is left counts up to what is left; a bare `filled` reply folds like a bare `withdraw`; "Delivered" for the pledger, "Filled" for the author or an operator; Released goes to cycle 8.
+  - Answered: who may mark when the pledger's key is not approved. A reply line needs no approval, only counted attribution.
+- [ ] **8. `pledge_fill_review`** — the author confirms or disputes a pledger's "Delivered"; a disputed fill stops counting and both stay visible. Added 2026-11-16 at cycle 3 Step 1 (Option B). Numbered 8 so the other numbers stay stable; it runs straight after cycle 3.
+  - Open: Released, an author's or operator's way to stop someone else's pledge counting without deleting it.
 - [ ] **4. `pledge_stages`** — Open, Fully pledged, Cushioned and Complete in the header; the Fully pledged celebration that still shows the pledge box; marker posts; the optional `cushion:` line.
   - Open: what the celebration looks like; it must work without JavaScript.
 - [ ] **5. `pledge_board_rows`** — campaign rows on the board show the bar and "1300 / 1000 coffees".
@@ -48,7 +50,7 @@ Notes for later cycles from cycle 2: reply lines are read in `PledgeCampaign::wi
 
 Notes for later cycles from cycle 1: `PledgeCampaign::fromPosts()` is the one place that decides what counts, so withdrawal and fills extend it; `pledge_amount.php` is where a state badge goes; the amount field should also reach the separate Reply page.
 
-Cycles 2 and 3 need 1. Cycle 4 needs 3. Cycles 5 and 6 need 1 and gain detail after 3. Cycle 7 needs 3.
+Cycles 2 and 3 need 1. Cycle 8 needs 3. Cycle 4 needs 3 only, not 8. Cycles 5 and 6 need 1 and gain detail after 3. Cycle 7 needs 3.
 
 ## Still open in the design
 
@@ -71,5 +73,7 @@ Cycles 2 and 3 need 1. Cycle 4 needs 3. Cycles 5 and 6 need 1 and gain detail af
 - 2026-11-16: maintainer cut Step 2's part-filled groundwork by review comment, then approved Step 2. Step 3 written in four stages and shared as a file; awaiting `Approved Step 3`.
 - 2026-11-16: maintainer approved cycle 2 Step 3. PR #268 had merged by then, so cycle 2 was built in four stages on a new branch from `origin/main` and pushed as a PR. Release check on zenmemes.com pending.
 - 2026-11-16: PR #275 merged. Cycle 3 Step 1 written and pushed on `plan/pledge-fills` for a new session to resume.
+- 2026-11-16: new session. `plan/pledge-fills` was 0 commits behind `origin/main`, so it needed no update. Maintainer approved cycle 3 Step 1 (Option B). Cycle 8 `pledge_fill_review` added. Step 2 written and shared as a file; awaiting `Approved Step 2`.
+- 2026-11-16: maintainer approved cycle 3 Step 2. Two unrelated PRs had landed, so `plan/pledge-fills` was rebased onto `origin/main` locally. Step 3 written in five stages and shared as a file; awaiting `Approved Step 3`.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*

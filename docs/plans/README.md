@@ -14,9 +14,11 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
 
+[Pledge fills](pledge_fills/pledge_fills_step3_development_plan.md) — the pledger, the campaign author or an operator marks a pledge delivered or filled with a `filled` reply; partial fills add up and the block shows what arrived.
+
 [Pledge withdraw](pledge_withdraw/pledge_withdraw_step3_development_plan.md) — a pledger takes a pledge back with a `withdraw` reply; the pledge stays visible, marked withdrawn, and leaves the sum.
 
-[Pledges checklist](pledges_checklist.md) — pledge campaigns in seven cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
+[Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
