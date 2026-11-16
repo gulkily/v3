@@ -101,3 +101,37 @@ Step 4 entry: 0.65 whole-cycle projection reaffirmed, scope v3 unchanged; stage-
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 6 - End-to-end check and documentation
+**Original estimate: 0.07**
+**Retrospective: 0.09**
+- Changes:
+  - New `ImportPageTest::testImportResumeAndCancelRunEndToEndThroughThePageAndWorker`, run through the page's POST route and a real worker against a loopback source:
+    - an import whose publication fails leaves a committed run; Cancel and Import are refused and Resume is accepted;
+    - the worker resumes it and the page shows the run complete;
+    - a run interrupted before its commit is canceled from the page; its file is removed and the tree is clean.
+  - Browser check `tests/browser/tools_import.mjs` with `tests/Support/import_page_fixture.php`: idle, running, result, pending and signed-out states in gloss, glossdark, word97, midnight, bubblegum, spearmint, light and dark at 390 and 1280 px. It also follows a queued import to its result and checks that a refusal re-enables the form.
+  - `tests/browser/tools_launcher.mjs` turns the Import page flag on so every registry tool is listed.
+  - The Midnight-set Import icon changes from navy to teal, because the navy arrow was hard to see on Midnight's dark buttons.
+  - Docs: a Browser entry section in `docs/runbooks/instance_content_import.md`, replacing "no … web UI in this release"; a Browser entry line in `docs/concepts/instance_content_import.md`; an entry in `docs/plans/ui_copy_audit_checklist.md`; and feedback item `PF-20261116-F02` (blocked, locally verified).
+- Verification:
+  - `./v3 test --smoke InstanceImportTaskTest ImportPageTest TaskQueueWorkerTest BoundedProcessTest NavIconSetsTest FeatureFlagEvaluatorTest DeployPageTest ContentImportRecoveryTest ImportInstanceCommandTest::testCliCancelRefusesCommittedImportAndReportsMissingJournal ImportInstanceCommandTest::testCliResumeDoesNotNeedTheRemoteSourceAgain`: 506 run, 506 passed.
+  - `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/tools_import.mjs`: passed, 80 theme/width/state cases with no overflow and no page errors. Screenshots were reviewed for gloss (390), word97 (1280, running) and bubblegum (390, pending).
+  - `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/tools_launcher.mjs`: passed, 38 theme/width cases; icons checked by eye in word97, gloss, bubblegum and midnight.
+  - `./v3 feedback check` and `./v3 feedback index`: no problems.
+  - `git diff --check`: clean.
+  - Full suite not run.
+- Not verified:
+  - The real worker on the production host and an import from zenmemes.com itself. This needs a deploy, the flag on and a running worker; pending with the maintainer.
+  - Browsers other than Chromium.
+- Final review: the diff from the planning commit touches only the files listed in Stages 1–6. It reuses the Deploy page pattern, `BoundedProcess`, the queue store and the existing import script, with no duplicate import logic. The touched concept entry and runbook match what was delivered. No dependency was added; the browser check uses the existing `playwright-core` tooling.
+- Estimate details: original scope unchanged; retrospective higher for the browser fixture.
+
+## Study closeout
+
+- Retrospective scope assessment (not a measured actual): 0.70 for scope v3 as delivered, against the 0.65 projection. The browser fixture and the flag-list test updates were the extra work. Stage retrospectives are listed above and are not summed.
+- Verification and omissions: as listed under Stage 6.
+- Maintainer comfortable-fit judgment: pending. Acceptance: pending.
+- Claude single exposed rater, R1, P2, 2026-11-16 UTC.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*

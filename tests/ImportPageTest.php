@@ -5,6 +5,8 @@ declare(strict_types=1);
 use ForumRewrite\Import\InstanceImportStatus;
 
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+require_once __DIR__ . '/Support/ImportHttpServer.php';
 
 final class ImportPageTest
 {
@@ -245,7 +247,7 @@ PHP;
      * @param array<string, string> $post
      * @return array<string, mixed>
      */
-    private function postAction(string $queuePath, ?string $identity, array $server, array $post, ?string $hint = null): array
+    private function postAction(string $queuePath, ?string $identity, array $server, array $post, ?string $hint = null, ?string $repositoryRoot = null): array
     {
         $script = <<<'PHP'
 require $argv[1] . '/autoload.php';
@@ -264,6 +266,7 @@ if ($identity !== null) {
 if ($hint !== null) $_COOKIE['identity_hint'] = $hint;
 $_SERVER = array_merge($_SERVER, ['HTTP_X_REQUESTED_WITH' => 'ForumImport', 'HTTP_HOST' => 'forum.test'], $server);
 $app = new Application($argv[1], $argv[2], $databasePath);
+if ($argv[2] !== $argv[1] . '/tests/fixtures/parity_minimal_v1') { ob_start(); $app->handle('GET', '/threads/'); ob_end_clean(); }
 $_POST = $post;
 ob_start();
 $app->handle('POST', '/tools/import/');
@@ -274,13 +277,73 @@ PHP;
             'php -r %s %s %s %s 2>&1',
             escapeshellarg($script),
             escapeshellarg(dirname(__DIR__)),
-            escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1'),
+            escapeshellarg($repositoryRoot ?? __DIR__ . '/fixtures/parity_minimal_v1'),
             escapeshellarg((string) json_encode([$queuePath, $identity, $server, $post, $hint])),
         );
         $output = (string) shell_exec($command);
         $json = substr($output, (int) strrpos($output, "---JSON---\n") + 11);
 
         return json_decode($json, true) ?? ['raw' => $output];
+    }
+
+    public function testImportResumeAndCancelRunEndToEndThroughThePageAndWorker(): void
+    {
+        $w = new \ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($source . '/records/posts/page-thread.txt', $w->post('page-thread'));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new \ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $queue = $w->root . '/private/tasks.sqlite3';
+        $same = ['HTTP_SEC_FETCH_SITE' => 'same-origin', 'HTTP_ORIGIN' => 'http://forum.test'];
+        $static = $w->root . '/static';
+        $worker = function () use ($queue, $target, $w, $static): array {
+            $pdo = new PDO('sqlite:' . $queue);
+            $store = new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo);
+            $task = \ForumRewrite\Import\InstanceImportTask::forQueue($queue);
+            return (new \ForumRewrite\TaskQueue\TaskQueueWorker($store, static function (): void {},
+                runInstanceImport: static fn (array $claimed): array => $task->run($claimed, dirname(__DIR__),
+                    ['repository_root' => $target, 'database_path' => $w->root . '/worker-cache/index.sqlite3', 'static_html_root' => $static],
+                    static function (string $line) use ($store, $claimed): void { $store->recordTaskProgress((int) $claimed['id'], $line); }),
+            ))->run(1);
+        };
+        $status = fn (): array => $this->postAction($queue, self::OPERATOR, $same, ['action' => 'status'], null, $target);
+
+        // An import whose publication fails leaves a committed run: only Resume is offered.
+        $w->put($static, 'File blocking publication directory creation');
+        $queued = $this->postAction($queue, self::OPERATOR, $same, ['action' => 'import', 'source' => $server->url], null, $target);
+        assertSame('ok', $queued['status'] ?? null, json_encode($queued));
+        assertSame(1, $worker()['failed']);
+        assertTrue(is_file($target . '/records/posts/page-thread.txt'));
+        assertSame(true, $status()['state']['pending']);
+        $cancel = $this->postAction($queue, self::OPERATOR, $same, ['action' => 'cancel'], null, $target);
+        assertSame('Its content is already committed; resume finishes publishing.', $cancel['error'] ?? null);
+        $import = $this->postAction($queue, self::OPERATOR, $same, ['action' => 'import', 'source' => $server->url], null, $target);
+        assertSame('An interrupted import is waiting; resume or cancel it first.', $import['error'] ?? null);
+        unlink($static);
+        assertSame('ok', $this->postAction($queue, self::OPERATOR, $same, ['action' => 'resume'], null, $target)['status'] ?? null);
+        assertSame(1, $worker()['completed']);
+        $after = $status();
+        assertSame(false, $after['state']['pending']);
+        assertSame(false, $after['state']['busy']);
+        assertTrue(in_array('Import result: complete', $after['state']['progress'], true), json_encode($after['state']['progress']));
+
+        // An interruption before the commit can be canceled from the page.
+        $w->put($source . '/records/posts/page-second.txt', $w->post('page-second'));
+        try {
+            (new \ForumRewrite\Import\ContentImportRunner($target, $w->root . '/worker-cache/index.sqlite3', static function ($phase): void {
+                if ($phase === 'copied') throw new RuntimeException('stop');
+            }))->run($source, static fn () => null, false, 'https://second.example');
+        } catch (RuntimeException) {
+        }
+        assertTrue(is_file($target . '/records/posts/page-second.txt'));
+        assertSame('ok', $this->postAction($queue, self::OPERATOR, $same, ['action' => 'cancel'], null, $target)['status'] ?? null);
+        assertSame(1, $worker()['completed']);
+        assertTrue(!is_file($target . '/records/posts/page-second.txt'));
+        assertSame(false, $status()['state']['pending']);
+        assertSame('', trim($w->command(['git', '-C', $target, 'status', '--porcelain'])[1]));
     }
 
     public function testStatusReadsPendingAndNewestFinishedOrCanceledRun(): void
