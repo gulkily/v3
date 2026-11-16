@@ -49,7 +49,7 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
     'label' => $title,
     'label_hidden' => true,
     'variant' => 'library',
-    // Without the body's closing newline, so the field ends in one empty line, not two.
+    // Without the body's closing newline, which would show as an empty last line.
     'text' => rtrim((string) $shared['body']),
 ]]) ?>
         <div class="prompt-card__footer">
@@ -113,34 +113,41 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
       scratch.remove();
       return ok;
     };
-    // Where CSS can't size a field to its text (no field-sizing), do it here:
-    // the text's height plus the borders. A hidden card measures 0; skip it.
-    var cssSizesFields = window.CSS && CSS.supports && CSS.supports('field-sizing', 'content');
-    var sizeField = function (field) {
-      if (cssSizesFields) return;
-      field.style.height = 'auto';
-      if (field.scrollHeight > 0) {
-        field.style.height = (field.scrollHeight + field.offsetHeight - field.clientHeight) + 'px';
-      }
+    // A shared prompt much taller than the cap is cut off (agent.css fades
+    // its end) and gets "Show all". A hidden card measures 0; it is measured
+    // when search shows it again.
+    var cutTallPrompt = function (prompt) {
+      var text = prompt.querySelector('[data-copy-prompt-source]');
+      var more = prompt.querySelector('[data-copy-prompt-more]');
+      if (!more || more.getAttribute('aria-expanded') === 'true' || text.scrollHeight === 0) return;
+      text.classList.remove('is-cut');
+      var cap = 16 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+      var tall = text.scrollHeight > cap * 1.25;
+      text.classList.toggle('is-cut', tall);
+      more.hidden = !tall;
     };
-    var sizeFields = function () {
-      page.querySelectorAll('[data-copy-prompt] textarea').forEach(sizeField);
+    var cutTallPrompts = function () {
+      page.querySelectorAll('[data-copy-prompt]').forEach(cutTallPrompt);
     };
-    if (!cssSizesFields) window.addEventListener('resize', sizeFields);
+    window.addEventListener('resize', cutTallPrompts);
     page.querySelectorAll('[data-copy-prompt]').forEach(function (prompt) {
-      var field = prompt.querySelector('textarea');
+      var field = prompt.querySelector('[data-copy-prompt-source]');
       var button = prompt.querySelector('[data-copy-prompt-button]');
+      var more = prompt.querySelector('[data-copy-prompt-more]');
       var status = prompt.querySelector('[data-copy-prompt-status]');
       var timer;
       if (from && from !== location.origin) {
-        field.value = field.value.split(from).join(location.origin);
+        field.textContent = field.textContent.split(from).join(location.origin);
       }
-      sizeField(field);
-      field.addEventListener('focus', function () { field.select(); });
-      field.addEventListener('mouseup', function (event) {
-        event.preventDefault();
-        field.select();
-      });
+      cutTallPrompt(prompt);
+      if (more) {
+        more.addEventListener('click', function () {
+          var open = more.getAttribute('aria-expanded') !== 'true';
+          more.setAttribute('aria-expanded', open ? 'true' : 'false');
+          more.textContent = open ? 'Show less' : 'Show all';
+          field.classList.toggle('is-cut', !open);
+        });
+      }
       button.hidden = false;
       button.addEventListener('click', function () {
         status.textContent = '';
@@ -155,8 +162,11 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
           }, 1500);
         };
         var manual = function () {
-          field.focus();
-          field.setSelectionRange(0, field.value.length);
+          var range = document.createRange();
+          range.selectNodeContents(field);
+          var selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
           status.textContent = touch
             ? 'Couldn\'t copy. Touch and hold the selected prompt, then tap Copy.'
             : 'Press Ctrl+C (Windows/Linux) or ⌘C (Mac) to copy the selected prompt.';
@@ -164,15 +174,15 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
         // Without the Clipboard API (plain HTTP, older browsers), copy now,
         // inside the tap: iPhone Safari allows execCommand only there.
         if (!navigator.clipboard || !navigator.clipboard.writeText) {
-          if (copySelectedText(field.value)) {
+          if (copySelectedText(field.textContent)) {
             copied();
           } else {
             manual();
           }
           return;
         }
-        navigator.clipboard.writeText(field.value).then(copied, function () {
-          if (copySelectedText(field.value)) {
+        navigator.clipboard.writeText(field.textContent).then(copied, function () {
+          if (copySelectedText(field.textContent)) {
             copied();
           } else {
             manual();
@@ -196,7 +206,7 @@ $plural = static fn (int $count, string $one, string $many): string => $count . 
           if (match) shown++;
         });
         if (none) none.hidden = shown !== 0;
-        sizeFields();
+        cutTallPrompts();
       });
     }
   })(document.currentScript.previousElementSibling);
