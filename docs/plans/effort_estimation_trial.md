@@ -2126,3 +2126,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/prompt_library_notprompt` | One-shot technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.1 (intake 0.1; retrospective 0.1) | [One-shot record](./prompt_library_notprompt/prompt_library_notprompt_one_shot.md#study-history) | In-session request; acceptance pending |
 
 2026-11-16T01:36Z: standing P2 enrollment, one-shot on the maintainer's in-session request. Intake **0.1** after source inspection (no pristine intake), retrospective **0.1**. Baseline `c54c3375d33f388b6b76ce34aabfb47843040d81`; branch `fix/prompt_library_notprompt`. Single exposed rater Claude (claude-fable-5-2). No measured effort, independent rating or accepted-count increment.
+
+## Cycle v3/pledge_campaigns
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/pledge_campaigns` | Step 1 written; awaiting approval | v1 / R1 / P2 | 0.45 (intake 0.45; Step 1 0.45) | [Intake and Step 1](./pledge_campaigns_step1_solution_assessment.md#study-snapshots) | New cycle; first of seven in [pledges checklist](./pledges_checklist.md); no implementation |
+
+2026-11-16T02:30Z: standing P2 enrollment for pledge campaigns, staged. Intake **0.45** after a first code read (no pristine intake) and Step 1 handoff **0.45** for Option A (lines read when shown). Extended estimates enabled (A 0.45, B 0.80, C 0.60; not summed). Baseline `9e5aa010ddff888248ca670c932e3b5f7ec69274`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Planning committed early on `plan/pledge-campaigns` at the maintainer's request for session handoff; Step 1 not yet approved.
