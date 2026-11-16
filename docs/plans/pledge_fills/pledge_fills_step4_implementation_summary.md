@@ -35,3 +35,22 @@ Status: Steps 1 (Option B), 2 and 3 approved by the maintainer 2026-11-16. Step 
   - Estimate details: original scope as in Step 3; no revision. Retrospective lower: the reasons table fitted the withdraw pattern directly.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - Show fills on each pledge and in the block
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - `ThreadAndPostPageController` passes `ApprovalPolicy::isActiveOperator()` as the operator check.
+  - `templates/partials/pledge_amount.php` lists each counted fill on its own line under the amount: "Delivered by mara" or "Filled by ilyag", linked to the fill reply, with the amount when it is not the whole pledge. A fill reply that does not count shows its reason; one capped at what was left shows "Counted 300 of 500".
+  - `templates/partials/pledge_totals.php` adds "· N filled" to the count line, and "· M confirmed" when that is lower. No CSS change: the lines reuse `pledge-amount`.
+- Verification:
+  - Passed: `./v3 test PledgeCampaignTest` (16 tests, 1 new): both labels, the partial amount, the cap note, a reason, the totals line, a baked page dropped by a fill reply and rebuilt with the new totals, and the flag off.
+  - The page test uses posts with no name, with "Count pledges with no name" on, because the fixture has one key. That key fills as the pledger on its own pledge and as an operator on a pledge with no name, which goes through the controller's operator check.
+- Notes:
+  - Refinement within Step 3: the block shows "filled" only once something is filled, so a new campaign does not read "0 filled".
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*

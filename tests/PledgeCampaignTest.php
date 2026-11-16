@@ -509,6 +509,51 @@ final class PledgeCampaignTest
         pledgeAssertSame(true, $stranger !== '');
     }
 
+    public function testThreadPageListsFillsAndABakedPageFollows(): void
+    {
+        [$root, $database, $service, $artifacts] = $this->environment();
+        // The fixture has one key, a root operator. A campaign with no name lets that key fill
+        // as an operator; its own pledge shows it filling as the pledger.
+        $thread = (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Fill campaign', 'body' => 'goal: 1000 coffees'])['thread_id'];
+        $own = $this->reply($service, $thread, 'pledge: 300');
+        $other = $this->reply($service, $thread, 'pledge: 400', null);
+        $path = $artifacts . '/threads/' . $thread . '.html';
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED=1');
+        try {
+            $builder = new StaticArtifactBuilder(dirname(__DIR__), $root, $database, $artifacts);
+            pledgeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
+            pledgeAssertContains('2 pledges</p>', (string) file_get_contents($path));
+
+            $delivered = $this->replyTo($service, $thread, $own, 'filled');
+            $filled = $this->replyTo($service, $thread, $other, 'filled: 100');
+            $over = $this->replyTo($service, $thread, $other, 'filled: 500');
+            $nameless = $this->replyTo($service, $thread, $own, 'filled', null);
+            // The reply drops the baked page, so the next build carries the new totals.
+            pledgeAssertSame(false, is_file($path));
+            pledgeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
+            pledgeAssertContains('2 pledges · 700 filled · 400 confirmed</p>', (string) file_get_contents($path));
+
+            $on = $page();
+            pledgeAssertContains('data-pledge-state="fill"><a href="/posts/' . $delivered . '">Delivered by ', $on);
+            pledgeAssertContains('data-pledge-state="fill"><a href="/posts/' . $filled . '">Filled by ', $on);
+            pledgeAssertContains('</a> · 100</p>', $on);
+            pledgeAssertContains('data-pledge-state="fill"><a href="/posts/' . $over . '">Filled by ', $on);
+            pledgeAssertContains('</a> · 300</p>', $on);
+            pledgeAssertContains('data-pledge-state="fill-capped"><span class="meta">Counted 300 of 500</span>', $on);
+            pledgeAssertContains('data-pledge-state="fill-uncounted"><span class="meta">Not counted: no name</span>', $on);
+            pledgeAssertSame(true, $nameless !== '');
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+            putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
+        }
+
+        // With the flag off the lines are plain text.
+        pledgeAssertNotContains('pledge-amount', $page());
+    }
+
     public function testABareWithdrawalFoldsIntoThePledgeAndUndoLeavesNoStub(): void
     {
         [$root, $database, $service] = $this->environment();
