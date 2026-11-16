@@ -2159,6 +2159,20 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-16T04:30Z: standing P2 enrollment, one-shot. Intake and execution entry **0.08**; retrospective scope assessment **0.07**; no revisions. Baseline `9bdd4b39`. Single exposed rater Claude (claude-fable-5-2), who wrote the parent cycle; R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
 
+## Cycle v3/pledge_withdraw
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/pledge_withdraw` | Technically complete; release check and maintainer acceptance pending (every step approved by the maintainer) | v1 / R1 / P2 | 0.40 (intake 0.35; Step 1 0.35; Step 2 0.40; Step 3 0.40; entry 0.40; retrospective 0.35) | [Intake and Step 1](./pledge_withdraw/pledge_withdraw_step1_solution_assessment.md#study-snapshots); [Step 2](./pledge_withdraw/pledge_withdraw_step2_feature_description.md#study-snapshots); [Step 3](./pledge_withdraw/pledge_withdraw_step3_development_plan.md#study-checkpoint); [Step 4](./pledge_withdraw/pledge_withdraw_step4_implementation_summary.md#cycle-retrospective) | Follow-up to `v3/pledge_campaigns`; second of seven in [pledges checklist](./pledges_checklist.md); no implementation |
+
+2026-11-16T05:42Z: Step 4 closeout for `v3/pledge_withdraw`: four stages complete on `feat/pledge-withdraw` from `b9ffa6b8` (PR #268 had merged; planning commit `fc318f72`). Entry projection 0.40 reaffirmed; no revisions. Retrospective scope assessment **0.35**; stage retrospectives 0.10, 0.06, 0.12, 0.05, not summed. Release check on zenmemes.com pending. Maintainer comfortable-fit judgment pending. Same R1/P2, single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified.
+
+2026-11-16T03:02Z: Step 2 handoff for `v3/pledge_withdraw`: **0.40** (from 0.35). New understanding, same scope v1: fold rule with two exceptions, "not counted" reasons for withdraw lines, written and counted amounts kept apart for cycle 3. Revision 2026-11-16T05:08Z: 0.40 reaffirmed after the maintainer cut the part-filled groundwork from Step 2.
+
+2026-11-16T05:13Z: Step 3 handoff for `v3/pledge_withdraw`: **0.40** reaffirmed. Step 2 approved by the maintainer. Stage work 0.12, 0.08, 0.14, 0.06, not summed. Same baseline, R1/P2, single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation. Step 1 approved by the maintainer (Option A) in a new session; Step 2 not yet approved. Baseline `c1572e57`; PR #268 still open. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation.
+
+2026-11-16T03:00Z: standing P2 enrollment for pledge withdraw, staged. Intake **0.35** after cycle 1's code and a read of the retraction, tagset and reaction concepts (no pristine intake) and Step 1 handoff **0.35** for Option A (a `withdraw` reply line read when shown). Extended estimates enabled (A 0.35, B 0.50, C 0.85, D 0.10; not summed). Baseline `c1572e57` on `feat/pledge-campaigns`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation, measured effort or accepted outcome. Step 1 committed and pushed on `plan/pledge-withdraw` at the maintainer's request for session handoff; not yet approved.
+
 ## Cycle v3/pledge_campaigns
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |

@@ -189,7 +189,7 @@ final class ThreadAndPostPageController
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
                 '/assets/private_site_auth.js',
-                ...($pledgeCampaign !== null ? ['/assets/pledge_field.js'] : []),
+                ...($pledgeCampaign !== null ? ['/assets/pledge_field.js', '/assets/pledge_withdraw.js'] : []),
             ]),
         );
     }

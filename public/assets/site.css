@@ -2284,6 +2284,7 @@ pre {
 .pledge-amount { margin: 0.4rem 0 0; }
 .pledge-amount strong { font-size: 1.25em; }
 .pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
+.pledge-withdraw { margin: 0.3rem 0 0; }
 .pledge-field { display: flex; align-items: center; gap: 0.5rem; }
 .pledge-field input { flex: 0 1 8rem; min-width: 0; width: 8rem; }
 .pledge-field__unit { color: var(--ink-soft); overflow-wrap: anywhere; }

@@ -11,6 +11,7 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\GoalDirective;
 use ForumRewrite\Support\PledgeAmount;
 use ForumRewrite\Support\PledgeDirective;
+use ForumRewrite\Support\WithdrawDirective;
 use ForumRewrite\View\PledgeCampaign;
 use ForumRewrite\Write\LocalWriteService;
 
@@ -255,6 +256,244 @@ final class PledgeCampaignTest
         );
     }
 
+    public function testWithdrawLineIsBareOrCarriesText(): void
+    {
+        pledgeAssertSame('', WithdrawDirective::extract('withdraw'));
+        pledgeAssertSame('', WithdrawDirective::extract("Sorry, the order fell through.\n  Withdraw:  "));
+        pledgeAssertSame('100', WithdrawDirective::extract('withdraw: 100'));
+        pledgeAssertSame(null, WithdrawDirective::extract('> withdraw'));
+        pledgeAssertSame(null, WithdrawDirective::extract('I withdraw'));
+        pledgeAssertSame(null, WithdrawDirective::extract('withdraw my pledge please'));
+        pledgeAssertSame(null, WithdrawDirective::extract('withdrawn'));
+        pledgeAssertSame(true, WithdrawDirective::isBare(WithdrawDirective::BODY));
+        pledgeAssertSame(true, WithdrawDirective::isBare("\n WITHDRAW: \n\n"));
+        pledgeAssertSame(false, WithdrawDirective::isBare("withdraw\n\nSorry."));
+        pledgeAssertSame(false, WithdrawDirective::isBare('withdraw: 100'));
+        pledgeAssertSame(false, WithdrawDirective::isBare('Sorry.'));
+    }
+
+    public function testThePledgerWithdrawsAndEveryOtherWithdrawLineSaysWhyNot(): void
+    {
+        $other = 'openpgp:' . str_repeat('b', 40);
+        $post = static fn (string $id, string $body, string $parent = 'root', array $more = []): array => $more + [
+            'post_id' => $id, 'thread_id' => 'root', 'parent_id' => $parent, 'body' => $body, 'retracted_at' => null,
+            'author_identity_id' => self::MEMBER, 'attribution_counted' => 1, 'created_at' => '2026-11-16T05:00:00Z',
+        ];
+        $posts = [
+            $post('root', 'goal: 1000 coffees'),
+            $post('a', 'pledge: 300'),
+            $post('b', 'pledge: 200'),
+            $post('c', 'pledge: 100', 'root', ['author_identity_id' => $other]),
+            $post('d', 'pledge: 50'),
+            $post('e', 'pledge: 25'),
+            $post('nameless', 'pledge: 60', 'root', ['author_identity_id' => null]),
+            $post('talk', 'Does decaf count?'),
+            $post('wa', "Withdraw:\n\nThe order fell through.", 'a'),
+            $post('wa2', 'withdraw', 'a'),
+            $post('wb-other', 'withdraw', 'b', ['author_identity_id' => $other]),
+            $post('wc-other', 'withdraw', 'c'),
+            $post('wd-number', 'withdraw: 20', 'd'),
+            $post('wd-unverified', 'withdraw', 'd', ['attribution_counted' => 0]),
+            $post('wd-nameless', 'withdraw', 'd', ['author_identity_id' => null]),
+            $post('we-retracted', 'withdraw', 'e', ['retracted_at' => '2026-11-16T06:00:00Z']),
+            $post('w-talk', 'withdraw', 'talk'),
+            $post('w-root', 'withdraw'),
+            $post('w-nameless', 'withdraw', 'nameless', ['author_identity_id' => null]),
+            $post('quoted', "> withdraw\nPlease don't.", 'b'),
+        ];
+        $campaign = PledgeCampaign::fromPosts($posts, 'root');
+
+        // a is withdrawn by its pledger; b, c, d and e still count.
+        pledgeAssertSame('375', $campaign['pledged']);
+        pledgeAssertSame(4, $campaign['count']);
+        pledgeAssertSame(
+            ['state' => 'withdrawn', 'amount' => '300', 'note' => '', 'withdrawn_by' => 'wa', 'withdrawn_at' => '2026-11-16T05:00:00Z'],
+            $campaign['pledges']['a']
+        );
+        foreach (['b', 'c', 'd', 'e'] as $id) {
+            pledgeAssertSame('counted', $campaign['pledges'][$id]['state']);
+        }
+        pledgeAssertSame([
+            'wa' => ['effective' => true, 'note' => ''],
+            // A second withdrawal changes nothing and is still a withdrawal.
+            'wa2' => ['effective' => true, 'note' => ''],
+            'wb-other' => ['effective' => false, 'note' => 'Not counted: only the pledger can withdraw'],
+            'wc-other' => ['effective' => false, 'note' => 'Not counted: only the pledger can withdraw'],
+            'wd-number' => ['effective' => false, 'note' => 'Not counted: write “withdraw” alone on its line'],
+            'wd-unverified' => ['effective' => false, 'note' => 'Not counted: unverified'],
+            'wd-nameless' => ['effective' => false, 'note' => 'Not counted: no name'],
+            'w-talk' => ['effective' => false, 'note' => 'Not counted: not a reply to a pledge'],
+            'w-root' => ['effective' => false, 'note' => 'Not counted: not a reply to a pledge'],
+            // A pledge with no name is not counted, so there is nothing to withdraw.
+            'w-nameless' => ['effective' => false, 'note' => 'Not counted: not a reply to a pledge'],
+        ], $campaign['withdrawals']);
+
+        // Retracting the withdraw reply undoes it: a retracted post is not read.
+        $posts[8]['retracted_at'] = '2026-11-16T07:00:00Z';
+        $posts[9]['retracted_at'] = '2026-11-16T07:00:00Z';
+        $undone = PledgeCampaign::fromPosts($posts, 'root');
+        pledgeAssertSame('675', $undone['pledged']);
+        pledgeAssertSame(['state' => 'counted', 'amount' => '300', 'note' => ''], $undone['pledges']['a']);
+
+        // With "Count pledges with no name" on, a no-name pledge counts and nobody can withdraw it.
+        $open = PledgeCampaign::fromPosts($posts, 'root', true);
+        pledgeAssertSame('735', $open['pledged']);
+        pledgeAssertSame('counted', $open['pledges']['nameless']['state']);
+        pledgeAssertSame(['effective' => false, 'note' => 'Not counted: no name'], $open['withdrawals']['w-nameless']);
+
+        // A withdrawal of a retracted pledge has nothing to mark.
+        $posts[1]['retracted_at'] = '2026-11-16T08:00:00Z';
+        $posts[8]['retracted_at'] = null;
+        $gone = PledgeCampaign::fromPosts($posts, 'root');
+        pledgeAssertSame(false, isset($gone['pledges']['a']));
+        pledgeAssertSame('Not counted: not a reply to a pledge', $gone['withdrawals']['wa']['note']);
+    }
+
+    public function testThreadPageMarksAWithdrawnPledgeAndABakedPageFollows(): void
+    {
+        [$root, $database, $service, $artifacts] = $this->environment();
+        $thread = $this->thread($service, 'Withdraw campaign', 'goal: 1000 coffees');
+        $kept = $this->reply($service, $thread, 'pledge: 200');
+        $pledge = $this->reply($service, $thread, "pledge: 300\n\nI'll order these myself.");
+        $path = $artifacts . '/threads/' . $thread . '.html';
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $builder = new StaticArtifactBuilder(dirname(__DIR__), $root, $database, $artifacts);
+            pledgeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
+            pledgeAssertContains('<strong>500</strong> of 1000 coffees pledged', (string) file_get_contents($path));
+
+            $withdrawal = $this->replyTo($service, $thread, $pledge, "withdraw\n\nThe order fell through.");
+            $stranger = $this->replyTo($service, $thread, $kept, 'withdraw: 50');
+            // The reply drops the baked page, so the next build carries the lower sum.
+            pledgeAssertSame(false, is_file($path));
+            pledgeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
+            pledgeAssertContains('<strong>200</strong> of 1000 coffees pledged', (string) file_get_contents($path));
+
+            $on = $page();
+            pledgeAssertContains('<strong>200</strong> of 1000 coffees pledged', $on);
+            pledgeAssertContains('1 pledge</p>', $on);
+            pledgeAssertContains(
+                'data-pledge-state="withdrawn"><strong>300</strong> coffees · <a href="/posts/' . $withdrawal . '">Withdrawn</a> <span class="meta">',
+                $on
+            );
+            // The pledge keeps its text, and the withdraw line stays in its reply as written.
+            pledgeAssertContains('order these myself.', $on);
+            pledgeAssertContains('The order fell through.', $on);
+            pledgeAssertContains('data-pledge-state="withdraw-uncounted"><span class="meta">Not counted: write “withdraw” alone on its line</span>', $on);
+            pledgeAssertContains('data-pledge-state="counted"><strong>200</strong> coffees</p>', $on);
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+
+        // With the flag off the lines are plain text.
+        $off = $page();
+        pledgeAssertNotContains('pledge-amount', $off);
+        pledgeAssertContains('withdraw: 50', $off);
+        pledgeAssertSame(true, $stranger !== '');
+    }
+
+    public function testABareWithdrawalFoldsIntoThePledgeAndUndoLeavesNoStub(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Fold campaign', 'goal: 1000 coffees');
+        $first = $this->reply($service, $thread, 'pledge: 300');
+        $second = $this->reply($service, $thread, 'pledge: 200');
+        $third = $this->reply($service, $thread, 'pledge: 100');
+        $bare = $this->replyTo($service, $thread, $first, 'withdraw');
+        $noted = $this->replyTo($service, $thread, $second, "withdraw\n\nThe order fell through.");
+        $answered = $this->replyTo($service, $thread, $third, 'withdraw');
+        $this->replyTo($service, $thread, $answered, 'Sorry to hear that.');
+        $application = fn (): Application => new Application(dirname(__DIR__), $root, $database);
+        $card = static fn (string $postId): string => 'data-post-id="' . $postId . '"';
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED=1');
+        try {
+            $page = $this->render($application(), '/threads/' . rawurlencode($thread));
+            pledgeAssertContains('<strong>0</strong> of 1000 coffees pledged', $page);
+            // The bare withdrawal has no card; the pledge links to its page, which still shows it.
+            pledgeAssertNotContains($card($bare), $page);
+            pledgeAssertContains('<a href="/posts/' . $bare . '">Withdrawn</a>', $page);
+            pledgeAssertContains($card($noted), $page);
+            pledgeAssertContains($card($answered), $page);
+            pledgeAssertContains('withdraw', $this->render($application(), '/posts/' . rawurlencode($bare)));
+        } finally {
+            putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+        }
+        try {
+            // With the flag off nothing folds: the line is an ordinary reply.
+            putenv('FORUM_PLEDGES_ENABLED');
+            pledgeAssertContains($card($bare), $this->render($application(), '/threads/' . rawurlencode($thread)));
+
+            // Undo: retracting the withdraw reply restores the pledge and leaves no "retracted" stub.
+            putenv('FORUM_PLEDGES_ENABLED=1');
+            (new PDO('sqlite:' . $database))->prepare("UPDATE posts SET retracted_at = '2026-11-16T09:00:00Z', body = '' WHERE post_id = ?")->execute([$bare]);
+            $undone = $this->render($application(), '/threads/' . rawurlencode($thread));
+            pledgeAssertContains('<strong>300</strong> of 1000 coffees pledged', $undone);
+            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees</p>', $undone);
+            pledgeAssertNotContains($card($bare), $undone);
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+    }
+
+    public function testWithdrawButtonShowsOnlyOnThePledgersOwnCountedPledge(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Button campaign', 'goal: 1000 coffees');
+        $mine = $this->reply($service, $thread, 'pledge: 300');
+        $withdrawn = $this->reply($service, $thread, 'pledge: 200');
+        $this->replyTo($service, $thread, $withdrawn, 'withdraw');
+        $nameless = $this->reply($service, $thread, 'pledge: 40', null);
+        $this->reply($service, $thread, 'pledge: a few');
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        $form = static fn (string $postId): string => '<input type="hidden" name="parent_id" value="' . $postId . '">';
+        $oldCookies = $_COOKIE;
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED=1');
+        try {
+            // No viewer: no button anywhere, so a page drawn for everyone carries none.
+            $_COOKIE = [];
+            pledgeAssertNotContains('data-role="pledge-withdraw"', $page());
+
+            $_COOKIE = ['identity_hint' => self::MEMBER];
+            $own = $page();
+            pledgeAssertSame(1, substr_count($own, 'data-role="pledge-withdraw"'));
+            pledgeAssertContains('<form class="pledge-withdraw" method="post" action="/compose/reply" data-role="pledge-withdraw">', $own);
+            pledgeAssertContains($form($mine), $own);
+            pledgeAssertContains('<input type="hidden" name="body" value="withdraw">', $own);
+            pledgeAssertContains('>Withdraw pledge</button>', $own);
+            pledgeAssertContains('/assets/pledge_withdraw.', $own);
+            // Not on a withdrawn pledge, a counted pledge with no name, or a line that is not counted.
+            pledgeAssertNotContains($form($withdrawn), $own);
+            pledgeAssertNotContains($form($nameless), $own);
+
+            // Another viewer sees no button on this member's pledge.
+            $_COOKIE = ['identity_hint' => 'openpgp:' . str_repeat('b', 40)];
+            pledgeAssertNotContains('data-role="pledge-withdraw"', $page());
+
+            // Without JavaScript the form posts a reply with no name: it does not withdraw, and says why.
+            $_COOKIE = ['identity_hint' => self::MEMBER];
+            $_POST = ['thread_id' => $thread, 'parent_id' => $mine, 'board_tags' => 'general', 'body' => 'withdraw', 'return_to' => '/threads/' . $thread];
+            try {
+                $this->render(new Application(dirname(__DIR__), $root, $database), 'POST /compose/reply');
+            } finally {
+                $_POST = [];
+            }
+            $after = $page();
+            pledgeAssertContains('<strong>340</strong> of 1000 coffees pledged', $after);
+            pledgeAssertContains('data-pledge-state="withdraw-uncounted"><span class="meta">Not counted: no name</span>', $after);
+            pledgeAssertContains($form($mine), $after);
+        } finally {
+            $_COOKIE = $oldCookies;
+            putenv('FORUM_PLEDGES_ENABLED');
+            putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
+        }
+    }
+
     /** @return array{string,string,LocalWriteService,string} */
     private function environment(): array
     {
@@ -284,6 +523,16 @@ final class PledgeCampaignTest
     private function reply(LocalWriteService $service, string $threadId, string $body, ?string $author = self::MEMBER): string
     {
         $input = ['thread_id' => $threadId, 'parent_id' => $threadId, 'body' => $body];
+        if ($author !== null) {
+            $input['author_identity_id'] = $author;
+        }
+
+        return (string) $service->createReply($input)['post_id'];
+    }
+
+    private function replyTo(LocalWriteService $service, string $threadId, string $parentId, string $body, ?string $author = self::MEMBER): string
+    {
+        $input = ['thread_id' => $threadId, 'parent_id' => $parentId, 'body' => $body];
         if ($author !== null) {
             $input['author_identity_id'] = $author;
         }
