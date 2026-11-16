@@ -64,3 +64,25 @@
 - `origin/main` moved between Step 2 and Step 3. The plan branch was rebased locally, not force-pushed; no workflow rule covers a plan branch falling behind between steps.
 - "<=1 page": exceeded by the findings and refinements sections, as in cycle 2.
 - R1 reference hashes were not re-verified this session.
+
+## 2026-11-16T11:35Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md` planning commit gate: kept Steps 1–3 and the folder move apart from code; the ledger went with Stage 1. Retain.
+- Stage Boundary Protocol: one commit per stage with its summary; five stage commits after the planning commit. Retain.
+- `implementation_standards.md` "inspect existing implementations": found `viewerCanRetractOthers` already on the thread page, so the operator button reuses the Retract test instead of a new check. Retain.
+- `implementation_standards.md` "complete the outcome through its ordinary entry": the browser check pressed the real button, with a forced failure, in every theme. Retain.
+- User preference and `AGENTS.md` tests rule (a test failing or missing on the base commit is fixed as part of the work): running each named test on its own exposed that `WithdrawLeafFilterTest` was never registered; fixed in Stage 5. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Replaying a reported user failure: none reported.
+- Navigation icon rule: no new destination.
+
+**Uncertain assessments**
+- Cycle 2's summary reported `WithdrawLeafFilterTest` as passing, though the runner never loaded it. A combined `./v3 test A B C` run silently skips unlisted files, so a summary can count tests that did not run. Railspike's "record commands and results" did not catch this; a check that each named test appears in the output would.
+- The model changed between Step 1 and Step 2 (Claude Fable 5.2 to Claude Opus 5.5); attribution follows the session.
+- The release check on zenmemes.com cannot run from this session and is recorded as pending.
+- R1 reference hashes were not re-verified this session.
