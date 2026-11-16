@@ -43,3 +43,18 @@
 
 ### Uncertain assessments
 - The ≤1 page limit and six fully fielded stages conflict; this plan runs about two pages.
+
+## 2026-11-16T22:00Z — Step 4
+
+### Necessary/useful instructions
+- `step4_implementation_do.md` Stage Boundary Protocol: one commit per stage kept the page, worker and docs changes reviewable apart.
+- `implementation_standards.md` "Complete the recorded outcome through its ordinary entry": pushed the end-to-end test through the page's POST route and a real worker instead of stopping at controller unit tests; it exposed the run-ID timestamp format (`gmdate('YmdTHis')` prints a zone name).
+
+### Redundant/unnecessary instructions
+- No supported findings.
+
+### Inapplicable instructions
+- Read-model schema requirements: no schema change.
+
+### Uncertain assessments
+- The planning-commit gate says to exclude the ledger, but the study requires ledger rows at Steps 1–3; they stayed uncommitted across a branch switch and had to be carried by hand until the closeout commit.
