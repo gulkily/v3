@@ -2225,7 +2225,7 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 Cycle ID: v3/local_start_import
 Mode: one-shot; standing enrollment under P2
 Scope/reference: v1 / R1 / P2
-Status: locally verified MVP; PR, merge, deployment and maintainer acceptance pending
+Status: locally verified MVP; PR #284 open; thread reply unavailable; merge, deployment and maintainer acceptance pending
 Projection: unavailable; frozen external calibration sources were not recovered
 Canonical checkpoints: [record](local_start_import/local_start_import_one_shot.md)
 Relationship: new local-start outcome; related PF-20261111-F09 speed and PF-20261104-B14 availability remain separate

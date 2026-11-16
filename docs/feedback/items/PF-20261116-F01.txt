@@ -17,3 +17,4 @@ A fresh local launch offers exploration and public-content import. Imported thre
 Notes:
 2026-11-16: User authorized one-shot MVP in the agent session. Branch feat/local-start-import; record docs/plans/local_start_import/local_start_import_one_shot.md. Related PF-20261111-F09 performance and PF-20261104-B14 archive availability remain separate. No deployment or production acceptance yet.
 2026-11-16: Fresh-checkout browser flow, all offered themes at phone/desktop sizes, native JS-on/off import failure and retry passed. HTTP checks verified journal resume, duplicate-free repeat and conflicts. Review, merge and deployment remain pending. Smoke: 482/486; four failures reproduced on origin/main. Full suite not run.
+2026-11-16: Implementation 817332da pushed; PR https://github.com/gulkily/v3/pull/284 open. Reply to the supplied local thread is pending because discovery and /api/version timed out. No post operation was created.
