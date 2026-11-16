@@ -1,0 +1,107 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ImportTestWorkspace.php';
+require_once __DIR__ . '/Support/ImportHttpServer.php';
+
+use ForumRewrite\Import\InstanceImportTask;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+use ForumRewrite\TaskQueue\TaskQueueWorker;
+
+final class InstanceImportTaskTest
+{
+    public function testWorkerRunsQueuedImportRecordsProgressAndRefusesASecondRequest(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($source . '/records/posts/queued-thread.txt', $w->post('queued-thread'));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $queuePath = $w->root . '/private/tasks.sqlite3';
+        [$store, $task] = $this->queueStore($queuePath);
+
+        $queued = $task->queue($store, 'import', $server->url, 'openpgp:operator');
+        assertTrue($queued['enqueued']);
+        $second = $task->queue($store, 'resume', null, 'openpgp:operator');
+        assertSame(false, $second['enqueued']);
+        assertSame($queued['task_id'], $second['task_id']);
+        $request = $task->request((string) $store->findById($queued['task_id'])['deduplication_key']);
+        assertSame('import', $request['Action']);
+        assertSame($server->url, $request['Source']);
+        assertSame('0600', substr(sprintf('%o', fileperms($task->stateDirectory() . '/' . $store->findById($queued['task_id'])['deduplication_key'] . '.txt')), -4));
+
+        $summary = $this->worker($store, $task, $w, $target)->run(1);
+        assertSame(1, $summary['completed']);
+        assertSame('completed', $store->findById($queued['task_id'])['status']);
+        assertTrue(is_file($target . '/records/posts/queued-thread.txt'));
+        $progress = array_column($store->recentTaskProgress(200), 'message');
+        assertTrue(in_array('Import result: complete', $progress, true), implode("\n", $progress));
+        $log = $task->log((string) $store->findById($queued['task_id'])['deduplication_key']);
+        assertStringContains('Import result: complete', (string) $log);
+    }
+
+    public function testFailedSourceMarksTaskFailedWithTheLastLine(): void
+    {
+        $w = new ImportTestWorkspace();
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($w->root . '/router.php', '<?php http_response_code(500); echo "nope";');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        [$store, $task] = $this->queueStore($w->root . '/private/tasks.sqlite3');
+        $queued = $task->queue($store, 'import', $server->url, 'openpgp:operator');
+        $summary = $this->worker($store, $task, $w, $target)->run(1);
+        assertSame(1, $summary['failed']);
+        $row = $store->findById($queued['task_id']);
+        assertSame('failed', $row['status']);
+        assertSame('instance_import_failed', $row['failure_code']);
+        assertStringContains('Elapsed time', (string) $row['failure_message']);
+    }
+
+    public function testQueueRejectsBadInputAndCancelNeedsNoSource(): void
+    {
+        $w = new ImportTestWorkspace();
+        [$store, $task] = $this->queueStore($w->root . '/private/tasks.sqlite3');
+        foreach ([['import', ''], ['import', '--resume'], ['import', "a\nb"], ['wipe', 'x']] as [$action, $source]) {
+            $failed = false;
+            try { $task->queue($store, $action, $source, 'openpgp:operator'); } catch (InvalidArgumentException) { $failed = true; }
+            assertTrue($failed, $action . ' ' . $source);
+        }
+        $queued = $task->queue($store, 'cancel', null, 'openpgp:operator');
+        $request = $task->request((string) $store->findById($queued['task_id'])['deduplication_key']);
+        assertSame('cancel', $request['Action']);
+        assertSame('', $request['Source']);
+        assertSame(null, $task->request('../etc/passwd'));
+    }
+
+    /** @return array{0: SqliteTaskQueueStore, 1: InstanceImportTask} */
+    private function queueStore(string $queuePath): array
+    {
+        mkdir(dirname($queuePath), 0700, true);
+        $pdo = new PDO('sqlite:' . $queuePath);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+
+        return [new SqliteTaskQueueStore($pdo), InstanceImportTask::forQueue($queuePath)];
+    }
+
+    private function worker(SqliteTaskQueueStore $store, InstanceImportTask $task, ImportTestWorkspace $w, string $target): TaskQueueWorker
+    {
+        $projectRoot = dirname(__DIR__);
+
+        return new TaskQueueWorker(
+            $store,
+            static function (): void {},
+            runInstanceImport: static fn (array $claimed): array => $task->run($claimed, $projectRoot, [
+                'repository_root' => $target,
+                'database_path' => $w->root . '/cache/index.sqlite3',
+                'static_html_root' => $w->root . '/static',
+            ], static function (string $line) use ($store, $claimed): void {
+                $store->recordTaskProgress((int) $claimed['id'], $line);
+            }),
+        );
+    }
+}
