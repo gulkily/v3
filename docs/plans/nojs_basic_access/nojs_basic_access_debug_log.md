@@ -98,3 +98,29 @@ Mode: enabled, inherited from the 2026-10-19 entries.
 
 - Chromium (`/opt/google/chrome/chrome`) through Playwright with scripts off, against the local dev server (`127.0.0.1:8000`, this checkout). Read-only probe plus one failed-validation submit, which wrote nothing. Probe scripts live in the session scratchpad, not the repo.
 - Pagination and members-only denial were not exercised in a browser. Stage 1 seeds them.
+
+## 2026-11-16 — Step 4
+
+Mode: enabled, inherited.
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md` planning-commit gate and organization rule: moved the four nojs artifacts into the feature folder and repaired links. Uncommitted Windows ME plans and the ledger stayed out of the commit.
+- `step4_implementation_do.md` "reuse canonical components": led to reusing `image_browser_router.php` (its `flags.json` already switches members-only) and the existing `@media (scripting: none)` first-paint block, instead of new routers or script-driven toggles.
+- `step4_implementation_after.md` item 7, "identify reproduced baseline failures; a focused pass is never a full-suite result": shaped the final table (smoke 159/162 long-standing, `board_compose_focus` baseline failure, full suite not run).
+- AGENTS.md "replay that condition or explicitly report it unverified": kept the Lynx result honest. Form submission passed; keyboard discovery was reported as not achieved rather than passed.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Extended stage estimates: disabled for this legacy cycle.
+- Deployment and migration checks: no schema, authentication or deployment change.
+
+### Uncertain assessments
+
+- The study ledger is one file shared by concurrent cycles. Committing only the nojs section needed a hand-built index entry (`git update-index --cacheinfo`), because `git add -p` is unavailable and the hunks were adjacent. Railspike could say how to scope ledger commits when another cycle's planning edits are pending in the same file.
+- Two proposed concept entries were merged into one (`no_script_presentation.md`) because they share a mechanism. The plan named them separately.
+- A safety check blocked an `rm -rf` whose target came from command substitution. Temporary fixtures were then removed by literal path.
