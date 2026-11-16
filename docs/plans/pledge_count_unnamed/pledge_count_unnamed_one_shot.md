@@ -8,7 +8,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.08**
 
-Status: plan written; next permitted action: planning commit, then implementation.
+Status: technically complete on `feat/pledge-count-unnamed`; release check pending maintainer; next permitted action: maintainer review.
 
 # Pledges with no name: a flag to count them
 
@@ -63,10 +63,39 @@ Default off because it is the behaviour already merged in PR #268; the maintaine
 
 Branch `feat/pledge-count-unnamed` from `origin/main` at `9bdd4b39` (the merge of PR #268).
 
-Planning commit: pending.
+Planning commit: `a5a80600`, before any implementation edit.
+
+## Dated execution history
+
+- 2026-11-16: added `FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED` ("Count pledges with no name", Forum experience, off by default, requires Pledges). `PledgeCampaign::fromPosts()` gained a third argument, `$countUnnamed`; `ThreadAndPostPageController` passes the flag. No template, style or script changed.
+- 2026-11-16: `tests/browser/pledge_campaign.mjs` gained `--count-unnamed`, which runs with the flag on and skips the theme loop.
+- 2026-11-16: the checklist's cycle 1 entry now records the merge of PR #268 and this flag. Its log section was left alone, because `plan/pledge-withdraw` edits the same lines.
+- Maintainer question during the work ("is there a UI for verifying etc yet? does that involve tagsets?"): answered in the handoff; no scope change.
+
+## Outcome
+
+Delivered as planned. With the flag off nothing changes. With it on, a pledge whose post has no name counts and shows no note; unverified pledges are unaffected.
+
+## Verification
+
+- `./v3 test --smoke PledgeCampaignTest FeatureFlagEvaluatorTest`: passed, 475 of 475. The full suite was not run.
+- `./v3 test FeatureFlagChangePageTest`: passed.
+- `node tests/browser/pledge_campaign.mjs --count-unnamed`: passed. A pledge posted without JavaScript raised the sum from 1300 to 1312.5 and showed as counted.
+- Not done: toggling the flag on the Feature flags page in a browser. The flag is registered the same way as the others on that page, and the page's own test passed, but the click itself was not exercised.
+- Not done: the release check on zenmemes.com.
+
+## Final review
+
+Diff read: one flag definition, one argument, one controller call, tests, the browser check option, the concept line, the checklist entry and the ledger. No duplication; nothing outside the authorized scope.
+
+## Commit, merge and publication status
+
+Planning commit `a5a80600`. Completion commit pending in this record; see the PR. Not merged.
 
 ## Study history
 
 - Intake: 0.08 projected total, scope v1, baseline `9bdd4b39`, R1, P2; Claude single exposed rater, 2026-11-16 UTC. The rater wrote cycle 1, so this is not a pristine intake. R1 hashes not re-verified.
+- Execution entry: 0.08 reaffirmed.
+- Closeout: retrospective scope assessment 0.07; no revisions. Maintainer comfortable-fit judgment pending.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*

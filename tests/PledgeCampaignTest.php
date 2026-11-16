@@ -96,6 +96,13 @@ final class PledgeCampaignTest
         pledgeAssertSame(['state' => 'unreadable', 'amount' => null, 'note' => 'Not counted: “a few” is not a number'], $campaign['pledges']['words']);
         pledgeAssertSame('Not counted: “300 dollars” is not in coffees', $campaign['pledges']['unit']['note']);
 
+        // An instance may choose to count pledges with no name; unverified ones still stay out.
+        $open = PledgeCampaign::fromPosts($posts, 'root', true);
+        pledgeAssertSame('1372.5', $open['pledged']);
+        pledgeAssertSame(4, $open['count']);
+        pledgeAssertSame(['state' => 'counted', 'amount' => '60', 'note' => ''], $open['pledges']['unnamed']);
+        pledgeAssertSame('unverified', $open['pledges']['unverified']['state']);
+
         // Under the goal the bar's end is the goal, so there is no goal mark.
         $under = PledgeCampaign::fromPosts(array_slice($posts, 0, 2), 'root');
         pledgeAssertSame('300', $under['pledged']);
@@ -142,6 +149,27 @@ final class PledgeCampaignTest
         pledgeAssertContains('data-pledge-state="unverified"><strong>250</strong> coffees · <span class="meta">Not counted: unverified</span>', $on);
         pledgeAssertContains('data-pledge-state="unnamed"><strong>40</strong> coffees · <span class="meta">Not counted: no name</span>', $on);
         pledgeAssertContains('data-pledge-state="unreadable"><span class="meta">Not counted: “a few” is not a number</span>', $on);
+        // With "Count pledges with no name" on, the no-name pledge joins the sum and loses its note.
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED=1');
+        try {
+            $counting = $page($thread);
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+            putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
+        }
+        pledgeAssertContains('<strong>340</strong> of 1000 coffees pledged', $counting);
+        pledgeAssertContains('2 pledges</p>', $counting);
+        pledgeAssertContains('data-pledge-state="counted"><strong>40</strong> coffees</p>', $counting);
+        pledgeAssertNotContains('Not counted: no name', $counting);
+        pledgeAssertContains('Not counted: unverified', $counting);
+        // The second flag does nothing while Pledges is off.
+        putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED=1');
+        try {
+            pledgeAssertNotContains('pledge-totals', $page($thread));
+        } finally {
+            putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
+        }
         // The lines stay in the posts as written.
         pledgeAssertContains('goal: 1000 coffees', $on);
         pledgeAssertContains('pledge: a few', $on);
