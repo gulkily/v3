@@ -11,6 +11,7 @@ Make Gloss and Gloss Dark the default themes on ZenMemes.
 
 Sources:
 - https://zenmemes.com/threads/thread-20261114191546-399777af
+- Session: maintainer request in a Claude session, 2026-11-11
 
 Done when:
 A ZenMemes visitor who has not chosen a theme (or chose Auto/System) sees Gloss on a light device setting and Gloss Dark on a dark one, from first paint, and it follows a live change of the device setting. An explicit theme choice, page themes and other sites' defaults are unchanged.

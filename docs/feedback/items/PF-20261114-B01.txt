@@ -1,0 +1,19 @@
+ID: PF-20261114-B01
+Title: Bubblegum: You menu buttons and wrapping tool labels
+Kind: bug
+Workflow: blocked
+Created: 2026-11-14
+Evidence: locally-verified
+
+Request:
+A couple of visual bugs with the Bubblegum theme: the Account and Invite buttons in the desktop You menu (oversized icon jammed against the label, status dot sitting on the pill's rounded edge), and the Bookmarklets caption on the Tools page breaking mid-word ("Bookmarklet / s").
+
+Sources:
+- https://zenmemes.com/threads/thread-20261114183048-312aba71
+
+Done when:
+In Bubblegum on desktop, Account and Invite in the You menu show a normal-size icon with a space before the label, like the other menu pills. On the Tools page at phone and narrow widths, no tool caption breaks inside a word.
+
+Notes:
+2026-11-14: one-shot started on fix/bubblegum-menu-and-tool-labels (record docs/plans/bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md).
+2026-11-14: fixed and verified locally in headless Chrome on fix/bubblegum-menu-and-tool-labels; push blocked (no repository access in the session), awaiting push, PR, review and deployment.

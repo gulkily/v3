@@ -64,10 +64,11 @@ final class ZoomButtons
     /**
      * A labelled group. $values maps "smaller" and "larger", and optionally "fit" and "actual",
      * to the data attribute's values; buttons appear as Smaller, Fit, Actual size, Larger.
+     * $label names what the buttons resize (the Gallery's are "Image size").
      *
      * @param array{smaller: string, larger: string, fit?: string, actual?: string} $values
      */
-    public static function group(string $tag, string $class, string $attribute, array $values): string
+    public static function group(string $tag, string $class, string $attribute, array $values, string $label = 'Text size'): string
     {
         if ($tag !== 'span' && $tag !== 'div') {
             throw new \InvalidArgumentException('Zoom group tag must be span or div.');
@@ -82,7 +83,7 @@ final class ZoomButtons
             }
         }
         return '<' . $tag . ' class="zoom-buttons' . ($class !== '' ? ' ' . self::escape($class) : '') . '"'
-            . ' role="group" aria-label="Text size">' . $buttons . '</' . $tag . '>';
+            . ' role="group" aria-label="' . self::escape($label) . '">' . $buttons . '</' . $tag . '>';
     }
 
     private static function attributeName(string $attribute): string

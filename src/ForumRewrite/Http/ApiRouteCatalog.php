@@ -36,7 +36,7 @@ final class ApiRouteCatalog
             ['GET', '/api/list_index', 'public', 'text', 'Threads, one per line: thread ID, title, reply count (tab-separated).'],
             ['GET', '/api/get_thread?thread_id=<id>', 'public', 'text', 'Thread headers (including Retracted), then one line per post.'],
             ['GET', '/api/get_post?post_id=<id>', 'public', 'text', 'Post headers (including Retracted) and exact body.'],
-            ['GET', '/api/get_profile?profile_slug=<slug>', 'public', 'text', 'Identity, username, approval and post count.'],
+            ['GET', '/api/get_profile?profile_slug=<slug>', 'public', 'text', 'Identity, username, approval, post count and newest posts.'],
             ['GET', '/api/get_username?username=<name>', 'public', 'text', 'How many approved keys use this username.'],
             ['GET', '/api/get_username_claim_cta', 'public', 'text', 'Short prompt for claiming a username.'],
             ['GET', '/api/read_model_status', 'public', 'text', 'Read-model health.'],
@@ -132,7 +132,8 @@ final class ApiRouteCatalog
     }
 
     /**
-     * Route paths without their query hints, for matching against the router.
+     * @internal Test hook: route paths without their query hints, for matching against the router
+     * so the API docs can't drift from the routes.
      *
      * @return list<string>
      */

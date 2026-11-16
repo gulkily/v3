@@ -327,7 +327,8 @@
   }
 
   :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
-  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button.is-active {
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button.is-active,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .account-menu[open] > .account-menu__trigger {
     background: var(--active-bg);
     color: var(--active-ink);
   }
@@ -363,6 +364,26 @@
   background-image: var(--bubblegum-shine-on-pink), var(--bubblegum-candy-on-pink);
 }
 
+/* Copy inside a prompt field (/agent/): a bare icon, since a chunky block with
+   an offset shadow crowds the field's rounded corner. Fill on hover; no
+   press-down shift. */
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button) {
+  border-color: transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):hover,
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):focus-visible {
+  background: var(--button-bg);
+}
+
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):active {
+  box-shadow: none;
+  transform: none;
+}
+
 /* Phones: the board's All / Liked / Newest / Tags row fits on one line. */
 @media (max-width: 639px) {
   :root[data-theme="bubblegum"] .board-toolbar {
@@ -382,7 +403,7 @@
    names underneath, no buttons around them; hovering or focusing an item
    gives it a soft pink highlight. */
 :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-list {
-  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(5.75rem, 1fr));
   gap: 0.6rem 0.4rem;
 }
 
@@ -415,7 +436,7 @@
   flex-direction: column;
   justify-content: flex-start;
   gap: 0.35rem;
-  padding: 0.45rem 0.2rem;
+  padding: 0.45rem 0;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -425,6 +446,9 @@
   font-size: 0.85rem;
   line-height: 1.2;
   text-align: center;
+  /* Captions wrap between words only (.card allows breaks anywhere); the
+     5.75rem column fits the longest word, Bookmarklets. */
+  overflow-wrap: normal;
 }
 
 :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:hover {
@@ -442,8 +466,7 @@
   color: var(--active-ink);
 }
 
-:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button::before,
-:root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link::before {
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button::before {
   width: 32px;
   height: 32px;
   margin: 0;
@@ -451,30 +474,40 @@
   image-rendering: pixelated;
 }
 
-:root[data-theme="bubblegum"] .account-menu__links .nav-link {
-  position: relative;
-}
-
-:root[data-theme="bubblegum"] .account-menu__links .nav-link::after {
-  content: "";
-  position: absolute;
-  top: 0.4rem;
-  right: 0.45rem;
-  width: 6px;
-  height: 6px;
-  border: 1.5px solid var(--bubblegum-berry);
-  border-radius: 50%;
-  background: #8fe0bf;
-  box-shadow: 0 0 4px rgba(143, 224, 191, 0.9);
-}
-
 :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:active {
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--bubblegum-berry);
 }
 
-/* The phone More panel: a pink control-panel window of tiles. */
+/* The phone More panel: a pink control-panel window of tiles, each with a big
+   icon and a status light. The desktop You menu keeps ordinary pills with the
+   shared 16px icons. */
 @media (max-width: 639px) {
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link::before {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    background-size: 32px 32px;
+    image-rendering: pixelated;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link {
+    position: relative;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link::after {
+    content: "";
+    position: absolute;
+    top: 0.4rem;
+    right: 0.45rem;
+    width: 6px;
+    height: 6px;
+    border: 1.5px solid var(--bubblegum-berry);
+    border-radius: 50%;
+    background: #8fe0bf;
+    box-shadow: 0 0 4px rgba(143, 224, 191, 0.9);
+  }
+
   :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__panel {
     border: 0;
     border-top: 3px solid var(--bubblegum-berry);

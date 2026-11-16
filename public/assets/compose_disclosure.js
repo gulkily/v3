@@ -16,6 +16,8 @@
       var date = value(form, 'event_date');
       var endDate = value(form, 'event_end_date');
       parts = [date !== '' && endDate !== '' ? date + ' \u2013 ' + endDate : date, value(form, 'event_time'), value(form, 'event_location')];
+    } else if (kind === 'photo') {
+      parts = Array.prototype.map.call(form.querySelectorAll('[data-photo-detail]:checked'), function (box) { return box.getAttribute('data-label'); });
     } else if (kind === 'options') {
       var markdown = form.querySelector('[data-role="markdown-toggle"]');
       var theme = form.querySelector('[data-role="thread-theme-choice"]');

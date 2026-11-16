@@ -2224,6 +2224,11 @@ PHP;
         assertStringNotContains('class="nav tools-nav"', $tools);
         assertStringNotContains('tool-launcher-description', $tools);
         foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
+            // The usage tools appear only while the "Usage reports" flag is on (off by default).
+            if (in_array($tool['key'], ['usage-log', 'usage-reports'], true)) {
+                assertSame(0, substr_count($tools, 'href="' . $tool['href'] . '"'), $tool['href']);
+                continue;
+            }
             assertSame(1, substr_count($tools, 'class="tool-launcher-button" href="' . $tool['href'] . '"'), $tool['href']);
             assertStringContains('data-tone="' . $tool['tone'] . '"', $tools);
         }
@@ -2350,7 +2355,7 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","spearmint","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
@@ -2783,16 +2788,23 @@ PHP;
     {
         // A <details> embed inside <p> makes the parser close the <p> early and turn the
         // stray </p> into an empty unclassed <p>, which Word 97 and Midnight draw as a box.
-        $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
-        $card = $renderer->renderFragment('partials/thread_card.php', ['thread' => [
-            'root_post_id' => 'card-preview-embed-001',
-            'subject' => 'Artist - Title',
-            'body_preview' => "https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj  #rapclub",
-            'thread_labels' => ['rapclub'],
-            'reply_count' => 0,
-            'last_activity_at' => null,
-            'root_post_created_at' => null,
-        ]]);
+        // Media embeds are off by default, so turn them on for this render only.
+        $previous = getenv('FORUM_MEDIA_EMBEDS_ENABLED');
+        putenv('FORUM_MEDIA_EMBEDS_ENABLED=true');
+        try {
+            $renderer = new \ForumRewrite\View\TemplateRenderer(dirname(__DIR__) . '/templates');
+            $card = $renderer->renderFragment('partials/thread_card.php', ['thread' => [
+                'root_post_id' => 'card-preview-embed-001',
+                'subject' => 'Artist - Title',
+                'body_preview' => "https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj  #rapclub",
+                'thread_labels' => ['rapclub'],
+                'reply_count' => 0,
+                'last_activity_at' => null,
+                'root_post_created_at' => null,
+            ]]);
+        } finally {
+            putenv($previous === false ? 'FORUM_MEDIA_EMBEDS_ENABLED' : 'FORUM_MEDIA_EMBEDS_ENABLED=' . $previous);
+        }
 
         assertStringContains('media-embed-card', $card);
         assertStringContains('<div class="thread-card__preview">', $card);
@@ -2875,12 +2887,11 @@ PHP;
             assertStringContains('data-role="reading-margins"', $thread);
             assertStringContains('localStorage.getItem(browserRuntime.readingMarginsStorageKey)', $thread);
             assertStringContains('"readingMarginsStorageKey":"forum-zenmemes-reading-margins"', $thread);
-            foreach (['left' => [5, 23, 41], 'right' => [59, 77, 95]] as $edge => $positions) {
-                foreach ($positions as $position) {
-                    assertStringContains('name="reading-margin-' . $edge . '" value="' . $position . '"', $thread);
-                    assertStringContains('style="--at: ' . $position . '"', $thread);
-                }
+            foreach ([5, 23, 41, 59, 77, 95] as $position) {
+                assertStringContains('name="reading-margin-' . $position . '" value="' . $position . '"', $thread);
+                assertStringContains('style="--at: ' . $position . '"', $thread);
             }
+            assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
             assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
             // Every page in the main layout gets the ruler, except the gallery.
@@ -3287,9 +3298,10 @@ PHP;
         $this->runCommand($repositoryRoot, 'git commit -m "Add detached label signature"');
 
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
-        $method = new ReflectionMethod($application, 'activityCommitManifest');
+        $routeServices = new ReflectionMethod($application, 'routeServices');
+        $routeServices->setAccessible(true);
         $commitSha = trim($this->runCommand($repositoryRoot, 'git rev-parse HEAD'));
-        $manifest = $method->invoke($application, $commitSha);
+        $manifest = $routeServices->invoke($application)->activityService()->activityCommitManifest($commitSha);
         $entry = array_values(array_filter(
             $manifest,
             static fn (array $entry): bool => $entry['path'] === $signaturePath
@@ -5331,9 +5343,6 @@ PHP;
                 $invalidator->invalidateReply('thread-001', 'reply-001');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
-                $invalidator->invalidateProfile('openpgp-example');
-            },
-            static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
@@ -5374,9 +5383,6 @@ PHP;
             },
             static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateReply('thread-001', 'reply-001');
-            },
-            static function (StaticArtifactInvalidator $invalidator): void {
-                $invalidator->invalidateProfile('openpgp-example');
             },
             static function (StaticArtifactInvalidator $invalidator): void {
                 $invalidator->invalidateIdentityLink('openpgp-example', 'thread-001', 'post-001');

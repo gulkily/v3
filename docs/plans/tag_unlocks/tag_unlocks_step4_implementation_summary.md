@@ -181,3 +181,13 @@ Maintainer request: a state for "I've picked this up" so nobody else starts the 
 - Known limit: two marks on one post within the same second tie on time and are ordered by record ID, so a Claim immediately followed by Resolved in the same second can show either. Found by a flaky test; the test now uses distinct tap times.
 
 *— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*
+
+## Follow-up: Tag Unlocks tool page (2026-11-14, branch `tag-unlocks-tools-view`)
+
+Maintainer request: a view-only page under Tools, plus a way to see which tags unlock what.
+
+- New read-only `/tools/tag-unlocks/` ("Tag Unlocks", Community group): "What unlocks what" lists each tagset from `resources/tagsets.txt` (parent tag linking to its tag page, unlocked tags, where they apply, and whether they are one state), then Claimed, Resolved and Closed sections listing each marked post newest first (link to the post, thread title, who marked it, date). No buttons.
+- `Tagsets::all()`; new `Tools\MarkedPostsQuery` (up to 200 per state, hidden and retracted posts left out); `ToolsPageController::tagUnlocks()`; route in `Application`; registry entry; `tools.css` loaded for the page; icons in the pixel, smooth-line and cute sets reuse each set's tag glyph.
+- Verification: `TagUnlocksTest::testToolsPageListsTagsetsAndMarkedPosts` (page, links, empty states, no action buttons, Tools bar and launcher entries); `./v3 test --smoke` plus `TagUnlocksTest`, `TagsetsTest`, `ToolsRegistryTest`, `NavIconSetsTest`, `ThemeRegistryTest`: 474 run, 473 passed. The one failure, `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, also fails on clean main. Screenshots in light, console, gloss, word97 and dark at 375 px and 1280 px with no horizontal scroll. Full suite not run.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

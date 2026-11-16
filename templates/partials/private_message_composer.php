@@ -1,5 +1,5 @@
 <article
-  class="card"
+  class="<?= ($compact ?? false) ? 'private-message-composer-bar' : 'card' ?>"
   data-private-message-composer
   data-recipient-username-token="<?= $e($recipientUsernameToken) ?>"
   data-sender-username-token="<?= $e($senderUsernameToken) ?>"

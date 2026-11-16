@@ -16,27 +16,44 @@
   display: block;
   width: 100%;
   box-sizing: border-box;
-  min-height: 8rem;
-  /* Show the whole prompt where supported; rows="5" elsewhere. */
+  /* As tall as the prompt (agent.php's script sizes it where field-sizing is
+     missing; rows="5" without script), never shorter than Copy. */
   field-sizing: content;
-  padding-bottom: 3.6rem;
+  min-height: calc(44px + 0.8rem);
+  /* One empty line after the text shows where the prompt ends. */
+  padding-bottom: 2.1em;
+  /* Room for Copy in the top right corner, so text never runs under it. */
+  padding-right: 3.6rem;
   resize: vertical;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.85em;
   line-height: 1.5;
 }
 
-/* `:root` outranks themes that stretch buttons on phones. */
+/* Icon only, in the field's top right corner. `:root` outranks themes that
+   stretch buttons on phones. */
 :root .copy-prompt__button {
   position: absolute;
-  right: 0.6rem;
-  bottom: 0.6rem;
+  top: 0.4rem;
+  right: 0.4rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  width: auto;
-  min-height: 44px;
+  justify-content: center;
+  width: 44px;
+  min-width: 0;
+  height: 44px;
+  min-height: 0;
   margin: 0;
+  padding: 0;
+}
+
+.copy-prompt__icon--copied,
+.copy-prompt__button[data-copied] .copy-prompt__icon {
+  display: none;
+}
+
+.copy-prompt__button[data-copied] .copy-prompt__icon--copied {
+  display: inline;
 }
 
 :root .copy-prompt__button[hidden] {
@@ -46,4 +63,109 @@
 .copy-prompt__status {
   min-height: 1.4em;
   margin: 0.35rem 0 0;
+}
+
+/* The prompt library: toolbar and category links reuse the board's, each
+   shared prompt is a card with the same copy field, capped in height. */
+.prompt-library__toolbar,
+.prompt-library__categories {
+  flex-wrap: wrap;
+}
+
+.prompt-library__categories {
+  margin-top: 0.6rem;
+}
+
+.prompt-library__share {
+  margin-left: auto;
+}
+
+.prompt-library__list {
+  margin-top: 1rem;
+}
+
+.prompt-card + .prompt-card {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.prompt-card[hidden] {
+  display: none;
+}
+
+.prompt-card__title {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+/* The card's last row: tags on the left, author/date/likes/Discuss on the
+   right. When both don't fit, the meta line wraps below, still on the right. */
+.prompt-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1rem;
+}
+
+.prompt-card__meta {
+  margin: 0 0 0 auto;
+  text-align: right;
+}
+
+.prompt-card__tags {
+  margin: 0;
+}
+
+/* The like count carries its own separator so nothing shows at zero. */
+.prompt-card__likes:not(:empty)::before {
+  content: " · ";
+}
+
+/* Like sits in the meta line; `:root` outranks themes that stretch buttons
+   on phones. */
+:root .prompt-card__like {
+  display: inline-block;
+  width: auto;
+  margin: 0 0 0 0.5rem;
+  vertical-align: baseline;
+}
+
+.prompt-card__feedback {
+  margin: 0.35rem 0 0;
+  text-align: right;
+}
+
+.prompt-card__tags .chip {
+  text-decoration: none;
+}
+
+.copy-prompt--library textarea {
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.copy-prompt--library .copy-prompt__status {
+  min-height: 0;
+}
+
+.prompt-library__empty {
+  margin: 1rem 0 0;
+}
+
+.prompt-library__waiting {
+  margin-top: 1.25rem;
+}
+
+.prompt-library__waiting ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.agent-page__start-heading {
+  margin-top: 0;
+}
+
+.agent-page__prompt h3 {
+  margin-bottom: 0.25rem;
 }

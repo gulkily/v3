@@ -49,6 +49,11 @@ final class FeatureFlagRegistry
     public const FAST_SCORING_ENABLED = 'FAST_SCORING_ENABLED';
     public const FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED = 'FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED';
     public const POST_RECORDS_ENABLED = 'FORUM_POST_RECORDS_ENABLED';
+    public const PENDING_CHIP_APPROVAL_ENABLED = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
+    public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
+    public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
+    public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
+    public const PLEDGES_COUNT_UNNAMED_ENABLED = 'FORUM_PLEDGES_COUNT_UNNAMED_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
@@ -61,9 +66,11 @@ final class FeatureFlagRegistry
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
-            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED],
+            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
-            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
+            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
+            self::THREAD_ACTIVITY_DRAWER_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
         'FASTMOD' => [self::FAST_SCORING_ENABLED, self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
             self::FASTMOD_AUTOMATIC_TAGGING_ENABLED],
@@ -308,7 +315,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::AGENT_PROMPT_ENABLED,
                 'Agent prompt',
-                'Offer /agent/, a page of prompts visitors paste into their own agent: to be introduced to the site, to post as an agent, or to run their own copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
+                'Offer /agent/ (Prompts in the main nav): the library of prompts members share as #prompt threads, with copy, search and categories, plus the site\'s own prompts for being introduced, posting as an agent, or running a copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
                 true,
                 self::AGENT_PROMPT_ENABLED,
                 siteMutable: true,
@@ -335,7 +342,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::READING_MARGINS_ENABLED,
                 'Reading margins',
-                'Show a row of radio buttons at the top of pages; the left half sets the left edge of the text column and the right half the right edge. The choice stays in their browser and is ignored on phones.',
+                'Show a row of radio buttons at the top of pages; the two checked ones are the text column\'s edges, and a click moves the nearer edge. The choice stays in their browser and is ignored on phones.',
                 false,
                 self::READING_MARGINS_ENABLED,
                 siteMutable: true,
@@ -388,6 +395,41 @@ final class FeatureFlagRegistry
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
+                self::PENDING_CHIP_APPROVAL_ENABLED,
+                'Approve from Pending chips',
+                "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
+                true,
+                self::PENDING_CHIP_APPROVAL_ENABLED,
+            ),
+            new FeatureFlagDefinition(
+                self::USAGE_REPORTS_ENABLED,
+                'Usage reports',
+                'Offer Tools → Usage log, where visitors can record their own page views and clicks in their browser and upload them, and Tools → Usage reports, where root operators see click counts and journeys that could be shorter. Reports are kept in a private file outside exports.',
+                false,
+                self::USAGE_REPORTS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::PLEDGES_ENABLED,
+                'Pledges',
+                'A thread whose opening post has a line "goal: 1000 coffees" shows a running total, and replies with a line "pledge: 300" add to it. No money moves through the site. Off leaves the lines as plain text.',
+                false,
+                self::PLEDGES_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::PLEDGES_COUNT_UNNAMED_ENABLED,
+                'Count pledges with no name',
+                'Count a pledge whose post names no author, which includes every pledge posted without JavaScript. Off shows the amount with "Not counted: no name". Nobody can be asked to deliver a pledge with no name, and anyone can post one.',
+                false,
+                self::PLEDGES_COUNT_UNNAMED_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::PLEDGES_ENABLED,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
                 self::POST_MARKDOWN_ENABLED,
                 'Markdown in posts',
                 'Format posts their authors marked as Markdown (headings, lists, links, code) on thread and post pages. Turning it off shows every post as plain text; nothing stored changes.',
@@ -402,6 +444,15 @@ final class FeatureFlagRegistry
                 'Link hashtags in post bodies to their tag pages.',
                 true,
                 self::TAG_LINKS_ENABLED,
+                siteMutable: true,
+                group: 'RENDERING',
+            ),
+            new FeatureFlagDefinition(
+                self::THREAD_ACTIVITY_DRAWER_ENABLED,
+                'Thread activity drawer',
+                'On thread pages, move replies that are only hashtags out of the conversation and list them, with each post\'s likes and flags, in a collapsed Activity drawer above the reply box.',
+                false,
+                self::THREAD_ACTIVITY_DRAWER_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
             ),

@@ -926,3 +926,22 @@ Verification: Playwright at 375 and 1150 px in light, dark, console, lcd, chicag
 
 Change: the ↓ button beside Send now appears only when the newest message is out of view (you scrolled up, or new messages arrived below), and hides once it is back in view; Send takes the whole row otherwise. Server HTML renders it hidden, matching the opening position at the newest message. Seen-marking is unchanged: it follows scrolling, not the button.
 Verification: Chromium; `checkChatLayout` asserts ↓ appears when scrolled away, returns to the newest message, then hides; messaging suite through `checkHistoryRecovery` with the cache flag on and off; `private_message_redesign.mjs`; 375px screenshot. Later checks that click ↓ (seen windows, unavailable) now click it only when shown; they sit behind baseline failures and did not run. Not checked: iPhone Safari.
+
+## Phone tab bar inside a conversation — 2026-11-14
+
+Change: on phones a single conversation shows no bottom tab bar; the back arrow leads to Messages, which keeps it. The composer sits at the bottom edge, including in a short conversation (the page now fills the screen). Desktop is unchanged. Cycle `dm_conversation_tabbar`.
+Verification: Chromium; `checkConversationTabBar` at 375×667 (no bar after load, scroll and typing; composer at the bottom edge; back arrow returns to Messages with the bar; desktop header intact); `private_message_redesign.mjs` in every theme with 390px screenshots reviewed. Engagify's floating Exit and help buttons overlap the Send row exactly as on main. Not checked yet: iPhone Safari.
+## Conversation composer on one line — 2026-11-14
+
+Change: in a conversation the composer is a plain bar instead of a card (themes that decorate cards, such as Bubblegum's window frame, no longer frame it), and the message field, ↓ (when shown) and Send share one row. The field starts as one line and grows with its text; the buttons stay at its bottom edge. The person-page composer is unchanged.
+Verification: Chromium; `private_message_redesign.mjs` in Bubblegum, Gloss, Light, Dark, Word97 and Console with 390px screenshots reviewed; a probe in Bubblegum at 390px measured the field growing from 44px to 109px for four lines with Send's bottom aligned to it; messaging suite through `checkHistoryRecovery`, cache flag on and off. Not checked: iPhone Safari.
+
+## Conversation as one window — 2026-11-14
+
+Change: the whole conversation (header, messages, ↓, the message field and Send) is now one card, so themes that frame cards (Bubblegum's window, Word97 and Midnight panels) frame the entire conversation instead of just the header. The privacy line ("Only you and … can read these, on your approved devices.") is removed from the conversation header; the person-page composer still shows it.
+Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390px screenshots reviewed (now asserts no privacy line in the conversation); `checkConversationTabBar` now checks that the conversation reaches the bottom edge with the composer inside it; messaging suite through `checkHistoryRecovery`, cache flag on and off. Not checked: iPhone Safari.
+
+## Messages list as one window — 2026-11-14
+
+Change: /messages is now one card with a visible "Messages" title, matching a conversation's window (Bubblegum draws its title bar; Word97 and Midnight render the title as a window title bar). This is a maintainer-requested exception to the rule that main-nav pages show no visible title (PR #142); the active nav item still names the page too.
+Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390px screenshots reviewed (asserts the visible title and the card); messaging suite through `checkHistoryRecovery`, cache flag on and off; `PrivateMessagePageControllerTest`. Not checked: iPhone Safari.

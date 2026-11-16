@@ -117,3 +117,7 @@
   animation: private-message-list-cache-reveal 0s 2s forwards;
 }
 @keyframes private-message-list-cache-reveal { to { visibility: visible; } }
+
+/* Messages is one window, like a conversation: the card is the frame (themes such as Bubblegum draw its title bar)
+   and "Messages" is its title, at the size of a conversation's name. An agreed exception to main-nav pages showing no title. */
+.message-list-window .message-list-title { margin: 0; font-size: 1.35rem; line-height: 1.2; }

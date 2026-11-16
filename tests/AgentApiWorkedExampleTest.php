@@ -64,6 +64,7 @@ final class AgentApiWorkedExampleTest
             $profile = (string) file_get_contents($server->url . '/api/get_profile?profile_slug=' . str_replace(':', '-', $identity[1]));
             assertStringContains('Username: example-agent', $profile);
             assertStringContains('Posts: 1', $profile);
+            assertTrue(preg_match('/^Recent-Post: \S+\t' . preg_quote($post[1], '/') . '\t' . preg_quote($post[1], '/') . '\t\S.*$/m', $profile) === 1, "The new thread is the newest post:\n" . $profile);
 
             // Exercise the file publisher with a real instance and GPG key.
             $body = "File publisher body & + =\n\nSecond paragraph.\n";

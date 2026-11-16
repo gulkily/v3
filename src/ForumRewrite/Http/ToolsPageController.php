@@ -104,6 +104,28 @@ final class ToolsPageController
         );
     }
 
+    /**
+     * /tools/preferences/: the settings this browser keeps, in one place. The
+     * page is the same for everyone; preferences.php reads storage before
+     * paint and preferences.js saves changes.
+     */
+    public function preferences(): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'preferences.php',
+            [
+                'preferenceThemes' => \ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::active()['permittedThemes']),
+                'threadDensityEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED),
+                'readingMarginsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED),
+                'usageLogEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
+                'toolNavOptions' => ToolsPageSupport::navOptions('preferences'),
+            ],
+            'Preferences',
+            'tools',
+            ['/assets/preferences.js'],
+        );
+    }
+
     public function bookmarklets(): string
     {
         return $this->routeServices->renderPageTemplate(
@@ -158,6 +180,24 @@ final class ToolsPageController
             'Bookmarklets',
             'tools',
             ['/assets/tools_bookmarklets.js'],
+        );
+    }
+
+    /** Read-only: which thread tags unlock which post tags, and every post marked claimed, resolved or closed. */
+    public function tagUnlocks(): string
+    {
+        $enabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED);
+
+        return $this->routeServices->renderPageTemplate(
+            'tag_unlocks.php',
+            [
+                'tagsets' => \ForumRewrite\Support\Tagsets::forApplication()->all(),
+                'markedPosts' => $enabled ? \ForumRewrite\Tools\MarkedPostsQuery::byState($this->routeServices->pdo()) : [],
+                'tagUnlocksOn' => $enabled,
+                'toolNavOptions' => ToolsPageSupport::navOptions('tag-unlocks'),
+            ],
+            'Tag Unlocks',
+            'tools',
         );
     }
 

@@ -12,6 +12,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
+
+[Pledges checklist](pledges_checklist.md) — pledge campaigns in seven cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
+
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
 [Tag unlocks](tag_unlocks/tag_unlocks_step3_development_plan.md) — a thread's tag unlocks extra tags on its replies; first use: Resolved and Closed on replies in `#meta` threads, which fold to one line.
@@ -26,6 +30,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Board search checklist](board_search_checklist.md) — zenmemes full-text search, starting with thread-only search like qdb. Item 1: [board thread search one-shot](board_thread_search/board_thread_search_one_shot.md).
 
+[Photo details](image_metadata/image_metadata_step3_development_plan.md) — when attaching a photo, a collapsed Photo details row lets the poster attach camera, exposure, time taken and (opt-in) location as signed text shown under the image.
+
+[Photo details collapsed one-shot](photo_details_collapsed/photo_details_collapsed_one_shot.md) — photo details under a post image start collapsed behind a "Photo details" row.
+
 [frm.py image attachments one-shot](frm_image/frm_image_one_shot.md) — `thread` and `reply` take `--image` and `--image-description` to publish one screenshot with a post.
 
 [Agent intro prompt one-shot](agent_intro_prompt/agent_intro_prompt_one_shot.md) — `/agent/` offers copyable prompts for a visitor's agent: get introduced, post as an agent, run your own site; About, the first-visit intro and Tools link to it.
@@ -35,6 +43,22 @@ checklists, and proposals remain at the top level or in the collections below.
 [Quiet composer bottom one-shot](quiet_composer_bottom/quiet_composer_bottom_one_shot.md) — below Post on the New post form, Title is an underlined line and closed Tags, Event and Options are one row of small words; a tool gets its box when opened.
 
 [Railspike for every commit one-shot](railspike_for_every_commit/railspike_for_every_commit_one_shot.md) — AGENTS.md runs every committed change as a Railspike cycle (one-shot by default) and asks the agent to name the mode in its first reply.
+
+[Test-only member cleanup one-shot](test_only_member_cleanup/test_only_member_cleanup_one_shot.md) — removes the 13 lowest-rated test-only members and the two single-implementation store interfaces from the code quality review; marks the five test hooks kept on purpose.
+
+[Test-only member cleanup, round 2 one-shot](test_only_member_cleanup_round2/test_only_member_cleanup_round2_one_shot.md) — follow-up: removes markSeenThrough, cachedBytes, FastScoreResult::scored and two unread properties; keeps setFeatureFlag, rendersMarkdown and isSignedIn with notes.
+[Fix the #217 merge parse error one-shot](merge_217_fix/merge_217_fix_one_shot.md) — `main` parses again: one EXPERIENCE flag list with both new flags.
+
+[Spearmint theme one-shot](spearmint_theme/spearmint_theme_one_shot.md) — a light mint sibling of Bubblegum with its own shapes: rounded soft-shadow cards, a wavy header line, lifting buttons and coral accents.
+
+[Spearmint icons one-shot](spearmint_icons/spearmint_icons_one_shot.md) — Spearmint joins the smooth-line icon set, turned teal.
+[Bolder Spearmint one-shot](spearmint_bold/spearmint_bold_one_shot.md) — Spearmint turned up: deeper mint, gum-wrapper stripes on cards, a teal-and-coral double wave, coral Post buttons and bouncier controls.
+
+[Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
+
+[Bubblegum open More tab one-shot](bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md) — in Bubblegum on phones, the open More tab gets the selected look instead of a white label on a pale bar.
+
+[Scoped post reaction update one-shot](scoped_post_reaction_update/scoped_post_reaction_update_one_shot.md) — a like or state mark reads only that post's reaction files, so quick successive clicks no longer hit "server is busy".
 
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
@@ -74,6 +98,9 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes and flags by post; follows Pollyanna's `#notext`; behind a new flag; Step 4 complete, release pending.
+- [Usage reports UI](usage_reports_ui/usage_reports_ui_step3_development_plan.md) — readable page and control names, phone-first Usage Reports with shortcut-idea cards, and a readable Usage Log with the exact upload text behind a disclosure; follow-up to the local usage log; Step 4 in progress.
+- [Local usage log](local_telemetry/local_telemetry_step3_development_plan.md) — opt-in, browser-only log of page views and clicks that a visitor reviews and uploads to a private report store kept out of exports; a root-only summary shows click counts and multi-click journeys that could be one click; behind a flag; Step 4 in progress.
 - [Post records](post_records/post_records_step3_development_plan.md) — a post's Records section lists every record that targets it, each with its own `/records/<Record-ID>` page, and members (or operators) can retract likes through the existing signed retraction with `Target-ID`; behind a flag; Step 4 complete, release pending.
 - [Retraction target ID](retraction_target_id/retraction_target_id_step3_development_plan.md) — new retraction requests and receipts name what they remove with `Target-ID` instead of `Post-ID`; old files still read, `post_id` stays an API alias, and posts can't use reaction ID prefixes; split from `post_records`; merged in #189.
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — review findings for PF-20261030-B03, the fixes, and the anonymous post ID decision.
@@ -107,6 +134,16 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Ctrl+Enter after late signing load](ctrl_enter_late_signing/ctrl_enter_late_signing_one_shot.md) — one-shot fix: the composer's signing script sets itself up when an approved member's messaging scripts load it after page parse, restoring Ctrl+Enter on the board; merged, deployed and accepted.
 - [Compose menu options](compose_menu_options/compose_menu_options_one_shot.md) — one-shot: the composer's ... menu holds only actions; Markdown, Formatting help and the theme choice moved to a collapsed Options section in the compose form.
 - [Gloss default](gloss_default/gloss_default_one_shot.md) — one-shot: on ZenMemes, Auto/System shows Gloss on a light device setting and Gloss Dark on a dark one.
+- [Reading margins: two clicks](reading_margins_two_clicks/reading_margins_two_clicks_one_shot.md) — one-shot: any two radios in the reading margins ruler set the column between them, in either order.
+- [Reading margins: last two clicks](reading_margins_last_two/reading_margins_last_two_one_shot.md) — one-shot: every click moves the column at once; it spans the last two radios clicked, and the older one is outlined as the edge that moves next.
+- [Reading margins: the nearer edge moves](reading_margins_nearest_edge/reading_margins_nearest_edge_one_shot.md) — one-shot: a click moves the column edge nearer to it, so the column never flips; ties move the edge clicked longer ago.
+- [Preferences page](preferences_page/preferences_page_one_shot.md) — one-shot: Tools → Preferences lists the settings this browser keeps (theme, thread view, reading margins, phone tabs, page themes, welcome note, usage log) with their current values, to change or reset in one place.
+- [Prompt library](prompt_library/prompt_library_one_shot.md) — one-shot: /agent/ becomes a prompt library of approved `#prompt` threads with copy, search, categories and sharing, linked from the main nav as Prompts.
+- [Prompt library: #notprompt](prompt_library_notprompt/prompt_library_notprompt_one_shot.md) — one-shot: an approved member's `#notprompt` label takes a thread out of the /agent/ library.
+- [Prompt card byline corner](prompt_card_meta_corner/prompt_card_meta_corner_one_shot.md) — one-shot: each /agent/ prompt's author/date/likes/Discuss line moves to the card's bottom right.
+- [Prompt card Like](prompt_card_like/prompt_card_like_one_shot.md) — one-shot: a Like button on each /agent/ prompt card, reusing the thread page's Like.
+- [Prompt copy icon](prompt_copy_icon/prompt_copy_icon_one_shot.md) — one-shot: the Copy button on /agent/ prompt fields moves to the top right and shows only its icon.
+- [Prompt copy button, quiet in Gloss and Bubblegum](prompt_copy_quiet/prompt_copy_quiet_one_shot.md) — one-shot: the icon-only Copy button drops its theme button chrome in Gloss, Gloss Dark, Engagify and Bubblegum.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
@@ -476,3 +513,15 @@ and repair its navigation and affected references. See the
 - [Deploy prompt in the page header](deploy_header_prompt/deploy_header_prompt_step3_development_plan.md) — operator Deploy now button in the header behind `FORUM_DEPLOY_HEADER_PROMPT_ENABLED`; Steps 1–3 approved.
 
 - [DM instant load](dm_instant_load/dm_instant_load_step3_development_plan.md) — conversations show read messages on first paint from an encrypted per-browser cache behind `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`, including Messages list previews; complete and accepted on iPhone ([Step 4](dm_instant_load/dm_instant_load_step4_implementation_summary.md)).
+
+- [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; Steps 1–3 approved.
+
+- [Gallery zoom](gallery_zoom/gallery_zoom_one_shot.md) — one-shot: Smaller / Larger buttons and phone pinch resize Gallery tiles, remembered per browser and resettable on Preferences.
+- [Gallery compact captions](gallery_compact_captions/gallery_compact_captions_one_shot.md) — one-shot: Gallery tile captions hide when zoomed far out.
+- [Gallery zoom buttons in view](gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md) — one-shot: Smaller / Larger keep the buttons on screen.
+- [Gallery caption zoom](gallery_caption_zoom/gallery_caption_zoom_one_shot.md) — one-shot: Gallery caption text scales with the gallery zoom.
+
+- [Deploy celebration](deploy_celebration/deploy_celebration_one_shot.md) — one-shot: confetti and a Deployed banner on the page that loads after a deploy that changed the code.
+- [Live feature tour](live_feature_tour/live_feature_tour_one_shot.md) — one-shot: unlinked page of live, scaled-down frames of the main ZenMemes pages.
+- [Live feature tour, quiet](live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md) — one-shot: no intro copy and no new tabs on the tour page.
+- [Offline card extra line](offline_card_extra_line/offline_card_extra_line_one_shot.md) — one-shot: offline board cards show one more line of the post body.

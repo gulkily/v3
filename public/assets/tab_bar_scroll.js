@@ -7,7 +7,8 @@
   // composer's Post button. Without this script the bar simply stays visible.
   const shell = document.querySelector("[data-shell='app']");
   const bar = shell && shell.querySelector(".site-header--app .site-header-actions");
-  if (!shell || !bar) return;
+  // Pages without the bar (data-tabbar-page="none") have nothing to show or hide.
+  if (!shell || !bar || shell.dataset.tabbarPage === "none") return;
 
   const phone = window.matchMedia("(max-width: 639px)");
   // Ignore smaller movements (jitter, momentum tails); show within `EDGE` of

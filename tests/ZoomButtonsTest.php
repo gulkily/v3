@@ -40,6 +40,7 @@ final class ZoomButtonsTest
     {
         $html = ZoomButtons::group('span', 'sqlite-dialog-zoom', 'data-query-zoom', ['smaller' => '-1', 'larger' => '1']);
         zoomAssertContains('<span class="zoom-buttons sqlite-dialog-zoom" role="group" aria-label="Text size">', $html);
+        zoomAssertContains('aria-label="Image size"', ZoomButtons::group('div', 'gallery-zoom', 'data-gallery-zoom', ['smaller' => 'out', 'larger' => 'in'], 'Image size'));
         if (substr_count($html, '<button type="button" class="zoom-button"') !== 2) {
             throw new RuntimeException('Expected exactly Smaller and Larger: ' . $html);
         }

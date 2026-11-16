@@ -6,7 +6,7 @@ namespace ForumRewrite\Scoring;
 
 use PDO;
 
-final class SqliteFastScoreStore implements FastScoreStore
+final class SqliteFastScoreStore
 {
     public function __construct(private readonly PDO $pdo, bool $initializeSchema = true)
     {
@@ -20,19 +20,6 @@ final class SqliteFastScoreStore implements FastScoreStore
     {
         $stmt = $this->pdo->prepare('SELECT * FROM post_fast_scores WHERE post_id = :post_id AND content_hash = :content_hash AND rubric_revision = :rubric_revision');
         $stmt->execute(['post_id' => $postId, 'content_hash' => $contentHash, 'rubric_revision' => $rubricRevision]);
-        $row = $stmt->fetch();
-        return $row === false ? null : $this->hydrate($row);
-    }
-
-    public function latestScoredForPostContent(string $postId, string $contentHash): ?array
-    {
-        $stmt = $this->pdo->prepare(
-            "SELECT * FROM post_fast_scores
-             WHERE post_id = :post_id AND content_hash = :content_hash AND status = 'scored'
-             ORDER BY updated_at DESC, rowid DESC
-             LIMIT 1"
-        );
-        $stmt->execute(['post_id' => $postId, 'content_hash' => $contentHash]);
         $row = $stmt->fetch();
         return $row === false ? null : $this->hydrate($row);
     }

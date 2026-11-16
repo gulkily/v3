@@ -55,6 +55,49 @@ final class ImageReference
         return $found;
     }
 
+    /** Photo details are `Photo-<Label>: value` lines; only those directly after the Image-v1 line count. */
+    public const PHOTO_DETAIL_LABELS = ['Camera', 'Lens', 'Exposure', 'Taken', 'Location'];
+
+    /**
+     * Splits the text that follows an Image-v1 line into its photo details and the rest.
+     *
+     * @return array{details: list<array{label: string, value: string, display: string}>, rest: string}
+     */
+    public static function photoDetails(string $after): array
+    {
+        $details = [];
+        $pattern = '/\A\nPhoto-(' . implode('|', self::PHOTO_DETAIL_LABELS) . '): ([^\x00-\x1f\x7f]{1,120})(?=\n|\z)/u';
+        while (preg_match($pattern, $after, $m) === 1) {
+            $details[] = ['label' => $m[1], 'value' => $m[2], 'display' => self::photoDisplay($m[1], $m[2])];
+            $after = substr($after, strlen($m[0]));
+        }
+        return ['details' => $details, 'rest' => $after];
+    }
+
+    /** The body without its image reference and photo details, for titles and excerpts. */
+    public static function withoutReference(string $body): string
+    {
+        try { $image = self::fromBody($body); } catch (RuntimeException) { return $body; }
+        if ($image === null) { return $body; }
+        [$before, $after] = explode(self::line($image), $body, 2);
+        return $before . self::photoDetails($after)['rest'];
+    }
+
+    private static function photoDisplay(string $label, string $value): string
+    {
+        if ($label === 'Taken' && preg_match('/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:[+-]\d\d:\d\d)?$/D', $value, $m) === 1) {
+            $taken = \DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s', $m[1], new \DateTimeZone('UTC'));
+            if ($taken !== false && $taken->format('Y-m-d\TH:i:s') === $m[1]) { return $taken->format('M j, Y, g:i A'); }
+        }
+        if ($label === 'Location' && preg_match('/^(-?\d{1,2}\.\d+) (-?\d{1,3}\.\d+)$/D', $value, $m) === 1
+            && abs((float) $m[1]) <= 90 && abs((float) $m[2]) <= 180) {
+            $lat = (float) $m[1];
+            $lon = (float) $m[2];
+            return sprintf('%.4f° %s, %.4f° %s', abs($lat), $lat < 0 ? 'S' : 'N', abs($lon), $lon < 0 ? 'W' : 'E');
+        }
+        return $value;
+    }
+
     public static function filename(array $reference): string
     {
         $r = self::validate($reference);

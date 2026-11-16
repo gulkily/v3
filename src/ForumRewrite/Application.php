@@ -643,6 +643,17 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/usage-log/upload' && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->upload(
+                $method,
+                $method === 'POST' ? (string) file_get_contents('php://input', length: 2 * \ForumRewrite\UsageReports\UsageReportStore::MAX_REPORT_BYTES + 1) : '',
+                (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+                (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
+                time(),
+            );
+            return;
+        }
+
         if ($method !== 'GET') {
             $this->sendHtml(
                 $this->renderMessagePage(
@@ -708,7 +719,7 @@ final class Application
                 $this->routeServices()->notFound();
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\AgentPageController($this->renderPageTemplate(...)))->render(), 200);
+            $this->sendHtml((new \ForumRewrite\Http\AgentPageController($this->renderPageTemplate(...), $this->pdo()))->render($query['sort'] ?? null, $query['tag'] ?? null), 200);
             return;
         }
 
@@ -950,8 +961,24 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/preferences/' || $path === '/tools/preferences') {
+            $this->sendHtml($this->toolsPageController()->preferences(), 200);
+            return;
+        }
+
+        if ($path === '/tools/tag-unlocks/' || $path === '/tools/tag-unlocks') {
+            $this->sendHtml($this->toolsPageController()->tagUnlocks(), 200);
+            return;
+        }
+
         if ($path === '/tools/outbox/' || $path === '/tools/outbox') {
             $this->sendHtml($this->toolsPageController()->outbox(), 200);
+            return;
+        }
+
+        if (($path === '/tools/usage-log/' || $path === '/tools/usage-log')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->log();
             return;
         }
 
@@ -962,6 +989,12 @@ final class Application
 
         if ($path === '/tools/visitor-statistics/' || $path === '/tools/visitor-statistics') {
             $this->visitorStatisticsController()->render($query);
+            return;
+        }
+
+        if (($path === '/tools/usage-reports/' || $path === '/tools/usage-reports')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->summary($query);
             return;
         }
 
@@ -1665,6 +1698,30 @@ final class Application
             $this->repositoryRoot,
             $this->sourceCommitDetails(...),
         );
+    }
+
+    private function usageReportsController(): \ForumRewrite\Http\UsageReportsController
+    {
+        return new \ForumRewrite\Http\UsageReportsController(
+            $this->routeServices(),
+            $this->usageReportStore(...),
+            function (): ?string {
+                $username = trim((string) ($this->authenticatedViewerProfile()['username'] ?? ''));
+                return $username !== '' ? $username : null;
+            },
+            fn (): bool => $this->routeServices()->profileIsActiveOperator($this->authenticatedViewerProfile()),
+        );
+    }
+
+    private function usageReportStore(): \ForumRewrite\UsageReports\UsageReportStore
+    {
+        $path = \ForumRewrite\UsageReports\UsageReportDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('Usage report database directory is not writable: ' . $directory);
+        }
+
+        return new \ForumRewrite\UsageReports\UsageReportStore(new PDO('sqlite:' . $path));
     }
 
     private function toolsPageController(): ToolsPageController
@@ -2396,10 +2453,12 @@ final class Application
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/calendar', '/calendar/',
-            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
+            '/tools', '/tools/', '/tools/preferences', '/tools/preferences/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
+            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
+            '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
@@ -2762,25 +2821,6 @@ final class Application
     }
 
     /**
-     * @param array<string, float|int> $timings
-     * @return list<string>
-     */
-    private function noStoreTimingHeaders(array $timings): array
-    {
-        return array_merge($this->noStoreHeaders(), $this->serverTimingHeaders(['timings' => $timings]));
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     * @param array<string, float|int> $timings
-     * @return array<string, mixed>
-     */
-    private function mergeResultTimings(array $result, array $timings, int $totalStartedAt): array
-    {
-        return $this->routeServices()->mergeResultTimings($result, $timings, $totalStartedAt);
-    }
-
-    /**
      * @param array<string, mixed> $query
      */
     private function handleApproveUserSubmit(string $slug, array $query): void
@@ -2949,14 +2989,6 @@ final class Application
         }
 
         return implode("\n", $lines) . "\n";
-    }
-
-    /**
-     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>|null
-     */
-    private function activityCommitManifest(string $commitSha): ?array
-    {
-        return $this->routeServices()->activityService()->activityCommitManifest($commitSha);
     }
 
     /**

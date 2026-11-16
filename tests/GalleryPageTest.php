@@ -28,6 +28,11 @@ final class GalleryPageTest
 
             $page = $this->markup($this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/gallery/'));
             assertSame(2, substr_count($page, 'class="gallery-tile"'), 'Only posts with a stored image become tiles.');
+            assertStringContains('<div class="zoom-buttons gallery-zoom" role="group" aria-label="Image size"><button type="button" class="zoom-button" data-gallery-zoom="out" aria-label="Smaller"', $page, 'The gallery has its own image-size buttons.');
+            assertStringContains('data-gallery-zoom="in" aria-label="Larger"', $page);
+            assertTrue(preg_match('#<script src="/assets/gallery_zoom[^"]*\.js" defer>#', $page) === 1, 'The page loads the gallery zoom script.');
+            assertStringContains("localStorage.getItem('gallery-zoom')", $page, 'The saved tile size is restored before paint.');
+            assertStringContains("if (galleryZoom < 0.7) {\n            document.documentElement.setAttribute('data-gallery-compact', '');", $page, 'Far zoomed out, captions are hidden before paint.');
             assertStringContains('href="/threads/gallery-wide#post-gallery-reply" style="--ratio: 0.6"', $page, 'Newest first; a tall image is clamped.');
             assertStringContains('<img src="/images/' . ImageReference::filename($tall) . '" alt="Tall test image" width="200" height="400"', $page, 'An image that already fits a tile is shown as is.');
             assertStringContains('<img src="/images/thumbs/' . ThumbnailStore::filename($wide, 'tile') . '"', $page);
@@ -52,7 +57,10 @@ final class GalleryPageTest
     {
         $this->withImages(function (string $repositoryRoot, string $databasePath): void {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
-            assertStringContains('<h2>No images yet</h2>', $this->render($application, '/gallery'));
+            $empty = $this->markup($this->render($application, '/gallery'));
+            assertStringContains('<h2>No images yet</h2>', $empty);
+            assertStringNotContains('gallery_zoom', $empty, 'No tiles, no zoom buttons or script.');
+            assertStringNotContains('data-gallery-zoom', $empty);
 
             putenv(FeatureFlagRegistry::IMAGE_GALLERY_ENABLED . '=false');
             $off = $this->render($application, '/gallery/');
