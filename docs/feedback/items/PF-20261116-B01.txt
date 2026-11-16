@@ -19,3 +19,4 @@ board_tags=prompt,community,accessibility on create_thread stores three tags and
 Notes:
 2026-11-16: one-shot started on fix/agent_write_readback (record docs/plans/agent_write_readback/agent_write_readback_one_shot.md).
 2026-11-16: fixed and verified locally on fix/agent_write_readback (HTTP replay of the reported request); awaiting PR review and deployment. The seven existing guest threads are not repaired by this.
+2026-11-16: PR #276 open.

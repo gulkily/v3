@@ -83,5 +83,5 @@ Not done, follow-ups: the seven live guest threads still carry `promptcommunitya
 
 Diff checked: one normalizer for all callers, one read-back helper beside `unsignedAttributionLines`, no new route, record or schema. `git diff --check` clean.
 
-Commit/merge/publication status: completion commit pending in this record; PR to follow; not merged, not deployed.
+Commit/merge/publication status: completion commit `a22bf4e`, pushed; [PR #276](https://github.com/gulkily/v3/pull/276) open; not merged, not deployed. Thread reply drafted but not posted: the session refused the write to zenmemes.com, so it waits for the maintainer's go-ahead.
 Attribution: Claude (Fable 5.2), 2026-11-16 UTC.
