@@ -41,6 +41,11 @@ Same `viewer_tags` + approved `profiles` test the library already uses for `#pro
 
 Starting revision and branch: `c54c3375d33f388b6b76ce34aabfb47843040d81`; `fix/prompt_library_notprompt`
 
+## Dated execution history
+
+- 2026-11-16T01:36Z: no matching item in `docs/feedback/items/`.
+- 2026-11-16T01:45Z: pushed; PR #267 open. Not merged or deployed.
+
 ## Study history
 
 - 2026-11-16T01:36Z intake: **0.1**, scope v1, R1, P2, single exposed rater Claude (claude-fable-5-2), rated after reading `PromptLibrary` and its test. Retrospective **0.1**. Maintainer acceptance pending; no accepted-count increment.
