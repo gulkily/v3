@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/pledge_campaigns`; [host ledger](../effor
 
 Extended estimates: enabled
 
-Status: Step 4 Stages 1–4 complete on branch `feat/pledge-campaigns`; release check pending maintainer. Planning commit `613cef37`. Steps 2 and 3 were approved by Claude under the maintainer's one-time delegation ([record](./pledge_campaigns_step2_feature_description.md#delegated-approval)).
+Status: Step 4 Stages 1–4 complete on branch `feat/pledge-campaigns`; release check pending maintainer. [PR #268](https://github.com/gulkily/v3/pull/268). Planning commit `613cef37`. Steps 2 and 3 were approved by Claude under the maintainer's one-time delegation ([record](./pledge_campaigns_step2_feature_description.md#delegated-approval)).
 
 **Cycle estimate: 0.50**
 
