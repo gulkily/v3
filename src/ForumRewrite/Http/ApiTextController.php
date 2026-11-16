@@ -106,6 +106,23 @@ final class ApiTextController
         $this->routeServices->sendText(implode("\n", $lines) . "\n", 200);
     }
 
+    /**
+     * `Board-Tags: a b` for a thread's opening post, so a client can check the
+     * tags it sent; replies carry none.
+     *
+     * @param array<string, mixed> $post
+     */
+    private static function boardTagsHeader(array $post): string
+    {
+        if (($post['parent_id'] ?? null) !== null) {
+            return '';
+        }
+        $tags = json_decode((string) ($post['board_tags_json'] ?? '[]'), true);
+        $tags = array_filter(is_array($tags) ? $tags : [], is_string(...));
+
+        return $tags === [] ? '' : 'Board-Tags: ' . implode(' ', $tags) . "\n";
+    }
+
     public function getPost(string $postId): void
     {
         $post = ($this->fetchPost)($postId);
@@ -116,7 +133,7 @@ final class ApiTextController
 
         $imageNote = str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX) ? "Image-Bytes: separate image backup required\n" : '';
         $this->routeServices->sendText(
-            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\nRetracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n" . $this->resolutionHeader($post) . "\n{$post['body']}",
+            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n" . self::boardTagsHeader($post) . "Retracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n" . $this->resolutionHeader($post) . "\n{$post['body']}",
             200
         );
     }

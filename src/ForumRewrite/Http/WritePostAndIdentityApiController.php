@@ -65,6 +65,7 @@ final class WritePostAndIdentityApiController
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->routeServices->sendText(
                 "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n"
+                    . $this->routeServices->storedPostLines((string) $result['post_id'])
                     . $this->routeServices->unsignedAttributionLines('post', (string) ($input['author_identity_id'] ?? ''), false),
                 200,
                 $this->routeServices->serverTimingHeaders($result)
@@ -99,6 +100,7 @@ final class WritePostAndIdentityApiController
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
             $this->routeServices->sendText(
                 "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n"
+                    . $this->routeServices->storedPostLines((string) $result['post_id'])
                     . $this->routeServices->unsignedAttributionLines('post', (string) ($input['author_identity_id'] ?? ''), false),
                 200,
                 $this->routeServices->serverTimingHeaders($result)

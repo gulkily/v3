@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); no separate log unle
 Effort study: `railspike-effort` / `v3/agent_write_readback` — [host ledger](../effort_estimation_trial.md#cycle-v3agent_write_readback); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.35**
-Status: planned; next permitted action: implement on `fix/agent_write_readback`
+Status: implemented and verified locally; pushed with a PR; merge and deploy need the maintainer
 
 ## Original request
 
@@ -52,12 +52,36 @@ Board tags: changed (separator parsing). Write response: changed (author, signed
 `./v3 test --smoke WriteApiSmokeTest LlmsTxtRendererTest AgentPostingApiTest ApiRouteCatalogTest` plus any test the change touches; replay ChatGPT's request against a local instance with curl. Full suite not run (maintainer runs it). Recovery for an agent that already posted this way is the documented repair path.
 
 Starting revision and branch: `b9ffa6b` (origin/main after PR #272); `fix/agent_write_readback`
-Planning commit: pending
+Planning commit: `0d79dbb`
 
 ## Dated execution history
 
 - 2026-11-16T05:40Z: no matching item in `docs/feedback/items/`; created PF-20261116-B01. Source inspected before the estimate (the comma cause had to be found first), so the intake is not pristine.
+- 2026-11-16T05:50Z: implemented items 1 to 3 as planned. `board_tags` also accepts a JSON list (a JSON body with a list used to store the tag `array`); repeated tags are kept once.
+- 2026-11-16T05:55Z: correction found in the local replay. The plan assumed `apply_thread_tag` could add `#prompt`; it takes only like, flag and votes, and answers `tag must be one of: like, flag, upvote, downvote`. Topic labels come from hashtags in a post's body, so the working repair is a reply of `#prompt` (replayed: a thread stored with `promptcommunityaccessibility` reached `/agent/` after that reply). The "identity hint" refusal ChatGPT hit was a dead end in front of that. Changes: the identity-hint refusal now says what to send; the tag refusal points at the hashtag reply; `/llms.txt` and the reference describe the hashtag reply as the way to tag an existing thread.
+- 2026-11-16T06:05Z: guest attribution has no repair today. Documented what exists (signed reply claiming the post; signed copy first, then operator removal). A route for moving a guest post to an identity is a follow-up that needs the maintainer's choice.
 
 ## Study history
 
 - Intake, 2026-11-16T05:40Z: **0.35**, after source inspection; single exposed Claude rater; R1/P2.
+- Closeout, 2026-11-16T06:10Z: retrospective **0.35**; same rater; maintainer fit judgment pending.
+
+## Outcome
+
+Delivered: separators in `board_tags` (comma, semicolon, `#`, JSON list); `author`, `signed`, `board_tags` and a guest notice on `create_thread`, `create_quote` and `create_reply`; `Board-Tags` in `get_post`; actionable refusals on the tag routes; "Before you post as guest" and "Tags and the Prompts page" in `/llms.txt`; matching sections in `docs/reference/agent_api.md`.
+
+Not done, follow-ups: the seven live guest threads still carry `promptcommunityaccessibility`-style tags (an approved member's `#prompt` reply on each lists them; a production write, not made here); moving a guest post to an identity; `frm.py whoami`; `frm.py --tags` still refuses commas; the JSON create routes (`create_prepared_post`, `create_signed_post`) do not echo author and tags.
+
+## Verification
+
+- Passed: `./v3 test --smoke WriteApiSmokeTest::testCreateThreadReadsSeparatedTagsAndReportsWhatItStored WriteApiSmokeTest::testApplyPostTagApiRejectsAnonymousViewerAndUnknownTag LlmsTxtRendererTest TagUnlocksTest PromptLibraryTest QdbBoardPolicyTest` (505 passed).
+- Passed: `./v3 test WriteApiSmokeTest` (221), and `FrmClientTest ComposeAttemptReplayTest HighTrafficPostRefreshTest SingleRequestPostingTest TagUnlocksTest PromptLibraryTest LocalAppSmokeTest AgentApiWorkedExampleTest AgentPostingApiTest ApiRouteCatalogTest`.
+- Passed, replay of the reported request: local instance over HTTP, form POST to `/api/create_thread` with `board_tags=prompt,community,accessibility` and no identity. Response carried `author=guest`, `signed=no`, `board_tags=prompt community accessibility` and the notice; `get_post` showed `Board-Tags`; the thread was in the `/agent/` waiting list.
+- Not run: the full suite (maintainer runs it). Not verified: production, and ChatGPT's own workspace; whether ChatGPT reads the new `/llms.txt` section before falling back is only testable after deploy.
+
+## Final review
+
+Diff checked: one normalizer for all callers, one read-back helper beside `unsignedAttributionLines`, no new route, record or schema. `git diff --check` clean.
+
+Commit/merge/publication status: completion commit pending in this record; PR to follow; not merged, not deployed.
+Attribution: Claude (Fable 5.2), 2026-11-16 UTC.

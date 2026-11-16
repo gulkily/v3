@@ -121,7 +121,7 @@ class LocalWriteService
             $timings = [];
             $totalStartedAt = hrtime(true);
             $postId = $this->mintThreadPostId($isQdbQuote);
-            $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+            $boardTags = $this->normalizeBoardTags($this->boardTagsInput($input));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             if (!empty($input['image']) || str_contains($body, ImageReference::PREFIX)) {
@@ -202,7 +202,7 @@ class LocalWriteService
             if (!empty($input['image']) || str_contains($body, ImageReference::PREFIX)) {
                 throw new RuntimeException('Image attachments require signed publication by an approved member.');
             }
-            $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+            $boardTags = $this->normalizeBoardTags($this->boardTagsInput($input));
             $authorIdentityId = $this->resolveAuthorIdentityId($input);
             $createdAt = $this->canonicalTimestampNow();
 
@@ -333,7 +333,7 @@ class LocalWriteService
             $timings = [];
             $totalStartedAt = hrtime(true);
             $postId = $this->mintThreadPostId($isQdbQuote);
-            $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+            $boardTags = $this->normalizeBoardTags($this->boardTagsInput($input));
             $subject = $this->normalizeAuthoredLine((string) ($input['subject'] ?? ''), 'subject');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
             $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
@@ -384,7 +384,7 @@ class LocalWriteService
             $threadId = $this->requireAsciiToken((string) ($input['thread_id'] ?? ''), 'thread_id');
             $parentId = $this->requireAsciiToken((string) ($input['parent_id'] ?? ''), 'parent_id');
             $body = $this->normalizeAuthoredBody((string) ($input['body'] ?? ''), 'body');
-            $boardTags = $this->normalizeBoardTags((string) ($input['board_tags'] ?? 'general'));
+            $boardTags = $this->normalizeBoardTags($this->boardTagsInput($input));
             $authorIdentityId = $this->requirePreparedAuthorIdentityId($input);
             $this->assertImageAuthor($body, $authorIdentityId);
             $createdAt = $this->canonicalTimestampNow();
@@ -4754,7 +4754,7 @@ class LocalWriteService
         $tag = strtolower(trim($value));
         if (!TagScore::isScoredTag($tag)
             && !($allowQdbCaptionTag && $this->qdbVoteCaptionCatalog()->isActiveTag($tag))) {
-            throw new RuntimeException('tag must be one of: ' . implode(', ', array_keys(TagScore::scoredTags())));
+            throw new RuntimeException('tag must be one of: ' . implode(', ', array_keys(TagScore::scoredTags())) . '. To add a topic label such as #prompt, reply to the thread with the hashtag in the body.');
         }
 
         return $tag;
@@ -5149,12 +5149,30 @@ class LocalWriteService
         return $value;
     }
 
+    /**
+     * A JSON request may send board_tags as a list; join it like the string form.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function boardTagsInput(array $input): string
+    {
+        $value = $input['board_tags'] ?? 'general';
+        if (is_array($value)) {
+            $value = implode(' ', array_filter($value, is_scalar(...)));
+        }
+
+        return is_scalar($value) ? (string) $value : 'general';
+    }
+
     private function normalizeBoardTags(string $value): string
     {
         $normalized = strtolower(trim($value));
-        $normalized = preg_replace('/[^a-z0-9 -]+/', '', $normalized) ?? '';
+        // Commas, semicolons and # separate tags like spaces do ("prompt,community",
+        // "#prompt #community"); read as nothing they ran tags together into one.
+        $normalized = preg_replace('/[,;#]+/', ' ', $normalized) ?? '';
+        $normalized = preg_replace('/[^a-z0-9\s-]+/', '', $normalized) ?? '';
         $normalized = preg_replace('/\s+/', ' ', $normalized) ?? '';
-        $normalized = trim($normalized);
+        $normalized = implode(' ', array_values(array_unique(explode(' ', trim($normalized)))));
 
         if (in_array('identity', explode(' ', $normalized), true)) {
             throw new RuntimeException('Identity protocol records require their dedicated endpoint.');

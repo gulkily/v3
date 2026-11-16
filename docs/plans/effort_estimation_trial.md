@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/agent_write_readback
+
+2026-11-16T06:10Z — v3/agent_write_readback one-shot (standing P2 enrollment): [record](./agent_write_readback/agent_write_readback_one_shot.md#study-history). Comma-separated `board_tags` read as separate tags; create responses and `get_post` show the stored author and tags; `/llms.txt` covers guest fallback, tags and repair. Intake **0.35** after source inspection (no pristine intake), retrospective 0.35, single exposed Claude rater. Baseline `b9ffa6b`; maintainer fit judgment pending; no accepted-count change.
+
 ## Cycle v3/prompt_copy_icon
 
 2026-11-16T05:20Z — v3/prompt_copy_icon one-shot (standing P2 enrollment; follows v3/prompt_card_like): [record](./prompt_copy_icon/prompt_copy_icon_one_shot.md#study-history). Copy on /agent/ prompt fields moves to the top right, icon only, with a check after copying; intake **0.1** after source inspection in the preceding cycles (no pristine intake), retrospective 0.1, single exposed Claude rater. Baseline `0b18578`; maintainer fit judgment pending; no accepted-count change.

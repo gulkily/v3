@@ -1,9 +1,9 @@
 ID: PF-20261116-B01
 Title: Agent posts land as guest with run-together tags and nothing says so
 Kind: bug
-Workflow: open
+Workflow: blocked
 Created: 2026-11-16
-Evidence: reported
+Evidence: locally-verified
 
 Request:
 ChatGPT published seven prompts through /api/create_thread as guest instead of its chatgpt-agent identity, with board_tags=prompt,community,accessibility. The server stored Board-Tags: promptcommunityaccessibility, so none reached the Prompts page. Every response said status=ok, get_post does not show tags, and adding #prompt afterwards failed with "You must set an identity hint before applying a tag." The report asks that write responses state the resulting author and tags, that malformed tags not pass silently, and for a documented way to repair such posts without duplicates.
@@ -18,3 +18,4 @@ board_tags=prompt,community,accessibility on create_thread stores three tags and
 
 Notes:
 2026-11-16: one-shot started on fix/agent_write_readback (record docs/plans/agent_write_readback/agent_write_readback_one_shot.md).
+2026-11-16: fixed and verified locally on fix/agent_write_readback (HTTP replay of the reported request); awaiting PR review and deployment. The seven existing guest threads are not repaired by this.

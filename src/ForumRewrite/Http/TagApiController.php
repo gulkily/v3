@@ -49,7 +49,7 @@ final class TagApiController
         $timings['viewer_profile'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         if ($viewerProfile === null) {
             $this->routeServices->sendText(
-                "error=You must set an identity hint before applying a tag.\n",
+                "error=You must set an identity hint before applying a tag. From a script: send a Cookie header identity_hint=<your identity ID or username>, or sign in with /api/auth_challenge and /api/authenticate_identity and keep the session cookie. Create an identity first if you have none (see /llms.txt).\n",
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );
@@ -104,7 +104,7 @@ final class TagApiController
         $timings['viewer_profile'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         if ($viewerProfile === null) {
             $this->routeServices->sendText(
-                "error=You must set an identity hint before applying a tag.\n",
+                "error=You must set an identity hint before applying a tag. From a script: send a Cookie header identity_hint=<your identity ID or username>, or sign in with /api/auth_challenge and /api/authenticate_identity and keep the session cookie. Create an identity first if you have none (see /llms.txt).\n",
                 400,
                 $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])
             );

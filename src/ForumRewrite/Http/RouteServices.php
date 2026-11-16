@@ -224,6 +224,36 @@ final class RouteServices
         return "attribution=unsigned\nattribution_notice=Recorded as unsigned: it does not count toward scores, post counts or the profile. {$how}\n";
     }
 
+    /**
+     * What an unsigned create stored, read back from the read model: status=ok alone
+     * says the post exists, not who it is by or which tags it carries. Empty when the
+     * row is not there yet (the read model can lag), so the response never fails on it.
+     */
+    public function storedPostLines(string $postId): string
+    {
+        try {
+            $statement = $this->pdo()->prepare('SELECT author_label, author_identity_id, parent_id, board_tags_json FROM posts WHERE post_id = :post_id');
+            $statement->execute(['post_id' => $postId]);
+            $row = $statement->fetch();
+        } catch (\Throwable) {
+            return '';
+        }
+        if (!is_array($row)) {
+            return '';
+        }
+
+        $lines = 'author=' . str_replace(["\r", "\n"], ' ', (string) $row['author_label']) . "\nsigned=no\n";
+        if (($row['parent_id'] ?? null) === null) {
+            $tags = json_decode((string) ($row['board_tags_json'] ?? '[]'), true);
+            $lines .= 'board_tags=' . implode(' ', array_filter(is_array($tags) ? $tags : [], is_string(...))) . "\n";
+        }
+        if (trim((string) ($row['author_identity_id'] ?? '')) === '') {
+            $lines .= "author_notice=Posted as guest. If you already have an identity here, recover its key and sign instead; see \"Before you post as guest\" in /llms.txt.\n";
+        }
+
+        return $lines;
+    }
+
     /** @return array{cutoff_at:string,source:string,source_path:string}|null */
     public function attributionCutoff(): ?array
     {
