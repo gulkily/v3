@@ -20,6 +20,13 @@ final class ContentImportPlanner
 {
     private int $dependencyVisits = 0;
 
+    /**
+     * $withApprovals also imports approval and invitation posts and their acceptance
+     * receipts. They stay inert until a key that wrote them is approved here, so
+     * local seeds remain the only authority. Seeds and other authority stay excluded.
+     */
+    public function __construct(private readonly bool $withApprovals = false) {}
+
     /** @internal Test hook: diagnostic work counter; enables deterministic complexity regression checks. */
     public function dependencyVisits(): int { return $this->dependencyVisits; }
 
@@ -265,6 +272,18 @@ final class ContentImportPlanner
             }
             return [...$parent, 'key' => $parent['key'] === null ? null : 'signature:' . $parent['key'] . ':' . substr($path, -4), 'record' => $record];
         }
+        if ($this->withApprovals && preg_match('#^records/approval-acceptances/([A-Za-z0-9][A-Za-z0-9._-]*)\.(?:txt|json)$#D', $path, $match) === 1) {
+            try {
+                // Validates the receipt against the exact grant bytes it names.
+                if (\ForumRewrite\Security\ApprovalAcceptance::read($root, \ForumRewrite\Security\ApprovalAcceptance::grantPath($root, $match[1])) === null) {
+                    throw new RuntimeException('Approval receipt is unreadable.');
+                }
+                return [...$entry, 'key' => ArchiveRecordCatalog::identityKey($root, $path) ?? ArchiveRecordCatalog::pathIdentityKey($path),
+                    'dependencies' => ['post:' . $match[1]]];
+            } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) {
+                return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)];
+            }
+        }
         if (preg_match('#^records/(instance|approval-seeds|approval-acceptances|key-retirements|key-retirement-acceptances|feature-flag-changes|operator-grants|attribution-cutoffs|private-messages|invitations)/#', $path)) {
             return [...$entry, 'state' => 'excluded', 'reason' => 'Instance authority, settings, or private data'];
         }
@@ -285,8 +304,8 @@ final class ContentImportPlanner
                     if ($error->getMessage() !== 'Missing required post header: Created-At') { throw $error; }
                     $entry['dependencies'][] = 'post-timestamp:' . $post->postId;
                 }
-                if ((in_array('identity', $post->boardTags, true) && in_array('approval', $post->boardTags, true))
-                    || in_array('invitation', $post->boardTags, true)) {
+                if (!$this->withApprovals && ((in_array('identity', $post->boardTags, true) && in_array('approval', $post->boardTags, true))
+                    || in_array('invitation', $post->boardTags, true))) {
                     return [...$entry, 'state' => 'excluded', 'reason' => 'Approval or invitation authority post'];
                 }
                 foreach ([$post->threadId, $post->parentId] as $id) {

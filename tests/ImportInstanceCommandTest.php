@@ -217,6 +217,32 @@ final class ImportInstanceCommandTest
         assertSame('1', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
     }
 
+    public function testWithApprovalsImportsApprovalRecordsAndPointsToSuggestRoots(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($source . '/records/posts/approval-1.txt', str_replace('Board-Tags: general', 'Board-Tags: identity approval', $w->post('approval-1')));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $paths = ['--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3', '--static-html-root=' . $w->root . '/static'];
+
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, '--dry-run', ...$paths]);
+        assertStringContains('Approvals: 1 approval/invitation post(s) were left out', $output);
+        assertStringContains('rerun this import with --with-approvals', $output);
+
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, '--with-approvals', ...$paths]);
+        assertSame(0, $code, $output);
+        assertTrue(is_file($target . '/records/posts/approval-1.txt'));
+        assertStringContains('Next: ./v3 approval suggest-roots --repository-root=', $output);
+
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--resume', '--with-approvals', ...$paths]);
+        assertSame(1, $code, $output);
+        assertStringContains('--with-approvals applies to a new import', $output);
+    }
+
     public function testCliResumeDoesNotNeedTheRemoteSourceAgain(): void
     {
         $w = new ImportTestWorkspace();
