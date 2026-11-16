@@ -25,7 +25,7 @@ final class SiteProfileRegistry
                 'defaultTheme' => 'auto',
                 // What Auto/System shows for a light or dark device setting.
                 'autoThemes' => ['light' => 'gloss', 'dark' => 'glossdark'],
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'gloss', 'glossdark', 'engagify'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'spearmint', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'gloss', 'glossdark', 'engagify'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],

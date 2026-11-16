@@ -4698,11 +4698,11 @@ NODE;
             }
             $_COOKIE = ['identity_hint' => 'guest'];
             $thread = $this->renderMethod($app, 'GET', '/threads/root-001');
-            assertStringNotContains('LLM exchanges:', $thread);
+            assertStringNotContains('>LLM exchanges</th>', $thread);
             foreach ($ids as $postId => $id) {
                 assertStringNotContains('/tools/llm-exchanges/' . $id . '"', $thread);
                 $post = $this->renderMethod($app, 'GET', '/posts/' . $postId);
-                assertStringContains('LLM exchanges:', $post);
+                assertStringContains('>LLM exchanges</th>', $post);
                 assertStringContains('/tools/llm-exchanges/' . $id . '"', $post);
                 foreach ($ids as $otherPostId => $otherId) {
                     if ($otherPostId !== $postId) {
@@ -4711,14 +4711,14 @@ NODE;
                 }
             }
             $_COOKIE = [];
-            assertStringNotContains('LLM exchanges:', $this->renderMethod($app, 'GET', '/posts/root-001'));
+            assertStringNotContains('>LLM exchanges</th>', $this->renderMethod($app, 'GET', '/posts/root-001'));
             file_put_contents($config, '<?php return ' . var_export([
                 'LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb,
                 'LLM_CONVERSATION_UI_ENABLED' => false,
             ], true) . ';');
             $_COOKIE = ['identity_hint' => 'guest'];
             $disabledApp = new Application(dirname(__DIR__), $root, $db, $artifacts);
-            assertStringNotContains('LLM exchanges:', $this->renderMethod($disabledApp, 'GET', '/posts/root-001'));
+            assertStringNotContains('>LLM exchanges</th>', $this->renderMethod($disabledApp, 'GET', '/posts/root-001'));
         } finally {
             $_COOKIE = $cookies;
             putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
@@ -4775,7 +4775,7 @@ NODE;
             assertSame(false, str_contains($list, '/tools/llm-exchanges/' . $ids[1] . '/'));
             assertStringContains('/tools/llm-exchanges/' . $ids[2] . '/', $list);
             $post = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
-            assertSame(false, str_contains($post, 'LLM exchanges:'));
+            assertSame(false, str_contains($post, '>LLM exchanges</th>'));
             $rootPost = $this->renderMethod($app, 'GET', '/posts/root-001');
             assertSame(false, str_contains($rootPost, '/tools/llm-exchanges/' . $ids[1] . '"'));
             assertStringContains('/tools/llm-exchanges/' . $ids[2] . '"', $rootPost);
@@ -6914,6 +6914,46 @@ NODE;
         $label = (new \ForumRewrite\Canonical\ThreadLabelRecordParser())->parse((string) file_get_contents($matchingRecords[0]));
         assertSame($this->extractValue($response, 'post_id'), $label->sourcePostId);
         assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect($label, $repositoryRoot)['status']);
+    }
+
+    public function testThreadActivityDrawerFlagMovesTagOnlyLeavesOutOfTheConversation(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $reply = function (string $parentId, string $body) use ($application): string {
+            $response = $this->renderMethod($application, 'POST', '/api/create_reply?thread_id=root-001&parent_id=' . rawurlencode($parentId) . '&body=' . rawurlencode($body));
+            assertStringContains('status=ok', $response);
+            return $this->extractValue($response, 'post_id');
+        };
+        $first = $reply('root-001', "First words\n");
+        $leaf = $reply('root-001', "#bug #ux\n");
+        $answered = $reply('root-001', "> First words\n#answered\n");
+        $answer = $reply($answered, "Why answered?\n");
+        $last = $reply('root-001', "Last words\n");
+        $card = static fn (string $page, string $id): bool => preg_match('/<article[^>]*data-post-id="' . preg_quote($id, '/') . '"/', $page) === 1;
+
+        putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+        $off = $this->renderMethod($application, 'GET', '/threads/root-001');
+        foreach ([$first, $leaf, $answered, $answer, $last] as $id) {
+            assertSame(true, $card($off, $id));
+        }
+
+        putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED=1');
+        try {
+            $on = $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/threads/root-001');
+        } finally {
+            putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+        }
+        assertSame(false, $card($on, $leaf));
+        assertStringContains('data-activity-kind="tagged" data-post-id="' . $leaf . '"', $on);
+        foreach ([$first, $answered, $answer, $last] as $id) {
+            assertSame(true, $card($on, $id));
+        }
+        // The same-author run around the moved reply still groups: the reply after it stays a continuation.
+        $classOf = static fn (string $page, string $id): string =>
+            preg_match('/<article id="[^"]*" class="([^"]*)"[^>]*data-post-id="' . preg_quote($id, '/') . '"/', $page, $m) === 1 ? $m[1] : '';
+        assertSame(true, str_contains($classOf($off, $answered), 'continuation'));
+        assertSame(true, str_contains($classOf($on, $answered), 'continuation'));
     }
 
     public function testLabeledWritesUseIncrementalReadModelAndPublishLabelActivityImmediately(): void

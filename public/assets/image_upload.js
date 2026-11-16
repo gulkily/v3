@@ -108,8 +108,55 @@
     choose.disabled = busy || form.__imageEligible === false;
     const remove = fields.querySelector('.image-upload-remove');remove.hidden = !state;
     fields.querySelectorAll('button').forEach(button=>{button.disabled=busy || form.__imageEligible===false;});
+    renderPhotoDetails(form, fields, state, busy);
     const recovery = form.querySelector('.image-upload-recovery');
     if (recovery) { recovery.hidden = !state || form.__imageEligible !== false; recovery.querySelector('button').disabled = busy; }
+  }
+  // Photo details: one unticked box per detail the photo carries; nothing is shared unless ticked.
+  function renderPhotoDetails(form, fields, state, busy) {
+    const details = fields.querySelector('.image-photo-details');
+    if (!details) return;
+    const found = state?.file && Array.isArray(state.details) ? state.details : [];
+    details.hidden = found.length === 0;
+    // Rebuild once per prepared file: the state object is filled in place when preparation finishes.
+    const prepared = state?.file || null;
+    if (details.__photoFile !== prepared) {
+      details.__photoFile = prepared;
+      details.open = false;
+      const list = details.querySelector('.image-photo-details-list');
+      list.replaceChildren(...found.map(detail => {
+        const row = document.createElement('label');
+        row.className = 'image-photo-detail';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.dataset.photoDetail = detail.key;
+        box.dataset.label = detail.label;
+        const text = document.createElement('span');
+        const name = document.createElement('span');
+        name.className = 'image-photo-detail-name';
+        name.textContent = detail.label;
+        const value = document.createElement('span');
+        value.className = 'meta';
+        value.textContent = detail.display || detail.value;
+        text.append(name, value);
+        if (detail.key === 'location') {
+          const warning = document.createElement('span');
+          warning.className = 'meta image-photo-detail-warning';
+          warning.textContent = 'Shows where this photo was taken.';
+          text.append(warning);
+        }
+        row.append(box, text);
+        return row;
+      }));
+      details.dispatchEvent(new Event('change'));
+    }
+    details.querySelectorAll('[data-photo-detail]').forEach(box => { box.disabled = busy; });
+  }
+  function chosenLines(form) {
+    const state = form.__imageState;
+    if (!state?.file || !Array.isArray(state.details)) return [];
+    const chosen = new Set(Array.from(form.querySelectorAll('[data-photo-detail]:checked'), box => box.dataset.photoDetail));
+    return state.details.filter(detail => chosen.has(detail.key)).map(detail => detail.line);
   }
   async function ready(form) {
     const state = form.__imageState;
@@ -165,5 +212,5 @@
     // pessimistic reset would hide the attachment and show the recovery prompt mid-upload.
     if (!await refreshEligibility(form, true)) throw new Error('Image uploading is unavailable for this identity or connection. Your draft is retained; reconnect or remove the attachment to post text.');
   }
-  window.ForumImageUpload = {bind,select,clear,ready,lock,assertEligible,refreshEligibility,has:form=>Boolean(form.__imageState)};
+  window.ForumImageUpload = {bind,select,clear,ready,lock,assertEligible,refreshEligibility,chosenLines,has:form=>Boolean(form.__imageState)};
 })();

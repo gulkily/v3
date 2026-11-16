@@ -6,7 +6,7 @@ require __DIR__ . '/../autoload.php';
 
 /**
  * theme-nav-icons.css carries three icon sets keyed to the same links: pixel
- * art (word97, chicago, midnight), smooth lines (gloss, glossdark, engagify)
+ * art (word97, chicago, midnight), smooth lines (gloss, glossdark, engagify, spearmint)
  * and cute pink pixel art (bubblegum). A destination added to one set and not
  * the others leaves an empty icon slot, because the sizing rules cover every
  * icon theme.
@@ -14,7 +14,7 @@ require __DIR__ . '/../autoload.php';
 final class NavIconSetsTest
 {
     private const PIXEL = ':root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"])';
-    private const SMOOTH = ':root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"])';
+    private const SMOOTH = ':root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="spearmint"])';
     private const CUTE = ':root:is([data-theme="bubblegum"])';
 
     public function testSmoothLineSetCoversEveryPixelArtDestination(): void

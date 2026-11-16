@@ -55,3 +55,4 @@ TestRunnerBehaviorTest
 # Usage reports (local_telemetry)
 UsageReportUploadTest
 UsageJourneysTest
+UsageNamesTest

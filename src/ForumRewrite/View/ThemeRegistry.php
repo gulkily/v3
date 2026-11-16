@@ -63,6 +63,7 @@ final class ThemeRegistry
             ['name' => 'forge', 'label' => 'Forge', 'mode' => 'dark'],
             ['name' => 'sticker', 'label' => 'Sticker', 'mode' => 'light'],
             ['name' => 'bubblegum', 'label' => 'Bubblegum', 'mode' => 'light'],
+            ['name' => 'spearmint', 'label' => 'Spearmint', 'mode' => 'light'],
             ['name' => 'arena', 'label' => 'Arena', 'mode' => 'dark'],
             ['name' => 'thermal', 'label' => 'Thermal', 'mode' => 'dark'],
             ['name' => 'whitehot', 'label' => 'Whitehot', 'mode' => 'light'],
