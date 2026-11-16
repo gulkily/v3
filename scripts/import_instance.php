@@ -48,8 +48,12 @@ try {
     }
     $source = $options['source'] ?? null;
     $resume = isset($options['resume']);
-    if (($source === null) === !$resume || ($resume && isset($options['dry-run']))) {
-        throw new RuntimeException('Supply one source URL, or --resume without a source/preview.');
+    $cancel = isset($options['cancel']);
+    if ($cancel && ($resume || $source !== null || isset($options['dry-run']))) {
+        throw new RuntimeException('--cancel takes no source and cannot be combined with --resume or --dry-run.');
+    }
+    if (!$cancel && (($source === null) === !$resume || ($resume && isset($options['dry-run'])))) {
+        throw new RuntimeException('Supply one source URL, or --resume or --cancel without a source/preview.');
     }
     if ($source !== null) {
         $source = (new InstanceSourceResolver())->resolve($source, $options['sources'] ?? null);
@@ -74,6 +78,15 @@ try {
             $line = substr($line, $written);
         }
     };
+    if ($cancel) {
+        $progress('Destination: ' . $repository);
+        $canceled = (new ContentImportRunner($repository, $database, progress: $progress))->cancel();
+        foreach ($canceled['kept'] as $path) {
+            $progress('Kept (changed or already committed): ' . $path);
+        }
+        $progress('Saved copies and report: ' . $canceled['saved']);
+        return 0;
+    }
     $progress('Source: ' . ($source ?? 'saved interrupted import'));
     $progress('Destination: ' . $repository);
     $progress('Database: ' . $database);
@@ -159,7 +172,7 @@ try {
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");
     if (is_string($repository) && is_file($repository . '/.git/instance-import/pending.json')) {
-        fwrite(STDERR, "An interrupted merge is pending. Use --resume with the same destination options.\n");
+        fwrite(STDERR, "An interrupted merge is pending. Use --resume with the same destination options, or --cancel to discard it.\n");
     }
 } finally {
     if ($workspace !== null && is_dir($workspace)) {
@@ -178,7 +191,7 @@ function importInstanceOptions(array $arguments): array
 {
     $options = [];
     foreach ($arguments as $argument) {
-        if (in_array($argument, ['--help', '-h', '--dry-run', '--resume', '--verbose'], true)) {
+        if (in_array($argument, ['--help', '-h', '--dry-run', '--resume', '--cancel', '--verbose'], true)) {
             $options[$argument === '-h' ? 'help' : substr($argument, 2)] = true;
         } elseif (preg_match('/^--(repository-root|database-path|static-html-root|sources|time-limit)=(.+)$/D', $argument, $match)) {
             if (isset($options[$match[1]])) { throw new RuntimeException('Duplicate option: --' . $match[1]); }
@@ -208,6 +221,7 @@ function importInstanceUsage(): string
 Usage:
   ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose]
   ./v3 import-instance --resume
+  ./v3 import-instance --cancel
   Options: --repository-root=/path/repository --database-path=/path/index.sqlite3
            --static-html-root=/path/static_html
 
@@ -221,6 +235,9 @@ Run ./v3 build-static separately when static output is needed.
            conflicts, and exclusions without changing records, commits, the
            read model, or published views. Temporary/lock files may be created.
            Cannot be combined with --resume; omit it to perform the import.
+--cancel: discard an interrupted import instead of resuming it. Removes the
+          record files it installed (changed files are kept) and keeps its saved
+          copies and report. Refused once its content is committed; use --resume.
 --verbose: include every rejected/excluded file; the default report groups root causes.
 Example: ./v3 import-instance https://forum.example --dry-run
 Conflicts retain the local version.

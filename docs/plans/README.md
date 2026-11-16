@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Import cancel one-shot](import_cancel/import_cancel_one_shot.md) — `./v3 import-instance --cancel` discards an interrupted import that has not committed its content; prerequisite for the import-instance GUI.
+
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
 
 [Pledge fills](pledge_fills/pledge_fills_step3_development_plan.md) — the pledger, the campaign author or an operator marks a pledge delivered or filled with a `filled` reply; partial fills add up and the block shows what arrived.
