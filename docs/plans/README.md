@@ -69,6 +69,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [UI messages](ui_messages/)
 - [UI tools launcher](ui_tools_launcher/)
 - [Compose keyboard fit](compose_keyboard_fit/)
+- [No-JavaScript basic access](nojs_basic_access/nojs_basic_access_step3_development_plan.md) — reading and anonymous posting with scripts off; resumed 2026-11-16, in progress. Prerequisite for [Windows ME compatibility](windows_me_compat_step1_solution_assessment.md).
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
