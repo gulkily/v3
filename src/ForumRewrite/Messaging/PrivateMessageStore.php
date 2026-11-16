@@ -44,11 +44,6 @@ final class PrivateMessageStore
         return $q->fetchColumn() !== false;
     }
 
-    public function markSeenThrough(string $viewer, string $counterpart, string $messageId): void
-    {
-        $this->readState->mark($viewer, $counterpart, $messageId);
-    }
-
     public function readTokenFor(string $viewer, string $counterpart, string $pageCursor): string
     {
         $page = $this->conversationPageFor($viewer, $counterpart, $pageCursor);

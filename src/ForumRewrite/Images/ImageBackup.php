@@ -41,11 +41,6 @@ final class ImageBackup
         return ['path' => $relative, 'bytes' => $bytes];
     }
 
-    public function cachedBytes(string $kind): ?int
-    {
-        return $this->cachedArchive($kind)['bytes'];
-    }
-
     public function export(string $kind, ?string $expectedRevision = null, string $imageFormat = 'zip'): array
     {
         if (!in_array($kind, ['images', 'tar.gz', 'zip'], true)) throw new RuntimeException('Unsupported backup format.');
