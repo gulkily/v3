@@ -72,3 +72,24 @@ Status: Steps 1 (Option B), 2 and 3 approved by the maintainer 2026-11-16. Step 
   - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Mark delivered and Mark filled buttons
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `PledgeCampaign::fromPosts()` also returns the campaign's `author`, so the template can tell the author from other viewers.
+  - `templates/partials/pledge_amount.php`: one fill button on an open pledge (counted, not withdrawn, not fully filled). The pledger sees "Mark delivered". The campaign author or an operator sees "Mark filled", using the page's existing `viewerCanRetractOthers` test for operators. The button posts the bare `filled` line as a reply to the pledge. "Withdraw pledge" no longer shows on a fully filled pledge.
+  - `public/assets/pledge_withdraw.js` handles both forms by role (`pledge-withdraw`, `pledge-line`) and takes the failure message from the form's `data-failure`. Same file and same signing calls; no new script.
+- Verification:
+  - Passed: `./v3 test PledgeCampaignTest` (17 tests, 1 new): no viewer, the pledger, the campaign author, an operator on a campaign that is not theirs, and a stranger; no fill or withdraw button on a fully filled pledge; the withdraw button test was updated because the author now also sees "Mark filled" on a pledge with no name.
+  - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/pledge_campaign.mjs --screenshots=/tmp/pledges` in headless Chrome. The withdraw press still works first; then "Mark delivered" fails once (aborted request, message shown, button enabled), works on the second press, shows "Delivered by guest", the block reads "2 pledges · 300 filled · 0 confirmed", no card is added and the filled pledge loses both buttons. No dialogs or page errors.
+  - Passed: the same check with `--count-unnamed`.
+  - `playwright-core` was installed from the repository's own `package.json` with `npm install --no-save`; `node_modules/` is ignored. No dependency changed.
+- Notes:
+  - "Mark filled" is not shown to the author on the author's own pledge; there the author is the pledger and sees "Mark delivered".
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5*

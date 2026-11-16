@@ -632,8 +632,10 @@ final class PledgeCampaignTest
             pledgeAssertContains('>Withdraw pledge</button>', $own);
             pledgeAssertContains('/assets/pledge_withdraw.', $own);
             // Not on a withdrawn pledge, a counted pledge with no name, or a line that is not counted.
+            // The member started the campaign, so the pledge with no name gets Mark filled instead.
             pledgeAssertNotContains($form($withdrawn), $own);
-            pledgeAssertNotContains($form($nameless), $own);
+            pledgeAssertSame(1, substr_count($own, '>Mark filled</button>'));
+            pledgeAssertContains($form($nameless), $own);
 
             // Another viewer sees no button on this member's pledge.
             $_COOKIE = ['identity_hint' => 'openpgp:' . str_repeat('b', 40)];
@@ -651,6 +653,56 @@ final class PledgeCampaignTest
             pledgeAssertContains('<strong>340</strong> of 1000 coffees pledged', $after);
             pledgeAssertContains('data-pledge-state="withdraw-uncounted"><span class="meta">Not counted: no name</span>', $after);
             pledgeAssertContains($form($mine), $after);
+        } finally {
+            $_COOKIE = $oldCookies;
+            putenv('FORUM_PLEDGES_ENABLED');
+            putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
+        }
+    }
+
+    public function testFillButtonsShowForThePledgerTheAuthorAndOperatorsOnly(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $page = fn (string $thread): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        $oldCookies = $_COOKIE;
+
+        // The member's campaign: Mark delivered on the member's own pledge, Mark filled on one with no name.
+        $mine = $this->thread($service, 'Own campaign', 'goal: 1000 coffees');
+        $own = $this->reply($service, $mine, 'pledge: 300');
+        $part = $this->reply($service, $mine, 'pledge: 200');
+        $this->replyTo($service, $mine, $part, 'filled: 50');
+        $full = $this->reply($service, $mine, 'pledge: 100');
+        $this->replyTo($service, $mine, $full, 'filled');
+        $nameless = $this->reply($service, $mine, 'pledge: 40', null);
+        // A campaign with no name: the member is not its author, but is an operator.
+        $open = (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Open campaign', 'body' => 'goal: 10 coffees'])['thread_id'];
+        $theirs = $this->reply($service, $open, 'pledge: 5', null);
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED=1');
+        try {
+            $_COOKIE = [];
+            pledgeAssertNotContains('data-role="pledge-line"', $page($mine));
+
+            $_COOKIE = ['identity_hint' => self::MEMBER];
+            $html = $page($mine);
+            // Own and part-filled pledges: Mark delivered; the fully filled one: nothing, not even Withdraw.
+            pledgeAssertSame(2, substr_count($html, '>Mark delivered</button>'));
+            pledgeAssertSame(1, substr_count($html, '>Mark filled</button>'));
+            pledgeAssertSame(2, substr_count($html, 'data-role="pledge-withdraw"'));
+            pledgeAssertContains('<input type="hidden" name="body" value="filled">', $html);
+            foreach ([$own, $part, $nameless] as $id) {
+                pledgeAssertContains('<input type="hidden" name="parent_id" value="' . $id . '">', $html);
+            }
+            pledgeAssertNotContains('<input type="hidden" name="parent_id" value="' . $full . '">', $html);
+            pledgeAssertContains('>Mark filled</button>', $page($open));
+            pledgeAssertContains('<input type="hidden" name="parent_id" value="' . $theirs . '">', $page($open));
+
+            // A viewer who is none of the three sees no fill button.
+            $_COOKIE = ['identity_hint' => 'openpgp:' . str_repeat('b', 40)];
+            pledgeAssertNotContains('data-role="pledge-line"', $page($mine));
+            pledgeAssertNotContains('data-role="pledge-line"', $page($open));
+            pledgeAssertContains('data-failure="Marking failed. Try again."', $html);
         } finally {
             $_COOKIE = $oldCookies;
             putenv('FORUM_PLEDGES_ENABLED');

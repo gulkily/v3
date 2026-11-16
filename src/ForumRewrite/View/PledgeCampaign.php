@@ -47,7 +47,7 @@ final class PledgeCampaign
      * @param bool $countUnnamed count pledges whose post names no author
      * @param (callable(string): bool)|null $isOperator whether a key is an operator now; null means none is
      * @return array{
-     *     goal: string, unit: string, pledged: string, count: int, fill_percent: float, goal_percent: ?float,
+     *     author: string, goal: string, unit: string, pledged: string, count: int, fill_percent: float, goal_percent: ?float,
      *     pledges: array<string, array{state: string, amount: ?string, note: string, withdrawn_by?: string, withdrawn_at?: string}>,
      *     withdrawals: array<string, array{effective: bool, note: string}>,
      *     filled: string, confirmed: string,
@@ -119,6 +119,7 @@ final class PledgeCampaign
         $scale = max($goal['amount'], $sum);
 
         return [
+            'author' => $campaignAuthor,
             'goal' => PledgeAmount::format($goal['amount']),
             'unit' => $unit,
             'pledged' => PledgeAmount::format($sum),
