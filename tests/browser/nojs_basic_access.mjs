@@ -102,11 +102,11 @@ try {
   const denied = await fresh.newPage();
   const response = await denied.goto(base + '/threads/');
   check(response.status() === 401, `members-only board answered ${response.status()}, expected 401`);
-  const heading = (await denied.locator('h1').first().innerText()).trim();
-  check(!/reconnecting|verifying/i.test(heading + await denied.locator('main, body').first().innerText()),
+  const heading = (await denied.locator('h1:visible').first().innerText()).trim();
+  check(!/reconnecting|verifying/i.test(heading + await denied.locator('main').innerText()),
     `members-only denial claims progress without JavaScript: "${heading}"`);
   for (const href of ['/account/key/', '/lobby/']) {
-    check(await denied.locator(`a[href^="${href}"]`).first().isVisible(), `members-only denial lacks a visible ${href} link`);
+    check(await denied.locator(`main a[href^="${href}"]`).first().isVisible(), `members-only denial lacks a visible ${href} link`);
   }
   await fresh.close();
 

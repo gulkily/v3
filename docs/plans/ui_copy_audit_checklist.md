@@ -839,3 +839,9 @@ only; subsequent implementation and verification are recorded separately above.
 - [x] Full composer order is now body, Post row, Title, tags and event; no copy added, removed or reworded. The Title placeholder and all button labels are unchanged.
 - [x] Phone body height and the dropped picker reservation are layout only; verified in 13 themes at 375 by 667 and 375 by 300 in Chromium (`compose_layout_stability.mjs --phone-fit-only`).
 - [ ] Maintainer's iPhone SE check in Firefox and Safari with the keyboard open is pending.
+
+## No-JavaScript truthful controls — 2026-11-16
+
+- [x] Members-only page without scripts: "Reconnecting / Verifying this browser identity…" is replaced by "Members only" and "Check your browser key or go to the lobby." Removed copy that can't come true; no new explanation. With scripts the page is unchanged ("If this does not complete automatically, check your browser key…"; the link text is now "your browser key").
+- [x] Without scripts, "View query" and Like/Flag no longer show (they need scripts); with scripts they are unchanged. Verified in 13 themes in Chromium with scripts on and off ([nojs Step 4](nojs_basic_access/nojs_basic_access_step4_implementation_summary.md)).
+- [ ] Browsers without support for the `scripting` media feature (e.g. Firefox before 113) show both the scripted and no-script copy on the members-only page; not verified.

@@ -31,3 +31,24 @@ Branch `feat/nojs-basic-access` from `main` `32f884b1`; planning commit `58eefd2
   - Thread order ties within the same second, so the pagination check compares sets rather than specific thread numbers.
 
 *— Claude (claude-opus-5-5) · 2026-11-16 UTC*
+
+## Stage 2 - Truthful controls and protected recovery
+
+- Changes:
+  - `public/assets/site.css`, existing first-paint `@media (scripting: none)` block: also hides `[data-view-query]`, `.thread-reaction-button` (Like/Flag) and a new `.requires-script` utility. A matching `@media (scripting: enabled)` rule hides `.without-script`. Server HTML stays static.
+  - `templates/pages/authentication_resume.php`: with scripts, the page is unchanged ("Reconnecting", verifying copy, "If this does not complete automatically, check your browser key or go to the lobby."). Without scripts it reads "Members only" and "Check your browser key or go to the lobby.", with the same links and the same 401.
+  - `tests/LocalAppSmokeTest.php`: five `<h1>Reconnecting</h1>` assertions now match the new class attribute.
+  - `tests/browser/nojs_basic_access.mjs`: link check scoped to `<main>` (the hidden navigation Account link also points to `/account/key/`); heading check reads the visible `<h1>`.
+  - `docs/plans/ui_copy_audit_checklist.md`: entry added.
+- Verification:
+  - `node tests/browser/nojs_basic_access.mjs`: PASS, all five sections.
+  - `node tests/browser/composers.mjs`: PASS.
+  - `node tests/browser/image_content_browser.mjs` (scripts-on members-only flows): exit 0.
+  - `php tests/run.php LocalAppSmokeTest`: 162 run, 159 passed. The three failures are tracked long-standing (failing since 2026-11-03) and none involves the resume page: lobby pending-approval copy, Forte expired sessions, archive download filename method.
+  - Theme sweep, 13 themes in Chromium, scripts off and on: View query and Like are hidden off and visible on in every theme.
+  - Members-only `/threads/` with app scripts blocked: scripts on shows "Reconnecting" with the original sentence; scripts off shows "Members only". Both answer 401.
+- Notes:
+  - Browsers without support for the `scripting` media feature (Firefox before 113, Chrome before 120, Safari before 17) show both versions of the copy on the members-only page and keep the dead buttons. Not verified; old engines are the Windows ME cycle's scope.
+  - Hiding Like/Flag without scripts follows Step 2's "script-dependent actions must not misrepresent availability". Reactions without scripts remain deferred.
+
+*— Claude (claude-opus-5-5) · 2026-11-16 UTC*

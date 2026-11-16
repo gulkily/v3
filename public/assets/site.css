@@ -846,7 +846,16 @@ pre {
   padding: 0.45rem 0.7rem;
 }
 @media (scripting: none) {
-  .board-toolbar__search {
+  .board-toolbar__search,
+  [data-view-query],
+  .thread-reaction-button,
+  .requires-script {
+    display: none;
+  }
+}
+/* Copy that is true only when scripts cannot run (e.g. "Members only" instead of "Reconnecting"). */
+@media (scripting: enabled) {
+  .without-script {
     display: none;
   }
 }
