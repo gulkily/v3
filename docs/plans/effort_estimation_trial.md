@@ -30,6 +30,10 @@
 
 2026-11-15T20:45:00Z — v3/usage_reports_ui Step 4 closeout: four stages committed on `plan/usage_reports_ui` ([summary](./usage_reports_ui/usage_reports_ui_step4_implementation_summary.md#closeout)). Retrospective stage work 0.08, 0.15, 0.15, 0.08 against originals 0.08, 0.15, 0.14, 0.06 (supplemental, non-additive). Retrospective cycle scope **0.46** against the 0.45 projection; driver: visual fixes found by screenshots. Release on the maintainer's phone pending; comfortable-fit judgment pending.
 
+## Cycle v3/browsing_tree_checklist
+
+2026-11-15T21:00:50Z — v3/browsing_tree_checklist one-shot (standing P2 enrollment, no parent): [record](./browsing_tree_checklist/browsing_tree_checklist_one_shot.md). Documentation only: checklist for the nav_tree, tree_history and filmstrip cycles. Cycle estimate **0.03**, retrospective 0.03; maintainer fit judgment pending.
+
 ## Cycle v3/merge_217_fix
 
 2026-11-14T20:30:00Z — v3/merge_217_fix one-shot (standing P2 enrollment, no parent): [record](./merge_217_fix/merge_217_fix_one_shot.md). Fix PHP parse error from the #217 merge; cycle estimate **0.03**, retrospective 0.03; maintainer fit judgment pending. PR #242.

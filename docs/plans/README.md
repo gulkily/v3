@@ -82,6 +82,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Rebuild triggers checklist](rebuild_triggers_checklist.md) — every remaining write or command that still runs a full read-model rebuild, most frequent first, to remove one at a time.
 
+[Browsing tree checklist](browsing_tree_checklist.md) — three cycles for tree history, tree bookmarks and a filmstrip of recent screens: `nav_tree`, `tree_history`, `filmstrip`. Written in the [browsing tree checklist one-shot](browsing_tree_checklist/browsing_tree_checklist_one_shot.md).
+
 ## Production feedback
 
 [Retraction simplification handoff](retraction_simplification_handoff.md) — current user direction, canceled sweep diagnostics plan, and coordination with registration and high-traffic work.
