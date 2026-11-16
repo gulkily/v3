@@ -49,6 +49,8 @@ checklists, and proposals remain at the top level or in the collections below.
 [Test-only member cleanup one-shot](test_only_member_cleanup/test_only_member_cleanup_one_shot.md) — removes the 13 lowest-rated test-only members and the two single-implementation store interfaces from the code quality review; marks the five test hooks kept on purpose.
 
 [Test-only member cleanup, round 2 one-shot](test_only_member_cleanup_round2/test_only_member_cleanup_round2_one_shot.md) — follow-up: removes markSeenThrough, cachedBytes, FastScoreResult::scored and two unread properties; keeps setFeatureFlag, rendersMarkdown and isSignedIn with notes.
+
+[Quality review decisions record one-shot](quality_review_decisions_record/quality_review_decisions_record_one_shot.md) — records how each code quality review decision ended, which items are still open, and the lessons for the next pass.
 [Fix the #217 merge parse error one-shot](merge_217_fix/merge_217_fix_one_shot.md) — `main` parses again: one EXPERIENCE flag list with both new flags.
 
 [Spearmint theme one-shot](spearmint_theme/spearmint_theme_one_shot.md) — a light mint sibling of Bubblegum with its own shapes: rounded soft-shadow cards, a wavy header line, lifting buttons and coral accents.
