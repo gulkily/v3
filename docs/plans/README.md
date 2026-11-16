@@ -140,6 +140,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Prompt card byline corner](prompt_card_meta_corner/prompt_card_meta_corner_one_shot.md) — one-shot: each /agent/ prompt's author/date/likes/Discuss line moves to the card's bottom right.
 - [Prompt card Like](prompt_card_like/prompt_card_like_one_shot.md) — one-shot: a Like button on each /agent/ prompt card, reusing the thread page's Like.
 - [Prompt copy icon](prompt_copy_icon/prompt_copy_icon_one_shot.md) — one-shot: the Copy button on /agent/ prompt fields moves to the top right and shows only its icon.
+- [Agent write read-back](agent_write_readback/agent_write_readback_one_shot.md) — one-shot: comma-separated `board_tags` read as separate tags; create responses and `get_post` show the stored author and tags; `/llms.txt` covers guest fallback, tags and repair.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
