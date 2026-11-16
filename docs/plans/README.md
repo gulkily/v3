@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
+
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
 
 [Pledge withdraw](pledge_withdraw/pledge_withdraw_step3_development_plan.md) — a pledger takes a pledge back with a `withdraw` reply; the pledge stays visible, marked withdrawn, and leaves the sum.
