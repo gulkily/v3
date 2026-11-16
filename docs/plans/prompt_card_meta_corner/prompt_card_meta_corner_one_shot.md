@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`); no separate log unle
 Effort study: `railspike-effort` / `v3/prompt_card_meta_corner` — [host ledger](../effort_estimation_trial.md#cycle-v3prompt_card_meta_corner); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.05**
-Status: planned; next permitted action: implement
+Status: implemented and verified locally; pushed with a PR; merge and deploy need the maintainer
 
 ## Original request
 
@@ -40,14 +40,34 @@ Prompt library card: used, layout changed. No inventory change.
 `./v3 test --smoke` plus the tests that render `/agent/` (`PromptLibraryTest`, `PresentationProfileMatrixTest`). Look at the page in a browser at phone and desktop widths in the default themes if a local server can be run; say so if not. Full suite not run (maintainer runs it).
 
 Starting revision and branch: `9e5aa010ddff888248ca670c932e3b5f7ec69274`; `fix/prompt_card_meta_corner`
-Planning commit: pending
+Planning commit: `9c52c3aa9053ceb6b2d299960e3fda9e38464d59`
 
 ## Dated execution history
 
 - 2026-11-16T04:10Z: no matching item in `docs/feedback/items/`.
+- 2026-11-16T04:12Z: moved the line in `templates/pages/agent.php` into a new `prompt-card__footer` row with the tags; `public/assets/agent.css` lays the row out and gives the title the bottom margin the line used to provide. No theme stylesheet mentions the prompt card classes.
+- 2026-11-16T04:15Z: maintainer: "thank you, you can pr when done".
 
 ## Study history
 
 - 2026-11-16T04:10Z intake: **0.05**, scope v1, R1, P2, single exposed rater Claude (claude-fable-5-2), rated after reading `agent.php` and `agent.css` (no pristine intake).
+
+- 2026-11-16T04:18Z closeout: retrospective **0.05**. Maintainer acceptance pending; no accepted-count increment.
+
+## Verification
+
+- Passed: `./v3 test --smoke PromptLibraryTest PresentationProfileMatrixTest`: 480/480.
+- Looked at in headless Chrome at 1100px and 375px, Gloss theme: the live `/agent/` HTML with the template change applied by hand and the branch's `agent.css`. Tags left and the line right on one row at desktop width; at phone width the line wraps under the tags, right-aligned; a card with no tags shows the line at the bottom right.
+- Not run: full suite (maintainer runs it); a local server render of the template itself; other themes (none override these classes); the live site, which needs the deploy.
+
+## Outcome
+
+Delivered as scoped. Next action: maintainer merges and deploys.
+
+## Final review
+
+Diff is `templates/pages/agent.php`, `public/assets/agent.css`, this record, the plans index and the ledger. No debug findings.
+
+Commit/merge/publication status: completion commit pending at time of writing; pushed with a PR; not merged or deployed.
 
 Attribution: Claude (claude-fable-5-2), 2026-11-16 UTC.

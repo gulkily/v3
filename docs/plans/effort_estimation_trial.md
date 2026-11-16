@@ -1,5 +1,9 @@
 # Effort estimation trial ledger
 
+## Cycle v3/prompt_card_meta_corner
+
+2026-11-16T04:18Z — v3/prompt_card_meta_corner one-shot (standing P2 enrollment, no parent): [record](./prompt_card_meta_corner/prompt_card_meta_corner_one_shot.md#study-history). Move each /agent/ prompt card's author/date/likes/Discuss line to the card's bottom right; intake **0.05** after source inspection (no pristine intake), retrospective 0.05, single exposed Claude rater. Baseline `9e5aa010ddff888248ca670c932e3b5f7ec69274`; maintainer fit judgment pending; no accepted-count change.
+
 ## Cycle v3/usage_reports_ui
 
 2026-11-15T02:17:36Z — v3/usage_reports_ui Step 1 handoff (standing P2 enrollment, no parent; follow-up to v3/local_telemetry): [assessment/checkpoint](./usage_reports_ui/usage_reports_ui_step1_solution_assessment.md#study-checkpoint). Scope v1, recommended Option A (readable page and control names, phone-first journey cards, styled summary, readable Usage Log with exact text behind a disclosure). Starting revision `bd2b0fad`, R1/P2; R1 hashes not re-verified. Single exposed Claude rater; pristine intake missing because both pages were rendered and inspected before rating. Intake and projected total **0.45**; option estimates A 0.45, B 0.65, C 0.15, non-additive. Await Approved Step 1; Step 1 committed at the maintainer's request.
