@@ -6,9 +6,9 @@ Effort study: `railspike-effort` / `v3/pledge_withdraw`; [host ledger](./effort_
 
 Extended estimates: enabled
 
-Status: Step 1 written 2026-11-16, awaiting `Approved Step 1`. Approval is the maintainer's; the one-time delegation in cycle 1 does not carry over.
+Status: Step 1 written 2026-11-16; Revision 1 the same day (maintainer prefers Option B). Awaiting `Approved Step 1`. Approval is the maintainer's; the one-time delegation in cycle 1 does not carry over.
 
-**Cycle estimate: 0.35**
+**Cycle estimate: 0.50**
 
 # Step 1: Solution Assessment — Pledge withdraw
 
@@ -93,9 +93,34 @@ Questions for Step 2:
 
 Enhancement requests: none in this request.
 
+## Revision 1 — direction changed to Option B (2026-11-16)
+
+Maintainer, after reading the options: "I think I actually like option B better." This records the direction; it is not `Approved Step 1`. The original recommendation above is kept as written.
+
+Revised recommendation: Option B, a "Withdrawn" state set by a signed reaction on the pledge. Rechecked against the code:
+
+- A reply's state is worked out when the read model is built (`PostResolution::derive()`) and stored in a column that exists already. No schema change is needed. Existing posts have no "withdrawn" marks, so no rebuild is needed either.
+- `PledgeCampaign::fromPosts()` already receives each reply's state, so "withdrawn pledges leave the sum" is a small change there.
+- Today a state counts only when an approved key sets it. A pledger need not be approved, so withdrawal needs its own rule: the pledge's author may withdraw their own pledge.
+- Today a thread tag unlocks states (`resources/tagsets.txt`, `meta`). A campaign is known by its goal line, not a tag. Step 2 must choose how "withdrawn" is unlocked.
+- It remains a complete slice: tap Withdraw, see the pledge marked and the sum drop, tap again to restore.
+
+What Option B leaves for later cycles:
+
+- A reaction carries a tag and no number. Cycle 3's whole fills (delivered, confirmed, disputed) fit states well. Partial fills ("200 of 300") need something that carries an amount; cycle 3's Step 1 must settle that.
+- The spec's decided line "Withdrawal reuses the existing retraction method" should be reworded to "a signed reaction on the pledge".
+
+Questions for Step 2 (these replace the list above):
+- How is "withdrawn" unlocked: by the goal line itself, or by a tag every campaign carries? And should pledges work when `FORUM_TAG_UNLOCKS_ENABLED` is off?
+- Who may set it: only the pledge's author, or also the campaign author and operators?
+- How does a pledger undo it: a Restore button that writes `open`, as Reopen does?
+- Does a withdrawn pledge fold to one line, as resolved replies do, or stay open with its amount struck through?
+- A pledge with no name cannot be withdrawn, since no key wrote it. It is not counted either.
+
 ## Study snapshots
 
 - Intake (after cycle 1's code and a read of the retraction, tagset and reaction concepts; no pristine intake): 0.35 projected total for Option A. Baseline `c1572e57` (`feat/pledge-campaigns`, which contains cycle 1; `origin/main` was `9e5aa010`), scope v1, R1, P2; Claude single exposed rater, 2026-11-16 UTC.
 - Step 1 handoff: 0.35 reaffirmed. Option estimates A 0.35, B 0.50, C 0.85, D 0.10, not summed. R1 hashes not re-verified in this session.
+- Step 1 Revision 1: recommended scope changed from Option A to Option B at the maintainer's direction; projected total 0.35 → **0.50** (changed scope, the Option B estimate unchanged). A 0.35, C 0.85 and D 0.10 reaffirmed, not summed. Same baseline, R1, P2, single exposed rater.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*

@@ -28,8 +28,8 @@ Found on a first read at `9e5aa010`. Each cycle re-checks its own part before pl
   - Left out: no field on the separate Reply page or in paned layouts; the Pledge/Reply switch from the mock-up became one optional field.
 - [ ] **2. `pledge_withdraw`** — a pledger withdraws a pledge; it stays visible, marked withdrawn, and stops counting.
   - Status: Step 1 written 2026-11-16 on branch `plan/pledge-withdraw` (based on `feat/pledge-campaigns`), awaiting the maintainer's `Approved Step 1`. [Step 1](./pledge_withdraw_step1_solution_assessment.md)
-  - Open: the mechanism. Plain retraction does not fit (see inventory). Step 1 compares four and recommends a `withdraw` line in a reply to the pledge, read when the thread is shown.
-  - If chosen, the spec's decided line "Withdrawal reuses the existing retraction method" needs rewording, and cycle 3 can use the same reply-line mechanism for fills with amounts.
+  - Open: the mechanism. Plain retraction does not fit (see inventory). Step 1 compares four. The maintainer prefers Option B (Revision 1): a "Withdrawn" reply state set by a signed reaction, like Resolved and Closed. Not yet approved.
+  - With Option B the spec's decided line "Withdrawal reuses the existing retraction method" needs rewording. Carried to cycle 3: states fit whole fills, but a reaction has no number, so partial fills need a way to carry an amount.
 - [ ] **3. `pledge_fills`** — the pledger marks a pledge delivered; the author confirms or disputes; the author and operators mark fills directly; partial fills add up. Totals gain filled and confirmed.
   - Open: whether tagset states can carry an amount for partial fills, and who may mark when the pledger's key is not approved.
 - [ ] **4. `pledge_stages`** — Open, Fully pledged, Cushioned and Complete in the header; the Fully pledged celebration that still shows the pledge box; marker posts; the optional `cushion:` line.
@@ -60,5 +60,6 @@ Cycles 2 and 3 need 1. Cycle 4 needs 3. Cycles 5 and 6 need 1 and gain detail af
 - 2026-11-16: the maintainer delegated step approval to Claude for cycle 1 only, as an experiment. Steps 2 and 3 approved on that basis; plans moved to `docs/plans/pledge_campaigns/`; implementation started on `feat/pledge-campaigns`.
 - 2026-11-16: cycle 1 built in four stages and pushed as a PR. Release check on zenmemes.com pending.
 - 2026-11-16: cycle 2 Step 1 written and pushed on `plan/pledge-withdraw` for a new session to resume. Cycle 1's delegated approval does not apply to cycle 2.
+- 2026-11-16: cycle 2 Step 1 Revision 1: the maintainer prefers Option B (reply state by reaction). Step 1 still awaits approval.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
