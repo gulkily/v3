@@ -66,6 +66,7 @@ Planning commit: `6dc6d388` (plan, Step 1, debug log and index only; confirmed w
 - 2026-11-16 correction: the first border colour `#b3262b` measured exactly 3.0:1 on panels; raised to `#c42e33` (3.51:1) for margin.
 - 2026-11-16: two smoke tests failed from this change and were updated: `FeatureFlagEvaluatorTest::testRegistryListsCurrentPublicFlags` (new flag in both lists) and `ThemeRegistryTest::testMenuLayoutPairsMutualCounterpartsAndPacksTheRest` (Zalgo joins the unpaired dark column, shifting Chouse and MIT Rap Club down a row). Added `ThemeRegistryTest::testZalgoIsOfferedOnlyWhileItsFlagIsOn`.
 - 2026-11-16: documented the `'flag'` option in the theme development guide.
+- 2026-11-16, maintainer feedback on PR #278 (still open): "this theme as you screenshotted it is about 10% zalgo. please make it closer to 75". Same scope (the stylesheet only), same branch. Added: combining-mark drips above and below headings, thread titles and the brand, built from CSS generated content with `content: ... / ""` so screen readers skip them, and stacked with faded vertical copies because monospace fonts draw stacked marks on top of each other; per-row offsets so list rows drip differently; red/cyan split on headings, nav, buttons and meta; tilted, skewed cards with leaking edge marks; scanline and vignette overlay; a faint colour fringe on all text; tilted nav links; and, only without reduced motion, heading glitch slices, dripping, header flicker and two falling tear lines (the tears are not drawn at all under reduced motion). Reading text (`p`, lists, excerpts, row meta) is layered above the drips. Focus stays a clean cyan ring and drops any transform.
 
 ## Study history
 
@@ -77,6 +78,8 @@ Planning commit: `6dc6d388` (plan, Step 1, debug log and index only; confirmed w
 
 Delivered Option A plus the flag. With `FORUM_ZALGO_THEME_ENABLED` off (default), Zalgo is absent everywhere; on, it appears in the theme menu, `/themes`, Preferences and the composer, and thread `theme: zalgo` lines apply. Not delivered (by authorization): the Cyan palette, the operator theme panel, the hex-hashtag fix.
 
+Revision (2026-11-16): intensity raised toward "75% zalgo" at the maintainer's request; see history.
+
 Limitations: no `theme-nav-icons.css` set (Zalgo uses the text nav, like Console). The board screenshot covered the empty Liked view from the fixture; a busy board was not seen.
 
 ## Verification
@@ -86,6 +89,7 @@ Limitations: no `theme-nav-icons.css` set (Zalgo uses the text nav, like Console
 - Passed: `python3 -I tests/theme_contrast_audit.py` — Zalgo passes all ten pairs (lowest `--line` on `--panel` 3.51). The audit reports 14 failing older themes, the same count on `main` without this change; out of scope here, and the audit is not part of `./v3 test`.
 - Passed: rendered `/` and `/themes/` from the fixture app with the flag off and on. Off: 0 mentions of zalgo (menu, composer option, stylesheet map). On: menu option, composer option and stylesheet present.
 - Passed: Chrome (headless) with `zenmemes-theme=zalgo` saved, board and a thread at 1280px and 380px: `data-theme="zalgo"` at first paint, no horizontal overflow, keyboard focus outline solid cyan `rgb(61, 242, 255)`. Screenshots checked by eye.
+- Revision checks (2026-11-16): theme tests re-run (483 passed), contrast audit Zalgo all pass, `/recent/` and a thread re-rendered in Chrome at 1280px and 380px with no horizontal overflow and a cyan focus ring; excerpts and post text stay readable over the drips. Animations were screenshotted disabled, so the motion itself was not seen.
 - Inapplicable: migrations and read-model schema (none changed). Pending: production, after the maintainer merges and switches the flag on.
 
 ## Final review
