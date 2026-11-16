@@ -29,6 +29,7 @@ final class FeatureFlagRegistry
     public const DEPLOY_HEADER_PROMPT_ENABLED = 'FORUM_DEPLOY_HEADER_PROMPT_ENABLED';
     public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
+    public const ZALGO_THEME_ENABLED = 'FORUM_ZALGO_THEME_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
@@ -64,7 +65,7 @@ final class FeatureFlagRegistry
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
-            self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
+            self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED],
@@ -363,6 +364,15 @@ final class FeatureFlagRegistry
                 "In the Engagify theme, the newsletter's email box hides what you type like a password, and Ava's chat panel opens over it. Off by default; Ava then waits until the popup is closed.",
                 false,
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::ZALGO_THEME_ENABLED,
+                'Zalgo theme',
+                'Offer the Zalgo theme: dark, with headings and borders that look like the page is being corrupted. Off by default; while it is off, anyone who chose Zalgo sees the site default.',
+                false,
+                self::ZALGO_THEME_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

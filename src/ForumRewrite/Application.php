@@ -724,7 +724,7 @@ final class Application
         }
 
         if ($path === '/themes/' || $path === '/themes') {
-            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot))->render(), 200);
+            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot, $this->featureFlags()))->render(), 200);
             return;
         }
 

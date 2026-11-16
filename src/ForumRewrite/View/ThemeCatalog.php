@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\View;
 
 use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 
 /**
  * The /themes catalog: every explicit theme this site permits, each with the
@@ -19,10 +20,10 @@ final class ThemeCatalog
     /**
      * @return list<array{name: string, label: string, mode: string, palettes: list<string>, properties: array<string, string>}>
      */
-    public static function entries(string $projectRoot): array
+    public static function entries(string $projectRoot, FeatureFlagEvaluator $flags): array
     {
         $entries = [];
-        foreach (ThemeRegistry::permitted(SiteProfileRegistry::active()['permittedThemes']) as $theme) {
+        foreach (ThemeRegistry::permitted(SiteProfileRegistry::active()['permittedThemes'], $flags) as $theme) {
             if (!ThemeRegistry::isExplicitName($theme['name'])) {
                 continue;
             }

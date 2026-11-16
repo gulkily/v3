@@ -10,7 +10,7 @@ Extended estimates: enabled (inherited); no real alternatives or work units rema
 
 **Cycle estimate: 0.45 (execution entry)**
 
-Status: planned; next permitted action: planning commit, then implementation.
+Status: implemented and verified locally; PR pending. Turning the flag on in production is the maintainer's step.
 
 ## Original request
 
@@ -56,31 +56,44 @@ Concepts touched: [page theme](../../concepts/page_theme.md), used unchanged (a 
 
 Starting revisions and branch: `origin/main` `66856253`; branch `feat/zalgo-theme`.
 
-Planning commit: pending.
+Planning commit: `6dc6d388` (plan, Step 1, debug log and index only; confirmed with `git show --stat` before implementation).
 
 ## Dated execution history
 
 - 2026-11-16: staged Step 1 transitioned to one-shot on the maintainer's instruction above; Step 1 kept unchanged except for a transition note and moved into this folder. `v3/operator_theme_choice` shelved at an uncommitted Step 1.
+- 2026-11-16: planning commit `6dc6d388`; branch `feat/zalgo-theme` from `origin/main` `66856253`.
+- 2026-11-16: added `theme-zalgo.css`, the `zalgo` registry entry with `'flag' => FeatureFlagRegistry::ZALGO_THEME_ENABLED`, the flag (off, site-mutable, Experience group) and `zalgo` on the four profiles that list Bubblegum. `ThemeRegistry::permitted()` now takes the evaluator; all six callers pass one (`TemplateRenderer` ×2, `ToolsPageController`, `ThreadTheme` ×2 via `choices()`/`permittedNames()`, `ThemeCatalog`). `ThreadTheme::forThread` builds its evaluator from the repository root like `KeyRetirementPolicy`; the composer gets the renderer's evaluator as `$themeFlags`.
+- 2026-11-16 correction: the first border colour `#b3262b` measured exactly 3.0:1 on panels; raised to `#c42e33` (3.51:1) for margin.
+- 2026-11-16: two smoke tests failed from this change and were updated: `FeatureFlagEvaluatorTest::testRegistryListsCurrentPublicFlags` (new flag in both lists) and `ThemeRegistryTest::testMenuLayoutPairsMutualCounterpartsAndPacksTheRest` (Zalgo joins the unpaired dark column, shifting Chouse and MIT Rap Club down a row). Added `ThemeRegistryTest::testZalgoIsOfferedOnlyWhileItsFlagIsOn`.
+- 2026-11-16: documented the `'flag'` option in the theme development guide.
 
 ## Study history
 
 - 2026-11-15 intake (staged Step 1): 0.40 for Option B; extended estimates A 0.35, B 0.40, C 0.65.
 - 2026-11-16 execution entry: **0.45** for Option A plus the flag gate across six `permitted()` callers and their tests. Scope changed from Step 1's recommendation (B to A, plus the flag); prior exposure: the same agent wrote Step 1. Claude single exposed rater; R1 hashes not re-verified; baseline `66856253`.
+- 2026-11-16 closeout: delivered the recorded scope; no scope change after entry. Retrospective scope assessment 0.45 (the gate touched the six callers as expected; the two test updates and one colour correction were small). Maintainer fit/acceptance pending.
 
 ## Outcome
 
-Pending.
+Delivered Option A plus the flag. With `FORUM_ZALGO_THEME_ENABLED` off (default), Zalgo is absent everywhere; on, it appears in the theme menu, `/themes`, Preferences and the composer, and thread `theme: zalgo` lines apply. Not delivered (by authorization): the Cyan palette, the operator theme panel, the hex-hashtag fix.
+
+Limitations: no `theme-nav-icons.css` set (Zalgo uses the text nav, like Console). The board screenshot covered the empty Liked view from the fixture; a busy board was not seen.
 
 ## Verification
 
-Pending.
+- Passed: `./v3 test --smoke ThemeRegistryTest ThemeCatalogPageTest PreferencesPageTest ThreadThemeTest FeatureFlagEvaluatorTest LocalAppSmokeTest::testStaticArtifactBuilderWritesApacheFriendlyArtifactLayout` — 483 run, 483 passed. Full suite not run (the maintainer runs it).
+- Passed: `php -l` on every changed PHP file.
+- Passed: `python3 -I tests/theme_contrast_audit.py` — Zalgo passes all ten pairs (lowest `--line` on `--panel` 3.51). The audit reports 14 failing older themes, the same count on `main` without this change; out of scope here, and the audit is not part of `./v3 test`.
+- Passed: rendered `/` and `/themes/` from the fixture app with the flag off and on. Off: 0 mentions of zalgo (menu, composer option, stylesheet map). On: menu option, composer option and stylesheet present.
+- Passed: Chrome (headless) with `zenmemes-theme=zalgo` saved, board and a thread at 1280px and 380px: `data-theme="zalgo"` at first paint, no horizontal overflow, keyboard focus outline solid cyan `rgb(61, 242, 255)`. Screenshots checked by eye.
+- Inapplicable: migrations and read-model schema (none changed). Pending: production, after the maintainer merges and switches the flag on.
 
 ## Final review
 
-Pending.
+Diff checked: no duplicated theme lists; the only new file in `public/` is the stylesheet; all six `permitted()` callers covered (`grep` for `permitted(`, `choices(`, `permittedNames(`, `entries(`). The touched concept (page theme) is used unchanged. Debug log updated.
 
 ## Commit/merge/publication status
 
-Planning commit pending; not merged; not deployed.
+Planning commit `6dc6d388`; completion commit pending at the time of writing; not merged; not deployed.
 
 *— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*

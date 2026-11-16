@@ -1,0 +1,160 @@
+/* Theme: zalgo
+ * A dark theme that looks like the page is slowly being corrupted. The
+ * corruption lives in headings, borders and chrome; body text stays plain and
+ * high-contrast. No combining characters: every effect is a style. Offered only
+ * while the "Zalgo theme" feature flag is on (see ThemeRegistry). */
+:root[data-theme="zalgo"],
+.theme-menu__option[data-theme-option="zalgo"] {
+  color-scheme: dark;
+  --zalgo-red: #ff1a1a;
+  --zalgo-blood: #8c0a0a;
+  --zalgo-cyan: #3df2ff;
+  --page-bg: #0a0505;
+  --body-background:
+    repeating-linear-gradient(90deg, rgba(255, 26, 26, 0.03) 0 1px, transparent 1px 7px),
+    linear-gradient(180deg, #120707 0%, #0a0505 40%, #060303 100%);
+  --ink: #f2e8e6;
+  --ink-soft: #c9a9ac;
+  --line: #c42e33;
+  --panel: #140a0a;
+  --input-bg: #100707;
+  --button-bg: #1c0b0b;
+  --button-alt-bg: #240e0e;
+  --feedback-ok-bg: #0b1c1d;
+  --feedback-error-bg: #2a0b0d;
+  --status-error: #ff8f8f;
+  --status-ok: #8ff7ff;
+  --status-warning: #ffd479;
+  --active-bg: #3a0f12;
+  --active-ink: #fff4f2;
+  --active-line: #ff4d4d;
+  --active-ring: rgba(255, 26, 26, 0.2);
+  --body-font: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  --ui-font: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  --code-font: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.theme-swatch[data-theme="zalgo"] {
+  background:
+    linear-gradient(100deg, transparent 0 46%, #ff1a1a 46% 54%, transparent 54%),
+    #0a0505;
+  border-color: #c42e33;
+  box-shadow: inset 0 0 0 0.12rem #0a0505;
+}
+
+.theme-menu__option[data-theme-option="zalgo"] {
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 0 #ff1a1a, 0 -1px 0 rgba(61, 242, 255, 0.55);
+}
+
+:root[data-theme="zalgo"] body {
+  letter-spacing: -0.01em;
+}
+
+/* Diacritic overflow: tight vertical copies of the heading above and below it. */
+:root[data-theme="zalgo"] h1,
+:root[data-theme="zalgo"] h2,
+:root[data-theme="zalgo"] .thread-row__title,
+:root[data-theme="zalgo"] .site-brand {
+  text-shadow:
+    0 -2px 0 rgba(255, 26, 26, 0.75),
+    0 -4px 0 rgba(140, 10, 10, 0.55),
+    0 -6px 1px rgba(255, 26, 26, 0.25),
+    0 2px 0 rgba(140, 10, 10, 0.6),
+    0 4px 1px rgba(255, 26, 26, 0.3),
+    1px 0 0 rgba(61, 242, 255, 0.35);
+}
+
+:root[data-theme="zalgo"] a {
+  color: var(--zalgo-red);
+  text-decoration-color: rgba(255, 26, 26, 0.55);
+  text-shadow: 0 0 8px rgba(255, 26, 26, 0.35);
+}
+
+:root[data-theme="zalgo"] a:hover {
+  color: #ff5c5c;
+}
+
+/* Headings and titles keep the reading colour; only body links turn red. */
+:root[data-theme="zalgo"] h1 a,
+:root[data-theme="zalgo"] h2 a,
+:root[data-theme="zalgo"] .thread-row__title,
+:root[data-theme="zalgo"] .thread-row__title a,
+:root[data-theme="zalgo"] .site-brand,
+:root[data-theme="zalgo"] .nav-link {
+  color: var(--ink);
+}
+
+:root[data-theme="zalgo"] .site-header:not(.site-header--app)::after {
+  content: "";
+  display: block;
+  margin-top: 0.7rem;
+  height: 2px;
+  background:
+    linear-gradient(90deg, #ff1a1a 0 18%, transparent 18% 19%, #ff1a1a 19% 61%, transparent 61% 63%, #8c0a0a 63% 100%);
+  box-shadow: 0 2px 0 rgba(61, 242, 255, 0.35);
+}
+
+/* Cards: a thin border plus a fainter, offset copy that slips on hover. */
+:root[data-theme="zalgo"] .card {
+  position: relative;
+  border-color: var(--line);
+  border-radius: 0;
+  box-shadow: 2px 1px 0 -1px rgba(255, 26, 26, 0.45), -1px 0 0 rgba(61, 242, 255, 0.18);
+}
+
+:root[data-theme="zalgo"] .nav-link,
+:root[data-theme="zalgo"] input,
+:root[data-theme="zalgo"] textarea,
+:root[data-theme="zalgo"] select,
+:root[data-theme="zalgo"] .feedback {
+  border-radius: 0;
+  border-color: var(--line);
+}
+
+:root[data-theme="zalgo"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border-radius: 0;
+  border-color: var(--zalgo-red);
+  box-shadow: inset 0 0 0 0 var(--zalgo-red);
+}
+
+:root[data-theme="zalgo"] .nav-link[aria-current="page"] {
+  border-color: var(--active-line);
+  box-shadow: 0 2px 0 var(--zalgo-red);
+}
+
+/* Focus is the one clean, unglitched element, in a colour no border uses. */
+:root[data-theme="zalgo"] :focus-visible {
+  outline: 2px solid var(--zalgo-cyan);
+  outline-offset: 2px;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+:root[data-theme="zalgo"] ::selection {
+  background: var(--zalgo-red);
+  color: #0a0505;
+}
+
+html[data-theme="zalgo"] {
+  scrollbar-color: var(--zalgo-red) #0a0505;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-theme="zalgo"] .card {
+    transition: box-shadow 120ms steps(3, end);
+  }
+
+  :root[data-theme="zalgo"] .card:hover {
+    box-shadow: 4px 2px 0 -1px rgba(255, 26, 26, 0.6), -3px -1px 0 rgba(61, 242, 255, 0.28);
+  }
+
+  :root[data-theme="zalgo"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+    transition: box-shadow 160ms steps(2, end);
+  }
+
+  :root[data-theme="zalgo"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+    box-shadow: inset 0 0 0 1px var(--zalgo-red), 0 0 10px rgba(255, 26, 26, 0.35);
+  }
+}
