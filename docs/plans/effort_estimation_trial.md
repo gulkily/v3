@@ -2168,7 +2168,13 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/pledge_fills` | Step 1 written; awaiting approval | v1 / R1 / P2 | 0.50 (intake 0.50; Step 1 0.50) | [Intake and Step 1](./pledge_fills_step1_solution_assessment.md#study-snapshots) | Parent `v3/pledge_withdraw`; acceptance pending |
+| `v3/pledge_fills` | Steps 1–3 approved; Step 4 in progress on `feat/pledge-fills` | v1 / R1 / P2 | 0.50 (intake 0.50; Step 1 0.50; Step 2 0.50; Step 3 0.50; entry 0.50) | [Intake and Step 1](./pledge_fills/pledge_fills_step1_solution_assessment.md#study-snapshots); [Step 2](./pledge_fills/pledge_fills_step2_feature_description.md#study-snapshots); [Step 3](./pledge_fills/pledge_fills_step3_development_plan.md#study-checkpoint) | Parent `v3/pledge_withdraw`; acceptance pending |
+
+2026-11-16T11:25Z: Step 4 entry for `v3/pledge_fills`: Step 3 approved by the maintainer; planning commit `c7c6d6c` on `feat/pledge-fills` from `c98b5221`. Entry projection **0.50** reaffirmed. [Summary](./pledge_fills/pledge_fills_step4_implementation_summary.md).
+
+2026-11-16T10:05Z: Step 3 handoff for `v3/pledge_fills`: **0.50** reaffirmed. Step 2 approved by the maintainer. Stage work 0.14, 0.08, 0.05, 0.12, 0.06, not summed. Baseline `c98b5221` after a local rebase (unrelated changes only). Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No implementation.
+
+2026-11-16T09:45Z: Step 2 handoff for `v3/pledge_fills`: **0.50** reaffirmed. Step 1 approved by the maintainer (Option B). Same scope v1, baseline `66856253`, R1/P2. Single exposed rater Claude, now on claude-opus-5-5 (Step 1 on claude-fable-5-2); R1 hashes not re-verified. No implementation.
 
 2026-11-16T09:31Z: standing P2 enrollment for pledge fills, staged. Intake **0.50** for Option B after cycle 2's code and a read of the spec's fill rules and the tagset state code; no pristine intake. Step 1 handoff **0.50**; option estimates A 0.85, B 0.50, C 0.70, D 0.35, not summed. Baseline `66856253`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation.
 

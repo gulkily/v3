@@ -8,6 +8,7 @@ use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Host\StaticArtifactBuilder;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FilledDirective;
 use ForumRewrite\Support\GoalDirective;
 use ForumRewrite\Support\PledgeAmount;
 use ForumRewrite\Support\PledgeDirective;
@@ -347,6 +348,120 @@ final class PledgeCampaignTest
         $gone = PledgeCampaign::fromPosts($posts, 'root');
         pledgeAssertSame(false, isset($gone['pledges']['a']));
         pledgeAssertSame('Not counted: not a reply to a pledge', $gone['withdrawals']['wa']['note']);
+    }
+
+    public function testFilledLineIsBareOrCarriesText(): void
+    {
+        pledgeAssertSame('', FilledDirective::extract('filled'));
+        pledgeAssertSame('', FilledDirective::extract("Arrived Tuesday.\n  Filled:  "));
+        pledgeAssertSame('200', FilledDirective::extract('filled: 200'));
+        pledgeAssertSame('2 coffees', FilledDirective::extract('FILLED: 2 coffees'));
+        pledgeAssertSame(null, FilledDirective::extract('> filled'));
+        pledgeAssertSame(null, FilledDirective::extract('I filled it'));
+        pledgeAssertSame(null, FilledDirective::extract('filled up the tank'));
+        pledgeAssertSame(true, FilledDirective::isBare(FilledDirective::BODY));
+        pledgeAssertSame(true, FilledDirective::isBare("\n Filled: \n"));
+        pledgeAssertSame(false, FilledDirective::isBare("filled\n\nThanks!"));
+        pledgeAssertSame(false, FilledDirective::isBare('filled: 200'));
+    }
+
+    public function testFillsAddUpToEachPledgeAndEveryOtherFillLineSaysWhyNot(): void
+    {
+        $author = 'openpgp:' . str_repeat('a', 40);
+        $mara = 'openpgp:' . str_repeat('b', 40);
+        $op = 'openpgp:' . str_repeat('c', 40);
+        $rin = 'openpgp:' . str_repeat('d', 40);
+        $post = static fn (string $id, string $body, string $parent, string $by, array $more = []): array => $more + [
+            'post_id' => $id, 'thread_id' => 'root', 'parent_id' => $parent, 'body' => $body, 'retracted_at' => null,
+            'author_identity_id' => $by, 'author_label' => ['' => '', $author => 'ilyag', $mara => 'mara', $op => 'opal', $rin => 'rin'][$by],
+            'attribution_counted' => 1, 'created_at' => '2026-11-16T05:00:00Z',
+        ];
+        $posts = [
+            $post('root', 'goal: 1000 coffees', '', $author),
+            $post('a', 'pledge: 300', 'root', $mara),
+            $post('b', 'pledge: 400', 'root', $rin),
+            $post('c', 'pledge: 50', 'root', $rin),
+            $post('fa', 'filled', 'a', $mara),
+            $post('fa2', 'filled: 10', 'a', $author),
+            $post('fb', 'filled: 100', 'b', $author),
+            $post('fb2', "filled: 2 coffees\nMore tomorrow.", 'b', $op),
+            $post('fb3', 'filled: 350', 'b', $rin),
+            $post('fc-other', 'filled', 'c', $mara),
+            $post('fc-lots', 'filled: lots', 'c', $rin),
+            $post('fc-unit', 'filled: 5 teas', 'c', $rin),
+            $post('fc-unverified', 'filled', 'c', $rin, ['attribution_counted' => 0]),
+            $post('fc-nameless', 'filled', 'c', ''),
+            $post('fc-retracted', 'filled', 'c', $rin, ['retracted_at' => '2026-11-16T06:00:00Z']),
+            $post('f-root', 'filled', 'root', $author),
+            $post('f-fill', 'filled', 'fa', $author),
+        ];
+        $campaign = PledgeCampaign::fromPosts($posts, 'root', false, static fn (string $id): bool => $id === $op);
+
+        pledgeAssertSame('750', $campaign['pledged']);
+        // a: 300 by mara; b: 100 + 2 + 298 of 350 = 400; c: nothing.
+        pledgeAssertSame('700', $campaign['filled']);
+        pledgeAssertSame('102', $campaign['confirmed']);
+        pledgeAssertSame('300', $campaign['pledges']['a']['filled']);
+        pledgeAssertSame([['post_id' => 'fa', 'by' => 'mara', 'role' => 'pledger', 'amount' => '300']], $campaign['pledges']['a']['fill_list']);
+        pledgeAssertSame([
+            ['post_id' => 'fb', 'by' => 'ilyag', 'role' => 'author', 'amount' => '100'],
+            ['post_id' => 'fb2', 'by' => 'opal', 'role' => 'operator', 'amount' => '2'],
+            ['post_id' => 'fb3', 'by' => 'rin', 'role' => 'pledger', 'amount' => '298'],
+        ], $campaign['pledges']['b']['fill_list']);
+        pledgeAssertSame(false, isset($campaign['pledges']['c']['filled']));
+        pledgeAssertSame([
+            'fa' => ['effective' => true, 'note' => ''],
+            'fa2' => ['effective' => false, 'note' => 'Not counted: already filled'],
+            'fb' => ['effective' => true, 'note' => ''],
+            'fb2' => ['effective' => true, 'note' => ''],
+            'fb3' => ['effective' => true, 'note' => 'Counted 298 of 350'],
+            'fc-other' => ['effective' => false, 'note' => 'Not counted: only the pledger, the author or an operator can fill'],
+            'fc-lots' => ['effective' => false, 'note' => 'Not counted: “lots” is not a number'],
+            'fc-unit' => ['effective' => false, 'note' => 'Not counted: “5 teas” is not in coffees'],
+            'fc-unverified' => ['effective' => false, 'note' => 'Not counted: unverified'],
+            'fc-nameless' => ['effective' => false, 'note' => 'Not counted: no name'],
+            'f-root' => ['effective' => false, 'note' => 'Not counted: not a reply to a counted pledge'],
+            'f-fill' => ['effective' => false, 'note' => 'Not counted: not a reply to a counted pledge'],
+        ], $campaign['fills']);
+
+        // Without an operator check nobody is an operator; retracting a fill undoes it.
+        $plain = PledgeCampaign::fromPosts($posts, 'root');
+        pledgeAssertSame('Not counted: only the pledger, the author or an operator can fill', $plain['fills']['fb2']['note']);
+        $posts[4]['retracted_at'] = '2026-11-16T07:00:00Z';
+        $undone = PledgeCampaign::fromPosts($posts, 'root', false, static fn (string $id): bool => $id === $op);
+        pledgeAssertSame(['effective' => true, 'note' => ''], $undone['fills']['fa2']);
+        pledgeAssertSame('10', $undone['pledges']['a']['filled']);
+        pledgeAssertSame('410', $undone['filled']);
+        pledgeAssertSame('112', $undone['confirmed']);
+    }
+
+    public function testWithdrawingAPartFilledPledgeKeepsWhatArrivedInAnyOrder(): void
+    {
+        $mara = 'openpgp:' . str_repeat('b', 40);
+        $post = static fn (string $id, string $body, string $parent): array => [
+            'post_id' => $id, 'thread_id' => 'root', 'parent_id' => $parent, 'body' => $body, 'retracted_at' => null,
+            'author_identity_id' => $mara, 'author_label' => 'mara', 'attribution_counted' => 1, 'created_at' => '2026-11-16T05:00:00Z',
+        ];
+        $fill = $post('f', 'filled: 100', 'a');
+        $withdraw = $post('w', 'withdraw', 'a');
+        foreach ([[$fill, $withdraw], [$withdraw, $fill]] as $order) {
+            $campaign = PledgeCampaign::fromPosts([$post('root', 'goal: 1000', ''), $post('a', 'pledge: 300', 'root'), ...$order], 'root');
+            pledgeAssertSame('withdrawn', $campaign['pledges']['a']['state']);
+            pledgeAssertSame('100', $campaign['pledges']['a']['filled']);
+            pledgeAssertSame('100', $campaign['pledged']);
+            pledgeAssertSame('100', $campaign['filled']);
+            pledgeAssertSame(0, $campaign['count']);
+            pledgeAssertSame(['effective' => true, 'note' => ''], $campaign['withdrawals']['w']);
+        }
+
+        // A fully filled pledge cannot be withdrawn, whichever reply came first.
+        $full = $post('f', 'filled', 'a');
+        foreach ([[$full, $withdraw], [$withdraw, $full]] as $order) {
+            $campaign = PledgeCampaign::fromPosts([$post('root', 'goal: 1000', ''), $post('a', 'pledge: 300', 'root'), ...$order], 'root');
+            pledgeAssertSame('counted', $campaign['pledges']['a']['state']);
+            pledgeAssertSame('300', $campaign['pledged']);
+            pledgeAssertSame(['effective' => false, 'note' => 'Not counted: already filled'], $campaign['withdrawals']['w']);
+        }
     }
 
     public function testThreadPageMarksAWithdrawnPledgeAndABakedPageFollows(): void
