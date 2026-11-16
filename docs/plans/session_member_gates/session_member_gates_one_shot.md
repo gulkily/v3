@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/session_member_gates` — [host ledger](../effort_estimation_trial.md#cycle-v3session_member_gates); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.15 (retrospective 0.25)**
-Status: implemented and verified locally; next permitted action: push and PR on the maintainer's word (merge and deploy need the maintainer)
+Status: implemented, verified locally, PR open; next permitted action: maintainer merge and deploy
 
 ## Original request
 
@@ -76,7 +76,7 @@ Host `main` at `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `fix/member-ga
 
 ## Planning commit
 
-`633944c` (confirmed with Git).
+`00ae864` (confirmed with Git; `633944c` before the rebase).
 
 ## Study history
 
@@ -127,6 +127,6 @@ Diff checked: four source files, three test files, two documents, this record, t
 
 ## Commit, merge and publication status
 
-Planning commit `633944c`. Completion commit `1b457e0` (confirmed with Git). Not pushed, no PR, not merged, not deployed. Pushing publishes the bug before the fix is live; the maintainer decides when.
+Planning commit `00ae864`, completion commit `53b3862` (confirmed with Git). 2026-11-16: the maintainer asked for a PR ("please pr the hint-cookie fix"). Rebased onto `main` at `b9ffa6b`; one conflict, both sides appending to the effort ledger, kept both. After the rebase: smoke set plus the affected classes 697 of 697, agent-reply runner 22 of 22, both browser tests pass. Pushed and opened as a PR; not merged, not deployed.
 
 *— Claude · 2026-11-15 UTC · Model: claude-fable-5-2*
