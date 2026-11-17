@@ -2264,3 +2264,25 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/import_review_summary` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./import_review_summary/import_review_summary_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
 
 2026-11-17: one-shot import review summary; baseline `34d87c86`. Intake after inspection and closeout retrospective both 0.08; Claude single exposed rater; R1 hashes not re-verified.
+## Cycle v3/local_start_import
+
+Cycle ID: v3/local_start_import
+Mode: one-shot; standing enrollment under P2
+Scope/reference: v1 / R1 / P2
+Status: locally verified MVP; PR #284 open; thread reply unavailable; merge, deployment and maintainer acceptance pending
+Projection: unavailable; frozen external calibration sources were not recovered
+Canonical checkpoints: [record](local_start_import/local_start_import_one_shot.md)
+Relationship: new local-start outcome; related PF-20261111-F09 speed and PF-20261104-B14 availability remain separate
+2026-11-16: Codex, single exposed rater; intake and execution-entry snapshot record prior source exposure and missing pristine intake. Closeout retains unavailable numeric projection/retrospective; no reconstructed score, measured labor or accepted-count increment. Fresh checkout/native browser flow passed; smoke 482/486 with the four failures reproduced on untouched origin/main. Full suite not run.
+
+## Cycle v3/local_start_import_pr_fix
+
+Cycle ID: v3/local_start_import_pr_fix
+Mode: one-shot; standing enrollment under P2
+Scope/reference: v1 / R1 / P2
+Status: conflicts resolved and integration verified; updating existing PR #284
+Projection: unavailable; frozen external R1 sources not recovered
+Canonical checkpoints: [record](local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md)
+Relationship: integration follow-up to v3/local_start_import on open PR #284, not a separate product outcome
+2026-11-17: Intake and execution entry: Codex single exposed rater, baseline 936c6357 / original PR dee4c41c, prior source/history exposure disclosed. Pristine intake missing. No numeric score, independent rating, measured effort or accepted-count increment.
+2026-11-17 closeout for v3/local_start_import_pr_fix: projection/retrospective remain unavailable; v1/R1/P2 preserved. Smoke plus affected import, task, tour and cache checks: 522/526; the four failures reproduced on unchanged 936c6357. Fresh-start browser check passed. Feedback collision reconciled with local-start intake PF-20261117-F01, preserving main PF-20261116-F01 cancellation record. No new product outcome, measured labor or accepted-count increment.
