@@ -237,6 +237,15 @@ try {
   assert.equal(await writer.page.locator('[data-role="pledge-line"]').count(), 1, 'a filled pledge has no fill button');
   assert.equal(await writer.page.locator('[data-role="pledge-withdraw"]').count(), 1, 'a filled pledge cannot be withdrawn');
   assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
+  // Inside "More", Retract is a plain button, not a second "…" menu; it still asks first.
+  await openRows(writer.page);
+  assert.equal(await writer.page.locator('.post-more .post-more-actions').count(), 0, 'no "…" menu inside More');
+  const cardsBeforeRetract = await writer.page.locator('article.post-card').count();
+  await press(writer.page.locator('.post-more [data-action="retract-post"]:not([data-role])').first());
+  assert.equal(writer.seen.dialogs.length, 1, 'Retract asks to confirm');
+  assert.match(writer.seen.dialogs[0], /^Retract this post\?/);
+  writer.seen.dialogs.length = 0;
+  assert.equal(await writer.page.locator('article.post-card').count(), cardsBeforeRetract, 'a dismissed confirm retracts nothing');
 
   // Without JavaScript the server writes the line. The post has no name, so it never counts.
   const plain = await open(false);

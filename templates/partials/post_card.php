@@ -221,7 +221,7 @@ if (!is_array($postAnalysisLabels)) {
       data-post-id="<?= $e($post['post_id']) ?>"
     >Agent</button>
 <?php endif; ?>
-<?= $partial('partials/retract_post_control.php') ?>
+<?= $partial('partials/retract_post_control.php', ['retractInline' => $compactCard]) ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
 <?php if (!$agentReplyIsUnfinished): ?>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?></p>

@@ -1114,6 +1114,10 @@ final class PledgeCampaignTest
         $more = substr($card($campaign, $pledge), (int) strpos($card($campaign, $pledge), 'data-role="post-more"'));
         pledgeAssertContains('>Mark delivered</button>', $more);
         pledgeAssertContains('>Withdraw pledge</button>', $more);
+        // Retract sits in "More" as a plain button, not behind a second "…" menu; other threads keep the menu.
+        pledgeAssertContains('data-action="retract-post"', $more);
+        pledgeAssertNotContains('post-more-actions', $card($campaign, $pledge));
+        pledgeAssertContains('<details class="post-more-actions">', $card($other, $plainReply));
         // Other threads keep the full byline and the open action row.
         pledgeAssertNotContains('data-role="post-more"', $card($other, $plainReply));
         pledgeAssertContains('data-post-byline>by ', $card($other, $plainReply));

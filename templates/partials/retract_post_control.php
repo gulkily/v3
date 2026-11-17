@@ -1,4 +1,6 @@
 <?php
+// Inside a card's "More" the buttons sit in its action row, not in a second "…" menu.
+$retractInline = (bool) ($retractInline ?? false);
 $retractViewerIdentityId = is_array($viewerProfile ?? null) ? (string) ($viewerProfile['identity_id'] ?? '') : '';
 $retractAuthorIdentityId = (string) ($post['author_identity_id'] ?? '');
 $retractTags = json_decode((string) ($post['board_tags_json'] ?? '[]'), true);
@@ -11,9 +13,11 @@ $canRetractPost = ($post['retracted_at'] ?? null) === null
 ?>
 <?php if ($canRetractPost): ?>
     <div class="post-retraction-control" data-role="retraction-control">
+<?php if (!$retractInline): ?>
       <details class="post-more-actions">
         <summary aria-label="More actions">…</summary>
         <div class="post-more-actions-panel">
+<?php endif; ?>
 <?php $formatTarget = ($post['body_format'] ?? null) === 'markdown' ? 'plain' : 'markdown'; ?>
           <button
             type="button"
@@ -30,8 +34,10 @@ $canRetractPost = ($post['retracted_at'] ?? null) === null
             data-confirm="<?= $e(\ForumRewrite\Support\RetractedPostNotice::CONFIRM) ?>"
             data-done="<?= $e(\ForumRewrite\Support\RetractedPostNotice::DONE) ?>"
           >Retract post</button>
+<?php if (!$retractInline): ?>
         </div>
       </details>
+<?php endif; ?>
       <button type="button" class="thread-reaction-button" data-role="retraction-retry" data-action="retract-post"
         data-post-id="<?= $e($post['post_id']) ?>" data-confirm="<?= $e(\ForumRewrite\Support\RetractedPostNotice::CONFIRM) ?>"
         data-done="<?= $e(\ForumRewrite\Support\RetractedPostNotice::DONE) ?>" hidden>Retry retraction</button>
