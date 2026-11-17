@@ -42,3 +42,21 @@
 
 **Uncertain assessments**
 - Step 2's open question was not answered before approval. Treating the suggested answer as chosen follows earlier cycles' practice, and the Status line records it.
+
+## 2026-11-17T22:25Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md` "Planning Docs Commit Gate": PR #319 merged between Step 3 and Step 4. Branching from a fresh `origin/main` and recording the moved base in the summary kept the planning commit clean. Retain.
+- `implementation_standards.md` "Replay each reported failure in the relevant user/environment": the browser fixture's router does not bake pages, so the existing check could not show the visitor-with-no-cookies case. A separate replay through `FrontController` with a baked board did, and it is the only evidence that approval refreshes what such a visitor sees. Retain.
+- `RAILSPIKE.md` "Enhancement Requests … record every request before acting": the excerpt refinement was found by looking at screenshots, not requested. Recording it kept the Stage 2 diff explainable. Retain.
+- Host rule "fix any test that fails on the base commit": a base run of the named tests before Stage 1 found none. Retain.
+
+**Redundant/unnecessary instructions**
+- `step4_implementation_do.md` "Stage Boundary Protocol" steps 4 and 6 (`git status`, then `git log` after each commit): useful, but they repeat what a commit's output already shows. Railspike could fold them into one "confirm the commit" step.
+
+**Inapplicable instructions**
+- Documentation-only verification rules: this was an application change.
+
+**Uncertain assessments**
+- The thumbnail row was planned in Stage 2 but not exercised; it is recorded as pending, not done. Railspike has no word for a planned check dropped as low-risk; "pending" overstates the intent to come back to it.
+- `.railspike_debug_on` exists; enabled. R1 hashes not re-verified.
