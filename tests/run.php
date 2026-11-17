@@ -51,7 +51,7 @@ $testFiles = [
     __DIR__ . '/FeedbackItemCheckTest.php',
     __DIR__ . '/FastmodScoreTransferTest.php',
     __DIR__ . '/FastmodDerivedTagsTest.php',
-    __DIR__ . '/FrmClientTest.php',
+    __DIR__ . '/QuillClientTest.php',
     __DIR__ . '/AgentPostingApiTest.php',
     __DIR__ . '/SingleRequestHttpTest.php',
     __DIR__ . '/ReadModelBusyPageTest.php',

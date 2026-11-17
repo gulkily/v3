@@ -8,7 +8,7 @@ script prints the plan and exits. Each step runs a fixed number of concurrent re
 a short time, then reports latency, status codes and cache hits. The run stops at the
 first step that breaks a stop rule (any 429, too many errors, or p95 over budget).
 
-Read-only: GET requests only. Test writes separately and by hand (for example one frm.py
+Read-only: GET requests only. Test writes separately and by hand (for example one quill.py
 reply while a step runs).
 
   python3 scripts/stress_probe.py https://zenmemes.com                # show the plan

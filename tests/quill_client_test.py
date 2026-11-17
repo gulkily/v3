@@ -1,4 +1,4 @@
-"""Failure boundaries that do not require a live forum; HTTP/GPG flows are in FrmClientTest."""
+"""Failure boundaries that do not require a live forum; HTTP/GPG flows are in QuillClientTest."""
 import argparse
 import importlib.util
 import io
@@ -9,9 +9,9 @@ import unittest
 from unittest.mock import patch
 
 sys.dont_write_bytecode = True
-spec = importlib.util.spec_from_file_location('frm', Path(__file__).resolve().parents[1] / 'public/frm.py')
-frm = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(frm)
+spec = importlib.util.spec_from_file_location('quill', Path(__file__).resolve().parents[1] / 'public/quill.py')
+quill = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(quill)
 
 
 def png(width, height):
@@ -60,18 +60,18 @@ class ImageAttachmentTest(unittest.TestCase):
             path = Path(directory) / 'image'
             path.write_bytes(data)
             if use_pillow:
-                return frm.prepare_image(path)
-            with patch.object(frm, 'pillow', return_value=None):
-                return frm.prepare_image(path)
+                return quill.prepare_image(path)
+            with patch.object(quill, 'pillow', return_value=None):
+                return quill.prepare_image(path)
 
     def test_reference_line_matches_the_browser_format(self):
         import hashlib
         data = png(3, 2)
-        line = frm.image_reference(data, 'png', (3, 2), "Tools card (live) it's fine!*")
+        line = quill.image_reference(data, 'png', (3, 2), "Tools card (live) it's fine!*")
         self.assertEqual('Image-v1: %s png %d 3 2 Tools%%20card%%20%%28live%%29%%20it%%27s%%20fine%%21%%2A' % (hashlib.sha256(data).hexdigest(), len(data)), line)
         for description in ('x' * 501, 'tab\there'):
-            with self.assertRaisesRegex(frm.ClientError, '500 bytes'):
-                frm.image_reference(data, 'png', (3, 2), description)
+            with self.assertRaisesRegex(quill.ClientError, '500 bytes'):
+                quill.image_reference(data, 'png', (3, 2), description)
 
     def test_without_pillow_png_metadata_is_removed_and_pixels_kept(self):
         data = with_text_chunk(png(3, 2))
@@ -86,25 +86,25 @@ class ImageAttachmentTest(unittest.TestCase):
         jpeg = jpeg_header(640, 480)
         prepared, kind, size, _ = self.prepare(with_app1(jpeg, 1))
         self.assertEqual(('jpg', (640, 480), jpeg), (kind, size, prepared))
-        with self.assertRaisesRegex(frm.ClientError, 'stored rotated'):
+        with self.assertRaisesRegex(quill.ClientError, 'stored rotated'):
             self.prepare(with_app1(jpeg, 6))
 
     def test_without_pillow_limits_name_pillow_as_the_fix(self):
         for data, message in [(b'GIF89a' + b'\x00' * 20, 'PNG or JPEG only'), (png(2049, 1), '2048 pixels per side \\(this one is 2049 x 1\\)'),
                               (b'\xff\xd8\xff\xe0\x00\x02', 'readable JPEG'), (b'', '32 MiB')]:
-            with self.assertRaisesRegex(frm.ClientError, message):
+            with self.assertRaisesRegex(quill.ClientError, message):
                 self.prepare(data)
-        with patch.object(frm, 'IMAGE_MAX_BYTES', 10), self.assertRaisesRegex(frm.ClientError, '5 MiB'):
+        with patch.object(quill, 'IMAGE_MAX_BYTES', 10), self.assertRaisesRegex(quill.ClientError, '5 MiB'):
             self.prepare(png(2, 2))
 
 
-@unittest.skipUnless(frm.pillow(), 'Pillow not installed')
+@unittest.skipUnless(quill.pillow(), 'Pillow not installed')
 class PillowImagePrepareTest(unittest.TestCase):
     def prepare(self, data):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'image'
             path.write_bytes(data)
-            return frm.prepare_image(path)
+            return quill.prepare_image(path)
 
     def encode(self, image, fmt, **options):
         import io
@@ -137,7 +137,7 @@ class PillowImagePrepareTest(unittest.TestCase):
         from PIL import Image
         import random
         noise = Image.frombytes('RGB', (300, 300), random.Random(1).randbytes(300 * 300 * 3))
-        with patch.object(frm, 'IMAGE_MAX_BYTES', 120000):
+        with patch.object(quill, 'IMAGE_MAX_BYTES', 120000):
             prepared, kind, size, _ = self.prepare(self.encode(noise, 'PNG'))
         self.assertLessEqual(len(prepared), 120000)
         self.assertLess(size[0], 300)
@@ -157,8 +157,8 @@ class ImageRequestTest(unittest.TestCase):
             Path(command[command.index('--output') + 1]).write_text('{"status":"ok","post_id":"thread-1"}')
             Path(command[command.index('--dump-header') + 1]).write_text('')
             return argparse.Namespace(returncode=0, stdout=b'200', stderr=b'')
-        with patch.object(frm.subprocess, 'run', side_effect=fake_run), patch.object(frm.shutil, 'which', return_value='/usr/bin/curl'):
-            frm.request('https://forum.example', '/api/create_prepared_post', {'canonical_record': '@not-a-file\n<nor this'}, 5, {'image': ('/tmp/x.png', 'image/png')})
+        with patch.object(quill.subprocess, 'run', side_effect=fake_run), patch.object(quill.shutil, 'which', return_value='/usr/bin/curl'):
+            quill.request('https://forum.example', '/api/create_prepared_post', {'canonical_record': '@not-a-file\n<nor this'}, 5, {'image': ('/tmp/x.png', 'image/png')})
         self.assertNotIn('--data-binary', seen['command'])
         self.assertEqual('@not-a-file\n<nor this', seen['parts']['canonical_record'])
         self.assertEqual('@/tmp/x.png;type=image/png', seen['parts']['image'])
@@ -168,23 +168,23 @@ class ClientFailureTest(unittest.TestCase):
     def test_unrecognized_discovery_never_selects_legacy(self):
         for response in [(200, '<html>lobby</html>', {}), (503, '{"status":"busy"}', {}),
                          (404, 'not found', {}), (200, 'POST /api/create_signed_post', {})]:
-            with patch.object(frm, 'request', return_value=response):
-                with self.assertRaises(frm.ClientError):
-                    frm.discover('https://forum.example')
+            with patch.object(quill, 'request', return_value=response):
+                with self.assertRaises(quill.ClientError):
+                    quill.discover('https://forum.example')
 
     def test_unknown_read_is_not_missing(self):
         for response in [(404, '<html>proxy</html>', {}), (200, 'post not found', {}),
                          (200, 'Post-ID: wrong\n\nhello\n', {})]:
-            with patch.object(frm, 'request', return_value=response):
-                with self.assertRaises(frm.ClientError):
-                    frm.read_post('https://forum.example', 'post-id')
+            with patch.object(quill, 'request', return_value=response):
+                with self.assertRaises(quill.ClientError):
+                    quill.read_post('https://forum.example', 'post-id')
 
     def test_long_or_invalid_delay_does_not_retry_early(self):
         args = argparse.Namespace(timeout=1, retries=2)
         for delay in ('120', 'nan', 'not-a-date'):
-            with patch.object(frm, 'request', return_value=(503, '{"status":"busy","error":"busy"}', {'retry-after': delay})) as send, patch.object(frm.time, 'sleep') as sleep:
-                with self.assertRaises(frm.ClientError):
-                    frm.api('https://forum.example', '/api/create_signed_post', {}, args)
+            with patch.object(quill, 'request', return_value=(503, '{"status":"busy","error":"busy"}', {'retry-after': delay})) as send, patch.object(quill.time, 'sleep') as sleep:
+                with self.assertRaises(quill.ClientError):
+                    quill.api('https://forum.example', '/api/create_signed_post', {}, args)
                 self.assertEqual(1, send.call_count)
                 sleep.assert_not_called()
 
@@ -192,23 +192,23 @@ class ClientFailureTest(unittest.TestCase):
         args = argparse.Namespace(timeout=1, retries=5)
         for status, text in [(400, '{"status":"error","error":"invalid"}'), (403, '{}'), (404, '{}'),
                              (500, '{}'), (503, '{"status":"error"}'), (200, 'malformed'), (200, '[]')]:
-            with patch.object(frm, 'request', return_value=(status, text, {})) as send:
-                with self.assertRaises(frm.ClientError):
-                    frm.api('https://forum.example', '/api/create_signed_post', {}, args)
+            with patch.object(quill, 'request', return_value=(status, text, {})) as send:
+                with self.assertRaises(quill.ClientError):
+                    quill.api('https://forum.example', '/api/create_signed_post', {}, args)
                 self.assertEqual(1, send.call_count)
 
     def test_source_coordinates_after_composition_and_newlines(self):
-        self.assertEqual(10, frm.source_index('  Cafe\u0301\r\nx→', 'Café\nx→\n', 6))
-        self.assertEqual(2, frm.source_index('e\u0301\u200dx', 'é\u200dx\n', 1))
+        self.assertEqual(10, quill.source_index('  Cafe\u0301\r\nx→', 'Café\nx→\n', 6))
+        self.assertEqual(2, quill.source_index('e\u0301\u200dx', 'é\u200dx\n', 1))
 
     def test_legacy_unknown_read_preserves_operation(self):
         with tempfile.TemporaryDirectory() as directory:
             operation = Path(directory)
-            frm.save_meta(operation / 'key.txt', {'Fingerprint': 'test', 'Home': directory, 'Generated': 'yes'})
+            quill.save_meta(operation / 'key.txt', {'Fingerprint': 'test', 'Home': directory, 'Generated': 'yes'})
             meta = {'Protocol': 'prepared', 'State': 'sending', 'Site': 'https://forum.example', 'Post-ID': 'saved'}
-            with patch.object(frm, 'read_post', side_effect=frm.ClientError('unknown')), patch.object(frm, 'api') as send:
-                with self.assertRaises(frm.ClientError):
-                    frm.resume_post(operation, meta, argparse.Namespace(timeout=1))
+            with patch.object(quill, 'read_post', side_effect=quill.ClientError('unknown')), patch.object(quill, 'api') as send:
+                with self.assertRaises(quill.ClientError):
+                    quill.resume_post(operation, meta, argparse.Namespace(timeout=1))
                 send.assert_not_called()
                 self.assertEqual('sending', meta['State'])
 
@@ -222,7 +222,7 @@ class TroubleReportTest(unittest.TestCase):
 
     def test_report_never_carries_keys_paths_or_tokens(self):
         error = 'GPG failed: ' + ' and '.join(self.SECRETS)
-        report = frm.trouble_report('reply', '/api/create_signed_post', error, 'failed')
+        report = quill.trouble_report('reply', '/api/create_signed_post', error, 'failed')
         for secret in self.SECRETS:
             for fragment in secret.split('\n'):
                 self.assertNotIn(fragment, report)
@@ -230,16 +230,16 @@ class TroubleReportTest(unittest.TestCase):
         self.assertIn('[path]', report)
 
     def test_report_has_fixed_fields_and_bounded_error(self):
-        report = frm.trouble_report('thread', '', 'HTTP 503: ' + 'x' * 900, 'failed', 2)
+        report = quill.trouble_report('thread', '', 'HTTP 503: ' + 'x' * 900, 'failed', 2)
         names = [line.split(': ', 1)[0] for line in report.split('\n\n', 1)[1].splitlines()]
         self.assertEqual(['Client', 'Command', 'Route', 'Outcome', 'Busy-Retries', 'Error'], names)
         self.assertIn('Route: none', report)
         self.assertIn('Busy-Retries: 2', report)
         error = next(line for line in report.splitlines() if line.startswith('Error: '))
-        self.assertLessEqual(len(error) - len('Error: '), frm.REPORT_ERROR_LIMIT)
+        self.assertLessEqual(len(error) - len('Error: '), quill.REPORT_ERROR_LIMIT)
 
     def test_api_routes_and_urls_survive_scrubbing(self):
-        text = frm.scrub('HTTP 400: Inspect https://forum.example/api/ and /api/create_signed_post')
+        text = quill.scrub('HTTP 400: Inspect https://forum.example/api/ and /api/create_signed_post')
         self.assertIn('https://forum.example/api/', text)
         self.assertIn('/api/create_signed_post', text)
 
@@ -251,7 +251,7 @@ class TroubleReportPostingTest(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        frm.TRACE.update(route='/api/create_signed_post', busy=0, operation=None, identity='')
+        quill.TRACE.update(route='/api/create_signed_post', busy=0, operation=None, identity='')
 
     def args(self, **values):
         base = dict(command='reply', resume=None, state_dir=self.directory.name, report_thread='t1',
@@ -262,18 +262,18 @@ class TroubleReportPostingTest(unittest.TestCase):
     def operation(self, state):
         operation = Path(self.directory.name) / 'operation-x'
         operation.mkdir()
-        frm.save_meta(operation / 'operation.txt', {'Site': self.SITE, 'Kind': 'reply', 'State': state})
-        frm.TRACE['operation'] = operation
+        quill.save_meta(operation / 'operation.txt', {'Site': self.SITE, 'Kind': 'reply', 'State': state})
+        quill.TRACE['operation'] = operation
         return operation
 
     def test_failure_before_identity_posts_one_unsigned_report_after_the_error(self):
-        argv = ['frm.py', '--site', self.SITE, '--state-dir', self.directory.name, 'reply',
+        argv = ['quill.py', '--site', self.SITE, '--state-dir', self.directory.name, 'reply',
                 '--thread', 'x', '--body-file', 'b', '--report-thread', 't1']
         with patch.object(sys, 'argv', argv), \
-                patch.object(frm, 'write_post', side_effect=frm.ClientError('GPG failed: no agent')), \
-                patch.object(frm, 'request', return_value=self.OK) as send, \
+                patch.object(quill, 'write_post', side_effect=quill.ClientError('GPG failed: no agent')), \
+                patch.object(quill, 'request', return_value=self.OK) as send, \
                 patch('sys.stderr', new_callable=io.StringIO) as err:
-            self.assertEqual(2, frm.main())
+            self.assertEqual(2, quill.main())
         self.assertEqual(1, send.call_count)
         fields = send.call_args[0][2]
         self.assertEqual(('t1', 't1', 'plain'), (fields['thread_id'], fields['parent_id'], fields['body_format']))
@@ -285,70 +285,139 @@ class TroubleReportPostingTest(unittest.TestCase):
         self.assertEqual([], list(Path(self.directory.name).rglob('trouble-pending-*')))
 
     def test_known_identity_is_named_and_rejection_reported_once(self):
-        frm.TRACE['identity'] = 'openpgp:abc'
+        quill.TRACE['identity'] = 'openpgp:abc'
         operation = self.operation('rejected')
-        with patch.object(frm, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
-            frm.report_trouble(self.args(), self.SITE, frm.ClientError('HTTP 400: invalid'))
-            frm.report_trouble(self.args(), self.SITE, frm.ClientError('HTTP 400: invalid'))
+        with patch.object(quill, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
+            quill.report_trouble(self.args(), self.SITE, quill.ClientError('HTTP 400: invalid'))
+            quill.report_trouble(self.args(), self.SITE, quill.ClientError('HTTP 400: invalid'))
         self.assertEqual(1, send.call_count)
         self.assertEqual('openpgp:abc', send.call_args[0][2]['author_identity_id'])
         self.assertIn('Outcome: rejected', send.call_args[0][2]['body'])
-        self.assertEqual('yes', frm.load_meta(operation / 'operation.txt')['Trouble-Reported'])
+        self.assertEqual('yes', quill.load_meta(operation / 'operation.txt')['Trouble-Reported'])
 
     def test_screenshot_case_prepare_identity_error_is_readable_and_reported(self):
         """The reported zm.py crash: prepare_identity answered without prepare_token (KeyError)."""
         refused = (400, '{"status":"error","error":"Unable to inspect OpenPGP public key. gpg said: no valid OpenPGP data found."}', {})
-        with patch.object(frm, 'request', return_value=refused):
-            with self.assertRaises(frm.ClientError) as caught:
-                frm.api(self.SITE, '/api/prepare_identity', {'public_key': ''}, argparse.Namespace(timeout=1, retries=0))
+        with patch.object(quill, 'request', return_value=refused):
+            with self.assertRaises(quill.ClientError) as caught:
+                quill.api(self.SITE, '/api/prepare_identity', {'public_key': ''}, argparse.Namespace(timeout=1, retries=0))
         self.assertIn('Unable to inspect OpenPGP public key', str(caught.exception))
-        frm.TRACE['route'] = '/api/prepare_identity'
-        with patch.object(frm, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
-            frm.report_trouble(self.args(), self.SITE, caught.exception)
+        quill.TRACE['route'] = '/api/prepare_identity'
+        with patch.object(quill, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
+            quill.report_trouble(self.args(), self.SITE, caught.exception)
         body = send.call_args[0][2]['body']
         self.assertIn('Route: /api/prepare_identity', body)
         self.assertIn('Error: HTTP 400: Unable to inspect OpenPGP public key', body)
 
     def test_unregistered_identity_falls_back_to_anonymous(self):
         refused = (400, 'error=author_identity_id does not resolve to a known identity.\n', {})
-        with patch.object(frm, 'request', side_effect=[refused, self.OK]) as send:
-            self.assertEqual('reply-1', frm.post_trouble_report(self.SITE, 't1', 'body', 'openpgp:abc', 1))
+        with patch.object(quill, 'request', side_effect=[refused, self.OK]) as send:
+            self.assertEqual('reply-1', quill.post_trouble_report(self.SITE, 't1', 'body', 'openpgp:abc', 1))
         self.assertEqual(2, send.call_count)
         self.assertNotIn('author_identity_id', send.call_args[0][2])
 
     def test_unsent_report_is_queued_and_sent_by_the_next_write(self):
         self.operation('sending')
-        with patch.object(frm, 'request', side_effect=frm.ClientError('Network outcome unknown')), \
+        with patch.object(quill, 'request', side_effect=quill.ClientError('Network outcome unknown')), \
                 patch('sys.stderr', new_callable=io.StringIO) as err:
-            frm.report_trouble(self.args(), self.SITE, frm.ClientError('HTTP 503: busy'))
+            quill.report_trouble(self.args(), self.SITE, quill.ClientError('HTTP 503: busy'))
         self.assertIn('saved for the next write', err.getvalue())
         queued = list(Path(self.directory.name).rglob('trouble-pending-*'))
         self.assertEqual(1, len(queued))
         self.assertIn('Outcome: unresolved', queued[0].read_text())
-        frm.TRACE.update(operation=None, busy=0)
-        with patch.object(frm, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
-            frm.report_trouble(self.args(), self.SITE)
+        quill.TRACE.update(operation=None, busy=0)
+        with patch.object(quill, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
+            quill.report_trouble(self.args(), self.SITE)
         self.assertEqual(1, send.call_count)
         self.assertFalse(queued[0].exists())
 
     def test_success_after_busy_retries_is_reported(self):
-        frm.TRACE['busy'] = 2
-        with patch.object(frm, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
-            frm.report_trouble(self.args(), self.SITE)
+        quill.TRACE['busy'] = 2
+        with patch.object(quill, 'request', return_value=self.OK) as send, patch('sys.stderr', new_callable=io.StringIO):
+            quill.report_trouble(self.args(), self.SITE)
         self.assertIn('Outcome: accepted after busy retries', send.call_args[0][2]['body'])
 
     def test_no_report_and_missing_thread_send_nothing(self):
-        with patch.object(frm, 'request') as send, patch('sys.stderr', new_callable=io.StringIO) as err:
-            frm.report_trouble(self.args(no_report=True), self.SITE, frm.ClientError('x'))
-            frm.report_trouble(self.args(report_thread=''), self.SITE, frm.ClientError('x'))
+        with patch.object(quill, 'request') as send, patch('sys.stderr', new_callable=io.StringIO) as err:
+            quill.report_trouble(self.args(no_report=True), self.SITE, quill.ClientError('x'))
+            quill.report_trouble(self.args(report_thread=''), self.SITE, quill.ClientError('x'))
         send.assert_not_called()
         self.assertIn('no --report-thread', err.getvalue())
 
     def test_reporting_never_raises(self):
-        with patch.object(frm, '_report_trouble', side_effect=RuntimeError('boom')), \
+        with patch.object(quill, '_report_trouble', side_effect=RuntimeError('boom')), \
                 patch('sys.stderr', new_callable=io.StringIO) as err:
-            frm.report_trouble(self.args(), self.SITE, frm.ClientError('x'))
+            quill.report_trouble(self.args(), self.SITE, quill.ClientError('x'))
         self.assertIn('Trouble-report: not sent (RuntimeError)', err.getvalue())
+
+
+class VersionAndCompatibilityTest(unittest.TestCase):
+    """Quill reports its version, prints the server's update notice once, and keeps frm.py's settings."""
+
+    def fake_curl(self, headers):
+        seen = []
+
+        def fake_run(command, input=None, stdout=None, stderr=None):
+            seen.append(command)
+            Path(command[command.index('--output') + 1]).write_text('ok\n')
+            Path(command[command.index('--dump-header') + 1]).write_text('HTTP/1.1 200 OK\r\n' + headers)
+            return argparse.Namespace(returncode=0, stdout=b'200', stderr=b'')
+        return seen, fake_run
+
+    def test_every_request_names_its_version(self):
+        seen, fake_run = self.fake_curl('')
+        with patch.object(quill.subprocess, 'run', side_effect=fake_run), patch.object(quill.shutil, 'which', return_value='/usr/bin/curl'):
+            quill.request('https://forum.example', '/api/')
+            quill.request('https://forum.example', '/api/create_reply', {'body': 'x'})
+        for command in seen:
+            self.assertEqual('quill/' + quill.QUILL_VERSION, command[command.index('--user-agent') + 1])
+
+    def test_update_notice_is_printed_once(self):
+        notice = 'You are running Quill 2000-01-01; this site serves 2026-11-16. Fetch it from /quill.py.'
+        seen, fake_run = self.fake_curl('X-Quill-Update: ' + notice + '\r\n')
+        with patch.object(quill.subprocess, 'run', side_effect=fake_run), patch.object(quill.shutil, 'which', return_value='/usr/bin/curl'), \
+                patch.object(quill, 'NOTICES', set()), patch('sys.stderr', new_callable=io.StringIO) as err:
+            quill.request('https://forum.example', '/api/')
+            quill.request('https://forum.example', '/api/list_index')
+        self.assertEqual('Update: ' + notice + '\n', err.getvalue())
+
+    def test_no_notice_without_the_header(self):
+        seen, fake_run = self.fake_curl('Content-Type: text/plain\r\n')
+        with patch.object(quill.subprocess, 'run', side_effect=fake_run), patch.object(quill.shutil, 'which', return_value='/usr/bin/curl'), \
+                patch.object(quill, 'NOTICES', set()), patch('sys.stderr', new_callable=io.StringIO) as err:
+            quill.request('https://forum.example', '/api/')
+        self.assertEqual('', err.getvalue())
+
+    def test_old_state_directory_is_kept(self):
+        with tempfile.TemporaryDirectory() as home:
+            with patch.object(quill.Path, 'home', return_value=Path(home)), patch('sys.stderr', new_callable=io.StringIO) as err:
+                self.assertEqual(str(Path(home) / '.local/state/quill'), quill.default_state_dir())
+                (Path(home) / '.local/state/frm').mkdir(parents=True)
+                self.assertEqual(str(Path(home) / '.local/state/frm'), quill.default_state_dir())
+                self.assertIn('kept from frm.py', err.getvalue())
+                (Path(home) / '.local/state/quill').mkdir()
+                self.assertEqual(str(Path(home) / '.local/state/quill'), quill.default_state_dir())
+
+    def test_explicit_state_directory_wins(self):
+        args = argparse.Namespace(state_dir='/tmp/quill-explicit', resume=None)
+        self.assertEqual(Path('/tmp/quill-explicit').resolve(), quill.state_directory(args, 'https://forum.example').parent)
+
+    def test_settings_prefer_quill_then_frm(self):
+        with patch.dict(quill.os.environ, {'FRM_REPORT_THREAD': 'old'}, clear=True):
+            self.assertEqual('old', quill.setting('REPORT_THREAD'))
+        with patch.dict(quill.os.environ, {'FRM_REPORT_THREAD': 'old', 'QUILL_REPORT_THREAD': 'new'}, clear=True):
+            self.assertEqual('new', quill.setting('REPORT_THREAD'))
+        with patch.dict(quill.os.environ, {}, clear=True):
+            self.assertEqual('', quill.setting('REPORT_THREAD'))
+
+    def test_printed_commands_use_the_saved_name(self):
+        meta = {'Site': 'https://forum.example', 'Kind': 'reply'}
+        with patch.object(quill.sys, 'argv', ['/tmp/frm.py']):
+            self.assertTrue(quill.recovery_command(Path('/tmp/op'), meta).startswith('python3 frm.py --site '))
+        with patch.object(quill.sys, 'argv', ['/tmp/quill.py']):
+            self.assertTrue(quill.recovery_command(Path('/tmp/op'), meta).startswith('python3 quill.py --site '))
+        with patch.object(quill.sys, 'argv', ['-c']):
+            self.assertTrue(quill.recovery_command(Path('/tmp/op'), meta).startswith('python3 quill.py --site '))
 
 
 if __name__ == '__main__':

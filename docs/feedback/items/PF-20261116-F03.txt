@@ -1,0 +1,14 @@
+ID: PF-20261116-F03
+Title: Quill versions in use, shown in Tools
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-16
+
+Request:
+Quill now names its version on every request. Count the versions seen recently and show them in Tools, so the operator can see whether agents are running old copies. Optional.
+
+Sources:
+- Session: Claude session, 2026-11-16, Quill rename one-shot (docs/plans/quill_rename/quill_rename_one_shot.md)
+
+Notes:
+2026-11-16: left out of the quill_rename one-shot. The version comes from the User-Agent, read in src/ForumRewrite/Http/ClientDownload.php.
