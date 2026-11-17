@@ -122,3 +122,26 @@ PR #274 was still open at Step 4 entry. This branch starts from `main` and rebas
 **Retrospective stage work: 0.14**
 
 *— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Replaced pill and queue
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `ReplacedKeys.php` (new): reads replaced keys from bootstrap posts and profile approvals already in the read model. A lost key counts as replaced while its replacement's session-vouched approval stands, and until either key is retired.
+  - `user_access.php`: a "Replaced keys" card on Tools → User Access, listing each lost key with its pill. Each entry links to the key's page, which already carries the retirement action.
+  - `user_access_account.php`: the account's key list adds the Replaced pill. This is the member's own list of keys.
+  - `profile_access.php`: the key page shows the pill and "Replaced by" with a link to the new key.
+  - `site.css`: `chip--replaced` (dashed border, soft ink) beside `chip--pending` and `chip--approved`.
+- Verification:
+  - Passed: `KeyBootstrapTest::testReplacedKeyShowsItsPillAndWaitsInTheQueueUntilRetired` covers the queue, the account pill, "Replaced by", no pill on the new key, and that retiring the lost key empties the queue. `KeyBootstrapTest` passes 9 of 9.
+  - Passed: `./v3 test --smoke KeyBootstrapTest RootApprovalPageTest UserAccessTest` (488 of 488). The full suite was not run.
+  - Looked at: screenshots of the account keys list in Gloss, Gloss Dark, Light, Dark, Word97, Chicago, Midnight, Bubblegum, Spearmint and Engagify (`KEY_BOOTSTRAP_THEME_DIR=… node tests/browser/key_bootstrap.mjs`). The pill shows in all; Word97 and Midnight draw it flat, like their other chips. In Engagify the theme's parody pop-ups cover the list, so the pill can't be seen there; that is the theme's design.
+- Notes:
+  - Deviation from Step 3: no read-model schema change. The data was already there, so `SCHEMA_VERSION` stays at 55 and no rebuild regression test is needed. This is a simpler route to the same outcome.
+  - The plan said to show the pill wherever a Pending pill can appear, including the pending pane. A lost key is approved, so it never appears where Pending pills are; the pending pane is inapplicable.
+  - The Account → Key page is drawn by the browser from local storage and has no key list. The member's list of keys is the account page under User Access.
+
+**Retrospective stage work: 0.10**
+
+*— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*

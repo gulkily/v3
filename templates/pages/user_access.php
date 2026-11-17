@@ -15,6 +15,16 @@
     </ul>
 <?php endif; ?>
   </article>
+<?php if (($replacedKeys ?? []) !== []): ?>
+  <article class="card" id="replaced-keys">
+    <h2>Replaced keys</h2>
+    <ul>
+<?php foreach ($replacedKeys as $replaced): ?>
+      <li><a href="/tools/user-access/profiles/<?= $e($replaced['profile_slug']) ?>"><?= $e($replaced['username']) ?> · <?= $e($shortenProfileSlug($replaced['profile_slug'])) ?></a> <span class="chip chip--replaced">Replaced</span></li>
+<?php endforeach; ?>
+    </ul>
+  </article>
+<?php endif; ?>
 <?php if ($canSecurityReview || ($canResumeHistory ?? false)): ?>
   <article class="card" id="access-history">
     <div class="access-history-heading">

@@ -246,6 +246,48 @@ final class KeyBootstrapTest
         });
     }
 
+    public function testReplacedKeyShowsItsPillAndWaitsInTheQueueUntilRetired(): void
+    {
+        $this->withRepository(function (string $root, string $db, string $artifacts, Application $app): void {
+            $writer = $this->writer($root, $db, $artifacts);
+            $lost = $this->link($app, 'ada');
+            $writer->approveUser($this->approvalInput(self::ROOT_IDENTITY, $lost));
+            $replacement = $this->link($app, 'ada');
+            assertSame([], \ForumRewrite\ReadModel\ReplacedKeys::all((new ReadModelConnection($db))->open()));
+            $this->bootstrap($writer, $lost, $replacement);
+
+            $queue = \ForumRewrite\ReadModel\ReplacedKeys::all((new ReadModelConnection($db))->open());
+            assertSame([$lost['identity_id']], array_column($queue, 'identity_id'));
+            assertSame($replacement['profile_slug'], $queue[0]['replacement_profile_slug']);
+            TestViewerSession::signIn($replacement['identity_id']);
+            $index = $this->html($root, $db, $artifacts, '/tools/user-access/');
+            assertSame(true, str_contains($index, 'Replaced keys') && str_contains($index, '<span class="chip chip--replaced">Replaced</span>')
+                && str_contains($index, '/tools/user-access/profiles/' . $lost['profile_slug']), 'queue on User Access');
+            $account = $this->html($root, $db, $artifacts, '/tools/user-access/accounts/ada');
+            assertSame(1, substr_count($account, 'class="chip chip--replaced"'), 'one pill on the account keys list');
+            $lostPage = $this->html($root, $db, $artifacts, '/tools/user-access/profiles/' . $lost['profile_slug']);
+            assertSame(true, str_contains($lostPage, 'Replaced by:') && str_contains($lostPage, '/tools/user-access/profiles/' . $replacement['profile_slug']), 'replaced by link');
+            $newPage = $this->html($root, $db, $artifacts, '/tools/user-access/profiles/' . $replacement['profile_slug']);
+            assertSame(false, str_contains($newPage, 'class="chip chip--replaced"'));
+
+            // Retiring the lost key with the existing tool takes it out of the queue.
+            $prepared = $writer->prepareKeyRetirement(['actor_identity_id' => $replacement['identity_id'], 'target_identity_id' => $lost['identity_id']]);
+            $writer->finalizePreparedKeyRetirement(['prepare_token' => $prepared['prepare_token'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->sign($replacement['home'], $prepared['canonical_record'])]);
+            assertSame([], \ForumRewrite\ReadModel\ReplacedKeys::all((new ReadModelConnection($db))->open()));
+            assertSame(false, str_contains($this->html($root, $db, $artifacts, '/tools/user-access/'), 'Replaced keys'));
+            TestViewerSession::reset();
+        });
+    }
+
+    private function html(string $root, string $db, string $artifacts, string $path): string
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        ob_start();
+        (new Application(dirname(__DIR__), $root, $db, $artifacts))->handle('GET', $path);
+        return (string) ob_get_clean();
+    }
+
     /** @var array<string, string> */
     private array $lastFinalize = [];
 

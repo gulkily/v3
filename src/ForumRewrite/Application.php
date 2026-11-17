@@ -1600,6 +1600,7 @@ final class Application
             [
                 'accessManagement' => $accessManagement,
                 'retirementActors' => $accessManagement ? (new \ForumRewrite\Security\KeyRetirementPolicy($this->pdo(),$this->repositoryRoot))->presentationActors($profile) : [],
+                'replacedKey' => $accessManagement ? \ForumRewrite\ReadModel\ReplacedKeys::forIdentity($this->pdo(), (string) $profile['identity_id']) : null,
                 'operatorGrantActors' => $accessManagement ? \ForumRewrite\Security\ApprovalPolicy::operatorGrantActors($this->repositoryRoot, $profile) : [],
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,

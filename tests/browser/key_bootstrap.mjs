@@ -70,6 +70,20 @@ try {
   const profile = await (await fetch(base + '/api/get_profile?profile_slug=openpgp-' + newFingerprint)).text();
   assert.match(profile, /^Approved: yes$/m);
 
+  // Optional: KEY_BOOTSTRAP_THEME_DIR=/tmp/themes saves the account's key list, with its Replaced pill, in each theme.
+  if (process.env.KEY_BOOTSTRAP_THEME_DIR) {
+    for (const theme of ['gloss', 'glossdark', 'light', 'dark', 'word97', 'chicago', 'midnight', 'bubblegum', 'spearmint', 'engagify']) {
+      await page.evaluate(theme => localStorage.setItem(window.forumBrowserRuntime.themeStorageKey, theme), theme);
+      await page.goto(base + '/tools/user-access/accounts/bootstrap-member');
+      const pill = await page.$('.chip--replaced');
+      assert.ok(pill, 'Replaced pill in ' + theme);
+      await pill.evaluate(node => node.closest('article').scrollIntoView());
+      await page.screenshot({ path: join(process.env.KEY_BOOTSTRAP_THEME_DIR, theme + '.png') });
+    }
+    await page.evaluate(() => localStorage.removeItem(window.forumBrowserRuntime.themeStorageKey));
+    await page.goto(base + '/');
+  }
+
   // 3. Reloading keeps the key and shows no second notice.
   await page.reload();
   await new Promise(r => setTimeout(r, 1500));
