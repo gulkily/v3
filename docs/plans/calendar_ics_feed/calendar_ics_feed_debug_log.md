@@ -61,3 +61,18 @@
 
 **Uncertain assessments**
 - Stage 1 depends on Google fetching a raw GitHub URL; not confirmed, and the web "From URL" path is the stated fallback.
+
+## 2026-11-17T23:45Z — Step 4 Stages 1–2
+
+**Necessary/useful instructions**
+- `AGENTS.md` "Follow-up changes after a PR": the PR was opened as a draft because the maintainer reviews by merging, and the cycle is mid-way; retain.
+- `step4_implementation_do.md` stage summary rules: recording that Google's add offer comes before any fetch kept a partial result from being reported as a pass; retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Read-model schema change rules: no schema change.
+
+**Uncertain assessments**
+- The maintainer asked to start Stage 2 before Stage 1's time checks finished, which the plan made a dependency. Proceeded at his request; recorded in the Stage 1 status.
