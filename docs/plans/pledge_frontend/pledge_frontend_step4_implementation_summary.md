@@ -2,7 +2,7 @@
 
 Debug mode: enabled ([debug log](./pledge_frontend_debug_log.md))
 
-Effort study: `railspike-effort` / `v3/pledge_frontend`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment. Parent: `v3/pledge_fill_review`. Replaces `v3/pledge_stages`.
+Effort study: `railspike-effort` / `v3/pledge_frontend`; [ledger](../effort_ledger/pledge_frontend.md). Standing P2 enrollment. Parent: `v3/pledge_fill_review`. Replaces `v3/pledge_stages`.
 
 Extended estimates: enabled
 
@@ -146,5 +146,12 @@ Status: Steps 1 (Option C), 2 and 3 approved by the maintainer 2026-11-17. Step 
 - Corrective work inside the cycle: two extra theme runs for the bar colours; browser expectations reworded for the new wording; one leftover "Post reply" press. No new requests.
 - Maintainer comfortable-fit judgment: pending. Release check: pending.
 - Single exposed rater Claude (claude-opus-5-5), 2026-11-17 UTC; R1 hashes not re-verified.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Correction after closeout - ledger location
+
+- `AGENTS.md` on `origin/main` (from `f381052a`, after this cycle's Step 1 read at `fc368349`) moved study entries to one file per cycle. This branch had appended `v3/pledge_frontend` and `v3/pledge_stages` to the frozen `effort_estimation_trial.md`. Both entries moved, unchanged, to [`effort_ledger/pledge_frontend.md`](../effort_ledger/pledge_frontend.md) and [`effort_ledger/pledge_stages.md`](../effort_ledger/pledge_stages.md); the frozen ledger is back as it was on `origin/main`, and the plans' ledger links point to the new file.
+- Verification: `git diff f381052a -- docs/plans/effort_estimation_trial.md` is empty; links in the moved entries resolve; `git diff --check`.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

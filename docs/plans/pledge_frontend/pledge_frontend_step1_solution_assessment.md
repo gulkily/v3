@@ -2,7 +2,7 @@
 
 Debug mode: enabled ([debug log](./pledge_frontend_debug_log.md))
 
-Effort study: `railspike-effort` / `v3/pledge_frontend`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment. Parent: `v3/pledge_fill_review`. Replaces `v3/pledge_stages`, which was dropped before its Step 1 was approved.
+Effort study: `railspike-effort` / `v3/pledge_frontend`; [ledger](../effort_ledger/pledge_frontend.md). Standing P2 enrollment. Parent: `v3/pledge_fill_review`. Replaces `v3/pledge_stages`, which was dropped before its Step 1 was approved.
 
 Extended estimates: enabled
 
