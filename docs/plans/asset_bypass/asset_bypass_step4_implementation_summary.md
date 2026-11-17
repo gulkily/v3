@@ -40,3 +40,27 @@ Original stage work, copied from Step 3: Stage 1 0.08 · Stage 2 0.1 · Stage 3 
   - Estimate details: original scope unchanged; the retrospective is higher because of the stale-test triage and Apache setup.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - The mode manages an asset link
+
+**Original estimate: 0.1**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `HighTrafficMode::ASSET_LINK` (`.high-traffic-assets`) and a private `exposeAssets()`. It writes the cache's `assets/.htaccess` and creates the link.
+    - `assets/.htaccess`: no listings; PHP's types for the allowlist, plus UTF-8 for css and js; one-year immutable, `nosniff` and `X-V3-High-Traffic: hit`.
+  - `change()`: a fresh turn-on exposes the assets after the pages link, and a failure detaches both. Turn-on while already on refreshes the saved `normal.htaccess` and exposes missing assets.
+  - `HighTrafficSafety::detach()` removes both links, so off, every withdrawal and `restore()` cover the asset link without their own code.
+  - `.gitignore`: `public/.high-traffic-assets`.
+  - `HighTrafficAutomationTest::testAssetLinkIsCreatedAndRemovedWithTheMode`: covers turn-on, turn-on while on (link added, saved rules refreshed), off, withdrawal, `restore`, and a refused regular file at the link path.
+- Verification:
+  - Passed: `./v3 test --smoke HighTrafficAutomationTest HighTrafficTest WebServerRoutingTest` gave 488 run, 488 passed. `StatusCommandTest` passes again now that Stage 1 is committed.
+  - Passed: in the Apache test, turning the mode on created both links. The run then stopped at the same pre-existing import check.
+  - Full suite not run.
+- Notes:
+  - Reuse: `pages/.htaccess` and its symlink pattern, and the single `detach()` used by every withdrawal path. No new service.
+  - A regular file at either link path blocks turn-off and withdrawal with "must be a managed symlink". `.high-traffic` already behaves that way.
+  - Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
