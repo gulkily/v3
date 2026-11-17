@@ -20,6 +20,7 @@ final class ContentImportRunner
         private readonly ?Closure $progress = null,
         private readonly array $publicationContext = [],
         private readonly ?string $projectRoot = null,
+        private readonly bool $withApprovals = false,
     ) {
         if (!is_dir($repositoryRoot . '/.git') || is_link($repositoryRoot . '/.git')) {
             throw new RuntimeException('Destination must be a Git checkout with a local .git directory.');
@@ -38,7 +39,7 @@ final class ContentImportRunner
                     if ($source === null) {
                         throw new RuntimeException('Preview requires a source.');
                     }
-                    $entries = (new ContentImportPlanner())->plan($source, $this->repositoryRoot);
+                    $entries = (new ContentImportPlanner($this->withApprovals))->plan($source, $this->repositoryRoot);
                     $report = $this->report($entries, $sourceLabel, $archiveExclusions, true);
                     $scores = new FastmodScoreImport($this->projectRoot ?? dirname(__DIR__, 3));
                     $supplement = $scores->read($source, $archiveExclusions);
@@ -62,7 +63,7 @@ final class ContentImportRunner
                     }
                     $this->assertClean([]);
                     $this->say('Planning public records, dependencies, and conflicts...');
-                    $entries = (new ContentImportPlanner())->plan($source, $this->repositoryRoot);
+                    $entries = (new ContentImportPlanner($this->withApprovals))->plan($source, $this->repositoryRoot);
                     $id = gmdate('YmdTHis') . '-' . bin2hex(random_bytes(6));
                     $directory = $this->stateRoot . '/' . $id;
                     $this->directory($directory);
@@ -280,7 +281,7 @@ final class ContentImportRunner
         }
         ksort($causes);
         ksort($exclusions);
-        return ['source' => $source, 'destination' => $this->repositoryRoot, 'preview' => $preview,
+        return ['source' => $source, 'destination' => $this->repositoryRoot, 'preview' => $preview, 'with_approvals' => $this->withApprovals,
             'status' => $counts['conflict'] + $counts['invalid'] + $counts['unsupported'] > 0 ? 'partial' : 'complete',
             'counts' => $counts, 'excluded_archive_categories' => $excluded, 'entries' => $entries,
             'review_causes' => array_values($causes), 'exclusion_reasons' => $exclusions];

@@ -65,6 +65,9 @@ final class ApprovalRootSuggestions
         }
 
         $edges = $this->edges($repositoryRoot, $profiles, $posts, $warnings);
+        if ($edges === [] && count($profiles) > count($seeds)) {
+            $warnings[] = 'No approval posts found. ./v3 import-instance leaves them out unless run with --with-approvals; rerun the import with it, then run this again.';
+        }
 
         $nodes = [];
         foreach ($edges as $edge) {
