@@ -88,3 +88,45 @@ Original stage work, copied from Step 3: Stage 1 0.08 · Stage 2 0.1 · Stage 3 
   - Estimate details: original scope unchanged; extra base-commit runs to attribute the failures.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Deploy replay and documentation
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.1**
+
+- Changes:
+  - `AppUpdateTest::testAssetBypassReleaseKeepsServerEditsToHtaccess` deploys this release's `public/.htaccess` over the base file (`tests/fixtures/asset_bypass/htaccess_before.txt`, taken from `fb90541`). It covers two stand-in server edits: an HTTPS redirect appended at the end, and a changed `DirectoryIndex` line.
+  - The replay found a real conflict, and this stage fixes it: Stage 1 had put the plain-file `<If>` block at the end of the file. A server edit appended there made the deploy refuse with `local_changes_conflict`. The block now sits directly below the line-35 rule.
+  - `docs/runbooks/high_traffic_mode.md`: both symlinks; assets served while on; enable after every deploy that changes `public/.htaccess`; asset check in verification; disable and restore remove both.
+  - New concept entry `docs/concepts/high_traffic_mode.md`.
+- Verification:
+  - Passed: `./v3 test --smoke AppUpdateTest WebServerRoutingTest` gave 503 run, 502 passed, before this commit. The one failure is `StatusCommandTest`, caused by the uncommitted `public/.htaccess` (see Stage 1). It is rerun after the commit, below.
+  - Passed: after the move, the Apache test's Stage 1 and Stage 3 checks run up to the pre-existing import check.
+  - Passed: concept links resolve; `git diff --check fb90541` is clean.
+  - Pending: the production replay. The server's real local edit is still unknown, so only stand-in edits were tested.
+  - Full suite not run.
+- Notes:
+  - Estimate details: original scope unchanged; the conflict fix is ordinary correction found by the planned replay.
+
+*— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion Contract:
+  - Passed: end-to-end in the isolated Apache test; a warm page and its assets add zero PHP requests.
+  - Passed: recovery (off, withdrawal, `restore`, miss, query, `Authorization`).
+  - Passed: deploy over stand-in edits.
+  - Pending: release on zenmemes. The maintainer deploys, runs `./v3 high-traffic enable`, and checks that one stylesheet carries `X-V3-High-Traffic: hit`.
+- Pending decision, pre-existing failures in `tests/high_traffic_apache_test.py` (all reproduced at `fb90541`):
+  - Import no longer withdraws serving. A product decision under the retraction handoff.
+  - The absent-target section shows a deleted and retracted reply on a cached thread page when the read model is stale. The same section's `live_hash` check fails. A product decision under the retraction handoff.
+  - The QDB section: `SetEnv FORUM_SITE_ID qdb` does not reach PHP on the ordinary page in my workspace. The cause is not yet known; it may be specific to my environment.
+  - Fixed here: `Retry-After` and the removed prepared read model.
+- Observed, outside this cycle:
+  - PHP serves `/assets/1111.html` and `/assets/tour.html` without the members-only gate.
+  - `./v3 status` prints a misaligned row whenever `public/.htaccess` has local edits. That also makes `StatusCommandTest` fail in such a checkout.
+- Commits: planning `fb90541`; stages `be5141ea`, `5689b4d7`, `66dd92dd`, and Stage 4 (this commit).
+- **Retrospective cycle scope assessment: 0.45** (single exposed rater Claude; not a measured actual). The scope delivered is the approved scope. The increase comes from the Apache-test triage on the base commit and the conflict fix. Maintainer comfortable-fit judgment: pending.
+
+*— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*

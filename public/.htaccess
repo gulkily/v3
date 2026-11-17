@@ -43,6 +43,13 @@ RewriteRule ^\.static(?:/|$) - [F,L]
 RewriteCond %{REQUEST_URI} ^/(?:assets/[^/]+\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?)|favicon\.ico)$ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
+# Apache-served presentation files get the headers PHP sends for them.
+<IfModule mod_headers.c>
+<If "%{REQUEST_URI} =~ m#^/(?:assets/[^/]+\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?)|favicon\.ico)$#i && -f %{REQUEST_FILENAME}">
+Header set Cache-Control "public, max-age=300, must-revalidate"
+Header set X-Content-Type-Options "nosniff"
+</If>
+</IfModule>
 
 # Feature and membership state must be evaluated by PHP before serving content.
 # Every content, API, download, and generated-artifact request goes through the
@@ -50,12 +57,4 @@ RewriteRule ^ - [L]
 # private instances always run the approved-members-only gate.
 RewriteRule ^index\.php$ - [L]
 RewriteRule ^ index.php [L]
-</IfModule>
-
-# Apache-served presentation files get the headers PHP sends for them.
-<IfModule mod_headers.c>
-<If "%{REQUEST_URI} =~ m#^/(?:assets/[^/]+\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?)|favicon\.ico)$#i && -f %{REQUEST_FILENAME}">
-Header set Cache-Control "public, max-age=300, must-revalidate"
-Header set X-Content-Type-Options "nosniff"
-</If>
 </IfModule>

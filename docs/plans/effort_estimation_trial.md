@@ -2252,6 +2252,12 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/asset_bypass` | Step 1 approved (Option A); Step 2 next | v1 / R1 / P2 | 0.35 (Step 1) | [Step 1](./asset_bypass/asset_bypass_step1_solution_assessment.md) | Found during `v3/tour_snapshots`; acceptance pending |
+| `v3/asset_bypass` | Technically complete; production release and maintainer acceptance pending | v1 / R1 / P2 | 0.4 (Step 1 0.35; Step 2 0.4; Step 3 0.4; Step 4 entry 0.4; retrospective 0.45) | [Step 1](./asset_bypass/asset_bypass_step1_solution_assessment.md) · [Step 2](./asset_bypass/asset_bypass_step2_feature_description.md) · [Step 3](./asset_bypass/asset_bypass_step3_development_plan.md) · [Step 4](./asset_bypass/asset_bypass_step4_implementation_summary.md) | Found during `v3/tour_snapshots`; acceptance pending |
 
 2026-11-16: standing P2 enrollment, staged. Step 1 0.35 (Option A; B 0.4; C 0.05). Baseline `34d87c86`; branch `feat/asset_bypass`. Single exposed rater Claude (claude-opus-5-5).
+
+2026-11-17 Step 2: 0.4, up from 0.35. New understanding, same Option A: turn-on while already on must also create the asset link and refresh the saved rules; plain files need PHP's 300-second header from Apache; a refusal rule for the new link path. Scope v1 unchanged; same single exposed rater.
+
+2026-11-17 Step 3: 0.4 reaffirmed (stage work 0.08 / 0.1 / 0.12 / 0.08, not summed). Scope v1 unchanged; same single exposed rater.
+
+2026-11-17 Step 4: entry 0.4 reaffirmed. Closeout: retrospective scope assessment **0.45** (Apache-test triage on the base commit; a deploy-conflict fix found by the planned replay). Retrospective stage work 0.1 / 0.08 / 0.14 / 0.1. Approved scope delivered. No measured effort, independent rating or accepted-count increment; maintainer judgment pending.
