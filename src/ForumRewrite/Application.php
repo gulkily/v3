@@ -193,6 +193,16 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
+                new \ForumRewrite\Support\LocalDevelopmentImport(
+                    $this->projectRoot, $this->repositoryRoot, $this->databasePath,
+                    $this->staticHtmlRoot ?? \ForumRewrite\PresentationPathResolver::staticHtmlRoot($this->projectRoot, \ForumRewrite\SiteProfileRegistry::active()),
+                )
+            ))->handle($method);
+            return;
+        }
+
         if ($securityReviewRequest) {
             if (!$this->routeServices()->securityReviewAllowed()) {
                 if (!str_starts_with($path, '/api/') && ($query['format'] ?? '') !== 'rss') {
@@ -291,6 +301,16 @@ final class Application
 
         if ($path === '/api/auth_status') {
             $this->authApiController()->authenticationStatus($method);
+            return;
+        }
+
+        if (in_array($path, ['/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap'], true)) {
+            $controller = new \ForumRewrite\Http\KeyBootstrapApiController($this->routeServices());
+            match ($path) {
+                '/api/key_bootstrap_status' => $controller->status($method),
+                '/api/prepare_key_bootstrap' => $controller->prepare($method, $query),
+                default => $controller->finalize($method, $query),
+            };
             return;
         }
 
@@ -1492,10 +1512,13 @@ final class Application
 
     private function importController(): \ForumRewrite\Http\ImportController
     {
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+
         return new \ForumRewrite\Http\ImportController(
             $this->routeServices(),
             $this->repositoryRoot,
-            TaskQueueDatabaseConfig::path($this->projectRoot),
+            $queuePath,
+            fn (): string => (new \ForumRewrite\TaskQueue\DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchForOperator(),
         );
     }
 
@@ -1616,6 +1639,7 @@ final class Application
             [
                 'accessManagement' => $accessManagement,
                 'retirementActors' => $accessManagement ? (new \ForumRewrite\Security\KeyRetirementPolicy($this->pdo(),$this->repositoryRoot))->presentationActors($profile) : [],
+                'replacedKey' => $accessManagement ? \ForumRewrite\ReadModel\ReplacedKeys::forIdentity($this->pdo(), (string) $profile['identity_id']) : null,
                 'operatorGrantActors' => $accessManagement ? \ForumRewrite\Security\ApprovalPolicy::operatorGrantActors($this->repositoryRoot, $profile) : [],
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
@@ -1799,8 +1823,7 @@ final class Application
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
 
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
-            && $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+            && RouteServices::signedInApproved($viewerProfile);
     }
 
     private function renderLlmsTxt(): string
@@ -2493,6 +2516,7 @@ final class Application
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
+            '/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/prepare_post_format', '/api/create_prepared_post_format', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status',

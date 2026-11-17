@@ -217,6 +217,51 @@ final class ViewerSessionStoreTest
         }
     }
 
+    public function testSignInRecordsTheDeviceAndSameIdentitySignInRefreshesIt(): void
+    {
+        $store = $this->store();
+        $first = $store->signIn('openpgp:abc', null, 'safari/ios/mobile');
+        assertSame('safari/ios/mobile', $store->resolve($first->token)?->deviceFingerprint);
+
+        // An unknown device keeps what was recorded; a known one replaces it.
+        $store->signIn('openpgp:abc', $first->token, '');
+        assertSame('safari/ios/mobile', $store->resolve($first->token)?->deviceFingerprint);
+        $store->signIn('openpgp:abc', $first->token, 'chrome/ios/mobile');
+        assertSame('chrome/ios/mobile', $store->resolve($first->token)?->deviceFingerprint);
+    }
+
+    public function testStoreFromBeforeKeyBootstrapGainsItsColumnsInPlace(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->exec('CREATE TABLE viewer_sessions (token_hash TEXT PRIMARY KEY, identity_id TEXT NOT NULL, lobby_identity_id TEXT NOT NULL,
+            created_at INTEGER NOT NULL, last_seen_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, replaced_by_hash TEXT NOT NULL, replaced_at INTEGER NOT NULL)');
+        $token = str_repeat('b', 64);
+        $pdo->prepare('INSERT INTO viewer_sessions VALUES (:hash, :identity, \'\', :now, :now, :expires, \'\', 0)')
+            ->execute(['hash' => hash('sha256', $token), 'identity' => 'openpgp:abc', 'now' => $this->now, 'expires' => $this->now + 3600]);
+
+        $store = new ViewerSessionStore($pdo, fn (): int => $this->now);
+        $session = $store->resolve($token);
+        assertSame('openpgp:abc', $session?->identityId);
+        assertSame('', $session?->deviceFingerprint);
+        assertSame(0, $session?->keyBootstrappedAt);
+        // A second store on the same database finds the columns already there.
+        new ViewerSessionStore($pdo, fn (): int => $this->now);
+    }
+
+    public function testASessionBootstrapsAKeyOnceAndOnlyWhileSignedIn(): void
+    {
+        $store = $this->store();
+        $session = $store->signIn('openpgp:abc', null, 'safari/ios/mobile');
+        assertSame(true, $store->markKeyBootstrapped($session->token));
+        assertSame(false, $store->markKeyBootstrapped($session->token));
+        assertSame($this->now, $store->resolve($session->token)?->keyBootstrappedAt);
+
+        $signedOut = $store->signIn('openpgp:def');
+        $store->signOut($signedOut->token);
+        assertSame(false, $store->markKeyBootstrapped($signedOut->token));
+        assertSame(false, $store->markKeyBootstrapped(str_repeat('c', 64)));
+    }
+
     private function store(): ViewerSessionStore
     {
         return new ViewerSessionStore(new PDO('sqlite::memory:'), fn (): int => $this->now);

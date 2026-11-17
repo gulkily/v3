@@ -129,6 +129,7 @@ final class InstanceArchiveDownloader
                         }
                         if ($this->progress !== null && $count - $lastProgress >= 1048576) {
                             ($this->progress)('Downloaded ' . $count . ' bytes...');
+                            ($this->progress)('Progress: download ' . $count . '/' . ($length ?? '?'));
                             $lastProgress = $count;
                         }
                     }

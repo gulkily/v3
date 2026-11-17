@@ -21,6 +21,8 @@ under `docs/plans/`. Move completed feature cycles to `docs/plans/archive/`.
 
 ## Community and product experience
 
+- [Prompt versions and Edit](prompt_plain_text_and_revise_step2_feature_description.md) — backlogged with Step 1 approved and Step 2 awaiting approval: Edit on a prompt's thread opens the reply form filled in and posts a marked version; the Prompts page shows the author's newest. [Step 1](prompt_plain_text_and_revise_step1_solution_assessment.md), [debug log](prompt_plain_text_and_revise_debug_log.md).
+
 - [Approved User Server Pause](approved_user_server_pause_step1_solution_assessment.md)
 - [Clickable External Links](clickable_external_links_step1_solution_assessment.md)
 - [Gamification Leaderboard](gamification_leaderboard_step1_solution_assessment.md)

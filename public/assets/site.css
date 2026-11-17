@@ -1350,6 +1350,12 @@ pre {
   color: var(--status-ok, var(--ink));
 }
 
+/* A key a session replaced (key bootstrap): still approved, waiting to be retired or kept. */
+.chip--replaced {
+  border-style: dashed;
+  color: var(--ink-soft, var(--ink));
+}
+
 /* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
    only page-specific layout lives here. */
 /* A search field inside the board toolbar. Users filters the list already on the page, so its field is script-only;

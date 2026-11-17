@@ -1,5 +1,12 @@
 # UI copy audit checklist
 
+## Local start MVP — November 16, 2026
+
+Review: [one-shot record](local_start_import/local_start_import_one_shot.md). The development homepage uses existing cards and form controls. Import consequences and recovery remain visible; the detailed CLI output is collapsed. Redundant initial Browse local content was removed because Browse threads already provides that action.
+Verification: Fresh-checkout ./v3 start browser check passed at 390px and 1280px across all offered themes, with native JavaScript-on/off failure/retry/import flows and expanded logs without overflow. Initial, pending, failed and imported screenshots were captured; light initial and Engagify failed/imported screenshots were inspected. Pending feedback was checked through a submit event with navigation prevented, then real native submissions verified the result. HTTP tests cover resume, partial results and local conflict preservation. Production and physical-device acceptance remain unverified. No new navigation icons or CSS were introduced.
+
+*— Codex · 2026-11-16 UTC*
+
 ## Current audit status — October 30, 2026
 
 Four copy-review candidates remain in the [current queue](#next-phase--new-candidates):
@@ -956,3 +963,7 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 ## Tools → Import page — 2026-11-16
 
 - [x] New operator page: no explanatory intro. Copy is kept to consequences and recovery: who can import, "Resume finishes it; cancel removes what it installed." (or "Content is committed; resume finishes publishing."), the task worker not running, and the last failed request. Per-file detail is folded under Advanced. Checked in 8 themes at 390 and 1280 px for idle, running, result, pending and signed-out states ([Step 4](import_instance_gui/import_instance_gui_step4_implementation_summary.md)).
+
+## Tools → Import progress — 2026-11-17
+
+- [x] The step list replaces the "Importing…" status line and the Task worker row. The form is hidden while an import runs. Raw output is folded under Log. New copy is limited to step names, "Elapsed · updated · time left", and the not-started recovery: "The task worker didn't start.", the command and Try again. Checked in 8 themes at 390 and 1280 px ([Step 4](import_without_worker/import_without_worker_step4_implementation_summary.md)).

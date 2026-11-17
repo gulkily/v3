@@ -12,6 +12,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Import without a worker](import_without_worker/import_without_worker_step1_solution_assessment.md) — Tools → Import starts a worker when none runs, `./v3 start` runs one by default, and the page shows steps, elapsed time and time left.
+
+[Import review summary one-shot](import_review_summary/import_review_summary_one_shot.md) — Tools → Import groups review causes by state and reason instead of listing every path.
+
 [Import-instance GUI](import_instance_gui/import_instance_gui_step1_solution_assessment.md) — root-only Tools → Import page: import from a remembered or typed source, watch progress, resume or cancel, read the result.
 
 [Import cancel one-shot](import_cancel/import_cancel_one_shot.md) — `./v3 import-instance --cancel` discards an interrupted import that has not committed its content; prerequisite for the import-instance GUI.
@@ -110,6 +114,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Session key bootstrap](session_key_bootstrap/session_key_bootstrap_step3_development_plan.md) — a browser with a live session but no key (iPhone Safari's storage wipe) gets a new approved key from the session, with a coarse fingerprint as tie-breaker; the lost key shows a Replaced pill and waits in a queue; behind two flags; Stages 1–6 committed, iPhone Safari replay (Stage 7) pending deploy.
 - [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes and flags by post; follows Pollyanna's `#notext`; behind a new flag; Step 4 complete, release pending.
 - [Usage reports UI](usage_reports_ui/usage_reports_ui_step3_development_plan.md) — readable page and control names, phone-first Usage Reports with shortcut-idea cards, and a readable Usage Log with the exact upload text behind a disclosure; follow-up to the local usage log; Step 4 in progress.
 - [Local usage log](local_telemetry/local_telemetry_step3_development_plan.md) — opt-in, browser-only log of page views and clicks that a visitor reviews and uploads to a private report store kept out of exports; a root-only summary shows click counts and multi-click journeys that could be one click; behind a flag; Step 4 in progress.
@@ -542,3 +547,11 @@ and repair its navigation and affected references. See the
 - [Tour snapshots](tour_snapshots/tour_snapshots_step1_solution_assessment.md) — staged: the feature tour as one row per feature with essays, served from pre-rendered HTML snapshots refreshed by deploy, cron or Tools → Operations.
 - [Approval root suggestions](approval_suggest_roots/approval_suggest_roots_one_shot.md) — one-shot: read-only `./v3 approval suggest-roots` that finds which keys to seed as roots after importing a site without its approval seeds.
 - [Asset bypass](asset_bypass/asset_bypass_step1_solution_assessment.md) — staged: high-traffic mode serves its verified asset copies through Apache; fix the broken /assets/ bypass condition.
+
+- [Import with approvals](import_with_approvals/import_with_approvals_one_shot.md) — one-shot: `import-instance --with-approvals` imports approval/invitation posts and receipts (never seeds) and points to `./v3 approval suggest-roots`.
+
+- [Local start PR integration repair](local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md) — one-shot repair of open PR #284.
+
+- [Local start and import MVP](local_start_import/local_start_import_one_shot.md) — one-shot.
+
+- [Session member gates](session_member_gates/session_member_gates_one_shot.md) — one-shot: member-only agent, analysis and LLM Exchanges gates require a signed-in session, not the hint cookie.

@@ -55,12 +55,14 @@ final class FeatureFlagRegistry
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
     public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
     public const PLEDGES_COUNT_UNNAMED_ENABLED = 'FORUM_PLEDGES_COUNT_UNNAMED_ENABLED';
+    public const SESSION_KEY_BOOTSTRAP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_ENABLED';
+    public const SESSION_KEY_BOOTSTRAP_HTTP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
         'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
-            self::VERIFIED_ATTRIBUTION],
+            self::VERIFIED_ATTRIBUTION, self::SESSION_KEY_BOOTSTRAP_ENABLED, self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED],
         'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
@@ -218,6 +220,25 @@ final class FeatureFlagRegistry
                 false,
                 self::VERIFIED_ATTRIBUTION,
                 siteMutable: true,
+                group: 'ACCESS',
+            ),
+            new FeatureFlagDefinition(
+                self::SESSION_KEY_BOOTSTRAP_ENABLED,
+                'Session key bootstrap',
+                'A browser that lost its key but is still signed in gets a new key under the same name. It is approved when the browser matches the one that signed in, and waits for approval otherwise.',
+                false,
+                self::SESSION_KEY_BOOTSTRAP_ENABLED,
+                siteMutable: true,
+                group: 'ACCESS',
+            ),
+            new FeatureFlagDefinition(
+                self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED,
+                'Session key bootstrap over HTTP',
+                'Let sessions over plain HTTP bootstrap keys too. A cookie sent over HTTP can be copied on the network.',
+                false,
+                self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::SESSION_KEY_BOOTSTRAP_ENABLED,
                 group: 'ACCESS',
             ),
             new FeatureFlagDefinition(
@@ -410,6 +431,7 @@ final class FeatureFlagRegistry
                 "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
                 true,
                 self::PENDING_CHIP_APPROVAL_ENABLED,
+                group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
                 self::USAGE_REPORTS_ENABLED,

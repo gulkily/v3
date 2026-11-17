@@ -7,7 +7,7 @@ COMMAND="${1:-}"
 if [[ -z "${COMMAND}" || "${COMMAND}" == "help" || "${COMMAND}" == "--help" || "${COMMAND}" == "-h" ]]; then
   cat <<'EOF'
 Usage:
-  ./v3 start [--listen-all|port|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
+  ./v3 start [--listen-all|port|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
   ./v3 check-dependencies [--install|--help] (alias: dependency-check)
   ./v3 test [--smoke] [--all] [--jobs=N] [Class[::method] ...]
   ./v3 fulltest [--jobs=N] (full suite on every core)
@@ -24,7 +24,7 @@ Usage:
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
   ./v3 rebuild recover --confirm [repository_root] [database_path]
-  ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
+  ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--with-approvals] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
   ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
   ./v3 import-instance --cancel [--repository-root=/path/repository] [--database-path=/path/index.sqlite3]
   ./v3 images verify|restore <images.tar> <repository_root> <database_path> [--image-root=/private/images]
@@ -120,7 +120,7 @@ case "${COMMAND}" in
     ADDRESS_SEEN=0
     for ARGUMENT in "$@"; do
       case "${ARGUMENT}" in
-        --verbose|--quiet) DEV_SERVER_ARGS+=("${ARGUMENT}") ;;
+        --verbose|--quiet|--no-worker) DEV_SERVER_ARGS+=("${ARGUMENT}") ;;
         --log-file=) echo 'The log-file path cannot be empty.' >&2; exit 1 ;;
         --log-file=*) DEV_SERVER_ARGS+=("${ARGUMENT}") ;;
         *)

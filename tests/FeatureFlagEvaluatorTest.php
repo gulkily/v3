@@ -234,6 +234,8 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
             FeatureFlagRegistry::USERNAME_CHANGES_ENABLED,
             FeatureFlagRegistry::VERIFIED_ATTRIBUTION,
+            FeatureFlagRegistry::SESSION_KEY_BOOTSTRAP_ENABLED,
+            FeatureFlagRegistry::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED,
             FeatureFlagRegistry::UNICODE_AUTHORED_TEXT,
             FeatureFlagRegistry::EMOJI_AUTHORED_TEXT,
             FeatureFlagRegistry::EVENT_SUPPORT_ENABLED,

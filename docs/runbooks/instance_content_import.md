@@ -14,8 +14,23 @@ Import lets a signed-in root-approved operator import from a typed or
 remembered source, then resume or cancel an interrupted import. The page queues
 an `instance_import` task. The task worker runs this same command with its own
 destination paths, so limits, locks, exclusions and conflict rules are
-unchanged. The worker must be running; the page says when it is not. One
-request runs at a time.
+unchanged. One request runs at a time.
+
+No cron is needed to start. `./v3 start` runs the task worker every few
+seconds. On a server with no fresh worker heartbeat, pressing Import, Resume or
+Cancel starts one detached one-task worker (`php scripts/task_queue.php run
+--limit=1`). This doesn't need `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`; only
+a root operator's request on this page can start it. If the task hasn't started
+15 seconds later, the page says the worker didn't start, shows that command to
+run in the application checkout, and offers Try again. Hosts that forbid
+processes started by the web server need cron or that command.
+
+While it runs, the page lists the steps (download, archive check, planning,
+installing, commit, view refresh, images) with counts, an elapsed timer, the
+time since the last update, and the time left. Time left comes from the current
+step's rate, or from the previous import's step times (`Step-Seconds` on its
+request). With neither, it says "estimating time left". The command prints the
+same steps as `Progress: <step> [done/total]` lines.
 
 Each request is a private `Key: value` file beside the task queue database
 (`state/private/instance_import/` by default), with the command's full output

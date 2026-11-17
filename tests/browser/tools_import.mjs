@@ -48,7 +48,9 @@ let cases = 0;
 for (const theme of ['gloss', 'glossdark', 'word97', 'midnight', 'bubblegum', 'spearmint', 'light', 'dark']) {
   for (const width of [390, 1280]) {
     for (const state of ['idle', 'running', 'result', 'pending', 'signed-out']) {
-      const { page, context, errors } = await open(state, { width, theme, onPost: () => ({ status: 'ok', message: '', state: { busy: true, task: { status: 'running' }, progress: [] } }) });
+      const { page, context, errors } = await open(state, { width, theme, onPost: () => ({ status: 'ok', message: '', state: { busy: true, task: { status: 'running' }, progress: ['Installing 7172 record file(s)...'],
+        steps: [{ key: 'worker', label: 'Task worker started', status: 'done', done: null, total: null }, { key: 'install', label: 'Installing records', status: 'current', done: 1300, total: 7172 }],
+        timing: { elapsed: 30, since_update: 0, step_seconds_left: 90, seconds_left: 400 } } }) });
       assert.ok(await overflow(page) <= 0, `${theme}/${width}/${state}: page overflows`);
       if (state === 'result') {
         assert.equal(await page.locator('details.import-advanced').evaluate((d) => d.open), false, 'Advanced starts closed');
@@ -57,7 +59,13 @@ for (const theme of ['gloss', 'glossdark', 'word97', 'midnight', 'bubblegum', 's
         await page.click('details.import-advanced summary');
       }
       if (state === 'idle' || state === 'result') assert.ok(await page.locator('button[value="import"]').isVisible(), `${state}: Import visible`);
-      if (state === 'running') assert.ok(await page.locator('button[value="import"]').isDisabled(), 'running: Import disabled');
+      if (state === 'running') {
+        assert.equal(await page.locator('[data-import-form]').isVisible(), false, 'running: form hidden');
+        assert.ok(await page.locator('.import-steps li.is-current').isVisible(), 'running: current step shown');
+        const first = await page.locator('[data-import-timing]').textContent();
+        await page.waitForTimeout(1100);
+        assert.notEqual(await page.locator('[data-import-timing]').textContent(), first, 'running: timer ticks');
+      }
       if (state === 'pending') {
         assert.ok(await page.locator('button[value="resume"]').isVisible() && await page.locator('button[value="cancel"]').isVisible(), 'pending: Resume and Cancel');
         assert.equal(await page.locator('input[name="source"]').count(), 0, 'pending: no source field');
@@ -77,17 +85,22 @@ for (const theme of ['gloss', 'glossdark', 'word97', 'midnight', 'bubblegum', 's
   const { page, context, errors } = await open('idle', { width: 390, theme: 'gloss', onPost: (body) => {
     if (body.action === 'import') {
       assert.equal(body.source, 'forum.example');
-      return { status: 'ok', message: 'Queued for the task worker.', state: { busy: true, task: { status: 'queued' }, progress: [] } };
+      return { status: 'ok', message: 'Starting a worker…', state: { busy: true, task: { status: 'queued' }, progress: [], start: 'starting',
+        steps: [{ key: 'worker', label: 'Starting the task worker', status: 'current', done: null, total: null }], timing: null } };
     }
     polls++;
-    if (polls < 2) return { status: 'ok', message: '', state: { busy: true, task: { status: 'running' }, progress: ['Downloading repository archive...'] } };
+    if (polls < 2) return { status: 'ok', message: '', state: { busy: true, task: { status: 'running' }, progress: ['Downloading repository archive...'],
+      steps: [{ key: 'worker', label: 'Task worker started', status: 'done', done: null, total: null }, { key: 'install', label: 'Installing records', status: 'current', done: 1200, total: 7172 }],
+      timing: { elapsed: 65, since_update: 1, step_seconds_left: 125, seconds_left: null } } };
     return { status: 'ok', message: '', state: { busy: false, task: { status: 'completed' }, progress: ['Import result: complete'] }, next: 'result' };
   } });
   await page.fill('input[name="source"]', 'forum.example');
   await page.click('button[value="import"]');
-  await page.waitForSelector('[data-import-progress] li', { timeout: 8000 });
-  assert.equal(await page.locator('[data-import-status]').textContent(), 'Importing…');
-  assert.ok(await page.locator('button[value="import"]').isDisabled(), 'busy while following');
+  assert.equal(await page.locator('.import-steps li.is-current').textContent(), 'Starting the task worker');
+  await page.waitForFunction(() => document.querySelector('.import-steps li.is-current')?.textContent.startsWith('Installing'), null, { timeout: 8000 });
+  assert.equal(await page.locator('.import-steps li.is-current').textContent(), 'Installing records 1,200 of 7,172');
+  assert.match(await page.locator('[data-import-timing]').textContent(), /^Elapsed 1:0\d · updated \d s ago · about 3 min left in this step$/);
+  assert.equal(await page.locator('[data-import-form]').isVisible(), false, 'form hidden while following');
   await page.waitForSelector('details.import-advanced', { timeout: 10000 });
   assert.deepEqual(errors, []);
   await context.close();

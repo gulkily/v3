@@ -1,5 +1,15 @@
 # Effort estimation trial ledger
 
+## Cycle v3/prompt_plain_text_and_revise
+
+2026-11-16T10:35Z — v3/prompt_plain_text_and_revise **backlogged** at the maintainer's request, incomplete: Step 1 approved, Step 2 (scope v2) unapproved, nothing implemented. Artifacts in [backlog](./backlog/prompt_plain_text_and_revise_step2_feature_description.md). No outcome score.
+
+2026-11-16T09:50Z — scope v2 (maintainer split): the listing display moved to one-shot v3/prompt_plain_text; versions and Edit remain. Step 2 revised, projected total **0.4**.
+
+2026-11-16T09:45Z — Step 1 approved (Option B; author's version; "Show all"). Step 2 projected total **0.55**, same rater.
+
+2026-11-16T09:30Z — staged (standing P2 enrollment; follows v3/prompt_copy_quiet): [Step 1](./backlog/prompt_plain_text_and_revise_step1_solution_assessment.md). Prompts shown as plain text with Copy; Edit on a prompt version opens the reply form filled in. Intake **0.5** after reading the prompt library record and thread templates (no pristine intake); Step 1 projected total for recommended Option B **0.5** (A 0.3, C 0.45), single exposed Claude rater. Baseline `65b98d0`.
+
 ## Cycle v3/prompt_plain_text
 
 2026-11-16T10:25Z — v3/prompt_plain_text one-shot (standing P2 enrollment; split from the staged v3/prompt_plain_text_and_revise at the maintainer's request): [record](./prompt_plain_text/prompt_plain_text_one_shot.md#study-history). /agent/ prompts become selectable text with Copy in the corner; tall shared prompts cut off with Show all; intake **0.15** after source inspection (no pristine intake), retrospective 0.15, single exposed Claude rater. Baseline `6685625`; maintainer fit judgment pending; no accepted-count change.
@@ -669,6 +679,7 @@ Maintainer request: “I want every future railspike to be part of the same data
 | `v3/quality_review_decisions_record` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.10 | [One-shot record](./quality_review_decisions_record/quality_review_decisions_record_one_shot.md#study-history) | Documentation follow-up to the code quality review; acceptance pending |
 | `v3/image_backup_zip` | Locally complete; maintainer acceptance pending | v1 / R1 / P2 | 0.40 | [Intake and Step 2](./image_backup_zip/image_backup_zip_step2_feature_description.md#study-snapshots-and-approval); [Step 3](./image_backup_zip/image_backup_zip_step3_development_plan.md#checkpoint-and-approval) | Format/recovery follow-up to archive README and Backup UI; acceptance pending |
 | `v3/approval_suggest_roots` | Locally complete; not pushed; acceptance pending | v1 / R1 / P2 | 0.25 | [One-shot record](./approval_suggest_roots/approval_suggest_roots_one_shot.md#study-history) | New cycle; acceptance pending |
+| `v3/import_with_approvals` | Complete; PR open; acceptance pending | v1 / R1 / P2 | 0.30 | [One-shot record](./import_with_approvals/import_with_approvals_one_shot.md#study-history) | New cycle; acceptance pending |
 
 2026-10-26T00:56:13Z: image ZIP Step 2 approved. Step 3 **0.40 whole-cycle projection reaffirmed**, same scope v1/original baseline/R1/P2, verified R1 hashes and Codex single exposed rater. Extended stage-work originals: S1 0.18 bounded ZIP recovery, S2 0.12 ZIP export/routes, S3 0.08 ordinary-flow verification/docs; independent annotations, not summed. Reuse existing PHP ZIP support with no dependency addition. No implementation, measurement or accepted outcome; awaiting Approved Step 3.
 
@@ -2261,3 +2272,52 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-17 Step 3: 0.4 reaffirmed (stage work 0.08 / 0.1 / 0.12 / 0.08, not summed). Scope v1 unchanged; same single exposed rater.
 
 2026-11-17 Step 4: entry 0.4 reaffirmed. Closeout: retrospective scope assessment **0.45** (Apache-test triage on the base commit; a deploy-conflict fix found by the planned replay). Retrospective stage work 0.1 / 0.08 / 0.14 / 0.1. Approved scope delivered. No measured effort, independent rating or accepted-count increment; maintainer judgment pending.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_review_summary` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./import_review_summary/import_review_summary_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
+
+2026-11-17: one-shot import review summary; baseline `34d87c86`. Intake after inspection and closeout retrospective both 0.08; Claude single exposed rater; R1 hashes not re-verified.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_without_worker` | Locally complete; acceptance pending | v2 / R1 / P2 | 0.46 | [Step 1](./import_without_worker/import_without_worker_step1_solution_assessment.md#study-snapshots); [Step 2](./import_without_worker/import_without_worker_step2_feature_description.md#study-snapshots); [Step 3](./import_without_worker/import_without_worker_step3_development_plan.md#study-checkpoint); [Step 4](./import_without_worker/import_without_worker_step4_implementation_summary.md#study-closeout) | Follow-up to `v3/import_instance_gui`; acceptance pending |
+
+2026-11-17: import without a worker; baseline `34d87c86`. Intake after inspection and Step 1 handoff both 0.45 for A + C + D; extended estimates A 0.12, B 0.10, C 0.08, D 0.20, E 0.05 (not summed). Claude single exposed rater; R1 hashes not re-verified. Awaiting Approved Step 1.
+
+2026-11-17: import without a worker Step 1 approved with answers (launch without the emergency variable; dev-server worker on by default). Step 2 projection 0.45 unchanged, scope v2. Awaiting Approved Step 2.
+
+2026-11-17: import without a worker Step 2 approved. Step 3 projection 0.46; stage originals S1 0.07, S2 0.08, S3 0.10, S4 0.15, S5 0.06 (not summed). Awaiting Approved Step 3.
+
+2026-11-17: import without a worker Step 3 approved; Step 4 entry 0.46 reaffirmed. Closeout: five stages on `feat/import_without_worker`; retrospective scope assessment 0.55 (S1 0.06, S2 0.12, S3 0.11, S4 0.17, S5 0.09; not summed). Claude single exposed rater; R1 hashes not re-verified; no measured time. Maintainer acceptance pending.
+
+## Cycle v3/local_start_import
+
+Cycle ID: v3/local_start_import
+Mode: one-shot; standing enrollment under P2
+Scope/reference: v1 / R1 / P2
+Status: locally verified MVP; PR #284 open; thread reply unavailable; merge, deployment and maintainer acceptance pending
+Projection: unavailable; frozen external calibration sources were not recovered
+Canonical checkpoints: [record](local_start_import/local_start_import_one_shot.md)
+Relationship: new local-start outcome; related PF-20261111-F09 speed and PF-20261104-B14 availability remain separate
+2026-11-16: Codex, single exposed rater; intake and execution-entry snapshot record prior source exposure and missing pristine intake. Closeout retains unavailable numeric projection/retrospective; no reconstructed score, measured labor or accepted-count increment. Fresh checkout/native browser flow passed; smoke 482/486 with the four failures reproduced on untouched origin/main. Full suite not run.
+
+## Cycle v3/local_start_import_pr_fix
+
+Cycle ID: v3/local_start_import_pr_fix
+Mode: one-shot; standing enrollment under P2
+Scope/reference: v1 / R1 / P2
+Status: conflicts resolved and integration verified; updating existing PR #284
+Projection: unavailable; frozen external R1 sources not recovered
+Canonical checkpoints: [record](local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md)
+Relationship: integration follow-up to v3/local_start_import on open PR #284, not a separate product outcome
+2026-11-17: Intake and execution entry: Codex single exposed rater, baseline 936c6357 / original PR dee4c41c, prior source/history exposure disclosed. Pristine intake missing. No numeric score, independent rating, measured effort or accepted-count increment.
+2026-11-17 closeout for v3/local_start_import_pr_fix: projection/retrospective remain unavailable; v1/R1/P2 preserved. Smoke plus affected import, task, tour and cache checks: 522/526; the four failures reproduced on unchanged 936c6357. Fresh-start browser check passed. Feedback collision reconciled with local-start intake PF-20261117-F01, preserving main PF-20261116-F01 cancellation record. No new product outcome, measured labor or accepted-count increment.
+
+## Cycle v3/session_member_gates
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/session_member_gates` | One-shot technically complete; push, PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.15 (intake 0.15; execution entry 0.15; retrospective 0.25) | [One-shot record](./session_member_gates/session_member_gates_one_shot.md#study-history) | Security audit finding; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer in chat ("Yes, that's exactly what I want") after the audit. Intake **0.15** after the audit and call-site inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**: two pre-existing test defects were fixed on the way (parallel isolation in `WriteApiSmokeTest`; a browser test stale since the retraction simplification). Baseline `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `fix/member-gates-need-session`; planning commit `633944c`. Single exposed rater Claude (claude-fable-5-2). R1 hashes not re-verified this session. No measured effort, independent rating or accepted-count increment.

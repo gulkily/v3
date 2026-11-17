@@ -155,6 +155,45 @@ final class ContentImportPlannerTest
         }
     }
 
+    public function testWithApprovalsImportsApprovalPostsAndValidReceiptsButNotSeeds(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source', true);
+        $target = $w->repository('target');
+        $actor = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'; // fixture identity
+        $authority = str_replace(['Board-Tags: general', 'Imported body'], ['Board-Tags: identity approval', 'Approve-Identity-ID: openpgp:' . str_repeat('b', 40)],
+            $w->post('authority', "Thread-ID: root-001\nParent-ID: root-001\nAuthor-Identity-ID: {$actor}\n"));
+        $invite = str_replace('Board-Tags: general', 'Board-Tags: invitation', $w->post('invite'));
+        $w->put($source . '/records/posts/authority.txt', $authority);
+        $w->put($source . '/records/posts/invite.txt', $invite);
+        $context = ['actor_identity_id' => $actor, 'target_identity_id' => 'openpgp:' . str_repeat('b', 40),
+            'actor_username' => 'alice', 'target_username' => 'bob', 'target_profile_slug' => 'bob', 'target_thread_id' => 'root-001',
+            'target_post_id' => 'root-001', 'existing_key_count' => 0, 'classification' => 'new_account', 'actor_is_operator' => true,
+            'cross_account_allowed' => false, 'allowed' => true];
+        $receipt = \ForumRewrite\Security\ApprovalAcceptance::path('authority');
+        $forged = \ForumRewrite\Security\ApprovalAcceptance::path('invite');
+        $w->put($source . '/' . $receipt, \ForumRewrite\Security\ApprovalAcceptance::encode($authority, $context, '2026-04-10T12:05:00Z', 'direct'));
+        // Receipt bytes bound to different grant contents than the post that ships.
+        $w->put($source . '/' . $forged, \ForumRewrite\Security\ApprovalAcceptance::encode($invite . "tampered\n", $context, '2026-04-10T12:05:00Z', 'invitation'));
+        $seed = 'records/approval-seeds/openpgp-' . str_repeat('a', 40) . '.txt';
+        $w->put($source . '/' . $seed, 'Approved-Identity-ID: openpgp:' . str_repeat('a', 40) . "\nSeed-Reason: test\n\nRoot.\n");
+
+        $default = (new ContentImportPlanner())->plan($source, $target);
+        foreach (['records/posts/authority.txt', 'records/posts/invite.txt', $receipt, $seed] as $path) {
+            assertSame('excluded', $default[$path]['state'], $path);
+        }
+
+        $plan = (new ContentImportPlanner(withApprovals: true))->plan($source, $target);
+        assertSame('import', $plan['records/posts/authority.txt']['state']);
+        assertSame('import', $plan['records/posts/invite.txt']['state']);
+        assertSame('import', $plan[$receipt]['state']);
+        assertSame(['post:authority'], $plan[$receipt]['dependencies']);
+        assertSame('invalid', $plan[$forged]['state']);
+        assertSame('excluded', $plan[$seed]['state']);
+        assertSame('excluded', $plan['records/instance/public.txt']['state']);
+        assertSame([], ContentImportPlanner::files($target));
+    }
+
     public function testOperatorGrantsAndTheirSeedsAreExcludedAsAuthority(): void
     {
         $w = new ImportTestWorkspace();
