@@ -1,0 +1,31 @@
+Cycle: v3/local_start_import_pr_fix
+Mode: one-shot
+Index: [Plans](../README.md)
+Predecessor: [Local start MVP](../local_start_import/local_start_import_one_shot.md), on the existing open PR #284
+Debug mode: enabled; project marker .railspike_debug_on
+Effort study: railspike-effort / R1 / P2; [ledger](../effort_estimation_trial.md)
+Extended estimates: enabled; no separate work units
+**Cycle estimate: unavailable**
+Status: planned; next action: planning commit, then merge conflict resolution
+
+Original request: “can you please help me fix the pr”
+Authorization: User, 2026-11-17 UTC, requests repair of the existing PR #284. GitHub confirms it is OPEN and unmerged, but CONFLICTING. Repair and push to that PR are authorized; no merge into main or deployment.
+Branch choice: Start fix/local-start-import-pr from freshly fetched origin/main, 936c6357. Merge the original PR head dee4c41c into this integration branch after the planning commit. Push its descendant result to feat/local-start-import to update the specifically requested open PR; do not rewrite history or create a duplicate PR. Check that PR #284 remains open before pushing.
+Outcome and work type: Application integration and record repair. Make PR #284 mergeable against current main while preserving the local development homepage and main's newer importer, operator GUI and tour features. No new product behavior is planned.
+Boundary: Resolve actual conflicts, reconcile the colliding feedback record and derived index, retain all planning/study histories, and fix compatibility regressions found in affected import and browser checks. No dependency, schema, deployment or optional feature changes. Preserve unrelated .test-self-approve and todo.txt.
+Reuse decisions: Application.php and Host/FrontController.php already route the local entry through shared RouteServices, templates and the existing import-instance CLI. Current main adds Import/InstanceImportTask.php, Http/ImportController.php and Tools → Import, with root-only authorization; preserve those separate operator controls. The local flow still serves a fresh clone without root setup. Keep scripts/import_instance.php and Import/ContentImportRunner.php as authoritative for import, approvals exclusions and resume. Preserve current main's Tour classes and snapshots. Regenerate docs/feedback/README.md through ./v3 feedback index rather than manually merging derived tables.
+Feedback identity: PR #284 assigned PF-20261116-F01 to local startup while independently merged main assigned that same ID to import cancellation. Main's canonical cancellation record must survive unchanged. Allocate PF-20261117-F01 to a distinct intake of the local-start outcome, preserving the earlier branch record and trailers in Git history and documenting the collision. Keep PF-20261116-F02 (operator GUI) distinct. Search found no other local-start item on current main.
+Approach and risks: Merge current histories, resolve overlapping indexes and records without dropping either change, then replay startup/import/resume. A stale CLI or journal assumption could break recovery; inspect the updated contracts before any compatibility correction. The feedback collision can overwrite an unrelated request; explicitly preserve the main record and record provenance for the local-start intake. Numeric study ratings remain unavailable because external frozen R1 sources were not recovered; do not invent earlier scores.
+Completion conditions: GitHub reports PR #284 mergeable, local startup/import/retry/resume still work, and main's operator import/tour paths pass their affected checks. Feedback checker has zero malformed or duplicate IDs. Current code is pushed to the same open PR; no merge/deploy. Previous thread-reply timeout remains separate unless the local server becomes available.
+Verification plan: Smoke plus LocalDevelopmentImportTest, ImportInstanceCommandTest, ContentImportRecoveryTest, ImportPageTest, InstanceImportTaskTest, TourSnapshotsTest and affected routing checks. Run the fresh-checkout browser script on the integrated code. No UI redesign is authorized; inspect screens if markup changes become necessary. Run feedback check/index, syntax and diff/conflict-marker checks. Full suite will not run. Separate baseline failures from introduced regressions by replay on untouched 936c6357 as needed.
+Concepts touched: Local development import and instance content import used unchanged; verify their existing entries and reconcile sources only if the integration changes a described contract.
+Planning commit: pending
+
+Study history:
+2026-11-17: Intake/execution entry, scope v1, baseline 936c6357 and parent PR dee4c41c. Codex is the single exposed rater; prior source/diff and predecessor exposure disclosed. Pristine intake missing. Projection unavailable without frozen external calibration sources. P2 standing enrollment; fit/acceptance pending. This is integration follow-up to v3/local_start_import, not another independently delivered feature.
+
+Verification: pending
+Outcome: pending
+Commit/PR status: planning commit pending; original PR still open/unmerged
+
+*— Codex · 2026-11-17 UTC*
