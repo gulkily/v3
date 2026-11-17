@@ -701,6 +701,7 @@ Maintainer request: “I want every future railspike to be part of the same data
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
 | `v3/dm_instant_load` | Complete; accepted on iPhone Safari | v1 / R1 / P2 | 0.70 | [Step 1](./dm_instant_load/dm_instant_load_step1_solution_assessment.md#study-snapshots); [Step 2](./dm_instant_load/dm_instant_load_step2_feature_description.md#study-snapshots); [Step 3](./dm_instant_load/dm_instant_load_step3_development_plan.md#study-snapshots) | New cycle; no implementation |
+| `v3/dm_conversation_tabbar` | Complete; accepted on iPhone Safari | v1 / R1 / P2 | 0.30 | [Step 1](./dm_conversation_tabbar/dm_conversation_tabbar_step1_solution_assessment.md#study-snapshots); [Step 2](./dm_conversation_tabbar/dm_conversation_tabbar_step2_feature_description.md#study-snapshots); [Step 3](./dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md#study-snapshots); [Step 4](./dm_conversation_tabbar/dm_conversation_tabbar_step4_implementation_summary.md#study-snapshots) | New cycle; no implementation |
 
 2026-11-11: standing P2 enrollment for DM instant load; baseline `6d0f9da1`. Intake (after inspection) and Step 1 handoff both 0.70 for Option B built on Option A; Claude single exposed rater; R1 hashes not re-verified this session. Extended estimates enabled (A 0.30, B 0.70, C 0.40; not summed). Awaiting Approved Step 1.
 
@@ -729,6 +730,8 @@ Maintainer request: “I want every future railspike to be part of the same data
 2026-11-14: `v3/dm_conversation_tabbar` Step 3 approved; Step 4 entry 0.30 reaffirmed.
 
 2026-11-14: `v3/dm_conversation_tabbar` Stages 1–3 complete (retrospective stage work 0.10, 0.05, 0.05); Stage 4 iPhone Safari acceptance and whole-cycle retrospective pending maintainer.
+
+2026-11-17: `v3/dm_conversation_tabbar` Stage 4 accepted on iPhone Safari by the maintainer (stage retrospective 0.05). Whole-cycle retrospective 0.25 against the 0.30 projection. Complete.
 
 E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically complete, projected 0.85, retrospective 0.90, maintainer acceptance pending. These counts are unchanged by P2. Append each new cycle here with links to its canonical snapshots; keep unsuccessful/incomplete cycles visible. The historical “0 / 6” is accepted outcomes toward the first review checkpoint, not the number of collected records.
 

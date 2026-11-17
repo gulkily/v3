@@ -539,7 +539,7 @@ and repair its navigation and affected references. See the
 
 - [DM instant load](dm_instant_load/dm_instant_load_step3_development_plan.md) — conversations show read messages on first paint from an encrypted per-browser cache behind `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`, including Messages list previews; complete and accepted on iPhone ([Step 4](dm_instant_load/dm_instant_load_step4_implementation_summary.md)).
 
-- [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; Steps 1–3 approved.
+- [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; complete and accepted on iPhone ([Step 4](dm_conversation_tabbar/dm_conversation_tabbar_step4_implementation_summary.md)).
 
 - [Gallery zoom](gallery_zoom/gallery_zoom_one_shot.md) — one-shot: Smaller / Larger buttons and phone pinch resize Gallery tiles, remembered per browser and resettable on Preferences.
 - [Gallery compact captions](gallery_compact_captions/gallery_compact_captions_one_shot.md) — one-shot: Gallery tile captions hide when zoomed far out.
