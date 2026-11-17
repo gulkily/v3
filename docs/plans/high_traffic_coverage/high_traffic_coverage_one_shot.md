@@ -8,7 +8,7 @@ Extended estimates: disabled (one-shot with no alternatives or work units)
 
 **Cycle estimate: 0.08**
 
-Status: planning committed; next permitted action: write the checklist.
+Status: complete; next permitted action: the maintainer picks an item for its own cycle.
 
 ## Original request
 
@@ -64,6 +64,49 @@ The checklist exists and every item names its route or file and its current beha
 
 Starting revision and branch: `origin/main` `f83c0b0d`; branch `docs/htm_coverage_checklist`.
 
-Planning commit: pending.
+Planning commit: `73e2d824`.
+
+*— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
+
+## Execution history
+
+- 2026-11-17: wrote [the checklist](./high_traffic_coverage_checklist.md) from `HighTrafficRoute`, `public/.htaccess`, `HighTrafficCache`, the route table in `Application.php` and the requests in `public/assets/*.js`.
+- Correction: thread RSS is `?format=rss` on the thread route, not a separate route. It moved into the query-string item.
+
+## Study history
+
+- Intake 0.08: recorded in this record before the checklist was written, after inspecting routes. The same single exposed rater, Claude, made the asset_bypass ratings.
+- Closeout: retrospective scope assessment 0.08. Maintainer judgment: pending.
+
+## Outcome
+
+Delivered: one checklist in five groups.
+- 0: measure first.
+- 1: pages people land on.
+- 2: public read-only pages.
+- 3: cache gaps on covered pages.
+- 4: files and assets.
+
+It also lists the pages that are out of scope and links related findings.
+
+Limitations: nothing was measured. The cost of a signed-in visitor's view and of the version check is marked unknown.
+
+## Verification
+
+- Passed: claims checked against source on `f83c0b0d` (routes, `HighTrafficCache::currentBackupPolicyPage()`, `FrontController::resolveRawPublicAssetPath()`, the scripts' requests).
+- Passed: all 10 linked paths and both heading anchors resolve.
+- Passed: `git diff --check`.
+- Passed: only the allowed files changed.
+- Not applicable: runtime, UI and deployment checks; this is a documentation-only cycle.
+
+## Final review
+
+No duplicated runbook procedures, no files outside the allowed list, and no concept inventory change.
+
+## Commit status
+
+- Planning commit: `73e2d824`.
+- Completion commit: pending; this record ships in it.
+- Not pushed, no PR.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
