@@ -64,3 +64,25 @@ Branch `feat/qdb-moderated-submissions` from `6bfe1243`; planning commit `3b34a3
 - Estimate details: original scope as planned; no revision. Retrospective slightly lower: the board template and empty state fitted without changes.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Pending notices
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.06**
+
+- Changes:
+  - The thread page shows one line above a pending quote: "Pending approval · Queue", linking to `/queue`.
+  - A rejected quote's thread page and number address return 404.
+  - `/api/create_quote` adds `moderation=pending` or `moderation=approved`, matching the route's existing `key=value` lines.
+  - `docs/reference/agent_api.md` documents the new line.
+- Verification:
+  - `./v3 test --smoke WriteApiSmokeTest::testQdbQueueHoldsANewQuoteOffListingsButOnItsPermalink QdbModerationTest QdbExperienceRoutingTest ApiRouteCatalogTest`: 459 passed. Full suite not run.
+  - The new end-to-end test creates an anonymous quote through `/api/create_quote` with the queue on. The quote is absent from `/latest`, present on `/queue` and its permalink with the marker, and listed again with the queue off.
+- Notes:
+  - **Deviation from Step 3:** the Add page keeps its existing redirect to the new quote's permalink. The permalink's marker is the confirmation, so the Add flow needs no extra copy.
+  - **Deviation from Step 3:** a rejected quote returns 404 to everyone, operators included, so the page stays the same for every viewer. Operators still reach the record through the source browser and Git.
+  - Fixed: `useRepository` cleared a test override when a second `Application` was built.
+- Estimate details: original scope; no revision. Retrospective lower because the Add flow needed no change.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

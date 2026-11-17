@@ -46,7 +46,9 @@ final class QdbModeration
     {
         if (self::$repositoryRoot !== $repositoryRoot) {
             self::$repositoryRoot = $repositoryRoot;
-            self::$current = null;
+            if (!self::$overridden) {
+                self::$current = null;
+            }
         }
     }
 

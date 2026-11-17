@@ -58,6 +58,9 @@ foreach ($replyContinuationFlags as $flagIndex => $flag) {
 }
 $rootMetaVisible = $rootRunTailIndex === -1;
 ?>
+<?php if (($qdbModerationState ?? 'approved') === 'pending'): ?>
+  <p class="meta qdb-pending" data-qdb-moderation="pending">Pending approval · <a href="/queue">Queue</a></p>
+<?php endif; ?>
 <?php if ($rootPost !== null): ?>
 <?= $indent($partial('partials/thread_root_card.php', ['post' => $rootPost, 'trueReplyCount' => $trueReplyCount, 'metaVisible' => $rootMetaVisible, 'voteCaptionPair' => $voteCaptionPair ?? null]), 1) ?>
 <?php else: ?>

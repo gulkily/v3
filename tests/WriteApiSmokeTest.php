@@ -5346,6 +5346,36 @@ NODE;
         }
     }
 
+    public function testQdbQueueHoldsANewQuoteOffListingsButOnItsPermalink(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        \ForumRewrite\Qdb\QdbModeration::override(new \ForumRewrite\Qdb\QdbModeration('2000-01-01T00:00:00Z'));
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+            $response = $this->renderMethod($application, 'POST', '/api/create_quote?board_tags=general&subject=&body=Waiting%20quote');
+            assertSame('pending', $this->extractValue($response, 'moderation'));
+            $threadId = $this->extractValue($response, 'thread_id');
+
+            assertStringNotContains('Waiting quote', $this->renderMethod($application, 'GET', '/latest'));
+            assertStringContains('Waiting quote', $this->renderMethod($application, 'GET', '/queue'));
+            $permalink = $this->renderMethod($application, 'GET', '/threads/' . $threadId);
+            assertStringContains('Waiting quote', $permalink);
+            assertStringContains('data-qdb-moderation="pending"', $permalink);
+
+            \ForumRewrite\Qdb\QdbModeration::override(\ForumRewrite\Qdb\QdbModeration::inactive());
+            $permalink = $this->renderMethod($application, 'GET', '/threads/' . $threadId);
+            assertStringNotContains('data-qdb-moderation', $permalink);
+            assertStringContains('Waiting quote', $this->renderMethod($application, 'GET', '/latest'));
+            $response = $this->renderMethod($application, 'POST', '/api/create_quote?board_tags=general&subject=&body=Listed%20quote');
+            assertSame('approved', $this->extractValue($response, 'moderation'));
+        } finally {
+            \ForumRewrite\Qdb\QdbModeration::override(null);
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
     public function testQdbPrepareQuoteContinuesSameQuoteNumberSequenceAsCreateQuote(): void
     {
         putenv('FORUM_SITE_ID=qdb');
