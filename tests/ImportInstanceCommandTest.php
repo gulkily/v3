@@ -42,7 +42,8 @@ final class ImportInstanceCommandTest
         assertStringContains('Preview result: complete', $output);
         assertTrue(!is_file($target . '/records/posts/remote-thread.txt'));
         assertTrue(!is_file($target . '/' . $signedLabel . '.asc'));
-        [$code, $output] = $w->command($command);
+        assertStringNotContains('Progress: ', $output);
+        [$code, $output] = $w->command([...$command, '--progress-lines']);
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
         preg_match_all('/^Progress: (\S+)(?: (\d+)\/(\d+|\?))?$/m', $output, $steps, PREG_SET_ORDER);
@@ -217,7 +218,8 @@ final class ImportInstanceCommandTest
         [$previewCode, $previewOutput] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, '--dry-run',
             '--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3']);
         assertSame(2, $previewCode, $previewOutput);
-        assertStringContains('Review cause: records/posts/root-001.txt', $previewOutput);
+        assertStringContains('Conflict: Existing path or canonical identity has different bytes (1 file)', $previewOutput);
+        assertStringNotContains('Review cause: ', $previewOutput);
         assertStringContains('Use --verbose', $previewOutput);
         assertTrue(!str_contains($previewOutput, 'conflict: records/posts/'));
         assertStringContains('Excluded: Instance authority', $previewOutput);

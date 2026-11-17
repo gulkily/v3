@@ -627,7 +627,7 @@ controlled operator workflow.
 ## Import content from a remote instance
 
 ```
-./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
+./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--progress-lines] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
 ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
 ./v3 import-instance --cancel [--repository-root=/path/repository] [--database-path=/path/index.sqlite3]
 ```
@@ -654,8 +654,13 @@ and retained as hash-bound metadata without changing signed post bytes. See the
 - `--time-limit=SECONDS` — positive finite whole-invocation budget (default 300),
   including lock waits/publication, with up to five seconds process cleanup.
   Linux/WSL PCNTL/POSIX supervision is required; file limits remain unchanged.
-- `--verbose` — list every rejected/excluded file and dependency root cause.
-  The default output groups review causes and summarizes intentional exclusions.
+- `--verbose` — list every rejected/excluded file and dependency root cause, and
+  every read-model rebuild step. The default output groups review causes into
+  one line per kind (`Invalid: Missing dependency (31 files)`), summarizes
+  intentional exclusions, and prints counters such as `Installed 300 record
+  files...` at most once a second.
+- `--progress-lines` — also print `Progress: <step> [done/total]` lines. Tools →
+  Import passes this to drive its step list; terminal runs don't need it.
 
 Preview an import:
 

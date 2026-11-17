@@ -29,8 +29,9 @@ While it runs, the page lists the steps (download, archive check, planning,
 installing, commit, view refresh, images) with counts, an elapsed timer, the
 time since the last update, and the time left. Time left comes from the current
 step's rate, or from the previous import's step times (`Step-Seconds` on its
-request). With neither, it says "estimating time left". The command prints the
-same steps as `Progress: <step> [done/total]` lines.
+request). With neither, it says "estimating time left". The task runs the
+command with `--progress-lines`, which prints the same steps as
+`Progress: <step> [done/total]` lines; a terminal run shows readable lines instead.
 
 Each request is a private `Key: value` file beside the task queue database
 (`state/private/instance_import/` by default), with the command's full output

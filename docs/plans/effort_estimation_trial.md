@@ -2423,3 +2423,11 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 2026-11-17: import planning speed Stage 2 retrospective 0.35 (original 0.30); killed-process cleanup found in verification.
 
 2026-11-17: import planning speed Stage 3 retrospective 0.10 (original 0.08). Stage 4 pending maintainer WSL replay.
+
+## Cycle v3/import_output_noise
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_output_noise` | Implemented; PR open | v1 (one-shot) / R1 / P2 | 0.25 | [One-shot record](./import_output_noise/import_output_noise_one_shot.md#study-history) | New cycle; maintainer acceptance pending |
+
+2026-11-17: one-shot import output noise; baseline `80107069`. Intake 0.25; closeout retrospective 0.30. Single exposed rater Claude (claude-opus-5-5). No measured effort.

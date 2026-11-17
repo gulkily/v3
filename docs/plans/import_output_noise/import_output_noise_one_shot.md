@@ -10,7 +10,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.25**
 
-Status: planned; next permitted action: implement.
+Status: implemented; PR pending. Next: the maintainer reruns the import on WSL.
 
 ## Original request
 
@@ -71,10 +71,41 @@ Risks:
 
 Branch `fix/import_output_noise` from `origin/main` `80107069`.
 
-Planning commit: pending.
+Planning commit: `7f5ac58d`.
+
+## Dated execution history
+
+- 2026-11-17: built the three planned changes in a new `ImportOutputFilter` class instead of script functions, so they can be unit-tested; the script only loads it.
+- 2026-11-17, discovery: "Missing dependency" reasons carry the missing post's ID, so grouping by raw reason printed one line per post. The group drops the ID; `--verbose` and `report.json` keep it.
+- 2026-11-17, correction: a first throttle compared all lines with digits removed, which could drop `--verbose` per-file lines whose paths differ only in digits. Throttling now applies only to counter lines (`... (n/m).` and `Installed N record files...`).
+- 2026-11-17, discovery: the replay still printed 218 lines, about 130 of them read-model sub-steps. Added within the authorized output scope: without `--verbose`, `Read model:` detail lines print only after five quiet seconds. The import already prints "Refreshing read model…" and "Read-model promotion complete."
+- 2026-11-17, correction: counters without a total stopped at their first value (`Installed 100 record files...` then nothing). The filter now returns the lines to print and flushes the last held-back counter before the next different line.
+- 2026-11-17, correction: hiding `Progress:` lines left planning silent in terminals again, the problem `v3/import_planning_speed` started from. Without `--progress-lines`, `Progress: plan n/m` becomes `Checking records (n/m).`, throttled like other counters.
+- 2026-11-17, correction: grouped lines first used a `Review:` prefix, which clashed with the final `Review: …/report.json` line. They now follow the existing `Excluded: reason (N entries)` style as `Invalid: Missing dependency (31 files)`. Excluded causes are left to the `Excluded:` lines, which already count them.
+
+## Outcome
+
+Delivered: a default `import-instance` run of the zenmemes.com archive into a fresh checkout prints 70 lines instead of 1,093, with the same final counts. Planning, install, download and image steps each show a few counter lines. Review causes take 5 lines instead of 303. `--verbose` still lists every file and rebuild step; Tools → Import still gets its `Progress:` lines.
+
+Limitations: a failure exit may lose one held-back counter value, because the last counter is printed only when the next line arrives. WSL output is unverified until the maintainer reruns it.
+
+## Verification
+
+- Passed: `./v3 test --smoke ImportOutputFilterTest ImportInstanceCommandTest InstanceImportTaskTest ImportPageTest ImportProgressViewTest LocalDevelopmentImportTest ImportedContentPublicationTest ContentImportRecoveryTest ImportDeadlineRecoveryTest`: 523 run, 523 passed. Full suite not run.
+- Passed: new `ImportOutputFilterTest` (6 tests): `Progress:` only on request; planning counter on terminals; counters once a second with their last value flushed; per-file lines never throttled; read-model detail hidden unless verbose or quiet for five seconds; grouping without record IDs and without excluded causes.
+- Passed: `ImportInstanceCommandTest` now checks that a default run prints no `Progress:` lines, that `--progress-lines` prints the full step order, and that a preview prints the grouped `Conflict: … (1 file)` line and no per-file `Review cause:` lines.
+- Passed: `InstanceImportTaskTest` runs a real import through the worker and still records step times from `Progress:` lines, so the page path works with the new option.
+- Passed: live replay, zenmemes.com archive and `images.zip` from 2026-11-17 served on loopback, fresh checkout. `main` `80107069`: 1,093 lines (165 `Progress:`, 303 `Review cause:`). This branch: 70 lines. `--verbose`: 1,554 lines with all 303 per-file causes. Counts identical on all runs: import 7435, invalid 226, unsupported 89, excluded 725.
+- Passed: `./v3 import-instance --help` shows the new option and wording.
+- Pending: the maintainer's WSL rerun.
+
+## Final review
+
+Checked the diff against `origin/main`: one new class and its test, the CLI using it, one option added to the task's command, test updates, and docs (CLI reference, runbook, operator-progress concept). No change to what is imported or saved. The `--dry-run` and `--resume` paths share the same closure. The concept entry for operator command progress now names the import filter.
 
 ## Study history
 
 - Intake (after reading the output and the printing code): 0.25. Claude single exposed rater, 2026-11-17 UTC, R1, P2.
+- Closeout retrospective: 0.30. Above intake because of the read-model detail, the held-counter flush and the planning counter, each found in the live replay.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
