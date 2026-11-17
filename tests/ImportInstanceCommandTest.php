@@ -45,6 +45,14 @@ final class ImportInstanceCommandTest
         [$code, $output] = $w->command($command);
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
+        preg_match_all('/^Progress: (\S+)(?: (\d+)\/(\d+|\?))?$/m', $output, $steps, PREG_SET_ORDER);
+        $order = array_values(array_unique(array_column($steps, 1)));
+        assertSame(['download', 'extract', 'plan', 'install', 'commit', 'publish', 'images', 'done'], $order, $output);
+        $installs = array_values(array_filter($steps, static fn (array $step): bool => $step[1] === 'install'));
+        assertSame('0', $installs[0][2]);
+        assertSame(end($installs)[3], end($installs)[2]);
+        $downloads = array_values(array_filter($steps, static fn (array $step): bool => $step[1] === 'download'));
+        assertSame(end($downloads)[3], end($downloads)[2]);
         assertStringNotContains('Rendering ', $output);
         assertStringNotContains('Fingerprinting and copying assets', $output);
         assertTrue(is_file($target . '/records/posts/remote-thread.txt'));
