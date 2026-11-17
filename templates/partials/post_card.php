@@ -50,6 +50,11 @@ if ($postFoldable) {
         $postFoldDate = '';
     }
 }
+// On a campaign's thread page a pledge with an amount is one row, closed: the summary shows name,
+// amount and status, and opening it shows the rest. It takes the place of the tagset fold, so a
+// card never has two.
+$isPledgeRow = is_array($pledgeCampaign ?? null) && !$isRetracted
+    && (($pledgeCampaign['pledges'][(string) $post['post_id']]['amount'] ?? null) !== null);
 $viewerHasLikedPost = isset($viewerPostLikes[(string) $post['post_id']]);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
@@ -87,8 +92,11 @@ if ($isRunTail) {
     $metaLine .= '</p>';
 }
 ?>
-<article id="<?= $e($postAnchorId) ?>" class="card post-card<?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $isContinuation ? ' continuation' : '' ?><?= $isRunTail ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($post['created_at'] ?? null) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $postResolution !== null ? ' data-resolution="' . $e($postResolution) . '"' : '' ?> data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $hoverTimeLabel !== '' ? ' data-time="' . $e($hoverTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
-<?php if ($postFoldable): ?>
+<article id="<?= $e($postAnchorId) ?>" class="card post-card<?= $isPledgeRow ? ' pledge-row' : '' ?><?= $isAgentPost ? ' agent-authored-post' : '' ?><?= $isContinuation ? ' continuation' : '' ?><?= $isRunTail ? '' : ' meta-deferred' ?>" data-heat="<?= $heat($post['created_at'] ?? null) ?>" data-post-id="<?= $e($post['post_id']) ?>"<?= $postResolution !== null ? ' data-resolution="' . $e($postResolution) . '"' : '' ?> data-author="<?= $e((string) ($post['author_label'] ?? '')) ?>"<?= $hoverTimeLabel !== '' ? ' data-time="' . $e($hoverTimeLabel) . '"' : '' ?><?= $isAgentPost ? ' data-agent-authored="reply-agent"' : '' ?><?= $agentReplyPostedId !== '' ? ' data-agent-reply-posted-id="' . $e($agentReplyPostedId) . '"' : '' ?><?= $agentReplyWork !== '' ? ' data-agent-reply-work="' . $e($agentReplyWork) . '"' : '' ?><?= ($agentReply['response_mode'] ?? '') === 'scripture_oriented_analysis' && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true) ? ' data-scripture-pending="1"' : '' ?>>
+<?php if ($isPledgeRow): ?>
+<details class="post-resolution pledge-row-fold" data-role="pledge-row">
+  <summary class="post-resolution-summary pledge-row-summary" data-role="pledge-row-summary"><?= $partial('partials/pledge_amount.php', ['post' => $post, 'pledgePart' => 'row']) ?></summary>
+<?php elseif ($postFoldable): ?>
 <details class="post-resolution" data-role="post-resolution"<?= \ForumRewrite\Support\PostStateView::folds($postResolution) ? '' : ' open' ?>>
   <summary class="post-resolution-summary" data-role="post-resolution-summary"><span class="post-resolution-header"><?= $e((string) ($post['author_label'] ?? '')) ?><?= $postFoldDate !== '' ? ' · ' . $e($postFoldDate) : '' ?></span> <span class="post-resolution-state" data-role="post-resolution-label"><?= $e(\ForumRewrite\Support\PostStateView::folds($postResolution) ? $postStateLabel : 'Resolved') ?></span><?php if ($postFoldExcerpt !== ''): ?> <span class="post-resolution-line"><?= $e($postFoldExcerpt) ?></span><?php endif; ?></summary>
 <?php if ($metaLine === ''): ?>
@@ -109,7 +117,6 @@ if ($isRunTail) {
 $pledgeLineKind = is_array($pledgeCampaign ?? null) ? ($pledgeCampaign['used_lines'][(string) $post['post_id']] ?? null) : null;
 $pledgeShownBody = $pledgeLineKind !== null ? \ForumRewrite\Support\PledgeLines::hide((string) ($post['body'] ?? ''), $pledgeLineKind) : null;
 ?>
-<?= $partial('partials/pledge_amount.php', ['post' => $post, 'pledgePart' => 'head']) ?>
 <?php if ($pledgeShownBody === null || trim($pledgeShownBody) !== ''): ?>
   <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post, $pledgeShownBody) ?></div>
 <?php endif; ?>
@@ -255,7 +262,7 @@ if (!is_array($postAnalysisLabels)) {
   </details>
 <?php endif; ?>
   </div>
-<?php if ($postFoldable): ?>
+<?php if ($postFoldable || $isPledgeRow): ?>
 </details>
 <?php endif; ?>
   <a class="post-card-permalink" href="/posts/<?= $e($post['post_id']) ?>" title="<?= $e($postPermalinkLabel) ?>" aria-label="<?= $e($postPermalinkLabel) ?>">#</a>

@@ -40,7 +40,19 @@ async function settled(page) {
     const url = page.url(); await page.waitForTimeout(400);
     quiet = page.url() === url && await page.evaluate(() => document.readyState === 'complete').catch(() => false) ? quiet + 1 : 0;
   }
+  await openRows(page);
 }
+// Each pledge is a closed row; a reader opens one by pressing its summary, as this does for every row.
+async function openRows(page) {
+  const closed = page.locator('details.pledge-row-fold:not([open]) > summary');
+  for (let n = await closed.count(); n > 0; n--) {
+    // Centre it first: on a phone the fixed bottom bar covers a row scrolled only to the edge.
+    await closed.first().evaluate(e => e.scrollIntoView({ block: 'center' }));
+    await closed.first().click();
+  }
+}
+// A pledge row's amount and status, as "300 · Open".
+const rowText = async (row) => `${(await row.locator('.pledge-amount').textContent()).trim()} · ${(await row.locator('[data-role="pledge-card-status"]').textContent()).trim()}`;
 // Approves the author of the newest post whose body starts with `start`, as an approval would: pledges
 // count only from approved keys, and the automatic guest keys these visitors get are not approved.
 function approveAuthorOf(start) {
@@ -110,9 +122,14 @@ try {
   await settled(writer.page);
   await writer.page.goto(base + '/threads/' + threadId);
   await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').waitFor();
+  // The pledge arrives as a closed row: name, amount and status, with the note hidden until opened.
+  assert.equal(await writer.page.locator('details.pledge-row-fold').evaluate(d => d.open), false);
+  assert.equal(await writer.page.getByText('I can order these myself.').isVisible(), false);
+  await openRows(writer.page);
+  assert.equal(await writer.page.getByText('I can order these myself.').isVisible(), true);
   assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '300 of 1000 coffees pledged');
   assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '1 pledge');
-  assert.equal((await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').textContent()).trim(), '300 coffees Open');
+  assert.equal(await rowText(writer.page.locator('.pledge-row-summary').first()), '300 · Open');
   assert.equal(await writer.page.locator('.pledge-bar__fill').evaluate(e => e.style.width), '30%');
   // A reply saved on this device is listed by the reply box at the bottom, not by the pledge form.
   const unsentBesideReplyBox = await writer.page.evaluate(async (thread) => {
@@ -165,17 +182,18 @@ try {
   const withdrew = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
   await withdrawForm.getByRole('button', { name: 'Withdraw pledge' }).click();
   assert.equal((await withdrew).status(), 200);
-  await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"]').waitFor({ timeout: 30000 });
+  await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"]').waitFor({ state: 'attached', timeout: 30000 });
   await settled(writer.page);
   assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged Goal reached');
   assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges');
-  assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"]').textContent()).trim(), /^5 coffees · Withdrawn [A-Z][a-z]{2} \d{1,2}$/);
+  assert.equal(await rowText(writer.page.locator('.pledge-row-summary', { has: writer.page.locator('[data-pledge-state="withdrawn"]') })), '5 · Withdrawn');
+  assert.match((await writer.page.locator('[data-pledge-state="withdrawn-by"]').textContent()).trim(), /^Withdrawn [A-Z][a-z]{2} \d{1,2}$/);
   assert.equal(await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"] strong').evaluate(e => getComputedStyle(e).textDecorationLine), 'line-through');
   assert.equal(await writer.page.getByText('Half a tray more.').first().isVisible(), true, 'the withdrawn pledge keeps its text');
   assert.equal(await writer.page.locator('article.post-card').count(), cardsBefore, 'the bare withdrawal adds no card');
   assert.equal(await writer.page.locator('[data-role="pledge-withdraw"]').count(), 2, 'a withdrawn pledge has no button');
   // The label leads to the signed withdraw reply on its own page.
-  const withdrawHref = await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"] a').getAttribute('href');
+  const withdrawHref = await writer.page.locator('[data-pledge-state="withdrawn-by"] a').getAttribute('href');
   assert.match(withdrawHref, /^\/posts\//);
   const replyPage = await open(true);
   await replyPage.page.goto(base + withdrawHref);
@@ -203,7 +221,7 @@ try {
   const filledReply = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
   await fillForm.getByRole('button', { name: 'Mark delivered' }).click();
   assert.equal((await filledReply).status(), 200);
-  await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').waitFor({ timeout: 30000 });
+  await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').waitFor({ state: 'attached', timeout: 30000 });
   await settled(writer.page);
   assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').textContent()).trim(), /^Delivered by \S+$/);
   assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges · 300 delivered');
@@ -221,10 +239,12 @@ try {
   await plain.page.locator('[data-pledge-form] .compose-form-actions > button[type="submit"]').click();
   await plain.page.waitForLoadState('load');
   await plain.page.goto(base + '/threads/' + threadId);
-  assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').textContent()).trim(), '12.5 coffees · Not counted: no name');
+  assert.equal(await rowText(plain.page.locator('.pledge-row-summary', { has: plain.page.locator('[data-pledge-state="unnamed"]') })), '12.5 · Not counted: no name');
   assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged Goal reached');
   // The card shows the amount, so the thread page leaves the written line out; the note stays.
   assert.equal(await plain.page.getByText('pledge: 12.5').count(), 0);
+  // Without JavaScript a row still opens: it is a plain disclosure.
+  await openRows(plain.page);
   assert.equal(await plain.page.getByText('Decaf, then.').first().isVisible(), true);
   // A line that is not a number stays a reply and says why.
   await plain.page.locator('[data-inline-reply-compose] textarea[name="body"]').fill('pledge: a few');
@@ -246,7 +266,7 @@ try {
   await settled(pledger.page);
   await pledger.page.goto(base + '/threads/' + threadId);
   await settled(pledger.page);
-  assert.equal((await pledger.page.locator('.pledge-amount[data-pledge-state="waiting"]').textContent()).trim(), '20 coffees · Waiting for approval');
+  assert.equal(await rowText(pledger.page.locator('.pledge-row-summary', { has: pledger.page.locator('[data-pledge-state="waiting"]') })), '20 · Waiting for approval');
   assert.equal((await pledger.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged Goal reached');
   approveAuthorOf('pledge: 20');
   await pledger.page.goto(base + '/threads/' + threadId);
@@ -332,7 +352,18 @@ try {
       const colours = await view.page.locator('.pledge-bar__fill').evaluate(e => [getComputedStyle(e).backgroundColor, getComputedStyle(e.closest('.card') || document.body).backgroundColor]);
       assert.notEqual(colours[0], colours[1], `${theme}: bar fill differs from the card`);
       assert.equal(await view.page.locator('[data-role="pledge-amount"]').count(), 1);
-      const mark = await view.page.locator('.pledge-amount[data-pledge-state="withdrawn"] a').boundingBox();
+      if (shots) {
+        await mkdir(shots, { recursive: true });
+        await view.page.screenshot({ path: join(shots, `${theme}-${width}-rows.png`), fullPage: true });
+      }
+      // Closed rows are one line each, and rows that follow each other touch.
+      const rows = await view.page.locator('article.pledge-row').evaluateAll(cards => cards.map(c => c.getBoundingClientRect()).map(r => ({ top: r.top, bottom: r.bottom, height: r.height })));
+      assert.ok(rows.length >= 4, `${theme} ${width}px: pledge rows are drawn`);
+      const lines = await view.page.locator('.pledge-row-summary').evaluateAll(sums => sums.map(e => e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).fontSize)));
+      assert.ok(lines.every(h => h < 2.6), `${theme} ${width}px: each closed row is one line (${lines.map(h => h.toFixed(1)).join(', ')} em)`);
+      assert.ok(rows.some((r, i) => i > 0 && Math.abs(r.top - rows[i - 1].bottom) < 2), `${theme} ${width}px: adjacent rows join into a list`);
+      await openRows(view.page);
+      const mark = await view.page.locator('[data-pledge-state="withdrawn-by"] a').boundingBox();
       assert.ok(mark && mark.width > 20 && mark.height > 8, `${theme} ${width}px: the Withdrawn label is drawn`);
       const fillMark = await view.page.locator('.pledge-amount[data-pledge-state="fill"] a').first().boundingBox();
       assert.ok(fillMark && fillMark.width > 40 && fillMark.height > 8, `${theme} ${width}px: the Delivered label is drawn`);

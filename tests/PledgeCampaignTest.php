@@ -150,9 +150,9 @@ final class PledgeCampaignTest
         pledgeAssertContains('style="width: 30%"', $on);
         pledgeAssertNotContains('pledge-bar__goal', $on);
         pledgeAssertContains('1 pledge</p>', $on);
-        pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $on);
-        pledgeAssertContains('data-pledge-state="waiting"><strong>250</strong> coffees · <span class="meta">Waiting for approval</span>', $on);
-        pledgeAssertContains('data-pledge-state="unnamed"><strong>40</strong> coffees · <span class="meta">Not counted: no name</span>', $on);
+        pledgeAssertContains('<span class="pledge-amount" data-pledge-state="counted"><strong>300</strong></span><span class="pledge-status" data-role="pledge-card-status">Open</span>', $on);
+        pledgeAssertContains('<span class="pledge-amount" data-pledge-state="waiting"><strong>250</strong></span><span class="pledge-status" data-role="pledge-card-status">Waiting for approval</span>', $on);
+        pledgeAssertContains('<span class="pledge-amount" data-pledge-state="unnamed"><strong>40</strong></span><span class="pledge-status" data-role="pledge-card-status">Not counted: no name</span>', $on);
         pledgeAssertContains('data-pledge-state="unreadable"><span class="meta">Not counted: “a few” is not a number</span>', $on);
         // A site that still stores the removed "Count pledges with no name" flag changes nothing.
         putenv('FORUM_PLEDGES_ENABLED=1');
@@ -496,15 +496,14 @@ final class PledgeCampaignTest
             $on = $page();
             pledgeAssertContains('<strong>200</strong> of 1000 coffees pledged', $on);
             pledgeAssertContains('1 pledge</p>', $on);
-            pledgeAssertContains(
-                'data-pledge-state="withdrawn"><strong>300</strong> coffees · <a href="/posts/' . $withdrawal . '">Withdrawn</a> <span class="meta">',
-                $on
-            );
+            // The row says Withdrawn; opening it links the reply that withdrew it.
+            pledgeAssertContains('<span class="pledge-amount" data-pledge-state="withdrawn"><strong>300</strong></span><span class="pledge-status" data-role="pledge-card-status">Withdrawn</span>', $on);
+            pledgeAssertContains('data-pledge-state="withdrawn-by"><a href="/posts/' . $withdrawal . '">Withdrawn</a> <span class="meta">', $on);
             // The pledge keeps its text, and the withdraw line stays in its reply as written.
             pledgeAssertContains('order these myself.', $on);
             pledgeAssertContains('The order fell through.', $on);
             pledgeAssertContains('data-pledge-state="withdraw-uncounted"><span class="meta">Not counted: write “withdraw” alone on its line</span>', $on);
-            pledgeAssertContains('data-pledge-state="counted"><strong>200</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $on);
+            pledgeAssertContains('<span class="pledge-amount" data-pledge-state="counted"><strong>200</strong></span><span class="pledge-status" data-role="pledge-card-status">Open</span>', $on);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
         }
@@ -607,7 +606,7 @@ final class PledgeCampaignTest
             (new PDO('sqlite:' . $database))->prepare("UPDATE posts SET retracted_at = '2026-11-16T09:00:00Z', body = '' WHERE post_id = ?")->execute([$bare]);
             $undone = $this->render($application(), '/threads/' . rawurlencode($thread));
             pledgeAssertContains('<strong>300</strong> of 1000 coffees pledged', $undone);
-            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $undone);
+            pledgeAssertContains('<span class="pledge-amount" data-pledge-state="counted"><strong>300</strong></span><span class="pledge-status" data-role="pledge-card-status">Open</span>', $undone);
             pledgeAssertNotContains($card($bare), $undone);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
@@ -959,10 +958,10 @@ final class PledgeCampaignTest
         pledgeAssertContains('1 pledge · 30 delivered</p>', $part);
         pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Complete</span>', $complete);
         pledgeAssertContains('1 pledge · 120 delivered</p>', $complete);
-        // Each pledge card leads with its amount and one status, then the note.
-        pledgeAssertContains('<strong>120</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span>', $reached);
+        // Each pledge is a row: name, amount and one status, then, once opened, the note.
+        pledgeAssertContains('<span class="pledge-amount" data-pledge-state="counted"><strong>120</strong></span><span class="pledge-status" data-role="pledge-card-status">Open</span>', $reached);
         pledgeAssertSame(true, strpos($reached, 'data-role="pledge-card-status"') < strpos($reached, 'From the lab.'));
-        pledgeAssertContains('data-role="pledge-card-status">Part delivered: 30 of 120</span>', $part);
+        pledgeAssertContains('data-role="pledge-card-status">30 of 120</span>', $part);
         pledgeAssertContains('data-role="pledge-card-status">Delivered</span>', $complete);
     }
 
@@ -1024,12 +1023,46 @@ final class PledgeCampaignTest
         }
         pledgeAssertContains('<strong>30</strong> of 100 coffees pledged', $waiting);
         pledgeAssertContains('1 pledge</p>', $waiting);
-        pledgeAssertContains('data-pledge-state="waiting"><strong>20</strong> coffees · <span class="meta">Waiting for approval</span>', $waiting);
+        pledgeAssertContains('<span class="pledge-amount" data-pledge-state="waiting"><strong>20</strong></span><span class="pledge-status" data-role="pledge-card-status">Waiting for approval</span>', $waiting);
         pledgeAssertContains('Counting me in.', $waiting);
         // Approval is read when the page is drawn: nothing is rewritten, and the pledge now counts.
         pledgeAssertContains('<strong>50</strong> of 100 coffees pledged', $approved);
         pledgeAssertContains('2 pledges</p>', $approved);
         pledgeAssertNotContains('Waiting for approval', $approved);
+    }
+
+    public function testEachPledgeIsOneClosedRowAndRowsNeverJoinARun(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        // A #meta thread unlocks the tagset fold too; a pledge row must still be one disclosure.
+        $thread = $this->thread($service, 'Row campaign', "goal: 100 coffees\n\n#meta");
+        $first = $this->reply($service, $thread, "pledge: 20\n\nFirst one.");
+        $second = $this->reply($service, $thread, 'pledge: 30');
+        $question = $this->reply($service, $thread, 'Does decaf count?');
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        putenv('FORUM_TAG_UNLOCKS_ENABLED=1');
+        try {
+            $html = $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+            putenv('FORUM_TAG_UNLOCKS_ENABLED');
+        }
+        $card = static function (string $html, string $postId): string {
+            $start = (int) strpos($html, 'data-post-id="' . $postId . '"');
+            return substr($html, $start, (int) strpos($html, '</article>', $start) - $start);
+        };
+        foreach ([$first, $second] as $postId) {
+            $row = $card($html, $postId);
+            pledgeAssertSame(1, substr_count($row, '<details'));
+            pledgeAssertContains('<details class="post-resolution pledge-row-fold" data-role="pledge-row">', $row);
+            pledgeAssertNotContains('data-role="post-resolution"', $row);
+        }
+        pledgeAssertContains('<span class="pledge-row-name">', $card($html, $first));
+        pledgeAssertContains('First one.', $card($html, $first));
+        // Two pledges in a row from one key are two rows, not one merged card; a question stays a card.
+        pledgeAssertSame(2, substr_count($html, 'class="card post-card pledge-row'));
+        pledgeAssertNotContains('pledge-row', substr($html, (int) strpos($html, 'data-post-id="' . $question . '"') - 200, 200));
+        pledgeAssertSame(false, str_contains(substr($html, (int) strpos($html, 'data-post-id="' . $second . '"') - 200, 200), ' continuation'));
     }
 
     private function environment(): array

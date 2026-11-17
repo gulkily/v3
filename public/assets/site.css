@@ -2318,6 +2318,17 @@ pre {
 .pledge-amount strong { font-size: 1.25em; }
 .pledge-amount .pledge-status { margin-left: 0.25rem; vertical-align: 0.15em; }
 .pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
+/* A pledge row: one line (name, amount, status) that opens to the pledge. Rows that follow each
+   other join into one list. The fold hides summaries on cards with no tagset state; a row's shows. */
+.post-card.pledge-row { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+.post-card.pledge-row > .post-resolution.pledge-row-fold > .post-resolution-summary.pledge-row-summary { display: flex; align-items: center; gap: 0.6rem; color: var(--ink); font-size: 1em; }
+.pledge-row-summary .pledge-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pledge-row-summary .pledge-amount { margin: 0; }
+.pledge-row-summary .pledge-amount strong { font-size: 1.1em; }
+.pledge-row-summary .pledge-status { flex: none; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.post-card.pledge-row > .pledge-row-fold[open] > .pledge-row-summary { margin-bottom: 0.5rem; }
+.post-card.pledge-row + .post-card.pledge-row { margin-top: 0; border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+.post-card.pledge-row:has(+ .post-card.pledge-row) { margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .pledge-withdraw { margin: 0.3rem 0 0; }
 .pledge-form { margin: 0.9rem 0 0; }
 .pledge-field { display: flex; align-items: center; gap: 0.5rem; }
