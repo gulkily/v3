@@ -7,7 +7,8 @@ Extended estimates: enabled (no alternatives or stages, so only the cycle estima
 
 **Cycle estimate: 0.10**
 
-Status: planned; next permitted action: implement and verify.
+Status: technically complete and committed; next permitted action: push and open the PR (authorized).
+Debug report: [log](pledge_complete_pill_debug_log.md)
 
 ## Original request
 
@@ -52,14 +53,40 @@ On a "Complete" campaign's thread page and board row, the pill's text reaches 4.
 `tests/browser/pledge_campaign.mjs` gains a contrast check for every status pill on the thread page and the board, in each theme. Its long-unit campaign is made Complete (a pledge of 40, marked delivered), so both statuses are covered. The scratch measurement is rerun for the before-and-after table. Smoke set run once. Full suite not run, per `AGENTS.md`. No user-facing recovery applies to a colour.
 
 Starting revisions and branch: `fix/pledge-complete-pill` from `origin/main` at `d27730e6` (#320 merged).
-Planning commit: pending.
+Planning commit: `d91d6f1d` (plan and index link only; confirmed with `git log`).
 
 ## Dated execution history
 
 - 2026-11-17: defect measured as above; plan written.
+- 2026-11-17: the Complete rule in `site.css` keeps only `border-color: var(--status-ok)`; the text colour change is gone, with a comment saying why.
+- 2026-11-17: the browser check's long-unit campaign gets a pledge of 40 from the writer, marked delivered, so it reads "Complete". A `pillContrast()` helper measures every status pill on the thread page and the board in each theme and requires 4.5:1. The board must show both words.
+- 2026-11-17, correction during verification: the first run's `goto` after "Mark delivered" collided with the page's own reload; the step now waits for the page to settle first.
 
 ## Study history
 
 - Intake: **0.10**, exposed rater Claude (claude-opus-5-5), after measuring the pill in 17 themes and reading the Complete rule (no pristine intake).
+
+- Execution entry: reaffirmed 0.10.
+- Closeout retrospective: **0.10**. Not hours or measured labor; maintainer acceptance pending.
+
+## Outcome
+
+Delivered as bounded. "Complete" now uses the theme's own text and fill, like "Goal reached", with a `--status-ok` border. Its contrast is now 5.19 at the lowest (Spearmint), up from 1.12 at the lowest (Bubblegum). Complete and Goal reached now differ by word and border colour only; a stronger visual difference is a design question left to the maintainer.
+
+## Verification
+
+- `tests/browser/pledge_campaign.mjs` with the old CSS stashed: failed at Sticker 375 px, board "Complete" contrast 2.73. With the fix: the whole flow and 17 themes at 375 and 1280 px pass, including contrast for both pills on the thread page and the board.
+- Scratch measurement, outside the repository, of all 17 themes after the fix: every "Complete" pill is between 5.19 (Spearmint) and 21.00 (Arena). "Goal reached" is unchanged.
+- Screenshots checked by eye at 375 px in Bubblegum, Spearmint, Word97, Arena and Sticker.
+- `./v3 test --smoke PledgeCampaignTest`: 509 run, 509 passed. Full suite not run, per `AGENTS.md`.
+- Inapplicable: no PHP or template changed; the release check is the maintainer viewing a Complete campaign on zenmemes.com, pending.
+
+## Final review
+
+Diff checked: one CSS rule and its comment, the browser check, this record, its debug log, the plans index and the cycle ledger. `git diff --check` clean.
+
+## Commit/merge/publication status
+
+Completion commit: pending at writing; reported in the handoff. Not merged or deployed.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

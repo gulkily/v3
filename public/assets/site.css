@@ -2319,7 +2319,9 @@ pre {
 .pledge-totals__sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.4rem; margin: 0 0 0.5rem; color: var(--ink-soft); }
 .pledge-totals__sum strong { font-size: 2em; line-height: 1; color: var(--ink); }
 .pledge-status { align-self: center; padding: 0.15em 0.6em; border: 1px solid var(--active-line, var(--line)); border-radius: 999px; background: var(--active-bg, var(--panel)); color: var(--active-ink, var(--ink)); font: 600 0.8rem/1.3 var(--ui-font); white-space: nowrap; }
-.pledge-totals[data-pledge-status="complete"] .pledge-status, .thread-row__pledge[data-pledge-status="complete"] .pledge-status { border-color: var(--status-ok, var(--line)); color: var(--status-ok, var(--ink)); }
+/* Complete keeps the theme's own ink and fill, which every theme pairs to read; --status-ok is
+   picked for the page, not the active fill, so it marks only the border. */
+.pledge-totals[data-pledge-status="complete"] .pledge-status, .thread-row__pledge[data-pledge-status="complete"] .pledge-status { border-color: var(--status-ok, var(--line)); }
 .pledge-totals__count { margin: 0.4rem 0 0; }
 .pledge-bar { position: relative; height: 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: transparent; overflow: hidden; }
 .pledge-bar__fill, .pledge-bar__delivered { position: absolute; inset: 0 auto 0 0; }
