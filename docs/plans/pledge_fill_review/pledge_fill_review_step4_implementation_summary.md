@@ -54,3 +54,25 @@ Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-16 and 20
   - Estimate details: original scope as in Step 3; no revision. Retrospective higher: the fixture's single key needed a records-and-rebuild test setup.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Confirm and Dispute buttons; a bare confirm folds
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.14**
+
+- Changes:
+  - `src/ForumRewrite/ReadModel/WithdrawLeafFilter.php`: `apply()` takes the `reviews` map and folds an effective bare `confirm`. A dispute never folds. The existing repeat-until-stable loop then folds the bare fill the confirm answered. `templates/pages/thread.php` passes the map.
+  - `templates/partials/pledge_amount.php`: "Confirm" and "Dispute" forms under an unreviewed pledger fill line, for the campaign author or an operator (the same test as "Mark filled"), and not on the viewer's own pledge. Each is a `pledge-line` reply to the fill whose body is the bare line, with "Review failed. Try again." on failure. `pledge_withdraw.js` unchanged.
+  - `tests/PledgeCampaignTest.php`: the records-and-rebuild setup became a `writeThread()` helper, used by the Stage 2 test and a new button test.
+  - `tests/browser/pledge_campaign.mjs`: a second visitor pledges 20 and 30 and marks both delivered. The author confirms one after a failed first press and disputes the other. The check covers the totals, both labels, the strike-through, the dispute and its fill staying as cards, and no buttons for the pledger. The theme pass checks the disputed line is drawn. The existing fill-link locator takes `.first()`, since the page now has more than one.
+- Verification:
+  - Passed: the unchanged browser check before any change (17 themes at 375 and 1280 pixels).
+  - Passed: `./v3 test PledgeCampaignTest WithdrawLeafFilterTest` (26 tests; 1 new in each): fold for bare confirm, noted confirm, dispute and an uncounted review; buttons only for the author, only on the open pledger fill, none for a signed-out viewer or the pledger.
+  - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/pledge_campaign.mjs`, all 34 theme and width passes, and the `--count-unnamed` run.
+  - Passed: the Stage 2 visual look. The light theme at 375 pixels shows "Delivered by guest · confirmed by guest", the struck-through disputed line, and the dispute card under the fill.
+- Notes:
+  - The browser check ran with the preinstalled `playwright-core` 1.63.0, linked into an ignored `node_modules/`; `package.json` declares 1.58.1. No dependency change.
+  - Estimate details: original scope as in Step 3; no revision. Retrospective higher: the browser fixture has one key, so the second visitor's automatic guest identity plays the pledger.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

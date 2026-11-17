@@ -40,12 +40,31 @@ $fillButtonLabel = !$pledgeOpen || $withdrawViewerId === '' ? '' : match (true) 
     $withdrawViewerId === (string) ($pledgeCampaign['author'] ?? '') || (bool) ($viewerCanRetractOthers ?? false) => 'Mark filled',
     default => '',
 };
+// Confirm and Dispute: for the campaign author or an operator (the same test as Mark filled), on a
+// pledger's counted fill that nobody has reviewed and that is not the viewer's own. Each posts the bare
+// line as a reply to the fill, which is usually folded, so the buttons sit on the pledge's fill line.
+$viewerCanReview = $withdrawViewerId !== '' && is_array($pledgeEntry)
+    && ($withdrawViewerId === (string) ($pledgeCampaign['author'] ?? '') || (bool) ($viewerCanRetractOthers ?? false))
+    && $withdrawViewerId !== (string) ($post['author_identity_id'] ?? '');
 ?>
 <?php if (is_array($pledgeEntry)): ?>
   <p class="pledge-amount" data-pledge-state="<?= $e($pledgeEntry['state']) ?>"><?php if ($pledgeEntry['amount'] !== null): ?><strong><?= $e($pledgeEntry['amount']) ?></strong><?= $pledgeCampaign['unit'] !== '' ? ' ' . $e($pledgeCampaign['unit']) : '' ?><?php endif; ?><?php if ($withdrawnBy !== ''): ?> · <a href="/posts/<?= $e($withdrawnBy) ?>">Withdrawn</a><?= $withdrawnDate !== '' ? ' <span class="meta">' . $e($withdrawnDate) . '</span>' : '' ?><?php endif; ?><?php if ($pledgeEntry['note'] !== ''): ?><?= $pledgeEntry['amount'] !== null ? ' · ' : '' ?><span class="meta"><?= $e($pledgeEntry['note']) ?></span><?php endif; ?></p>
 <?php foreach ($fillList as $fill): ?>
 <?php $fillDisputed = ($fill['review'] ?? '') === 'disputed'; ?>
   <p class="pledge-amount" data-pledge-state="<?= $fillDisputed ? 'fill-disputed' : 'fill' ?>"><?= $fillDisputed ? '<s>' : '' ?><a href="/posts/<?= $e($fill['post_id']) ?>"><?= $fill['role'] === 'pledger' ? 'Delivered' : 'Filled' ?> by <?= $e($fill['by'] !== '' ? $fill['by'] : 'unnamed') ?></a><?= $fill['amount'] !== $pledgeEntry['amount'] ? ' · ' . $e($fill['amount']) : '' ?><?= $fillDisputed ? '</s>' : '' ?><?php if (($fill['review'] ?? '') !== ''): ?> · <a href="/posts/<?= $e($fill['review_post_id']) ?>"><?= $e($fill['review']) ?> by <?= $e($fill['review_by'] !== '' ? $fill['review_by'] : 'unnamed') ?></a><?php endif; ?></p>
+<?php if ($viewerCanReview && $fill['role'] === 'pledger' && ($fill['review'] ?? '') === ''): ?>
+<?php foreach ([\ForumRewrite\Support\ReviewDirective::CONFIRM => 'Confirm', \ForumRewrite\Support\ReviewDirective::DISPUTE => 'Dispute'] as $reviewLine => $reviewLabel): ?>
+  <form class="pledge-withdraw" method="post" action="/compose/reply" data-role="pledge-line" data-failure="Review failed. Try again.">
+    <input type="hidden" name="thread_id" value="<?= $e($post['thread_id']) ?>">
+    <input type="hidden" name="parent_id" value="<?= $e($fill['post_id']) ?>">
+    <input type="hidden" name="board_tags" value="general">
+    <input type="hidden" name="return_to" value="/threads/<?= $e($post['thread_id']) ?>">
+    <input type="hidden" name="body" value="<?= $e($reviewLine) ?>">
+    <button type="submit" class="thread-reaction-button"><?= $e($reviewLabel) ?></button>
+    <span class="meta" data-role="pledge-withdraw-feedback" role="status" aria-live="polite" hidden></span>
+  </form>
+<?php endforeach; ?>
+<?php endif; ?>
 <?php endforeach; ?>
 <?php endif; ?>
 <?php if ($fillButtonLabel !== ''): ?>

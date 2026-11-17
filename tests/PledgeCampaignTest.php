@@ -847,14 +847,7 @@ final class PledgeCampaignTest
             'rv-dispute' => ['rv-lost', self::MEMBER, '', "dispute\nNothing came."],
             'rv-stray' => ['rv-first', self::MEMBER, '', 'confirm'],
         ];
-        $minute = 0;
-        foreach ($records as $id => [$parent, $author, $subject, $body]) {
-            $minute++;
-            $thread = $parent === '' ? '' : "Thread-ID: rv-root\nParent-ID: {$parent}\n";
-            file_put_contents($root . '/records/posts/' . $id . '.txt', "Post-ID: {$id}\nCreated-At: 2026-11-17T06:" . sprintf('%02d', $minute)
-                . ":00Z\nBoard-Tags: general\n{$thread}{$subject}Author-Identity-ID: {$author}\n\n{$body}\n");
-        }
-        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new CanonicalRecordRepository($root), 'pledge_review_test'))->rebuild();
+        $this->writeThread($root, $database, $records);
         $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/rv-root');
 
         putenv('FORUM_PLEDGES_ENABLED=1');
@@ -872,6 +865,53 @@ final class PledgeCampaignTest
         }
 
         pledgeAssertNotContains('pledge-amount', $page());
+    }
+
+    public function testReviewButtonsShowForTheAuthorOnUnreviewedPledgerFillsAndABareConfirmFolds(): void
+    {
+        [$root, $database] = $this->environment();
+        $pledger = 'openpgp:' . str_repeat('b', 40);
+        $this->writeThread($root, $database, [
+            'rb-root' => ['', self::MEMBER, "Subject: Button campaign\n", 'goal: 1000 coffees'],
+            'rb-a' => ['rb-root', $pledger, '', 'pledge: 300'],
+            'rb-b' => ['rb-root', $pledger, '', 'pledge: 200'],
+            'rb-c' => ['rb-root', self::MEMBER, '', 'pledge: 100'],
+            'rb-open' => ['rb-a', $pledger, '', 'filled'],
+            'rb-done' => ['rb-b', $pledger, '', 'filled'],
+            'rb-confirm' => ['rb-done', self::MEMBER, '', 'confirm'],
+            'rb-own' => ['rb-c', self::MEMBER, '', 'filled'],
+        ]);
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/rb-root');
+        $oldCookies = $_COOKIE;
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $_COOKIE = [];
+            $html = $page();
+            pledgeAssertNotContains('>Confirm</button>', $html);
+            // The bare confirm folds, and so does the bare fill it answered; the open fill folds too.
+            pledgeAssertNotContains('data-post-id="rb-confirm"', $html);
+            pledgeAssertNotContains('data-post-id="rb-done"', $html);
+            pledgeAssertNotContains('data-post-id="rb-open"', $html);
+
+            // The member is the campaign author: buttons on the open pledger fill only, not on the
+            // confirmed one or the member's own fill.
+            $_COOKIE = ['identity_hint' => self::MEMBER];
+            $html = $page();
+            pledgeAssertSame(1, substr_count($html, '>Confirm</button>'));
+            pledgeAssertSame(1, substr_count($html, '>Dispute</button>'));
+            pledgeAssertSame(2, substr_count($html, '<input type="hidden" name="parent_id" value="rb-open">'));
+            pledgeAssertContains('<input type="hidden" name="body" value="confirm">', $html);
+            pledgeAssertContains('<input type="hidden" name="body" value="dispute">', $html);
+            pledgeAssertContains('data-failure="Review failed. Try again."', $html);
+
+            // The pledger sees no review buttons on their own fills.
+            $_COOKIE = ['identity_hint' => $pledger];
+            pledgeAssertNotContains('>Confirm</button>', $page());
+        } finally {
+            $_COOKIE = $oldCookies;
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
     }
 
     private function environment(): array
@@ -892,6 +932,25 @@ final class PledgeCampaignTest
         $service = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root), featureFlags: FeatureFlagEvaluator::forRepository($root));
 
         return [$root, $database, $service, $artifacts];
+    }
+
+    /**
+     * Writes one thread as post records, root first, and rebuilds the read model. Lets a test use a
+     * second key, which the fixture does not have. Each record is [parent, author, extra headers, body].
+     *
+     * @param array<string, array{0: string, 1: string, 2: string, 3: string}> $records
+     */
+    private function writeThread(string $root, string $database, array $records): void
+    {
+        $rootId = (string) array_key_first($records);
+        $minute = 0;
+        foreach ($records as $id => [$parent, $author, $headers, $body]) {
+            $minute++;
+            $thread = $parent === '' ? '' : "Thread-ID: {$rootId}\nParent-ID: {$parent}\n";
+            file_put_contents($root . '/records/posts/' . $id . '.txt', "Post-ID: {$id}\nCreated-At: 2026-11-17T06:" . sprintf('%02d', $minute)
+                . ":00Z\nBoard-Tags: general\n{$thread}{$headers}Author-Identity-ID: {$author}\n\n{$body}\n");
+        }
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new CanonicalRecordRepository($root), 'pledge_review_test'))->rebuild();
     }
 
     private function thread(LocalWriteService $service, string $subject, string $body): string
