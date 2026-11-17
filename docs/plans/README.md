@@ -32,6 +32,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Import cancel one-shot](import_cancel/import_cancel_one_shot.md) — `./v3 import-instance --cancel` discards an interrupted import that has not committed its content; prerequisite for the import-instance GUI.
 
+[Pledge Complete pill](pledge_complete_pill/pledge_complete_pill_one_shot.md) — the "Complete" pill keeps the theme's own text and fill, so it reads in every theme; its border marks it complete.
+
 [Pledge board rows](pledge_board_rows/pledge_board_rows_step3_development_plan.md) — a campaign's row on the board shows its progress ("620 / 1000 coffees") and its status word.
 
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.

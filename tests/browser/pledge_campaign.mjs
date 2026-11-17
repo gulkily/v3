@@ -376,6 +376,29 @@ try {
   await longForm.getByRole('button', { name: 'Post', exact: true }).click();
   await writer.page.waitForURL(/\/threads\//, { timeout: 30000 });
   const longId = /\/threads\/([^?#]+)/.exec(writer.page.url())[1];
+  // The writer pledges the whole goal and marks it delivered, so this campaign reads "Complete".
+  approveAuthorOf('goal: 40 hand-roasted');
+  await settled(writer.page);
+  await writer.page.locator('[data-pledge-form] [data-role="pledge-amount"]').fill('40');
+  await writer.page.locator('[data-pledge-form]').getByRole('button', { name: 'Post pledge' }).click();
+  await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').waitFor({ timeout: 60000 });
+  await settled(writer.page);
+  const delivered = writer.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
+  await press(writer.page.getByRole('button', { name: 'Mark delivered' }).first());
+  assert.equal((await delivered).status(), 200);
+  await settled(writer.page);
+  await writer.page.goto(base + '/threads/' + longId);
+  assert.equal((await writer.page.locator('.pledge-totals__sum .pledge-status').textContent()).trim(), 'Complete');
+  // Each status pill's text against the colour actually behind it (its own fill over its ancestors), as a WCAG ratio.
+  const pillContrast = page => page.evaluate(() => [...document.querySelectorAll('.pledge-totals__sum .pledge-status, .thread-row__pledge .pledge-status')].map(e => {
+    const parse = c => { const m = c.match(/[\d.]+/g).map(Number); return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1 }; };
+    const over = (top, under) => ({ r: top.r * top.a + under.r * (1 - top.a), g: top.g * top.a + under.g * (1 - top.a), b: top.b * top.a + under.b * (1 - top.a), a: 1 });
+    const chain = []; for (let n = e; n; n = n.parentElement) chain.push(parse(getComputedStyle(n).backgroundColor));
+    let bg = { r: 255, g: 255, b: 255, a: 1 }; for (const c of chain.reverse()) bg = over(c, bg);
+    const lum = c => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+    const [hi, lo] = [lum(over(parse(getComputedStyle(e).color), bg)), lum(bg)].sort((p, q) => q - p);
+    return { word: e.textContent.trim(), ratio: (hi + 0.05) / (lo + 0.05) };
+  }));
   // The board row's line, checked against the thread page's own numbers. Without JavaScript too.
   const boardLine = async (page, id) => {
     const row = page.locator(`article#post-${id}`);
@@ -446,26 +469,33 @@ try {
         await view.page.locator('[data-pledge-totals]').scrollIntoViewIfNeeded();
         await view.page.screenshot({ path: join(shots, `${theme}-${width}.png`), fullPage: true });
       }
+      for (const pill of await pillContrast(view.page)) assert.ok(pill.ratio >= 4.5, `${theme} ${width}px: thread "${pill.word}" pill contrast ${pill.ratio.toFixed(2)}`);
       // The board row shows the thread page's sum and status word, under the title, without crowding it.
       const pledged = (await view.page.locator('.pledge-totals__sum strong').textContent()).trim();
       const status = (await view.page.locator('.pledge-totals__sum .pledge-status').allTextContents()).map(t => t.trim()).join('');
       await view.page.goto(base + '/threads/?view=all&sort=newest');
-      for (const [id, expected] of [[threadId, `${pledged} / 1000 coffees${status ? ' ' + status : ''}`], [longId, '0 / 40 hand-roasted single-origin coffees from the shop on Mass Ave']]) {
+      for (const [id, expected] of [[threadId, `${pledged} / 1000 coffees${status ? ' ' + status : ''}`], [longId, '40 / 40 hand-roasted single-origin coffees from the shop on Mass Ave Complete']]) {
         const seen = await boardLine(view.page, id);
         assert.equal(seen.text, expected, `${theme} ${width}px: board line`);
         assert.equal(await view.page.locator(`article#post-${id} .thread-row__excerpt`).filter({ hasText: 'goal:' }).count(), 0, `${theme} ${width}px: the excerpt leaves out the goal line`);
         assert.ok(seen.below && seen.sameTitle && seen.clear && seen.fits, `${theme} ${width}px: board line under the title, title unchanged, clear of the count (${JSON.stringify(seen)})`);
       }
       assert.ok(await view.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${theme} ${width}px: no board overflow`);
+      const boardPills = await pillContrast(view.page);
+      assert.deepEqual(boardPills.map(p => p.word).sort(), ['Complete', 'Goal reached'], `${theme} ${width}px: both status words on the board`);
+      for (const pill of boardPills) assert.ok(pill.ratio >= 4.5, `${theme} ${width}px: board "${pill.word}" pill contrast ${pill.ratio.toFixed(2)}`);
       if (shots) {
         await view.page.locator(`article#post-${threadId}`).scrollIntoViewIfNeeded();
         await view.page.screenshot({ path: join(shots, `${theme}-${width}-board.png`) });
       }
+      // The Complete campaign's own thread page.
+      await view.page.goto(base + '/threads/' + longId);
+      for (const pill of await pillContrast(view.page)) assert.ok(pill.ratio >= 4.5, `${theme} ${width}px: thread "${pill.word}" pill contrast ${pill.ratio.toFixed(2)}`);
       console.log(`PASS ${theme} ${width}px`);
       await view.context.close();
     }
   }
   await writer.context.close();
-  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, fill with a failed first press, confirm with a failed first press, dispute, no-JavaScript pledge, uncounted reason, board rows, themes');
+  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, fill with a failed first press, confirm with a failed first press, dispute, no-JavaScript pledge, uncounted reason, board rows, status pill contrast, themes');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }
