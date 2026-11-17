@@ -90,3 +90,20 @@
 
 **Uncertain assessments**
 - Stage 1 changes counting and removes a flag in one stage; the two are tied (the flag can do nothing once approval is required), so splitting them would leave a stage with a flag that does nothing.
+
+## 2026-11-17T19:05Z — Step 4
+
+**Necessary/useful instructions**
+- `implementation_standards.md` "check affected shared consumers, themes, roles": the theme pass found Word97 and Bubblegum drawing rows as separate windows, and the author view found the Retract control's menu nested in "More"; both were recorded instead of forced. Retain.
+- `implementation_standards.md` "replay that condition or explicitly report it unverified": the replay at 375 by 667 pixels ran as visitor, without JavaScript and as author; the device check stays pending. Retain.
+- `implementation_standards.md` "identify the canonical components": the list byline (`$rowMeta`) already existed, so the compact header reused it rather than a new form; this produced the one recorded deviation from Step 2. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only rules: the work type is an application change.
+
+**Uncertain assessments**
+- Approval in tests: PHP tests set the profile row directly and the browser check writes an approval seed. Neither exercises the site's own Approve flow; recorded as not exercised.
+- Screenshots were looked at by the agent; no independent visual review was run.
