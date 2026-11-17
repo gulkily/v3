@@ -82,8 +82,21 @@ Ledger note: Step 3 said this cycle's ledger row would go into the planning comm
 ## Stage 4 - Float mode, dragging and Reset
 
 **Original estimate: 0.20**
+**Retrospective stage work: 0.20**
 
-- Status: not started.
+- Status: complete.
+- Changes:
+  - `theme-bubblegum.js`: with `(pointer: fine) and (min-width: 640px)`, start adds Float and Reset buttons in a fixed corner bar at the bottom left. Float sets `data-window-float` on the root. A primary-button mouse or pen press on a title bar (not its button) drags the window with pointer capture, moving it with the CSS `translate` property so the pop's `transform` doesn't fight it. Arrow keys on a window's title bar button move it 10px, or 50px with Shift. Reset clears every position; Float off clears them too. Positions live only in the page. Stop removes the corner bar, positions and Float mode.
+  - `theme-bubblegum.css`: grab and grabbing cursors, the active window on top in Float mode, and the corner bar's look.
+  - `tests/browser/draggable_windows.mjs` extended.
+- Verification:
+  - `node tests/browser/draggable_windows.mjs`: passes. No drag before Float; a drag moves the reply by (150, 100) within 2px; dragging across text inside a window selects it and moves nothing; ArrowRight and Shift+ArrowDown move by (10, 50); Reset restores both windows and keeps Float on; Float off restores them; a link inside a window is followed in Float mode; a reload starts with Float off; switching to Gloss removes the corner bar, positions and Float mode; no Float toggle at 380px with touch.
+  - `node tests/browser/theme_scripts.cjs`: passes.
+  - Screenshots at 1280px with Float on and a window dragged, checked by eye.
+- Notes:
+  - Placement (left open in Step 3 for screenshot review): beside the wordmark, Float and Reset ran into the Board tab at 1280px. They moved to a fixed corner bar at the bottom left, styled like a taskbar's start area.
+  - Small deviation from Step 3's wording "Reset returns every window and turns Float mode off": Reset keeps Float on, since turning Float off already puts windows back. Two buttons doing the same thing would add nothing. Flagged for the maintainer.
+- Estimate details: original scope as Step 3; retrospective 0.20, on estimate. No revisions.
 
 ## Stage 5 - Preferences row
 

@@ -190,6 +190,52 @@
   }
 }
 
+/* Float mode (desktop): windows drag by their title bars; the one in use sits on top. */
+:root[data-theme="bubblegum"][data-window-float] [data-window-titlebar] {
+  cursor: grab;
+}
+
+:root[data-theme="bubblegum"][data-window-float] .card[data-window-dragging] > [data-window-titlebar] {
+  cursor: grabbing;
+}
+
+:root[data-theme="bubblegum"][data-window-float] .card[data-window-active] {
+  z-index: 2;
+}
+
+/* Float and Reset sit in a small taskbar corner at the bottom left
+   (desktop only; the script doesn't add it for touch or narrow screens). */
+:root[data-theme="bubblegum"] [data-window-float-controls] {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  border: 3px solid var(--bubblegum-berry);
+  background: var(--bubblegum-bar);
+  box-shadow: 4px 4px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  min-height: 0;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  box-shadow: 2px 2px 0 var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button[hidden] {
+  display: none;
+}
+
 /* A white box with a pixel underscore (collapse), or an outlined window
    (expand) once collapsed. The invisible ::after makes a 44px touch target. */
 /* `.card >` outranks the chunky-button hover and press rules further down. */

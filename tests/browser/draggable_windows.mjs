@@ -17,6 +17,9 @@ import { chromium } from 'playwright-core';
 // back restores them; with the flag off the script isn't even loaded.
 // Clicking or tabbing into a window makes it active and fades the other title
 // bars (labels stay readable); a window pops open unless motion is reduced.
+// Float mode (desktop only): a window drags by its title bar or moves with
+// arrow keys on its button; text selection and links inside windows still
+// work; Reset puts windows back; Float off and theme switches clear positions.
 // Usage: node tests/browser/draggable_windows.mjs [screenshot-dir]
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
@@ -171,6 +174,75 @@ try {
   assert.deepEqual(await page.evaluate(() => window.__pops), ['bubblegum-window-pop'], 'no pop with reduced motion');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
+  // Float mode.
+  await setUp('bubblegum', null, null);
+  await page.goto(url);
+  await page.waitForSelector('[data-window-titlebar]');
+  const floatToggle = page.locator('[data-window-float-toggle]');
+  const reset = page.locator('[data-window-float-reset]');
+  assert.equal(await floatToggle.count(), 1, 'Float toggle on desktop');
+  assert.equal(await reset.isVisible(), false, 'Reset hidden until Float is on');
+  // Position only: a run's first post grows on hover (its byline), which isn't a move.
+  const box = id => page.locator(`.card[data-post-id="${id}"]`).first().boundingBox().then(b => ({ x: b.x, y: b.y }));
+  const replyStart = await box(replyId);
+  // Without Float mode, a title bar doesn't drag.
+  await page.mouse.move(replyStart.x + 200, replyStart.y + 8); await page.mouse.down();
+  await page.mouse.move(replyStart.x + 350, replyStart.y + 108, { steps: 5 }); await page.mouse.up();
+  assert.deepEqual(await box(replyId), replyStart, 'no drag before Float is on');
+  await floatToggle.click();
+  assert.equal(await floatToggle.getAttribute('aria-pressed'), 'true');
+  assert.equal(await reset.isVisible(), true, 'Reset shown in Float mode');
+  if (shots) await page.screenshot({ path: join(shots, 'bubblegum-float-on.png') });
+  await page.mouse.move(replyStart.x + 200, replyStart.y + 8); await page.mouse.down();
+  await page.mouse.move(replyStart.x + 350, replyStart.y + 108, { steps: 8 }); await page.mouse.up();
+  const moved = await box(replyId);
+  assert.ok(Math.abs(moved.x - replyStart.x - 150) <= 2 && Math.abs(moved.y - replyStart.y - 100) <= 2, `dragged by its title bar (${moved.x - replyStart.x}, ${moved.y - replyStart.y})`);
+  if (shots) await page.screenshot({ path: join(shots, 'bubblegum-float-dragged.png') });
+  // Text selection inside a window still selects, and doesn't move it.
+  const rootStart = await box(rootId);
+  const para = page.locator(`.card[data-post-id="${rootId}"] .body`).first();
+  const pb = await para.boundingBox();
+  // Selecting starts outside Float's title bars, so nothing should move.
+  await page.mouse.move(pb.x + 2, pb.y + 6); await page.mouse.down();
+  await page.mouse.move(pb.x + 120, pb.y + 6, { steps: 5 }); await page.mouse.up();
+  assert.ok((await page.evaluate(() => String(window.getSelection()))).length > 3, 'text still selects in Float mode');
+  assert.deepEqual(await box(rootId), rootStart, 'selecting text moves nothing');
+  // Arrow keys on a window's button move it.
+  await button(rootId).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  const keyed = await box(rootId);
+  assert.ok(Math.abs(keyed.x - rootStart.x - 10) <= 1 && Math.abs(keyed.y - rootStart.y - 50) <= 1, 'arrow keys move a window');
+  // Reset puts windows back and leaves Float on.
+  await reset.click();
+  assert.deepEqual(await box(replyId), replyStart, 'Reset: reply back in place');
+  assert.deepEqual(await box(rootId), rootStart, 'Reset: root back in place');
+  assert.equal(await floatToggle.getAttribute('aria-pressed'), 'true', 'Reset keeps Float on');
+  // Float off puts windows back too.
+  await page.mouse.move(replyStart.x + 200, replyStart.y + 8); await page.mouse.down();
+  await page.mouse.move(replyStart.x + 260, replyStart.y + 48, { steps: 4 }); await page.mouse.up();
+  await floatToggle.click();
+  assert.equal(await floatToggle.getAttribute('aria-pressed'), 'false');
+  assert.deepEqual(await box(replyId), replyStart, 'Float off: windows back');
+  // A link inside a window still works in Float mode.
+  await floatToggle.click();
+  await page.locator(`.card[data-post-id="${replyId}"] a[href*="tag"], .card[data-post-id="${replyId}"] .meta a`).first().click();
+  await page.waitForLoadState();
+  assert.notEqual(page.url(), url, 'link followed in Float mode');
+  // Positions are page-only: a reload starts with Float off and windows in place.
+  await page.goto(url);
+  await page.waitForSelector('[data-window-titlebar]');
+  assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-window-float')), false, 'Float off after reload');
+  // A theme switch removes the Float controls and any position.
+  await page.locator('[data-window-float-toggle]').click();
+  await page.mouse.move(replyStart.x + 200, replyStart.y + 8); await page.mouse.down();
+  await page.mouse.move(replyStart.x + 260, replyStart.y + 48, { steps: 4 }); await page.mouse.up();
+  await page.evaluate(() => window.forumExitTheme('gloss'));
+  assert.equal(await page.locator('[data-window-float-controls], [data-window-x]').count(), 0, 'gloss: no Float controls or positions');
+  assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-window-float')), false, 'gloss: Float off');
+  await page.evaluate(() => window.forumExitTheme('bubblegum'));
+  await page.waitForSelector('[data-window-titlebar]');
+
   // A composer keeps its draft through collapse and expand.
   const composer = page.locator('.card:has(textarea)').last();
   await composer.locator('textarea').fill('draft text');
@@ -206,6 +278,7 @@ try {
   await phonePage.waitForSelector('[data-window-titlebar]');
   await phonePage.locator(`.card[data-post-id="${replyId}"] > [data-window-titlebar] > [data-window-collapse]`).first().tap();
   assert.ok(await phonePage.locator(`.card[data-post-id="${replyId}"]`).first().evaluate(c => c.getBoundingClientRect().height) < 40, 'tap collapses on a phone');
+  assert.equal(await phonePage.locator('[data-window-float-toggle]').count(), 0, 'no Float toggle on a phone');
   assert.equal(await phonePage.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false, 'no sideways scroll on a phone');
   if (shots) await phonePage.screenshot({ path: join(shots, 'bubblegum-buttons-phone.png'), fullPage: true });
   await phone.close();
