@@ -558,6 +558,8 @@ and repair its navigation and affected references. See the
 - [Gallery caption zoom](gallery_caption_zoom/gallery_caption_zoom_one_shot.md) — one-shot: Gallery caption text scales with the gallery zoom.
 
 - [Deploy celebration](deploy_celebration/deploy_celebration_one_shot.md) — one-shot: confetti and a Deployed banner on the page that loads after a deploy that changed the code.
+
+- [One ledger file per cycle](per_cycle_effort_ledger/per_cycle_effort_ledger_one_shot.md) — one-shot: effort-study entries go in `effort_ledger/<cycle>.md`, so open PRs stop conflicting on the shared ledger.
 - [Live feature tour](live_feature_tour/live_feature_tour_one_shot.md) — one-shot: unlinked page of live, scaled-down frames of the main ZenMemes pages.
 - [Live feature tour, quiet](live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md) — one-shot: no intro copy and no new tabs on the tour page.
 - [Offline card extra line](offline_card_extra_line/offline_card_extra_line_one_shot.md) — one-shot: offline board cards show one more line of the post body.
