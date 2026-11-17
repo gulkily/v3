@@ -1268,6 +1268,7 @@ pre {
 }
 
 .thread-row__excerpt,
+.thread-row__pledge,
 .thread-row__meta,
 .thread-row > .event-block {
   grid-column: 1;
@@ -1285,6 +1286,16 @@ pre {
   font-size: 0.85rem;
 }
 
+/* A campaign's progress: one line under the title that wraps, so the title keeps its line. */
+.thread-row__pledge {
+  font-size: 0.85rem;
+}
+
+.thread-row__pledge .pledge-status {
+  margin-left: 0.25rem;
+  font-size: 0.75rem;
+}
+
 /* A row with an attached image: the thumbnail fills a narrow first column as
    tall as the row; the image never adds height of its own. */
 .thread-row--thumb {
@@ -1293,6 +1304,7 @@ pre {
 
 .thread-row--thumb > .thread-row__title,
 .thread-row--thumb > .thread-row__excerpt,
+.thread-row--thumb > .thread-row__pledge,
 .thread-row--thumb > .thread-row__meta,
 .thread-row--thumb > .event-block {
   grid-column: 2;
@@ -2307,7 +2319,7 @@ pre {
 .pledge-totals__sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.4rem; margin: 0 0 0.5rem; color: var(--ink-soft); }
 .pledge-totals__sum strong { font-size: 2em; line-height: 1; color: var(--ink); }
 .pledge-status { align-self: center; padding: 0.15em 0.6em; border: 1px solid var(--active-line, var(--line)); border-radius: 999px; background: var(--active-bg, var(--panel)); color: var(--active-ink, var(--ink)); font: 600 0.8rem/1.3 var(--ui-font); white-space: nowrap; }
-.pledge-totals[data-pledge-status="complete"] .pledge-status { border-color: var(--status-ok, var(--line)); color: var(--status-ok, var(--ink)); }
+.pledge-totals[data-pledge-status="complete"] .pledge-status, .thread-row__pledge[data-pledge-status="complete"] .pledge-status { border-color: var(--status-ok, var(--line)); color: var(--status-ok, var(--ink)); }
 .pledge-totals__count { margin: 0.4rem 0 0; }
 .pledge-bar { position: relative; height: 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: transparent; overflow: hidden; }
 .pledge-bar__fill, .pledge-bar__delivered { position: absolute; inset: 0 auto 0 0; }

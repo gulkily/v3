@@ -394,6 +394,32 @@ final class PledgeCampaign
     }
 
     /** An approved key's post whose attribution counts: the only posts whose pledge lines count. */
+    /**
+     * Adds `pledge_campaign` to each board row whose opening post has a goal line: the same
+     * result the thread page computes, from the same posts. Only those threads' posts are
+     * loaded, so rows that are not campaigns cost nothing.
+     *
+     * @param array<int, array<string, mixed>> $rows board rows with `root_post_id` and `root_post_body`
+     * @param callable(string): array<int, array<string, mixed>> $loadPosts the thread page's post loader
+     * @param (callable(string): bool)|null $isOperator as for fromPosts()
+     * @return array<int, array<string, mixed>>
+     */
+    public static function forRows(array $rows, callable $loadPosts, ?callable $isOperator = null): array
+    {
+        foreach ($rows as $index => $row) {
+            if (($row['retracted_at'] ?? null) !== null || GoalDirective::extract((string) ($row['root_post_body'] ?? '')) === null) {
+                continue;
+            }
+            $threadId = (string) $row['root_post_id'];
+            $campaign = self::fromPosts($loadPosts($threadId), $threadId, $isOperator);
+            if ($campaign !== null) {
+                $rows[$index]['pledge_campaign'] = $campaign;
+            }
+        }
+
+        return $rows;
+    }
+
     private static function approved(array $post): bool
     {
         return (int) ($post['author_is_approved'] ?? 0) === 1 && (int) ($post['attribution_counted'] ?? 1) === 1;

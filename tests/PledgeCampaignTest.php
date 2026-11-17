@@ -1123,6 +1123,96 @@ final class PledgeCampaignTest
         pledgeAssertContains('data-post-byline>by ', $card($other, $plainReply));
     }
 
+    public function testBoardRowsGetTheThreadPagesTotalsAndOnlyCampaignsAreRead(): void
+    {
+        $post = static fn (string $id, string $body, array $more = []): array => $more + [
+            'post_id' => $id, 'thread_id' => 'camp', 'body' => $body, 'retracted_at' => null,
+            'author_identity_id' => self::MEMBER, 'attribution_counted' => 1, 'author_is_approved' => 1,
+        ];
+        $posts = [
+            $post('camp', "Coffee.\ngoal: 1000 coffees"),
+            $post('a', 'pledge: 620'),
+            $post('waits', 'pledge: 12', ['author_is_approved' => 0]),
+            $post('gone', 'pledge: 50'),
+            $post('w', 'withdraw', ['parent_id' => 'gone']),
+        ];
+        $rows = [
+            ['root_post_id' => 'plain', 'root_post_body' => 'Just talking.', 'retracted_at' => null],
+            ['root_post_id' => 'camp', 'root_post_body' => "Coffee.\ngoal: 1000 coffees", 'retracted_at' => null],
+            ['root_post_id' => 'quoted', 'root_post_body' => '> goal: 5 hours', 'retracted_at' => null],
+        ];
+        $read = [];
+        $loader = static function (string $threadId) use (&$read, $posts): array {
+            $read[] = $threadId;
+            return $posts;
+        };
+
+        $result = PledgeCampaign::forRows($rows, $loader);
+        // Only the campaign's posts are loaded, and its row gets exactly the thread page's result.
+        pledgeAssertSame(['camp'], $read);
+        pledgeAssertSame(PledgeCampaign::fromPosts($posts, 'camp'), $result[1]['pledge_campaign']);
+        pledgeAssertSame('620', $result[1]['pledge_campaign']['pledged']);
+        pledgeAssertSame(false, isset($result[0]['pledge_campaign']));
+        pledgeAssertSame(false, isset($result[2]['pledge_campaign']));
+        // A board with no campaign reads nothing.
+        $read = [];
+        PledgeCampaign::forRows([$rows[0], $rows[2]], $loader);
+        pledgeAssertSame([], $read);
+    }
+
+    public function testBoardRowShowsTheThreadPagesProgressOnlyWithTheFlagOn(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Board campaign', "Coffee for the weekend.\ngoal: 10 coffees");
+        $this->reply($service, $thread, 'pledge: 12');
+        $second = $this->secondIdentity($service);
+        $this->reply($service, $thread, 'pledge: 3', $second);
+        $plain = $this->thread($service, 'No campaign here', 'Just talking.');
+        $board = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/?view=all&sort=newest');
+        $row = static function (string $html, string $threadId): string {
+            preg_match('/<article id="post-' . preg_quote($threadId, '/') . '".*?<\/article>/s', $html, $match);
+            return $match[0] ?? '';
+        };
+
+        putenv('FORUM_PLEDGES_ENABLED');
+        pledgeAssertNotContains('data-pledge-row', $board());
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $on = $board();
+            // The waiting pledger's 3 stays out, as on the thread page.
+            pledgeAssertContains('<p class="meta thread-row__pledge" data-pledge-row data-pledge-status="goal_reached"><strong>12</strong> / 10 coffees <span class="pledge-status">Goal reached</span></p>', $row($on, $thread));
+            pledgeAssertNotContains('data-pledge-row', $row($on, $plain));
+            // The excerpt keeps the pitch and leaves out the goal line the row's line already shows.
+            pledgeAssertContains('Coffee for the weekend.', $row($on, $thread));
+            pledgeAssertNotContains('goal: 10 coffees', $row($on, $thread));
+            // The line sits under the title, before the excerpt.
+            pledgeAssertSame(true, strpos($row($on, $thread), 'thread-row__title') < strpos($row($on, $thread), 'thread-row__pledge'));
+            pledgeAssertContains('<strong>12</strong> of 10 coffees pledged', $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread)));
+
+            // Approval is read when the board is shown.
+            $this->approveKeys($database, $second);
+            pledgeAssertContains('<strong>15</strong> / 10 coffees', $row($board(), $thread));
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+    }
+
+    public function testAPledgeReplyClearsTheBakedBoardPages(): void
+    {
+        [$root, $database, $service, $artifacts] = $this->environment();
+        $thread = $this->thread($service, 'Baked board campaign', 'goal: 10 coffees');
+        $baked = [$artifacts . '/index.html', $artifacts . '/threads.html', $artifacts . '/threads/index.html'];
+        foreach ($baked as $path) {
+            @mkdir(dirname($path), 0777, true);
+            file_put_contents($path, 'stale');
+        }
+        $this->reply($service, $thread, 'pledge: 4');
+        foreach ($baked as $path) {
+            pledgeAssertSame(false, is_file($path), 'a pledge should clear the baked board page ' . $path);
+        }
+    }
+
     private function environment(): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-pledge-repo-' . bin2hex(random_bytes(6));

@@ -1549,6 +1549,7 @@ final class Application
             $this->routeServices(),
             $this->repositoryRoot,
             $this->resolveViewerProfileFromIdentityHint(...),
+            $this->fetchThreadPosts(...),
         );
     }
 
