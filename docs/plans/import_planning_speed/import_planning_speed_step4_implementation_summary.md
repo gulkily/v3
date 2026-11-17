@@ -65,3 +65,37 @@ Branch: `feat/import_planning_speed`, from `origin/main` at `f9d61535`. Planning
 **Retrospective stage-work assessment: 0.35** — above the original because of the killed-process cleanup and fork handling.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Cloud Linux replay and concept entry
+
+**Original estimate: 0.08**
+
+- Changes:
+  - New `docs/concepts/signature_check_cache.md`; linked from `docs/concepts/instance_content_import.md`.
+  - `docs/runbooks/instance_content_import.md`: repeat imports reuse saved checks, and deleting the file is safe.
+- Verification (live zenmemes.com archive from 2026-11-17, served on loopback; GPG launches counted with a `PATH` wrapper; planning measured from "Planning public records" to "Installing"):
+
+  | Run | `main` `f9d61535` | This branch |
+  | --- | --- | --- |
+  | First import, fresh checkout | 28.42 s planning, 38.70 s total, 1,168 GPG | 11.42 s planning, 18.21 s total, 394 GPG |
+  | Repeat import, same checkout | not measured (no cache use; same as first) | 1.42 s planning, 6.38 s total, 0 GPG |
+  | Repeat import, existing local repository | 26.29 s planning, 1,168 GPG | 1.53 s planning, 0 GPG |
+
+  - Passed: fresh-checkout counts identical on `main` and the branch: import 7372, invalid 226, unsupported 87, excluded 721. Status partial on both only because the loopback server has no `images.zip`.
+  - Passed: the first import into a fresh checkout leaves `signature_checks.sqlite3` beside its database, so the repeat needs no GPG.
+  - Passed: `--resume` after interruption, through `ImportDeadlineRecoveryTest` and `ContentImportRecoveryTest` in the Stage 2 run.
+  - Passed: `git diff --check`; concept and runbook links resolve to existing files.
+  - Not applicable: deployment, because `signature_checks.sqlite3` is derived and needs no migration.
+- Notes:
+  - A first attempt at the fresh-checkout run used a destination without `records/instance/public.txt` and failed at publish on both `main` and the branch with "Unable to read canonical record". That was the test setup, not a regression; the rerun above adds the file.
+- Estimate details: original scope as Step 3 Stage 3; uncertainty was archive drift, avoided by using one downloaded archive for every run. No revisions.
+
+**Retrospective stage-work assessment: 0.10** — slightly above the original, because the PHP download path stopped working in the sandbox and the archive had to be served from loopback.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Maintainer WSL replay
+
+**Original estimate: 0.03**
+
+- Status: pending. Needs the maintainer to run `time ./v3 import-instance zenmemes.com` twice on WSL with this branch checked out. Cloud Linux results above do not satisfy this stage.

@@ -2399,6 +2399,8 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 
 | `v3/import_planning_speed` | Step 4 in progress (Stages 1-2 done) | v1 / R1 / P2 | 0.55 | [Step 1](./import_planning_speed/import_planning_speed_step1_solution_assessment.md#study-snapshots); [Step 2](./import_planning_speed/import_planning_speed_step2_feature_description.md#study-snapshots); [Step 3](./import_planning_speed/import_planning_speed_step3_development_plan.md#study-snapshots); [Step 4](./import_planning_speed/import_planning_speed_step4_implementation_summary.md) | Branch `feat/import_planning_speed` |
 
+| `v3/import_planning_speed` | Step 4: Stages 1-3 done; Stage 4 (WSL) pending | v1 / R1 / P2 | 0.55 | [Step 1](./import_planning_speed/import_planning_speed_step1_solution_assessment.md#study-snapshots); [Step 2](./import_planning_speed/import_planning_speed_step2_feature_description.md#study-snapshots); [Step 3](./import_planning_speed/import_planning_speed_step3_development_plan.md#study-snapshots); [Step 4](./import_planning_speed/import_planning_speed_step4_implementation_summary.md) | Branch `feat/import_planning_speed` |
+
 2026-11-13: standing P2 enrollment for import planning speed; baseline `05486f22`. Intake (after profiling) and Step 1 handoff both 0.55 for Option A then B; Claude single exposed rater; R1 hashes not re-verified this session. Extended estimates enabled (A 0.15, B 0.45, C 1.20; not summed). Awaiting Approved Step 1.
 
 2026-11-13: import planning speed Step 1 approved (Option A then B). Step 2 0.55 reaffirmed, scope v1. Awaiting Approved Step 2.
@@ -2408,3 +2410,5 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 2026-11-17: import planning speed Step 3 approved; planning commit `4bc38c64` on `main` `f9d61535` (reference drift from `05486f22` recorded in Step 4). Step 4 entry 0.55 reaffirmed. Stage 1 retrospective 0.10 (original 0.15).
 
 2026-11-17: import planning speed Stage 2 retrospective 0.35 (original 0.30); killed-process cleanup found in verification.
+
+2026-11-17: import planning speed Stage 3 retrospective 0.10 (original 0.08). Stage 4 pending maintainer WSL replay.
