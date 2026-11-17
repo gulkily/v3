@@ -6,7 +6,7 @@ Debug mode: enabled; project marker .railspike_debug_on
 Effort study: railspike-effort / R1 / P2; [ledger](../effort_estimation_trial.md)
 Extended estimates: enabled; no separate work units
 **Cycle estimate: unavailable**
-Status: conflicts resolved and combined code verified; next action: push and confirm GitHub mergeability
+Status: complete; conflict resolution pushed to existing PR #284; GitHub reports MERGEABLE / CLEAN
 
 Original request: “can you please help me fix the pr”
 Authorization: User, 2026-11-17 UTC, requests repair of the existing PR #284. GitHub confirms it is OPEN and unmerged, but CONFLICTING. Repair and push to that PR are authorized; no merge into main or deployment.
@@ -31,7 +31,7 @@ Records and syntax: ./v3 feedback check reported 324 items, zero problems and 35
 Outcome: Preserved both branches' behavior and tests, retained all appended planning/study histories, and repaired the feedback collision through a distinct local-start intake. Runtime files merged cleanly and required no additional behavior changes. No dependency, schema, markup, CSS, navigation or deployed settings changes beyond the original PR. Unrelated .test-self-approve and todo.txt remain untouched.
 Final review: The conflict list contains only tests/run.php and four documentation/index files. Both main import test registrations and the local-start registration remain. Existing GUI root authorization, import exclusions and journal contracts were retained. Local development import and instance content import concept paths match the integrated code and need no semantic edits. Git histories and earlier Feedback trailers are intact.
 Study closeout: Scope v1 / R1 / P2 unchanged; projection and retrospective remain unavailable without recovered external calibration sources. This repair remains a follow-up to v3/local_start_import, not a second independent feature outcome. No measured labor, independent rating or accepted-count increment; maintainer fit pending.
-Commit/PR status: Planning commit 6c8065bb precedes the merge resolution. Completion merge commit pending at authorship. The original PR is still open/unmerged; push the combined descendant to its existing branch and confirm mergeability before handoff. No merge into main, force push or deployment is authorized.
+Commit/PR status: Planning commit 6c8065bb preceded completion merge 2eb041e88f52dd98fbd16512fe2ae251867a645e. The original PR branch was advanced by fast-forward and pushed without force. GitHub reports OPEN, MERGEABLE and CLEAN for PR #284. Its description now records current validation and the corrected feedback intake. No merge into main or deployment. This final record-only handoff commit contains these confirmed references; its own hash is reported separately without another record loop.
 
 *— Codex · 2026-11-17 UTC*
 
