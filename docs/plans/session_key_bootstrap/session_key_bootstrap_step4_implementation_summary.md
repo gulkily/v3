@@ -14,6 +14,8 @@ Step 3 approved 2026-11-16. Branch `feat/session-key-bootstrap` from `origin/mai
 
 PR #274 was still open at Step 4 entry. This branch starts from `main` and rebases onto it if it merges first.
 
+Published as PR #289 after Stage 6. A trial merge with `origin/main` at `c010efca` was clean, and the bootstrap tests, the smoke set (493 of 493) and the browser check passed on it. Stage 7 and the closeout wait for deploy.
+
 ## Enhancement Requests
 
 - 2026-11-16, Ilya: "Remove this key" keeps the session open, so we need a way to log out. Disposition: no change needed; Step 3 Stage 7 was wrong. "Remove this key" already calls `/api/clear_identity` before it deletes the key, so it logs out. A deliberate removal therefore never bootstraps a key. Stage 4 adds a test that holds this. Stage 7 needs another way to drop only the stored key (see Stage 7). Approval: not needed (in-scope correction).
