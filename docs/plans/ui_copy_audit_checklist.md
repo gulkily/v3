@@ -956,3 +956,7 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 ## Tools → Import page — 2026-11-16
 
 - [x] New operator page: no explanatory intro. Copy is kept to consequences and recovery: who can import, "Resume finishes it; cancel removes what it installed." (or "Content is committed; resume finishes publishing."), the task worker not running, and the last failed request. Per-file detail is folded under Advanced. Checked in 8 themes at 390 and 1280 px for idle, running, result, pending and signed-out states ([Step 4](import_instance_gui/import_instance_gui_step4_implementation_summary.md)).
+
+## Tools → Import progress — 2026-11-17
+
+- [x] The step list replaces the "Importing…" status line and the Task worker row. The form is hidden while an import runs. Raw output is folded under Log. New copy is limited to step names, "Elapsed · updated · time left", and the not-started recovery: "The task worker didn't start.", the command and Try again. Checked in 8 themes at 390 and 1280 px ([Step 4](import_without_worker/import_without_worker_step4_implementation_summary.md)).

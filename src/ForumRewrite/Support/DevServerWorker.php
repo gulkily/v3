@@ -27,7 +27,7 @@ final class DevServerWorker
      */
     public function __construct(
         private readonly string $projectRoot,
-        private readonly float $intervalSeconds = 10.0,
+        private readonly float $intervalSeconds = 5.0,
         private readonly array $extraArguments = [],
     ) {
     }

@@ -2254,3 +2254,15 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/import_review_summary` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./import_review_summary/import_review_summary_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
 
 2026-11-17: one-shot import review summary; baseline `34d87c86`. Intake after inspection and closeout retrospective both 0.08; Claude single exposed rater; R1 hashes not re-verified.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_without_worker` | Locally complete; acceptance pending | v2 / R1 / P2 | 0.46 | [Step 1](./import_without_worker/import_without_worker_step1_solution_assessment.md#study-snapshots); [Step 2](./import_without_worker/import_without_worker_step2_feature_description.md#study-snapshots); [Step 3](./import_without_worker/import_without_worker_step3_development_plan.md#study-checkpoint); [Step 4](./import_without_worker/import_without_worker_step4_implementation_summary.md#study-closeout) | Follow-up to `v3/import_instance_gui`; acceptance pending |
+
+2026-11-17: import without a worker; baseline `34d87c86`. Intake after inspection and Step 1 handoff both 0.45 for A + C + D; extended estimates A 0.12, B 0.10, C 0.08, D 0.20, E 0.05 (not summed). Claude single exposed rater; R1 hashes not re-verified. Awaiting Approved Step 1.
+
+2026-11-17: import without a worker Step 1 approved with answers (launch without the emergency variable; dev-server worker on by default). Step 2 projection 0.45 unchanged, scope v2. Awaiting Approved Step 2.
+
+2026-11-17: import without a worker Step 2 approved. Step 3 projection 0.46; stage originals S1 0.07, S2 0.08, S3 0.10, S4 0.15, S5 0.06 (not summed). Awaiting Approved Step 3.
+
+2026-11-17: import without a worker Step 3 approved; Step 4 entry 0.46 reaffirmed. Closeout: five stages on `feat/import_without_worker`; retrospective scope assessment 0.55 (S1 0.06, S2 0.12, S3 0.11, S4 0.17, S5 0.09; not summed). Claude single exposed rater; R1 hashes not re-verified; no measured time. Maintainer acceptance pending.

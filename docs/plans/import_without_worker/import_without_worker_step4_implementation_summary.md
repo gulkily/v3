@@ -93,3 +93,44 @@ Step 3 approved 2026-11-17 ("approved step 3"). Branch `feat/import_without_work
 - Estimate details: retrospective higher for the browser check updates.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 5 - End-to-end on `./v3 start` and docs
+**Original estimate: 0.06**
+**Retrospective: 0.09**
+- Changes:
+  - Fixes from the real runs:
+    - The planner now prints `Progress: plan <done>/<total>` every 250 files. The total counts two passes over local records plus one over the source's. Before this, planning showed no update for about 23 seconds on a 7,000-record instance.
+    - `Progress: plan` is printed before the local scan, which had been showing under "Checking the archive".
+    - A download at 0 bytes with no known size shows no count, instead of "1 KB".
+    - The dev-server worker interval is 5 seconds, down from 10, so "Waiting for the task worker" lasts at most about 5 seconds.
+    - Elapsed time counts from the request while the task waits.
+    - In the Review row, exclusion root causes are no longer listed a second time beside `exclusion_reasons`.
+  - Docs:
+    - The runbook's Browser entry section now covers running without cron, the page-started worker, the not-started recovery and the steps and time left.
+    - `docs/concepts/internal_task_queue.md` covers workers without cron and the test queue isolation.
+    - The CLI reference covers the 5-second worker interval.
+    - Entries added to the UI copy checklist and the feedback item `PF-20261116-F02`.
+- Verification:
+  - A fresh git worktree of this branch, `./v3 start 127.0.0.1:8123` with the Import page flag on, a root session, and Chromium importing zenmemes.com from Tools → Import:
+    - First import: "Waiting for the task worker" (about 9 s with the old 10-second interval), then download, check, planning, install (300 of 7,288), views and images. Finished in about 40 s with "needs review": imported 7,288 · duplicate 1 · conflict 4 · invalid 193 · unsupported 81 · excluded 716 · images complete. `Step-Seconds` was recorded.
+    - Repeat imports used that timing ("under a minute left"). With the planner counts, planning updated every 1–7 seconds.
+    - `--no-worker` with a stale heartbeat: the page showed "Starting the task worker", its launched worker ran the import to completion (`Worker-Launch: launched`), and no worker process was left.
+    - `FORUM_PHP_CLI=/bin/false` with `--no-worker`: after 15 seconds the page showed "The task worker didn't start.", the command and Try again.
+  - `./v3 test --smoke ImportPageTest ImportInstanceCommandTest ContentImportRecoveryTest InstanceImportTaskTest DevServerWorkerTest ImportProgressViewTest`: 505 passed.
+  - `./v3 test --smoke` with every test file that uses `ContentImportPlanner` or `ContentImportRunner` (including `WriteApiSmokeTest` and `ContentImportPlannerTest`): 763 passed.
+  - `node tests/browser/tools_import.mjs`: 80 cases passed. `node tests/browser/tools_launcher.mjs`: 38 cases passed.
+  - `./v3 feedback check`: no problems. `git diff --check`: clean.
+  - Full suite not run.
+- Not verified:
+  - A hosted install without cron (php-fpm). The launch now uses `PhpCli::binary()`, but a real php-fpm host wasn't tried. Shared hosts that kill web-started processes fall back to the not-started message.
+  - On a fresh `./v3 start`, the first worker run before any page request logs "unable to open database file" to `state/private/task_queue_errors.log`, because the read model doesn't exist yet. Later runs succeed. This was left as is; the cron worker behaves the same.
+  - Browsers other than Chromium.
+- Final review: the diff from the planning commit touches only files named in Stages 1–5. It reuses the existing launcher, queue store, `BoundedProcess` and progress callbacks. No dependency was added.
+
+## Study closeout
+
+- Retrospective scope assessment (not a measured actual): 0.55 for scope v2 as delivered, against the 0.46 projection. The extra work: the test-queue isolation found in Stage 2, and the planner progress and fixes found in the real end-to-end runs.
+- Maintainer comfortable-fit judgment: pending. Acceptance: pending.
+- Claude single exposed rater, R1, P2, 2026-11-17 UTC.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

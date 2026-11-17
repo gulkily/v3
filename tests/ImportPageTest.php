@@ -211,6 +211,7 @@ file_put_contents($run . '/report.json', json_encode([
         [['path' => 'records/posts/c0.txt', 'state' => 'conflict', 'reason' => 'local <b>differs</b>', 'affected_count' => 3]],
         array_map(static fn (int $i): array => ['path' => 'records/thread-labels/l' . $i . '.txt', 'state' => 'invalid', 'reason' => 'Missing dependency: post thread-' . $i, 'affected_count' => 1], range(1, 193)),
         array_map(static fn (int $i): array => ['path' => 'records/post-formats/f' . $i . '.txt', 'state' => 'unsupported', 'reason' => 'Unsupported record family or path', 'affected_count' => 1], range(1, 31)),
+        [['path' => 'records/posts/private.txt', 'state' => 'excluded', 'reason' => 'private record', 'affected_count' => 2]],
     ),
     'exclusion_reasons' => ['private record' => 2],
     'entries' => $entries,
@@ -241,6 +242,7 @@ try {
     }
     if (str_contains($page, '<details class="import-advanced" open')) throw new RuntimeException('Advanced must start closed.');
     $review = substr($page, (int) strpos($page, '<th scope="row">Review</th>'), (int) strpos($page, '</tbody>') - (int) strpos($page, '<th scope="row">Review</th>'));
+    if (substr_count($review, 'private record') !== 1) throw new RuntimeException('Exclusion listed twice: ' . $review);
     if (str_contains($review, '<code>') || substr_count($review, '<li>') !== 4) throw new RuntimeException('Review row should list grouped causes only: ' . $review);
     if (strpos($review, 'Missing dependency') > strpos($review, 'Unsupported record')) throw new RuntimeException('Largest group first.');
     if (str_contains($page, 'records/a-excluded/')) throw new RuntimeException('Exclusions should be hidden before conflicts.');

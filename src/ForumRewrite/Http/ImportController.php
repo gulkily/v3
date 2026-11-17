@@ -276,11 +276,13 @@ final class ImportController
         $state['worker_command'] = 'php scripts/task_queue.php run --limit=1';
         $view = $state['view'];
         $state['steps'] = $state['busy'] ? self::steps($state) : [];
-        $state['timing'] = $state['busy'] && $view !== null && $view['started_at'] !== null ? [
-            'elapsed' => max(0, $this->now() - $view['started_at']),
-            'since_update' => max(0, $this->now() - (int) $view['last_update_at']),
-            'step_seconds_left' => $view['step_seconds_left'],
-            'seconds_left' => $view['seconds_left'],
+        // Until the import prints its first line, time counts from the request.
+        $runStart = $view['started_at'] ?? (strtotime((string) ($state['task']['requested_at'] ?? '')) ?: null);
+        $state['timing'] = $state['busy'] && $runStart !== null ? [
+            'elapsed' => max(0, $this->now() - $runStart),
+            'since_update' => max(0, $this->now() - (int) ($view['last_update_at'] ?? $runStart)),
+            'step_seconds_left' => $view['step_seconds_left'] ?? null,
+            'seconds_left' => $view['seconds_left'] ?? null,
         ] : null;
         // Image copying happens after the merge and is reported only in the command output.
         $state['images'] = null;

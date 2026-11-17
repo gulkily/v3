@@ -63,8 +63,9 @@ final class ContentImportRunner
                     }
                     $this->assertClean([]);
                     $this->say('Planning public records, dependencies, and conflicts...');
+                    // Reading the local records comes first and takes a while on a large instance.
                     $this->say('Progress: plan');
-                    $entries = (new ContentImportPlanner($this->withApprovals))->plan($source, $this->repositoryRoot);
+                    $entries = (new ContentImportPlanner($this->withApprovals, fn (string $line) => $this->say($line)))->plan($source, $this->repositoryRoot);
                     $id = gmdate('YmdTHis') . '-' . bin2hex(random_bytes(6));
                     $directory = $this->stateRoot . '/' . $id;
                     $this->directory($directory);

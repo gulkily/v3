@@ -7,12 +7,14 @@ $counts = is_array($report['counts'] ?? null) ? $report['counts'] : [];
 // The Review row groups causes by state and the reason before any per-record detail
 // ("Missing dependency: post …" counts as "Missing dependency"); paths are under Advanced.
 $causes = [];
+$exclusions = is_array($report['exclusion_reasons'] ?? null) ? $report['exclusion_reasons'] : [];
 foreach (is_array($report['review_causes'] ?? null) ? $report['review_causes'] : [] as $cause) {
+    // Exclusions are counted in full by exclusion_reasons; their root causes would repeat them.
+    if (($cause['state'] ?? '') === 'excluded' && isset($exclusions[explode(': ', (string) ($cause['reason'] ?? ''), 2)[0]])) continue;
     $label = (string) ($cause['state'] ?? '') . ': ' . explode(': ', (string) ($cause['reason'] ?? ''), 2)[0];
     $causes[$label] = ($causes[$label] ?? 0) + max(1, (int) ($cause['affected_count'] ?? 1));
 }
 arsort($causes);
-$exclusions = is_array($report['exclusion_reasons'] ?? null) ? $report['exclusion_reasons'] : [];
 $detailLimit = 500;
 $details = [];
 // Records needing attention come before excluded ones, so the cap hides exclusions first.
@@ -87,7 +89,7 @@ $details = array_slice($details, 0, $detailLimit);
 <?php endif; ?>
 <?php
 $formatCount = static function (array $step): string {
-    if ($step['done'] === null) return '';
+    if ($step['done'] === null || ($step['done'] === 0 && $step['total'] === null)) return '';
     if ($step['key'] === 'download') {
         $size = static fn (int $bytes): string => $bytes < 1048576 ? max(1, (int) round($bytes / 1024)) . ' KB' : number_format($bytes / 1048576, 1) . ' MB';
         return $step['total'] !== null ? $size($step['done']) . ' of ' . $size($step['total']) : $size($step['done']);

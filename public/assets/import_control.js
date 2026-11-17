@@ -33,7 +33,7 @@
   // Same wording as templates/pages/tools_import.php.
   const size = (bytes) => (bytes < 1048576 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1048576).toFixed(1)} MB`);
   const count = (step) => {
-    if (step.done === null || step.done === undefined) return '';
+    if (step.done === null || step.done === undefined || (step.done === 0 && step.total === null)) return '';
     if (step.key === 'download') return step.total !== null ? `${size(step.done)} of ${size(step.total)}` : size(step.done);
     return step.done.toLocaleString('en-US') + (step.total !== null ? ` of ${step.total.toLocaleString('en-US')}` : '');
   };

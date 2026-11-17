@@ -91,7 +91,7 @@ repair. The marker file is not created by installation or tracked in Git.
 
 Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
 It also runs the internal task worker (`scripts/task_queue.php run --limit=1`) every
-10 seconds while the server runs, as cron does on a server, so queued imports,
+5 seconds while the server runs, as cron does on a server, so queued imports,
 rebuilds and offline snapshots run locally. `--no-worker` turns that off. A worker
 still busy when the server stops finishes its task on its own.
 Checks local-server prerequisites before application loading, logs, or bootstrap.
