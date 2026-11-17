@@ -1,0 +1,112 @@
+Cycle: `v3/high_traffic_coverage`; Mode: one-shot; Record/index: this file · [plans index](../README.md)
+
+Debug mode: enabled (project marker `.railspike_debug_on`)
+
+Effort study: `railspike-effort` / `v3/high_traffic_coverage`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
+
+Extended estimates: disabled (one-shot with no alternatives or work units)
+
+**Cycle estimate: 0.08**
+
+Status: complete; next permitted action: the maintainer picks an item for its own cycle.
+
+## Original request
+
+2026-11-17 00:21 ET, maintainer: "please make a checklist files of all the things we need to add support for in htm"
+
+## Understood intent
+
+"htm" is high-traffic mode. This follows from the previous answer, which listed what still reaches PHP while the mode is on, after [asset_bypass](../asset_bypass/asset_bypass_step4_implementation_summary.md) (PR #293, merged).
+
+## Authorization
+
+The request authorizes writing one checklist file. That is bounded documentation work, so one-shot mode fits. It does not authorize implementing any item, pushing or opening a PR.
+
+## Outcome and work type
+
+Documentation-only. Allowed files:
+- `docs/plans/high_traffic_coverage/high_traffic_coverage_checklist.md` (new)
+- this record
+- `docs/plans/README.md` (index entry)
+- the effort study ledger
+- this cycle's debug log
+
+No application, test or configuration changes.
+
+Reader outcome: the maintainer can pick the next high-traffic coverage cycle from one list. Each item says what reaches PHP today, why it matters, and what is known or unknown.
+
+## Approach and risks
+
+- Approach: derive the items from the code on `origin/main` (`f83c0b0d`), not from memory. Sources: `HighTrafficRoute`, `public/.htaccess`, `HighTrafficCache`, the Application route table and the page scripts' requests.
+- Risk: an item might be stated as fact when it is only an inference. Mitigation: label unmeasured items "unknown" and make measurement the first item.
+- Risk: a list of every route is noise. Mitigation: group items by priority, and list the intentionally dynamic pages once, as out of scope.
+
+## Reuse decisions
+
+- Format: Markdown checklist under `docs/plans/`, like `docs/plans/ui_copy_audit_checklist.md`. It is a planning document, not a canonical record, so the `Key: value` format does not apply.
+- Facts come from the [runbook](../../runbooks/high_traffic_mode.md) and the [concept entry](../../concepts/high_traffic_mode.md), without duplicating their procedures.
+
+## Completion conditions
+
+The checklist exists and every item names its route or file and its current behavior. Paths and links resolve. Its handoff is the maintainer choosing an item, which then becomes its own cycle.
+
+## Concepts touched
+
+[High-traffic mode](../../concepts/high_traffic_mode.md), used unchanged. No inventory edits.
+
+## Verification plan
+
+- Check each claim against the source paths above.
+- Check that the links resolve.
+- Run `git diff --check`.
+- Confirm only the allowed files changed.
+- Runtime, UI and deployment checks do not apply.
+
+Starting revision and branch: `origin/main` `f83c0b0d`; branch `docs/htm_coverage_checklist`.
+
+Planning commit: `73e2d824`.
+
+*— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
+
+## Execution history
+
+- 2026-11-17: wrote [the checklist](./high_traffic_coverage_checklist.md) from `HighTrafficRoute`, `public/.htaccess`, `HighTrafficCache`, the route table in `Application.php` and the requests in `public/assets/*.js`.
+- Correction: thread RSS is `?format=rss` on the thread route, not a separate route. It moved into the query-string item.
+
+## Study history
+
+- Intake 0.08: recorded in this record before the checklist was written, after inspecting routes. The same single exposed rater, Claude, made the asset_bypass ratings.
+- Closeout: retrospective scope assessment 0.08. Maintainer judgment: pending.
+
+## Outcome
+
+Delivered: one checklist in five groups.
+- 0: measure first.
+- 1: pages people land on.
+- 2: public read-only pages.
+- 3: cache gaps on covered pages.
+- 4: files and assets.
+
+It also lists the pages that are out of scope and links related findings.
+
+Limitations: nothing was measured. The cost of a signed-in visitor's view and of the version check is marked unknown.
+
+## Verification
+
+- Passed: claims checked against source on `f83c0b0d` (routes, `HighTrafficCache::currentBackupPolicyPage()`, `FrontController::resolveRawPublicAssetPath()`, the scripts' requests).
+- Passed: all 10 linked paths and both heading anchors resolve.
+- Passed: `git diff --check`.
+- Passed: only the allowed files changed.
+- Not applicable: runtime, UI and deployment checks; this is a documentation-only cycle.
+
+## Final review
+
+No duplicated runbook procedures, no files outside the allowed list, and no concept inventory change.
+
+## Commit status
+
+- Planning commit: `73e2d824`.
+- Completion commit: pending; this record ships in it.
+- Not pushed, no PR.
+
+*— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*

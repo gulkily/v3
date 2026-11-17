@@ -79,6 +79,22 @@ top-right close, and a sample of recent participation.
   `./v3 test --smoke BoardListTest FeatureFlagEvaluatorTest
   AgentApiWorkedExampleTest`: 454 passed. Full suite not run.
 
+## Fix: page jumped on open (2026-11-17)
+
+Reported from production on desktop Chrome and Firefox: opening the summary
+scrolled the page. Cause: Bubblegum and Sticker (also chouse and MIT Rap
+Club) set `:root[data-theme="..."] .card { position: relative }`, which
+outranked the dialog's `position: fixed`. A non-fixed modal dialog sits at the
+top of the document, and focusing its close button scrolled the page there.
+The positioning rule is now `:root dialog.pending-user-dialog.card`, which
+outranks those theme rules.
+
+Checks: reproduced on zenmemes.com in Chrome and Firefox (every theme; only
+Bubblegum and Sticker jumped, to the top) and confirmed the rule stops it
+there; the browser test now opens the summary on a scrolled page under the
+real Bubblegum and Sticker stylesheets (fails without the fix);
+`./v3 test --smoke`: 470 passed. Full suite not run.
+
 ## Not covered
 
 - Thread pages mark unapproved authors with "(unapproved)" text, not a chip,

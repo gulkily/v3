@@ -677,6 +677,8 @@ Maintainer request: “I want every future railspike to be part of the same data
 | `v3/test_only_member_cleanup` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.35 | [One-shot record](./test_only_member_cleanup/test_only_member_cleanup_one_shot.md#study-history) | Follow-up to the code quality review (decisions 2 and 3); acceptance pending |
 | `v3/test_only_member_cleanup_round2` | Locally complete; two items held for maintainer; acceptance pending | v1 / R1 / P2 | 0.15 | [One-shot record](./test_only_member_cleanup_round2/test_only_member_cleanup_round2_one_shot.md#study-history) | Follow-up child of `v3/test_only_member_cleanup` (PR #223); acceptance pending |
 | `v3/quality_review_decisions_record` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.10 | [One-shot record](./quality_review_decisions_record/quality_review_decisions_record_one_shot.md#study-history) | Documentation follow-up to the code quality review; acceptance pending |
+| `v3/quality_review_handoff` | Complete; merged by request | v1 / R1 / P2 | 0.05 | [One-shot record](./quality_review_handoff/quality_review_handoff_one_shot.md#study-history) | Handoff doc for the code quality review |
+| `v3/register_fast_navigation_test` | Complete; merged by request | v1 / R1 / P2 | 0.02 | [One-shot record](./register_fast_navigation_test/register_fast_navigation_test_one_shot.md#study-history) | Pre-existing failure found while closing out the quality review |
 | `v3/image_backup_zip` | Locally complete; maintainer acceptance pending | v1 / R1 / P2 | 0.40 | [Intake and Step 2](./image_backup_zip/image_backup_zip_step2_feature_description.md#study-snapshots-and-approval); [Step 3](./image_backup_zip/image_backup_zip_step3_development_plan.md#checkpoint-and-approval) | Format/recovery follow-up to archive README and Backup UI; acceptance pending |
 | `v3/approval_suggest_roots` | Locally complete; not pushed; acceptance pending | v1 / R1 / P2 | 0.25 | [One-shot record](./approval_suggest_roots/approval_suggest_roots_one_shot.md#study-history) | New cycle; acceptance pending |
 | `v3/import_with_approvals` | Complete; PR open; acceptance pending | v1 / R1 / P2 | 0.30 | [One-shot record](./import_with_approvals/import_with_approvals_one_shot.md#study-history) | New cycle; acceptance pending |
@@ -2350,3 +2352,7 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 | `v3/worker_before_read_model` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.05 | [One-shot record](./worker_before_read_model/worker_before_read_model_one_shot.md) | Follow-up to `v3/import_without_worker`; acceptance pending |
 
 2026-11-17: one-shot worker before the read model; baseline `96462cfd`. Intake 0.05 after reproduction; closeout retrospective 0.06; Claude single exposed rater; R1 hashes not re-verified.
+
+| `v3/high_traffic_coverage` | Complete (documentation-only); acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./high_traffic_coverage/high_traffic_coverage_one_shot.md) | Follows `v3/asset_bypass` (PR #293, merged); acceptance pending |
+
+2026-11-17: one-shot high-traffic coverage checklist; baseline `f83c0b0d`. Intake 0.08, recorded after route inspection; closeout retrospective 0.08. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.

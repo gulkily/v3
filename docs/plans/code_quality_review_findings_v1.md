@@ -8,6 +8,8 @@ The earlier [cleanup audit findings](codebase_cleanup_audit_findings_v1.md) were
 
 ## Summary
 
+Current state and how to rerun the tools: [handoff](code_quality_review_handoff.md).
+
 This is the first pass, 2026-11-10. What happened afterwards, decision by decision, is under [Decisions and outcomes](#decisions-and-outcomes-2026-11-14), and the mistakes to avoid next time are under [Lessons for the next pass](#lessons-for-the-next-pass).
 
 
@@ -228,7 +230,7 @@ Decision 2, middle eight, final calls:
 
 Bugs found and fixed across the review, all merged: the missing `RuntimeException` import (#143), high-traffic mode not refreshing a thread after a reply (#147), `GpgAvailabilityTest` never running because it wasn't registered (#158), and history purge ignoring failed journal writes (#162).
 
-Baseline failures seen on `main` during this work, not caused by the review: `WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages` and `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` (both failing on `9122adf0`, 2026-11-14).
+Baseline failures seen on `main` during this work, not caused by the review: `WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages` and `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` (failing on `9122adf0`, 2026-11-14). Both pass on `main` as of `96462cfd` (2026-11-17).
 
 ## Lessons for the next pass
 

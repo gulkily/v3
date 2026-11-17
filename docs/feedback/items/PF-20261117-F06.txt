@@ -1,0 +1,18 @@
+ID: PF-20261117-F06
+Title: One import path on a fresh local install
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-17
+Evidence: unknown
+
+Request:
+A fresh ./v3 start has two import paths: the /local/ start page (from #284) runs the import inside the page request, while Tools → Import hands it to the task worker and shows steps, elapsed time and time left.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+The local start page's Import uses the same worker-run path and progress display as Tools → Import, or the two are merged into one.
+
+Notes:
+2026-11-17: filed from the import-instance GUI thread at the maintainer's request ("file anything we have not finished or addressed yet"). Found while merging #290 with #284.
