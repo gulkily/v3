@@ -118,10 +118,14 @@ final class InstanceImportTask
         chmod($log, 0600);
         $buffer = '';
         $lastLine = '';
-        $emit = static function (string $line) use ($progress, &$lastLine): void {
+        $stepStarts = [];
+        $emit = static function (string $line) use ($progress, &$lastLine, &$stepStarts): void {
             $line = rtrim($line);
             if ($line === '') return;
             $lastLine = $line;
+            if (preg_match('/^Progress: ([a-z]+)/', $line, $match) === 1 && !isset($stepStarts[$match[1]])) {
+                $stepStarts[$match[1]] = microtime(true);
+            }
             $progress($line);
         };
         try {
@@ -142,6 +146,11 @@ final class InstanceImportTask
             $exitCode = 1;
         } finally {
             fclose($handle);
+        }
+
+        // A full import's step times let the next import estimate the time left.
+        if (in_array($exitCode, [0, 2], true) && ($request['Action'] ?? '') === 'import' && isset($stepStarts['done'])) {
+            $this->annotate($key, ['Step-Seconds' => ImportProgressView::encodeDurations(ImportProgressView::durations($stepStarts))]);
         }
 
         return ['exit_code' => $exitCode, 'message' => $lastLine, 'request' => $request];
@@ -178,6 +187,29 @@ final class InstanceImportTask
             }
         }
         $this->write($this->requestPath($key), $request);
+    }
+
+    /**
+     * Step durations of the newest finished full import other than $exceptKey.
+     *
+     * @return array<string, float>
+     */
+    public function previousStepSeconds(string $exceptKey = ''): array
+    {
+        $files = glob($this->stateDirectory . '/' . self::KEY_PREFIX . '*.txt') ?: [];
+        rsort($files, SORT_STRING);
+        foreach ($files as $file) {
+            $key = basename($file, '.txt');
+            if ($key === $exceptKey) {
+                continue;
+            }
+            $seconds = ImportProgressView::decodeDurations((string) ($this->request($key)['Step-Seconds'] ?? ''));
+            if ($seconds !== []) {
+                return $seconds;
+            }
+        }
+
+        return [];
     }
 
     public function log(string $key): ?string

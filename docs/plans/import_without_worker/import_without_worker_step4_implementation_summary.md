@@ -65,3 +65,31 @@ Step 3 approved 2026-11-17 ("approved step 3"). Branch `feat/import_without_work
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Steps, liveness and time left
+**Original estimate: 0.15**
+**Retrospective: 0.17**
+- Changes:
+  - `ImportProgressView` (`src/ForumRewrite/Import/ImportProgressView.php`) turns a task's `Progress:` lines and their event times into:
+    - the ordered steps with done, current or pending status and counts;
+    - the run's start time and last-update time;
+    - `step_seconds_left`, from the current step's rate after 2 seconds, or else from the previous run's duration for that step;
+    - `seconds_left` for the whole import, given only when a previous run's step times exist.
+  - A resumed run omits the steps it skipped, and a finished run marks every step it ran as done.
+  - `InstanceImportTask::run` records each step's start time. After a finished full import it writes `Step-Seconds: download=… extract=…` on the request. `previousStepSeconds()` reads the newest such line from another request.
+  - `ImportController::state()` reads up to 2,000 events for the latest task. It keeps the last 40 non-`Progress:` lines as the raw log and builds `steps` with a worker step first ("Starting the task worker", "Waiting for the task worker", then "Task worker started"). It also builds `timing` (elapsed, seconds since update, step and whole-import seconds left). The status poll returns `steps` and `timing`.
+  - Page:
+    - an ordered step list (✓ done, ▸ current in bold, ○ pending) with counts ("1,200 of 7,172", "47 KB of 47 KB");
+    - "Elapsed m:ss · updated N s ago · about N min left", or "under a minute left", "… in this step" or "estimating time left", rendered on the server so the first paint is final;
+    - the raw lines folded under Log;
+    - the form hidden while an import runs;
+    - the Task worker row and the "Importing…" status line removed, since the steps show both.
+  - `import_control.js` redraws the steps and timing on each 2-second poll and ticks the timer every second between polls.
+- Verification:
+  - `./v3 test --smoke ImportProgressViewTest InstanceImportTaskTest ImportPageTest`: passed (smoke set included). New `ImportProgressViewTest` covers counts and status, the rate estimate (1,200 files in 5 s gives 25 s left), no estimate without a basis (unknown total, nothing done yet, no count and no previous run), previous-run figures with no negative time, resumed and finished runs, and duration round trips. `InstanceImportTaskTest` checks `Step-Seconds` after a loopback import. The page test checks the running markup.
+  - `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/tools_import.mjs`: passed, 80 cases. The running state checks a visible current step, a hidden form and the timer changing within 1.1 s. The follow-through checks "Starting the task worker", then "Installing records 1,200 of 7,172" with "about 3 min left in this step". Screenshots reviewed in gloss 390, word97 1280 and bubblegum 390.
+  - Full suite not run.
+- Notes: corrections during the stage: small downloads showed "0.0 of 0.0 MB" (now KB under 1 MB), and the hidden form stayed visible because `.deploy-actions` sets `display` (now `.import-actions[hidden]`).
+- Estimate details: retrospective higher for the browser check updates.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

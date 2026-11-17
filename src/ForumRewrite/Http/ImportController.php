@@ -138,7 +138,37 @@ final class ImportController
             'last_id' => $state['last']['id'] ?? null,
             'start' => $state['start'],
             'worker_command' => $state['worker_command'],
+            'steps' => $state['steps'],
+            'timing' => $state['timing'],
         ];
+    }
+
+    /**
+     * The run's steps with the worker start first: queued shows it current and the import's
+     * steps pending; once running, the import's own steps from its progress lines.
+     *
+     * @param array<string, mixed> $state
+     * @return list<array{key: string, label: string, status: string, done: ?int, total: ?int}>
+     */
+    private static function steps(array $state): array
+    {
+        $queued = ($state['task']['status'] ?? null) === 'queued';
+        $worker = ['key' => 'worker', 'label' => $state['start'] === 'starting' ? 'Starting the task worker' : 'Waiting for the task worker',
+            'status' => $queued ? 'current' : 'done', 'done' => null, 'total' => null];
+        if ($queued) {
+            if (($state['task']['action'] ?? '') !== 'import') {
+                return [$worker];
+            }
+            $pending = [];
+            foreach (\ForumRewrite\Import\ImportProgressView::STEPS as $key => $label) {
+                $pending[] = ['key' => $key, 'label' => $label, 'status' => 'pending', 'done' => null, 'total' => null];
+            }
+
+            return [$worker, ...$pending];
+        }
+        $worker['label'] = 'Task worker started';
+
+        return [$worker, ...($state['view']['steps'] ?? [])];
     }
 
     /** Start one detached worker for this task and note the attempt on its request. */
@@ -196,6 +226,7 @@ final class ImportController
             'worker' => 'not_observed',
             'task' => null,
             'progress' => [],
+            'view' => null,
         ];
         $store = $this->existingStore();
         if ($store !== null) {
@@ -214,7 +245,15 @@ final class ImportController
                         'launch' => $request['Worker-Launch'] ?? '',
                         'launch_at' => (int) ($request['Worker-Launch-At'] ?? 0),
                     ];
-                    $state['progress'] = array_column($store->taskProgress((int) $latest['id'], 40), 'message');
+                    $events = $store->taskProgress((int) $latest['id'], 2000);
+                    // Structured `Progress:` lines feed the step list; the rest is the raw log tail.
+                    $lines = array_values(array_filter(array_column($events, 'message'), static fn ($line): bool => !str_starts_with((string) $line, 'Progress: ')));
+                    $state['progress'] = array_slice($lines, -40);
+                    $state['view'] = \ForumRewrite\Import\ImportProgressView::build(
+                        array_map(static fn (array $event): array => ['message' => (string) $event['message'], 'created_at' => (string) $event['created_at']], $events),
+                        $this->now(),
+                        $task->previousStepSeconds((string) $latest['deduplication_key']),
+                    );
                 }
             } catch (\Throwable) {
                 $state['worker'] = 'unavailable';
@@ -235,6 +274,14 @@ final class ImportController
             $state['start'] = 'started';
         }
         $state['worker_command'] = 'php scripts/task_queue.php run --limit=1';
+        $view = $state['view'];
+        $state['steps'] = $state['busy'] ? self::steps($state) : [];
+        $state['timing'] = $state['busy'] && $view !== null && $view['started_at'] !== null ? [
+            'elapsed' => max(0, $this->now() - $view['started_at']),
+            'since_update' => max(0, $this->now() - (int) $view['last_update_at']),
+            'step_seconds_left' => $view['step_seconds_left'],
+            'seconds_left' => $view['seconds_left'],
+        ] : null;
         // Image copying happens after the merge and is reported only in the command output.
         $state['images'] = null;
         if (($state['task']['status'] ?? null) === 'completed') {

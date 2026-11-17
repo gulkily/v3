@@ -35,7 +35,7 @@ try {
     $app = new Application($argv[1], $argv[2], $databasePath);
     $render($app, '/threads/');
     $page = $render($app, '/tools/import/');
-    foreach (['<h1>Import</h1>', 'Last import', 'Task worker', 'never seen', 'href="/tools/import/"'] as $needle) {
+    foreach (['<h1>Import</h1>', 'Last import', 'href="/tools/import/"'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Operator page missing: ' . $needle);
     }
     $tools = $render($app, '/tools/');
@@ -156,11 +156,14 @@ try {
     $queued = InstanceImportTask::forQueue($queuePath)->queue($store, 'import', 'https://forum.example', 'openpgp:x');
     $store->claimNext();
     $store->recordTaskProgress($queued['task_id'], 'Downloading repository archive...');
+    $store->recordTaskProgress($queued['task_id'], 'Progress: download 1048576/4194304');
     $page = $render($app);
-    foreach (['data-import-busy="1"', 'Downloading repository archive...', 'Importing…', '<option value="https://forum.example">', 'value="https://forum.example"'] as $needle) {
+    foreach (['data-import-busy="1"', 'Downloading repository archive...', '<li class="is-done"><span>Task worker started</span></li>',
+        '<li class="is-current"><span>Downloading</span> <span class="meta">1.0 MB of 4.0 MB</span></li>', '<li class="is-pending"><span>Installing records</span></li>',
+        'Elapsed 0:0', 'estimating time left', '<option value="https://forum.example">', 'value="https://forum.example"'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Running page missing: ' . $needle);
     }
-    if (!str_contains($page, 'value="import" disabled')) throw new RuntimeException('Import button must be disabled while running.');
+    if (!str_contains($page, 'data-import-form hidden')) throw new RuntimeException('The form must be hidden while running.');
 
     $store->markFailed($queued['task_id'], 'instance_import_failed', 'Import failed: source unreachable', false);
     $page = $render($app);
@@ -237,7 +240,7 @@ try {
         if (!str_contains($page, $needle)) throw new RuntimeException('Result page missing: ' . $needle);
     }
     if (str_contains($page, '<details class="import-advanced" open')) throw new RuntimeException('Advanced must start closed.');
-    $review = substr($page, (int) strpos($page, '<th scope="row">Review</th>'), (int) strpos($page, 'Task worker') - (int) strpos($page, '<th scope="row">Review</th>'));
+    $review = substr($page, (int) strpos($page, '<th scope="row">Review</th>'), (int) strpos($page, '</tbody>') - (int) strpos($page, '<th scope="row">Review</th>'));
     if (str_contains($review, '<code>') || substr_count($review, '<li>') !== 4) throw new RuntimeException('Review row should list grouped causes only: ' . $review);
     if (strpos($review, 'Missing dependency') > strpos($review, 'Unsupported record')) throw new RuntimeException('Largest group first.');
     if (str_contains($page, 'records/a-excluded/')) throw new RuntimeException('Exclusions should be hidden before conflicts.');
