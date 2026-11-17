@@ -175,7 +175,7 @@ export async function checkUnavailableRecovery(page, base, recoveryKey) {
   const arrived = new Promise(resolve => { started = resolve; });
   const gate = new Promise(resolve => { unblock = resolve; });
   const delayed = async route => { if (first) { first = false; started(); await gate; } return route.continue(); };
-  await page.route('**/api/private_messages/recipient_keys?username_token=user-54', delayed);
+  await page.route('**/api/private_messages/recipient_keys?username_token=user-54&*', delayed);
   await pending.getByRole('button', { name: 'Retry reading message' }).click();
   await arrived;
   await page.getByRole('button', { name: 'Load older', exact: true }).click();
@@ -186,7 +186,7 @@ export async function checkUnavailableRecovery(page, base, recoveryKey) {
   assert.match(await groups.innerText(), /Couldn’t decrypt 50 messages/);
   assert.equal(await groups.getByRole('button').getAttribute('aria-expanded'), 'true');
   assert.equal(await page.locator('[data-private-message-id]').count(), 50);
-  await page.unroute('**/api/private_messages/recipient_keys?username_token=user-54', delayed);
+  await page.unroute('**/api/private_messages/recipient_keys?username_token=user-54&*', delayed);
 }
 
 export async function checkUnavailableBoundaries(page, base, seed, unavailable, incoming) {
@@ -204,13 +204,13 @@ export async function checkUnavailableBoundaries(page, base, seed, unavailable, 
   assert.equal(await readable.getAttribute('hidden'), null);
   assert.match(await readable.innerText(), /Incoming fixture preview/);
   const deny = route => route.abort();
-  await page.route('**/api/private_messages/recipient_keys?username_token=user-52', deny);
+  await page.route('**/api/private_messages/recipient_keys?username_token=user-52&*', deny);
   await page.reload();
   await settled();
   assert.equal(await groups.count(), 1, 'Loading failures must not enter groups');
   assert.equal(await page.locator('[data-reader-state="load-failed"]:not([hidden])').count(), 5);
   await readable.getByRole('button', { name: 'Retry reading message' }).waitFor();
-  await page.unroute('**/api/private_messages/recipient_keys?username_token=user-52', deny);
+  await page.unroute('**/api/private_messages/recipient_keys?username_token=user-52&*', deny);
   await readable.getByRole('button', { name: 'Retry reading message' }).click();
   await readable.getByText('Incoming fixture preview', { exact: true }).waitFor();
   const privateKey = await page.evaluate(() => localStorage.getItem('forum_pki_private_key'));

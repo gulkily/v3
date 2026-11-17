@@ -1105,6 +1105,11 @@ pre {
   :root [data-shell="app"] > .site-status-bar {
     display: none;
   }
+
+  /* ...and so does the space those themes reserve for them below the page. */
+  :root body:has(> [data-shell="app"] > .site-status-bar) {
+    padding-bottom: 0;
+  }
 }
 
 @media (max-width: 639px) and (prefers-reduced-motion: reduce) {

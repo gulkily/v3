@@ -19,13 +19,22 @@ export async function checkConversationTabBar(page, base) {
   const composerBottom = () => page.locator('[data-private-message-composer]').evaluate(node => Math.round(innerHeight - node.getBoundingClientRect().bottom));
   // The conversation is one window (card) that reaches the bottom edge, with the composer inside it.
   assert.ok(await page.locator('.private-conversation').evaluate(node => Math.round(innerHeight - node.getBoundingClientRect().bottom)) <= 1, 'conversation reaches the bottom edge');
-  assert.ok(await composerBottom() >= 0 && await composerBottom() <= 32, 'composer sits at the bottom, inside the conversation');
-  // Scrolling and typing never bring it back.
+  assert.ok(Math.abs(await composerBottom()) <= 1, 'composer sits at the bottom edge, inside the conversation');
+  // Scrolling and typing never bring it back. A spacer makes the conversation long enough to scroll.
+  await page.evaluate(() => {
+    const spacer = document.createElement('div');
+    spacer.dataset.testSpacer = '';
+    spacer.style.height = '1500px';
+    document.querySelector('[data-role="private-message-transcript"]').append(spacer);
+  });
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(150);
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.waitForTimeout(150);
   assert.equal(await barVisible(), false, 'scrolling keeps the bar away');
+  // At the end of a long conversation the composer stays flush; the card's padding doesn't lift it.
+  assert.ok(Math.abs(await composerBottom()) <= 1, 'composer stays flush at the end of scrolling');
+  await page.evaluate(() => document.querySelector('[data-test-spacer]').remove());
   await page.locator('[data-private-message-composer] textarea').focus();
   await page.waitForTimeout(150);
   assert.equal(await barVisible(), false, 'typing keeps the bar away');
