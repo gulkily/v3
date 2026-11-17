@@ -1492,10 +1492,13 @@ final class Application
 
     private function importController(): \ForumRewrite\Http\ImportController
     {
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+
         return new \ForumRewrite\Http\ImportController(
             $this->routeServices(),
             $this->repositoryRoot,
-            TaskQueueDatabaseConfig::path($this->projectRoot),
+            $queuePath,
+            fn (): string => (new \ForumRewrite\TaskQueue\DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchForOperator(),
         );
     }
 

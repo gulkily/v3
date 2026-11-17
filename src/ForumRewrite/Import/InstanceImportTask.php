@@ -161,6 +161,25 @@ final class InstanceImportTask
         return self::parse((string) file_get_contents($path));
     }
 
+    /**
+     * Add or replace fields on an existing request (for example the worker launch attempt).
+     *
+     * @param array<string, string> $fields
+     */
+    public function annotate(string $key, array $fields): void
+    {
+        $request = $this->request($key);
+        if ($request === null) {
+            return;
+        }
+        foreach ($fields as $name => $value) {
+            if (preg_match('/^[A-Za-z][A-Za-z-]*$/', $name) === 1 && preg_match('/[\x00-\x1F\x7F]/', $value) !== 1) {
+                $request[$name] = $value;
+            }
+        }
+        $this->write($this->requestPath($key), $request);
+    }
+
     public function log(string $key): ?string
     {
         if ($this->request($key) === null || !is_file($this->logPath($key))) {

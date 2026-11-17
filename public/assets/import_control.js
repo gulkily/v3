@@ -7,6 +7,8 @@
   const status = document.querySelector('[data-import-status]');
   const progress = document.querySelector('[data-import-progress]');
   const root = document.querySelector('[data-import-root]');
+  const notStarted = document.querySelector('[data-import-not-started]');
+  const retry = document.querySelector('[data-import-form-retry]');
   if (!form || !status || !progress) return;
   const controls = Array.from(form.querySelectorAll('button, input'));
   const say = (text) => { status.textContent = text; status.hidden = text === ''; };
@@ -52,7 +54,11 @@
         return;
       }
       const running = data.state.task && data.state.task.status === 'running';
-      say(running ? 'Importing…' : 'Queued; waiting for the task worker…');
+      if (notStarted) notStarted.hidden = data.state.start !== 'not_started';
+      if (running) say('Importing…');
+      else if (data.state.start === 'starting') say('Starting a worker…');
+      else if (data.state.start === 'not_started') say('');
+      else say('Queued; the task worker picks it up shortly.');
     }
     polling = false;
     setBusy(false);
@@ -81,6 +87,18 @@
     progress.hidden = true;
     poll();
   });
+
+  if (retry) {
+    retry.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      let data;
+      try { data = await post({ action: 'start_worker' }); } catch { return; }
+      if (data.status !== 'ok') { say(data.error || 'Request refused.'); return; }
+      if (notStarted) notStarted.hidden = true;
+      say(data.message);
+      poll();
+    });
+  }
 
   if (root && root.dataset.importBusy === '1') poll();
 })();

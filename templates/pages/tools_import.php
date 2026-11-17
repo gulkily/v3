@@ -119,10 +119,14 @@ $details = array_slice($details, 0, $detailLimit);
 <?php endif; ?>
 <?php endif; ?>
     </form>
-<?php if (in_array($s['worker'], ['stale', 'not_observed', 'failed', 'unavailable'], true)): ?>
-    <p class="meta">Imports wait for the task worker, which <?= $e(['stale' => 'has not run recently', 'not_observed' => 'has not run on this server yet', 'failed' => 'failed on its last run', 'unavailable' => 'cannot be checked'][$s['worker']]) ?>.</p>
-<?php endif; ?>
-<?php $statusText = ($importNotice ?? '') !== '' ? $importNotice : ($s['busy'] ? (($s['task']['status'] ?? '') === 'running' ? 'Importing…' : 'Queued; waiting for the task worker.') : ''); ?>
+    <div class="import-not-started" data-import-not-started<?= ($s['start'] ?? null) === 'not_started' ? '' : ' hidden' ?>>
+      <p><strong>The task worker didn't start.</strong> Run this in the application checkout, or try again:</p>
+      <p><code><?= $e($s['worker_command']) ?></code></p>
+      <form method="post" action="/tools/import/" data-import-form-retry>
+        <button type="submit" name="action" value="start_worker">Try again</button>
+      </form>
+    </div>
+<?php $statusText = ($importNotice ?? '') !== '' ? $importNotice : ($s['busy'] ? (($s['task']['status'] ?? '') === 'running' ? 'Importing…' : (($s['start'] ?? null) === 'starting' ? 'Starting a worker…' : (($s['start'] ?? null) === 'waiting' ? 'Queued; the task worker picks it up shortly.' : ''))) : ''); ?>
     <p class="meta" role="status" aria-live="polite" data-import-status<?= $statusText === '' ? ' hidden' : '' ?>><?= $e($statusText) ?></p>
 <?php endif; ?>
 <?php if (!$canImport && ($importNotice ?? '') !== ''): ?>
