@@ -1,0 +1,16 @@
+ID: PF-20261111-F24
+Title: Clear the Outbox from the UI
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+There's no way to clear the Outbox through the interface.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261108230824-39d176c6
+- https://zenmemes.com/posts/reply-20261108230930-510bd857
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

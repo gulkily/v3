@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 require dirname(__DIR__, 2) . '/autoload.php';
+require_once __DIR__ . '/TestFiles.php';
 require dirname(__DIR__) . '/FastmodScoreTransferTest.php';
 
-use ForumRewrite\Images\ImageBackup;
 use ForumRewrite\Scoring\SqliteFastScoreStore;
 
 $root = $argv[1];
@@ -19,7 +19,7 @@ if ($command === 'inspect') {
 }
 foreach (['source', 'target'] as $name) {
     $repo = $root . '/' . $name;
-    ImageBackup::copyTree(dirname(__DIR__) . '/fixtures/parity_minimal_v1/records', $repo . '/records');
+    TestFiles::copyTree(dirname(__DIR__) . '/fixtures/parity_minimal_v1/records', $repo . '/records');
     if ($name === 'source') file_put_contents($repo . '/records/posts/post-1.txt', "Post-ID: post-1\nCreated-At: 2026-04-10T12:00:00Z\nBoard-Tags: general\nSubject: Portable score example\n\nA discussion about how this community works.\n");
     foreach ([['init', '-q'], ['config', 'user.email', 'test@example.invalid'], ['config', 'user.name', 'Transfer Test'], ['add', '.'], ['commit', '-qm', 'Seed']] as $arguments) {
         $process = proc_open(['git', '-C', $repo, ...$arguments], [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => STDERR], $pipes);

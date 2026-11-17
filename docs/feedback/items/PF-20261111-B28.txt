@@ -1,0 +1,16 @@
+ID: PF-20261111-B28
+Title: Friendly time display missing
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+We used to have friendly time display and it seems to have gone away?
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111220447-47779b35
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Asked as a question; cause unknown.

@@ -11,3 +11,7 @@ Cookies are per scheme (`__Host-v3_session` over https, `v3_session` over http) 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
 
 *— Revised by Claude · 2026-11-15 UTC · Model: claude-fable-5-2*
+
+Key bootstrap: each session also keeps the coarse [device fingerprint](../../src/ForumRewrite/Session/DeviceFingerprint.php) of the browser that signed in, and whether it already vouched for a new key. A browser that lost its key but kept its session asks the session for a new key under the same username; a matching device makes it approved, once per session. Browsers with a key re-sign once so older sessions gain a description. Sources: [bootstrap API](../../src/ForumRewrite/Http/KeyBootstrapApiController.php), [browser script](../../public/assets/key_bootstrap.js), [record spec](../specs/key_bootstrap_record_v1.md).
+
+*— Revised by Claude · 2026-11-16 UTC · Model: claude-opus-5-5*

@@ -1350,6 +1350,12 @@ pre {
   color: var(--status-ok, var(--ink));
 }
 
+/* A key a session replaced (key bootstrap): still approved, waiting to be retired or kept. */
+.chip--replaced {
+  border-style: dashed;
+  color: var(--ink-soft, var(--ink));
+}
+
 /* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
    only page-specific layout lives here. */
 /* A search field inside the board toolbar. Users filters the list already on the page, so its field is script-only;
@@ -1367,7 +1373,17 @@ pre {
   margin: 0;
 }
 @media (scripting: none) {
-  .board-toolbar__search[data-users-search] {
+  .board-toolbar__search[data-users-search],
+  [data-view-query],
+  [data-visitor-intro-hide],
+  .thread-reaction-button,
+  .requires-script {
+    display: none;
+  }
+}
+/* Copy that is true only when scripts cannot run (e.g. "Members only" instead of "Reconnecting"). */
+@media (scripting: enabled) {
+  .without-script {
     display: none;
   }
 }
@@ -2284,6 +2300,7 @@ pre {
 .pledge-amount { margin: 0.4rem 0 0; }
 .pledge-amount strong { font-size: 1.25em; }
 .pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
+.pledge-withdraw { margin: 0.3rem 0 0; }
 .pledge-field { display: flex; align-items: center; gap: 0.5rem; }
 .pledge-field input { flex: 0 1 8rem; min-width: 0; width: 8rem; }
 .pledge-field__unit { color: var(--ink-soft); overflow-wrap: anywhere; }

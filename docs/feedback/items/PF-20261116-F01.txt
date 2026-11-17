@@ -1,0 +1,18 @@
+ID: PF-20261116-F01
+Title: Cancel an interrupted instance import instead of resuming it
+Kind: feature
+Workflow: blocked
+Created: 2026-11-16
+Evidence: locally-verified
+
+Request:
+As a prerequisite for the import-instance GUI, add a command to cancel a partial import instead of resuming it; resume should still be available.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+An operator with an interrupted import that has not committed its content can run ./v3 import-instance --cancel, after which the installed record files are gone, the run's saved copies remain for review, and a new import can start. --resume still works for interrupted imports that are not canceled.
+
+Notes:
+2026-11-16: one-shot on feat/import_cancel (record docs/plans/import_cancel/import_cancel_one_shot.md); verified locally; awaiting PR review and deployment.

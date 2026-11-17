@@ -1,0 +1,18 @@
+ID: PF-20261111-B31
+Title: Deploy behind count exceeds incoming commits
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+On Deploy, the "behind" number is one more than the number of incoming commits. Explain why; should we fix this?
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109222616-7edadd02
+- https://zenmemes.com/posts/reply-20261109222619-ebfcd96a
+- https://zenmemes.com/posts/reply-20261109222807-bd3f379f9bd7f15aaf8f137d0dcc6a25
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Claude explained it: behind counts merge commits, Incoming skips them. Suggested fixing the label rather than the number. No change decided.

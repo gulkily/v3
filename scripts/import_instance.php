@@ -48,8 +48,15 @@ try {
     }
     $source = $options['source'] ?? null;
     $resume = isset($options['resume']);
-    if (($source === null) === !$resume || ($resume && isset($options['dry-run']))) {
-        throw new RuntimeException('Supply one source URL, or --resume without a source/preview.');
+    $cancel = isset($options['cancel']);
+    if ($cancel && ($resume || $source !== null || isset($options['dry-run']))) {
+        throw new RuntimeException('--cancel takes no source and cannot be combined with --resume or --dry-run.');
+    }
+    if (isset($options['with-approvals']) && ($resume || $cancel)) {
+        throw new RuntimeException('--with-approvals applies to a new import; --resume keeps the saved choice.');
+    }
+    if (!$cancel && (($source === null) === !$resume || ($resume && isset($options['dry-run'])))) {
+        throw new RuntimeException('Supply one source URL, or --resume or --cancel without a source/preview.');
     }
     if ($source !== null) {
         $source = (new InstanceSourceResolver())->resolve($source, $options['sources'] ?? null);
@@ -74,6 +81,15 @@ try {
             $line = substr($line, $written);
         }
     };
+    if ($cancel) {
+        $progress('Destination: ' . $repository);
+        $canceled = (new ContentImportRunner($repository, $database, progress: $progress))->cancel();
+        foreach ($canceled['kept'] as $path) {
+            $progress('Kept (changed or already committed): ' . $path);
+        }
+        $progress('Saved copies and report: ' . $canceled['saved']);
+        return 0;
+    }
     $progress('Source: ' . ($source ?? 'saved interrupted import'));
     $progress('Destination: ' . $repository);
     $progress('Database: ' . $database);
@@ -96,7 +112,7 @@ try {
     }
     $publisher = new ImportedContentPublisher($projectRoot, $repository, $database, $static, $progress);
     $progress(isset($options['dry-run']) ? 'Previewing content merge...' : 'Importing content and publishing local views...');
-    $result = (new ContentImportRunner($repository, $database, progress: $progress, publicationContext: ['static_root' => $static, 'site_profile' => SiteProfileRegistry::active()['name']]))->run($root, $publisher->publishWhileLocked(...), isset($options['dry-run']), $source ?? '', $excluded);
+    $result = (new ContentImportRunner($repository, $database, progress: $progress, publicationContext: ['static_root' => $static, 'site_profile' => SiteProfileRegistry::active()['name']], withApprovals: isset($options['with-approvals'])))->run($root, $publisher->publishWhileLocked(...), isset($options['dry-run']), $source ?? '', $excluded);
     foreach ($result['excluded_archive_categories'] as $category => $count) {
         $progress('Excluded archive category ' . $category . ': ' . $count);
     }
@@ -155,11 +171,14 @@ try {
     if (isset($result['review_path'])) {
         $progress('Review: ' . $result['review_path'] . '/report.json');
     }
+    foreach (importApprovalGuidance($result, $options) as $line) {
+        $progress($line);
+    }
     $exitCode = $result['status'] === 'complete' && $images['status'] === 'complete' ? 0 : 2;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");
     if (is_string($repository) && is_file($repository . '/.git/instance-import/pending.json')) {
-        fwrite(STDERR, "An interrupted merge is pending. Use --resume with the same destination options.\n");
+        fwrite(STDERR, "An interrupted merge is pending. Use --resume with the same destination options, or --cancel to discard it.\n");
     }
 } finally {
     if ($workspace !== null && is_dir($workspace)) {
@@ -178,7 +197,7 @@ function importInstanceOptions(array $arguments): array
 {
     $options = [];
     foreach ($arguments as $argument) {
-        if (in_array($argument, ['--help', '-h', '--dry-run', '--resume', '--verbose'], true)) {
+        if (in_array($argument, ['--help', '-h', '--dry-run', '--resume', '--cancel', '--verbose', '--with-approvals'], true)) {
             $options[$argument === '-h' ? 'help' : substr($argument, 2)] = true;
         } elseif (preg_match('/^--(repository-root|database-path|static-html-root|sources|time-limit)=(.+)$/D', $argument, $match)) {
             if (isset($options[$match[1]])) { throw new RuntimeException('Duplicate option: --' . $match[1]); }
@@ -190,6 +209,25 @@ function importInstanceOptions(array $arguments): array
         }
     }
     return $options;
+}
+
+/** Next steps for who-approved-whom; approval records grant nothing until a root is seeded here. */
+function importApprovalGuidance(array $result, array $options): array
+{
+    $paths = '';
+    foreach (['repository-root', 'database-path'] as $name) {
+        if (isset($options[$name])) $paths .= ' --' . $name . '=' . escapeshellarg($options[$name]);
+    }
+    if ($result['with_approvals'] ?? false) {
+        return $result['preview']
+            ? ['Approvals: --with-approvals would bring the source\'s approval and invitation records; they count only once a root key is seeded here.']
+            : ['Approvals: source approval and invitation records were imported. They count only once their root keys are approved here.',
+                'Next: ./v3 approval suggest-roots' . $paths . '  (review its evidence, then run the seed commands it prints)'];
+    }
+    $left = ($result['exclusion_reasons']['Approval or invitation authority post'] ?? 0);
+    if ($left === 0) return [];
+    return ['Approvals: ' . $left . ' approval/invitation post(s) were left out, so imported keys stay unapproved here.',
+        'To restore who approved whom: rerun this import with --with-approvals, then ./v3 approval suggest-roots' . $paths . '.'];
 }
 
 function importAbsolutePath(string $path): string
@@ -206,8 +244,9 @@ function importInstanceUsage(): string
 {
     return <<<'TEXT'
 Usage:
-  ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose]
+  ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--with-approvals]
   ./v3 import-instance --resume
+  ./v3 import-instance --cancel
   Options: --repository-root=/path/repository --database-path=/path/index.sqlite3
            --static-html-root=/path/static_html
 
@@ -221,7 +260,16 @@ Run ./v3 build-static separately when static output is needed.
            conflicts, and exclusions without changing records, commits, the
            read model, or published views. Temporary/lock files may be created.
            Cannot be combined with --resume; omit it to perform the import.
+--cancel: discard an interrupted import instead of resuming it. Removes the
+          record files it installed (changed files are kept) and keeps its saved
+          copies and report. Refused once its content is committed; use --resume.
 --verbose: include every rejected/excluded file; the default report groups root causes.
+--with-approvals: also import the source's approval and invitation posts and
+          their acceptance receipts (root seeds and other authority stay out).
+          They grant nothing until a key that wrote them is approved here;
+          ./v3 approval suggest-roots then shows which roots to seed. Unused,
+          unexpired source invitations become redeemable here once their
+          issuer is approved. Not combinable with --resume or --cancel.
 Example: ./v3 import-instance https://forum.example --dry-run
 Conflicts retain the local version.
 Names require an explicit JSON mapping: {"community": "https://forum.example/base"}

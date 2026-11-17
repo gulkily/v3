@@ -129,4 +129,6 @@ Diff checked: four source files, three test files, two documents, this record, t
 
 Planning commit `00ae864`, completion commit `53b3862` (confirmed with Git). 2026-11-16: the maintainer asked for a PR ("please pr the hint-cookie fix"). Rebased onto `main` at `b9ffa6b`; one conflict, both sides appending to the effort ledger, kept both. After the rebase: smoke set plus the affected classes 697 of 697, agent-reply runner 22 of 22, both browser tests pass. Pushed and opened as a PR; not merged, not deployed.
 
+2026-11-17: the maintainer asked to make #274 mergeable. Merged `main` at `c010efca` (which includes #289, session key bootstrap) into the branch rather than rebasing, so the PR's pushed history stays intact. Four documentation conflicts, each two sides adding text in the same place; kept both: `viewer_session.md` (both revisions), `authentication_modes.md` (this PR's item 3 text inside #289's renumbered list), `docs/plans/README.md` and the effort ledger. No code conflicts. After the merge: smoke set plus session, key bootstrap and 31 agent/analysis/member-gate write-API tests 514 of 514; `hint_only_resume.mjs`, `llm_exchange_privacy.mjs` and `key_bootstrap.mjs` pass. Full suite not run. Not merged, not deployed.
+
 *— Claude · 2026-11-15 UTC · Model: claude-fable-5-2*

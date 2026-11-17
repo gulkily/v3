@@ -2345,8 +2345,8 @@ PHP);
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
-            $claimed = $store->claimNextRequested();
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
+            $claimed = $store->claimRequestedForPost($postId);
+            $result = $application->fulfillAgentReplyRequest($claimed);
             $row = $store->findByTarget($postId, $contentHash);
 
             assertSame('ok', $response['status']);
@@ -2544,18 +2544,18 @@ PHP);
             $_COOKIE = [];
             $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
-            $claimed = $store->claimNextRequested();
+            $claimed = $store->claimRequestedForPost($postId);
 
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
+            $result = $application->fulfillAgentReplyRequest($claimed);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
-            $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
-            $second = $application->fulfillAgentReplyRequest($claimed[0]);
+            $row = $store->findByTarget($postId, $claimed['target_content_hash']);
+            $second = $application->fulfillAgentReplyRequest($claimed);
             $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
                 ->query('SELECT COUNT(*) FROM post_analyses')
                 ->fetchColumn();
 
             assertSame('requested', $request['generation_status']);
-            assertSame(1, count($claimed));
+            assertSame(true, is_array($claimed));
             assertSame('generated', $result['generation_status']);
             assertSame(true, $result['posted']);
             assertSame(true, $postCountAfter > $postCountBefore);
@@ -2589,10 +2589,10 @@ PHP);
             ], [
                 'requested_by_identity_id' => 'openpgp:legacy-requester',
             ]);
-            $claimed = $store->claimNextRequested();
+            $claimed = $store->claimRequestedForPost($postId);
 
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
-            $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
+            $result = $application->fulfillAgentReplyRequest($claimed);
+            $row = $store->findByTarget($postId, $claimed['target_content_hash']);
 
             assertSame('requested', $request['status']);
             assertSame('not_recommended', $result['generation_status']);

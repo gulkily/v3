@@ -128,6 +128,7 @@ final class ThreadAndPostPageController
                 $posts,
                 $threadId,
                 $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED),
+                fn (string $identityId): bool => \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->routeServices->repositoryRoot(), $identityId),
             )
             : null;
 
@@ -189,7 +190,7 @@ final class ThreadAndPostPageController
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
                 '/assets/private_site_auth.js',
-                ...($pledgeCampaign !== null ? ['/assets/pledge_field.js'] : []),
+                ...($pledgeCampaign !== null ? ['/assets/pledge_field.js', '/assets/pledge_withdraw.js'] : []),
             ]),
         );
     }

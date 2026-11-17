@@ -11,6 +11,12 @@ Automatically save every key in a keychain, with “log out but keep key” and 
 Sources:
 - https://zenmemes.com/posts/thread-20261103040413-a008e701
 - https://zenmemes.com/posts/thread-20261103082445-475cead1
+- https://zenmemes.com/posts/thread-20261104212316-9cbeced1
+- https://zenmemes.com/posts/thread-20261104212327-9ec0a1c3
+- https://zenmemes.com/posts/thread-20261104212338-02df57db
+- https://zenmemes.com/posts/thread-20261104212349-8a0365e6
+- https://zenmemes.com/posts/thread-20261104212400-be2466b1
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 5 source(s): Split reposts; no new content.

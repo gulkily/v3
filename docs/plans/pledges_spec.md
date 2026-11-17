@@ -28,7 +28,7 @@ The sections below are unchanged from the draft; where they disagree with this l
 - A campaign is complete when fills reach the goal, not when pledges do.
 - Pledges reaching the goal is still a milestone worth marking (see Stages).
 - Campaigns and pledges are written as plain `goal:` and `pledge:` lines.
-- Withdrawal reuses the existing retraction method.
+- Withdrawal is a `withdraw` line in a reply to the pledge, made by the pledger. Retracting that reply undoes it. (Reworded 2026-11-16 after `pledge_withdraw` Step 1; the draft said "reuses the existing retraction method", which deletes the pledge's text.)
 - Pledgers can mark their own pledges delivered. That counts right away; the author can confirm or dispute it. The author and operators can also mark fills directly. Partial fills add up.
 - When a campaign is oversubscribed, the author decides whose pledges to call on. That is the default. The calling method is a configurable choice (see Configuration).
 - The word is "pledge" for now. The name may be revisited, and may become a configurable choice.
@@ -49,7 +49,7 @@ Number first, then the unit as free text. The rest of the post is the pitch, wri
 
 The rest of the reply is an optional note ("I'll order these from the roaster myself"). A reply without a pledge line is ordinary discussion. One person may pledge more than once; each pledge is its own record and they add up.
 
-**Withdrawal.** A retraction-style record that targets a pledge, made by the pledger. It uses the existing retraction method and its Target-ID header rather than a new mechanism. The pledge stays visible, shown as withdrawn, and stops counting.
+**Withdrawal.** A reply to a pledge, by the pledger, carrying the line `withdraw`. The pledge stays visible, shown as withdrawn, and stops counting. Retracting the reply undoes it. (Reworded 2026-11-16; see [pledge_withdraw Step 1](./pledge_withdraw/pledge_withdraw_step1_solution_assessment.md).)
 
 **Fill.** A record that targets a pledge and says it was delivered. A fill may carry a number for a partial fill ("filled: 200" against a pledge of 300); with no number it fills the whole pledge. Who made it decides how it is labelled:
 
@@ -110,7 +110,7 @@ Same unit as the goal. With no cushion line, the Cushioned stage is skipped.
 1. **Nothing is rejected.** A pledge line that can't be read as a number ("pledge: a few") is kept as an ordinary reply and the pledger sees a note that it was not counted. A pledge posted in a non-campaign thread is also just a reply.
 2. **Records add up; they don't overwrite.** Changing a pledge means withdrawing it and posting a new one. A second fill on the same pledge adds to the first, up to the pledge amount.
 3. **A fill can be undone** by retracting the fill record, the same way any record is retracted.
-4. **Withdrawing a filled pledge** only withdraws the unfilled part. What was delivered stays counted.
+4. **Withdrawing a filled pledge** only withdraws the unfilled part. What was delivered stays counted. A fully filled pledge cannot be withdrawn. Fills are read before withdrawals, so reply order does not change the result. (Added 2026-11-16 with [pledge_fills](./pledge_fills/pledge_fills_step3_development_plan.md).)
 5. **Who may pledge:** anyone who may reply in the thread.
 6. **Who may fill:** the pledger, for their own pledge; the campaign author and operators, for any pledge. Only the author and operators may confirm or dispute.
 7. **The goal line can't be silently changed.** A changed goal is a new visible record in the thread, so pledgers can see what they signed up for.
@@ -161,7 +161,7 @@ A per-campaign setting would be one more line in the first post, for example `ca
 
 1. Read `goal:` on a thread's first post and `pledge:` on replies; show the summary block and per-reply amounts.
 2. Pledge box on the thread page.
-3. Withdraw, via the existing retraction method.
+3. Withdraw, via a `withdraw` reply line.
 4. Fill and partial fill: pledger self-report, author confirm and dispute, direct fills by author and operators.
 5. Board row total and `.txt` output.
 

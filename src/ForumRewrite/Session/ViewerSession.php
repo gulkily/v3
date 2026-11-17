@@ -15,9 +15,14 @@ final class ViewerSession
         /** The identity this browser signed out of, kept for the Lobby; '' when none. */
         public readonly string $lobbyIdentityId,
         public readonly int $expiresAt,
+        /** Coarse browser description recorded at sign-in (see DeviceFingerprint); '' when none was recorded. */
+        public readonly string $deviceFingerprint = '',
+        /** When this session last bootstrapped a key; 0 when it never has. */
+        public readonly int $keyBootstrappedAt = 0,
     ) {
     }
 
+    /** Kept as the named check for a signed-in viewer; few callers hold a ViewerSession today. */
     public function isSignedIn(): bool
     {
         return $this->identityId !== '';
