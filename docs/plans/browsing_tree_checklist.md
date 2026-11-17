@@ -76,3 +76,6 @@ under protocol P2.
 - Whether a tab opened from a link inherits its opener's current visit in
   Safari, Chrome and Firefox (item 1).
 - Later: sync across devices, and in-page changes as visits.
+- Whether the filmstrip and the pane list in the
+  [open beside design notes](open_beside_design_notes.md) are one control:
+  a strip of open panes is also the reader's recent path (item 3).

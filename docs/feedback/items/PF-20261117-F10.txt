@@ -1,0 +1,18 @@
+ID: PF-20261117-F10
+Title: Second pane: open a link beside the current page on wide screens
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-17
+Evidence: unknown
+
+Request:
+"@claude this would be an amazing place to add another column, don't you think?" Screenshot: the Prompts page at 2048px wide with the reading margins at 5 and 41, leaving the right 60% of the page empty. Clarified in session: "i was talking about a second pane, from any other page". It is a special mode; with it on, a normal click opens the link in the second pane, and the pane stays while navigating in the first. Browsers without JavaScript are skipped for now.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261116070645-8b937ee9
+
+Done when:
+On a wide screen with the mode on, clicking a link shows that page beside the current one, and it stays there as the reader moves around in the first pane; with the mode off, on phones, and without JavaScript the site is unchanged.
+
+Notes:
+2026-11-17: design notes with Pollyanna prior art, recommendations from two review rounds, and open questions are in docs/plans/open_beside_design_notes.md. Not decided: strip of panes or one extra pane; whether a click closes panes to its right; how Float (window controls) shares the space. No Step 1 yet.
