@@ -145,3 +145,35 @@ PR #274 was still open at Step 4 entry. This branch starts from `main` and rebas
 **Retrospective stage work: 0.10**
 
 *— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Docs, disclosure and final review
+
+**Original estimate: 0.04**
+
+- Changes:
+  - `docs/reference/authentication_modes.md`: the session store now describes the browser; a new recovery case for a missing key with a live session; the cases after it are renumbered.
+  - Concepts: `viewer_session.md` and `approval_acceptance.md` revised; `replaced_key.md` created.
+  - `docs/plans/README.md`: status line.
+  - Disclosure, drafted for the anti-cookie notice thread and not posted. It waits for Ilya's go-ahead at release: "Sessions also note your browser's general type, such as Safari on an iPhone, so a browser that lost its key can be told apart from a stranger's. It stays in the server's private session store and nowhere else."
+- Verification:
+  - Passed: `git diff --check` on the branch and the working tree.
+  - Passed: every relative link in the new and changed docs resolves.
+  - Final diff review against `origin/main` (49 files): no duplicated components. The notice reuses the app banner; the pill reuses `chip`; approval writes reuse `commitApprovalAcceptance` and accepted-approval recovery; retirement reuses `KeyRetirement`. The only change outside the approved scope is the pre-existing `FeatureFlagsBehaviorTest` fix (Stage 1), which our rule on failing tests requires. The full suite was not run.
+- Notes:
+  - The ledger row (`docs/plans/effort_estimation_trial.md`) carries the Step 2 and Step 3 snapshots, uncommitted. It goes into the closeout commit with Stage 7.
+
+**Retrospective stage work: 0.04**
+
+*— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - iPhone Safari replay
+
+**Original estimate: 0.05**
+
+- Status: pending. It needs this branch deployed with `FORUM_SESSION_KEY_BOOTSTRAP_ENABLED` on, and Ilya's iPhone.
+- Steps for Ilya, in Safari on the iPhone:
+  1. Load zenmemes.com once while the key is still there, so the session records the browser (a quiet sign-in).
+  2. Drop only the stored key and keep the cookies. "Remove this key" is not usable here, because it logs out first (see Enhancement Requests). Use Settings → Apps → Safari → Advanced → Website Data only if it can delete storage without cookies. Otherwise use a Mac with Safari's Web Inspector attached to the phone: Storage → Local Storage → delete the `forum_pki_*` entries. Failing both, wait for a real seven-day wipe.
+  3. Reload. Expect one notice, "This browser lost its key and has a new one.", then a post that shows as approved.
+  4. Reload again. Expect no second notice and the same key on Account → Key.
+- Evidence so far: the same sequence passed in headless Chrome on Linux (Stage 4). That does not satisfy this stage; desktop browsers and simulators do not count.
