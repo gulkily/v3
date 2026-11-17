@@ -5,8 +5,20 @@
 <?php if ($exchanges === []): ?>
     <p>No recorded LLM exchanges are available.</p>
 <?php else: ?>
-    <div class="table-scroll">
-      <table class="codebase-facts">
+<?php
+$tableRows = [['Time', 'Call', 'Related post', 'Provider', 'Status']];
+foreach ($exchanges as $exchange) {
+    $tableRows[] = [
+        (string) $exchange['occurred_at'],
+        (string) $exchange['call_type'],
+        (string) ($exchange['related_post_id'] ?? 'none'),
+        ($exchange['provider'] ?? '') . (($exchange['provider_model'] ?? '') !== '' ? ' / ' . $exchange['provider_model'] : ''),
+        (string) $exchange['status'],
+    ];
+}
+?>
+    <?= \ForumRewrite\View\ZoomTable::open('tools', \ForumRewrite\View\ZoomTable::minimumEm($tableRows), 'LLM exchanges table') ?>
+      <table class="codebase-facts codebase-facts--columns">
         <thead>
           <tr><th scope="col">Time</th><th scope="col">Call</th><th scope="col">Related post</th><th scope="col">Provider</th><th scope="col">Status</th></tr>
         </thead>
@@ -28,7 +40,7 @@
 <?php endforeach; ?>
         </tbody>
       </table>
-    </div>
+    <?= \ForumRewrite\View\ZoomTable::close() ?>
 <?php endif; ?>
   </article>
 <?= $indent($partial('partials/tools_nav_card.php'), 2) ?>

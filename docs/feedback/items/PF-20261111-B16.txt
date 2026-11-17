@@ -1,0 +1,21 @@
+ID: PF-20261111-B16
+Title: Like needs two taps on iOS
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+On iOS the Like button sometimes only activates the second time I tap; it visibly reacts to the first tap, and it is always twice.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109102005-82d5f403
+- https://zenmemes.com/posts/reply-20261109102019-174496bc
+- https://zenmemes.com/posts/reply-20261109102055-608f3187
+- https://zenmemes.com/posts/reply-20261109102126-3df2bd2d
+- https://zenmemes.com/posts/reply-20261109102211-e452bd31
+- https://zenmemes.com/posts/reply-20261109102248-65c4ff0e
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Claude traced it to the hover-revealed action row on continuation posts and opened a fix; the maintainer replied "It works!" Merge and deployment not checked here.

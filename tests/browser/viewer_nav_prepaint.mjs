@@ -192,8 +192,9 @@ try {
       }
     }
   }
-  // Personal slots: a saved slot is a tab from first paint, with no change after;
-  // a guest never gets a Messages slot, however the browser state reads.
+  // Phone tabs: a saved slot is a tab from first paint, with no change after;
+  // a guest never gets a Messages slot, however the browser state reads. The seeded
+  // state is the form saved while Board was fixed, so Board is put in front before paint.
   if (site !== 'qdb' && messagingEnabled) {
     const slotTab = name => `.site-header--app nav.nav > .nav-link[data-tab="${name}"]`;
     const viewport = { width: 390, height: 844 };
@@ -211,7 +212,7 @@ try {
     const { page: memberPage, states: memberStates } = await visit(member, '/about/', 'member slot');
     assert.equal(memberStates.length, 1, `member slot: no change after first paint (${JSON.stringify(memberStates)})`);
     assert.equal(await memberPage.locator(slotTab('messages')).isVisible(), true, 'member slot: Messages is a tab');
-    assert.equal(await memberPage.evaluate(() => document.documentElement.getAttribute('data-nav-slots')), 'messages', 'member slot: placed before paint');
+    assert.equal(await memberPage.evaluate(() => document.documentElement.getAttribute('data-nav-slots')), 'board messages', 'member slot: placed before paint, Board kept from the old state');
     await tabBar(memberPage, 'member slot');
     await memberPage.close(); await member.close();
   }

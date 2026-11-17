@@ -97,9 +97,27 @@ try {
     await page.reload({ waitUntil: 'load' });
     assert.equal(await card(page, first).getAttribute('data-resolution'), null);
 
+    // Claim: the reply stays unfolded, shows who has it after the byline, and offers Unclaim.
+    await card(page, first).hover();
+    const claim = page.waitForResponse(response => /\/api\/apply_post_tag$/.test(response.url()));
+    await card(page, first).locator('[data-tag="claimed"]').click();
+    assert.match(await (await claim).text(), /status=ok/);
+    await page.waitForFunction(id => document.querySelector(`.post-card[data-post-id="${id}"]`)?.getAttribute('data-resolution') === 'claimed', first);
+    assert.equal(await card(page, first).locator('.body').isVisible(), true, 'claimed reply stays unfolded');
+    assert.match(await card(page, first).locator('[data-post-byline] [data-role="post-state-label"]').innerText(), /claimed by unlocks-viewer/i);
+    assert.match(await card(page, first).locator('[data-tag="open"]').innerText(), /unclaim/i);
+    await page.reload({ waitUntil: 'load' });
+    assert.match(await card(page, first).locator('[data-post-byline] [data-role="post-state-label"]').innerText(), /claimed by unlocks-viewer/i);
+    await card(page, first).hover();
+    const unclaim = page.waitForResponse(response => /\/api\/apply_post_tag$/.test(response.url()));
+    await card(page, first).locator('[data-tag="open"]').click();
+    assert.match(await (await unclaim).text(), /status=ok/);
+    await page.waitForFunction(id => !document.querySelector(`.post-card[data-post-id="${id}"]`)?.hasAttribute('data-resolution'), first);
+    assert.equal(await card(page, first).locator('[data-post-byline] [data-role="post-state-label"]').isVisible(), false);
+
     // The opening post takes the same tags; its label sits after the byline and it does not fold.
     const rootCard = card(page, thread);
-    const rootLabel = rootCard.locator('[data-role="post-resolution-label"]');
+    const rootLabel = rootCard.locator('[data-role="post-state-label"]');
     assert.equal(await rootLabel.isVisible(), false);
     await rootCard.hover();
     const closeRoot = page.waitForResponse(response => /\/api\/apply_post_tag$/.test(response.url()));
@@ -110,7 +128,7 @@ try {
     assert.match(await rootLabel.innerText(), /closed/i);
     assert.equal(await rootCard.locator('.body').isVisible(), true, 'opening post stays unfolded');
     await page.reload({ waitUntil: 'load' });
-    assert.equal(await card(page, thread).locator('[data-role="post-resolution-label"]').isVisible(), true);
+    assert.equal(await card(page, thread).locator('[data-role="post-state-label"]').isVisible(), true);
     assert.equal(await card(page, thread).locator('[data-tag="open"]').isHidden(), false);
   } finally { await context.close(); }
 

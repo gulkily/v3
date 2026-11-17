@@ -24,6 +24,27 @@ final class AcceptedRetraction
                 'author_identity_id' => $post->authorIdentityId, 'thread_type' => $post->threadType]];
     }
 
+    /**
+     * Acceptance of a signed retraction whose target is a reaction record. The receipt's structure
+     * fields describe where the reaction sat: its thread, the post it was on, and its own time.
+     *
+     * @param array{record_id: string, thread_id: string, target_post_id: string, created_at: string, author_identity_id: string} $reaction
+     */
+    public static function prepareReaction(array $reaction, PostRetractionRecord $request, string $signedRequest, string $signature, string $attribution, string $sourceHash): array
+    {
+        $id = $reaction['record_id'];
+        if (RemovalTarget::family($id) === 'post' || $request->postId !== $id
+            || $request->authorIdentityId !== $reaction['author_identity_id']
+            || ($request->classification === 'operator' && !$request->operatorAccepted)) {
+            throw new RuntimeException('Retraction does not authorize this target.');
+        }
+        return ['version' => 1, 'source_hash' => $sourceHash, 'post_id' => $id, 'accepted_at' => $request->createdAt,
+            'actor' => $request->signerIdentityId(), 'classification' => $request->classification,
+            'attribution' => $attribution, 'signed_request' => $signedRequest, 'signature' => $signature,
+            'post' => ['post_id' => $id, 'thread_id' => $reaction['thread_id'], 'parent_id' => $reaction['target_post_id'],
+                'created_at' => $reaction['created_at'], 'author_identity_id' => $reaction['author_identity_id'], 'thread_type' => null]];
+    }
+
     public static function requestPath(string $id): string
     {
         return RetractionReceipt::requestPath($id);

@@ -25,7 +25,7 @@ final class SiteProfileRegistry
                 'defaultTheme' => 'auto',
                 // What Auto/System shows for a light or dark device setting.
                 'autoThemes' => ['light' => 'gloss', 'dark' => 'glossdark'],
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'gloss', 'glossdark', 'engagify'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'spearmint', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'gloss', 'glossdark', 'engagify'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
@@ -35,13 +35,15 @@ final class SiteProfileRegistry
                     // "Our cookie notice (there isn't one)"
                     '/threads/thread-20261102152258-25e82c97' => 'engagify',
                 ],
+                // The thread whose top-level replies /guestbook/ shows as a book; null until it exists.
+                'guestbookThread' => null,
                 'presentationSlots' => ['navigation' => 'app', 'boardCard' => 'list', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
             ],
             'chouse' => [
                 'name' => 'chouse',
                 'displayName' => 'chouse',
                 'defaultTheme' => 'chouse',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'chouse'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'chouse'],
                 'browserNamespace' => 'chouse',
                 'editorialContentKey' => 'chouse',
                 'enabledExperienceKeys' => ['forum'],
@@ -52,7 +54,7 @@ final class SiteProfileRegistry
                 'name' => 'qdb',
                 'displayName' => 'qdb',
                 'defaultTheme' => 'qdb',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'qdb'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'qdb'],
                 'browserNamespace' => 'qdb',
                 'editorialContentKey' => 'qdb',
                 'enabledExperienceKeys' => ['qdb'],
@@ -63,7 +65,7 @@ final class SiteProfileRegistry
                 'name' => 'mitrapclub',
                 'displayName' => 'MIT Rap Club',
                 'defaultTheme' => 'mitrapclub',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'mitrapclub'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'mitrapclub'],
                 'browserNamespace' => 'mitrapclub',
                 'editorialContentKey' => 'mitrapclub',
                 'enabledExperienceKeys' => ['forum'],
@@ -124,6 +126,14 @@ final class SiteProfileRegistry
         $path = (string) (parse_url($path, PHP_URL_PATH) ?: '/');
 
         return $path === '/' ? '/' : rtrim($path, '/');
+    }
+
+    /** The active site's guestbook thread ID, or null when the site has none. */
+    public static function guestbookThread(): ?string
+    {
+        $threadId = self::active()['guestbookThread'] ?? null;
+
+        return is_string($threadId) && $threadId !== '' ? $threadId : null;
     }
 
     /** The page theme for a request path on the active site, or null. */
@@ -204,6 +214,10 @@ final class SiteProfileRegistry
                 if (!is_string($pageTheme) || $pageTheme === 'auto' || !in_array($pageTheme, $profile['permittedThemes'], true)) {
                     throw new \RuntimeException("Site profile {$siteId} page theme must be a permitted explicit theme: {$pagePath}");
                 }
+            }
+
+            if (isset($profile['guestbookThread']) && (!is_string($profile['guestbookThread']) || preg_match('/^[A-Za-z0-9._-]+$/', $profile['guestbookThread']) !== 1)) {
+                throw new \RuntimeException("Site profile {$siteId} has an invalid guestbook thread ID.");
             }
 
             $browserNamespace = $profile['browserNamespace'];

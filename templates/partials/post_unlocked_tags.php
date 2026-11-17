@@ -1,13 +1,12 @@
 <?php
-// Buttons for tags a thread tag unlocks on its replies (resources/tagsets.txt).
-// Exclusive-group tags are one state: an open reply offers the states, a marked one offers
-// Reopen. All are rendered so the script can switch them without a reload.
+// Buttons for tags a thread tag unlocks on its posts (resources/tagsets.txt).
+// Exclusive-group tags are one state (claimed, resolved, closed; open = none). All buttons are
+// rendered and shown or hidden by PostStateView, so the script can switch them without a reload.
 $tagsets = \ForumRewrite\Support\Tagsets::forApplication();
-$stateLabels = ['resolved' => 'Resolved', 'closed' => 'Closed', 'open' => 'Reopen'];
 foreach ($unlockedPostTags as $unlockedTag):
     $isState = $tagsets->exclusiveGroupOf($unlockedTag) !== null;
-    $label = $stateLabels[$unlockedTag] ?? ucfirst($unlockedTag);
-    $hidden = $isState && (($unlockedTag === 'open') !== ($postResolution !== null));
+    $label = $isState ? \ForumRewrite\Support\PostStateView::buttonLabel($unlockedTag, $postResolution) : ucfirst($unlockedTag);
+    $hidden = $isState && \ForumRewrite\Support\PostStateView::buttonHidden($unlockedTag, $postResolution);
 ?>
 <button
   type="button"

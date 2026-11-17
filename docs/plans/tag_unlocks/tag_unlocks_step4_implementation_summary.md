@@ -168,3 +168,26 @@ Maintainer requests after PR #183 merged, done directly (small, within the appro
 - Verification: `./v3 test TagUnlocksTest TagsetsTest` (15 passed, including root marks, root label hidden until marked, root not folded, a non-meta root refused); smoke set plus `LlmsTxtRendererTest`, `PostSignalsTemplateTest`, `ReactionOutboxTest` (483 passed); `node tests/browser/tag_unlocks.mjs` in light, console, gloss and word97 at phone and desktop width, including closing the opening post and a reload. Full suite not run.
 
 *— Claude · 2026-11-12 UTC · Model: claude-opus-5-5*
+
+## Follow-up: Claimed (2026-11-13, branch `tag-unlocks-claimed`)
+
+Maintainer request: a state for "I've picked this up" so nobody else starts the same work. Name chosen by the maintainer: **Claimed**.
+
+- `resources/tagsets.txt`: `meta` unlocks `claimed, resolved, closed, open`.
+- New `Support\PostStateView` holds the wording and button rules (mirrored in `thread_reactions.js`): an open post offers Claim, Resolved and Closed; a claimed one offers Resolved, Closed and Unclaim (tag `open`); a resolved or closed one offers Reopen.
+- A claimed post does not fold. It shows "Claimed by NAME" after its byline (amber, normal case), on replies and on the opening post. The name comes from `profiles` for `posts.resolution_set_by`; no schema change. After a tap the page shows the viewer's own username.
+- `get_post` adds `Resolution: claimed` and `Claimed-By: NAME`; `get_thread` prefixes `(claimed by NAME) `. `llms.txt`, the agent API reference and the tagset concept updated.
+- Verification: `./v3 test TagUnlocksTest` (11 passed, five runs in a row, including claim, the claimer name, no fold, Unclaim, resolving a claimed reply folding it, and the API text); smoke set plus `TagsetsTest`, `LlmsTxtRendererTest`, `PostSignalsTemplateTest`, `ReactionOutboxTest`; `node tests/browser/tag_unlocks.mjs` in light, console, gloss, word97, midnight and dark at phone and desktop width, including Claim, a reload and Unclaim. Full suite not run.
+- Known limit: two marks on one post within the same second tie on time and are ordered by record ID, so a Claim immediately followed by Resolved in the same second can show either. Found by a flaky test; the test now uses distinct tap times.
+
+*— Claude · 2026-11-13 UTC · Model: claude-opus-5-5*
+
+## Follow-up: Tag Unlocks tool page (2026-11-14, branch `tag-unlocks-tools-view`)
+
+Maintainer request: a view-only page under Tools, plus a way to see which tags unlock what.
+
+- New read-only `/tools/tag-unlocks/` ("Tag Unlocks", Community group): "What unlocks what" lists each tagset from `resources/tagsets.txt` (parent tag linking to its tag page, unlocked tags, where they apply, and whether they are one state), then Claimed, Resolved and Closed sections listing each marked post newest first (link to the post, thread title, who marked it, date). No buttons.
+- `Tagsets::all()`; new `Tools\MarkedPostsQuery` (up to 200 per state, hidden and retracted posts left out); `ToolsPageController::tagUnlocks()`; route in `Application`; registry entry; `tools.css` loaded for the page; icons in the pixel, smooth-line and cute sets reuse each set's tag glyph.
+- Verification: `TagUnlocksTest::testToolsPageListsTagsetsAndMarkedPosts` (page, links, empty states, no action buttons, Tools bar and launcher entries); `./v3 test --smoke` plus `TagUnlocksTest`, `TagsetsTest`, `ToolsRegistryTest`, `NavIconSetsTest`, `ThemeRegistryTest`: 474 run, 473 passed. The one failure, `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, also fails on clean main. Screenshots in light, console, gloss, word97 and dark at 375 px and 1280 px with no horizontal scroll. Full suite not run.
+
+*— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*

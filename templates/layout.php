@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>">
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>" data-fast-navigation="<?= ($fastNavigationScriptPath ?? null) !== null ? '1' : '0' ?>" data-nav-cached-copy="<?= ($navCachedCopyScriptPath ?? null) !== null ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?><?php if ($usageReportsEnabled ?? false): ?><?php if (($usagePageKind ?? null) !== null): ?> data-usage-page="<?= $e($usagePageKind) ?>"<?php endif; ?> data-usage-words="<?= $e($usagePageWords) ?>"<?php endif; ?>>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -33,28 +33,49 @@
         }
       } catch (error) {}
       try {
-        // Post table text size (table_zoom.js), restored before paint.
-        var tableZoomSaved = localStorage.getItem('table-zoom');
-        var tableZoom = parseFloat(tableZoomSaved);
-        if (tableZoomSaved === 'page') {
-          document.documentElement.setAttribute('data-table-size', 'page');
-        } else if (tableZoom >= 0.5 && tableZoom <= 8) {
-          document.documentElement.style.setProperty('--table-zoom', String(tableZoom));
+        // Zoom table text size per kind (ZoomTable, table_zoom.js), restored before paint.
+        var tableZoomKeys = <?= json_encode(\ForumRewrite\View\ZoomTable::KINDS, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+        Object.keys(tableZoomKeys).forEach(function (kind) {
+          var saved = localStorage.getItem(tableZoomKeys[kind]);
+          var zoom = parseFloat(saved);
+          if (saved === 'page') {
+            document.documentElement.setAttribute('data-table-size-' + kind, 'page');
+          } else if (zoom >= 0.5 && zoom <= 8) {
+            document.documentElement.style.setProperty('--table-zoom-' + kind, String(zoom));
+          }
+        });
+      } catch (error) {}
+      try {
+        // Gallery tile size (Smaller / Larger on the Gallery), restored before paint; same range as its script.
+        var galleryZoom = parseFloat(localStorage.getItem('gallery-zoom'));
+        if (galleryZoom >= 0.5 && galleryZoom <= 2) {
+          document.documentElement.style.setProperty('--gallery-zoom', String(galleryZoom));
+          // Far zoomed out, tiles show images only; same threshold as the gallery script.
+          if (galleryZoom < 0.7) {
+            document.documentElement.setAttribute('data-gallery-compact', '');
+          }
         }
       } catch (error) {}
 <?php if ($navSlotCount > 0): ?>
       try {
-        // Personal phone tabs, chosen by nav_slots.js and read here before paint.
+        // Phone tabs, earned by use in nav_slots.js and read here before paint. The
+        // server already set the starting tabs; a saved choice replaces them.
         var navSlotCount = <?= (int) $navSlotCount ?>;
         var navSlotSections = <?= json_encode($navSlotSections, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
-        window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections };
+        var navSlotDefaults = <?= json_encode($navSlotDefaults ?? [], JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+        window.__forumNavSlots = { count: navSlotCount, sections: navSlotSections, defaults: navSlotDefaults };
         var navSlotState = JSON.parse(localStorage.getItem('forum_nav_slots') || 'null');
-        var navSlots = navSlotState && Array.isArray(navSlotState.slots) ? navSlotState.slots : [];
-        var navMember = document.documentElement.getAttribute('data-member') === 'approved';
-        navSlots = navSlots.filter(function (section) {
-          return navSlotSections.indexOf(section) !== -1 && ((section !== 'messages' && section !== 'inbox') || navMember);
-        }).slice(0, navSlotCount);
-        if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
+        if (navSlotState && typeof navSlotState === 'object') {
+          var navSlots = Array.isArray(navSlotState.slots) ? navSlotState.slots : [];
+          // Saved while Board and Calendar were fixed: they come first.
+          if (navSlotState.v !== 2) navSlots = navSlotDefaults.concat(navSlots);
+          var navMember = document.documentElement.getAttribute('data-member') === 'approved';
+          navSlots = navSlots.filter(function (section, index, all) {
+            return all.indexOf(section) === index && navSlotSections.indexOf(section) !== -1 && ((section !== 'messages' && section !== 'inbox') || navMember);
+          }).slice(0, navSlotCount);
+          if (navSlots.length) document.documentElement.setAttribute('data-nav-slots', navSlots.join(' '));
+          else document.documentElement.removeAttribute('data-nav-slots');
+        }
       } catch (error) {}
 <?php endif; ?>
       // Each palette theme's saved colour, or its first palette.
@@ -166,6 +187,46 @@
       } catch (error) {
       }
 <?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+      try {
+        // Reading margins (reading_margins.js): the chosen column edges, in vw, restored before paint.
+        var readingMargins = (localStorage.getItem(browserRuntime.readingMarginsStorageKey) || '').split(' ');
+        // The stops match partials/reading_margins.php. The pair is stored in
+        // click order (older first); the column runs from the smaller to the larger.
+        var readingMarginStops = ['5', '23', '41', '59', '77', '95'];
+        if (readingMargins.length === 2 && readingMargins[0] !== readingMargins[1]
+          && readingMarginStops.indexOf(readingMargins[0]) !== -1 && readingMarginStops.indexOf(readingMargins[1]) !== -1) {
+          document.documentElement.setAttribute('data-reading-margins', readingMargins.join(' '));
+          document.documentElement.style.setProperty('--reading-left', Math.min(readingMargins[0], readingMargins[1]));
+          document.documentElement.style.setProperty('--reading-right', Math.max(readingMargins[0], readingMargins[1]));
+        }
+      } catch (error) {
+      }
+<?php endif; ?>
+<?php if ($draggableWindowsEnabled ?? false): ?>
+      try {
+        // Window controls (theme-bubblegum.js) are on unless this browser turned them off in Preferences.
+        if (localStorage.getItem(browserRuntime.windowControlsStorageKey) !== 'off') {
+          document.documentElement.setAttribute('data-window-controls', 'on');
+          // Posts collapsed in this browser show collapsed from the first frame. The rules
+          // match theme-bubblegum.css's [data-window-collapsed]; the script removes this
+          // style once it has marked the posts itself.
+          var collapsedPosts = (localStorage.getItem(browserRuntime.collapsedWindowsStorageKey) || '').split(' ')
+            .filter(function (id) { return /^[A-Za-z0-9_.:-]+$/.test(id); });
+          if (collapsedPosts.length > 0) {
+            var collapsedCards = collapsedPosts.map(function (id) {
+              return ':root[data-theme="bubblegum"][data-window-controls] .card[data-post-id="' + id + '"]';
+            });
+            var collapsedStyle = document.createElement('style');
+            collapsedStyle.id = 'window-controls-collapsed';
+            collapsedStyle.textContent = collapsedCards.join(',') + '{padding-top:1.5rem;padding-bottom:0;min-height:0}'
+              + collapsedCards.map(function (card) { return card + '>:not([data-window-titlebar]):not([data-visitor-intro-hide])'; }).join(',') + '{display:none!important}';
+            document.head.appendChild(collapsedStyle);
+          }
+        }
+      } catch (error) {
+      }
+<?php endif; ?>
     })();
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
@@ -197,8 +258,14 @@
 <?php endforeach; ?>
   <script src="<?= $e($themeToggleScriptPath) ?>" defer></script>
   <script src="<?= $e($memberApprovalScriptPath) ?>" defer></script>
+<?php if ($pendingUserSummaryScriptPath !== null): ?>
+  <script src="<?= $e($pendingUserSummaryScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($showThreadDensityToggle): ?>
   <script src="<?= $e($threadDensityToggleScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+  <script src="<?= $e($readingMarginsScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
@@ -218,10 +285,25 @@
 <?php if ($navigationSlot === 'app' && ($deployPromptScriptPath ?? null) !== null): ?>
   <script src="<?= $e($deployPromptScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php if (($keyBootstrapScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($keyBootstrapScriptPath) ?>" data-identity-scripts="<?= $e(implode(' ', $keyBootstrapIdentityScriptPaths ?? [])) ?>" defer></script>
+<?php endif; ?>
+<?php if (($deployCelebrateScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($deployCelebrateScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($navigationSlot === 'app'): ?>
   <script src="<?= $e($accountMenuScriptPath) ?>" defer></script>
   <script src="<?= $e($tabBarScrollScriptPath) ?>" defer></script>
   <script src="<?= $e($navSlotsScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if ($usageReportsEnabled ?? false): ?>
+  <script src="<?= $e($usageLogScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if (($fastNavigationScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($fastNavigationScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if (($navCachedCopyScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($navCachedCopyScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>
@@ -242,7 +324,7 @@
   </div>
 <?php endif; ?>
   <!-- route-source: <?= $e($routeSource) ?> -->
-  <div class="shell"<?= $navigationSlot === 'app' ? ' data-shell="app"' : '' ?>>
+  <div class="shell"<?= $navigationSlot === 'app' ? ' data-shell="app"' : '' ?><?= ($tabBarHidden ?? false) ? ' data-tabbar-page="none"' : '' ?>>
 <?php if ($navigationSlot === 'app'): ?>
     <div class="shell-sky" aria-hidden="true"></div>
 <?= $indent($partial('partials/app_header.php'), 2) ?>
@@ -257,6 +339,9 @@
 <?= $indent($partial('partials/theme_menu.php'), 4) ?>
       </div>
     </header>
+<?php endif; ?>
+<?php if ($showReadingMargins ?? false): ?>
+<?= $indent($partial('partials/reading_margins.php'), 2) ?>
 <?php endif; ?>
     <main class="main">
 <?= $indent($content, 3) ?>

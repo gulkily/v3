@@ -8,7 +8,19 @@ use RuntimeException;
 /** Effective interpretation of independently accepted signed and local receipts. */
 final class AcceptedRemoval
 {
+    /** Accepted removals of posts. Removed reactions are listed by self::reactions(). */
     public static function all(string $root): array
+    {
+        return array_filter(self::everything($root), static fn ($id): bool => RemovalTarget::family((string) $id) === 'post', ARRAY_FILTER_USE_KEY);
+    }
+
+    /** Accepted removals of reaction records (likes and labels), keyed by Record-ID. */
+    public static function reactions(string $root): array
+    {
+        return array_filter(self::everything($root), static fn ($id): bool => RemovalTarget::family((string) $id) !== 'post', ARRAY_FILTER_USE_KEY);
+    }
+
+    private static function everything(string $root): array
     {
         $records = LabelRemoval::all($root);
         foreach (AcceptedRetraction::removals($root) as $id => $signed) {

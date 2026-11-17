@@ -42,7 +42,7 @@ Before starting a fix or feature, search `docs/feedback/items/` for a matching i
 
 ## Navigation icons
 
-When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` in both icon sets: pixel art (Word97, Chicago and Midnight) and smooth lines (Gloss and Engagify). Cover both Tools launcher buttons and Tools subnavigation where applicable; `NavIconSetsTest` checks that the sets match. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.
+When adding or renaming a navigation destination, update its icon mapping in `public/assets/theme-nav-icons.css` in every icon set: pixel art (Word97, Chicago and Midnight), smooth lines (Gloss, Engagify and Spearmint, which recolours them) and cute pixel art (Bubblegum). Cover both Tools launcher buttons and Tools subnavigation where applicable; `NavIconSetsTest` checks that the sets match. Verify the icon in each affected theme before calling the UI complete; text-only theme checks do not cover this.
 
 ## Third-party code
 
@@ -50,7 +50,7 @@ Follow the dependency approval policy in `CONTRIBUTING.md` before adding or upda
 
 ## Railspike
 
-Use Railspike by default when a task would benefit from comparing approaches, staged planning, or work across sessions, unless the user opts out. Read `docs/railspike/RAILSPIKE.md` and begin the appropriate planning step; wait for each required `Approved Step N` before advancing. Small, straightforward changes can proceed directly. Honor a decline for the same task without repeated offers. This guidance does not approve implementation.
+Every change that will be committed runs as a Railspike cycle: one-shot by default, staged when the approach or scope needs review, approaches need comparing, or the work spans sessions. Direct work is only for answering questions, uncommitted exploration, or a task the user explicitly opts out of Railspike; size, mechanical scope and urgency never exempt a change. In your first reply, name the mode you chose and why. Read `docs/railspike/RAILSPIKE.md` and begin the appropriate step; in staged cycles, wait for each required `Approved Step N` before advancing. Honor an opt-out for the same task without repeated offers. This guidance does not approve implementation.
 
 Railspike is already installed as a Git subtree at `docs/railspike/`. Keep project planning artifacts in the host project's `docs/plans/`, outside the vendored tree. See `docs/reference/railspike_workflow.md` for project-specific workflow and update instructions.
 
@@ -64,4 +64,4 @@ Follow `CONTRIBUTING.md`, including its requirements for read-model schema chang
 
 ## Continuing Railspike effort study
 
-Every future Railspike cycle participates in the same `railspike-effort` study under protocol P2. Follow [standing enrollment and checkpoint collection](docs/plans/effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2); do not ask to select each cycle again. Keep snapshots in that cycle's artifacts and index them in the host ledger. Preserve R1, stable IDs, score revisions and incomplete outcomes; deduplicate worktree copies. Existing cycles join at their next checkpoint without invented earlier scores. Collection does not approve implementation, bypass normal approvals, require debug mode or authorize uploads.
+Every future Railspike cycle participates in the same `railspike-effort` study under protocol P2. Follow [standing enrollment and checkpoint collection](docs/plans/effort_estimation_trial.md#continuing-enrollment--2026-10-21-protocol-p2); do not ask to select each cycle again. Keep snapshots in that cycle's artifacts and index them in the cycle's own ledger file, `docs/plans/effort_ledger/<feature_prefix>.md` (see [its README](docs/plans/effort_ledger/README.md)); do not append to `effort_estimation_trial.md`. Preserve R1, stable IDs, score revisions and incomplete outcomes; deduplicate worktree copies. Existing cycles join at their next checkpoint without invented earlier scores. Collection does not approve implementation, bypass normal approvals, require debug mode or authorize uploads.

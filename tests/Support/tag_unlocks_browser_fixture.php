@@ -22,5 +22,7 @@ $first = $writer->createReply(['thread_id' => $thread, 'parent_id' => $thread, '
 // No author: an anonymous reply, so the two replies do not merge into one same-author run.
 $second = $writer->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'Thread pages have no text version. Appending .txt to the URL returns 404 and ?format=txt returns the HTML page.'])['post_id'];
 $writer->applyPostTag(['post_id' => $second, 'tag' => 'closed', 'author_identity_id' => $identity]);
+$third = $writer->createReply(['thread_id' => $thread, 'parent_id' => $thread, 'body' => 'Deploy from the panel times out on large rebuilds.'])['post_id'];
+$writer->applyPostTag(['post_id' => $third, 'tag' => 'claimed', 'author_identity_id' => $identity]);
 (new \ForumRewrite\ReadModel\ReadModelBuilder($root . '/repository', $root . '/read.sqlite3', $repository))->rebuild();
-echo json_encode(['identity' => $identity, 'thread' => $thread, 'first' => $first, 'second' => $second]);
+echo json_encode(['identity' => $identity, 'thread' => $thread, 'first' => $first, 'second' => $second, 'third' => $third]);

@@ -36,7 +36,7 @@
       <figcaption>Eligible requests over time (<?= $e($periodOptions[$periodKey]['label']) ?>)</figcaption>
       <svg viewBox="0 0 740 210" role="img" aria-labelledby="visitor-statistics-trend-title visitor-statistics-trend-description">
         <title id="visitor-statistics-trend-title">Eligible requests over time</title>
-        <desc id="visitor-statistics-trend-description">Each bar shows the eligible requests in an observed <?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?>. Green is anonymous and dark green is server-authenticated.</desc>
+        <desc id="visitor-statistics-trend-description">Each bar shows the eligible requests in an observed <?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?>. The lower, darker part of each bar is server-authenticated requests; the upper, lighter part is anonymous requests.</desc>
         <line x1="20" y1="180" x2="720" y2="180" class="visitor-statistics-axis" />
 <?php foreach ($buckets as $index => $bucket): ?>
 <?php $height = $maxVisits === 0 ? 0 : (int) round($plotHeight * $bucket['visits'] / $maxVisits); ?>
@@ -50,14 +50,29 @@
         <text x="720" y="202" text-anchor="end"><?= $e($dashboard['period_end']) ?></text>
       </svg>
     </figure>
+<?php
+$tableRows = [[$periodKey === '24h' ? 'UTC hour' : 'UTC day', 'Eligible', 'Anonymous', 'Authenticated', 'Estimated clients', 'Authenticated users']];
+foreach ($buckets as $bucket) {
+    $tableRows[] = [
+        $periodKey === '24h' ? $bucket['bucket_start'] : substr($bucket['bucket_start'], 0, 10),
+        number_format($bucket['visits']),
+        number_format($bucket['anonymous_visits']),
+        number_format($bucket['authenticated_visits']),
+        number_format($bucket['clients']),
+        number_format($bucket['authenticated_users']),
+    ];
+}
+?>
+    <?= \ForumRewrite\View\ZoomTable::open('tools', \ForumRewrite\View\ZoomTable::minimumEm($tableRows, 1, 1), 'Visitor statistics table') ?>
     <table class="visitor-statistics-table">
-      <thead><tr><th><?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?></th><th>Eligible</th><th>Anonymous</th><th>Authenticated</th><th>Estimated clients</th><th>Authenticated users</th></tr></thead>
+      <thead><tr><?php foreach ($tableRows[0] as $label): ?><th><?= $e($label) ?></th><?php endforeach; ?></tr></thead>
       <tbody>
-<?php foreach ($buckets as $bucket): ?>
-        <tr><th scope="row"><?= $e($periodKey === '24h' ? $bucket['bucket_start'] : substr($bucket['bucket_start'], 0, 10)) ?></th><td><?= $e(number_format($bucket['visits'])) ?></td><td><?= $e(number_format($bucket['anonymous_visits'])) ?></td><td><?= $e(number_format($bucket['authenticated_visits'])) ?></td><td><?= $e(number_format($bucket['clients'])) ?></td><td><?= $e(number_format($bucket['authenticated_users'])) ?></td></tr>
+<?php foreach (array_slice($tableRows, 1) as $row): ?>
+        <tr><th scope="row"><?= $e($row[0]) ?></th><?php foreach (array_slice($row, 1) as $value): ?><td><?= $e($value) ?></td><?php endforeach; ?></tr>
 <?php endforeach; ?>
       </tbody>
     </table>
+    <?= \ForumRewrite\View\ZoomTable::close() ?>
     <details class="visitor-statistics-counting">
       <summary>How this is counted</summary>
       <p>Assets, APIs, known bots, and traffic outside this application are excluded. Authenticated requests have a verified session. Client estimates may overlap before and after sign-in.</p>

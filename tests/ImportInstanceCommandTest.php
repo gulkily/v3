@@ -42,9 +42,18 @@ final class ImportInstanceCommandTest
         assertStringContains('Preview result: complete', $output);
         assertTrue(!is_file($target . '/records/posts/remote-thread.txt'));
         assertTrue(!is_file($target . '/' . $signedLabel . '.asc'));
-        [$code, $output] = $w->command($command);
+        assertStringNotContains('Progress: ', $output);
+        [$code, $output] = $w->command([...$command, '--progress-lines']);
         assertSame(0, $code, $output);
         assertStringContains('Import result: complete', $output);
+        preg_match_all('/^Progress: (\S+)(?: (\d+)\/(\d+|\?))?$/m', $output, $steps, PREG_SET_ORDER);
+        $order = array_values(array_unique(array_column($steps, 1)));
+        assertSame(['download', 'extract', 'plan', 'install', 'commit', 'publish', 'images', 'done'], $order, $output);
+        $installs = array_values(array_filter($steps, static fn (array $step): bool => $step[1] === 'install'));
+        assertSame('0', $installs[0][2]);
+        assertSame(end($installs)[3], end($installs)[2]);
+        $downloads = array_values(array_filter($steps, static fn (array $step): bool => $step[1] === 'download'));
+        assertSame(end($downloads)[3], end($downloads)[2]);
         assertStringNotContains('Rendering ', $output);
         assertStringNotContains('Fingerprinting and copying assets', $output);
         assertTrue(is_file($target . '/records/posts/remote-thread.txt'));
@@ -209,12 +218,39 @@ final class ImportInstanceCommandTest
         [$previewCode, $previewOutput] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, '--dry-run',
             '--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3']);
         assertSame(2, $previewCode, $previewOutput);
-        assertStringContains('Review cause: records/posts/root-001.txt', $previewOutput);
+        assertStringContains('Conflict: Existing path or canonical identity has different bytes (1 file)', $previewOutput);
+        assertStringNotContains('Review cause: ', $previewOutput);
         assertStringContains('Use --verbose', $previewOutput);
         assertTrue(!str_contains($previewOutput, 'conflict: records/posts/'));
         assertStringContains('Excluded: Instance authority', $previewOutput);
         assertSame($original, file_get_contents($target . '/records/posts/root-001.txt'));
         assertSame('1', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
+    }
+
+    public function testWithApprovalsImportsApprovalRecordsAndPointsToSuggestRoots(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($source . '/records/posts/approval-1.txt', str_replace('Board-Tags: general', 'Board-Tags: identity approval', $w->post('approval-1')));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $paths = ['--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3', '--static-html-root=' . $w->root . '/static'];
+
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, '--dry-run', ...$paths]);
+        assertStringContains('Approvals: 1 approval/invitation post(s) were left out', $output);
+        assertStringContains('rerun this import with --with-approvals', $output);
+
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, '--with-approvals', ...$paths]);
+        assertSame(0, $code, $output);
+        assertTrue(is_file($target . '/records/posts/approval-1.txt'));
+        assertStringContains('Next: ./v3 approval suggest-roots --repository-root=', $output);
+
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--resume', '--with-approvals', ...$paths]);
+        assertSame(1, $code, $output);
+        assertStringContains('--with-approvals applies to a new import', $output);
     }
 
     public function testCliResumeDoesNotNeedTheRemoteSourceAgain(): void
@@ -251,6 +287,37 @@ final class ImportInstanceCommandTest
         assertStringNotContains('Fingerprinting and copying assets', $output);
         assertTrue(!file_exists($static . '/current'));
         assertSame('2', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
+    }
+
+    public function testCliCancelRefusesCommittedImportAndReportsMissingJournal(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $w->put($source . '/records/posts/cancel-thread.txt', $w->post('cancel-thread'));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        $w->put($w->root . '/router.php', '<?php readfile(__DIR__ . "/source.tar.gz");');
+        $server = new ImportHttpServer($w->root . '/router.php', $w->root . '/http.log');
+        $static = $w->root . '/static';
+        $w->put($static, 'File blocking publication directory creation');
+        $options = ['--repository-root=' . $target, '--database-path=' . $w->root . '/cache/index.sqlite3'];
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', $server->url, ...$options, '--static-html-root=' . $static]);
+        assertSame(1, $code, $output);
+        assertStringContains('or --cancel to discard it', $output);
+        unset($server);
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--cancel', ...$options]);
+        assertSame(1, $code, $output);
+        assertStringContains('already committed its content', $output);
+        assertTrue(is_file($target . '/.git/instance-import/pending.json'));
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--cancel', '--resume', ...$options]);
+        assertSame(1, $code, $output);
+        unlink($static);
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--resume', ...$options, '--static-html-root=' . $static]);
+        assertSame(0, $code, $output);
+        [$code, $output] = $w->command([__DIR__ . '/../v3', 'import-instance', '--cancel', ...$options]);
+        assertSame(1, $code, $output);
+        assertStringContains('No interrupted import to cancel.', $output);
     }
 
     public function testImageFailuresKeepTextAndRerunOrResumeRecovers(): void

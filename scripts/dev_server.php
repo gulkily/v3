@@ -16,6 +16,7 @@ use ForumRewrite\Support\DevServerLog;
 $address = null;
 $mode = DevServerLog::MODE_DEFAULT;
 $logFile = null;
+$runWorker = true;
 
 foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--address=')) {
@@ -26,6 +27,8 @@ foreach (array_slice($argv, 1) as $argument) {
         $mode = DevServerLog::MODE_QUIET;
     } elseif (str_starts_with($argument, '--log-file=')) {
         $logFile = substr($argument, strlen('--log-file='));
+    } elseif ($argument === '--no-worker') {
+        $runWorker = false;
     } else {
         fwrite(STDERR, "Unknown dev server option: {$argument}\n");
         exit(1);
@@ -190,11 +193,21 @@ if ($headerOn) {
     $emit("v3 {$port} listening on {$url}  ({$checkout})");
 }
 
+// Queued work (imports, rebuilds, offline snapshots) runs here the way cron runs it on a server.
+$worker = null;
+if ($runWorker && \ForumRewrite\Support\DevServerWorker::available()) {
+    $worker = new \ForumRewrite\Support\DevServerWorker($root);
+    $emit('task worker on (./v3 start --no-worker turns it off)');
+} elseif ($runWorker) {
+    $emit('task worker unavailable: needs proc_open and setsid');
+}
+
 $requestCount = 0;
 $errorCount = 0;
 $lastPrintedAt = null;
 
 while (!$stopping) {
+    $worker?->tick();
     if ($resized && $applyLayout !== null) {
         $resized = false;
         $applyLayout();
@@ -260,6 +273,7 @@ while (!$stopping) {
 }
 
 $shutdownServer();
+$workerBusy = $worker !== null && !$worker->finish();
 if ($canSignal) {
     pcntl_signal(SIGINT, SIG_DFL);
     pcntl_signal(SIGTERM, SIG_DFL);
@@ -270,6 +284,9 @@ if ($headerOn) {
     fwrite(STDOUT, "\e[r\e[{$rows};1H\n");
 }
 $emit("v3 {$port} stopped");
+if ($workerBusy) {
+    $emit('task worker still finishing a task; it exits on its own');
+}
 if ($logHandle !== false) {
     fclose($logHandle);
 }

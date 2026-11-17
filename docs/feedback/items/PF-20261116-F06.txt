@@ -1,0 +1,14 @@
+ID: PF-20261116-F06
+Title: Versioned Quill download URLs
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-16
+
+Request:
+Serve each Quill release at its own address, such as /quill-2026-11-16.py, so an agent or script can pin a version. The plain /quill.py keeps serving the newest copy. Optional; raised while planning the rename.
+
+Sources:
+- Session: Claude session, 2026-11-16, Quill rename one-shot (docs/plans/quill_rename/quill_rename_one_shot.md)
+
+Notes:
+2026-11-16: left out of the quill_rename one-shot on purpose. Needs a decision on how old releases are kept (Git history or copies in public/).

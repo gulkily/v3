@@ -1,0 +1,826 @@
+/* Theme: bubblegum
+   Pink pixel desktop: a bubblegum page with faint pixel hearts, crosses
+   and sparkles, cards drawn
+   as little retro windows (striped title bar, three square buttons, hard
+   offset shadow), pill inputs and chunky square buttons. Uses system fonts
+   only; ui-rounded gives the bubbly face on Apple devices. */
+:root[data-theme="bubblegum"],
+.theme-menu__option[data-theme-option="bubblegum"] {
+  color-scheme: light;
+  --bubblegum-berry: #8e2457;
+  --bubblegum-bar: #e45b9c;
+  --bubblegum-shadow: #b23c74;
+  --bubblegum-butter: #ffe873;
+  /* Large, soft pink waves with a few sparkles; shared by windows and lists. */
+  --bubblegum-waves: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='960' height='120'%3E%3Cpath d='M-80 60 Q-40 96 0 60 T80 60 T160 60 T240 60 T320 60 T400 60 T480 60 T560 60 T640 60 T720 60 T800 60 T880 60 T960 60 T1040 60' fill='none' stroke='%23e45b9c' stroke-opacity='0.08' stroke-width='12'/%3E%3Cg fill='%23e45b9c' fill-opacity='0.2'%3E%3Cpath transform='translate(250 24) scale(1)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(70 100) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(560 32) scale(0.8)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(820 96) scale(1)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(420 102) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3Cpath transform='translate(900 26) scale(0.6)' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3C/g%3E%3C/svg%3E");
+  --page-bg: #f7b3d2;
+  --body-background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' fill-opacity='0.22'%3E%3Cpath d='M30 24h12v6H30zM48 24h12v6H48zM24 30h42v12H24zM30 42h30v6H30zM36 48h18v6H36zM42 54h6v6h-6z'/%3E%3Cpath d='M132 18h6v42h-6zM120 30h30v6h-30z'/%3E%3Cpath d='M42 144h4v14h-4zM37 149h14v4H37z'/%3E%3C/g%3E%3Cg fill='%23ffffff' fill-opacity='0.32'%3E%3Cpath d='M142 120h4v40h-4zM124 138h40v4h-40zM138 134h12v12h-12z'/%3E%3Cpath d='M90 92h3v13h-3zM85 97h13v3H85z'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(180deg, #f9c2db 0%, #f39ac4 55%, #ec7fb4 100%),
+    #f7b3d2;
+  --ink: #4f0f2f;
+  --ink-soft: #741d48;
+  --line: #8e2457;
+  --panel: #ffffff;
+  --input-bg: #fff4fa;
+  --button-bg: #ffdcec;
+  --button-alt-bg: #ffeaf4;
+  --feedback-ok-bg: #eafbea;
+  --feedback-error-bg: #ffe6ee;
+  --status-error: #b0002a;
+  --status-ok: #1d6b2a;
+  --status-warning: #7a4a00;
+  --active-bg: #b8286c;
+  --active-ink: #ffffff;
+  --active-line: #8e2457;
+  --active-ring: rgba(228, 91, 156, 0.4);
+  --body-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  --ui-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Varela Round", "Nunito", system-ui, sans-serif;
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
+.theme-swatch[data-theme="bubblegum"] {
+  background:
+    linear-gradient(#e45b9c 0 32%, #8e2457 32% 40%, #ffffff 40%);
+  border: 2px solid #8e2457;
+  box-shadow: 2px 2px 0 #b23c74;
+  border-radius: 0;
+}
+
+.theme-menu__option[data-theme-option="bubblegum"] {
+  border: 2px solid #8e2457;
+  box-shadow: 2px 2px 0 #b23c74;
+}
+
+/* site.css paints the page on a fixed body::before with one cover-sized
+   layer; the heart pattern needs to tile at its own size instead. */
+:root[data-theme="bubblegum"] body::before {
+  background-repeat: repeat, no-repeat;
+  background-size: 192px 192px, cover;
+}
+
+/* Cards are windows: the title bar sits inside the border, above the padding. */
+:root[data-theme="bubblegum"] .card {
+  position: relative;
+  border: 3px solid var(--bubblegum-berry);
+  border-radius: 0;
+  padding-top: calc(0.9rem + 1.5rem);
+  box-shadow: 6px 6px 0 var(--bubblegum-shadow);
+  /* One tile spans a full window's width, so tiles meet only between rows
+     where nothing is drawn (no hairline seams). Large, soft pink waves with a few sparkles over a white-to-blush fade,
+     and a warm light falling from the top of each window. Wide and pale
+     enough to read as a backdrop, never as marks beside the letters. */
+  background:
+    var(--bubblegum-waves) 0 0 / 960px 120px repeat-y,
+    radial-gradient(ellipse 70% 7rem at 50% 0, rgba(255, 232, 115, 0.28), transparent 75%) no-repeat,
+    linear-gradient(180deg, #ffffff 0%, #fff3f9 100%),
+    var(--panel);
+}
+
+:root[data-theme="bubblegum"] .card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5rem;
+  box-sizing: border-box;
+  border-bottom: 3px solid var(--bubblegum-berry);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 14' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' stroke='%238e2457' stroke-width='2'%3E%3Crect x='1' y='1' width='12' height='12'/%3E%3Crect x='17' y='1' width='12' height='12'/%3E%3Crect x='33' y='1' width='12' height='12'/%3E%3C/g%3E%3C/svg%3E") right 0.4rem center / auto 0.8rem no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    var(--bubblegum-bar);
+  pointer-events: none;
+  /* content-interactions.css hides .meta-deferred::before (its hover time) on
+     every post that starts a run; here ::before is the title bar, so keep it. */
+  opacity: 1;
+}
+
+:root[data-theme="bubblegum"][data-window-controls] .card[data-window-collapsed] {
+  /* Window controls (FORUM_DRAGGABLE_WINDOWS_ENABLED, theme-bubblegum.js): a
+     collapsed window keeps only its title bar; its contents stay in the page,
+     only hidden. layout.php writes the same rules for posts collapsed in this
+     browser, so they show collapsed before the script starts. */
+  padding-top: 1.5rem;
+  padding-bottom: 0;
+  min-height: 0;
+}
+
+:root[data-theme="bubblegum"][data-window-controls] .card[data-window-collapsed] > :not([data-window-titlebar]):not([data-visitor-intro-hide]) {
+  display: none !important;
+}
+
+/* The script's title bar: a strip over the drawn bar holding the window's
+   label (shown when collapsed) and the real collapse button, which replaces
+   the drawn boxes so every box on the bar does something. */
+:root[data-theme="bubblegum"][data-window-controls] .card[data-window]::before {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    var(--bubblegum-bar);
+}
+
+:root[data-theme="bubblegum"] [data-window-titlebar] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(1.5rem - 3px);
+  margin: 0 !important;
+  padding: 0 0.4rem 0 4.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+:root[data-theme="bubblegum"] .visitor-intro > [data-window-titlebar] {
+  /* Leave the close box (the intro's Hide button) its own spot at the end. */
+  padding-right: 1.9rem;
+}
+
+:root[data-theme="bubblegum"] [data-window-label] {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #ffffff;
+  font-family: var(--ui-font);
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 1px 1px 0 var(--bubblegum-berry);
+  visibility: hidden;
+}
+
+:root[data-theme="bubblegum"] .card[data-window-collapsed] [data-window-label] {
+  visibility: visible;
+}
+
+/* Once the reader is in a window, the other title bars fade to a pale pink;
+   a collapsed window's label turns berry there so it stays readable. */
+:root[data-theme="bubblegum"][data-window-has-active] .card[data-window]:not([data-window-active])::before {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    #f6b4d3;
+}
+
+:root[data-theme="bubblegum"][data-window-has-active] .card[data-window]:not([data-window-active]) [data-window-label] {
+  color: var(--bubblegum-berry);
+  text-shadow: none;
+}
+
+/* A short pop as a collapsed window opens. */
+@keyframes bubblegum-window-pop {
+  0% { transform: scale(0.97); }
+  60% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+:root[data-theme="bubblegum"] .card[data-window-pop] {
+  animation: bubblegum-window-pop 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="bubblegum"] .card[data-window-pop] {
+    animation: none;
+  }
+}
+
+/* Float mode (desktop): windows drag by their title bars; the one in use sits on top. */
+:root[data-theme="bubblegum"][data-window-float] [data-window-titlebar] {
+  cursor: grab;
+}
+
+:root[data-theme="bubblegum"][data-window-float] .card[data-window-dragging] > [data-window-titlebar] {
+  cursor: grabbing;
+}
+
+:root[data-theme="bubblegum"][data-window-float] .card[data-window-active] {
+  z-index: 2;
+}
+
+/* Float and Reset sit in a small taskbar corner at the bottom left
+   (desktop only; the script doesn't add it for touch or narrow screens). */
+:root[data-theme="bubblegum"] [data-window-float-controls] {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  border: 3px solid var(--bubblegum-berry);
+  background: var(--bubblegum-bar);
+  box-shadow: 4px 4px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  min-height: 0;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  box-shadow: 2px 2px 0 var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button[hidden] {
+  display: none;
+}
+
+/* A white box with a pixel underscore (collapse), or an outlined window
+   (expand) once collapsed. The invisible ::after makes a 44px touch target. */
+/* `.card >` outranks the chunky-button hover and press rules further down. */
+:root[data-theme="bubblegum"] .card > [data-window-titlebar] > button[data-window-collapse]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  position: relative;
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--bubblegum-berry);
+  background:
+    linear-gradient(var(--bubblegum-berry), var(--bubblegum-berry)) center bottom 2px / 55% 2px no-repeat,
+    #ffffff;
+  box-shadow: none;
+  transform: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root[data-theme="bubblegum"] .card[data-window-collapsed] > [data-window-titlebar] > button[data-window-collapse]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 4px var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] [data-window-titlebar] > button[data-window-collapse]::after {
+  content: "";
+  position: absolute;
+  inset: -0.625rem;
+}
+
+:root[data-theme="bubblegum"] .thread-rows {
+  /* Plain lists (board rows, Unread, Messages, search) get the windows' waves
+     and blush fade too. Offset by half a wave so neighbouring boxes don't line
+     up as one stripe. */
+  background:
+    var(--bubblegum-waves) -40px 30px / 960px 120px repeat-y,
+    linear-gradient(180deg, #ffffff 0%, #fff3f9 100%),
+    var(--panel);
+}
+
+:root[data-theme="bubblegum"] .stack > * + * {
+  margin-top: 1.4rem;
+}
+
+:root[data-theme="bubblegum"] .post-card.continuation {
+  margin-top: 0.5rem;
+}
+
+:root[data-theme="bubblegum"] .pending-reply-card,
+:root[data-theme="bubblegum"] .pending-thread-shell {
+  border-style: dashed;
+}
+
+:root[data-theme="bubblegum"] .post-card:target {
+  box-shadow: 6px 6px 0 var(--bubblegum-shadow), 0 0 0 4px var(--bubblegum-butter);
+}
+
+:root[data-theme="bubblegum"] .card h1,
+:root[data-theme="bubblegum"] .card h2,
+:root[data-theme="bubblegum"] .card h3 {
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+}
+
+/* Wordmark: white bubble letters with a berry outline and drop. */
+:root[data-theme="bubblegum"] .eyebrow,
+:root[data-theme="bubblegum"] .eyebrow .site-brand {
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 1.15rem;
+  text-shadow:
+    -1px -1px 0 var(--bubblegum-berry), 0 -1px 0 var(--bubblegum-berry),
+    1px -1px 0 var(--bubblegum-berry), 1px 0 0 var(--bubblegum-berry),
+    1px 1px 0 var(--bubblegum-berry), 0 1px 0 var(--bubblegum-berry),
+    -1px 1px 0 var(--bubblegum-berry), -1px 0 0 var(--bubblegum-berry),
+    2px 2px 0 var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] .eyebrow .site-brand {
+  text-decoration: none;
+}
+
+:root[data-theme="bubblegum"] .eyebrow .site-brand::after {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-left: 0.15em;
+  vertical-align: 0.45em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-8 -8 16 16'%3E%3Cpath fill='%23ffe873' stroke='%238e2457' stroke-width='1.2' stroke-linejoin='round' d='M0 -7 Q0 0 7 0 Q0 0 0 7 Q0 0 -7 0 Q0 0 0 -7Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+:root[data-theme="bubblegum"] .site-header:not(.site-header--app)::after {
+  content: "";
+  display: block;
+  margin-top: 0.8rem;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, var(--bubblegum-berry) 0 6px, transparent 6px 12px);
+}
+
+:root[data-theme="bubblegum"] .nav-link {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--bubblegum-berry);
+  box-shadow: 3px 3px 0 var(--bubblegum-shadow);
+  font-weight: 700;
+}
+
+:root[data-theme="bubblegum"] .nav-link[data-unread-count]:not([data-unread-count="0"]) {
+  background: var(--bubblegum-butter);
+}
+
+:root[data-theme="bubblegum"] .nav-link.is-active {
+  background: var(--active-bg);
+  color: var(--active-ink);
+  box-shadow: 3px 3px 0 var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] input,
+:root[data-theme="bubblegum"] select {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 999px;
+  /* A faint blush fade; no pattern behind the letters. */
+  background: linear-gradient(180deg, #fffafd 0%, #ffeaf4 100%), var(--input-bg);
+}
+
+:root[data-theme="bubblegum"] input[type="checkbox"],
+:root[data-theme="bubblegum"] input[type="radio"] {
+  border-radius: revert;
+  accent-color: var(--active-bg);
+}
+
+:root[data-theme="bubblegum"] textarea {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #fffafd 0%, #ffeaf4 100%), var(--input-bg);
+}
+
+/* Chunky pixel buttons, like a POST button on an old desktop. */
+:root[data-theme="bubblegum"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 0;
+  background: var(--button-bg);
+  color: var(--bubblegum-berry);
+  box-shadow: 3px 3px 0 var(--bubblegum-berry);
+  font-family: var(--code-font);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme="bubblegum"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  background: #ffc7e0;
+}
+
+:root[data-theme="bubblegum"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):active {
+  box-shadow: 1px 1px 0 var(--bubblegum-berry);
+  transform: translate(2px, 2px);
+}
+
+:root[data-theme="bubblegum"] button[type="submit"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option),
+:root[data-theme="bubblegum"] button.feature-flags-chip[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="bubblegum"] .thread-reaction-button {
+  padding: 0.3rem 0.55rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-theme="bubblegum"] .thread-reaction-button[disabled] {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
+:root[data-theme="bubblegum"] button:not(.theme-menu__option):focus-visible,
+:root[data-theme="bubblegum"] input:focus-visible,
+:root[data-theme="bubblegum"] textarea:focus-visible,
+:root[data-theme="bubblegum"] .nav-link:focus-visible {
+  outline: 3px solid var(--bubblegum-butter);
+  outline-offset: 2px;
+}
+
+:root[data-theme="bubblegum"] .pinned-thread-marker {
+  background: var(--bubblegum-butter);
+  border: 2px solid var(--bubblegum-berry);
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+}
+
+:root[data-theme="bubblegum"] .feedback,
+:root[data-theme="bubblegum"] [data-role="public-key-viewer"],
+:root[data-theme="bubblegum"] [data-role="private-key-viewer"] {
+  border: 2px solid var(--bubblegum-berry);
+  box-shadow: 3px 3px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] ::selection {
+  background: var(--bubblegum-butter);
+  color: var(--ink);
+}
+
+/* The intro card's Hide button becomes the title bar's close box. */
+:root[data-theme="bubblegum"] .visitor-intro::before {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    var(--bubblegum-bar);
+}
+
+:root[data-theme="bubblegum"] .visitor-intro > button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  top: 0.2rem;
+  right: 0.4rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid var(--bubblegum-berry);
+  background: #ffffff;
+  box-shadow: none;
+  font-size: 0.8rem;
+  font-family: var(--ui-font);
+  letter-spacing: 0;
+  z-index: 1;
+}
+
+:root[data-theme="bubblegum"] [data-shell="app"] .new-post-button,
+:root[data-theme="bubblegum"] .account-menu__trigger {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 0;
+  background: var(--button-bg);
+  color: var(--bubblegum-berry);
+  box-shadow: 3px 3px 0 var(--bubblegum-berry);
+  font-weight: 800;
+}
+
+:root[data-theme="bubblegum"] [data-shell="app"] .new-post-button:where(.is-active) {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+/* Phones: the app nav is a bottom tab bar; tabs sit flat in one window strip. */
+@media (max-width: 639px) {
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .site-header-actions {
+    border-top: 3px solid var(--bubblegum-berry);
+    background:
+      var(--bubblegum-waves) 0 -30px / 960px 120px repeat-x,
+      linear-gradient(180deg, #ffffff 0%, #fff0f7 100%);
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .nav > .nav-link,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .account-menu__trigger {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button.is-active,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .account-menu[open] > .account-menu__trigger {
+    background: var(--active-bg);
+    color: var(--active-ink);
+  }
+}
+
+@media (max-width: 480px) {
+  :root[data-theme="bubblegum"] .card {
+    box-shadow: 4px 4px 0 var(--bubblegum-shadow);
+  }
+}
+
+/* Texture for pills and buttons: faint candy stripes under a soft top shine,
+   so controls read as glossy candy rather than flat stickers. */
+:root[data-theme="bubblegum"] {
+  --bubblegum-candy: repeating-linear-gradient(135deg, rgba(228, 91, 156, 0.08) 0 5px, transparent 5px 10px);
+  --bubblegum-candy-on-pink: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 5px, transparent 5px 10px);
+  --bubblegum-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0 40%, rgba(255, 255, 255, 0) 60%);
+  --bubblegum-shine-on-pink: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 38%, rgba(255, 255, 255, 0) 58%);
+}
+
+:root[data-theme="bubblegum"] .nav-link,
+:root[data-theme="bubblegum"] [data-shell="app"] .new-post-button,
+:root[data-theme="bubblegum"] .account-menu__trigger,
+:root[data-theme="bubblegum"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button) {
+  background-image: var(--bubblegum-shine), var(--bubblegum-candy);
+}
+
+:root[data-theme="bubblegum"] .nav-link.is-active,
+:root[data-theme="bubblegum"] .board-filter .nav-link[aria-current],
+:root[data-theme="bubblegum"] [data-shell="app"] .new-post-button.is-active,
+:root[data-theme="bubblegum"] button[type="submit"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option),
+:root[data-theme="bubblegum"] button.feature-flags-chip[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background-image: var(--bubblegum-shine-on-pink), var(--bubblegum-candy-on-pink);
+}
+
+/* Copy inside a prompt field (/agent/): a bare icon, since a chunky block with
+   an offset shadow crowds the field's rounded corner. Fill on hover; no
+   press-down shift. */
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button) {
+  border-color: transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):hover,
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):focus-visible {
+  background: var(--button-bg);
+}
+
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):active {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Phones: the board's All / Liked / Newest / Tags row fits on one line. */
+@media (max-width: 639px) {
+  :root[data-theme="bubblegum"] .board-toolbar {
+    gap: 0.35rem;
+  }
+
+  :root[data-theme="bubblegum"] .board-filter {
+    gap: 0.25rem;
+  }
+
+  :root[data-theme="bubblegum"] .board-toolbar .nav-link {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+/* Tools is a classic desktop Control Panel: big pixel icons with their
+   names underneath, no buttons around them; hovering or focusing an item
+   gives it a soft pink highlight. */
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-list {
+  grid-template-columns: repeat(auto-fill, minmax(5.75rem, 1fr));
+  gap: 0.6rem 0.4rem;
+}
+
+@media (min-width: 640px) {
+  :root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-list {
+    grid-template-columns: repeat(auto-fill, minmax(6.75rem, 1fr));
+  }
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-item {
+  align-items: stretch;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-group-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.35rem;
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+  background: repeating-linear-gradient(90deg, var(--bubblegum-bar) 0 4px, transparent 4px 8px) left bottom / 100% 3px no-repeat;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-group-heading::before {
+  margin-right: 0;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  padding: 0.45rem 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  text-align: center;
+  /* Captions wrap between words only (.card allows breaks anywhere); the
+     5.75rem column fits the longest word, Bookmarklets. */
+  overflow-wrap: normal;
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:hover {
+  background: rgba(228, 91, 156, 0.14);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:focus-visible {
+  outline: 2px dotted var(--bubblegum-berry);
+  outline-offset: 0;
+  background: rgba(228, 91, 156, 0.14);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button:active {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="bubblegum"] .tools-launcher-page .tool-launcher-button::before {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+}
+
+:root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--bubblegum-berry);
+}
+
+/* The phone More panel: a pink control-panel window of tiles, each with a big
+   icon and a status light. The desktop You menu keeps ordinary pills with the
+   shared 16px icons. */
+@media (max-width: 639px) {
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link::before {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    background-size: 32px 32px;
+    image-rendering: pixelated;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link {
+    position: relative;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link::after {
+    content: "";
+    position: absolute;
+    top: 0.4rem;
+    right: 0.45rem;
+    width: 6px;
+    height: 6px;
+    border: 1.5px solid var(--bubblegum-berry);
+    border-radius: 50%;
+    background: #8fe0bf;
+    box-shadow: 0 0 4px rgba(143, 224, 191, 0.9);
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__panel {
+    border: 0;
+    border-top: 3px solid var(--bubblegum-berry);
+    background: var(--body-background);
+    box-shadow: none;
+    gap: 1rem;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 5rem;
+    padding: 0.65rem 0.3rem 0.55rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 0 var(--bubblegum-berry);
+    font-size: 0.85rem;
+    line-height: 1.15;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 2) {
+    background-color: #efe3ff;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 3) {
+    background-color: #fff6c7;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link:not(.is-active):nth-child(4n + 4) {
+    background-color: #dcf7ec;
+  }
+
+  :root[data-theme="bubblegum"] [data-shell="app"] .account-menu__links .nav-link.is-active::after {
+    background: var(--bubblegum-butter);
+    box-shadow: 0 0 5px rgba(255, 232, 115, 0.95);
+  }
+}
+
+/* Visitor statistics: tiles become little stat windows, and the chart sits
+   on pink pixel graph paper with candy bars (soft pink anonymous on top of
+   hot pink authenticated), berry outlines and a berry baseline. */
+:root[data-theme="bubblegum"] .visitor-statistics-tiles > div {
+  border: 2px solid var(--bubblegum-berry);
+  border-radius: 12px;
+  background: var(--bubblegum-shine), var(--bubblegum-candy), #fff4fa;
+  box-shadow: 3px 3px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles > div:nth-child(5n + 2) {
+  background-color: #efe3ff;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles > div:nth-child(5n + 3) {
+  background-color: #fff6c7;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles > div:nth-child(5n + 4) {
+  background-color: #dcf7ec;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles dt {
+  color: var(--ink-soft);
+  font-family: var(--code-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-tiles dd {
+  color: var(--bubblegum-berry);
+  font-weight: 900;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-trend figcaption {
+  color: var(--bubblegum-berry);
+  font-weight: 800;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-trend svg {
+  border: 3px solid var(--bubblegum-berry);
+  border-radius: 0;
+  background:
+    linear-gradient(rgba(228, 91, 156, 0.13) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(90deg, rgba(228, 91, 156, 0.13) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(180deg, #ffffff 0%, #fff0f7 100%);
+  box-shadow: 5px 5px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-trend text {
+  fill: var(--bubblegum-berry);
+  font-weight: 700;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-axis {
+  stroke: var(--bubblegum-berry);
+  stroke-width: 3;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-bar-anonymous,
+:root[data-theme="bubblegum"] .visitor-statistics-bar-authenticated {
+  stroke: var(--bubblegum-berry);
+  stroke-width: 1.5;
+  paint-order: stroke;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-bar-anonymous {
+  fill: #ffb6d6;
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-bar-authenticated {
+  fill: var(--bubblegum-bar);
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-table thead th {
+  border-bottom: 3px solid var(--bubblegum-berry);
+  color: var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] .visitor-statistics-table tbody tr:nth-child(even) {
+  background: rgba(228, 91, 156, 0.07);
+}
+
+/* Deploy page: only Deploy now is the filled pink button; the other two
+   keep the pale candy look so the main action stands out. */
+:root[data-theme="bubblegum"] .deploy-actions > button.deploy-actions__secondary:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--button-bg);
+  background-image: var(--bubblegum-shine), var(--bubblegum-candy);
+  color: var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] .deploy-actions > button.deploy-actions__secondary:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  background-color: #ffc7e0;
+}

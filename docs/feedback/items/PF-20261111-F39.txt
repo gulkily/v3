@@ -1,0 +1,16 @@
+ID: PF-20261111-F39
+Title: Voice dictation in text boxes
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Voice dictation in the text boxes? How to?
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110165028-44ec98a8
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Asked as a question.

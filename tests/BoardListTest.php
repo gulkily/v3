@@ -99,6 +99,47 @@ final class BoardListTest
         assertStringContains('data-nav-key="liked" aria-current="page"><span class="like-mark" aria-hidden="true"></span>Liked</a>', $liked);
     }
 
+    public function testDefaultBoardShowsAllUntilSomethingIsLiked(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $board = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/');
+        assertStringContains('data-nav-key="all" aria-current="page">All</a>', $board, 'Nothing liked yet: the default board shows All.');
+        assertStringContains('href="/threads/root-001"', $board);
+        assertStringContains('<a class="nav-link" href="/start/">Getting started</a>', $board);
+        assertStringNotContains('No liked threads yet', $board);
+
+        file_put_contents($repositoryRoot . '/records/thread-labels/thread-label-20260601000000-likeroot.txt',
+            "Record-ID: thread-label-20260601000000-likeroot\nCreated-At: 2026-06-01T00:00:00Z\nThread-ID: root-001\nOperation: add\nLabels: like\nAuthor-Identity-ID: openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954\n\n");
+        $this->runCommand($repositoryRoot, 'git add .');
+        $this->runCommand($repositoryRoot, 'git commit -m "Like a thread"');
+        $liked = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath . '-liked'), '/threads/');
+        assertStringContains('data-nav-key="liked" aria-current="page">', $liked, 'Once something is liked, the default is Liked again.');
+        assertStringContains('href="/threads/root-001"', $liked);
+        assertStringNotContains('href="/start/"', $liked);
+    }
+
+    public function testStartPageOffersBrowsingAndImportChoices(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $oldHost = $_SERVER['HTTP_HOST'] ?? null;
+        try {
+            $_SERVER['HTTP_HOST'] = '127.0.0.1:8000';
+            $page = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/start/');
+            assertStringContains('<h1>Getting started</h1>', $page);
+            assertStringContains('<a href="/threads/?view=all">Browse threads</a>', $page);
+            assertStringContains('<code>./v3 import-instance zenmemes --dry-run</code>', $page);
+            assertStringContains('<code>./v3 import-instance forum.example --dry-run</code>', $page);
+            assertStringContains('<a href="/compose/thread">Start a thread</a>', $page);
+
+            $_SERVER['HTTP_HOST'] = 'zenmemes.com';
+            $own = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/start/');
+            assertStringNotContains('import-instance zenmemes ', $own, 'An instance does not offer its own address.');
+            assertStringContains('import-instance forum.example', $own);
+        } finally {
+            if ($oldHost === null) unset($_SERVER['HTTP_HOST']); else $_SERVER['HTTP_HOST'] = $oldHost;
+        }
+    }
+
     public function testSortMenuMarksTheActiveSort(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
@@ -295,7 +336,30 @@ final class BoardListTest
             'root_post_created_at' => '2025-10-06T12:37:00Z',
         ], 'root_post_created_at', $escape);
 
-        assertSame('<a href="/profiles/mouse">mouse</a> · <time datetime="2025-10-06T12:37:00Z" title="Oct 6, 2025 at 12:37 UTC">Oct 6, 2025</time> <span class="chip chip--pending">Pending</span>', $meta);
+        assertSame('<a href="/profiles/mouse">mouse</a> · <time datetime="2025-10-06T12:37:00Z" title="Oct 6, 2025 at 12:37 UTC">Oct 6, 2025</time> <a class="pending-chip" href="/profiles/mouse" data-pending-profile="mouse" data-pending-username="mouse"><span class="chip chip--pending">Pending</span></a>', $meta);
+    }
+
+    public function testPendingChipIsAPlainLabelWhenItsFlagIsOff(): void
+    {
+        $flag = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
+        $old = getenv($flag);
+        putenv($flag . '=0');
+        try {
+            $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
+            $method = new ReflectionMethod($renderer, 'renderRowMeta');
+            $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES);
+            $meta = $method->invoke($renderer, [
+                'author_label' => 'mouse',
+                'author_profile_slug' => 'mouse',
+                'author_is_approved' => 0,
+                'root_post_created_at' => '2025-10-06T12:37:00Z',
+            ], 'root_post_created_at', $escape);
+
+            assertStringContains('</time> <span class="chip chip--pending">Pending</span>', $meta);
+            assertStringNotContains('data-pending-profile', $meta);
+        } finally {
+            putenv($old === false ? $flag : $flag . '=' . $old);
+        }
     }
 
     /** Text of the rows container with the given class. */

@@ -36,7 +36,7 @@ final class ApiRouteCatalog
             ['GET', '/api/list_index', 'public', 'text', 'Threads, one per line: thread ID, title, reply count (tab-separated).'],
             ['GET', '/api/get_thread?thread_id=<id>', 'public', 'text', 'Thread headers (including Retracted), then one line per post.'],
             ['GET', '/api/get_post?post_id=<id>', 'public', 'text', 'Post headers (including Retracted) and exact body.'],
-            ['GET', '/api/get_profile?profile_slug=<slug>', 'public', 'text', 'Identity, username, approval and post count.'],
+            ['GET', '/api/get_profile?profile_slug=<slug>', 'public', 'text', 'Identity, username, approval, post count and newest posts.'],
             ['GET', '/api/get_username?username=<name>', 'public', 'text', 'How many approved keys use this username.'],
             ['GET', '/api/get_username_claim_cta', 'public', 'text', 'Short prompt for claiming a username.'],
             ['GET', '/api/read_model_status', 'public', 'text', 'Read-model health.'],
@@ -49,6 +49,9 @@ final class ApiRouteCatalog
             ['GET', '/api/auth_challenge', 'public', 'text', 'Challenge to sign for authenticate_identity.'],
             ['POST', '/api/authenticate_identity', 'signed', 'text', 'Start a session with a signed challenge.'],
             ['GET', '/api/auth_status', 'session', 'text', 'Current session identity.'],
+            ['GET', '/api/key_bootstrap_status', 'session', 'json', 'Whether this session may vouch for a new key in a browser that lost its key, and under which username.'],
+            ['POST', '/api/prepare_key_bootstrap', 'session', 'json', 'Prepare the key bootstrap record the new key (identity_id) signs, or answer pending when the browser does not match.'],
+            ['POST', '/api/finalize_key_bootstrap', 'session', 'json', 'Accept the signed key bootstrap record; once per session.'],
             ['POST', '/api/prepare_profile_name', 'signed', 'json', 'Prepare an initial guest name, or a later rename when username changes are enabled.'],
             ['POST', '/api/finalize_profile_name', 'signed', 'json', 'Submit a signed username change.'],
             // Posting
@@ -132,7 +135,8 @@ final class ApiRouteCatalog
     }
 
     /**
-     * Route paths without their query hints, for matching against the router.
+     * @internal Test hook: route paths without their query hints, for matching against the router
+     * so the API docs can't drift from the routes.
      *
      * @return list<string>
      */

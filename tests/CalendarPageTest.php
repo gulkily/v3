@@ -134,14 +134,15 @@ final class CalendarPageTest
         calendarAssertContains('href="/tools/feature-flags/#flag-FORUM_EVENT_SUPPORT_ENABLED"', $html);
         calendarAssertNotContains('calendar-grid', $html);
         calendarAssertNotContains('rel="next"', $html);
-        calendarAssertNotContains('data-tab="calendar"', $this->render($application, '/'));
+        // Markup only: the inlined critical CSS names every section that can hold a phone tab.
+        calendarAssertNotContains('data-tab="calendar" data-phone', $this->render($application, '/'));
     }
 
     public function testNavLinksToTheCalendarWhileEventSupportIsOn(): void
     {
         [, , $application] = $this->environment();
-        calendarAssertContains('data-tab="calendar" data-phone="bar" class="nav-link" href="/calendar"', $this->render($application, '/'));
-        calendarAssertContains('data-tab="calendar" data-phone="bar" class="nav-link is-active" href="/calendar"', $this->render($application, '/calendar'));
+        calendarAssertContains('data-tab="calendar" data-phone="more" class="nav-link" href="/calendar"', $this->render($application, '/'));
+        calendarAssertContains('data-tab="calendar" data-phone="more" class="nav-link is-active" href="/calendar"', $this->render($application, '/calendar'));
     }
 
     public function testDayPageListsTheDayAndPostsThroughTheSharedComposer(): void

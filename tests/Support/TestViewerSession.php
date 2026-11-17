@@ -17,10 +17,10 @@ use ForumRewrite\Session\ViewerSessionStore;
  */
 final class TestViewerSession
 {
-    /** Signs the next requests in as this identity. */
-    public static function signIn(string $identityId): void
+    /** Signs the next requests in as this identity, optionally from a described browser (see DeviceFingerprint). */
+    public static function signIn(string $identityId, string $deviceFingerprint = ''): void
     {
-        $session = self::store()->signIn($identityId);
+        $session = self::store()->signIn($identityId, null, $deviceFingerprint);
         self::setCookie($session->token);
     }
 

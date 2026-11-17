@@ -341,13 +341,28 @@
       const keyboard = height < window.innerHeight * .75;
       root.classList.toggle('composer-inline', height < 420 || keyboard || zoomed || composer.getBoundingClientRect().height > height * .45);
     }
+    // Where the conversation stops being visible: the pinned composer sits above the site's bottom navigation, not at the screen edge.
+    function visibleBottom() {
+      return root.classList.contains('composer-inline') ? viewportHeight() : Math.min(viewportHeight(), composer.getBoundingClientRect().top);
+    }
+    function lastMessage() {
+      return presentationFor(root, Array.from(transcript.querySelectorAll('[data-private-message-id], [data-pending-message-id]')).at(-1)) || transcript;
+    }
     function revealLatest() {
       root.dispatchEvent(new CustomEvent('private-message-reveal-latest'));
-      const last = presentationFor(root, Array.from(transcript.querySelectorAll('[data-private-message-id], [data-pending-message-id]')).at(-1)) || transcript;
-      // Measure where the pinned composer really starts: it sits above the site's bottom navigation, not at the screen edge.
-      const visibleBottom = root.classList.contains('composer-inline') ? viewportHeight() : Math.min(viewportHeight(), composer.getBoundingClientRect().top);
-      window.scrollBy({ top: last.getBoundingClientRect().bottom - visibleBottom + 24, behavior: 'instant' });
+      window.scrollBy({ top: lastMessage().getBoundingClientRect().bottom - visibleBottom() + 24, behavior: 'instant' });
+      updateLatest();
     }
+    // The ↓ button only appears when the newest message is out of view.
+    let latestScheduled = 0;
+    function updateLatest() {
+      latestScheduled = 0;
+      latest.hidden = lastMessage().getBoundingClientRect().bottom <= visibleBottom() + 8;
+    }
+    function scheduleLatest() { if (!latestScheduled) latestScheduled = requestAnimationFrame(updateLatest); }
+    ['scroll', 'resize'].forEach(type => window.addEventListener(type, scheduleLatest, { passive: true }));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleLatest);
+    if (window.ResizeObserver) new ResizeObserver(scheduleLatest).observe(transcript);
     function initiallySettled() { regroup(root); layout(); if (!navigated) revealLatest(); }
     root.addEventListener('private-message-reader-settled', initiallySettled);
     root.addEventListener('private-message-cache-checked', initiallySettled);
@@ -355,8 +370,7 @@
     initiallySettled();
     latest.addEventListener('click', function () { revealLatest(); });
     root.addEventListener('private-message-before-append', function () {
-      const visibleBottom = root.classList.contains('composer-inline') ? viewportHeight() : Math.min(viewportHeight(), composer.getBoundingClientRect().top);
-      followReply = transcript.getBoundingClientRect().bottom <= visibleBottom + 96;
+      followReply = transcript.getBoundingClientRect().bottom <= visibleBottom() + 96;
     });
     root.addEventListener('private-message-appended', function () { layout(); if (followReply) revealLatest(); });
     window.addEventListener('resize', layout);

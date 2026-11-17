@@ -24,8 +24,11 @@ final class ProfileThemePresentationTest
                 $_COOKIE = [];
                 $html = $renderer->renderLayout('Theme', '<main></main>', 'board');
 
-                preg_match_all('/<button\\b[^>]*\\bdata-theme-option="([^"]+)"/', $html, $matches);
-                assertSame($themes, $matches[1]);
+                // In columns the menu's order follows the grid; data-theme-order keeps the list order.
+                preg_match_all('/<button\\b[^>]*\\bdata-theme-option="([^"]+)"[^>]*\\bdata-theme-order="(\\d+)"/', $html, $matches);
+                $menuOrder = array_combine($matches[2], $matches[1]);
+                ksort($menuOrder);
+                assertSame($themes, array_values($menuOrder));
                 assertSame(array_values(array_filter($themes, static fn (string $theme): bool => $theme !== 'auto')), $this->allowedThemes($html));
                 $brandedTheme = $contract['presentation']['brandedTheme'];
                 assertSame($brandedTheme !== null, str_contains($html, 'data-theme-option="' . ($brandedTheme ?? 'no-branded-theme') . '"'));

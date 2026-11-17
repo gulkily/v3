@@ -59,7 +59,7 @@ final class RecentPageController
             $tiles[] = $item + ['image' => $image, 'reply_count' => $replyCounts[$item['thread_id']] ?? 0];
         }
         $pagination = PageNavigation::numbered('/gallery/', [], $number, $page['has_next'], $page['items'] === []);
-        return $this->routeServices->renderPageTemplate('gallery.php', ['tiles'=>$tiles, 'pagination'=>$pagination, 'paginationError'=>null], 'Gallery', 'gallery');
+        return $this->routeServices->renderPageTemplate('gallery.php', ['tiles'=>$tiles, 'pagination'=>$pagination, 'paginationError'=>null], 'Gallery', 'gallery', $tiles === [] ? [] : ['/assets/gallery_zoom.js']);
     }
 
     /** The page holding a `with` post on Recent or Gallery; null shows the list normally. */

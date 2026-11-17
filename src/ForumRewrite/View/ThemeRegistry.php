@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace ForumRewrite\View;
 
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+
 final class ThemeRegistry
 {
     public const THEME_HINT_COOKIE = 'theme-hint';
@@ -46,9 +49,10 @@ final class ThemeRegistry
      * load /assets/theme-<other>.css instead of its own, and 'cycle' => false
      * to stay out of the cycle button while remaining in the menu, and
      * 'palettes' => [key => label] for a colour picker beside the theme menu;
-     * the first key is the default (see the theme development guide).
+     * the first key is the default, and 'flag' => <feature flag key> to offer
+     * the theme only while that flag is on (see the theme development guide).
      *
-     * @return list<array{name: string, label: string, mode: string, script?: bool, stylesheet?: string, cycle?: bool, palettes?: array<string, string>}>
+     * @return list<array{name: string, label: string, mode: string, script?: bool, stylesheet?: string, cycle?: bool, palettes?: array<string, string>, flag?: string}>
      */
     public static function all(): array
     {
@@ -62,11 +66,14 @@ final class ThemeRegistry
             ['name' => 'vapor', 'label' => 'Vapor', 'mode' => 'dark'],
             ['name' => 'forge', 'label' => 'Forge', 'mode' => 'dark'],
             ['name' => 'sticker', 'label' => 'Sticker', 'mode' => 'light'],
+            ['name' => 'bubblegum', 'label' => 'Bubblegum', 'mode' => 'light', 'script' => true],
+            ['name' => 'spearmint', 'label' => 'Spearmint', 'mode' => 'light'],
             ['name' => 'arena', 'label' => 'Arena', 'mode' => 'dark'],
             ['name' => 'thermal', 'label' => 'Thermal', 'mode' => 'dark'],
             ['name' => 'whitehot', 'label' => 'Whitehot', 'mode' => 'light'],
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
             ['name' => 'midnight', 'label' => 'Midnight', 'mode' => 'dark'],
+            ['name' => 'zalgo', 'label' => 'Zalgo', 'mode' => 'dark', 'flag' => FeatureFlagRegistry::ZALGO_THEME_ENABLED],
             ['name' => 'gloss', 'label' => 'Gloss', 'mode' => 'light', 'palettes' => self::GLOSS_PALETTES],
             ['name' => 'glossdark', 'label' => 'Gloss Dark', 'mode' => 'dark', 'stylesheet' => 'gloss', 'palettes' => self::GLOSS_PALETTES],
             ['name' => 'engagify', 'label' => 'Engagify', 'mode' => 'light', 'script' => true, 'stylesheet' => 'gloss', 'cycle' => false],
@@ -98,6 +105,69 @@ final class ThemeRegistry
         return self::COUNTERPARTS[$name] ?? null;
     }
 
+    /**
+     * Lays the theme menu out in Light and Dark columns. Each row pairs a
+     * theme with its counterpart in the other mode when the mapping is mutual
+     * and both are in $themes. Other themes follow under a divider, packed by
+     * mode. Auto spans both columns. A list whose themes are all one mode
+     * keeps the single list ('columns' => false). Every theme carries 'order',
+     * its position in $themes, so the cycle button keeps the list order.
+     *
+     * @param list<array{name: string, label: string, mode: string}> $themes
+     * @return array{columns: bool, auto: ?array, rows: list<array{light: ?array, dark: ?array}>, unpaired: list<array{light: ?array, dark: ?array}>}
+     */
+    public static function menuLayout(array $themes): array
+    {
+        $byName = [];
+        $auto = null;
+        foreach (array_values($themes) as $order => $theme) {
+            $theme['order'] = $order;
+            if ($theme['name'] === 'auto') {
+                $auto = $theme;
+                continue;
+            }
+            $byName[$theme['name']] = $theme;
+        }
+
+        $modes = array_unique(array_map(static fn (array $theme): string => $theme['mode'], $byName));
+        if (!in_array('light', $modes, true) || !in_array('dark', $modes, true)) {
+            return ['columns' => false, 'auto' => $auto, 'rows' => [], 'unpaired' => []];
+        }
+
+        $rows = [];
+        $placed = [];
+        foreach ($byName as $name => $theme) {
+            if (isset($placed[$name])) {
+                continue;
+            }
+            $other = self::counterpart($name);
+            if ($other === null || !isset($byName[$other]) || isset($placed[$other])
+                || self::counterpart($other) !== $name || $byName[$other]['mode'] === $theme['mode']) {
+                continue;
+            }
+            $row = ['light' => null, 'dark' => null];
+            $row[$theme['mode']] = $theme;
+            $row[$byName[$other]['mode']] = $byName[$other];
+            $rows[] = $row;
+            $placed[$name] = true;
+            $placed[$other] = true;
+        }
+
+        $loose = ['light' => [], 'dark' => []];
+        foreach ($byName as $name => $theme) {
+            if (!isset($placed[$name])) {
+                $loose[$theme['mode'] === 'dark' ? 'dark' : 'light'][] = $theme;
+            }
+        }
+        $unpaired = [];
+        $count = max(count($loose['light']), count($loose['dark']));
+        for ($i = 0; $i < $count; $i++) {
+            $unpaired[] = ['light' => $loose['light'][$i] ?? null, 'dark' => $loose['dark'][$i] ?? null];
+        }
+
+        return ['columns' => true, 'auto' => $auto, 'rows' => $rows, 'unpaired' => $unpaired];
+    }
+
     public static function isKnownName(string $name): bool
     {
         foreach (self::all() as $theme) {
@@ -110,16 +180,20 @@ final class ThemeRegistry
     }
 
     /**
+     * The themes from $names this site offers, in registry order. A theme with
+     * a 'flag' is left out while that feature flag is off.
+     *
      * @param list<string> $names
      * @return list<array{name: string, label: string, mode: string}>
      */
-    public static function permitted(array $names): array
+    public static function permitted(array $names, FeatureFlagEvaluator $flags): array
     {
         $allowed = array_fill_keys($names, true);
 
         return array_values(array_filter(
             self::all(),
-            static fn (array $theme): bool => isset($allowed[$theme['name']]),
+            static fn (array $theme): bool => isset($allowed[$theme['name']])
+                && (!isset($theme['flag']) || $flags->isEnabled($theme['flag'])),
         ));
     }
 

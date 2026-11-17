@@ -19,19 +19,26 @@ use RuntimeException;
 final class TemplateRenderer
 {
     private const THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES = ['board.php', 'tag.php'];
+    // Reading margins show on every page rendered with layout.php except these:
+    // the gallery lays its rows out for the normal column width, and a redirect
+    // page is gone before anyone reads it.
+    private const READING_MARGINS_EXCLUDED_PAGE_TEMPLATES = ['gallery.php', 'redirect.php'];
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
+        'guestbook.php' => ['/assets/compose.css', '/assets/guestbook.css'],
         'themes.php' => ['/assets/themes.css'],
+        'agent.php' => ['/assets/agent.css'],
         'activity.php' => ['/assets/activity.css', '/assets/access-history.css'],
         'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
         'invites.php' => ['/assets/invitations.css', '/assets/identity.css'],
-        'post.php' => ['/assets/identity.css', '/assets/content-interactions.css'],
+        'post.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/tool-details.css'],
         'profile.php' => ['/assets/identity.css'],
         'root_approval.php' => ['/assets/identity.css'],
         'username.php' => ['/assets/identity.css', '/assets/account.css', '/assets/thread-list.css'],
         'users.php' => ['/assets/account.css'],
+        'preferences.php' => ['/assets/account.css', '/assets/preferences.css'],
         'private_message_list.php' => ['/assets/private_message_list.css'],
         'private_message_access.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
@@ -45,6 +52,7 @@ final class TemplateRenderer
         'feature_flags.php' => ['/assets/tool-details.css'],
         'operations.php' => ['/assets/tool-details.css'],
         'deploy.php' => ['/assets/tool-details.css'],
+        'tools_import.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -57,6 +65,9 @@ final class TemplateRenderer
         'calendar_day.php' => ['/assets/compose.css', '/assets/calendar.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'usage_log.php' => ['/assets/tools.css'],
+        'usage_reports.php' => ['/assets/tools.css'],
+        'tag_unlocks.php' => ['/assets/tools.css'],
         'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
@@ -108,9 +119,14 @@ final class TemplateRenderer
         }
         $showThreadDensityToggle = in_array($pageTemplate, self::THREAD_DENSITY_TOGGLE_PAGE_TEMPLATES, true)
             && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED);
+        $showReadingMargins = !in_array($pageTemplate, self::READING_MARGINS_EXCLUDED_PAGE_TEMPLATES, true)
+            && $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED);
         $pageStylesheetPaths = [];
         foreach (self::PAGE_STYLESHEET_PATHS[$pageTemplate] ?? [] as $stylesheetPath) {
             $pageStylesheetPaths[] = $this->assetPath($stylesheetPath);
+        }
+        if ($showReadingMargins) {
+            $pageStylesheetPaths[] = $this->assetPath('/assets/reading-margins.css');
         }
 
         if ($hasQueryDialog) {
@@ -130,6 +146,8 @@ final class TemplateRenderer
             $publicAuthenticationResume,
             $pageStylesheetPaths,
             is_string($pageData['threadTheme'] ?? null) ? $pageData['threadTheme'] : null,
+            $showReadingMargins,
+            !empty($pageData['tabBarHidden']),
         );
     }
 
@@ -147,6 +165,8 @@ final class TemplateRenderer
         bool $publicAuthenticationResume = false,
         array $pageStylesheetPaths = [],
         ?string $threadTheme = null,
+        bool $showReadingMargins = false,
+        bool $tabBarHidden = false,
     ): string {
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::AUTOMATIC_GUEST_KEYPAIR_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
@@ -209,7 +229,7 @@ final class TemplateRenderer
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::ENGAGIFY_PASSWORD_NEWSLETTER)) {
             $browserRuntime['engagifyPasswordNewsletter'] = true;
         }
-        $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $themes = ThemeRegistry::permitted($profile['permittedThemes'], $this->featureFlags);
         $explicitThemeNames = $this->explicitThemeNames($themes);
         $permittedThemeNames = array_column($themes, 'name');
         $themeStylesheetPaths = [];
@@ -219,7 +239,12 @@ final class TemplateRenderer
             }
         }
         $themeScriptPaths = [];
+        // Bubblegum's script is its window controls; with their flag off it isn't loaded.
+        $draggableWindowsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::DRAGGABLE_WINDOWS_ENABLED);
         foreach (ThemeRegistry::scriptPaths() as $name => $path) {
+            if ($name === 'bubblegum' && !$draggableWindowsEnabled) {
+                continue;
+            }
             if (in_array($name, $explicitThemeNames, true)) {
                 $themeScriptPaths[$name] = $this->assetPath($path);
             }
@@ -243,6 +268,8 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'routeSource' => $routeSource,
             'showThreadDensityToggle' => $showThreadDensityToggle,
+            'showReadingMargins' => $showReadingMargins,
+            'draggableWindowsEnabled' => $draggableWindowsEnabled,
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,
@@ -267,7 +294,10 @@ final class TemplateRenderer
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'memberApprovalScriptPath' => $this->assetPath('/assets/member_approval.js'),
+            'pendingUserSummaryScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)
+                ? $this->assetPath('/assets/pending_user_summary.js') : null,
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
+            'readingMarginsScriptPath' => $this->assetPath('/assets/reading_margins.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
             'replyViewportScriptPath' => $this->assetPath('/assets/reply_viewport.js'),
             'composeDisclosureScriptPath' => $this->assetPath('/assets/compose_disclosure.js'),
@@ -284,6 +314,9 @@ final class TemplateRenderer
             'autoThemes' => $autoThemes,
             'pageTheme' => $pageTheme,
             'pagePath' => $pagePath,
+            'usageReportsEnabled' => $usageReportsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
+            'usagePageKind' => $usageReportsEnabled && $this->requestPath !== null ? \ForumRewrite\UsageReports\UsagePageKind::fromPath((string) ($this->requestPath)()) : null,
+            'usagePageWords' => $usageReportsEnabled ? implode(' ', \ForumRewrite\UsageReports\UsagePageKind::WORDS) : '',
             'themeStylesheetPaths' => $themeStylesheetPaths,
             'themeScriptPaths' => $themeScriptPaths,
             'initialThemeStylesheetPath' => $themeStylesheetPaths[$initialTheme],
@@ -295,18 +328,30 @@ final class TemplateRenderer
             'publicAuthenticationResume' => $publicAuthenticationResume,
             'navItems' => $navItems,
             'navSlotCount' => self::navSlotCount($navItems),
+            'navSlotDefaults' => self::navSlotDefaults($navItems),
             'navSlotSections' => array_values(array_map(
                 static fn (array $item): string => $item['section'],
                 array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && ($item['phone'] ?? '') === 'more'),
             )),
             'navigationSlot' => PresentationSlotRegistry::resolve($profile, 'navigation'),
+            // A page can drop the phone tab bar (a single conversation, whose back arrow is the way out).
+            'tabBarHidden' => $tabBarHidden,
             'accountMenuScriptPath' => $this->assetPath('/assets/account_menu.js'),
             'eventWhenScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_WHEN_ENABLED) ? $this->assetPath('/assets/event_when.js') : null,
             'inboxUnreadScriptPath' => in_array('inbox', array_column($navItems, 'section'), true) ? $this->assetPath('/assets/inbox_unread.js') : null,
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
+            'usageLogScriptPath' => $this->assetPath('/assets/usage_log.js'),
+            'fastNavigationScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::FAST_NAVIGATION_ENABLED) ? $this->assetPath('/assets/fast_navigation.js') : null,
+            'navCachedCopyScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED) ? $this->assetPath('/assets/nav_cached_copy.js') : null,
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
+            'deployCelebrateScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_celebrate.js') : null,
+            // Key bootstrap loads the signing scripts only on the rare page load that needs them.
+            'keyBootstrapScriptPath' => ($keyBootstrap = $this->featureFlags->isEnabled(FeatureFlagRegistry::SESSION_KEY_BOOTSTRAP_ENABLED))
+                ? $this->assetPath('/assets/key_bootstrap.js') : null,
+            'keyBootstrapIdentityScriptPaths' => $keyBootstrap ? array_map(fn (string $path): string => $this->assetPath($path),
+                ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js']) : [],
         ]);
     }
 
@@ -406,21 +451,21 @@ final class TemplateRenderer
 
         // Desktop bar order. The account menu keeps only the viewer's own items:
         // Profile, Account and Invite. Everything else is a main destination.
-        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'profiles', 'messages', 'search', 'about', 'tools'];
+        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'agent', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
         // Inbox sits just before Messages on the bar. Messages stays on the bar: its
         // link is where the unread count and history sync start.
         if (in_array('inbox', array_column($items, 'section'), true)) {
             array_splice($barOrder, (int) array_search('messages', $barOrder, true), 0, ['inbox']);
         }
-        // Phone tab bar: Board (or Lobby) and Calendar stay; the rest sit in More,
-        // which is the same disclosure as the desktop account menu.
-        $phoneBarSections = ['board', 'lobby', 'calendar'];
+        // Phone tab bar: every main destination sits in More (the same disclosure
+        // as the desktop account menu) and can earn a tab by use; Board (or Lobby)
+        // and Calendar are only the starting tabs (navSlotDefaults()).
         foreach ($items as $index => $item) {
             // Users is main; a personal profile link (members-only mode) belongs in the account menu.
             $isUsers = $item['section'] !== 'profiles' || $item['href'] === '/users/';
             $items[$index]['placement'] = !in_array($item['section'], $menuSections, true) && $isUsers ? 'main' : 'menu';
-            $items[$index]['phone'] = in_array($item['section'], $phoneBarSections, true) ? 'bar' : 'more';
+            $items[$index]['phone'] = 'more';
             $items[$index]['_order'] = array_search($item['section'], $barOrder, true);
         }
         usort($items, static fn (array $a, array $b): int => ($a['_order'] === false ? PHP_INT_MAX : $a['_order']) <=> ($b['_order'] === false ? PHP_INT_MAX : $b['_order']));
@@ -431,10 +476,13 @@ final class TemplateRenderer
         return $items;
     }
 
+    /** Destinations a fresh browser shows as phone tabs, before any use is counted. */
+    private const PHONE_DEFAULT_SECTIONS = ['board', 'lobby', 'calendar'];
+
     /**
-     * Personal slots on the phone tab bar: five tabs at most, minus the fixed
-     * ones (bar destinations, New post, More), and never more than two. The
-     * browser fills them before first paint from its own saved choice.
+     * Phone tabs: every destination tab is a slot earned by use. The count keeps
+     * the bar the size it had when Board (or Lobby) and Calendar were fixed: those
+     * starting tabs plus up to two more, within five tabs with New post and More.
      *
      * @param list<array<string, mixed>> $navItems
      */
@@ -443,11 +491,30 @@ final class TemplateRenderer
         if ($navItems === [] || !isset($navItems[0]['phone'])) {
             return 0;
         }
-        $fixed = count(array_filter($navItems, static fn (array $item): bool => ($item['phone'] ?? '') === 'bar'));
+        $defaults = count(self::navSlotDefaults($navItems));
         $canPost = array_filter($navItems, static fn (array $item): bool => $item['section'] === 'board') !== [];
-        $fixed += ($canPost ? 1 : 0) + 1;
+        $fixed = $defaults + ($canPost ? 1 : 0) + 1;
 
-        return max(0, min(2, 5 - $fixed));
+        return $defaults + max(0, min(2, 5 - $fixed));
+    }
+
+    /**
+     * The starting phone tabs, in bar order: what a browser with no saved use shows,
+     * and what the server puts on <html data-nav-slots> for pages without script.
+     *
+     * @param list<array<string, mixed>> $navItems
+     * @return list<string>
+     */
+    public static function navSlotDefaults(array $navItems): array
+    {
+        if ($navItems === [] || !isset($navItems[0]['phone'])) {
+            return [];
+        }
+
+        return array_values(array_map(
+            static fn (array $item): string => $item['section'],
+            array_filter($navItems, static fn (array $item): bool => ($item['placement'] ?? '') === 'main' && in_array($item['section'], self::PHONE_DEFAULT_SECTIONS, true)),
+        ));
     }
 
     /**
@@ -509,6 +576,17 @@ final class TemplateRenderer
             $after = array_search('calendar', $sections, true);
             $after = $after === false ? array_search('recent', $sections, true) : $after;
             array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/gallery/', 'label' => 'Gallery', 'section' => 'gallery']]);
+        }
+
+        // Prompts (/agent/) follows the content destinations while the agent page is on.
+        if (!$isQdbNavigation && $this->agentPageEnabled()) {
+            $sections = array_column($items, 'section');
+            $after = false;
+            foreach (['gallery', 'calendar', 'recent'] as $section) {
+                $after = array_search($section, $sections, true);
+                if ($after !== false) break;
+            }
+            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/agent/', 'label' => 'Prompts', 'section' => 'agent']]);
         }
 
         // Tools stays reachable by direct URL even when hidden from the nav,
@@ -596,7 +674,7 @@ final class TemplateRenderer
         }
 
         $profile = SiteProfileRegistry::active();
-        $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $themes = ThemeRegistry::permitted($profile['permittedThemes'], $this->featureFlags);
         $explicitThemeNames = $this->explicitThemeNames($themes);
         $themeModes = [];
         foreach ($themes as $theme) {
@@ -630,6 +708,29 @@ final class TemplateRenderer
     }
 
     /**
+     * /agent/ exists when the flag is on and the profile has prompts.
+     */
+    public function agentPageEnabled(): bool
+    {
+        return $this->featureFlags->isEnabled(FeatureFlagRegistry::AGENT_PROMPT_ENABLED)
+            && \ForumRewrite\ProfilePresentationContent::agentPrompts(SiteProfileRegistry::active(), '') !== [];
+    }
+
+    /**
+     * This request's origin for copy that names the site, such as the agent
+     * prompt. Pages rendered without a request (caches, offline snapshots)
+     * get a placeholder that the page's own script replaces before paint.
+     */
+    public static function requestOrigin(): string
+    {
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        if ($host === '' || preg_match('/^[A-Za-z0-9.\-:\[\]]+$/D', $host) !== 1) {
+            return '{origin}';
+        }
+        return (\ForumRewrite\Session\ViewerSessionCookie::requestIsHttps($_SERVER) ? 'https://' : 'http://') . $host;
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     private function renderFile(string $relativePath, array $data): string
@@ -649,10 +750,39 @@ final class TemplateRenderer
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
+            'agentPageEnabled' => $this->agentPageEnabled(),
+            // The guestbook thread while /guestbook/ is on; the thread and About pages link to the book.
+            'siteGuestbookThreadId' => $this->featureFlags->isEnabled(FeatureFlagRegistry::GUESTBOOK_ENABLED) ? SiteProfileRegistry::guestbookThread() : null,
+            'agentPromptOrigin' => self::requestOrigin(),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
+            // The composer's theme choice lists only themes this site offers now.
+            'themeFlags' => $this->featureFlags,
         ], $data);
+        // Drop tools whose pages are off: Agent Prompts opens /agent/, the
+        // usage tools exist only while the "Usage reports" flag is on, and
+        // Import only while the "Import page" flag is on.
+        $hiddenTools = [];
+        if (!$data['agentPageEnabled']) {
+            $hiddenTools[] = 'agent-prompts';
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            array_push($hiddenTools, 'usage-log', 'usage-reports');
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $hiddenTools[] = 'import';
+        }
+        if ($hiddenTools !== []) {
+            foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {
+                if (isset($data[$toolListKey]) && is_array($data[$toolListKey])) {
+                    $data[$toolListKey] = array_values(array_filter(
+                        $data[$toolListKey],
+                        static fn (array $tool): bool => !in_array($tool['key'] ?? '', $hiddenTools, true),
+                    ));
+                }
+            }
+        }
 
         $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $mediaEmbedsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED);
@@ -817,7 +947,20 @@ final class TemplateRenderer
             $parts[] = $dateHtml;
         }
 
-        return implode(' · ', $parts) . ($unapproved > 0 ? ' <span class="chip chip--pending">Pending</span>' : '');
+        if ($unapproved === 0) {
+            return implode(' · ', $parts);
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)) {
+            return implode(' · ', $parts) . ' <span class="chip chip--pending">Pending</span>';
+        }
+
+        // The chip opens an in-page summary with Approve (pending_user_summary.js);
+        // without script it is a plain link to the profile, which has Approve too.
+        $profileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
+        $authorLabel = trim((string) ($record['author_label'] ?? ''));
+
+        return implode(' · ', $parts)
+            . ' <a class="pending-chip" href="/profiles/' . $escape($profileSlug) . '" data-pending-profile="' . $escape($profileSlug) . '" data-pending-username="' . $escape($authorLabel) . '"><span class="chip chip--pending">Pending</span></a>';
     }
 
     /**

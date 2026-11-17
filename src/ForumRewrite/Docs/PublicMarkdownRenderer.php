@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Docs;
 
-use ForumRewrite\View\ZoomButtons;
+use ForumRewrite\View\ZoomTable;
 
 final class PublicMarkdownRenderer
 {
@@ -354,7 +354,7 @@ final class PublicMarkdownRenderer
             $html = '<tr>';
             foreach ($row as $i => $cell) {
                 $inner = self::inline($cell, $sourcePath, $projectRoot);
-                $longest[$i] = max($longest[$i], self::longestWordEm($inner, $tag === 'th'));
+                $longest[$i] = max($longest[$i], ZoomTable::longestWordEm($inner, $tag === 'th'));
                 $html .= '<' . $tag . ($tag === 'th' ? ' scope="col"' : '')
                     . ($alignments[$i] === null ? '' : ' class="docs-align-' . $alignments[$i] . '"') . '>'
                     . $inner . '</' . $tag . '>';
@@ -363,39 +363,13 @@ final class PublicMarkdownRenderer
         };
         $body = '<table><thead>' . $renderRow($rows[0], 'th') . '</thead><tbody>';
         foreach (array_slice($rows, 2) as $row) { $body .= $renderRow($row, 'td'); }
-        $body .= '</tbody></table></div>';
+        $body .= '</tbody></table>';
         if (!self::$postMode) {
-            return '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table">' . $body;
+            return '<div class="docs-table-scroll" tabindex="0" role="region" aria-label="Table">' . $body . '</div>';
         }
-        // Post tables carry their own text-size controls (table_zoom.js). On phones they open at
-        // the largest text size at which every column still fits its longest word side by side
-        // (site.css, --table-min); the browser then sizes the columns from their content.
-        $minimum = 0.0;
-        foreach ($longest as $width) { $minimum += $width + self::TABLE_CELL_PADDING_EM; }
-        return '<div class="post-table">'
-            . ZoomButtons::group('div', 'post-table-zoom', 'data-table-zoom', ['smaller' => 'out', 'fit' => 'fit', 'actual' => 'page', 'larger' => 'in'])
-            . '<div class="docs-table-scroll" style="--table-min: ' . number_format($minimum, 1, '.', '') . '" tabindex="0" role="region" aria-label="Table">'
-            . $body . '</div>';
-    }
-
-    /** Horizontal padding plus border of one table cell, in em (site.css: 0.5em each side). */
-    private const TABLE_CELL_PADDING_EM = 1.1;
-
-    /** Words longer than this many characters may break mid-word, so they count as this long. */
-    private const TABLE_WORD_CAP = 20;
-
-    /**
-     * Estimated width in em of the longest unbreakable word in a rendered cell: an average
-     * character is about 0.55em in body text, and header text is bold and a little wider.
-     */
-    private static function longestWordEm(string $html, bool $header): float
-    {
-        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $longest = 0;
-        foreach (preg_split('/[\s\p{Z}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
-            $longest = max($longest, min(self::TABLE_WORD_CAP, mb_strlen($word, 'UTF-8')));
-        }
-        return $longest * ($header ? 0.6 : 0.55);
+        // Post tables carry their own text-size controls on phones (ZoomTable, table_zoom.js):
+        // they open at the largest text size at which every column still fits its longest word.
+        return ZoomTable::open('post', ZoomTable::columnMinimumEm($longest)) . $body . ZoomTable::close();
     }
 
     /** Split only structural pipes; uncertain code spans retain the complete source block. */

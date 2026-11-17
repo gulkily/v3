@@ -121,11 +121,20 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
             : [];
         $signalActors = SignalActors::load($this->routeServices->pdo(), $threadId, array_values(array_unique([$threadId, ...array_map('strval', array_column($posts, 'post_id'))])));
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanSeePostAnalysis = RouteServices::signedInApproved($viewerProfile);
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
+
+        $pledgeCampaign = $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_ENABLED)
+            ? \ForumRewrite\View\PledgeCampaign::fromPosts(
+                $posts,
+                $threadId,
+                $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED),
+                fn (string $identityId): bool => \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->routeServices->repositoryRoot(), $identityId),
+            )
+            : null;
 
         return $this->routeServices->renderPageTemplate(
             'thread.php',
@@ -133,12 +142,19 @@ final class ThreadAndPostPageController
                 'collapseSameAuthorPostsEnabled' => $this->routeServices->featureFlags()->isEnabled(
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
                 ),
+                'threadActivityDrawerEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::THREAD_ACTIVITY_DRAWER_ENABLED
+                ),
+                'postRecordsEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED
+                ),
                 'thread' => $threadRow,
                 'eventState' => ((string) ($threadRow['event_date'] ?? '')) !== ''
                     && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)
                     ? \ForumRewrite\Calendar\EventStatus::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId)
                     : null,
                 'threadTheme' => \ForumRewrite\View\ThreadTheme::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId),
+                'pledgeCampaign' => $pledgeCampaign,
                 'posts' => $posts,
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
@@ -179,6 +195,7 @@ final class ThreadAndPostPageController
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
                 '/assets/private_site_auth.js',
+                ...($pledgeCampaign !== null ? ['/assets/pledge_field.js', '/assets/pledge_withdraw.js'] : []),
             ]),
         );
     }
@@ -210,6 +227,84 @@ final class ThreadAndPostPageController
         return ($post['author_label'] ?? '') === 'reply-agent' && ($meta['type'] ?? '') === 'scripture_expansion';
     }
 
+    /**
+     * `/records/<Record-ID>`: one signed record in readable form, or the removal notice for one
+     * that was retracted or deleted. Shown only with the post records flag on.
+     */
+    public function record(string $recordId): ?string
+    {
+        if (!$this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED)
+            || preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,200}$/D', $recordId) !== 1) {
+            return null;
+        }
+        $candidates = match (true) {
+            str_starts_with($recordId, 'post-format-') => [\ForumRewrite\Canonical\CanonicalPathResolver::postFormat($recordId)],
+            str_starts_with($recordId, 'thread-subject-') => [\ForumRewrite\Canonical\CanonicalPathResolver::threadSubject($recordId)],
+            default => \ForumRewrite\Canonical\RemovalTarget::sourceCandidates($recordId),
+        };
+        $path = null;
+        foreach ($candidates as $candidate) {
+            if (is_file($this->repositoryRoot . '/' . $candidate) && !is_link($this->repositoryRoot . '/' . $candidate)) { $path = $candidate; break; }
+        }
+        $removal = null;
+        try {
+            $removal = \ForumRewrite\Canonical\AcceptedRetraction::read($this->repositoryRoot, $recordId)
+                ?? \ForumRewrite\Canonical\LabelRemoval::read($this->repositoryRoot, $recordId);
+        } catch (\Throwable) { /* unreadable evidence shows as no removal */ }
+        if (($removal['operation'] ?? 'delete') !== 'delete') {
+            $removal = null; // a label repair ("resolve") leaves its post in place
+        }
+        if ($path === null && $removal === null) {
+            return null;
+        }
+        $headers = [];
+        $body = '';
+        if ($path !== null) {
+            try {
+                $parsed = (new \ForumRewrite\Canonical\GenericTextRecordParser())->parse((string) \ForumRewrite\Canonical\RecordLimits::read($this->repositoryRoot . '/' . $path));
+                $headers = $parsed->headers;
+                $body = $parsed->body;
+            } catch (\RuntimeException) { /* shown as unreadable below */ }
+        }
+        $family = \ForumRewrite\Canonical\RemovalTarget::family($recordId);
+        $target = $family === 'post' && !str_starts_with($recordId, 'post-format-') && !str_starts_with($recordId, 'thread-subject-')
+            ? ($headers['Parent-ID'] ?? null)
+            : ($headers['Target-ID'] ?? $headers['Post-ID'] ?? $headers['Thread-ID'] ?? ($removal['post']['parent_id'] ?? null));
+        $signaturePath = $path !== null && is_file($this->repositoryRoot . '/' . $path . '.asc') ? $path . '.asc' : null;
+        $signatureStatus = null;
+        if ($path !== null) {
+            $query = $this->routeServices->pdo()->prepare('SELECT signature_status FROM reaction_signatures WHERE source_path = ?');
+            $query->execute([$path]);
+            $signatureStatus = $query->fetchColumn() ?: null;
+        }
+        $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
+
+        return $this->routeServices->renderPageTemplate(
+            'record.php',
+            [
+                'recordId' => $recordId,
+                'family' => $family,
+                'recordPath' => $path,
+                'headers' => $headers,
+                'body' => $body,
+                'targetPostId' => $target,
+                'isPost' => $family === 'post' && $path !== null && str_starts_with($path, 'records/posts/'),
+                'signaturePath' => $signaturePath,
+                'signatureStatus' => $signatureStatus,
+                'removal' => $removal,
+                'removalPath' => $removal === null ? null
+                    : (isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($recordId) : \ForumRewrite\Canonical\LabelRemoval::path($recordId)),
+                'viewerProfile' => $viewerProfile,
+                'viewerCanRetractOthers' => $viewerProfile !== null
+                    && (int) ($viewerProfile['is_approved'] ?? 0) === 1
+                    && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, (string) $viewerProfile['identity_id']),
+            ],
+            'Record ' . $recordId,
+            'board',
+            $this->identityScripts(['/assets/post_retraction.js'])
+        );
+    }
+
     public function post(string $postId): ?string
     {
         $post = ($this->fetchPost)($postId, true);
@@ -238,7 +333,7 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
             : [];
         $signalActors = SignalActors::load($this->routeServices->pdo(), (string) $post['thread_id'], [(string) $post['post_id']]);
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanSeePostAnalysis = RouteServices::signedInApproved($viewerProfile);
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $posts = [$post];
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
@@ -264,6 +359,10 @@ final class ThreadAndPostPageController
                 'scriptureExpansionsByPostId' => $service->scriptureExpansionsForPosts($posts),
                 'llmExchangesByPostId' => $llmExchangesByPostId,
                 'fastScore' => ($this->latestFastScoreForPost)($post),
+                'localScore' => $this->routeServices->latestLocalScoreForPost($post),
+                'postRecords' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED)
+                    ? \ForumRewrite\Canonical\PostRecordList::forPost($this->repositoryRoot, (string) $post['post_id'], (string) $post['thread_id'] === (string) $post['post_id'])
+                    : null,
                 'agentReplyWorkByPostId' => $service->agentReplyWorkByPostId(
                     $posts,
                     '',

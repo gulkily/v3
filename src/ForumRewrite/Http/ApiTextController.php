@@ -122,22 +122,32 @@ final class ApiTextController
     }
 
     /**
-     * `Resolution: resolved` or `closed` for a reply marked through a tagset (resources/tagsets.txt);
-     * absent when the reply is open or the feature is off.
+     * `Resolution: claimed|resolved|closed` for a post marked through a tagset (resources/tagsets.txt),
+     * plus `Claimed-By:` for a claim; absent when the post is open or the feature is off.
      *
      * @param array<string, mixed> $post
      */
     private function resolutionHeader(array $post): string
     {
         $state = $this->resolutionState($post);
-        return $state === null ? '' : 'Resolution: ' . $state . "\n";
+        if ($state === null) {
+            return '';
+        }
+        $claimer = trim((string) ($post['resolution_set_by_username'] ?? ''));
+
+        return 'Resolution: ' . $state . "\n" . ($state === 'claimed' && $claimer !== '' ? 'Claimed-By: ' . $claimer . "\n" : '');
     }
 
     /** @param array<string, mixed> $post */
     private function resolutionMarker(array $post): string
     {
         $state = $this->resolutionState($post);
-        return $state === null ? '' : '(' . $state . ') ';
+        if ($state === null) {
+            return '';
+        }
+        $claimer = trim((string) ($post['resolution_set_by_username'] ?? ''));
+
+        return '(' . $state . ($state === 'claimed' && $claimer !== '' ? ' by ' . $claimer : '') . ') ';
     }
 
     /** @param array<string, mixed> $post */
@@ -182,11 +192,33 @@ final class ApiTextController
             . 'Approval-Classification: ' . $history['classification'] . "\nAccepted-At: " . ($history['accepted_at'] ?? 'unknown')
             . "\nApproval-Evidence: " . ($history['source_path'] ?? 'unknown') . "\nAcceptance-Receipt: " . ($history['receipt_path'] ?? 'unknown')
             . "\nAccount-Key-History: /user/" . rawurlencode((string) $profile['username_token']) . "#account-keys\n";
+        $historyText .= self::recentPostLines($this->routeServices->pdo(), (string) $profile['identity_id']);
         $this->routeServices->sendText(
             "Profile-Slug: {$profile['profile_slug']}\nIdentity-ID: {$profile['identity_id']}\nUsername: {$profile['username']}\nApproved: {$approved}\nImage-Upload-Allowed: {$imageUpload}\nApproved-By: {$approvedBy}\nPosts: {$profile['post_count']}\nThreads: {$profile['thread_count']}\n" . $historyText,
             200,
             ['Cache-Control: no-store']
         );
+    }
+
+    /**
+     * The newest posts on the profile page's Posts list, one line each:
+     * `Recent-Post: <created_at> TAB <thread_id> TAB <post_id> TAB <text>`. The text
+     * is a thread's title or a reply's opening words, on one line.
+     */
+    private static function recentPostLines(\PDO $pdo, string $identityId, int $limit = 3): string
+    {
+        $page = \ForumRewrite\ReadModel\AuthoredContentRepository::visibleIdentityPage($pdo, $identityId, 'posts', 1, $limit);
+        $lines = '';
+        foreach ($page['items'] as $item) {
+            $isThread = (string) $item['post_id'] === (string) $item['thread_id'];
+            $text = $isThread && trim((string) ($item['subject'] ?? '')) !== '' ? (string) $item['subject'] : (string) $item['body_preview'];
+            $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+            if (mb_strlen($text) > 120) {
+                $text = rtrim(mb_substr($text, 0, 119)) . "\u{2026}";
+            }
+            $lines .= 'Recent-Post: ' . $item['created_at'] . "\t" . $item['thread_id'] . "\t" . $item['post_id'] . "\t" . $text . "\n";
+        }
+        return $lines;
     }
 
     /**

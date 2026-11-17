@@ -39,10 +39,11 @@ final class BoardPageController
 
     public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1, ?QdbBoardPolicy $qdbPolicy = null, mixed $listPage = null): string
     {
-        $view = BoardViewOptions::normalizeView($view);
+        // No view in the URL: Liked, or All when nothing besides pinned threads is liked yet.
+        $defaultView = $view === '' && $qdbPolicy === null;
+        $view = $defaultView ? 'liked' : BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
-        $viewOptions = BoardViewOptions::viewOptions($view, $sort);
-        $sortOptions = BoardViewOptions::sortOptions($view, $sort);
+        $fellBackToAll = false;
         if ($qdbPolicy !== null && $view === 'all' && in_array($activeSection, ['latest', 'top', 'leetness', 'queue'], true)
             && $sort === (in_array($activeSection, ['latest', 'queue'], true) ? 'newest' : $activeSection)) {
             $selected = \ForumRewrite\ReadModel\QdbPage::page($this->routeServices->pdo(), $activeSection, $page);
@@ -51,11 +52,18 @@ final class BoardPageController
             $pagination = $qdbPolicy->pagination($selected['count'], $selected['page'], '/' . $activeSection);
         } else {
             $threads = $this->fetchBoardThreads($view, $sort, $qdbPolicy);
+            if ($defaultView && !$this->hasUnpinned($threads)) {
+                $view = 'all';
+                $fellBackToAll = true;
+                $threads = $this->fetchBoardThreads($view, $sort, null);
+            }
             $qdbQuoteCount = $qdbPolicy?->quoteCount($threads) ?? 0;
             $qdbPresentation = $qdbPolicy?->paginate($threads, $activeSection, $page);
             $threads = $qdbPresentation['threads'] ?? $threads;
             $pagination = $qdbPresentation['pagination'] ?? null;
         }
+        $viewOptions = BoardViewOptions::viewOptions($view, $sort);
+        $sortOptions = BoardViewOptions::sortOptions($view, $sort);
         $qdbPendingCount = null;
         if ($qdbPolicy !== null && \ForumRewrite\Qdb\QdbModeration::current()->isActive()) {
             // The footer counts approved and pending quotes, as the original did, on every board page.
@@ -70,7 +78,7 @@ final class BoardPageController
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
         $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
         if ($boardCardSlot === 'list' && $qdbPolicy === null) {
-            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, \ForumRewrite\Pagination\PageNavigation::pageNumber($listPage));
+            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, \ForumRewrite\Pagination\PageNavigation::pageNumber($listPage), $fellBackToAll);
         }
 
         return $this->routeServices->renderPageTemplate(
@@ -100,6 +108,7 @@ final class BoardPageController
                 'qdbQuoteCount' => $qdbQuoteCount,
                 'qdbPendingCount' => $qdbPendingCount,
                 'pagination' => $pagination,
+                'showGettingStarted' => $fellBackToAll,
             ],
             $qdbPolicy !== null ? match ($activeSection) {
                 'latest' => 'Latest Quotes',
@@ -128,7 +137,7 @@ final class BoardPageController
      * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $viewOptions
      * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $sortOptions
      */
-    private function boardList(string $view, string $sort, array $threads, array $viewOptions, array $sortOptions, int $number): string
+    private function boardList(string $view, string $sort, array $threads, array $viewOptions, array $sortOptions, int $number, bool $showGettingStarted = false): string
     {
         $pinned = array_values(array_filter($threads, fn (array $thread): bool => $this->isPinned($thread)));
         $latest = array_values(array_filter($threads, fn (array $thread): bool => !$this->isPinned($thread)));
@@ -153,6 +162,7 @@ final class BoardPageController
                 'threads' => $items,
                 'pagination' => $pagination,
                 'paginationError' => null,
+                'showGettingStarted' => $showGettingStarted,
             ],
             'Board',
             'board',
@@ -169,9 +179,15 @@ final class BoardPageController
     {
         $id = \ForumRewrite\Pagination\PageNavigation::withId($with);
         if ($id === null || PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard') !== 'list') return null;
-        $view = BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
-        $threads = $this->fetchBoardThreads($view, $sort, null);
+        if ($view === '') {
+            $threads = $this->fetchBoardThreads('liked', $sort, null);
+            $view = $this->hasUnpinned($threads) ? 'liked' : 'all';
+            if ($view === 'all') $threads = $this->fetchBoardThreads($view, $sort, null);
+        } else {
+            $view = BoardViewOptions::normalizeView($view);
+            $threads = $this->fetchBoardThreads($view, $sort, null);
+        }
         $latest = array_values(array_filter($threads, fn (array $thread): bool => !$this->isPinned($thread)));
         $index = array_search($id, array_map(static fn (array $thread): string => (string) $thread['root_post_id'], $latest), true);
         if ($index === false) {
@@ -180,6 +196,15 @@ final class BoardPageController
             $index = 0;
         }
         return \ForumRewrite\Pagination\PageNavigation::withLocation('/threads/', self::listState($view, $sort), intdiv($index, self::LIST_PAGE_SIZE) + 1, $id);
+    }
+
+    /** @param array<int, array<string, mixed>> $threads */
+    private function hasUnpinned(array $threads): bool
+    {
+        foreach ($threads as $thread) {
+            if (!$this->isPinned($thread)) return true;
+        }
+        return false;
     }
 
     /** @return array<string,string> View and sort for links, leaving out the defaults (liked, newest). */

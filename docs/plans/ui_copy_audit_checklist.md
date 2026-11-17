@@ -1,5 +1,12 @@
 # UI copy audit checklist
 
+## Local start MVP — November 16, 2026
+
+Review: [one-shot record](local_start_import/local_start_import_one_shot.md). The development homepage uses existing cards and form controls. Import consequences and recovery remain visible; the detailed CLI output is collapsed. Redundant initial Browse local content was removed because Browse threads already provides that action.
+Verification: Fresh-checkout ./v3 start browser check passed at 390px and 1280px across all offered themes, with native JavaScript-on/off failure/retry/import flows and expanded logs without overflow. Initial, pending, failed and imported screenshots were captured; light initial and Engagify failed/imported screenshots were inspected. Pending feedback was checked through a submit event with navigation prevented, then real native submissions verified the result. HTTP tests cover resume, partial results and local conflict preservation. Production and physical-device acceptance remain unverified. No new navigation icons or CSS were introduced.
+
+*— Codex · 2026-11-16 UTC*
+
 ## Current audit status — October 30, 2026
 
 Four copy-review candidates remain in the [current queue](#next-phase--new-candidates):
@@ -916,3 +923,48 @@ Follow-up 2026-11-11: wait pages reload with backoff (about 10, 20, 40, 80, then
 
 Change: the always-present ··· menu above a conversation, which held only "Restart history", is gone. Restart history is a recovery action, so it now appears only when it is the way out: after "Load older" reports that the history position is no longer usable, or after a restart fails. It hides again once a restart succeeds. Removing that row exposed a scrolling bug: "latest message" scrolling assumed the pinned composer touched the screen bottom, but it sits above the site's bottom navigation, so new messages and "Not sent" could land under the composer. It now measures the composer's real top.
 Verification: Chromium; `private_message_redesign.mjs` (all themes and widths, including "Not sent stays above the composer") passes; `checkHistoryRecovery` asserts the button is hidden before a stale position and after a successful restart; `PrivateMessagePageControllerTest` checks the markup. Not checked: iPhone Safari.
+
+## Automatic high-traffic mode — 2026-11-12
+
+Change: the Operations page gains two rows, **Turn on automatically** and **Turn off automatically**, beside the High-traffic mode row, in the same row style. Copy added: the two labels; under the mode row, a reason line only after an automatic change ("Turned on automatically, 4.2 requests/s (2026-11-12 11:02 UTC)") or a withdrawal ("Turned off for review after a content or access change."); under the turn-off row, one line only when cron cannot read the access log, saying why. No descriptions on the new rows; no navigation destination or icon change. Phone layout: rows with only a name gained a minimum height so the switch and its state label stay inside the row.
+Verification: Playwright at 375 and 1150 px in light, dark, console, lcd, chicago, vapor, forge, sticker, arena, thermal, whitehot, word97, midnight, gloss and engagify: switches inside the viewport, no horizontal overflow, state labels inside their rows; operator and non-operator views. Not checked here: a successful signed click, because this environment creates no viewer session (the existing `tests/browser/high_traffic_control.mjs` stops at sign-in on unchanged `main` too).
+
+## Conversation ↓ (Latest message) button — 2026-11-13
+
+Change: the ↓ button beside Send now appears only when the newest message is out of view (you scrolled up, or new messages arrived below), and hides once it is back in view; Send takes the whole row otherwise. Server HTML renders it hidden, matching the opening position at the newest message. Seen-marking is unchanged: it follows scrolling, not the button.
+Verification: Chromium; `checkChatLayout` asserts ↓ appears when scrolled away, returns to the newest message, then hides; messaging suite through `checkHistoryRecovery` with the cache flag on and off; `private_message_redesign.mjs`; 375px screenshot. Later checks that click ↓ (seen windows, unavailable) now click it only when shown; they sit behind baseline failures and did not run. Not checked: iPhone Safari.
+
+## Phone tab bar inside a conversation — 2026-11-14
+
+Change: on phones a single conversation shows no bottom tab bar; the back arrow leads to Messages, which keeps it. The composer sits at the bottom edge, including in a short conversation (the page now fills the screen). Desktop is unchanged. Cycle `dm_conversation_tabbar`.
+Verification: Chromium; `checkConversationTabBar` at 375×667 (no bar after load, scroll and typing; composer at the bottom edge; back arrow returns to Messages with the bar; desktop header intact); `private_message_redesign.mjs` in every theme with 390px screenshots reviewed. Engagify's floating Exit and help buttons overlap the Send row exactly as on main. Not checked yet: iPhone Safari.
+## Conversation composer on one line — 2026-11-14
+
+Change: in a conversation the composer is a plain bar instead of a card (themes that decorate cards, such as Bubblegum's window frame, no longer frame it), and the message field, ↓ (when shown) and Send share one row. The field starts as one line and grows with its text; the buttons stay at its bottom edge. The person-page composer is unchanged.
+Verification: Chromium; `private_message_redesign.mjs` in Bubblegum, Gloss, Light, Dark, Word97 and Console with 390px screenshots reviewed; a probe in Bubblegum at 390px measured the field growing from 44px to 109px for four lines with Send's bottom aligned to it; messaging suite through `checkHistoryRecovery`, cache flag on and off. Not checked: iPhone Safari.
+
+## Conversation as one window — 2026-11-14
+
+Change: the whole conversation (header, messages, ↓, the message field and Send) is now one card, so themes that frame cards (Bubblegum's window, Word97 and Midnight panels) frame the entire conversation instead of just the header. The privacy line ("Only you and … can read these, on your approved devices.") is removed from the conversation header; the person-page composer still shows it.
+Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390px screenshots reviewed (now asserts no privacy line in the conversation); `checkConversationTabBar` now checks that the conversation reaches the bottom edge with the composer inside it; messaging suite through `checkHistoryRecovery`, cache flag on and off. Not checked: iPhone Safari.
+
+## Messages list as one window — 2026-11-14
+
+Change: /messages is now one card with a visible "Messages" title, matching a conversation's window (Bubblegum draws its title bar; Word97 and Midnight render the title as a window title bar). This is a maintainer-requested exception to the rule that main-nav pages show no visible title (PR #142); the active nav item still names the page too.
+Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390px screenshots reviewed (asserts the visible title and the card); messaging suite through `checkHistoryRecovery`, cache flag on and off; `PrivateMessagePageControllerTest`. Not checked: iPhone Safari.
+
+
+## No-JavaScript truthful controls — 2026-11-16
+
+- [x] Members-only page without scripts: "Reconnecting / Verifying this browser identity…" is replaced by "Members only" and "Check your browser key or go to the lobby." Removed copy that can't come true; no new explanation. With scripts the page is unchanged ("If this does not complete automatically, check your browser key…"; the link text is now "your browser key").
+- [x] Without scripts, "View query" and Like/Flag no longer show (they need scripts); with scripts they are unchanged. Verified in 13 themes in Chromium with scripts on and off ([nojs Step 4](nojs_basic_access/nojs_basic_access_step4_implementation_summary.md)).
+- [ ] Browsers without support for the `scripting` media feature (e.g. Firefox before 113) show both the scripted and no-script copy on the members-only page; not verified.
+
+## Tools → Import page — 2026-11-16
+
+- [x] New operator page: no explanatory intro. Copy is kept to consequences and recovery: who can import, "Resume finishes it; cancel removes what it installed." (or "Content is committed; resume finishes publishing."), the task worker not running, and the last failed request. Per-file detail is folded under Advanced. Checked in 8 themes at 390 and 1280 px for idle, running, result, pending and signed-out states ([Step 4](import_instance_gui/import_instance_gui_step4_implementation_summary.md)).
+
+## Tools → Import progress — 2026-11-17
+
+- [x] The step list replaces the "Importing…" status line and the Task worker row. The form is hidden while an import runs. Raw output is folded under Log. New copy is limited to step names, "Elapsed · updated · time left", and the not-started recovery: "The task worker didn't start.", the command and Try again. Checked in 8 themes at 390 and 1280 px ([Step 4](import_without_worker/import_without_worker_step4_implementation_summary.md)).
+- 2026-11-17, [new instance home quickfix](./new_instance_home/new_instance_home_quickfix.md). Changed: the empty Liked text ("Threads you like will show up here." → "Threads people like show up here.", since Liked is anyone's likes). Added: a "Getting started" link on the board only while it falls back to All, and on "No threads yet"; the `/start/` page. `/local/`'s "search your local content" became "search" (shared partial).

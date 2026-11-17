@@ -597,6 +597,11 @@
 
   function formatThreadScoreText(scoreNode, scoreTotal, voteCount) {
     const format = threadScoreFormat(scoreNode);
+    if (format === "likes") {
+      // The Prompts page's count: "1 like", "2 likes", nothing at zero.
+      const likes = Math.max(0, Number(scoreTotal) || 0);
+      return likes === 0 ? "" : `${likes} ${likes === 1 ? "like" : "likes"}`;
+    }
     if (format === "bare-ratio" && voteCount !== undefined && voteCount !== "") {
       return `(${scoreTotal}/${voteCount})`;
     }
@@ -640,6 +645,11 @@
     }
 
     const format = threadScoreFormat(scoreNode);
+    if (format === "likes") {
+      const text = String(scoreNode.textContent || "").trim();
+      const likes = text.match(/^(\d+) likes?$/);
+      return text === "" ? 0 : (likes ? Number(likes[1]) : null);
+    }
     const pattern = format === "bare-ratio"
       ? /^\((-?\d+)\/\d+\)$/
       : format === "bare"
@@ -980,10 +990,20 @@
     };
   }
 
-  function postReactionMessage(appliedLabel, wroteRecord) {
+  function postReactionMessage(appliedLabel, wroteRecord, appliedMessage) {
     const label = String(appliedLabel || "Applied").trim() || "Applied";
     const lowerLabel = label.toLowerCase();
-    return wroteRecord ? `${label}.` : `Already ${lowerLabel}.`;
+    if (wroteRecord) {
+      return appliedMessageText(appliedMessage, label);
+    }
+    return `Already ${lowerLabel}.`;
+  }
+
+  // A button may set data-applied-message (e.g. Forte's "Like added") to word
+  // the status line differently from the applied button label.
+  function appliedMessageText(appliedMessage, appliedLabel) {
+    const message = String(appliedMessage || "").trim();
+    return `${message || appliedLabel}.`;
   }
 
   function bindThreadReactions(root) {
@@ -1070,7 +1090,7 @@
         }
 
         const confirmationMessage = wroteRecord
-          ? `${appliedLabel}.`
+          ? appliedMessageText(button.getAttribute("data-applied-message"), appliedLabel)
           : `Already ${appliedLabel.toLowerCase()}.`;
         setFeedback(feedbackNode, confirmationMessage, "ok");
       } catch (error) {
@@ -1116,23 +1136,33 @@
     } else {
       root.setAttribute("data-resolution", state);
     }
+    // Mirrors ForumRewrite\Support\PostStateView.
+    const folds = state === "resolved" || state === "closed";
+    const words = state === "claimed"
+      ? (viewerSignalName() ? `Claimed by ${viewerSignalName()}` : "Claimed by you")
+      : (state === "" ? "" : state.charAt(0).toUpperCase() + state.slice(1));
     Array.from(root.querySelectorAll("[data-state-tag]")).forEach(function (stateButton) {
-      const isOpen = stateButton.getAttribute("data-tag") === "open";
-      stateButton.hidden = isOpen === (state === "");
+      const buttonTag = stateButton.getAttribute("data-tag");
+      stateButton.hidden = state === "" ? buttonTag === "open" : (folds ? buttonTag !== "open" : buttonTag === state);
+      if (buttonTag === "open") {
+        const openLabel = state === "claimed" ? "Unclaim" : "Reopen";
+        stateButton.textContent = openLabel;
+        stateButton.setAttribute("data-applied-label", openLabel);
+      }
     });
     const fold = root.querySelector('[data-role="post-resolution"]');
     if (fold) {
-      fold.open = state === "";
+      fold.open = !folds;
     }
-    const label = root.querySelector('[data-role="post-resolution-label"]');
-    if (label) {
-      if (state !== "") {
-        label.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+    Array.from(root.querySelectorAll('[data-role="post-resolution-label"]')).forEach(function (label) {
+      if (folds) {
+        label.textContent = words;
       }
-      if (!fold) {
-        label.hidden = state === "";
-      }
-    }
+    });
+    Array.from(root.querySelectorAll('[data-role="post-state-label"]')).forEach(function (label) {
+      label.textContent = words;
+      label.hidden = words === "";
+    });
     if (typeof root.dispatchEvent === "function" && typeof CustomEvent === "function") {
       root.dispatchEvent(new CustomEvent("forum:post-resolution", { bubbles: true, detail: { state: state } }));
     }
@@ -1205,7 +1235,7 @@
             applyPostResolution(root, tag);
           }
           setFeedback(feedbackNode, approved
-            ? (tag === "open" ? "Reopened." : `${appliedLabel}.`)
+            ? (tag === "open" ? `${appliedLabel === "Unclaim" ? "Unclaimed" : "Reopened"}.` : (tag === "claimed" ? "Claimed. Others will see you're on it." : `${appliedLabel}.`))
             : "Saved. Only approved members' marks change a reply's state.", "ok");
           notifyReactionApplied();
           markActionTiming(timing, "forum_reconcile_complete");
@@ -1231,7 +1261,7 @@
           return;
         }
 
-        setFeedback(feedbackNode, postReactionMessage(appliedLabel, wroteRecord), "ok");
+        setFeedback(feedbackNode, postReactionMessage(appliedLabel, wroteRecord, button.getAttribute("data-applied-message")), "ok");
         markActionTiming(timing, "forum_reconcile_complete");
         completeActionTiming(timing, "ok");
       } catch (error) {

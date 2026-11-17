@@ -21,7 +21,9 @@ every theme's CSS on every page.)
    Two optional fields change that (see [Shared stylesheets and the cycle
    button](#shared-stylesheets-and-the-cycle-button)): `'stylesheet' =>
    '<other>'` and `'cycle' => false`. A third, `'palettes'`, adds a colour
-   picker (see [Colour palettes](#colour-palettes)).
+   picker (see [Colour palettes](#colour-palettes)). A fourth, `'flag'`,
+   offers the theme only while a feature flag is on (see [Themes behind a
+   feature flag](#themes-behind-a-feature-flag)).
    The registry feeds the popover markup, the cycle button, the anti-FOUC
    allow-list, and `templates/layout.php`'s `themeStylesheetPaths` JS map
    (which swaps the `<link id="theme-stylesheet">` `href` on theme change) -
@@ -71,6 +73,14 @@ Theme script UI appears after first paint, an exception to the first-paint
 rule in `CONTRIBUTING.md`. Keep it to themes whose point is that behavior.
 `tests/browser/theme_scripts.cjs` covers loading, start and stop.
 
+Bubblegum's script is its window controls (`docs/concepts/window_controls.md`):
+a title bar with a collapse button on every `.card`, and Float mode on desktop.
+`TemplateRenderer` leaves it out of `forumThemeScriptPaths` unless
+`FORUM_DRAGGABLE_WINDOWS_ENABLED` is on. The title bar is appended as the
+card's last child so it shifts no first-child spacing. A post collapsed in
+this browser is restored before paint by `layout.php`, which repeats the
+collapsed rules from `theme-bubblegum.css`; change both together.
+
 ## Shared stylesheets and the cycle button
 
 Two themes with one look should share one stylesheet rather than copy it. Set
@@ -89,6 +99,16 @@ and set only its colours.
 `'cycle' => false` keeps a theme in the menu but out of the cycle button, for
 themes a reader should only choose on purpose, such as Engagify. The menu
 option carries `data-theme-cycle="skip"`.
+
+## Themes behind a feature flag
+
+`'flag' => FeatureFlagRegistry::<KEY>` offers a theme only while that flag is
+on, as Zalgo does with `FORUM_ZALGO_THEME_ENABLED`. Add the flag to
+`FeatureFlagRegistry` (site-mutable, so an operator can switch it from Tools →
+Feature Flags). `ThemeRegistry::permitted()` takes the flag evaluator and drops
+the theme while the flag is off, so the menu, `/themes`, Preferences, the
+composer's theme choice and thread `theme:` lines all follow it. A reader who
+chose the theme sees the site default until the flag is on again.
 
 ## Colour palettes
 
@@ -171,6 +191,11 @@ Everything is inline `data:image/svg+xml;utf8,...` URIs in the CSS
   destination is in one set and not the other. Gloss Dark shows the same
   glyphs through `filter: invert(1) hue-rotate(180deg)`, which keeps the hue
   but makes the stroke light and the fill dark.
+- **Cute icons (Bubblegum):** the third set, at the end of
+  `theme-nav-icons.css`: pixel art like the first set but in Bubblegum's
+  palette (berry `#8e2457` outlines, pinks, butter, lavender, mint) with
+  little hearts, sparkles and faces. It keys to the same selectors and
+  `NavIconSetsTest` checks it against the pixel-art set.
 - **Theme-neutral glyphs (all themes):** draw smooth shapes (no
   crispEdges), apply via `mask` + `background-color: currentColor` so the
   glyph inherits each theme's ink automatically:

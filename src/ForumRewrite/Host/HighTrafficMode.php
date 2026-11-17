@@ -13,6 +13,8 @@ final class HighTrafficMode
 {
     private const BEGIN = '# BEGIN V3 HIGH TRAFFIC';
     private const END = '# END V3 HIGH TRAFFIC';
+    /** Public-root symlink to the cache's retained asset copies; managed with `.high-traffic`. */
+    public const ASSET_LINK = '.high-traffic-assets';
     public function __construct(public readonly HighTrafficCache $cache) {}
     public function status(): array
     {
@@ -23,12 +25,24 @@ final class HighTrafficMode
             && ($state['profile'] ?? \ForumRewrite\SiteProfileRegistry::active()['name'])===\ForumRewrite\SiteProfileRegistry::active()['name'] && is_link($this->cache->publicRoot . '/.high-traffic')
             && realpath($this->cache->publicRoot . '/.high-traffic') === realpath($this->cache->root . '/pages')
             && str_starts_with($rules,self::BEGIN . "\n");
-        return array_merge($state,['effective_mode'=>$effective ? 'high-traffic' : 'normal']);
+        $status=array_merge($state,['effective_mode'=>$effective ? 'high-traffic' : 'normal']);
+        $automation=HighTrafficAutomation::read($this->cache);
+        $status['source']=HighTrafficAutomation::source($status);
+        $status['turn_on_automatically']=($automation['Turn-On'] ?? 'no')==='yes';
+        $status['turn_off_automatically']=($automation['Turn-Off'] ?? 'no')==='yes';
+        $unavailable=HighTrafficAutomation::turnOffUnavailable($this->cache);
+        if ($unavailable!==null) $status['turn_off_unavailable']=$unavailable;
+        return $status;
     }
-    public function change(bool $enable, string $reason): array
+    /**
+     * The only switch for the mode. $source is operator, automatic or withdrawal; an
+     * operator off holds against automatic turn-on until traffic falls below the threshold.
+     */
+    public function change(bool $enable, string $reason, string $source = 'operator'): array
     {
-        return PublicationLock::withLock($this->cache->repositoryRoot, function () use ($enable,$reason): array {
-            return $this->cache->locked(function () use ($enable,$reason): array {
+        if (!in_array($source,['operator','automatic','withdrawal'],true)) throw new RuntimeException('Unknown high-traffic change source.');
+        return PublicationLock::withLock($this->cache->repositoryRoot, function () use ($enable,$reason,$source): array {
+            return $this->cache->locked(function () use ($enable,$reason,$source): array {
             $path=$this->cache->publicRoot . '/.htaccess';
             if (is_link($path) || !is_file($path)) throw new RuntimeException('A regular managed .htaccess file is required.');
             $savedState=$this->cache->state();
@@ -41,17 +55,22 @@ final class HighTrafficMode
                 if (($previous['enabled'] ?? false) && (($previous['public_root'] ?? $this->cache->publicRoot)!==(realpath($this->cache->publicRoot) ?: $this->cache->publicRoot) || ($previous['profile'] ?? \ForumRewrite\SiteProfileRegistry::active()['name'])!==\ForumRewrite\SiteProfileRegistry::active()['name'])) throw new RuntimeException('Disable high-traffic mode for the previous public root/profile first.');
                 if (FeatureFlagEvaluator::forApplication($this->cache->repositoryRoot,$this->cache->projectRoot)->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY)) throw new RuntimeException('Private instances cannot enable high-traffic mode.');
                 if (($this->status()['effective_mode'] ?? '') === 'high-traffic') {
-                    // Enabling again refreshes routing written by an older release; cached pages stay.
+                    // Enabling again refreshes routing written by an older release and the saved
+                    // normal rules, and exposes asset copies a release before them did not; cached pages stay.
+                    $this->cache->atomic($this->cache->root . '/normal.htaccess',$normal);
+                    $this->exposeAssets();
                     if (!str_starts_with($current,self::routingRules())) $this->cache->atomic($path,self::routingRules() . $normal);
                     return $this->status();
                 }
                 $this->cache->atomic($this->cache->root . '/normal.htaccess',$normal);
                 $this->cache->atomic($this->cache->root . '/normal-context.json',json_encode(['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot],JSON_THROW_ON_ERROR));
-                $this->clearPages();
+                $this->keepFreshPages($previous);
                 $this->cache->atomic($this->cache->root . '/pages/.htaccess',"Options -Indexes\n<IfModule mod_headers.c>\nHeader set Cache-Control \"public, no-cache, must-revalidate\"\nHeader set X-Content-Type-Options \"nosniff\"\nHeader set X-V3-High-Traffic \"hit\"\n</IfModule>\n");
                 $link=$this->cache->publicRoot . '/.high-traffic';
                 HighTrafficSafety::detach($this->cache->publicRoot);
                 if (!symlink($this->cache->root . '/pages',$link)) throw new RuntimeException('Cannot expose the high-traffic cache.');
+                try { $this->exposeAssets(); }
+                catch (\Throwable $error) { HighTrafficSafety::detach($this->cache->publicRoot);throw $error; }
                 // The shipped public/.htaccess already carries these rules, so this only
                 // writes for a separate document root or routing left by an older release.
                 if (!str_starts_with($current,self::routingRules())) {
@@ -63,9 +82,10 @@ final class HighTrafficMode
                 // requests fall through to the front controller.
                 HighTrafficSafety::detach($this->cache->publicRoot);
             }
-            $state=['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot,'profile'=>\ForumRewrite\SiteProfileRegistry::active()['name'],'enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c')];
+            $state=['public_root'=>realpath($this->cache->publicRoot) ?: $this->cache->publicRoot,'profile'=>\ForumRewrite\SiteProfileRegistry::active()['name'],'enabled'=>$enable,'generation'=>bin2hex(random_bytes(16)),'reason'=>substr($reason,0,200),'changed_at'=>gmdate('c'),'source'=>$source];
             try { $this->cache->atomic($this->cache->root . '/state.json',json_encode($state,JSON_THROW_ON_ERROR)); }
             catch (\Throwable $error) { HighTrafficSafety::detach($this->cache->publicRoot); throw $error; }
+            if ($source==='operator') HighTrafficAutomation::write($this->cache,['Manual-Off-Hold'=>$enable ? 'no' : 'yes']);
             return $this->status();
         });
         });
@@ -100,7 +120,41 @@ final class HighTrafficMode
         }
         return $files;
     }
-    private function clearPages(): void { foreach ($this->htmlFiles() as $file) if (!unlink($file)) throw new RuntimeException('Cannot reset old cached pages.'); }
+    /**
+     * On turn-on, keep pages that are still fresh so a spike does not start cold. A page is
+     * kept only when it is younger than keep_seconds and newer than the latest withdrawal or
+     * removal; after a withdrawal everything is cleared. Kept pages are queued for cron.
+     */
+    private function keepFreshPages(array $previous): void
+    {
+        $withdrawn = @filemtime($this->cache->root . '/withdrawn');
+        // Marked, legacy and detached-but-enabled withdrawals all clear every page.
+        $clearAll = HighTrafficAutomation::isWithdrawal($previous + ['effective_mode' => 'normal']);
+        $oldest = max(time() - $this->cache->limits['keep_seconds'], $withdrawn === false ? 0 : $withdrawn);
+        $kept = 0;
+        foreach ($this->htmlFiles() as $file) {
+            clearstatcache(true, $file);
+            if (!$clearAll && filemtime($file) > $oldest) { $kept++; continue; }
+            if (!unlink($file)) throw new RuntimeException('Cannot reset old cached pages.');
+        }
+        if ($kept > 0 && !is_file($this->cache->root . '/dirty')) $this->cache->atomic($this->cache->root . '/dirty', gmdate('c'));
+    }
+    /**
+     * Lets Apache serve the retained fingerprinted copies. Their names carry the content
+     * hash, so they get PHP's one-year immutable header; types are fixed to PHP's, as hosts'
+     * mime.types differ and `nosniff` drops a stylesheet or script with the wrong one.
+     */
+    private function exposeAssets(): void
+    {
+        $assets=$this->cache->root . '/assets';
+        if (!is_dir($assets) && !mkdir($assets,0775,true) && !is_dir($assets)) throw new RuntimeException('Cannot create the high-traffic asset folder.');
+        $this->cache->atomic($assets . '/.htaccess',"Options -Indexes\n<IfModule mod_mime.c>\nAddType text/css .css\nAddType application/javascript .js\nAddType image/x-icon .ico\nAddType image/png .png\nAddType image/jpeg .jpg .jpeg\nAddType image/gif .gif\nAddType image/svg+xml .svg\nAddType image/webp .webp\nAddType font/woff .woff\nAddType font/woff2 .woff2\nAddCharset utf-8 .css .js\n</IfModule>\n<IfModule mod_headers.c>\nHeader set Cache-Control \"public, max-age=31536000, immutable\"\nHeader set X-Content-Type-Options \"nosniff\"\nHeader set X-V3-High-Traffic \"hit\"\n</IfModule>\n");
+        $link=$this->cache->publicRoot . '/' . self::ASSET_LINK;
+        if (is_link($link) && readlink($link)===$assets) return;
+        if (is_link($link)) { if (!unlink($link)) throw new RuntimeException('Cannot replace the high-traffic asset link.'); }
+        elseif (file_exists($link)) throw new RuntimeException('High-traffic asset path must be a managed symlink.');
+        if (!symlink($assets,$link)) throw new RuntimeException('Cannot expose the high-traffic asset copies.');
+    }
     private function normalRules(string $current): string
     {
         if (!str_contains($current,self::BEGIN) && !str_contains($current,self::END)) return $current;
@@ -120,8 +174,14 @@ final class HighTrafficMode
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteCond %{THE_REQUEST} \s/+\.high-traffic(?:[/\s?]) [NC]
-RewriteRule ^\.high-traffic(?:/|$) - [F,END]
+RewriteCond %{THE_REQUEST} \s/+\.high-traffic(?:-assets)?(?:[/\s?]) [NC]
+RewriteRule ^\.high-traffic(?:-assets)?(?:/|$) - [F,END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond $1 !\.\.
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic-assets/assets/$1 -f
+RewriteRule ^assets/([A-Za-z0-9_-][A-Za-z0-9_./-]*\.[a-f0-9]{12}\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?))$ .high-traffic-assets/assets/$1 [END]
 RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{HTTP:Authorization} ^$

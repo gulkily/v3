@@ -311,6 +311,46 @@ final class DeleteRecordCommandTest
     }
 
     /** @return array{int,string,string} */
+    public function testDeletingALikeRemovesItsSignatureAndLeavesAReceipt(): void
+    {
+        [$project, $root, $database, $artifacts] = $this->environment();
+        try {
+            $this->commitReply($root, 'reply-liked', 'root-001', "Liked reply\n", self::AUTHOR);
+            $id = 'post-reaction-0123456789abcdef';
+            $path = 'records/post-reactions/' . $id . '.txt';
+            if (!is_dir($root . '/records/post-reactions')) mkdir($root . '/records/post-reactions', 0775, true);
+            file_put_contents($root . '/' . $path, \ForumRewrite\Canonical\ReactionRecordParser::build('post', $id, '2026-11-14T08:00:00Z', 'reply-liked', ['like'], self::AUTHOR));
+            file_put_contents($root . '/' . $path . '.asc', "-----BEGIN PGP SIGNATURE-----\nfixture\n-----END PGP SIGNATURE-----\n");
+            LabelRemoval::git($root, ['add', 'records']);
+            LabelRemoval::git($root, ['commit', '-qm', 'Like fixture']);
+            $this->rebuild($root, $database);
+
+            [$status, $stdout, $stderr] = $this->run([$root, $database, $artifacts, '--json'], $id);
+            assertSame(0, $status, $stderr);
+            $result = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
+            assertSame([$path, $path . '.asc'], $result['removed']);
+            assertSame(false, is_file($root . '/' . $path));
+            assertSame(false, is_file($root . '/' . $path . '.asc'));
+            $receipt = (string) file_get_contents($root . '/records/post-removals/' . $id . '.txt');
+            assertStringContains("\nTarget-ID: {$id}\n", $receipt);
+            assertStringContains("\nThread-ID: root-001\nParent-ID: reply-liked\n", $receipt);
+            assertStringContains('Authority: local-operator', $receipt);
+            assertSame([$id], array_keys(\ForumRewrite\Canonical\AcceptedRemoval::reactions($root)));
+            assertSame(false, array_key_exists($id, \ForumRewrite\Canonical\AcceptedRemoval::all($root)));
+            assertSame('', trim(LabelRemoval::git($root, ['status', '--porcelain'])));
+            assertStringContains('Delete post reaction ' . $id, LabelRemoval::git($root, ['log', '-1', '--format=%s']));
+            $pdo = new PDO('sqlite:' . $database);
+            assertSame(false, $pdo->query("SELECT post_id FROM posts WHERE post_id = '{$id}'")->fetchColumn());
+            assertSame('0', (string) $pdo->query("SELECT COUNT(*) FROM viewer_tags WHERE target_id = 'reply-liked'")->fetchColumn());
+
+            [$status, , $stderr] = $this->run([$root, $database, $artifacts], $id);
+            assertSame(1, $status);
+            assertStringContains('Reaction already removed: ' . $id, $stderr);
+        } finally {
+            $this->remove($project);
+        }
+    }
+
     private function run(array $arguments, string $id): array
     {
         $command = implode(' ', array_map('escapeshellarg', [dirname(__DIR__) . '/v3', 'delete-record', $id, ...$arguments]));

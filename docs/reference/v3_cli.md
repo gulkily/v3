@@ -86,10 +86,21 @@ repair. The marker file is not created by installation or tracked in Git.
 ## Start the local dev server
 
 ```
-./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
+./v3 start [--listen-all|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
 ```
 
 Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
+It also runs the internal task worker (`scripts/task_queue.php run --limit=1`) every
+5 seconds while the server runs, as cron does on a server, so queued imports,
+rebuilds and offline snapshots run locally. `--no-worker` turns that off. A worker
+still busy when the server stops finishes its task on its own.
+Loopback browsers get a local exploration homepage with a prefilled public-content
+Import form. `/local/` returns to that page; `/threads/?view=all` opens all local
+threads. Import uses the existing `import-instance` command and its recovery
+journal. Failures retain the source; Resume finishes interrupted publication.
+These controls require a loopback peer and Host without proxy headers. Remote
+clients and deployed servers keep their existing homepage. Imports merge content;
+they do not copy private messages, settings or approval authority.
 Checks local-server prerequisites before application loading, logs, or bootstrap.
 Missing required capabilities produce runtime-specific recovery guidance.
 On Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution packages, terminal input/output
@@ -616,8 +627,9 @@ controlled operator workflow.
 ## Import content from a remote instance
 
 ```
-./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
+./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--progress-lines] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
 ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html] [--time-limit=300]
+./v3 import-instance --cancel [--repository-root=/path/repository] [--database-path=/path/index.sqlite3]
 ```
 
 Downloads the source's public repository archive, merges supported public forum
@@ -636,13 +648,19 @@ and retained as hash-bound metadata without changing signed post bytes. See the
 - `--dry-run` — download and validate the archive, then report proposed imports,
   duplicates, conflicts, and exclusions without changing destination records,
   commits, the read model, or published views. Temporary downloads and lock files
-  may be created. Score eligibility is reported without creating private score
+  may be created, and successful signature checks are saved in
+  `signature_checks.sqlite3` beside the database so later runs skip them. Score eligibility is reported without creating private score
   state. Cannot be combined with `--resume`.
 - `--time-limit=SECONDS` — positive finite whole-invocation budget (default 300),
   including lock waits/publication, with up to five seconds process cleanup.
   Linux/WSL PCNTL/POSIX supervision is required; file limits remain unchanged.
-- `--verbose` — list every rejected/excluded file and dependency root cause.
-  The default output groups review causes and summarizes intentional exclusions.
+- `--verbose` — list every rejected/excluded file and dependency root cause, and
+  every read-model rebuild step. The default output groups review causes into
+  one line per kind (`Invalid: Missing dependency (31 files)`), summarizes
+  intentional exclusions, and prints counters such as `Installed 300 record
+  files...` at most once a second.
+- `--progress-lines` — also print `Progress: <step> [done/total]` lines. Tools →
+  Import passes this to drive its step list; terminal runs don't need it.
 
 Preview an import:
 
@@ -651,6 +669,11 @@ Preview an import:
 ```
 
 Remove `--dry-run` to perform the import.
+
+A name from `resources/known_instances.txt` (shipped with the code; currently
+`zenmemes`) works in place of a URL, for example `./v3 import-instance zenmemes`.
+A `--sources` file can override those names. Tools → Import and the local start
+page offer the same list, leaving out the instance's own address.
 
 Source HTTP failures report bounded, sanitized plain-text error detail when
 available. Repair the source download and retry; `--resume` advice appears only
@@ -661,7 +684,9 @@ Exit codes are 0 for complete supported-content results, 2 for partial results
 requiring review (including images that could not be copied), and 1 for failures.
 Rerun the same command to retry missing images. Reports group exclusions and rejected
 records; `--verbose` includes per-file details. `--resume` recovers a saved interrupted run without another download;
-use the original destination options and site profile. The destination must be
+use the original destination options and site profile. `--cancel` discards an
+interrupted run that has not committed its content, removing the record files it
+installed and keeping its saved copies for review. The destination must be
 initialized with a clean Git checkout. Scheduling, authenticated sources, and
 web controls are deferred.
 
@@ -721,6 +746,16 @@ the site instead; see [Author post retraction](author_post_retraction.md).
 - `database_path` — SQLite file to rebuild after deletion
 - `artifact_root` — static HTML output directory to rebuild after deletion
 
+### Deleting a like
+
+When the target is a like (a `post-reaction-…` or `thread-label-…` record whose only
+tag is `like`), `delete-record` removes the record and its signature in one commit,
+writes the same local receipt a removed post gets at `records/post-removals/<record-id>.txt`
+(`Target-ID` is the like, `Parent-ID` the post it was on), and rebuilds. Imports never
+bring a removed like back. Members and operators can also retract a like from the site;
+see [post retraction](../concepts/post_retraction.md). Other reactions still use the
+plain `git rm` path above.
+
 ### Source-post deletion and label repair
 
 Deleting a post also removes its proven generated thread-label records and their
@@ -766,6 +801,17 @@ not need another acceptance commit. Changed source/label bytes require inspectio
 rather than blind retry. Preserve `records/post-removals/` and trusted Git history
 in backups: copied receipt text alone does not establish removal authority. Imports reject
 foreign removal claims and do not restore locally removed sources or labels.
+
+### Retraction target ID rollback
+
+Since 2026-11-13, retraction requests and receipts name their target `Target-ID`
+(receipts also `Target-Created-At`) instead of `Post-ID` / `Post-Created-At`; older
+files keep the old names and still read. Application versions from before this
+change reject receipts with the new names, so rebuilds fail after a rollback that
+goes back past it. To roll back, either deploy a version that reads both forms, or
+remove the receipts written since the deploy and run `./v3 rebuild`. Without its
+receipt a retraction is no longer recorded as accepted, but the retracted post
+stays deleted because its file is already gone.
 
 ## Backfill Unicode-risk analysis for posts
 
@@ -1178,13 +1224,27 @@ Do not silently downgrade pending verified requests to unverified generation.
 
 Scripture writer override: `SCRIPTURE_RESPONSE_MODEL` is blank by default (inherits `LLM_MODEL`). OpenAI scripture requests and Expand may select `gpt-5-mini` or `gpt-5.6-sol`; other response modes and structured moderation retain the shared model. Sol explicit reasoning is currently restricted to the evaluated `low` setting. This prepares isolated comparison; it does not activate verified guidance or establish release acceptance.
 
+## Tour snapshots
+
+`./v3 tour refresh|status [--json]` manages the tour at `/assets/tour/`.
+`refresh` renders each page listed in `resources/tour.txt` as a logged-out
+snapshot through the isolated tour worker and rebuilds the tour page; a page
+that fails keeps its previous snapshot, a page that is not found is left out,
+and a second refresh while one runs exits 2 with "already running". `status`
+shows the last refresh, per-page results and whether a refresh is due. Deploys,
+the high-traffic cron and Tools → Operations start a refresh automatically when
+one is due. See [tour snapshots](tour_snapshots.md).
+
 ## High-traffic mode
 
 `./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/]`
 switches and manages instance-local Apache HTML caching. Run
 `./v3 high-traffic run /path/to/access.log` every minute for popularity-driven
 atomic refresh; a new post also refreshes its own cached thread page at once. See [host setup, limits, verification and recovery](../runbooks/high_traffic_mode.md).
-Automatic traffic/load activation is deferred.
+`./v3 high-traffic auto-on on|off` and `auto-off on|off` set the two automation
+switches: turn on when the PHP request rate spikes, and turn an automatic episode off
+after a quiet period in the access log (needs the cron job). See
+[automatic on and off](../runbooks/high_traffic_mode.md#automatic-on-and-off).
 
 CLI output is readable by default; use `--json` for automation.
 `./v3 high-traffic cron /path/to/access.log` prints the installation instructions

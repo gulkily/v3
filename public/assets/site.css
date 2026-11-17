@@ -398,10 +398,45 @@ pre {
   padding: 0.3rem;
   display: grid;
   gap: 4px;
+  /* Fixed so a theme's body line height (Arena's 1.65) doesn't make the
+     menu taller than the screen. */
+  line-height: 1.5;
 }
 
 .theme-menu__popover[hidden] {
   display: none;
+}
+
+/* Light and dark columns: each row is a theme beside its counterpart in the
+   other mode (ThemeRegistry::menuLayout); Auto spans both. */
+.theme-menu__popover--columns {
+  grid-template-columns: repeat(2, minmax(9.5rem, 1fr));
+  min-width: 20rem;
+}
+
+.theme-menu__popover--columns [data-theme-column="both"],
+.theme-menu__divider {
+  grid-column: 1 / -1;
+}
+
+.theme-menu__heading {
+  padding: 0.25rem 0.55rem 0;
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.theme-menu__divider {
+  width: 100%;
+  margin: 0.15rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.theme-menu__empty {
+  min-height: 2rem;
 }
 
 .theme-menu__option {
@@ -634,6 +669,61 @@ pre {
   display: none;
 }
 
+/* After a deploy that changed the code (deploy_celebrate.js): a banner and a
+   short burst of confetti on the page that loads next. */
+.deploy-celebration {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 1001;
+  max-width: calc(100vw - 2rem);
+  padding: 0.55rem 1rem;
+  border: 2px solid var(--active-line, var(--line));
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 0.95rem/1.3 var(--ui-font);
+  box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 0.18);
+  cursor: pointer;
+  transform: translateX(-50%);
+  animation: deploy-celebration-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+.deploy-celebration.is-leaving {
+  opacity: 0;
+  transform: translate(-50%, -1rem);
+}
+
+.deploy-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.deploy-confetti i {
+  position: absolute;
+  top: -1rem;
+  width: 0.5rem;
+  height: 0.8rem;
+  animation: deploy-confetti-fall 3s cubic-bezier(0.25, 0.6, 0.5, 1) both;
+}
+
+@keyframes deploy-celebration-in {
+  from { opacity: 0; transform: translate(-50%, -1.5rem) scale(0.8); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
+@keyframes deploy-confetti-fall {
+  to { transform: translate(var(--drift, 0), 110vh) rotate(var(--spin, 720deg)); opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deploy-celebration { animation: none; transition: none; }
+}
+
 .new-post-button__icon {
   font-size: 1.1em;
   line-height: 1;
@@ -741,6 +831,12 @@ pre {
     --app-tabbar-offset: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Pages without the bar (a single conversation): bottom-pinned parts clear only the safe area. */
+  [data-shell="app"][data-tabbar-page="none"] {
+    --app-tabbar-height: env(safe-area-inset-bottom, 0px);
+    --app-tabbar-offset: env(safe-area-inset-bottom, 0px);
+  }
+
   [data-shell="app"] .main {
     padding-bottom: var(--app-tabbar-height);
   }
@@ -769,6 +865,24 @@ pre {
      `transform: none` so the menu's fixed popovers position against the screen. */
   [data-shell="app"][data-tabbar="hidden"] .site-header--app .site-header-actions {
     transform: translateY(100%);
+  }
+
+  [data-shell="app"][data-tabbar-page="none"] .site-header--app .site-header-actions {
+    display: none;
+  }
+
+  /* Without the bar the page fills the screen, so a short page can still end at the bottom edge. */
+  [data-shell="app"][data-tabbar-page="none"] {
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+    padding-bottom: 0;
+  }
+
+  [data-shell="app"][data-tabbar-page="none"] .main {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
   }
 
   [data-shell="app"] .site-header--app .nav {
@@ -842,11 +956,15 @@ pre {
     display: none;
   }
 
-  /* Personal slots: <html data-nav-slots="recent users"> (set before paint by
-     the head script from the browser's saved choice) shows those More
-     destinations as tabs, after the fixed ones and before New post and More. */
+  /* Phone tabs: <html data-nav-slots="board calendar recent"> (the server's
+     starting tabs, replaced before paint by the browser's saved choice) shows
+     those destinations as tabs, in bar order, before New post and More. */
+  html[data-nav-slots~="board"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="board"],
+  html[data-nav-slots~="lobby"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="lobby"],
   html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
+  html[data-nav-slots~="calendar"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
+  html[data-nav-slots~="agent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="agent"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
   html[data-nav-slots~="inbox"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="inbox"],
@@ -878,8 +996,12 @@ pre {
     --more-tab-icon: none;
   }
 
+  html[data-nav-slots~="board"] [data-shell="app"] .account-menu[data-current="board"],
+  html[data-nav-slots~="lobby"] [data-shell="app"] .account-menu[data-current="lobby"],
   html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
+  html[data-nav-slots~="calendar"] [data-shell="app"] .account-menu[data-current="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
+  html[data-nav-slots~="agent"] [data-shell="app"] .account-menu[data-current="agent"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
   html[data-nav-slots~="inbox"] [data-shell="app"] .account-menu[data-current="inbox"],
@@ -918,7 +1040,7 @@ pre {
 
   /* Themes without their own More glyph (all but the icon themes in theme-nav-icons.css): three bars, drawn in the tab's ink. On a
      renamed tab an arrow replaces them, leaving room for the name. */
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .account-menu__icon {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"], [data-theme="spearmint"]) [data-shell="app"] .account-menu__icon {
     display: var(--more-tab-icon, inline-block);
     border: 0;
     border-radius: 0;
@@ -928,7 +1050,7 @@ pre {
       linear-gradient(currentColor, currentColor) 0 85% / 100% 2px no-repeat;
   }
 
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) [data-shell="app"] .account-menu__label--current::after {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"], [data-theme="spearmint"]) [data-shell="app"] .account-menu__label--current::after {
     content: "\25B4";
     position: absolute;
     top: -0.05rem;
@@ -943,6 +1065,16 @@ pre {
   [data-shell="app"] .account-menu__links .nav-link {
     padding: 0.7rem 0.8rem;
     font-size: 1rem;
+  }
+
+  /* Two links to a row, so the whole panel, theme menu included, fits one
+     phone screen without scrolling. */
+  [data-shell="app"] .account-menu__links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-shell="app"] .account-menu__links .nav-link {
+    overflow-wrap: anywhere;
   }
 
   /* Unread Messages shows on the More tab the same way it shows on the link. */
@@ -972,6 +1104,11 @@ pre {
   /* Decorative theme status bars (Word 97, Midnight) give way to the tab bar. */
   :root [data-shell="app"] > .site-status-bar {
     display: none;
+  }
+
+  /* ...and so does the space those themes reserve for them below the page. */
+  :root body:has(> [data-shell="app"] > .site-status-bar) {
+    padding-bottom: 0;
   }
 }
 
@@ -1202,6 +1339,12 @@ pre {
   color: var(--status-warning, var(--ink-soft));
 }
 
+/* The Pending chip beside an author opens their summary
+   (pending_user_summary.js); the chip keeps its own colours. */
+.pending-chip {
+  text-decoration: none;
+}
+
 /* Staged: post IDs are long unbroken strings; let them wrap on phones. */
 .staged-item__id code {
   overflow-wrap: anywhere;
@@ -1210,6 +1353,12 @@ pre {
 .chip--approved {
   border-color: var(--status-ok, var(--line));
   color: var(--status-ok, var(--ink));
+}
+
+/* A key a session replaced (key bootstrap): still approved, waiting to be retired or kept. */
+.chip--replaced {
+  border-style: dashed;
+  color: var(--ink-soft, var(--ink));
 }
 
 /* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
@@ -1229,7 +1378,17 @@ pre {
   margin: 0;
 }
 @media (scripting: none) {
-  .board-toolbar__search[data-users-search] {
+  .board-toolbar__search[data-users-search],
+  [data-view-query],
+  [data-visitor-intro-hide],
+  .thread-reaction-button,
+  .requires-script {
+    display: none;
+  }
+}
+/* Copy that is true only when scripts cannot run (e.g. "Members only" instead of "Reconnecting"). */
+@media (scripting: enabled) {
+  .without-script {
     display: none;
   }
 }
@@ -1294,9 +1453,19 @@ pre {
 }
 
 /* Gallery: justified rows. Each tile's basis is its (clamped) aspect ratio
-   times the row height, so rows fill the width and images keep their shape. */
+   times the row height, so rows fill the width and images keep their shape.
+   --gallery-zoom (Smaller / Larger and pinching on phones, gallery_zoom.js;
+   layout.php restores it before paint) multiplies the row height. */
+.gallery-zoom {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -0.5rem;
+}
+
 .gallery-grid {
-  --gallery-row: 12rem;
+  --gallery-row: calc(12rem * var(--gallery-zoom, 1));
+  /* Caption text follows the zoom too, within readable bounds (themes use it). */
+  --gallery-text-scale: clamp(0.75, var(--gallery-zoom, 1), 1.25);
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -1339,7 +1508,8 @@ pre {
 .gallery-tile__caption {
   display: flex;
   flex-direction: column;
-  padding: 0.3rem 0.5rem 0.4rem;
+  padding: 0.3em 0.5em 0.4em;
+  font-size: calc(var(--gallery-caption-size, 1rem) * var(--gallery-text-scale, 1));
   line-height: 1.3;
 }
 
@@ -1357,7 +1527,10 @@ pre {
 
 @media (max-width: 40rem) {
   .gallery-grid {
-    --gallery-row: 7rem;
+    --gallery-row: calc(7rem * var(--gallery-zoom, 1));
+    --gallery-caption-size: 0.8rem;
+    /* Two fingers on the grid resize the tiles instead of zooming the page. */
+    touch-action: pan-x pan-y;
     gap: 0.35rem;
   }
 }
@@ -1377,9 +1550,14 @@ pre {
   margin: 0 1.5rem 0 0;
 }
 
+/* Keep each link whole so "Agent prompt" never splits across lines. */
+.visitor-intro p a {
+  white-space: nowrap;
+}
+
 /* `:root` outranks themes' general button sizing. The invisible ::after gives
    the small button a 44px touch target without covering the sentence. */
-:root .visitor-intro button {
+:root .visitor-intro > button {
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
@@ -1390,7 +1568,7 @@ pre {
   line-height: 1;
 }
 
-.visitor-intro button::after {
+.visitor-intro > button::after {
   content: "";
   position: absolute;
   inset: -0.625rem;
@@ -1400,6 +1578,18 @@ pre {
    script marks a browser remembered as approved before paint. */
 :root:not([data-member="approved"]) [data-member-only] {
   display: none !important;
+}
+
+/* Gallery zoomed far out (gallery_zoom.js, restored before paint in layout.php):
+   images only. Captions stay readable to screen readers, as .visually-hidden. */
+:root[data-gallery-compact] .gallery-tile__caption {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
 }
 
 /* critical-css-end */
@@ -1582,9 +1772,8 @@ pre {
    Cells wrap only between words, without hyphenation: hyphens let a column shrink to one
    syllable ("re-ports"), so a column of short labels lost its width to the longest column. */
 .post-markdown th, .post-markdown td { overflow-wrap: break-word; word-break: normal; hyphens: manual; vertical-align: top; }
-.post-markdown .post-table { margin: 0 0 0.75em; }
-.post-markdown .post-table .docs-table-scroll { margin: 0; }
-/* Smaller/Larger text-size buttons (ZoomButtons.php): Query viewer, post tables. Each place
+.post-markdown .zoom-table { margin: 0 0 0.75em; }
+/* Smaller/Larger text-size buttons (ZoomButtons.php): Query viewer, zoom tables. Each place
    sets the group's display (both are phone-only), because site.css loads asynchronously and
    can arrive after page stylesheets such as sqlite.css. The [type] keeps these metrics ahead of header button rules
    whatever the load order. The Forte toolbar keeps its own toolbar button look. */
@@ -1602,30 +1791,48 @@ pre {
   margin: 0;
   padding: 0.25rem 0.4rem;
 }
-.post-table-zoom { display: none; }
-/* Phones: a table opens fitted to the screen and fills its width; the browser sizes the
-   columns from their content. --table-min (set per table by PublicMarkdownRenderer) is the
-   table's estimated narrowest width in em: each column's longest word plus cell padding. The
-   fitted text size is the largest at which that fits, never above the page's own size, so a
-   short two-column table keeps full-size text and only a really wide table gets small. Past
-   the fitted size the table scrolls sideways. --table-zoom multiplies the fitted size;
-   table_zoom.js sets it from the buttons and from pinching on the table, and layout.php
-   restores the saved value before paint. Pinching outside tables still zooms the page.
-   Links and code in tables (URLs, paths) may break anywhere, so one long token doesn't make
-   the whole table scroll; the renderer counts any word as at most 20 characters. */
+/* Tables with their own text-size controls on phones (ZoomTable.php, table_zoom.js): post
+   tables, Tools tables such as Visitor statistics, and the calendar (text mode, below).
+   Fit mode: a table opens fitted to the screen and
+   fills its width; the browser sizes the columns from their content. --table-min (set per
+   table by ZoomTable) is the table's estimated narrowest width in em: each column's longest
+   word plus cell padding. The fitted text size is the largest at which that fits, never above
+   the page's own size, so a short two-column table keeps full-size text and only a really
+   wide table gets small. Past the fitted size the table scrolls sideways. --table-zoom
+   multiplies the fitted size; each kind of table has its own (--table-zoom-post,
+   --table-zoom-tools), which table_zoom.js sets from the buttons and from pinching on the
+   table and layout.php restores before paint. Actual size (data-table-size-<kind>="page" on
+   <html>) puts that kind at the page's own text size. Pinching outside tables still zooms
+   the page. Links and code in tables (URLs, paths) may break anywhere, so one long token
+   doesn't make the whole table scroll; ZoomTable counts any word as at most 20 characters. */
+.zoom-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* Cards break text anywhere, which lets table columns shrink to a letter wide; zoom table
+   cells wrap only between words (and at hyphens), so a column is never narrower than one. */
+.zoom-table :is(th, td) { overflow-wrap: break-word; word-break: normal; hyphens: manual; }
+.zoom-table-buttons { display: none; }
+.zoom-table--post { --table-zoom: var(--table-zoom-post, 1); }
+.zoom-table--tools { --table-zoom: var(--table-zoom-tools, 1); }
+.zoom-table--calendar { --table-zoom: var(--table-zoom-calendar, 1); }
 @media (max-width: 639px) {
-  .post-table-zoom { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
-  .post-table .docs-table-scroll { container-type: inline-size; touch-action: pan-x pan-y; }
-  .post-table table {
+  .zoom-table-buttons { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
+  .zoom-table-scroll { container-type: inline-size; touch-action: pan-x pan-y; }
+  .zoom-table table {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     width: 100%;
+  }
+  .zoom-table--fit table {
     font-size: calc(1em * var(--table-zoom, 1));
     font-size: calc(min(1em, 100cqw / var(--table-min, 60)) * var(--table-zoom, 1));
   }
-  .post-table :is(a, code) { overflow-wrap: anywhere; }
-  /* Actual size: the page's own text size, for every table (table_zoom.js). */
-  :root[data-table-size="page"] .post-table table { font-size: 1em; }
+  .zoom-table--fit :is(td, th) :is(a, code) { overflow-wrap: anywhere; }
+  :root[data-table-size-post="page"] .zoom-table--post table,
+  :root[data-table-size-tools="page"] .zoom-table--tools table { font-size: 1em; }
+  /* Text mode (the calendar): full width always. The table's own CSS decides which text
+     scales with --table-zoom; Actual size sets --table-zoom to the table's
+     --table-page-scale, a plain number, which table_zoom.js reads back. */
+  .zoom-table--text .zoom-table-scroll { overflow-x: hidden; }
+  :root[data-table-size-calendar="page"] .zoom-table--calendar table { --table-zoom: var(--table-page-scale, 1); }
 }
 .post-markdown .docs-align-center { text-align: center; }
 .post-markdown .docs-align-right { text-align: right; }
@@ -1956,3 +2163,163 @@ pre {
 .outbox-unsent__item {
   border-style: dashed;
 }
+
+/* Post records list (post page) and record page */
+.post-records-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+.post-records-table th, .post-records-table td { text-align: left; padding: 0.25rem 0.5rem 0.25rem 0; vertical-align: top; overflow-wrap: anywhere; }
+.post-record-retracted td { color: var(--muted); }
+.record-fields { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 1rem; margin: 0.5rem 0; }
+.record-fields dt { font-weight: 600; }
+
+/* Thread activity drawer (thread page) */
+.thread-activity-list { margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.9em; }
+.thread-activity-list li { margin-block: 0.15rem; overflow-wrap: anywhere; }
+.record-fields dd { margin: 0; overflow-wrap: anywhere; }
+.record-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Short phone screens (an iPhone SE with Safari's bars): slimmer More links,
+   so the panel still fits without scrolling. */
+@media (max-width: 639px) and (max-height: 520px) {
+  [data-shell="app"] .account-menu__panel {
+    padding-top: 0.6rem;
+    padding-bottom: 0.8rem;
+  }
+
+  [data-shell="app"] .account-menu__more .nav-link,
+  [data-shell="app"] .account-menu__links .nav-link {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* The pending author summary (pending_user_summary.js). */
+.pending-user-dialog {
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 1rem);
+  overflow: auto;
+  color: var(--ink);
+}
+
+/* Placed beside the clicked chip by pending_user_summary.js. Specific enough
+   to beat themes' `:root[data-theme="..."] .card { position: relative }`: a
+   non-fixed modal dialog sits at the top of the document, and opening it
+   scrolled the page there. */
+:root dialog.pending-user-dialog.card {
+  position: fixed;
+  inset: auto;
+  top: 0;
+  left: 0;
+  margin: 0;
+}
+
+.pending-user-dialog::backdrop {
+  background: rgb(0 0 0 / 0.15);
+}
+
+.pending-user-dialog__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pending-user-dialog__head .chip {
+  flex: none;
+  overflow-wrap: normal;
+}
+
+.pending-user-dialog__head h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pending-user-dialog__head .pending-user-dialog__close {
+  flex: none;
+  width: 2.75rem;
+  min-width: 0;
+  height: 2.75rem;
+  min-height: 0;
+  margin: -0.5rem -0.5rem 0 auto;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.pending-user-dialog__key {
+  overflow-wrap: anywhere;
+}
+
+.pending-user-dialog__recent {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+}
+
+.pending-user-dialog__recent li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.pending-user-dialog__recent a {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-user-dialog__recent .meta {
+  flex: none;
+}
+
+.pending-user-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pending-user-dialog__actions button {
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+}
+
+.pending-user-dialog__actions [data-role="approve"] {
+  background: var(--button-bg);
+}
+
+/* Photo details the poster chose to attach, under the post's image (ImageReference::photoDetails).
+   Two or more fold behind a closed "Photo details" row; one stays visible. */
+.post-photo-details-disclosure { display: block; }
+.post-photo-details-disclosure > summary { cursor: pointer; padding: .7rem 0; font-size: .9em; }
+.post-photo-details-disclosure > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.post-photo-details-disclosure > .post-photo-details { margin-top: 0; }
+.post-photo-details { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .75rem; row-gap: .15rem; margin: .35rem 0; font-size: .9em; overflow-wrap: anywhere; }
+
+/* Pledge campaign (thread page): totals under the title, amount on each pledge reply */
+/* Totals under the title: delivered (the ink) over pledged (the ink, faded) on the card itself,
+   which the ink always contrasts with. The goal mark shows once pledges pass the goal. */
+.pledge-totals { margin: 0.6rem 0 1rem; }
+.pledge-totals__sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.4rem; margin: 0 0 0.5rem; color: var(--ink-soft); }
+.pledge-totals__sum strong { font-size: 2em; line-height: 1; color: var(--ink); }
+.pledge-status { align-self: center; padding: 0.15em 0.6em; border: 1px solid var(--active-line, var(--line)); border-radius: 999px; background: var(--active-bg, var(--panel)); color: var(--active-ink, var(--ink)); font: 600 0.8rem/1.3 var(--ui-font); white-space: nowrap; }
+.pledge-totals[data-pledge-status="complete"] .pledge-status { border-color: var(--status-ok, var(--line)); color: var(--status-ok, var(--ink)); }
+.pledge-totals__count { margin: 0.4rem 0 0; }
+.pledge-bar { position: relative; height: 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: transparent; overflow: hidden; }
+.pledge-bar__fill, .pledge-bar__delivered { position: absolute; inset: 0 auto 0 0; }
+.pledge-bar__fill { background: var(--ink); opacity: 0.35; }
+.pledge-bar__delivered { background: var(--ink); }
+.pledge-bar__goal { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); }
+.pledge-amount { margin: 0.4rem 0 0; }
+.pledge-amount strong { font-size: 1.25em; }
+.pledge-amount .pledge-status { margin-left: 0.25rem; vertical-align: 0.15em; }
+.pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
+.pledge-withdraw { margin: 0.3rem 0 0; }
+.pledge-form { margin: 0.9rem 0 0; }
+.pledge-field { display: flex; align-items: center; gap: 0.5rem; }
+.pledge-field input { flex: 0 1 8rem; min-width: 0; width: 8rem; }
+.pledge-field__unit { color: var(--ink-soft); overflow-wrap: anywhere; }

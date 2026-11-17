@@ -47,6 +47,12 @@ final class PlatformDocsCatalog
                 'description' => 'Commands, options, and error handling for the v3 CLI.',
             ],
             [
+                'title' => 'Post with an Agent',
+                'category' => 'Extending the Platform',
+                'path' => 'docs/post_with_an_agent.md',
+                'description' => 'Set up any AI agent to post on ZenMemes under one stable account.',
+            ],
+            [
                 'title' => 'Contribute with an Agent',
                 'category' => 'Extending the Platform',
                 'path' => 'docs/contribute_with_an_agent.md',
@@ -331,7 +337,7 @@ final class PlatformDocsCatalog
 
     /**
      * Resolve a Markdown destination to the existing public document route.
-     * Local URLs never grant access beyond resolvePath's realpath/size boundary.
+     * Local URLs never grant access beyond resolveSource's realpath boundary or the size cap applied when a document is read.
      */
     public static function resolveLink(string $url, ?string $sourcePath, string $projectRoot): ?string
     {
@@ -439,15 +445,5 @@ final class PlatformDocsCatalog
             ? '_project/' . $sourcePath : substr($sourcePath, strlen(self::DOCUMENT_ROOT . '/'));
 
         return '/docs/' . implode('/', array_map(rawurlencode(...), explode('/', $relativePath)));
-    }
-
-    public static function resolvePath(string $projectRoot, string $encodedPath): ?string
-    {
-        $resolvedPath = self::resolveSource($projectRoot, $encodedPath);
-        if ($resolvedPath === null) {
-            return null;
-        }
-        $size = filesize($resolvedPath);
-        return $size !== false && $size <= self::MAX_DOCUMENT_BYTES ? $resolvedPath : null;
     }
 }

@@ -53,8 +53,9 @@ final class LlmsTxtRendererTest
     {
         $text = $this->render([]);
         assertStringContains('Agents are welcome.', $text);
-        assertTrue(strpos($text, '/frm.py') < strpos($text, '## Publish'));
-        assertStringContains('frm.py --site https://forum.example thread', $text);
+        assertTrue(strpos($text, '/quill.py') < strpos($text, '## Publish'));
+        assertStringContains('quill.py --site https://forum.example thread', $text);
+        assertStringContains('X-Quill-Update', $text);
         assertStringContains('--resume', $text);
         assertStringContains('POST /api/create_signed_post', $text);
         assertStringContains('bootstrap stays separate', $text);
@@ -66,7 +67,7 @@ final class LlmsTxtRendererTest
         assertStringContains('(/api/)', $text);
         assertStringContains('(' . LlmsTxtRenderer::REFERENCE_PATH . ')', $text);
         assertStringContains(LlmsTxtRenderer::REFERENCE_RAW_PATH, $text);
-        assertStringContains('POST /api/prepare_retraction with post_id and author_identity_id', $text);
+        assertStringContains('POST /api/prepare_retraction with target_id (the post_id to retract, or the Record-ID of a like to take it back; post_id is still accepted) and author_identity_id', $text);
         assertStringContains('cleanup_status: pending', $text);
         assertStringContains('Retracted: yes', $text);
     }

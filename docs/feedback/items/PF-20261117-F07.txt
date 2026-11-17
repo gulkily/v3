@@ -1,0 +1,18 @@
+ID: PF-20261117-F07
+Title: Link to Railspike step docs on the website during planning
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-17
+Evidence: unknown
+
+Request:
+it would be amazing if i could have a link to step1 on the website, how can we do this? Plans appear under /docs/plans/ only after they reach main and are deployed; Railspike keeps step docs uncommitted until Step 3 is approved.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+A step doc written for a thread can be opened on the website while the cycle is still at Steps 1–2, by a route the maintainer chooses (early planning commits, posting the doc text to the thread, or another way).
+
+Notes:
+2026-11-17: filed from the import-instance GUI thread at the maintainer's request ("file anything we have not finished or addressed yet"). Options were offered in the thread; no choice recorded yet.

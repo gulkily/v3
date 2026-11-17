@@ -1772,14 +1772,14 @@ CODE;
             $_COOKIE = [];
             $first = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $postCountAfterFirstAnalyze = $this->countCanonicalPostFiles($repositoryRoot);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $second = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $postCountAfterSecondAnalyze = $this->countCanonicalPostFiles($repositoryRoot);
             $_COOKIE = [];
             $threadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId) . '?created_post_id=' . rawurlencode($postId));
             $_COOKIE = [];
             $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
             $_COOKIE = [];
             $pdo = new PDO('sqlite:' . $databasePath);
@@ -1836,7 +1836,7 @@ CODE;
             assertStringContains('Post analysis', $approvedThreadPage);
             assertStringContains('Provider: stub / stub/post-analysis', $approvedThreadPage);
             assertStringNotContains('Post summary:', $approvedThreadPage);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
             $_COOKIE = [];
             assertStringNotContains('Post summary:', $approvedPostPage);
@@ -1997,6 +1997,35 @@ CODE;
         }
     }
 
+    public function testPostDetailShowsLocalMetaScoreForCurrentText(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $scorePath = sys_get_temp_dir() . '/forum-local-meta-detail-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        $previousScorePath = getenv('FAST_SCORING_DATABASE_PATH');
+        putenv('FAST_SCORING_DATABASE_PATH=' . $scorePath);
+        try {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+            $postId = $this->extractValue($this->renderMethod($application, 'POST', '/api/create_thread?board_tags=general&subject=Bug&body=Button%20broken'), 'post_id');
+            $_COOKIE = [];
+            assertStringNotContains('Local meta', $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId)));
+            $readPdo = new PDO('sqlite:' . $databasePath);
+            $post = $readPdo->query('SELECT post_id, subject, body FROM posts WHERE post_id = ' . $readPdo->quote($postId))->fetch(PDO::FETCH_ASSOC);
+            $hash = (new FastScoreContextFactory(static fn (string $_): ?array => null))->contentHashForPost($post);
+            (new \ForumRewrite\Scoring\LocalMetaScores(new PDO('sqlite:' . $scorePath)))->save($postId, $hash, 'build-not-current',
+                ['probability' => 0.97, 'top_words' => ['bug', 'button'], 'signals' => []]);
+            $page = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
+            assertStringContains('Local meta (earlier model)', $page);
+            assertStringContains('0.97 · bug, button', $page);
+            (new \ForumRewrite\Scoring\LocalMetaScores(new PDO('sqlite:' . $scorePath)))->save($postId, 'older-text', 'build-not-current',
+                ['probability' => 0.10, 'top_words' => [], 'signals' => []], '2099-01-01T00:00:00Z');
+            assertStringContains('0.97 · bug, button', $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId)));
+        } finally {
+            $previousScorePath === false ? putenv('FAST_SCORING_DATABASE_PATH') : putenv('FAST_SCORING_DATABASE_PATH=' . $previousScorePath);
+            @unlink($scorePath);
+            $_COOKIE = [];
+        }
+    }
+
     public function testUnicodeRiskAnalysisFlagsMixedScriptIdentifierForApprovedViewersOnly(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2014,7 +2043,7 @@ CODE;
 
             $_COOKIE = [];
             $anonymous = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $approved = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($postId));
             $_COOKIE = [];
@@ -2030,7 +2059,7 @@ CODE;
             assertSame('low', $llmReview['review_priority']);
             assertStringContains('Unicode risk:', $approvedPostPage);
             assertStringContains('confusable_identifier_like_text', $approvedPostPage);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
             $_COOKIE = [];
             assertStringContains('Unicode risk:', $approvedThreadPage);
@@ -2080,7 +2109,7 @@ CODE;
             $_COOKIE = [];
             $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($targetPostId));
             $anonymousPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($targetPostId));
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($targetPostId));
             $approvedPostPage = $this->renderMethod($application, 'GET', '/posts/' . rawurlencode($targetPostId));
             $approvedResponse = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($targetPostId)), true);
@@ -2108,6 +2137,16 @@ CODE;
         }
     }
 
+    /**
+     * The fixture's approved member, signed in. Member-only tools need the session;
+     * the hint cookie alone only names an identity (see testApprovedViewerSeesAgentReplyRequestButtonUntilRequestExists).
+     */
+    private function signInApprovedGuest(): void
+    {
+        $_COOKIE = ['identity_hint' => 'guest'];
+        TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+    }
+
     public function testGenerateAgentReplyRequiresApprovedViewerAndRecordsRequest(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -2129,7 +2168,7 @@ CODE;
 
             $_COOKIE = [];
             $forbidden = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $duplicate = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
@@ -2194,7 +2233,7 @@ PHP);
             $generationCount = (int) (new PDO('sqlite:' . $databasePath))
                 ->query('SELECT COUNT(*) FROM post_generated_responses')
                 ->fetchColumn();
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
             assertStringNotContains('data-agent-reply-work=', $threadPage);
@@ -2231,8 +2270,17 @@ PHP);
 
             $_COOKIE = [];
             $anonymousThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            // A hint cookie naming the approved member, with no session: no member tools,
+            // a refused request, and a page that asks the browser to sign in.
             $_COOKIE = ['identity_hint' => 'guest'];
+            $hintOnlyThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            $hintOnlyRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
+            assertStringNotContains('data-action="request-agent-reply"', $hintOnlyThreadPage);
+            assertStringContains('data-public-auth-resume="true"', $hintOnlyThreadPage);
+            assertSame('forbidden', $hintOnlyRequest['error']);
+            $this->signInApprovedGuest();
             $approvedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
+            assertStringNotContains('data-public-auth-resume="true"', $approvedThreadPage);
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $requestedThreadPage = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
 
@@ -2288,7 +2336,7 @@ PHP);
                 '/api/create_reply?thread_id=' . rawurlencode($threadId) . '&parent_id=' . rawurlencode($firstReplyId) . '&body=Second%20reply'
             );
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $response = json_decode($this->renderMethod(
                 $application,
                 'POST',
@@ -2322,12 +2370,12 @@ PHP);
             $contentHash = $this->contentHashForAnalysis($databasePath, $postId);
             (new SqlitePostAnalysisStore(new PDO('sqlite:' . $databasePath)))->saveFailed($postId, $contentHash, 'provider_error', 'analysis failed');
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
-            $claimed = $store->claimNextRequested();
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
+            $claimed = $store->claimRequestedForPost($postId);
+            $result = $application->fulfillAgentReplyRequest($claimed);
             $row = $store->findByTarget($postId, $contentHash);
 
             assertSame('ok', $response['status']);
@@ -2354,7 +2402,7 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=Stale%20task&body=This%20task%20must%20not%20be%20analyzed.'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $this->renderMethod(
                 $application,
                 'POST',
@@ -2399,7 +2447,7 @@ PHP);
                 'engagement' => ['response_should_be_public' => false],
             ]);
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $lowRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($lowPostId)), true);
             $riskRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($riskPostId)), true);
             $moderationRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($moderationPostId)), true);
@@ -2441,12 +2489,17 @@ PHP);
 
             $_COOKIE = [];
             $anonymous = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $approved = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
+            $_COOKIE = ['identity_hint' => 'guest'];
+            $hintOnly = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $pdo = new PDO('sqlite:' . $databasePath);
 
+            // The hint names the approved member but proves nothing: same view as anonymous.
+            assertSame('not_recommended', $hintOnly['agent_reply_reason']);
+            assertSame(array_keys($anonymous), array_keys($hintOnly));
             assertSame(false, $anonymous['agent_reply_generation_allowed']);
             assertSame('not_recommended', $anonymous['agent_reply_generation_status']);
             assertSame(false, $anonymous['agent_reply_posted']);
@@ -2491,7 +2544,7 @@ PHP);
             $postId = $this->extractValue($threadResponse, 'post_id');
             $this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId));
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
 
             assertSame('not_recommended', $response['generation_status']);
@@ -2515,23 +2568,23 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=Queued%20Agent&body=What%20should%20we%20consider%20next%3F'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
-            $claimed = $store->claimNextRequested();
+            $claimed = $store->claimRequestedForPost($postId);
 
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
+            $result = $application->fulfillAgentReplyRequest($claimed);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
-            $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
-            $second = $application->fulfillAgentReplyRequest($claimed[0]);
+            $row = $store->findByTarget($postId, $claimed['target_content_hash']);
+            $second = $application->fulfillAgentReplyRequest($claimed);
             $analysisCount = (int) (new PDO('sqlite:' . $databasePath))
                 ->query('SELECT COUNT(*) FROM post_analyses')
                 ->fetchColumn();
 
             assertSame('requested', $request['generation_status']);
-            assertSame(1, count($claimed));
+            assertSame(true, is_array($claimed));
             assertSame('generated', $result['generation_status']);
             assertSame(true, $result['posted']);
             assertSame(true, $postCountAfter > $postCountBefore);
@@ -2565,10 +2618,10 @@ PHP);
             ], [
                 'requested_by_identity_id' => 'openpgp:legacy-requester',
             ]);
-            $claimed = $store->claimNextRequested();
+            $claimed = $store->claimRequestedForPost($postId);
 
-            $result = $application->fulfillAgentReplyRequest($claimed[0]);
-            $row = $store->findByTarget($postId, $claimed[0]['target_content_hash']);
+            $result = $application->fulfillAgentReplyRequest($claimed);
+            $row = $store->findByTarget($postId, $claimed['target_content_hash']);
 
             assertSame('requested', $request['status']);
             assertSame('not_recommended', $result['generation_status']);
@@ -2653,7 +2706,7 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=Command%20Agent&body=What%20should%20the%20command%20do%3F'
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
 
@@ -2681,7 +2734,7 @@ PHP);
                 '/api/create_thread?board_tags=general&subject=Quiet%20Command%20Agent&body=Should%20quiet%20mode%20still%20work%3F'
             );
             $secondPostId = $this->extractValue($secondThreadResponse, 'post_id');
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $secondRequest = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($secondPostId)), true);
             $_COOKIE = [];
             $quietRun = $this->runCommand(dirname(__DIR__), $baseCommand . ' --quiet --task-id=' . $queuedId($secondPostId));
@@ -2724,7 +2777,7 @@ PHP);
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
             $postId = $this->createAnalyzedThread($application, $databasePath);
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
@@ -2803,7 +2856,7 @@ PHP);
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
             $postId = $this->createAnalyzedThread($application, $databasePath);
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $request = json_decode($this->renderMethod(
                 $application,
                 'POST',
@@ -2873,7 +2926,7 @@ PHP);
                 ],
             ]);
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
@@ -2922,7 +2975,7 @@ PHP);
             $replyId = $this->extractValue($replyResponse, 'post_id');
             $this->analyzePostWithoutAgentReply($application, $replyId);
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($replyId)), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
@@ -2969,7 +3022,7 @@ PHP);
             ]);
             $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
             $row = $store->findByTarget($postId, $contentHash);
@@ -3104,7 +3157,7 @@ NODE;
             $postCountBefore = $this->countCanonicalPostFiles($repositoryRoot);
 
             $analysis = json_decode($this->renderMethod($application, 'POST', '/api/analyze_post?post_id=' . rawurlencode($postId)), true);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $response = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $postCountAfter = $this->countCanonicalPostFiles($repositoryRoot);
@@ -3142,7 +3195,7 @@ NODE;
             );
             $postId = $this->extractValue($threadResponse, 'post_id');
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $page = $this->renderMethod($application, 'GET', '/threads/' . rawurlencode($postId));
             $response = json_decode($this->renderMethod(
                 $application,
@@ -3184,7 +3237,7 @@ NODE;
                 'POST',
                 '/api/analyze_post?post_id=' . rawurlencode($postId)
             ), true);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $request = json_decode($this->renderMethod(
                 $application,
                 'POST',
@@ -3335,7 +3388,7 @@ NODE;
             $this->runCommand($root, 'git commit -m "Historical signed initial fixture"');
             (new ReadModelBuilder($root, $db, $repository))->rebuild();
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             assertSame('requested', json_decode($this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $initial), true)['generation_status']);
             $claim = $store->claimRequestedForPost($initial);
             $done = $app->fulfillAgentReplyRequest($claim);
@@ -3459,7 +3512,7 @@ NODE;
         try {
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
             $source = $this->createAnalyzedThread($app, $db);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($source) . '&response_mode=scripture_oriented_analysis');
             $pdo = new PDO('sqlite:' . $db);
             $store = new SqliteAgentReplyGenerationStore($pdo);
@@ -3481,7 +3534,7 @@ NODE;
             }
             $_COOKIE = [];
             assertSame('forbidden', json_decode($this->renderMethod($app, 'POST', $api), true)['error']);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             assertSame('requested', json_decode($this->renderMethod($app, 'POST', $api), true)['generation_status']);
             assertSame('requested', json_decode($this->renderMethod($app, 'POST', $api), true)['generation_status']);
             $claimed = $store->claimRequestedForPost($initial);
@@ -3505,7 +3558,7 @@ NODE;
             }
             $_COOKIE = [];
             assertStringContains('<summary>Further scripture reflection</summary>', $this->renderMethod($app, 'GET', '/posts/' . $initial));
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             assertSame($done['agent_post_id'], json_decode($this->renderMethod($app, 'POST', $api), true)['agent_post_id']);
             assertSame('error', json_decode($this->renderMethod($app, 'POST', '/api/expand_agent_reply?post_id=' . $done['agent_post_id']), true)['status']);
             // Replaying a claim after canonical publication makes no replacement.
@@ -3679,7 +3732,7 @@ NODE;
         try {
             $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
             $post = $this->createAnalyzedThread($app, $db);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $this->renderMethod($app, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($post) . '&response_mode=scripture_oriented_analysis');
             $pdo = new PDO('sqlite:' . $db);
             $hash = (string) $pdo->query('SELECT target_content_hash FROM post_generated_responses')->fetchColumn();
@@ -3732,7 +3785,7 @@ NODE;
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
             $postId = $this->createAnalyzedThread($application, $databasePath);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId));
             putenv('AGENT_REPLY_MAX_COMPLETION_TOKENS=0');
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
@@ -3760,7 +3813,7 @@ NODE;
             $postId = $this->createAnalyzedThread($application, $databasePath);
             $this->deleteTree($repositoryRoot . '/.git');
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $request = json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId) . '&response_mode=scripture_oriented_analysis'), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
@@ -4297,6 +4350,288 @@ NODE;
         assertSame(false, \ForumRewrite\Security\RetractionAuthority::currentOperator($root, $actor));
     }
 
+    /** @return array<string, mixed> the decoded result of signing and finalizing a prepared retraction */
+    private function finalizeRetraction(Application $app, array $prepared, string $actor, string $home): array
+    {
+        $_POST = ['prepare_token' => $prepared['prepare_token'], 'target_id' => $prepared['target_id'],
+            'record_path' => $prepared['record_path'], 'actor_identity_id' => $actor,
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($home, $prepared['canonical_record'])];
+        try { return json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true); }
+        finally { $_POST = []; }
+    }
+
+    /** @return array<string, mixed> */
+    private function prepareTargetRetraction(Application $app, string $actor, string $target): array
+    {
+        $_POST = ['actor_identity_id' => $actor, 'target_id' => $target];
+        try { return json_decode($this->renderMethod($app, 'POST', '/api/prepare_retraction'), true); }
+        finally { $_POST = []; }
+    }
+
+    private function likeRecordId(string $root, string $directory, string $identity): string
+    {
+        foreach (glob($root . '/records/' . $directory . '/*.txt') ?: [] as $path) {
+            if (str_contains((string) file_get_contents($path), 'Author-Identity-ID: ' . $identity . "\n")) return basename($path, '.txt');
+        }
+        throw new LogicException('No like by ' . $identity . ' in ' . $directory);
+    }
+
+    public function testMembersRetractTheirOwnLikesAndOperatorsRetractAnyLike(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'liked-thread', 'A thread worth liking');
+        $liker = $this->linkSigningIdentity($app, 'liker');
+        $this->seedApprovedIdentity($root, $liker['identity_id']);
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+        $likePath = 'records/thread-labels/' . $likeId . '.txt';
+
+        // Someone else, not an operator, may not retract it.
+        $stranger = $this->linkSigningIdentity($app, 'stranger');
+        $refused = $this->prepareTargetRetraction($app, $stranger['identity_id'], $likeId);
+        assertSame('error', $refused['status']);
+        assertStringContains('Only the person who liked this can retract it', $refused['error']);
+
+        // The liker retracts their like.
+        $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame('ok', $prepared['status']);
+        assertStringContains("\nTarget-ID: {$likeId}\n", $prepared['canonical_record']);
+        assertStringContains('Author-Identity-ID: ' . $liker['identity_id'], $prepared['canonical_record']);
+        $result = $writer->finalizePreparedRetraction(['prepare_token' => $prepared['prepare_token'], 'target_id' => $likeId,
+            'record_path' => $prepared['record_path'], 'actor_identity_id' => $liker['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($liker['home'], $prepared['canonical_record'])]);
+        assertSame('complete', $result['retraction_status']);
+        // The targeted update ran, not a full rebuild.
+        assertSame(true, isset($result['timings']['read_model_incremental_update']));
+        assertSame(false, isset($result['timings']['read_model_rebuild']));
+        assertSame(false, is_file($root . '/' . $likePath));
+        $receipt = (string) file_get_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($likeId));
+        assertStringContains("\nTarget-ID: {$likeId}\n", $receipt);
+        assertStringContains("\nParent-ID: " . $author['thread_id'] . "\n", $receipt);
+        assertStringContains('Retract thread label ' . $likeId, $this->runCommand($root, 'git log -1 --format=%s'));
+
+        // The like no longer counts, no placeholder post appears, and liking again writes a new like.
+        $likes = function () use ($db, $author, $liker): array {
+            $query = (new PDO('sqlite:' . $db))->prepare("SELECT tag FROM viewer_tags WHERE target_id = ? AND author_identity_id = ?");
+            $query->execute([$author['thread_id'], $liker['identity_id']]);
+            return $query->fetchAll(PDO::FETCH_COLUMN);
+        };
+        assertSame([], $likes());
+        assertSame(false, (new PDO('sqlite:' . $db))->query("SELECT post_id FROM posts WHERE post_id = '" . $likeId . "'")->fetchColumn());
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+        assertSame(['like'], $likes());
+
+        // A replay of the same request answers already_retracted.
+        $repeat = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame(true, $repeat['already_retracted']);
+
+        // An operator may retract someone else's like.
+        $operator = $this->linkSigningIdentity($app, 'like-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $secondLike = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+        $byOperator = $this->prepareTargetRetraction($app, $operator['identity_id'], $secondLike);
+        assertSame('ok', $byOperator['status']);
+        assertStringContains('Actor-Identity-ID: ' . $operator['identity_id'], $byOperator['canonical_record']);
+        assertStringContains('Retraction-Class: operator', $byOperator['canonical_record']);
+        assertSame('complete', $this->finalizeRetraction($app, $byOperator, $operator['identity_id'], $operator['home'])['retraction_status']);
+        assertSame(false, is_file($root . '/records/thread-labels/' . $secondLike . '.txt'));
+
+        // A full rebuild agrees: no like is counted and no reaction became a post.
+        $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
+        $pdo = new PDO('sqlite:' . $db);
+        assertSame(false, $pdo->query("SELECT post_id FROM posts WHERE post_id LIKE 'thread-label-%'")->fetchColumn());
+        assertSame([], $likes());
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+    }
+
+    public function testPostPageListsItsRecordsBehindTheFlag(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'records-listed', "A thread with records\n");
+        $liker = $this->linkSigningIdentity($app, 'records-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+
+        putenv('FORUM_POST_RECORDS_ENABLED');
+        $page = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
+        assertStringNotContains('post-records', $page);
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        try {
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/posts/' . $author['thread_id']);
+            assertStringContains('<summary>Records (2)</summary>', $page);
+            assertStringContains('href="/records/' . $author['thread_id'] . '">Post</a>', $page);
+            assertStringContains('href="/records/' . $likeId . '">Like</a>', $page);
+            assertStringContains('href="/source/current/records/thread-labels/' . $likeId . '.txt">source</a>', $page);
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/posts/' . $author['thread_id']);
+            assertStringContains('<summary>Records (2)</summary>', $page);
+            assertStringContains('class="post-record-retracted" data-record-id="' . $likeId . '"', $page);
+            assertStringContains('href="/records/' . $likeId . '">Like</a>', $page);
+            assertStringContains('href="/source/current/records/post-retraction-acceptances/post-retraction-' . $likeId . '.txt">receipt</a>', $page);
+        } finally {
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
+    public function testEachRecordHasAPageAndRetractedOnesShowTheirReceipt(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'record-page', "A thread with a record page\n");
+        $liker = $this->linkSigningIdentity($app, 'record-page-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+
+        putenv('FORUM_POST_RECORDS_ENABLED');
+        assertSame(true, $this->renderStatus($app, '/records/' . $likeId) === 404);
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        try {
+            $fresh = fn (): Application => new Application(dirname(__DIR__), $root, $db, $artifacts);
+            $page = $this->renderMethod($fresh(), 'GET', '/records/' . $likeId);
+            assertStringContains('<h1>Thread label ' . $likeId . '</h1>', $page);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">post ' . $author['thread_id'] . '</a>', $page);
+            assertStringContains('<dt>Tags</dt><dd>like</dd>', $page);
+            assertStringContains('href="/source/current/records/thread-labels/' . $likeId . '.txt"', $page);
+            assertStringContains('title="' . $liker['identity_id'] . '"', $page);
+
+            $postPage = $this->renderMethod($fresh(), 'GET', '/records/' . $author['thread_id']);
+            assertStringContains('<h1>Post ' . $author['thread_id'] . '</h1>', $postPage);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">Read this post</a>', $postPage);
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            $removed = $this->renderMethod($fresh(), 'GET', '/records/' . $likeId);
+            assertStringContains('<strong>Retracted.</strong>', $removed);
+            assertStringContains('records/post-retraction-acceptances/post-retraction-' . $likeId . '.txt', $removed);
+            assertStringContains('href="/posts/' . $author['thread_id'] . '">post ', $removed);
+            assertStringNotContains('<dt>Tags</dt>', $removed);
+
+            assertSame(true, $this->renderStatus($fresh(), '/records/post-reaction-unknown') === 404);
+            assertSame(true, $this->renderStatus($fresh(), '/records/..%2Fsecret') === 404);
+        } finally {
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
+    public function testRetractButtonsShowForTheLikerAndOperatorsOnly(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'retract-buttons', "A thread with a like\n");
+        $liker = $this->linkSigningIdentity($app, 'button-liker');
+        $stranger = $this->linkSigningIdentity($app, 'button-stranger');
+        $operator = $this->linkSigningIdentity($app, 'button-operator');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']]);
+        $likeId = $this->likeRecordId($root, 'thread-labels', $liker['identity_id']);
+        $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
+        $button = 'data-post-id="' . $likeId . '"'; // only the like's Retract button carries its ID here
+
+        putenv('FORUM_POST_RECORDS_ENABLED=1');
+        $cookies = $_COOKIE;
+        try {
+            $as = function (?array $viewer, string $path) use ($root, $db, $artifacts): string {
+                $_COOKIE = $viewer === null ? [] : ['identity_hint' => $viewer['identity_id']];
+                return $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', $path);
+            };
+            foreach (['/posts/' . $author['thread_id'], '/records/' . $likeId] as $path) {
+                assertStringContains($button, $as($liker, $path));
+                assertStringContains('Retract your like?', $as($liker, $path));
+                assertStringContains($button, $as($operator, $path));
+                assertStringContains('Retract this like as an operator?', $as($operator, $path));
+                assertStringNotContains($button, $as($stranger, $path));
+                assertStringNotContains($button, $as(null, $path));
+            }
+            assertStringContains('/assets/post_retraction', $as($liker, '/records/' . $likeId)); // fingerprinted name
+
+            $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+            assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+            foreach (['/posts/' . $author['thread_id'], '/records/' . $likeId] as $path) {
+                assertStringNotContains($button, $as($liker, $path));
+            }
+        } finally {
+            $_COOKIE = $cookies;
+            putenv('FORUM_POST_RECORDS_ENABLED');
+        }
+    }
+
+    public function testARetractedSignedLikeCannotBeReplayedBack(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'replayed-like', "A thread someone liked\n");
+        $liker = $this->linkSigningIdentity($app, 'replay-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        $likeId = 'thread-label-replayfixture01';
+        $record = \ForumRewrite\Canonical\ReactionRecordParser::build('thread', $likeId, gmdate('Y-m-d\TH:i:s\Z'), $author['thread_id'], ['like'], $liker['identity_id']);
+        $signed = ['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id'],
+            'canonical_record' => $record, 'detached_signature' => $this->signCanonicalRecord($liker['home'], $record)];
+        assertSame('yes', $writer->applyThreadTag($signed)['wrote_record']);
+
+        $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+
+        // Anyone holding the old signed bytes (they stay in history) tries to write the like back.
+        $refused = false;
+        try { $writer->applyThreadTag($signed); }
+        catch (RuntimeException $error) { $refused = str_contains($error->getMessage(), 'was retracted and cannot be restored'); }
+        assertSame(true, $refused);
+        assertSame(false, is_file($root . '/records/thread-labels/' . $likeId . '.txt'));
+        // Liking again with a new record still works.
+        assertSame('yes', $writer->applyThreadTag(['thread_id' => $author['thread_id'], 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+    }
+
+    public function testReplyLikesRetractAndOtherReactionsAreRefused(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'reply-like', 'Thread with a liked reply');
+        $this->renderMethod($app, 'POST', '/api/create_reply?thread_id=' . $author['thread_id'] . '&parent_id=' . $author['thread_id'] . '&body=Likeable%20reply');
+        $replyId = null;
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/records/posts', FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $file) {
+            $text = (string) file_get_contents((string) $file);
+            if (str_ends_with((string) $file, '.txt') && str_contains($text, "\nThread-ID: " . $author['thread_id'] . "\n") && str_contains($text, 'Likeable reply')) {
+                $replyId = basename((string) $file, '.txt');
+            }
+        }
+        assertSame(true, $replyId !== null);
+        $liker = $this->linkSigningIdentity($app, 'reply-liker');
+        $writer = new LocalWriteService($root, $db, $artifacts, new CanonicalRecordRepository($root));
+        assertSame('yes', $writer->applyPostTag(['post_id' => $replyId, 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+        $likeId = $this->likeRecordId($root, 'post-reactions', $liker['identity_id']);
+
+        $prepared = $this->prepareTargetRetraction($app, $liker['identity_id'], $likeId);
+        assertSame('ok', $prepared['status']);
+        assertSame($author['thread_id'], $prepared['thread_id']);
+        assertSame('complete', $this->finalizeRetraction($app, $prepared, $liker['identity_id'], $liker['home'])['retraction_status']);
+        $receipt = (string) file_get_contents($root . '/' . \ForumRewrite\Canonical\AcceptedRetraction::path($likeId));
+        assertStringContains("\nThread-ID: " . $author['thread_id'] . "\nParent-ID: {$replyId}\n", $receipt);
+        assertSame('yes', $writer->applyPostTag(['post_id' => $replyId, 'tag' => 'like', 'author_identity_id' => $liker['identity_id']])['wrote_record']);
+
+        $flag = 'post-reaction-flag-fixture';
+        file_put_contents($root . '/records/post-reactions/' . $flag . '.txt',
+            \ForumRewrite\Canonical\ReactionRecordParser::build('post', $flag, '2026-11-14T08:00:00Z', $replyId, ['flag'], $liker['identity_id']));
+        $this->runCommand($root, 'git add records && git commit -qm "flag fixture"');
+        $refused = $this->prepareTargetRetraction($app, $liker['identity_id'], $flag);
+        assertSame('error', $refused['status']);
+        assertStringContains('Only likes can be retracted for now.', $refused['error']);
+        $missing = $this->prepareTargetRetraction($app, $liker['identity_id'], 'post-reaction-missing');
+        assertStringContains('Reaction to retract was not found.', $missing['error']);
+    }
+
     public function testOperatorRetractionSignsAsActorAndRechecksPrivilegeAtFinalize(): void
     {
         [$root, $db, $artifacts] = $this->createTempEnvironment();
@@ -4414,13 +4749,13 @@ NODE;
                     'exchange_dependencies' => \ForumRewrite\Llm\ExchangeDependencies::manifest([$postId])],
                     ['payload' => []], ['body' => 'Exchange response'], 'completed', 1);
             }
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $thread = $this->renderMethod($app, 'GET', '/threads/root-001');
-            assertStringNotContains('LLM exchanges:', $thread);
+            assertStringNotContains('>LLM exchanges</th>', $thread);
             foreach ($ids as $postId => $id) {
                 assertStringNotContains('/tools/llm-exchanges/' . $id . '"', $thread);
                 $post = $this->renderMethod($app, 'GET', '/posts/' . $postId);
-                assertStringContains('LLM exchanges:', $post);
+                assertStringContains('>LLM exchanges</th>', $post);
                 assertStringContains('/tools/llm-exchanges/' . $id . '"', $post);
                 foreach ($ids as $otherPostId => $otherId) {
                     if ($otherPostId !== $postId) {
@@ -4428,15 +4763,19 @@ NODE;
                     }
                 }
             }
+            assertStringNotContains('Only approved users can view LLM exchanges', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/'));
+            $_COOKIE = ['identity_hint' => 'guest'];
+            assertStringNotContains('>LLM exchanges</th>', $this->renderMethod($app, 'GET', '/posts/root-001'));
+            assertStringContains('Only approved users can view LLM exchanges', $this->renderMethod($app, 'GET', '/tools/llm-exchanges/'));
             $_COOKIE = [];
-            assertStringNotContains('LLM exchanges:', $this->renderMethod($app, 'GET', '/posts/root-001'));
+            assertStringNotContains('>LLM exchanges</th>', $this->renderMethod($app, 'GET', '/posts/root-001'));
             file_put_contents($config, '<?php return ' . var_export([
                 'LLM_EXCHANGE_DATABASE_PATH' => $exchangeDb,
                 'LLM_CONVERSATION_UI_ENABLED' => false,
             ], true) . ';');
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $disabledApp = new Application(dirname(__DIR__), $root, $db, $artifacts);
-            assertStringNotContains('LLM exchanges:', $this->renderMethod($disabledApp, 'GET', '/posts/root-001'));
+            assertStringNotContains('>LLM exchanges</th>', $this->renderMethod($disabledApp, 'GET', '/posts/root-001'));
         } finally {
             $_COOKIE = $cookies;
             putenv($previous === false ? 'FORUM_SECRETS_PATH' : 'FORUM_SECRETS_PATH=' . $previous);
@@ -4465,7 +4804,7 @@ NODE;
                     ['payload' => ['messages' => [['role' => 'user', 'content' => $index === 2 ? 'Unrelated prompt' : 'Exchange private prose']]]],
                     ['body' => 'Exchange response prose'], 'completed', 1, ['message' => 'Exchange error prose']);
             }
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $withoutRequestId = $this->renderMethod($app, 'GET', '/tools/llm-exchanges/' . $ids[0]);
             assertStringContains('Exchange private prose', $withoutRequestId);
             assertStringNotContains('Request ID:', $withoutRequestId);
@@ -4493,7 +4832,7 @@ NODE;
             assertSame(false, str_contains($list, '/tools/llm-exchanges/' . $ids[1] . '/'));
             assertStringContains('/tools/llm-exchanges/' . $ids[2] . '/', $list);
             $post = $this->renderMethod($app, 'GET', '/posts/' . $author['thread_id']);
-            assertSame(false, str_contains($post, 'LLM exchanges:'));
+            assertSame(false, str_contains($post, '>LLM exchanges</th>'));
             $rootPost = $this->renderMethod($app, 'GET', '/posts/root-001');
             assertSame(false, str_contains($rootPost, '/tools/llm-exchanges/' . $ids[1] . '"'));
             assertStringContains('/tools/llm-exchanges/' . $ids[2] . '"', $rootPost);
@@ -4581,6 +4920,73 @@ NODE;
         $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
         assertSame('', $pdo->query("SELECT body FROM posts WHERE post_id='" . $author['thread_id'] . "'")->fetchColumn());
 
+    }
+
+    public function testRetractionWritesTargetIdAndStillReadsPostIdRetractions(): void
+    {
+        [$root, $db, $artifacts] = $this->createTempEnvironment();
+        $app = new Application(dirname(__DIR__), $root, $db, $artifacts);
+        $author = $this->createAuthoredThread($app, 'target-id', "Retract by target id\n");
+
+        $_POST = ['author_identity_id' => $author['identity_id'], 'target_id' => $author['thread_id'], 'post_id' => 'root-other'];
+        try { $conflict = json_decode($this->renderMethod($app, 'POST', '/api/prepare_retraction'), true); } finally { $_POST = []; }
+        assertSame('error', $conflict['status']);
+        assertStringContains('target_id and post_id name different records', $conflict['message'] ?? $conflict['error'] ?? '');
+
+        $_POST = ['author_identity_id' => $author['identity_id'], 'target_id' => $author['thread_id']];
+        try { $prepared = json_decode($this->renderMethod($app, 'POST', '/api/prepare_retraction'), true); } finally { $_POST = []; }
+        assertSame('ok', $prepared['status']);
+        assertSame($author['thread_id'], $prepared['target_id']);
+        assertSame($author['thread_id'], $prepared['post_id']);
+        assertStringContains("\nTarget-ID: " . $author['thread_id'] . "\n", $prepared['canonical_record']);
+        assertStringNotContains('Post-ID', $prepared['canonical_record']);
+
+        $_POST = ['prepare_token' => $prepared['prepare_token'], 'target_id' => $author['thread_id'],
+            'record_path' => $prepared['record_path'], 'author_identity_id' => $author['identity_id'],
+            'canonical_record' => $prepared['canonical_record'],
+            'detached_signature' => $this->signCanonicalRecord($author['home'], $prepared['canonical_record'])];
+        try { $result = json_decode($this->renderMethod($app, 'POST', '/api/create_prepared_retraction'), true); } finally { $_POST = []; }
+        assertSame('ok', $result['status']);
+        assertSame($author['thread_id'], $result['target_id']);
+        $receipt = file_get_contents($root . '/' . $result['acceptance_path']);
+        assertStringContains("\nTarget-ID: " . $author['thread_id'] . "\n", $receipt);
+        assertStringContains("\nTarget-Created-At: ", $receipt);
+        assertStringNotContains('Post-ID', $receipt);
+
+        // A retraction accepted before the rename: Post-ID request and receipt, hand-written as stored then.
+        $old = $this->createAuthoredThread($app, 'post-id', "Retracted before the rename\n");
+        $post = (new \ForumRewrite\Canonical\PostRecordParser())->parse(file_get_contents($root . '/' . $old['record_path']));
+        $request = "Record-ID: post-retraction-{$old['thread_id']}\nCreated-At: 2026-11-01T00:00:00Z\nPost-ID: {$old['thread_id']}\n"
+            . "Operation: retract\nAuthor-Identity-ID: {$old['identity_id']}\n\n";
+        $signature = $this->signCanonicalRecord($old['home'], $request);
+        $legacy = \ForumRewrite\Canonical\RemovalReceipt::encode(['Format' => 'removal-acceptance-v1', 'Post-ID' => $old['thread_id'],
+            'Operation' => 'delete', 'Authority' => 'signed-retraction', 'Accepted-At' => '2026-11-01T00:00:00Z',
+            'Actor' => $old['identity_id'], 'Source-SHA256' => hash('sha256', file_get_contents($root . '/' . $old['record_path'])),
+            'Thread-ID' => $old['thread_id'], 'Parent-ID' => '', 'Post-Created-At' => $post->createdAt,
+            'Author-Identity-ID' => $old['identity_id'], 'Thread-Type' => '', 'Retraction-Class' => 'author',
+            'Retraction-Attribution' => 'author', 'Request-SHA256' => hash('sha256', $request), 'Signature-SHA256' => hash('sha256', $signature)]);
+        foreach ([\ForumRewrite\Canonical\AcceptedRetraction::requestPath($old['thread_id']) => $request,
+            \ForumRewrite\Canonical\AcceptedRetraction::requestPath($old['thread_id']) . '.asc' => $signature,
+            \ForumRewrite\Canonical\AcceptedRetraction::path($old['thread_id']) => $legacy] as $path => $bytes) {
+            if (!is_dir(dirname($root . '/' . $path))) mkdir(dirname($root . '/' . $path), 0775, true);
+            file_put_contents($root . '/' . $path, $bytes);
+        }
+        unlink($root . '/' . $old['record_path']);
+        @unlink($root . '/' . $old['record_path'] . '.asc');
+        assertSame($old['thread_id'], \ForumRewrite\Canonical\AcceptedRetraction::read($root, $old['thread_id'])['post_id']);
+
+        $this->runCommand(dirname(__DIR__), './v3 rebuild ' . escapeshellarg($root) . ' ' . escapeshellarg($db));
+        $pdo = new PDO('sqlite:' . $db);
+        foreach ([$author['thread_id'], $old['thread_id']] as $id) {
+            assertSame('', $pdo->query("SELECT body FROM posts WHERE post_id='" . $id . "'")->fetchColumn());
+        }
+        $page = $this->renderMethod(new Application(dirname(__DIR__), $root, $db, $artifacts), 'GET', '/threads/' . $old['thread_id']);
+        assertStringNotContains('Retracted before the rename', $page);
+
+        // Replaying with the post_id alias still answers already_retracted.
+        $repeat = $this->prepareRetractionRequest($app, $author['identity_id'], $author['thread_id']);
+        assertSame(true, $repeat['already_retracted']);
+        assertSame($author['thread_id'], $repeat['target_id']);
     }
 
     public function testAuthorRetractionSuppressesThreadAndRejectsNonAuthorAndBadSignature(): void
@@ -5625,8 +6031,8 @@ NODE;
         assertStringContains('records/posts/2026/07/19/signed-test.txt.asc', $committedFiles);
 
         $postPage = $this->renderMethod($application, 'GET', '/posts/signed-test');
-        assertStringContains('Source:', $postPage);
-        assertStringContains('Signature:', $postPage);
+        assertStringContains('<th scope="row">Source</th>', $postPage);
+        assertStringContains('<th scope="row">Signature</th>', $postPage);
         assertStringContains('/source/current/records/posts/2026/07/19/signed-test.txt.asc', $postPage);
     }
 
@@ -6656,6 +7062,46 @@ NODE;
         assertSame('proven', \ForumRewrite\Canonical\LabelOwnership::inspect($label, $repositoryRoot)['status']);
     }
 
+    public function testThreadActivityDrawerFlagMovesTagOnlyLeavesOutOfTheConversation(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+        $reply = function (string $parentId, string $body) use ($application): string {
+            $response = $this->renderMethod($application, 'POST', '/api/create_reply?thread_id=root-001&parent_id=' . rawurlencode($parentId) . '&body=' . rawurlencode($body));
+            assertStringContains('status=ok', $response);
+            return $this->extractValue($response, 'post_id');
+        };
+        $first = $reply('root-001', "First words\n");
+        $leaf = $reply('root-001', "#bug #ux\n");
+        $answered = $reply('root-001', "> First words\n#answered\n");
+        $answer = $reply($answered, "Why answered?\n");
+        $last = $reply('root-001', "Last words\n");
+        $card = static fn (string $page, string $id): bool => preg_match('/<article[^>]*data-post-id="' . preg_quote($id, '/') . '"/', $page) === 1;
+
+        putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+        $off = $this->renderMethod($application, 'GET', '/threads/root-001');
+        foreach ([$first, $leaf, $answered, $answer, $last] as $id) {
+            assertSame(true, $card($off, $id));
+        }
+
+        putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED=1');
+        try {
+            $on = $this->renderMethod(new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot), 'GET', '/threads/root-001');
+        } finally {
+            putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+        }
+        assertSame(false, $card($on, $leaf));
+        assertStringContains('data-activity-kind="tagged" data-post-id="' . $leaf . '"', $on);
+        foreach ([$first, $answered, $answer, $last] as $id) {
+            assertSame(true, $card($on, $id));
+        }
+        // The same-author run around the moved reply still groups: the reply after it stays a continuation.
+        $classOf = static fn (string $page, string $id): string =>
+            preg_match('/<article id="[^"]*" class="([^"]*)"[^>]*data-post-id="' . preg_quote($id, '/') . '"/', $page, $m) === 1 ? $m[1] : '';
+        assertSame(true, str_contains($classOf($off, $answered), 'continuation'));
+        assertSame(true, str_contains($classOf($on, $answered), 'continuation'));
+    }
+
     public function testLabeledWritesUseIncrementalReadModelAndPublishLabelActivityImmediately(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -7286,14 +7732,14 @@ NODE;
         try {
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
             $postId = $this->createAnalyzedThread($application, $databasePath);
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             json_decode($this->renderMethod($application, 'POST', '/api/generate_agent_reply?post_id=' . rawurlencode($postId)), true);
             $_COOKIE = [];
             $store = new SqliteAgentReplyGenerationStore(new PDO('sqlite:' . $databasePath));
             $reply = $application->fulfillAgentReplyRequest($store->claimRequestedForPost($postId));
             $agentPostId = (string) $reply['agent_post_id'];
 
-            $_COOKIE = ['identity_hint' => 'guest'];
+            $this->signInApprovedGuest();
             $flagResponse = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=' . rawurlencode($agentPostId) . '&tag=flag');
             $_COOKIE = [];
 
@@ -8936,7 +9382,11 @@ NODE;
         $repositoryRoot = sys_get_temp_dir() . '/forum-rewrite-write-repo-' . bin2hex(random_bytes(6));
         mkdir($repositoryRoot, 0777, true);
         $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
-        $databasePath = sys_get_temp_dir() . '/forum-rewrite-write-db-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        // Its own directory: the rebuild lock (forum-rewrite.lock) sits beside the database,
+        // and directly in the temp folder every test running at the same time would share it.
+        $databaseDirectory = sys_get_temp_dir() . '/forum-rewrite-write-db-' . bin2hex(random_bytes(6));
+        mkdir($databaseDirectory, 0777, true);
+        $databasePath = $databaseDirectory . '/read_model.sqlite3';
         $artifactRoot = sys_get_temp_dir() . '/forum-rewrite-write-public-' . bin2hex(random_bytes(6));
         mkdir($artifactRoot, 0777, true);
         $this->initializeGitRepository($repositoryRoot);
@@ -9022,6 +9472,13 @@ NODE;
             'expires_at' => gmdate('Y-m-d\TH:i:s\Z', time() + 600),
         ], $metadata);
         file_put_contents($directory . '/' . $token . '.json', json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n");
+    }
+
+    private function renderStatus(Application $application, string $path): int
+    {
+        http_response_code(200);
+        $this->renderMethod($application, 'GET', $path);
+        return (int) http_response_code();
     }
 
     private function renderMethod(Application $application, string $method, string $path): string

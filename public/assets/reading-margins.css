@@ -1,0 +1,60 @@
+/* Reading margins (FORUM_READING_MARGINS_ENABLED): one row of evenly spaced
+   radio buttons placed at the viewport positions they stand for; the two
+   checked ones are the column's edges. The row and the column
+   break out of the centred shell with calc(50% - 50vw), which measures from
+   the viewport's left edge, so a radio at --at vw lines up with the column
+   edge it sets. The row itself has no width, so it never adds a scrollbar. */
+
+.reading-margins {
+  position: relative;
+  width: 0;
+  height: 1.75rem;
+  margin-left: calc(50% - 50vw);
+}
+
+.reading-margins__row {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  width: 0;
+}
+
+.reading-margins .reading-margins__stop {
+  position: absolute;
+  top: 0.25rem;
+  left: calc(var(--at) * 1vw);
+  /* Undo site and theme rules that size text inputs to their container. */
+  width: auto;
+  height: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+/* The column is never narrower than a small phone (20rem), which every page
+   is built to fit. When the chosen edges are closer than that, the column
+   grows evenly on both sides of the point halfway between them. */
+/* Shown when a stop sits midway between the edges: a click there moves this
+   edge, the one clicked longer ago. */
+.reading-margins .reading-margins__stop[data-reading-margin-next] {
+  outline: 2px dashed currentColor;
+  outline-offset: 3px;
+}
+
+@media (min-width: 640px) {
+  :root[data-reading-margins] .main {
+    --reading-width: max(20rem, calc((var(--reading-right) - var(--reading-left)) * 1vw));
+    width: var(--reading-width);
+    margin-left: calc(50% - 50vw + (var(--reading-left) + var(--reading-right)) * 0.5vw - var(--reading-width) / 2);
+  }
+}
+
+/* A phone has no room to spare, so the ruler and any saved column are ignored. */
+@media (max-width: 639px) {
+  .reading-margins {
+    display: none;
+  }
+}

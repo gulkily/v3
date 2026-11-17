@@ -18,4 +18,13 @@ $composerHiddenFields = '  <input type="hidden" name="thread_id" value="' . $e($
     . '  <input type="hidden" name="author_identity_id" value="">' . "\n"
     . '  <input type="hidden" name="board_tags" value="' . $e($boardTags) . '">' . "\n"
     . '  <input type="hidden" name="return_to" value="' . $e($returnTo ?? '') . '">' . "\n";
+// The pledge form in a campaign's totals block: the same reply composer with an amount field before
+// the note, and its own draft so it never mixes with the reply box at the bottom of the page.
+$composerLeadFields = '';
+if (($pledgePlacement ?? false) && is_array($pledgeCampaign ?? null)) {
+    $composerLeadFields = '  <label class="pledge-field">Pledge<input type="text" name="pledge_amount" inputmode="decimal" autocomplete="off" size="8" maxlength="20" data-role="pledge-amount">'
+        . ($pledgeCampaign['unit'] !== '' ? '<span class="pledge-field__unit">' . $e($pledgeCampaign['unit']) . '</span>' : '') . '</label>' . "\n";
+    $composerFormAttributes .= ' data-pledge-form data-compose-draft-scope="pledge"';
+    $composerShowOptions = false;
+}
 include __DIR__ . '/composer.php';

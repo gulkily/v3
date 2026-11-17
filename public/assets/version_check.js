@@ -106,11 +106,28 @@
       return false;
     }
 
+    // Navbar pages from last copy: this page may be an older copy shown on purpose.
+    // Offer the newer version instead of replacing the page the reader is looking at.
+    var root = document.documentElement;
+    if (root && typeof root.getAttribute === 'function' && root.getAttribute('data-nav-cached-copy') === '1') {
+      showBanner(pendingVersion);
+      return false;
+    }
+
     // url_hints.js runs next; tell it not to touch the URL while this navigation is pending.
     if (document.documentElement) document.documentElement.setAttribute('data-version-redirect', '');
     window.location.replace(withVersionBypass(currentUrl.toString(), pendingVersion));
     return true;
   }
+
+  // For nav_cached_copy.js: raise the notice when a background copy turns out newer.
+  window.ForumAppVersion = {
+    current: currentVersion,
+    show: function (version) {
+      var value = String(version || '').trim();
+      if (value !== '' && value !== currentVersion) showBanner(value);
+    }
+  };
 
   if (ensurePendingVersionSatisfied()) {
     return;

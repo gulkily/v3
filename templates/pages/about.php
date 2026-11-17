@@ -9,6 +9,12 @@
       <p data-build-example><?= $e($aboutContent['buildExample']['text']) ?> <a href="<?= $e($aboutContent['buildExample']['threadHref']) ?>">Read the thread</a> · <a href="<?= $e($aboutContent['buildExample']['changeHref']) ?>">See the change</a></p>
 <?php endif; ?>
       <p><?= $e($aboutContent['introduction']) ?></p>
+<?php if ($agentPageEnabled): ?>
+      <p><a href="/agent/#start">Use with your agent</a></p>
+<?php endif; ?>
+<?php if ($siteGuestbookThreadId !== null): ?>
+      <p><a href="/guestbook/">Sign the guestbook</a></p>
+<?php endif; ?>
     </section>
     <section class="about-section" data-about-section="community">
       <h2><?= $e($aboutContent['communityHeading']) ?></h2>

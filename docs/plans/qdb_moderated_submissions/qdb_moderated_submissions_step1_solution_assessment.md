@@ -4,7 +4,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/qdb_moderated_submissions`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment; extended estimates enabled.
+Effort study: `railspike-effort` / `v3/qdb_moderated_submissions`; [host ledger](../effort_ledger/qdb_moderated_submissions.md). Standing P2 enrollment; extended estimates enabled.
 
 Cycle estimate: 0.60 (Revision 1; was 0.70)
 

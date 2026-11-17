@@ -47,6 +47,80 @@ final class ContentImportRecoveryTest
         }
     }
 
+    public function testCancelBeforeCommitRemovesInstalledFilesAndAllowsANewImport(): void
+    {
+        foreach (['copied', 'staged'] as $failurePhase) {
+            $w = new ImportTestWorkspace();
+            $source = $w->repository('source');
+            $target = $w->repository('target');
+            $w->git($target);
+            $w->put($source . '/records/posts/root.txt', $w->post('root'));
+            $database = $w->root . '/cache/index.sqlite3';
+            try {
+                (new ContentImportRunner($target, $database, static function ($phase) use ($failurePhase): void {
+                    if ($phase === $failurePhase) throw new RuntimeException('stop');
+                }))->run($source, static fn () => null);
+            } catch (RuntimeException) {
+            }
+            assertTrue(is_file($target . '/records/posts/root.txt'));
+            $result = (new ContentImportRunner($target, $database))->cancel();
+            assertSame(['records/posts/root.txt'], $result['removed']);
+            assertSame([], $result['kept']);
+            assertTrue(!file_exists($target . '/records/posts/root.txt'));
+            assertTrue(!file_exists($target . '/.git/instance-import/pending.json'));
+            assertTrue(is_file($result['saved'] . '/canceled.json'));
+            assertTrue(is_file($result['saved'] . '/records/posts/root.txt'));
+            assertSame('', trim($w->command(['git', '-C', $target, 'status', '--porcelain'])[1]));
+            assertSame('1', trim($w->command(['git', '-C', $target, 'rev-list', '--count', 'HEAD'])[1]));
+            $failed = false;
+            try { (new ContentImportRunner($target, $database))->run(null, static fn () => null); } catch (RuntimeException) { $failed = true; }
+            assertTrue($failed);
+            $calls = 0;
+            $again = (new ContentImportRunner($target, $database))->run($source, static function () use (&$calls): void { $calls++; });
+            assertSame('complete', $again['status']);
+            assertSame(1, $calls);
+            assertTrue(is_file($target . '/records/posts/root.txt'));
+        }
+    }
+
+    public function testCancelKeepsChangedFilesAndRefusesAfterCommit(): void
+    {
+        $w = new ImportTestWorkspace();
+        $source = $w->repository('source');
+        $target = $w->repository('target');
+        $w->git($target);
+        $w->put($source . '/records/posts/root.txt', $w->post('root'));
+        $database = $w->root . '/cache/index.sqlite3';
+        try {
+            (new ContentImportRunner($target, $database, static function ($phase): void {
+                if ($phase === 'copied') throw new RuntimeException('stop');
+            }))->run($source, static fn () => null);
+        } catch (RuntimeException) {
+        }
+        $w->put($target . '/records/posts/root.txt', 'Local edit after interruption');
+        $result = (new ContentImportRunner($target, $database))->cancel();
+        assertSame(['records/posts/root.txt'], $result['kept']);
+        assertSame('Local edit after interruption', file_get_contents($target . '/records/posts/root.txt'));
+        unlink($target . '/records/posts/root.txt');
+
+        try {
+            (new ContentImportRunner($target, $database, static function ($phase): void {
+                if ($phase === 'committed') throw new RuntimeException('stop');
+            }))->run($source, static fn () => null);
+        } catch (RuntimeException) {
+        }
+        $refused = '';
+        try { (new ContentImportRunner($target, $database))->cancel(); } catch (RuntimeException $error) { $refused = $error->getMessage(); }
+        assertTrue(str_contains($refused, '--resume'));
+        assertTrue(is_file($target . '/.git/instance-import/pending.json'));
+        $result = (new ContentImportRunner($target, $database))->run(null, static fn () => null);
+        assertSame('complete', $result['status']);
+
+        $none = '';
+        try { (new ContentImportRunner($target, $database))->cancel(); } catch (RuntimeException $error) { $none = $error->getMessage(); }
+        assertSame('No interrupted import to cancel.', $none);
+    }
+
     public function testRecoveryPreservesDivergentLocalEdits(): void
     {
         $w = new ImportTestWorkspace();

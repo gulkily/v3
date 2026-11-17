@@ -194,6 +194,16 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
+                new \ForumRewrite\Support\LocalDevelopmentImport(
+                    $this->projectRoot, $this->repositoryRoot, $this->databasePath,
+                    $this->staticHtmlRoot ?? \ForumRewrite\PresentationPathResolver::staticHtmlRoot($this->projectRoot, \ForumRewrite\SiteProfileRegistry::active()),
+                )
+            ))->handle($method);
+            return;
+        }
+
         if ($securityReviewRequest) {
             if (!$this->routeServices()->securityReviewAllowed()) {
                 if (!str_starts_with($path, '/api/') && ($query['format'] ?? '') !== 'rss') {
@@ -292,6 +302,16 @@ final class Application
 
         if ($path === '/api/auth_status') {
             $this->authApiController()->authenticationStatus($method);
+            return;
+        }
+
+        if (in_array($path, ['/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap'], true)) {
+            $controller = new \ForumRewrite\Http\KeyBootstrapApiController($this->routeServices());
+            match ($path) {
+                '/api/key_bootstrap_status' => $controller->status($method),
+                '/api/prepare_key_bootstrap' => $controller->prepare($method, $query),
+                default => $controller->finalize($method, $query),
+            };
             return;
         }
 
@@ -634,13 +654,40 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/fastmod/' || $path === '/tools/fastmod') && $method === 'POST') {
+            $this->toolsPageController()->fastmodSubmit($query);
+            return;
+        }
+
+        if (($path === '/tools/operations/' || $path === '/tools/operations') && $method === 'POST') {
+            $this->toolsPageController()->operationsSubmit($query);
+            return;
+        }
+
         if (($path === '/tools/deploy/' || $path === '/tools/deploy') && $method === 'POST') {
             $this->deployController()->submit($query);
             return;
         }
 
+        if (($path === '/tools/import/' || $path === '/tools/import') && $method === 'POST'
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $this->importController()->submit($query);
+            return;
+        }
+
         if (($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') && $method === 'POST') {
             $this->toolsPageController()->submitFeatureFlagSubmit($query);
+            return;
+        }
+
+        if ($path === '/tools/usage-log/upload' && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->upload(
+                $method,
+                $method === 'POST' ? (string) file_get_contents('php://input', length: 2 * \ForumRewrite\UsageReports\UsageReportStore::MAX_REPORT_BYTES + 1) : '',
+                (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+                (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
+                time(),
+            );
             return;
         }
 
@@ -680,7 +727,7 @@ final class Application
             }
 
             $location = $this->qdbExperience()->isEnabled() ? null : $this->boardPageController()->listWithLocation(
-                (string) ($query['view'] ?? 'liked'),
+                (string) ($query['view'] ?? ''),
                 (string) ($query['sort'] ?? 'newest'),
                 $query['with'] ?? null,
             );
@@ -690,7 +737,7 @@ final class Application
             }
             $this->sendHtml(
                 $this->boardPageController()->board(
-                    (string) ($query['view'] ?? 'liked'),
+                    (string) ($query['view'] ?? ''),
                     (string) ($query['sort'] ?? 'newest'),
                     listPage: $query['page'] ?? null,
                 ),
@@ -699,13 +746,27 @@ final class Application
             return;
         }
 
+        if ($path === '/start/' || $path === '/start') {
+            $this->sendHtml($this->renderGettingStarted(), 200);
+            return;
+        }
+
         if ($path === '/about/' || $path === '/about') {
             $this->sendHtml($this->renderAbout(), 200);
             return;
         }
 
+        if ($path === '/agent/' || $path === '/agent') {
+            if (!$this->renderer()->agentPageEnabled()) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\AgentPageController($this->renderPageTemplate(...), $this->pdo()))->render($query['sort'] ?? null, $query['tag'] ?? null), 200);
+            return;
+        }
+
         if ($path === '/themes/' || $path === '/themes') {
-            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot))->render(), 200);
+            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot, $this->featureFlags()))->render(), 200);
             return;
         }
 
@@ -848,6 +909,21 @@ final class Application
             return;
         }
 
+        if ($path === '/guestbook/' || $path === '/guestbook') {
+            $guestbookThreadId = \ForumRewrite\Http\GuestbookPageController::threadId();
+            if ($guestbookThreadId === null || !$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::GUESTBOOK_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $html = (new \ForumRewrite\Http\GuestbookPageController($this->routeServices()))->book($guestbookThreadId, $query['page'] ?? null);
+            if ($html === null) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->sendHtml($html, 200);
+            return;
+        }
+
         if ($path === '/activity/' || $path === '/activity') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml($this->activityPageController()->rss((string) ($query['view'] ?? 'all')), 200);
@@ -927,8 +1003,24 @@ final class Application
             return;
         }
 
+        if ($path === '/tools/preferences/' || $path === '/tools/preferences') {
+            $this->sendHtml($this->toolsPageController()->preferences(), 200);
+            return;
+        }
+
+        if ($path === '/tools/tag-unlocks/' || $path === '/tools/tag-unlocks') {
+            $this->sendHtml($this->toolsPageController()->tagUnlocks(), 200);
+            return;
+        }
+
         if ($path === '/tools/outbox/' || $path === '/tools/outbox') {
             $this->sendHtml($this->toolsPageController()->outbox(), 200);
+            return;
+        }
+
+        if (($path === '/tools/usage-log/' || $path === '/tools/usage-log')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->log();
             return;
         }
 
@@ -939,6 +1031,12 @@ final class Application
 
         if ($path === '/tools/visitor-statistics/' || $path === '/tools/visitor-statistics') {
             $this->visitorStatisticsController()->render($query);
+            return;
+        }
+
+        if (($path === '/tools/usage-reports/' || $path === '/tools/usage-reports')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
+            $this->usageReportsController()->summary($query);
             return;
         }
 
@@ -959,6 +1057,12 @@ final class Application
 
         if ($path === '/tools/deploy/' || $path === '/tools/deploy') {
             $this->sendHtml($this->deployController()->render(), 200, ['Cache-Control: no-store']);
+            return;
+        }
+
+        if (($path === '/tools/import/' || $path === '/tools/import')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $this->sendHtml($this->importController()->render(), 200, ['Cache-Control: no-store']);
             return;
         }
 
@@ -1167,6 +1271,17 @@ final class Application
                 return;
             }
             $html = $this->tagsPageController()->tag($matches[1], $query['page'] ?? null);
+            if ($html === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendHtml($html, 200);
+            return;
+        }
+
+        if (preg_match('#^/records/([^/]+)/?$#', $path, $matches) === 1) {
+            $html = $this->threadAndPostPageController()->record(rawurldecode($matches[1]));
             if ($html === null) {
                 $this->notFound();
                 return;
@@ -1406,6 +1521,18 @@ final class Application
         );
     }
 
+    private function importController(): \ForumRewrite\Http\ImportController
+    {
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+
+        return new \ForumRewrite\Http\ImportController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $queuePath,
+            fn (): string => (new \ForumRewrite\TaskQueue\DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchForOperator(),
+        );
+    }
+
     private function calendarPageController(): \ForumRewrite\Http\CalendarPageController
     {
         return new \ForumRewrite\Http\CalendarPageController($this->routeServices(), $this->repositoryRoot);
@@ -1523,6 +1650,7 @@ final class Application
             [
                 'accessManagement' => $accessManagement,
                 'retirementActors' => $accessManagement ? (new \ForumRewrite\Security\KeyRetirementPolicy($this->pdo(),$this->repositoryRoot))->presentationActors($profile) : [],
+                'replacedKey' => $accessManagement ? \ForumRewrite\ReadModel\ReplacedKeys::forIdentity($this->pdo(), (string) $profile['identity_id']) : null,
                 'operatorGrantActors' => $accessManagement ? \ForumRewrite\Security\ApprovalPolicy::operatorGrantActors($this->repositoryRoot, $profile) : [],
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
@@ -1575,6 +1703,14 @@ final class Application
             $this->projectRoot,
             $this->fetchActivity(...),
         );
+    }
+
+    private function renderGettingStarted(): string
+    {
+        return $this->renderPageTemplate('getting_started.php', [
+            'knownInstances' => \ForumRewrite\Import\KnownInstances::others((string) ($_SERVER['HTTP_HOST'] ?? '')),
+            'importPageEnabled' => $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED),
+        ], 'Getting started', 'board');
     }
 
     private function renderAbout(): string
@@ -1633,6 +1769,30 @@ final class Application
         );
     }
 
+    private function usageReportsController(): \ForumRewrite\Http\UsageReportsController
+    {
+        return new \ForumRewrite\Http\UsageReportsController(
+            $this->routeServices(),
+            $this->usageReportStore(...),
+            function (): ?string {
+                $username = trim((string) ($this->authenticatedViewerProfile()['username'] ?? ''));
+                return $username !== '' ? $username : null;
+            },
+            fn (): bool => $this->routeServices()->profileIsActiveOperator($this->authenticatedViewerProfile()),
+        );
+    }
+
+    private function usageReportStore(): \ForumRewrite\UsageReports\UsageReportStore
+    {
+        $path = \ForumRewrite\UsageReports\UsageReportDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        $directory = dirname($path);
+        if ($directory !== '' && !is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('Usage report database directory is not writable: ' . $directory);
+        }
+
+        return new \ForumRewrite\UsageReports\UsageReportStore(new PDO('sqlite:' . $path));
+    }
+
     private function toolsPageController(): ToolsPageController
     {
         return new ToolsPageController(
@@ -1682,8 +1842,7 @@ final class Application
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
 
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
-            && $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+            && RouteServices::signedInApproved($viewerProfile);
     }
 
     private function renderLlmsTxt(): string
@@ -1881,7 +2040,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
-                    posts.created_at, posts.board_tags_json, posts.agent_response_json, posts.resolution_state,
+                    posts.created_at, posts.board_tags_json, posts.agent_response_json, posts.resolution_state, (SELECT COALESCE(NULLIF(profiles.username, \'\'), profiles.fallback_label) FROM profiles WHERE profiles.identity_id = posts.resolution_set_by) AS resolution_set_by_username,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
@@ -1904,7 +2063,7 @@ final class Application
         $hiddenWhere = $includeHidden ? '' : ' AND posts.is_hidden = 0';
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label,
-                    posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason, posts.resolution_state,
+                    posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason, posts.resolution_state, (SELECT COALESCE(NULLIF(profiles.username, \'\'), profiles.fallback_label) FROM profiles WHERE profiles.identity_id = posts.resolution_set_by) AS resolution_set_by_username,
                     posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, posts.body_format, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
                     profiles.public_key AS author_public_key
@@ -2345,8 +2504,9 @@ final class Application
         if (in_array($path, [
             '', '/',
             '/threads', '/threads/',
-            '/about', '/about/',
+            '/about', '/about/', '/start', '/start/',
             '/themes', '/themes/',
+            '/agent', '/agent/',
             '/docs', '/docs/',
             '/lobby', '/lobby/',
             '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',
@@ -2356,15 +2516,17 @@ final class Application
             '/downloads/images.zip', '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
-            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/',
+            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/', '/guestbook', '/guestbook/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
             '/calendar', '/calendar/',
-            '/tools', '/tools/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
-            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
+            '/tools', '/tools/', '/tools/preferences', '/tools/preferences/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/', '/tools/import', '/tools/import/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
+            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
+            '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
@@ -2373,6 +2535,7 @@ final class Application
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
+            '/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/prepare_post_format', '/api/create_prepared_post_format', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status',
@@ -2388,7 +2551,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|posts/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+|queue/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|posts/[^/]+|records/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+|queue/\d+)/?$#',
             $path,
         ) === 1;
     }
@@ -2727,25 +2890,6 @@ final class Application
     }
 
     /**
-     * @param array<string, float|int> $timings
-     * @return list<string>
-     */
-    private function noStoreTimingHeaders(array $timings): array
-    {
-        return array_merge($this->noStoreHeaders(), $this->serverTimingHeaders(['timings' => $timings]));
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     * @param array<string, float|int> $timings
-     * @return array<string, mixed>
-     */
-    private function mergeResultTimings(array $result, array $timings, int $totalStartedAt): array
-    {
-        return $this->routeServices()->mergeResultTimings($result, $timings, $totalStartedAt);
-    }
-
-    /**
      * @param array<string, mixed> $query
      */
     private function handleApproveUserSubmit(string $slug, array $query): void
@@ -2914,14 +3058,6 @@ final class Application
         }
 
         return implode("\n", $lines) . "\n";
-    }
-
-    /**
-     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>|null
-     */
-    private function activityCommitManifest(string $commitSha): ?array
-    {
-        return $this->routeServices()->activityService()->activityCommitManifest($commitSha);
     }
 
     /**

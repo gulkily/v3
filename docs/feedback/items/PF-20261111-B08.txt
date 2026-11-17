@@ -1,0 +1,17 @@
+ID: PF-20261111-B08
+Title: Front-page Post sometimes publishes as Guest
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The front-page composer sometimes publishes a post as Guest instead of signing it. Revised after review with the maintainer: post immediately, publish as Guest if signing is not ready or fails rather than make the user wait, warm signing in the background after load, and preserve ownership continuity for later claiming.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105203351-44bac944
+- https://zenmemes.com/posts/reply-20261105225914-330513e4
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Filed by ChatGPT from the maintainer's report; the follow-up supersedes the original blocking behavior. The length correlation is unconfirmed.

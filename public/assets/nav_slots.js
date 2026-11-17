@@ -1,17 +1,22 @@
 (function () {
   'use strict';
-  // Personal slots on the phone tab bar. The browser remembers which More
-  // destinations earned a tab; layout.php's head script applies that choice
+  // Phone tabs. Every destination tab is a slot earned by use; Board (or Lobby)
+  // and Calendar are only where a fresh browser starts. The browser remembers
+  // which destinations hold a tab; layout.php's head script applies that choice
   // before first paint by setting data-nav-slots on <html>. This script keeps
   // the saved state, counts use, and fills and holds slots.
   //
   // Storage (internal browser state, JSON): forum_nav_slots =
-  //   { "slots": ["recent"],
+  //   { "v": 2, "slots": ["board", "calendar", "recent"],
   //     "visits": { "recent": { "count": 3, "first": "2026-11-05", "last": "2026-11-06" } } }
+  // State without "v" was saved while Board and Calendar were fixed; they are
+  // put in front of its slots, with use matching the busiest destination so the
+  // change itself evicts nothing.
   //
   // Rules: a free slot fills once a destination has FILL visits. A filled
-  // slot changes only when a challenger leads it by LEAD visits and has been
-  // used on at least two different days. Slots keep the order they were earned; new ones go last.
+  // slot changes only when a challenger leads the least-used slot by LEAD
+  // visits and has been used on at least two different days; it takes that
+  // slot. Tabs show in bar order, whatever order they were earned in.
   const key = 'forum_nav_slots';
   const FILL = 3;
   const LEAD = 3;
@@ -37,6 +42,7 @@
   // the live nav wins over the published list when it is there.
   const config = () => window.__forumNavSlots || {};
   function count() { return Number(config().count) || 0; }
+  function defaults() { return list(config().defaults); }
   function sections() {
     const live = Array.from(document.querySelectorAll('.site-header--app nav.nav > .nav-link[data-phone="more"]')).map(link => link.dataset.tab);
     return live.length ? list(live) : list(config().sections);
@@ -45,9 +51,23 @@
   function usable(name) { return sections().includes(name) && ((name !== 'messages' && name !== 'inbox') || approved()); }
   function today() { return new Date().toISOString().slice(0, 10); }
 
-  // Mirrors the head script: known sections only, at most the free slot count, Messages only for members.
+  // The saved slots, with the starting tabs in front of state saved before they were earned.
+  function saved(state) {
+    const slots = list(state.slots);
+    const all = state.v === 2 ? slots : defaults().concat(slots);
+    return all.filter((name, index) => all.indexOf(name) === index);
+  }
+
+  // Mirrors the head script: no saved state keeps the server's starting tabs;
+  // otherwise known sections only, at most the slot count, Messages only for members.
   function place(state) {
-    const slots = list((state || read()).slots).filter(usable).slice(0, count());
+    state = state || read();
+    if (!Array.isArray(state.slots)) {
+      const slots = defaults().filter(usable).slice(0, count());
+      if (slots.length) root.setAttribute('data-nav-slots', slots.join(' '));
+      return slots;
+    }
+    const slots = saved(state).filter(usable).slice(0, count());
     if (slots.length) root.setAttribute('data-nav-slots', slots.join(' '));
     else root.removeAttribute('data-nav-slots');
     return slots;
@@ -66,19 +86,29 @@
     const visits = state.visits && typeof state.visits === 'object' ? state.visits : {};
     const uses = name => Number(visits[name] && visits[name].count) || 0;
     const twoDays = name => Boolean(visits[name] && visits[name].first && visits[name].last && visits[name].first !== visits[name].last);
-    const slots = [];
-    const auto = list(state.slots).filter(usable);
-    const challengers = () => sections().filter(name => usable(name) && !slots.includes(name) && !auto.includes(name))
+    const fresh = !Array.isArray(state.slots);
+    if (state.v !== 2 && !fresh) {
+      // Moving from fixed tabs: the old fixed tabs start as used as the busiest destination.
+      const busiest = Math.max(0, ...Object.keys(visits).map(uses));
+      for (const name of defaults()) {
+        if (uses(name) < busiest) visits[name] = { count: busiest, first: (visits[name] && visits[name].first) || today(), last: today() };
+      }
+      state.visits = visits;
+    }
+    const slots = (fresh ? defaults() : saved(state)).filter(usable).slice(0, free);
+    const challengers = () => sections().filter(name => usable(name) && !slots.includes(name))
       .sort((a, b) => uses(b) - uses(a));
-    for (const name of auto) {
-      if (slots.length >= free) break;
-      const best = challengers()[0];
-      slots.push(best && uses(best) >= uses(name) + LEAD && twoDays(best) ? best : name);
+    const best = challengers()[0];
+    if (best && slots.length >= free) {
+      // The least-used slot; on a tie, the one earned last.
+      const weakest = slots.reduce((low, name) => (uses(name) <= uses(low) ? name : low), slots[0]);
+      if (uses(best) >= uses(weakest) + LEAD && twoDays(best)) slots[slots.indexOf(weakest)] = best;
     }
     for (const name of challengers()) {
       if (slots.length >= free) break;
       if (uses(name) >= FILL) slots.push(name);
     }
+    state.v = 2;
     state.slots = slots;
     return state;
   }
@@ -87,14 +117,14 @@
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
     if (!phone.matches) return;
-    // Use counts on phones: a More destination, or a tab that already holds a slot.
+    // Use counts on phones: a More destination, or a tab that holds a slot.
     const link = target.closest('.account-menu__more a[data-more], .site-header--app nav.nav > .nav-link[data-phone="more"]');
     const name = link && (link.dataset.more || link.dataset.tab);
     if (!name || !usable(name)) return;
     write(decide(visit(read(), name)));
   });
 
-  window.ForumNavSlots = { key, read, write, list, count, sections, place, decide, visit, FILL, LEAD };
+  window.ForumNavSlots = { key, read, write, list, count, defaults, sections, place, decide, visit, FILL, LEAD };
   document.addEventListener('forum:nav-refreshed', () => place());
   window.addEventListener('forum:identity-changed', () => place());
 })();

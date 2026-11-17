@@ -71,6 +71,7 @@ Optional runtime setting:
 - `LLM_CONVERSATION_UI_ENABLED`: controls approved-user/operator web visibility of captured exchanges. The default is enabled.
 - `LLM_EXCHANGE_DATABASE_PATH`: optional private SQLite path; defaults to `<application-root>/state/private/llm_exchanges.sqlite3`.
 - `VISITOR_STATISTICS_DATABASE_PATH`: optional private SQLite path for aggregate visitor statistics; defaults to `<application-root>/state/private/visitor_statistics.sqlite3`.
+- `USAGE_REPORTS_DATABASE_PATH`: optional private SQLite path for uploaded usage logs; defaults to `<application-root>/state/private/usage_reports.sqlite3`.
 - `FORUM_TASK_QUEUE_DATABASE_PATH`: optional private SQLite path for queued internal maintenance; defaults to `<application-root>/state/private/internal_tasks.sqlite3`.
 - `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`: optional `true` enables one detached, allowlisted queue-worker launch when a classified schema recovery finds no fresh executor heartbeat. Leave it unset on hosts that prohibit child processes.
 - `FAST_SCORING_DATABASE_PATH`: optional private SQLite score-state path; defaults to `<application-root>/state/private/fast_scores.sqlite3`.
@@ -90,6 +91,7 @@ The web user must be able to write:
 - `state/private/agent-reply/` under the application root if agent reply fulfillment is enabled
 - the parent directory of `LLM_EXCHANGE_DATABASE_PATH` if LLM conversation recording is enabled
 - the parent directory of `VISITOR_STATISTICS_DATABASE_PATH` when visitor statistics are in use
+- the parent directory of `USAGE_REPORTS_DATABASE_PATH` when the Usage reports flag is on
 - the parent directory of `FORUM_TASK_QUEUE_DATABASE_PATH` when the internal task queue is enabled
 - the parent directory of `FAST_SCORING_DATABASE_PATH` when Fastmod sweeps are enabled
 - the parent directories of `PRIVATE_MESSAGE_DATABASE_PATH` and `PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH` when private messaging is enabled
@@ -337,6 +339,8 @@ LLM exchange records are private runtime data. Keep `LLM_EXCHANGE_DATABASE_PATH`
 Internal task-queue records are also private runtime data. Keep `FORUM_TASK_QUEUE_DATABASE_PATH` outside `public/`, the canonical repository, and the published read-model database. The queue is deliberately separate from the rebuildable read model so a rebuild task retains its state and final outcome. Its executor history, detached-launch outcomes, and rebuild checkpoints live in that same private database; terminal history is bounded while active work and automatic-recovery circuit state are retained.
 
 Visitor statistics are private runtime data. Keep `VISITOR_STATISTICS_DATABASE_PATH` outside `public/`, the canonical repository, and published artifacts. It retains only bounded UTC hourly aggregates for up to 90 days: eligible-request counters, anonymous/server-authenticated request counters, and mergeable client/authenticated-user cardinality sketches. It never retains raw visitor, session, key, identity, route, referrer, header, or network records. A deployment begins a new hourly collection epoch; legacy daily aggregates are not converted into hourly history. Its protected page reports only server-observed eligible traffic; direct edge/static delivery outside PHP is not included.
+
+Usage reports are private runtime data too. Keep `USAGE_REPORTS_DATABASE_PATH` outside `public/`, the canonical repository, and published artifacts. The feature is off until an operator turns on "Usage reports" in Tools → Feature Flags; reports are kept until removed, up to 50 MB in total. Release check after turning it on: record a short session in Tools → Usage Log, press Upload, confirm it appears in Tools → Usage Reports, then download a repository archive from Backup and confirm it has no `usage_reports` file or report text.
 
 ## LLM Provider Config
 

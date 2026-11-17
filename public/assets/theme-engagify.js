@@ -269,8 +269,21 @@
       form.appendChild(input);
       form.appendChild(subscribe);
       form.appendChild(error);
+      var egg = false;
+      function crackEgg() {
+        if (egg) return;
+        egg = true;
+        hunter2(ctx, d);
+      }
+      // Checked as it is typed, so the email box (whose browser validation
+      // would block submitting "hunter2") gets the egg too.
+      input.addEventListener("input", function () {
+        if (HUNTER2.test(input.value)) crackEgg();
+      });
       form.addEventListener("submit", function (event) {
         event.preventDefault();
+        // The egg never creates a post.
+        if (egg || HUNTER2.test(input.value)) { crackEgg(); return; }
         submitPost(ctx, subscribe, error, "New newsletter subscriber!",
           "Someone just joined the hourly ZenMemes newsletter. Their address has been shared with our 847 trusted partners.\n\n(It hasn't. Engagify posted this instead.)",
           function (link) {
@@ -296,6 +309,32 @@
       }
     }, 6000);
   });
+
+  // Easter egg: "hunter2" typed into the newsletter box, after the old
+  // bash.org quote. The dialog swaps to a reassurance that everyone else sees
+  // stars. Nothing is subscribed and nothing is posted.
+  var HUNTER2 = /^\s*hunter2\s*$/i;
+
+  function hunter2(ctx, d) {
+    var box = d.box;
+    while (box.firstChild) box.removeChild(box.firstChild);
+    box.setAttribute("data-engagify", "hunter2");
+    box.setAttribute("aria-label", "Password safety");
+    function close() {
+      d.close();
+      ctx.later(function () { rateUs(ctx); }, 2500);
+    }
+    var change = ctx.el("button", { type: "button", class: "engagify-button", text: "Change my password to *******", onclick: function () {
+      close();
+      toast(ctx, "Done. Your new password is *******.");
+    } });
+    box.appendChild(ctx.el("h2", { text: "Your password is safe with us" }));
+    box.appendChild(ctx.el("p", { text: "All we see is *******. You see your own password; everyone else sees stars. That's how it works here." }));
+    box.appendChild(ctx.el("p", { text: "We did not subscribe you, and nothing was posted. Our 847 trusted partners only saw *******." }));
+    box.appendChild(change);
+    box.appendChild(ctx.el("button", { type: "button", class: "engagify-link", text: "Close", onclick: close }));
+    change.focus();
+  }
 
   // Rate us: happy raters are sent to public reviews, unhappy ones to a
   // private box, and "Remind me later" brings it back.

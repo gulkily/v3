@@ -47,6 +47,11 @@ final class PostRecordParser
             }
         }
 
+        // A retraction's Target-ID tells posts from reactions by prefix, so posts may not take a reaction's.
+        if (RemovalTarget::isReactionId($record->headers['Post-ID'])) {
+            throw new CanonicalRecordParseException('Post-ID must not start with a reaction record prefix.');
+        }
+
         $threadId = $record->headers['Thread-ID'] ?? null;
         $parentId = $record->headers['Parent-ID'] ?? null;
         $authorIdentityId = $record->headers['Author-Identity-ID'] ?? null;

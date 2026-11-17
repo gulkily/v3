@@ -15,6 +15,7 @@ final class ThemeCatalogPageController
     public function __construct(
         private readonly \Closure $renderPageTemplate,
         private readonly string $projectRoot,
+        private readonly \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator $featureFlags,
     ) {
     }
 
@@ -22,7 +23,7 @@ final class ThemeCatalogPageController
     {
         return ($this->renderPageTemplate)(
             'themes.php',
-            ['themes' => ThemeCatalog::entries($this->projectRoot)],
+            ['themes' => ThemeCatalog::entries($this->projectRoot, $this->featureFlags)],
             'Themes',
             'themes',
             ['/assets/theme_catalog.js'],

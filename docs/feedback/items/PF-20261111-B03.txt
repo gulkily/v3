@@ -1,0 +1,21 @@
+ID: PF-20261111-B03
+Title: Chicago theme pages styled inconsistently
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The Chicago theme has a lot of inconsistently styled pages; see screenshots for some examples.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105061047-afaabd4f
+- https://zenmemes.com/posts/reply-20261105061103-8e5a80f5
+- https://zenmemes.com/posts/reply-20261105061120-6455c4c6
+- https://zenmemes.com/posts/reply-20261105061151-ed6de7e9
+- https://zenmemes.com/posts/reply-20261105061212-7f933b57
+- https://zenmemes.com/posts/reply-20261105061233-0bf1416e
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Five screenshots attached as replies; separate from PF-20261104-F66 (apply Word97 repairs to Chicago).

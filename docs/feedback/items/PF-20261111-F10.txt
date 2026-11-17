@@ -1,0 +1,16 @@
+ID: PF-20261111-F10
+Title: More prominent Post button
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+In the default theme the Post button is barely visible compared with other elements; for a lot of themes the action button like Post should be much more prominent.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105144935-49bd0fb1
+- https://zenmemes.com/posts/thread-20261109182547-0531c024
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

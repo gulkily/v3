@@ -1,0 +1,23 @@
+ID: PF-20261114-F02
+Title: Gallery zoom
+Kind: feature
+Workflow: blocked
+Created: 2026-11-14
+Evidence: locally-verified
+Estimate: 0.12
+
+Request:
+"Gallery needs zoom please"
+
+Sources:
+- https://zenmemes.com/threads/thread-20261115001728-044717db
+
+Done when:
+The Gallery has Smaller and Larger buttons, and a pinch on the tiles on phones, that change how big the images are; the size is remembered in this browser, shows from first paint on later visits, and can be reset on the Preferences page.
+
+Notes:
+Related: PF-20261105-F01 (the Gallery page itself); PF-20261030-F20 (browser zoom is shared across the whole domain).
+2026-11-14: one-shot on feat/gallery_zoom (record docs/plans/gallery_zoom/gallery_zoom_one_shot.md). Verified locally (GalleryPageTest, ZoomButtonsTest, PreferencesPageTest, tests/browser/preferences.mjs; buttons, reload and pinch checked in Gloss, Light, Word97 and Midnight at 390px and 1200px). Blocked on review, merge and deployment.
+2026-11-14: follow-up one-shot feat/gallery_compact_captions (docs/plans/gallery_compact_captions/gallery_compact_captions_one_shot.md): captions hide when zoomed below 0.7. Verified locally; blocked on review, merge and deployment.
+2026-11-14: bug fix one-shot fix/gallery_zoom_buttons_in_view (docs/plans/gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md): Smaller / Larger keep the buttons on screen. Verified locally; blocked on review, merge and deployment.
+2026-11-14: follow-up one-shot feat/gallery_caption_zoom (docs/plans/gallery_caption_zoom/gallery_caption_zoom_one_shot.md): caption text scales with the zoom. Verified locally; blocked on review, merge and deployment.

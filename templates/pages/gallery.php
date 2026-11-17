@@ -2,7 +2,8 @@
 /**
  * Gallery: posts with an attached image as tiles, newest first. Tiles keep
  * their image's proportions (clamped) in justified rows, so the page needs
- * no script and does not shift as previews load.
+ * no script and does not shift as previews load. Smaller and Larger (and a pinch
+ * on phones) change the tile size (gallery_zoom.js); layout.php restores it before paint.
  *
  * @var list<array<string, mixed>> $tiles
  */
@@ -15,6 +16,7 @@
     <h2>No images<?= $pagination['previous_href'] !== null ? ' on this page' : ' yet' ?></h2>
   </div>
 <?php else: ?>
+  <?= \ForumRewrite\View\ZoomButtons::group('div', 'gallery-zoom', 'data-gallery-zoom', ['smaller' => 'out', 'larger' => 'in'], 'Image size') ?>
   <div class="gallery-grid">
 <?php foreach ($tiles as $tile): ?>
 <?php $image = $tile['image']; $ratio = max(0.6, min(2.2, $image['width'] / $image['height'])); $replies = (int) $tile['reply_count']; ?>
