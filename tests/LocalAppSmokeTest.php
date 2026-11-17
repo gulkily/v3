@@ -5559,28 +5559,36 @@ PHP;
 
     public function testApplicationRebuildsWhenRepositoryHeadMetadataIsStale(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
-        $application = new Application(
-            dirname(__DIR__),
-            $repositoryRoot,
-            $databasePath,
-        );
+        // A fresh worker or a queued rebuild left by another test would turn the in-request
+        // rebuild these assertions expect into "rebuild queued"; use an empty queue.
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . sys_get_temp_dir() . '/forum-rewrite-empty-queue-' . bin2hex(random_bytes(6)) . '/tasks.sqlite3');
+        try {
+            [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+            $application = new Application(
+                dirname(__DIR__),
+                $repositoryRoot,
+                $databasePath,
+            );
 
-        $this->render($application, '/');
+            $this->render($application, '/');
 
-        $pdo = new PDO('sqlite:' . $databasePath);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $stmt = $pdo->prepare('UPDATE metadata SET value = :value WHERE key = :key');
-        $stmt->execute([
-            'key' => 'repository_head',
-            'value' => 'stale-head',
-        ]);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $stmt = $pdo->prepare('UPDATE metadata SET value = :value WHERE key = :key');
+            $stmt->execute([
+                'key' => 'repository_head',
+                'value' => 'stale-head',
+            ]);
 
-        $status = $this->render($application, '/api/read_model_status');
+            $status = $this->render($application, '/api/read_model_status');
 
-        assertStringContains('status=ready', $status);
-        assertStringContains('rebuild_reason=repository_head_mismatch', $status);
-        assertStringNotContains('repository_head=stale-head', $status);
+            assertStringContains('status=ready', $status);
+            assertStringContains('rebuild_reason=repository_head_mismatch', $status);
+            assertStringNotContains('repository_head=stale-head', $status);
+        } finally {
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+        }
     }
 
     public function testReadModelStatusReportsLockedWhenExecutionLockIsHeld(): void
@@ -5606,28 +5614,36 @@ PHP;
 
     public function testApplicationClearsStaleMarkerOnNextSuccessfulRead(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
-        $application = new Application(
-            dirname(__DIR__),
-            $repositoryRoot,
-            $databasePath,
-        );
+        // A fresh worker or a queued rebuild left by another test would turn the in-request
+        // rebuild these assertions expect into "rebuild queued"; use an empty queue.
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . sys_get_temp_dir() . '/forum-rewrite-empty-queue-' . bin2hex(random_bytes(6)) . '/tasks.sqlite3');
+        try {
+            [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+            $application = new Application(
+                dirname(__DIR__),
+                $repositoryRoot,
+                $databasePath,
+            );
 
-        $this->render($application, '/');
-        file_put_contents(
-            dirname($databasePath) . '/read_model_stale.json',
-            json_encode(['reason' => 'write_refresh_failed', 'commit_sha' => 'abc123'], JSON_THROW_ON_ERROR)
-        );
+            $this->render($application, '/');
+            file_put_contents(
+                dirname($databasePath) . '/read_model_stale.json',
+                json_encode(['reason' => 'write_refresh_failed', 'commit_sha' => 'abc123'], JSON_THROW_ON_ERROR)
+            );
 
-        $status = $this->render($application, '/api/read_model_status');
-        $codebase = $this->render($application, '/tools/codebase/');
+            $status = $this->render($application, '/api/read_model_status');
+            $codebase = $this->render($application, '/tools/codebase/');
 
-        assertStringContains('status=ready', $status);
-        assertStringContains('stale_marker=absent', $status);
-        assertStringContains('rebuild_reason=stale_marker', $status);
-        assertStringContains('System status', $codebase);
-        assertStringContains('Stale marker', $codebase);
-        assertStringContains('absent', $codebase);
+            assertStringContains('status=ready', $status);
+            assertStringContains('stale_marker=absent', $status);
+            assertStringContains('rebuild_reason=stale_marker', $status);
+            assertStringContains('System status', $codebase);
+            assertStringContains('Stale marker', $codebase);
+            assertStringContains('absent', $codebase);
+        } finally {
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+        }
     }
 
     public function testExecutionLockTimesOutWhenAlreadyHeld(): void

@@ -311,7 +311,7 @@ Start the local PHP server:
 ./v3 start
 ```
 
-By default this binds to `127.0.0.1:8000`. To make it reachable from other devices on allowed networks such as Tailscale, bind to all interfaces explicitly:
+By default this binds to `127.0.0.1:8000` and also runs the internal task worker, so queued work such as imports from Tools → Import runs without cron (`--no-worker` turns it off). To make it reachable from other devices on allowed networks such as Tailscale, bind to all interfaces explicitly:
 
 ```bash
 ./v3 start --listen-all

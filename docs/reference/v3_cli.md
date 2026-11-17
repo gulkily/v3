@@ -86,10 +86,14 @@ repair. The marker file is not created by installation or tracked in Git.
 ## Start the local dev server
 
 ```
-./v3 start [--listen-all|host:port] [--verbose|--quiet] [--log-file=/path/dev.log]
+./v3 start [--listen-all|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
 ```
 
 Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
+It also runs the internal task worker (`scripts/task_queue.php run --limit=1`) every
+10 seconds while the server runs, as cron does on a server, so queued imports,
+rebuilds and offline snapshots run locally. `--no-worker` turns that off. A worker
+still busy when the server stops finishes its task on its own.
 Checks local-server prerequisites before application loading, logs, or bootstrap.
 Missing required capabilities produce runtime-specific recovery guidance.
 On Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution packages, terminal input/output

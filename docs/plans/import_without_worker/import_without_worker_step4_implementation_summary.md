@@ -25,3 +25,22 @@ Step 3 approved 2026-11-17 ("approved step 3"). Branch `feat/import_without_work
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - `./v3 start` runs the task worker
+**Original estimate: 0.08**
+**Retrospective: 0.12**
+- Changes:
+  - `DevServerWorker` (`src/ForumRewrite/Support/DevServerWorker.php`) starts `setsid php scripts/task_queue.php run --quiet --limit=1` when none is running and at least 10 seconds have passed since the last start. `scripts/dev_server.php` calls it each time round its loop and prints "task worker on (./v3 start --no-worker turns it off)". `v3 start --no-worker` passes the flag through, and the usage text is updated.
+  - On stop, the server waits up to 2 seconds. A worker still busy after that is left to finish, with "task worker still finishing a task; it exits on its own" in the output.
+  - `README.md` and `docs/reference/v3_cli.md` describe the worker and `--no-worker`.
+  - `tests/run.php` points `FORUM_TASK_QUEUE_DATABASE_PATH` at a per-run temporary queue unless it is already set. The two `LocalAppSmokeTest` stale-head tests use their own empty queue.
+- Verification:
+  - `./v3 test --smoke DevServerWorkerTest`: 471 passed (smoke set included).
+  - New tests: repeated starts with the interval and the queued task claimed; the dev server with and without `--no-worker` (heartbeat fresh, or not, and no idle worker left after stop).
+  - The earlier failing `LocalAppSmokeTest`, `ActivityProjectionTest` and `BoardSearchTest` cases pass with the isolation. Full suite not run.
+- Notes:
+  - Deviation from Step 3: the plan said to terminate the worker on shutdown. A busy worker may be running an import, and the import runs in its own session (`BoundedProcess`/`InvocationSupervisor` use setsid). Killing the worker would orphan the import and leave its task "running" until the queue's abandoned-task recovery, so a busy worker is left to finish. An idle worker exits within a second and is waited for.
+  - Pre-existing test problem found and fixed: smoke tests wrote to the checkout's own queue (`state/private/internal_tasks.sqlite3`). A fresh heartbeat or queued rebuild left there made 24 smoke tests in this workspace fail with "rebuild updating". A running `./v3 start` worker would cause the same, so the runner now isolates the queue.
+- Estimate details: retrospective higher for the test isolation work.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
