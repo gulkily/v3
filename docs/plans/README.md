@@ -138,6 +138,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Key bootstrap test button](key_bootstrap_test_button/key_bootstrap_test_button_one_shot.md) — one-shot: Account → Key → Advanced button that clears the site's local storage and keeps cookies, to test session key bootstrap.
 - [Session key bootstrap](session_key_bootstrap/session_key_bootstrap_step3_development_plan.md) — a browser with a live session but no key (iPhone Safari's storage wipe) gets a new approved key from the session, with a coarse fingerprint as tie-breaker; the lost key shows a Replaced pill and waits in a queue; behind two flags; Stages 1–6 committed, iPhone Safari replay (Stage 7) pending deploy.
 - [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes and flags by post; follows Pollyanna's `#notext`; behind a new flag; Step 4 complete, release pending.
 - [Usage reports UI](usage_reports_ui/usage_reports_ui_step3_development_plan.md) — readable page and control names, phone-first Usage Reports with shortcut-idea cards, and a readable Usage Log with the exact upload text behind a disclosure; follow-up to the local usage log; Step 4 in progress.

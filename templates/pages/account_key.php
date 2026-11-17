@@ -179,6 +179,11 @@ No browser private key saved yet.
             <strong>Identity hint:</strong> <?= $e(((string) ($identityHint ?? '')) !== '' ? (string) $identityHint : 'none') ?>
             · <strong>Saved browser identity:</strong> <span data-role="identity-id-field">none</span>
           </p>
+<?php if ($keyLossTestEnabled ?? false): ?>
+          <div class="button-row account-key-advanced-actions">
+            <button type="button" data-action="test-key-loss">Test lost-key recovery</button>
+          </div>
+<?php endif; ?>
         </div>
       </details>
     </div>
@@ -186,6 +191,17 @@ No browser private key saved yet.
   <div class="account-group" data-account-when="member">
     <button type="button" class="account-row account-row--danger" data-tone="danger" data-action="remove-key" hidden>Remove this key</button>
   </div>
+<?php if ($keyLossTestEnabled ?? false): ?>
+  <dialog class="account-sheet" id="key-loss-test" data-role="key-loss-dialog" aria-labelledby="key-loss-title" aria-describedby="key-loss-text">
+    <form method="dialog" class="stack">
+      <h2 id="key-loss-title">Test lost-key recovery?</h2>
+      <p id="key-loss-text">This clears what this browser stores for the site, as iPhone Safari does after seven days away, and keeps your cookies. On reload, your session should give this browser a new key.</p>
+      <button type="button" data-backup-open="backup">Save a copy first</button>
+      <button type="submit" class="account-danger-button" value="clear" data-action="confirm-key-loss">Clear and reload</button>
+      <button type="submit" class="account-key-secondary-button" value="cancel">Cancel</button>
+    </form>
+  </dialog>
+<?php endif; ?>
   <dialog class="account-sheet" id="key-remove" data-role="remove-dialog" aria-labelledby="key-remove-title" aria-describedby="key-remove-text">
     <form method="dialog" class="stack">
       <h2 id="key-remove-title">Remove this key from this browser?</h2>
