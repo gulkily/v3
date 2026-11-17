@@ -2352,3 +2352,9 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 | `v3/high_traffic_coverage` | Complete (documentation-only); acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./high_traffic_coverage/high_traffic_coverage_one_shot.md) | Follows `v3/asset_bypass` (PR #293, merged); acceptance pending |
 
 2026-11-17: one-shot high-traffic coverage checklist; baseline `f83c0b0d`. Intake 0.08, recorded after route inspection; closeout retrospective 0.08. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/invite_qr_pitch` | Implemented; PR open | v1 (one-shot) / R1 / P2 | 0.20 | [One-shot record](./invite_qr_pitch/invite_qr_pitch_one_shot.md#study-history) | New cycle; maintainer acceptance pending |
+
+2026-11-17: one-shot invite QR pitch; baseline `6bdc52d7`. Intake and execution entry 0.20; closeout retrospective 0.20. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.

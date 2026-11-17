@@ -10,7 +10,9 @@ Extended estimates: enabled; no real alternatives or work units, so no unit esti
 
 **Cycle estimate: 0.20 (intake and execution entry)**
 
-Status: plan written; next permitted action: planning commit, then implementation.
+Status: implemented and verified locally on `feat/invite-qr-pitch`; PR open, awaiting maintainer review, merge and deploy.
+
+Debug log: [invite_qr_pitch_debug_log.md](./invite_qr_pitch_debug_log.md)
 
 ## Original request
 
@@ -60,28 +62,38 @@ Smoke set plus `InvitationIssuanceTest`. Render `/invites/` locally as an approv
 
 Starting revisions and branch: `feat/invite-qr-pitch` from `6bdc52d7`.
 
-Planning commit: pending.
+Planning commit: `2a2cc80d`.
 
 ## Dated execution history
 
-- 2026-11-17: record written before implementation.
+- 2026-11-17: record written before implementation; planning commit `2a2cc80d`.
+- 2026-11-17: `$siteName` is a layout-only variable, not available to page templates (first render warned). Correction: the controller passes `invitationSiteName` from the active profile's `displayName`, the same name `siteDescription()` uses.
+- 2026-11-17: the "Scan to accept this invitation" line above the code became a "Scan to join" caption under it, in a `figure`.
 
 ## Study history
 
 - 2026-11-17 intake and execution entry: **0.20**. Prior exposure: the same agent inspected `invites.php`, `invitations.css`, `ProfilePresentationContent` and the visitor intro before the estimate. Claude single exposed rater; R1 hashes not re-verified; baseline `6bdc52d7`.
 
+- 2026-11-17 closeout: delivered the recorded scope; no scope change. Retrospective scope assessment 0.20. Maintainer fit/acceptance pending.
+
 ## Outcome
 
-Pending.
+Delivered: after an invite is generated, the QR area shows "You're invited to zenmemes", the site description and three reasons to join, beside the code on wide screens and above it on phones. The code is 11rem (176px) instead of 18rem. Profiles without `invitationReasons` (chouse, qdb, MIT Rap Club) show the heading and their site description, if any.
+
+Limitations: the three reasons are new copy and may want the maintainer's wording. Not checked on a real phone camera.
 
 ## Verification
 
-Pending.
+- Passed: `./v3 test --smoke InvitationIssuanceTest PresentationProfileMatrixTest LocalAppSmokeTest::testApprovedPublicSessionIsResumedForBoardAndInvite AssetFingerprintTest`: 496 run, 496 passed. Full suite not run (the maintainer runs it).
+- Passed: `php -l` on every changed PHP file.
+- Passed: rendered `/invites/` as an approved member (zenmemes profile, fixture repository), revealed the result with a QR for a sample lobby link, and screenshotted the block in Headless Chromium in Gloss, Word 97, Bubblegum and Midnight at 390px and 1280px. No horizontal overflow; at 390px the whole block is 478–538px tall, so pitch and code fit on one phone screen. Screenshots checked by eye.
+- Passed: OpenCV decoded the sample link from each screenshot at the new size.
+- Inapplicable: migrations, read model, first paint (the block stays hidden until the QR renders, as before). Pending: production after merge.
 
 ## Final review
 
-Pending.
+Diff checked for scope (profile copy, controller, template, CSS, one test, this record, the index, ledger and debug log) and duplication (description reused from `siteDescription()`; reasons follow the existing editorial-key pattern). No touched concepts.
 
-Commit/merge/publication status: not committed.
+Commit/merge/publication status: planning commit `2a2cc80d`; completion commit and PR below in the handoff.
 
 *Claude (claude-opus-5-5), 2026-11-17 UTC.*

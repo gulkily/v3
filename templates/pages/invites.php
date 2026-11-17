@@ -32,8 +32,25 @@
         <button type="button" data-action="copy-invitation-link">Copy</button>
       </div>
       <div class="invitation-qr" data-role="invitation-qr" hidden>
-        <p>Scan to accept this invitation</p>
-        <canvas data-role="invitation-qr-code" role="img" aria-label="Invitation QR code. Scan with your phone, or use the invitation link above."></canvas>
+<?php if ($siteDescription !== '' || $invitationReasons !== []): ?>
+        <div class="invitation-qr-pitch">
+          <h2>You're invited to <?= $e($invitationSiteName) ?></h2>
+<?php if ($siteDescription !== ''): ?>
+          <p><?= $e($siteDescription) ?></p>
+<?php endif; ?>
+<?php if ($invitationReasons !== []): ?>
+          <ul>
+<?php foreach ($invitationReasons as $reason): ?>
+            <li><?= $e($reason) ?></li>
+<?php endforeach; ?>
+          </ul>
+<?php endif; ?>
+        </div>
+<?php endif; ?>
+        <figure class="invitation-qr-code">
+          <canvas data-role="invitation-qr-code" role="img" aria-label="Invitation QR code. Scan with your phone, or use the invitation link above."></canvas>
+          <figcaption>Scan to join</figcaption>
+        </figure>
       </div>
     </div>
   </article>
