@@ -27,6 +27,7 @@ final class FeatureFlagRegistry
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
     public const TAG_UNLOCKS_ENABLED = 'FORUM_TAG_UNLOCKS_ENABLED';
     public const DEPLOY_HEADER_PROMPT_ENABLED = 'FORUM_DEPLOY_HEADER_PROMPT_ENABLED';
+    public const INSTANCE_IMPORT_PAGE_ENABLED = 'FORUM_INSTANCE_IMPORT_PAGE_ENABLED';
     public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
@@ -64,7 +65,7 @@ final class FeatureFlagRegistry
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
-            self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
+            self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED],
@@ -327,6 +328,15 @@ final class FeatureFlagRegistry
                 'In a browser that has deployed from Tools → Deploy, check for updates a few seconds after each page load and show Deploy now in the header when the site is behind. Checks reuse a fetch from the last ten minutes. Only root-approved operators can check or deploy.',
                 false,
                 self::DEPLOY_HEADER_PROMPT_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::INSTANCE_IMPORT_PAGE_ENABLED,
+                'Import page',
+                'Offer Tools → Import, where a root-approved operator imports another instance\'s public content, watches it run in the task worker, and resumes or cancels an interrupted import. Same merge rules as ./v3 import-instance.',
+                false,
+                self::INSTANCE_IMPORT_PAGE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

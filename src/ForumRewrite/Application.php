@@ -643,6 +643,12 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/import/' || $path === '/tools/import') && $method === 'POST'
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $this->importController()->submit($query);
+            return;
+        }
+
         if (($path === '/tools/feature-flags/' || $path === '/tools/feature-flags') && $method === 'POST') {
             $this->toolsPageController()->submitFeatureFlagSubmit($query);
             return;
@@ -1020,6 +1026,12 @@ final class Application
 
         if ($path === '/tools/deploy/' || $path === '/tools/deploy') {
             $this->sendHtml($this->deployController()->render(), 200, ['Cache-Control: no-store']);
+            return;
+        }
+
+        if (($path === '/tools/import/' || $path === '/tools/import')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $this->sendHtml($this->importController()->render(), 200, ['Cache-Control: no-store']);
             return;
         }
 
@@ -1475,6 +1487,15 @@ final class Application
             \ForumRewrite\Deploy\AppUpdate::forProject($this->projectRoot),
             TaskQueueDatabaseConfig::path($this->projectRoot),
             \ForumRewrite\Support\SourceRepository::fromProjectRoot($this->projectRoot),
+        );
+    }
+
+    private function importController(): \ForumRewrite\Http\ImportController
+    {
+        return new \ForumRewrite\Http\ImportController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            TaskQueueDatabaseConfig::path($this->projectRoot),
         );
     }
 
@@ -2459,7 +2480,7 @@ final class Application
             '/tags', '/tags/',
             '/calendar', '/calendar/',
             '/tools', '/tools/', '/tools/preferences', '/tools/preferences/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
-            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/', '/tools/import', '/tools/import/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',

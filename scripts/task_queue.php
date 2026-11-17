@@ -363,6 +363,15 @@ try {
                     return $result;
                 },
                 runAppUpdate: static fn (): array => \ForumRewrite\Deploy\AppUpdate::forProject($projectRoot)->runQueued(),
+                runInstanceImport: static fn (array $task): array => \ForumRewrite\Import\InstanceImportTask::forQueue($queuePath)->run(
+                    $task,
+                    $projectRoot,
+                    ['repository_root' => $repositoryRoot, 'database_path' => $databasePath, 'static_html_root' => $staticHtmlRoot],
+                    static function (string $line) use ($store, $task, $quiet): void {
+                        $store->recordTaskProgress((int) $task['id'], $line);
+                        emitTaskQueue($quiet, '  ' . $line . "\n");
+                    },
+                ),
             );
             $taskStartedAt = [];
             try {

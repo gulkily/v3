@@ -2235,3 +2235,15 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/import_cancel` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.25 | [One-shot record](./import_cancel/import_cancel_one_shot.md) | Prerequisite of `v3/import_instance_gui`; acceptance pending |
 
 2026-11-16: one-shot import cancel; baseline `c95e22b3`. Intake after inspection and closeout retrospective both 0.25; Claude single exposed rater; R1 hashes not re-verified.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_instance_gui` | Locally complete; acceptance pending | v3 / R1 / P2 | 0.65 | [Step 1](./import_instance_gui/import_instance_gui_step1_solution_assessment.md#study-snapshots); [Step 2](./import_instance_gui/import_instance_gui_step2_feature_description.md#study-snapshots); [Step 3](./import_instance_gui/import_instance_gui_step3_development_plan.md#study-checkpoint); [Step 4](./import_instance_gui/import_instance_gui_step4_implementation_summary.md#study-closeout) | New cycle; prerequisite one-shot `v3/import_cancel`; acceptance pending |
+
+2026-11-13: standing P2 enrollment for the import-instance GUI (thread-20261113042243-1cbe8b8a); baseline `6bfe1243`. Intake (after inspection) and Step 1 handoff both 0.70 for Option A with C's status view; Claude single exposed rater; R1 hashes not re-verified. Extended estimates enabled (A 0.70, B 0.50, C 0.25; not summed). Awaiting Approved Step 1.
+
+2026-11-16: import-instance GUI Step 1 approved. Step 2 projection 0.60 (revised from 0.70): scope v2 moves Preview to a later cycle and adds remembered sources; user-level import split out as a separate cycle. Baseline `c98b5221`; Claude single exposed rater. Awaiting Approved Step 2.
+
+2026-11-16: import-instance GUI Step 2 approved; prerequisite cancel command split out as one-shot `v3/import_cancel` (PR #285). Step 3 projection 0.65 (from 0.60), scope v3 adds a page Cancel action. Extended stage-work originals: S1 0.18, S2 0.06, S3 0.14, S4 0.14, S5 0.08, S6 0.07; not summed. Awaiting Approved Step 3.
+
+2026-11-16: import-instance GUI Step 3 approved; Step 4 entry 0.65 reaffirmed, scope v3. Closeout: six stages done on `feat/import_instance_gui`; retrospective scope assessment 0.70 (stage retrospectives S1 0.18, S2 0.05, S3 0.16, S4 0.14, S5 0.08, S6 0.09; not summed). Claude single exposed rater; R1 hashes not re-verified; no measured time. Maintainer comfortable-fit judgment and acceptance pending.

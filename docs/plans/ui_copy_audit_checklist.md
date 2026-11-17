@@ -952,3 +952,7 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 - [x] Members-only page without scripts: "Reconnecting / Verifying this browser identity…" is replaced by "Members only" and "Check your browser key or go to the lobby." Removed copy that can't come true; no new explanation. With scripts the page is unchanged ("If this does not complete automatically, check your browser key…"; the link text is now "your browser key").
 - [x] Without scripts, "View query" and Like/Flag no longer show (they need scripts); with scripts they are unchanged. Verified in 13 themes in Chromium with scripts on and off ([nojs Step 4](nojs_basic_access/nojs_basic_access_step4_implementation_summary.md)).
 - [ ] Browsers without support for the `scripting` media feature (e.g. Firefox before 113) show both the scripted and no-script copy on the members-only page; not verified.
+
+## Tools → Import page — 2026-11-16
+
+- [x] New operator page: no explanatory intro. Copy is kept to consequences and recovery: who can import, "Resume finishes it; cancel removes what it installed." (or "Content is committed; resume finishes publishing."), the task worker not running, and the last failed request. Per-file detail is folded under Advanced. Checked in 8 themes at 390 and 1280 px for idle, running, result, pending and signed-out states ([Step 4](import_instance_gui/import_instance_gui_step4_implementation_summary.md)).
