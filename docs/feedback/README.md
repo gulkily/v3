@@ -241,6 +241,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261110-B01](items/PF-20261110-B01.txt) | Page titles are inconsistent across pages | blocked | locally-verified | — | 4 |
 | [PF-20261114-B01](items/PF-20261114-B01.txt) | Bubblegum: You menu buttons and wrapping tool labels | blocked | locally-verified | — | 1 |
 | [PF-20261115-B01](items/PF-20261115-B01.txt) | Bubblegum: open More tab label invisible on phones | blocked | locally-verified | — | 1 |
+| [PF-20261117-B01](items/PF-20261117-B01.txt) | Task worker logs "unable to open database file" on a fresh ./v3 start | blocked | locally-verified | — | 1 |
 | [PF-20261021-B01](items/PF-20261021-B01.txt) | Composer jumping | untriaged | unknown | 0.75 | 1 |
 | [PF-20261021-B02](items/PF-20261021-B02.txt) | Textarea edge alignment | untriaged | unknown | 0.25 | 1 |
 | [PF-20261021-B04](items/PF-20261021-B04.txt) | Slow reply feedback | untriaged | unknown | — | 7 |
