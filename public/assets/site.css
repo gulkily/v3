@@ -1350,6 +1350,12 @@ pre {
   color: var(--status-ok, var(--ink));
 }
 
+/* A key a session replaced (key bootstrap): still approved, waiting to be retired or kept. */
+.chip--replaced {
+  border-style: dashed;
+  color: var(--ink-soft, var(--ink));
+}
+
 /* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
    only page-specific layout lives here. */
 /* A search field inside the board toolbar. Users filters the list already on the page, so its field is script-only;
@@ -1367,7 +1373,17 @@ pre {
   margin: 0;
 }
 @media (scripting: none) {
-  .board-toolbar__search[data-users-search] {
+  .board-toolbar__search[data-users-search],
+  [data-view-query],
+  [data-visitor-intro-hide],
+  .thread-reaction-button,
+  .requires-script {
+    display: none;
+  }
+}
+/* Copy that is true only when scripts cannot run (e.g. "Members only" instead of "Reconnecting"). */
+@media (scripting: enabled) {
+  .without-script {
     display: none;
   }
 }
@@ -2173,16 +2189,22 @@ pre {
 
 /* The pending author summary (pending_user_summary.js). */
 .pending-user-dialog {
-  /* Placed beside the clicked chip by pending_user_summary.js. */
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 1rem);
+  overflow: auto;
+  color: var(--ink);
+}
+
+/* Placed beside the clicked chip by pending_user_summary.js. Specific enough
+   to beat themes' `:root[data-theme="..."] .card { position: relative }`: a
+   non-fixed modal dialog sits at the top of the document, and opening it
+   scrolled the page there. */
+:root dialog.pending-user-dialog.card {
   position: fixed;
   inset: auto;
   top: 0;
   left: 0;
   margin: 0;
-  width: min(22rem, calc(100vw - 1rem));
-  max-height: calc(100vh - 1rem);
-  overflow: auto;
-  color: var(--ink);
 }
 
 .pending-user-dialog::backdrop {
@@ -2284,6 +2306,7 @@ pre {
 .pledge-amount { margin: 0.4rem 0 0; }
 .pledge-amount strong { font-size: 1.25em; }
 .pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
+.pledge-withdraw { margin: 0.3rem 0 0; }
 .pledge-field { display: flex; align-items: center; gap: 0.5rem; }
 .pledge-field input { flex: 0 1 8rem; min-width: 0; width: 8rem; }
 .pledge-field__unit { color: var(--ink-soft); overflow-wrap: anywhere; }

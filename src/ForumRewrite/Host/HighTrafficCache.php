@@ -154,9 +154,9 @@ final class HighTrafficCache
         $this->progress('Generation refused: ' . $reason);
         return null;
     }
-    public function render(string $route, string $assets, ?array $context = null): string
+    public function render(string $route, string $assets, ?array $context = null, string $worker = 'high_traffic_render.php'): string
     {
-        $arguments = [\ForumRewrite\Support\PhpCli::binary(), $this->projectRoot . '/scripts/high_traffic_render.php', $this->projectRoot, $this->repositoryRoot, $this->databasePath, $assets, $route, \ForumRewrite\SiteProfileRegistry::active()['name']];
+        $arguments = [\ForumRewrite\Support\PhpCli::binary(), $this->projectRoot . '/scripts/' . $worker, $this->projectRoot, $this->repositoryRoot, $this->databasePath, $assets, $route, \ForumRewrite\SiteProfileRegistry::active()['name']];
         if ($context !== null) $arguments[] = HighTrafficPublication::identity($context);
         $this->progress('Starting isolated renderer (time limit ' . ($this->limits['render_seconds'] ?? 30) . ' seconds; HTML limit ' . $this->limits['page_bytes'] . ' bytes)');
         $proc=proc_open($arguments, [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);

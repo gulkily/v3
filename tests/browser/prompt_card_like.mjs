@@ -24,7 +24,8 @@ let server;
 try {
   const seed = spawnSync('php', [join(project, 'tests/Support/prompt_card_like_browser_fixture.php'), root], { input: JSON.stringify(keys), encoding: 'utf8', env });
   assert.equal(seed.status, 0, seed.stderr);
-  const { identity } = JSON.parse(seed.stdout);
+  const { identity, long_thread: longThread } = JSON.parse(seed.stdout);
+  assert.ok(longThread, 'fixture made the long prompt');
   const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listening');
   const port = socket.address().port; await new Promise(done => socket.close(done));
   const base = `http://127.0.0.1:${port}`;
@@ -83,54 +84,73 @@ try {
   await card.locator('[data-copy-prompt-button]').click();
   await page.waitForFunction(() => document.querySelector('#prompt-root-001 [data-copy-prompt-button]').hasAttribute('data-copied'));
   assert.equal(await card.locator('[data-copy-prompt-button]').getAttribute('aria-label'), 'Copied');
-  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await card.locator('textarea').inputValue());
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await card.locator('[data-copy-prompt-source]').textContent());
   if (shots) await card.screenshot({ path: join(shots, 'copied.png') });
   await page.waitForFunction(() => !document.querySelector('#prompt-root-001 [data-copy-prompt-button]').hasAttribute('data-copied'));
-  const field = await card.locator('textarea').boundingBox();
+  const field = await card.locator('[data-copy-prompt-source]').boundingBox();
   const copy = await card.locator('[data-copy-prompt-button]').boundingBox();
   assert.ok(copy.y - field.y < 12 && field.x + field.width - (copy.x + copy.width) < 12, 'Copy sits in the top right corner of the field');
   assert.ok(copy.width >= 44 && copy.height >= 44, 'Copy keeps a 44px tap target');
 
-  // Fields are as tall as their text plus one empty line, with and without
-  // CSS field sizing (the script sizes them where it is missing).
-  const fieldFit = () => page.evaluate(() => Array.from(document.querySelectorAll('[data-copy-prompt] textarea')).map(field => {
-    const style = getComputedStyle(field);
-    const line = parseFloat(style.lineHeight);
-    const lines = Math.round((field.scrollHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)) / line);
-    const text = field.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-    return { id: field.id, capped: field.scrollHeight > field.clientHeight + 1, slack: text - lines * line, spare: parseFloat(style.paddingBottom) / line };
-  }));
-  const assertFit = async (label) => {
-    const fields = await fieldFit();
-    assert.ok(fields.length >= 4, label + ': library card and the three site prompts');
-    for (const field of fields) {
-      assert.ok(field.capped || field.slack < 2, `${label}: ${field.id} has ${field.slack}px of empty room`);
-      assert.ok(field.spare >= 1 && field.spare < 2, `${label}: ${field.id} leaves about one empty line`);
-    }
-  };
-  assert.equal(await card.locator('textarea').inputValue(), 'First line preview.\nSecond line body.', "the body's closing newline is not shown");
-  await assertFit('field-sizing');
-  const fallback = await context.newPage();
-  await fallback.addInitScript(() => { CSS.supports = () => false; });
-  await fallback.goto(base + '/agent/');
-  await fallback.addStyleTag({ content: '[data-copy-prompt] textarea { field-sizing: fixed !important; }' });
-  await fallback.setViewportSize({ width: 500, height: 900 });
-  await fallback.waitForTimeout(200);
-  for (const field of await fallback.evaluate(() => Array.from(document.querySelectorAll('[data-copy-prompt] textarea')).map(field => ({ id: field.id, inline: field.style.height, gap: field.scrollHeight - field.clientHeight })))) {
-    assert.match(field.inline, /px$/, 'script fallback sized ' + field.id);
-    assert.ok(field.gap <= 1 || field.id.includes('shared-'), 'script fallback shows all of ' + field.id);
-  }
-  await fallback.close();
+  // Prompts are text, not form fields: nothing on the page is a textarea, a
+  // short prompt is shown whole, and its closing newline is not shown.
+  assert.equal(await page.locator('.agent-page textarea').count(), 0);
+  assert.equal(await card.locator('[data-copy-prompt-source]').textContent(), 'First line preview.\nSecond line body.');
+  assert.equal(await card.locator('[data-copy-prompt-more]').isHidden(), true, 'a short prompt has no Show all');
+  assert.equal(await page.locator('#start [data-copy-prompt-more]').count(), 0, "the site's own prompts are never cut");
+
+  // A tall prompt is cut off with Show all; Copy still copies all of it.
+  const longCard = page.locator('#prompt-' + longThread);
+  const longText = longCard.locator('[data-copy-prompt-source]');
+  const more = longCard.locator('[data-copy-prompt-more]');
+  const fullText = await longText.textContent();
+  assert.equal(fullText.split('\n').length, 40);
+  const cutHeight = (await longText.boundingBox()).height;
+  assert.ok(await longText.evaluate(node => node.classList.contains('is-cut') && node.scrollHeight > node.clientHeight + 1), 'the long prompt is cut');
+  assert.equal(await more.textContent(), 'Show all');
+  await longCard.locator('[data-copy-prompt-button]').click();
+  await page.waitForFunction(id => document.querySelector('#prompt-' + id + ' [data-copy-prompt-button]').hasAttribute('data-copied'), longThread);
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), fullText, 'Copy on a cut prompt copies all of it');
+  if (shots) await longCard.screenshot({ path: join(shots, 'long-cut.png') });
+  await more.click();
+  assert.equal(await more.textContent(), 'Show less');
+  assert.equal(await more.getAttribute('aria-expanded'), 'true');
+  assert.ok((await longText.boundingBox()).height > cutHeight * 1.5, 'Show all shows the whole prompt');
+  assert.ok(await longText.evaluate(node => node.scrollHeight <= node.clientHeight + 1));
+  await more.click();
+  assert.equal(await more.textContent(), 'Show all');
+  assert.ok(Math.abs((await longText.boundingBox()).height - cutHeight) < 2, 'Show less cuts it again');
+
+  // A copy that fails leaves the prompt selected and says how to copy by hand.
+  const manual = await context.newPage();
+  await manual.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('denied')) }, configurable: true });
+    document.execCommand = () => false;
+  });
+  await manual.goto(base + '/agent/');
+  await manual.locator('#prompt-root-001 [data-copy-prompt-button]').click();
+  await manual.waitForFunction(() => document.querySelector('#prompt-root-001 [data-copy-prompt-status]').textContent.includes('to copy the selected prompt'));
+  assert.equal(await manual.evaluate(() => String(window.getSelection())), 'First line preview.\nSecond line body.');
+  await manual.close();
 
   if (shots) {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.screenshot({ path: join(shots, 'page-1280.png'), fullPage: true });
+    await page.locator('#start').screenshot({ path: join(shots, 'start-1280.png') });
     for (const width of [390, 1280]) {
       await page.setViewportSize({ width, height: 900 });
-      for (const theme of (process.env.THEMES || 'gloss,gloss-dark,light,dark,word97,chicago,midnight,bubblegum,spearmint,sticker,engagify').split(',')) {
+      for (const theme of (process.env.THEMES || 'gloss,glossdark,light,dark,word97,chicago,midnight,bubblegum,spearmint,sticker,engagify').split(',')) {
         await page.evaluate(theme => localStorage.setItem('forum-zenmemes-theme', theme), theme);
         await page.reload();
+        assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), theme, 'theme id is real');
         await card.screenshot({ path: join(shots, `${theme}-${width}.png`) });
+        if (width === 390) {
+          await card.locator('[data-copy-prompt-button]').hover();
+          await card.screenshot({ path: join(shots, `${theme}-hover.png`) });
+          await card.locator('[data-copy-prompt-button]').click();
+          await card.screenshot({ path: join(shots, `${theme}-copied.png`) });
+          await page.mouse.move(0, 0);
+        }
       }
     }
   }

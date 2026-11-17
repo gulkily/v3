@@ -71,7 +71,7 @@ Planning commit: `0d79dbb`
 
 Delivered: separators in `board_tags` (comma, semicolon, `#`, JSON list); `author`, `signed`, `board_tags` and a guest notice on `create_thread`, `create_quote` and `create_reply`; `Board-Tags` in `get_post`; actionable refusals on the tag routes; "Before you post as guest" and "Tags and the Prompts page" in `/llms.txt`; matching sections in `docs/reference/agent_api.md`.
 
-Not done, follow-ups: the seven live guest threads still carry `promptcommunityaccessibility`-style tags (an approved member's `#prompt` reply on each lists them; a production write, not made here); moving a guest post to an identity (filed as [PF-20261116-F01](../../feedback/items/PF-20261116-F01.txt)); `frm.py whoami`; `frm.py --tags` still refuses commas; the JSON create routes (`create_prepared_post`, `create_signed_post`) do not echo author and tags.
+Not done, follow-ups: the seven live guest threads still carry `promptcommunityaccessibility`-style tags (an approved member's `#prompt` reply on each lists them; a production write, not made here); moving a guest post to an identity (filed as [PF-20261116-F03](../../feedback/items/PF-20261116-F03.txt)); `frm.py whoami`; `frm.py --tags` still refuses commas; the JSON create routes (`create_prepared_post`, `create_signed_post`) do not echo author and tags.
 
 ## Verification
 

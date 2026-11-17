@@ -83,7 +83,7 @@ final class ArchiveExportTest
         $backup = new ImageBackup($root, $w->root . '/index.sqlite3');
 
         // Nothing built yet, and looking must not create archive storage.
-        assertSame(null, $backup->cachedBytes('tar.gz'));
+        assertSame(null, $backup->cachedArchive('tar.gz')['bytes']);
         $unbuilt = $backup->cachedArchive('tar.gz');
         assertTrue(is_string($unbuilt['path']), 'the slot is named before anything is built');
         assertSame(false, is_dir($w->root . '/archive-exports'));
@@ -91,22 +91,22 @@ final class ArchiveExportTest
         $built = $backup->export('tar.gz');
         fclose($built['stream']);
         clearstatcache();
-        assertSame(filesize($built['path']), $backup->cachedBytes('tar.gz'));
+        assertSame(filesize($built['path']), $backup->cachedArchive('tar.gz')['bytes']);
         assertSame(realpath($w->root . '/' . $unbuilt['path']), realpath($built['path']), 'named slot is where the build lands');
-        assertSame(null, $backup->cachedBytes('zip'), 'other formats are not built yet');
-        assertSame(null, $backup->cachedBytes('images'), 'only content archives are sized');
+        assertSame(null, $backup->cachedArchive('zip')['bytes'], 'other formats are not built yet');
+        assertSame(null, $backup->cachedArchive('images')['bytes'], 'only content archives are sized');
 
         // Mismatched metadata is not trusted.
         $metadata = dirname($built['path']) . '/metadata';
         $original = file_get_contents($metadata);
         $meta = json_decode($original, true); $meta['bytes']++;
         file_put_contents($metadata, json_encode($meta));
-        assertSame(null, $backup->cachedBytes('tar.gz'));
+        assertSame(null, $backup->cachedArchive('tar.gz')['bytes']);
         file_put_contents($metadata, $original);
 
         // A new commit means the cached build is for an old revision.
         $w->put($root . '/records/posts/two.txt', $w->post('two')); $w->git($root);
-        assertSame(null, $backup->cachedBytes('tar.gz'));
+        assertSame(null, $backup->cachedArchive('tar.gz')['bytes']);
     }
 
     public function testWarmArchivesReuseAndCorruptionRebuildsWithoutDeletingReaders(): void

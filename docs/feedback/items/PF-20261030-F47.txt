@@ -11,7 +11,9 @@ On HTTP, discreetly offer secure or compatible mode at the bottom of the page, o
 
 Sources:
 - https://zenmemes.com/posts/thread-20261021184825-496ae4be
+- https://zenmemes.com/posts/thread-20261111012035-dc686fa4
 
 Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F47; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-14: Triage 2026-11-11 attached 1 source(s): Agent write-up of the maintainer's idea: gently nudge HTTP visitors that can use HTTPS, since offline mode needs a secure origin; never force it.

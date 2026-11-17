@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?><?php if ($usageReportsEnabled ?? false): ?><?php if (($usagePageKind ?? null) !== null): ?> data-usage-page="<?= $e($usagePageKind) ?>"<?php endif; ?> data-usage-words="<?= $e($usagePageWords) ?>"<?php endif; ?>>
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>" data-fast-navigation="<?= ($fastNavigationScriptPath ?? null) !== null ? '1' : '0' ?>" data-nav-cached-copy="<?= ($navCachedCopyScriptPath ?? null) !== null ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?><?php if ($usageReportsEnabled ?? false): ?><?php if (($usagePageKind ?? null) !== null): ?> data-usage-page="<?= $e($usagePageKind) ?>"<?php endif; ?> data-usage-words="<?= $e($usagePageWords) ?>"<?php endif; ?>>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -261,6 +261,9 @@
 <?php if ($navigationSlot === 'app' && ($deployPromptScriptPath ?? null) !== null): ?>
   <script src="<?= $e($deployPromptScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php if (($keyBootstrapScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($keyBootstrapScriptPath) ?>" data-identity-scripts="<?= $e(implode(' ', $keyBootstrapIdentityScriptPaths ?? [])) ?>" defer></script>
+<?php endif; ?>
 <?php if (($deployCelebrateScriptPath ?? null) !== null): ?>
   <script src="<?= $e($deployCelebrateScriptPath) ?>" defer></script>
 <?php endif; ?>
@@ -271,6 +274,12 @@
 <?php endif; ?>
 <?php if ($usageReportsEnabled ?? false): ?>
   <script src="<?= $e($usageLogScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if (($fastNavigationScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($fastNavigationScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if (($navCachedCopyScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($navCachedCopyScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>

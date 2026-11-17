@@ -278,6 +278,39 @@ final class AppUpdateTest
         assertSame('', trim($this->git($app, ['stash', 'list'])));
     }
 
+    public function testAssetBypassReleaseKeepsServerEditsToHtaccess(): void
+    {
+        // The release that changed the managed block and the asset condition, deployed over
+        // a server edit at the end of public/.htaccess and one just below the managed block.
+        $before = (string) file_get_contents(__DIR__ . '/fixtures/asset_bypass/htaccess_before.txt');
+        $after = (string) file_get_contents(dirname(__DIR__) . '/public/.htaccess');
+        foreach ([
+            'end' => static fn (string $rules): string => $rules . "\n# Server: force HTTPS\nRewriteCond %{HTTPS} off\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n",
+            'directory index' => static fn (string $rules): string => str_replace("DirectoryIndex index.php index.html\n", "DirectoryIndex index.php\n", $rules),
+        ] as $where => $edit) {
+            [$app, $seed] = $this->fixture();
+            mkdir($seed . '/public');
+            file_put_contents($seed . '/public/.htaccess', $before);
+            $this->git($seed, ['add', 'public/.htaccess']);
+            $this->git($seed, ['commit', '-q', '-m', 'before asset bypass']);
+            $this->git($seed, ['push', '-q', 'origin', 'main']);
+            (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+            assertSame($before, file_get_contents($app . '/public/.htaccess'));
+            file_put_contents($seed . '/public/.htaccess', $after);
+            $this->git($seed, ['commit', '-q', '-am', 'asset bypass']);
+            $this->git($seed, ['push', '-q', 'origin', 'main']);
+            $new = $this->head($seed);
+            file_put_contents($app . '/public/.htaccess', $edit($before));
+
+            $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+
+            if ($result['outcome'] !== 'deployed') throw new RuntimeException($where . ': ' . $result['outcome'] . ' ' . ($result['reason'] ?? '') . ' ' . $result['message']);
+            assertSame($new, $this->head($app), $where);
+            assertSame($edit($after), file_get_contents($app . '/public/.htaccess'), $where);
+            assertSame('', trim($this->git($app, ['stash', 'list'])), $where);
+        }
+    }
+
     public function testConflictingLocalEditRollsBackWithTheEditIntact(): void
     {
         [$app, $seed] = $this->fixture();

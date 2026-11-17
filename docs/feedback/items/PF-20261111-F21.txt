@@ -1,0 +1,17 @@
+ID: PF-20261111-F21
+Title: Serve a robots.txt
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+We do need a robots.txt.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261109032013-c73dfc0c
+- https://zenmemes.com/posts/reply-20261108210513-4c9730f4
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Prompted by an agent noting /robots.txt returns the HTML 404 page.

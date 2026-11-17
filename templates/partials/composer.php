@@ -58,7 +58,7 @@ HTML;
           <span class="compose-options-name"><?= $composerIsThread ? 'Theme' : 'Thread theme' ?></span>
           <select name="theme" data-role="thread-theme-choice">
             <option value=""><?= $composerIsThread ? 'Site default' : 'Unchanged' ?></option>
-<?php foreach (\ForumRewrite\View\ThreadTheme::choices() as $composerThemeChoice): ?>
+<?php foreach (\ForumRewrite\View\ThreadTheme::choices($themeFlags) as $composerThemeChoice): ?>
             <option value="<?= $e($composerThemeChoice['name']) ?>"><?= $e($composerThemeChoice['label']) ?></option>
 <?php endforeach; ?>
 <?php if (!$composerIsThread): ?>

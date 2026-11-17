@@ -1,0 +1,16 @@
+ID: PF-20261111-F05
+Title: Formatting help outside the ... menu
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+I don't think the ... menu is the right place for the Formatting help item (or probably the Markdown checkbox).
+
+Sources:
+- https://zenmemes.com/posts/reply-20261104155053-d5dd8577
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+PF-20261109-F01 later moved these into an Options section; check whether this is satisfied.

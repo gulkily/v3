@@ -1035,7 +1035,8 @@ class IncrementalReadModelUpdater
                 'author_identity_id' => $row['author_identity_id'] !== null ? (string) $row['author_identity_id'] : null,
                 'sequence_number' => (int) $row['sequence_number'],
                 'attribution_verified' => (int) $row['attribution_verified'] === 1,
-                'source_path' => (str_contains((string) $row['board_tags_json'], '"approval"') || str_contains((string) $row['board_tags_json'], '"invitation"'))
+                'source_path' => (str_contains((string) $row['board_tags_json'], '"approval"') || str_contains((string) $row['board_tags_json'], '"invitation"')
+                    || \ForumRewrite\Security\KeyBootstrapReplay::isBootstrapRecord((string) $row['board_tags_json']))
                     ? $this->postSourcePath((string) $row['post_id']) : null,
             ];
         }
@@ -1163,7 +1164,11 @@ class IncrementalReadModelUpdater
      */
     private function invitationApprovalCandidates(array $posts): array
     {
-        return \ForumRewrite\Invitation\InvitationApprovalReplay::candidates($this->repositoryRoot, $posts);
+        // Session-vouched grants (key bootstrap) replay through the same checks as invitations.
+        return array_merge(
+            \ForumRewrite\Invitation\InvitationApprovalReplay::candidates($this->repositoryRoot, $posts),
+            \ForumRewrite\Security\KeyBootstrapReplay::candidates($this->repositoryRoot, $posts),
+        );
     }
 
     private function loadApprovalSeedIdentityIds(): array

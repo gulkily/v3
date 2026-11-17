@@ -50,7 +50,7 @@ $mode=new HighTrafficMode($cache);
 try {
     $result=match($command) {
         'prepare'=>['prepared_model'=>\ForumRewrite\Host\HighTrafficRenderInput::build(\ForumRewrite\Host\HighTrafficPublication::capture($repository), $database, $progress)],
-        'run'=>(new \ForumRewrite\Host\HighTrafficRefresh($cache))->run($arguments[1] ?? (getenv('FORUM_HIGH_TRAFFIC_ACCESS_LOG') ?: '')),
+        'run'=>(new \ForumRewrite\Host\HighTrafficRefresh($cache))->run($arguments[1] ?? (getenv('FORUM_HIGH_TRAFFIC_ACCESS_LOG') ?: '')) + ['tour'=>(static function () use ($project): string { try { return (new \ForumRewrite\Tour\TourRefreshLauncher($project))->startIfDue(\ForumRewrite\Tour\TourSnapshots::forProject($project)); } catch (Throwable $error) { return 'not checked: ' . $error->getMessage(); } })()],
         'enable'=>$mode->change(true,'Operator CLI enable'),
         'disable'=>$mode->change(false,'Operator CLI disable'),
         'auto-on'=>(function () use ($cache,$mode,$arguments) { \ForumRewrite\Host\HighTrafficAutomation::set($cache,$arguments[1]==='on',null,'Operator CLI');return $mode->status(); })(),

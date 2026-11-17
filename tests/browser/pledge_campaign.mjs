@@ -93,6 +93,80 @@ try {
   await writer.page.goto(base + '/threads/' + threadId);
   await writer.page.locator('.pledge-bar__goal').waitFor({ state: 'attached' });
   assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+
+  // Withdraw: the pledger posts a third pledge with a note and takes it back with one press.
+  await settled(writer.page);
+  await body.fill('Half a tray more.');
+  await amount.fill('5');
+  const third = writer.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
+  await reply.getByRole('button', { name: 'Post reply' }).click();
+  assert.equal((await third).status(), 200);
+  await settled(writer.page);
+  await writer.page.goto(base + '/threads/' + threadId);
+  await settled(writer.page);
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1305 of 1000 coffees pledged');
+  const withdrawForms = writer.page.locator('[data-role="pledge-withdraw"]');
+  assert.equal(await withdrawForms.count(), 3, 'each of the pledger\'s counted pledges has the button');
+  const cardsBefore = await writer.page.locator('article.post-card').count();
+  const withdrawForm = withdrawForms.last();
+  if (shots) { await mkdir(shots, { recursive: true }); await withdrawForm.scrollIntoViewIfNeeded(); await writer.page.screenshot({ path: join(shots, 'pledger-withdraw-button-375.png'), fullPage: true }); }
+  // A failed send says so beside the button, and a second press works.
+  await writer.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await withdrawForm.getByRole('button', { name: 'Withdraw pledge' }).click();
+  const failure = withdrawForm.locator('[data-role="pledge-withdraw-feedback"]');
+  await failure.waitFor({ state: 'visible' });
+  assert.match((await failure.textContent()).trim(), /^Withdrawal failed\. Try again\./);
+  assert.equal(await withdrawForm.getByRole('button', { name: 'Withdraw pledge' }).isEnabled(), true);
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1305 of 1000 coffees pledged');
+  const withdrew = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
+  await withdrawForm.getByRole('button', { name: 'Withdraw pledge' }).click();
+  assert.equal((await withdrew).status(), 200);
+  await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"]').waitFor({ timeout: 30000 });
+  await settled(writer.page);
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+  assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges');
+  assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"]').textContent()).trim(), /^5 coffees · Withdrawn [A-Z][a-z]{2} \d{1,2}$/);
+  assert.equal(await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"] strong').evaluate(e => getComputedStyle(e).textDecorationLine), 'line-through');
+  assert.equal(await writer.page.getByText('Half a tray more.').first().isVisible(), true, 'the withdrawn pledge keeps its text');
+  assert.equal(await writer.page.locator('article.post-card').count(), cardsBefore, 'the bare withdrawal adds no card');
+  assert.equal(await writer.page.locator('[data-role="pledge-withdraw"]').count(), 2, 'a withdrawn pledge has no button');
+  // The label leads to the signed withdraw reply on its own page.
+  const withdrawHref = await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"] a').getAttribute('href');
+  assert.match(withdrawHref, /^\/posts\//);
+  const replyPage = await open(true);
+  await replyPage.page.goto(base + withdrawHref);
+  assert.equal(await replyPage.page.getByText('withdraw', { exact: true }).first().isVisible(), true);
+  await replyPage.context.close();
+  // Another reader sees the same mark and no button.
+  const reader = await open(true);
+  await reader.page.goto(base + '/threads/' + threadId);
+  assert.equal(await reader.page.locator('.pledge-amount[data-pledge-state="withdrawn"]').count(), 1);
+  assert.equal(await reader.page.locator('[data-role="pledge-withdraw"]').count(), 0);
+  await reader.context.close();
+  assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
+
+  // Fill: the pledger marks the 300 pledge delivered with one press; a failed first press says so.
+  const fillForms = writer.page.locator('[data-role="pledge-line"]');
+  assert.equal(await fillForms.count(), 2, 'each open pledge has Mark delivered for its pledger');
+  const fillForm = fillForms.first();
+  const fillCards = await writer.page.locator('article.post-card').count();
+  await writer.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await fillForm.getByRole('button', { name: 'Mark delivered' }).click();
+  const fillFailure = fillForm.locator('[data-role="pledge-withdraw-feedback"]');
+  await fillFailure.waitFor({ state: 'visible' });
+  assert.match((await fillFailure.textContent()).trim(), /^Marking failed\. Try again\./);
+  assert.equal(await fillForm.getByRole('button', { name: 'Mark delivered' }).isEnabled(), true);
+  const filledReply = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
+  await fillForm.getByRole('button', { name: 'Mark delivered' }).click();
+  assert.equal((await filledReply).status(), 200);
+  await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').waitFor({ timeout: 30000 });
+  await settled(writer.page);
+  assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').textContent()).trim(), /^Delivered by \S+$/);
+  assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges · 300 filled · 0 confirmed');
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+  assert.equal(await writer.page.locator('article.post-card').count(), fillCards, 'the bare fill adds no card');
+  assert.equal(await writer.page.locator('[data-role="pledge-line"]').count(), 1, 'a filled pledge has no fill button');
+  assert.equal(await writer.page.locator('[data-role="pledge-withdraw"]').count(), 1, 'a filled pledge cannot be withdrawn');
   assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
 
   // Without JavaScript the server writes the line. The post has no name, so it counts only with --count-unnamed.
@@ -107,7 +181,7 @@ try {
     assert.equal(await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').count(), 0);
     assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="counted"]').last().textContent()).trim(), '12.5 coffees');
     assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1312.5 of 1000 coffees pledged');
-    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges');
+    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges · 300 filled · 0 confirmed');
   } else {
     assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').textContent()).trim(), '12.5 coffees · Not counted: no name');
     assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
@@ -139,6 +213,10 @@ try {
       const colours = await view.page.locator('.pledge-bar__fill').evaluate(e => [getComputedStyle(e).backgroundColor, getComputedStyle(e.closest('.card') || document.body).backgroundColor]);
       assert.notEqual(colours[0], colours[1], `${theme}: bar fill differs from the card`);
       assert.equal(await view.page.locator('[data-role="pledge-amount"]').count(), 1);
+      const mark = await view.page.locator('.pledge-amount[data-pledge-state="withdrawn"] a').boundingBox();
+      assert.ok(mark && mark.width > 20 && mark.height > 8, `${theme} ${width}px: the Withdrawn label is drawn`);
+      const fillMark = await view.page.locator('.pledge-amount[data-pledge-state="fill"] a').boundingBox();
+      assert.ok(fillMark && fillMark.width > 40 && fillMark.height > 8, `${theme} ${width}px: the Delivered label is drawn`);
       if (shots) {
         await mkdir(shots, { recursive: true });
         await view.page.locator('[data-pledge-totals]').scrollIntoViewIfNeeded();
@@ -149,6 +227,6 @@ try {
     }
   }
   await writer.context.close();
-  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, no-JavaScript pledge, uncounted reason, themes');
+  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, fill with a failed first press, no-JavaScript pledge, uncounted reason, themes');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }
