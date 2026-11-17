@@ -80,6 +80,6 @@ Diff checked: `pending_user_summary.js`, its browser test, the concept's Countin
 
 ## Commit/merge/publication status
 
-Completion commit: the commit that adds this text (hash in the PR). Not pushed at writing.
+Completion commit: `5b6d21c5` (confirmed with `git log`). Pushed with a PR on `feat/pledge-polish`; not merged or deployed.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*

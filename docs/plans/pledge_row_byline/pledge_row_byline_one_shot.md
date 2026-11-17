@@ -78,6 +78,6 @@ Diff checked: `TemplateRenderer.php`, `post_card.php`, one test, the concept's R
 
 ## Commit/merge/publication status
 
-Completion commit: the commit that adds this text (hash in the PR). Not pushed at writing.
+Completion commit: `2039ac65` (confirmed with `git log`). Pushed with a PR on `feat/pledge-polish`; not merged or deployed.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
