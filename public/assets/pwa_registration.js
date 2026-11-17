@@ -25,7 +25,20 @@
     });
     return;
   }
+  // Fast navigation: the layout says whether page requests may start while the worker
+  // wakes up ("1" on, "0" off). Pages without the attribute leave the setting alone.
+  function applyNavigationPreload() {
+    var wanted = document.documentElement.getAttribute("data-fast-navigation");
+    if (wanted !== "1" && wanted !== "0") return;
+    navigator.serviceWorker.ready.then(function (registration) {
+      var preload = registration.navigationPreload;
+      if (!preload) return;
+      return wanted === "1" ? preload.enable() : preload.disable();
+    }).catch(function () {});
+  }
+
   window.addEventListener("load", function () {
+    applyNavigationPreload();
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       return Promise.all(registrations.map(function (registration) {
         return registration.scope === window.location.origin + "/offline/"

@@ -8,7 +8,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.30**
 
-Status: planned on `feat/nav-quick-wins`; next permitted action: implementation.
+Status: technically complete on `feat/nav-quick-wins`; release check pending maintainer; next permitted action: maintainer review, then cycle 3 (`nav_cached_copy`).
 
 # Nav quick wins: a navbar tap starts loading sooner and shows at once
 
@@ -71,14 +71,44 @@ None in the inventory: no concept covers worker navigation handling. [Navigation
 
 Branch `feat/nav-quick-wins` from `origin/main` at `c010efca`.
 
-Planning commit: pending.
+Planning commit: `7050fdf7`, before any implementation edit.
 
 ## Dated execution history
 
-- 2026-11-17: plan written.
+- 2026-11-17: plan written and committed (`7050fdf7`).
+- 2026-11-17: `FeatureFlagRegistry::FAST_NAVIGATION_ENABLED` ("Fast navigation", EXPERIENCE, on, site-changeable). `TemplateRenderer` passes `fastNavigationScriptPath` only with the flag on; `templates/layout.php` writes `data-fast-navigation="1"` or `"0"` on `<html>` and loads the script.
+- 2026-11-17: `pwa_registration.js` enables or disables `navigationPreload` after `serviceWorker.ready`, only when the attribute is present, so pages from other layouts leave the setting alone.
+- 2026-11-17: `service_worker.js`: `networkFirstNavigation()` now takes the fetch event and tries, in order, an early fetch for the same address younger than 10 s, the preload response, then the network; its offline fallbacks are unchanged. An `early-fetch` message starts at most one fetch per address in 10 s and keeps the worker alive until it settles. Redirected, failed or non-basic responses are never used.
+- 2026-11-17: `public/assets/fast_navigation.js` (new): pointerdown on a header nav link or New post (plain button, online, worker in control, not Invite) sends `early-fetch`; a click that is not prevented moves `is-active` to every header copy of the destination; `pageshow` from the back/forward cache restores the page's own active item.
+- 2026-11-17: correction to the plan's outcome: no progress bar was added. The moved highlight is the immediate reaction; a bar would add UI the reader has to parse (AGENTS.md: favour removing UI).
+- 2026-11-17: discovery while testing: Playwright does not reliably report the worker's early-fetch requests, so the browser test reads the worker's pending early fetches directly and proves use by stopping the server before the click.
+
+## Outcome
+
+Delivered, except the progress bar (see history). With the flag on, a navbar tap starts its page request on pointerdown through the worker, the click marks the destination active at once, and every navigation can start while the worker wakes. With it off, preload is turned off at the next page load and nothing is sent early.
+
+Limitations: a tap that uses the early fetch still sends the preload request, which is discarded (one extra server render per navbar tap for logged-in viewers). The gain on iOS Safari was not measured; the release check on the maintainer's phone is pending.
+
+## Verification
+
+- `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/fast_navigation.mjs`: passed. Flag off: attribute `0`, no script, preload off, no early fetch on pointerdown. Flag on: preload on; a navigation without an early fetch answered from the preload and no second request; the click marks Users active; a pointerdown starts the early fetch, the server is then killed, and the click still opens the real Users page (not the offline reader); `/threads/` with the server down still gets the offline reader.
+- `node tests/browser/offline_compose.mjs`: passed (worker navigation fallbacks for compose pages unchanged).
+- `./v3 test --smoke FastNavigationLayoutTest FeatureFlagEvaluatorTest FeatureFlagChangePageTest AppNavigationPlacementTest PrivateMessageFeatureFlagTest`: 476 of 477 on first run; the failure was `FeatureFlagEvaluatorTest::testRegistryListsCurrentPublicFlags`, caused by this change (the flag lists), fixed; rerun passed. The full suite was not run.
+- Themes: no CSS changed; the highlight reuses each theme's existing `is-active` rule. Not checked by screenshot.
+- Not done: iOS Safari, a real logged-in session, and zenmemes.com.
+
+## Final review
+
+Diff read: one flag, one renderer path, one layout attribute and script tag, the preload toggle, the worker's navigation handler and message, one new page script, two tests and the flag-list test update. No duplicated component; nothing outside the authorized scope.
+
+## Commit, merge and publication status
+
+Planning commit `7050fdf7`. Completion commit pending in this record; see the PR. Not merged.
 
 ## Study history
 
 - Intake: 0.30 projected total, scope v1, baseline `c010efca`, R1, P2; Claude single exposed rater, 2026-11-17 UTC, after measuring prod and reading the worker, registration script, nav templates and flag registry. Not a pristine intake. R1 hashes not re-verified.
+- Execution entry: 0.30 reaffirmed.
+- Closeout: retrospective scope assessment 0.25; no revisions (the dropped progress bar is a scope reduction, not a revision). Maintainer comfortable-fit judgment pending.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*

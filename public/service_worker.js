@@ -215,8 +215,48 @@ async function offlineComposePage(url) {
   return new Response(html, { status: cached.status, statusText: cached.statusText, headers: cached.headers });
 }
 
-async function networkFirstNavigation(request) {
+// Fast navigation: a page asks for a navbar destination as a finger or pointer goes down
+// on it, and the navigation that follows within EARLY_FETCH_MS is answered with that
+// response. Pages send nothing while the "Fast navigation" flag is off.
+const EARLY_FETCH_MS = 10000;
+const earlyFetches = new Map();
+
+function startEarlyFetch(href) {
+  let url;
+  try { url = new URL(href, self.location.origin); } catch (error) { return; }
+  if (url.origin !== self.location.origin) return;
+  url.hash = "";
+  const known = earlyFetches.get(url.href);
+  if (known && Date.now() - known.at < EARLY_FETCH_MS) return;
+  for (const [key, entry] of earlyFetches) if (Date.now() - entry.at >= EARLY_FETCH_MS) earlyFetches.delete(key);
+  const response = fetch(url.href, { credentials: "same-origin", headers: { Accept: "text/html" } }).catch(() => null);
+  earlyFetches.set(url.href, { at: Date.now(), response });
+  return response;
+}
+
+// A redirected or failed response cannot answer the navigation; the caller falls back.
+async function takeEarlyFetch(request) {
+  if (request.method !== "GET") return null;
+  const key = new URL(request.url);
+  key.hash = "";
+  const entry = earlyFetches.get(key.href);
+  if (!entry) return null;
+  earlyFetches.delete(key.href);
+  if (Date.now() - entry.at >= EARLY_FETCH_MS) return null;
+  const response = await entry.response;
+  return response && response.ok && !response.redirected && response.type === "basic" ? response : null;
+}
+
+async function networkFirstNavigation(event) {
+  const request = event.request;
+  // Settle the preload even when another response answers, so the browser does not cancel it noisily.
+  const preload = event.preloadResponse ? Promise.resolve(event.preloadResponse).catch(() => undefined) : Promise.resolve(undefined);
+  event.waitUntil(preload);
   try {
+    const early = await takeEarlyFetch(request);
+    if (early) return early;
+    const preloaded = await preload;
+    if (preloaded) return preloaded;
     return await fetch(request);
   } catch (error) {
     const url = new URL(request.url);
@@ -238,6 +278,12 @@ async function networkFirstNavigation(request) {
 }
 
 self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "early-fetch" && typeof event.data.url === "string") {
+    const started = startEarlyFetch(event.data.url);
+    // Keep the worker alive until the response arrives; the navigation picks it up.
+    if (started) event.waitUntil(started);
+    return;
+  }
   if (event.data && event.data.type === "refresh-offline-reader") {
     event.waitUntil((async () => {
       try {
@@ -257,7 +303,7 @@ self.addEventListener("message", (event) => {
 });
 self.addEventListener("fetch", (event) => {
   if (event.request.mode === "navigate") {
-    event.respondWith(networkFirstNavigation(event.request));
+    event.respondWith(networkFirstNavigation(event));
     return;
   }
   if (!cacheableRequest(event.request)) return;

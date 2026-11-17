@@ -2264,3 +2264,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/import_review_summary` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./import_review_summary/import_review_summary_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
 
 2026-11-17: one-shot import review summary; baseline `34d87c86`. Intake after inspection and closeout retrospective both 0.08; Claude single exposed rater; R1 hashes not re-verified.
+
+## Cycle v3/nav_quick_wins
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/nav_quick_wins` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.30 (intake 0.30; entry 0.30; retrospective 0.25) | [One-shot record](./nav_quick_wins/nav_quick_wins_one_shot.md#study-history) | Nav speed checklist cycle 2; one-shot |
+
+2026-11-17T05:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.30**; retrospective scope assessment **0.25**; no revisions. Baseline `c010efca`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.

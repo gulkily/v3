@@ -55,6 +55,7 @@ final class FeatureFlagRegistry
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
     public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
     public const PLEDGES_COUNT_UNNAMED_ENABLED = 'FORUM_PLEDGES_COUNT_UNNAMED_ENABLED';
+    public const FAST_NAVIGATION_ENABLED = 'FORUM_FAST_NAVIGATION_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
@@ -68,7 +69,8 @@ final class FeatureFlagRegistry
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
-            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED],
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED,
+            self::FAST_NAVIGATION_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -437,6 +439,15 @@ final class FeatureFlagRegistry
                 self::PLEDGES_COUNT_UNNAMED_ENABLED,
                 siteMutable: true,
                 requiresEnabledFlag: self::PLEDGES_ENABLED,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::FAST_NAVIGATION_ENABLED,
+                'Fast navigation',
+                'Pages start loading as soon as a finger or pointer touches a navbar link, the tapped item highlights at once, and the offline helper lets page requests start while it wakes up. Off waits for the click and a full start-up, as before.',
+                true,
+                self::FAST_NAVIGATION_ENABLED,
+                siteMutable: true,
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
