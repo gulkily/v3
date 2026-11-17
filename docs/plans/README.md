@@ -580,3 +580,5 @@ and repair its navigation and affected references. See the
 - [Invite QR pitch](invite_qr_pitch/invite_qr_pitch_one_shot.md) — one-shot: the invite QR shows a short pitch for the person scanning it, and the code is smaller.
 
 - [Import planning speed](import_planning_speed/import_planning_speed_step3_development_plan.md) — staged: import planning reuses saved signature checks and one GPG session per signer key.
+
+- [Import output noise](import_output_noise/import_output_noise_one_shot.md) — one-shot: import-instance prints a short log by default; per-file causes move to --verbose.
