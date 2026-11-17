@@ -56,7 +56,6 @@ final class FeatureFlagRegistry
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
     public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
-    public const PLEDGES_COUNT_UNNAMED_ENABLED = 'FORUM_PLEDGES_COUNT_UNNAMED_ENABLED';
     public const SESSION_KEY_BOOTSTRAP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_ENABLED';
     public const SESSION_KEY_BOOTSTRAP_HTTP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED';
     public const FAST_NAVIGATION_ENABLED = 'FORUM_FAST_NAVIGATION_ENABLED';
@@ -75,7 +74,7 @@ final class FeatureFlagRegistry
             self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
-            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED,
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED,
             self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
@@ -469,20 +468,10 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::PLEDGES_ENABLED,
                 'Pledges',
-                'A thread whose opening post has a line "goal: 1000 coffees" shows a running total, and replies with a line "pledge: 300" add to it. No money moves through the site. Off leaves the lines as plain text.',
+                'A thread whose opening post has a line "goal: 1000 coffees" shows a running total, and replies with a line "pledge: 300" from approved members add to it. No money moves through the site. Off leaves the lines as plain text.',
                 false,
                 self::PLEDGES_ENABLED,
                 siteMutable: true,
-                group: 'EXPERIENCE',
-            ),
-            new FeatureFlagDefinition(
-                self::PLEDGES_COUNT_UNNAMED_ENABLED,
-                'Count pledges with no name',
-                'Count a pledge whose post names no author, which includes every pledge posted without JavaScript. Off shows the amount with "Not counted: no name". Nobody can be asked to deliver a pledge with no name, and anyone can post one.',
-                false,
-                self::PLEDGES_COUNT_UNNAMED_ENABLED,
-                siteMutable: true,
-                requiresEnabledFlag: self::PLEDGES_ENABLED,
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
