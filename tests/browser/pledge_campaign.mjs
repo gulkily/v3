@@ -58,8 +58,12 @@ try {
   await settled(writer.page);
   assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '0 of 1000 coffees pledged');
 
-  // The amount field keeps a first line "pledge: N" in the body, both ways.
-  const reply = writer.page.locator('[data-compose-kind="reply"]');
+  // The pledge form in the totals block keeps a first line "pledge: N" in the note, both ways.
+  // The reply box at the bottom has no amount field.
+  const reply = writer.page.locator('[data-pledge-form]');
+  const bottom = writer.page.locator('[data-inline-reply-compose] [data-compose-kind="reply"]');
+  assert.equal(await bottom.locator('[data-role="pledge-amount"]').count(), 0);
+  assert.equal(await writer.page.locator('[data-pledge-totals] [data-pledge-form]').count(), 1);
   const amount = reply.locator('[data-role="pledge-amount"]');
   const body = reply.locator('textarea[name="body"]');
   assert.equal((await reply.locator('.pledge-field').textContent()).trim(), 'Pledgecoffees');
@@ -72,39 +76,65 @@ try {
   assert.equal(await body.inputValue(), 'I can order these myself.');
   await body.fill('pledge: 300\n\nI can order these myself.');
   assert.equal(await amount.inputValue(), '300', 'a typed line shows in the field');
+  // The two composers keep separate drafts: text in the reply box does not reach the pledge form.
+  await bottom.locator('textarea[name="body"]').fill('Just a question.');
+  assert.equal(await body.inputValue(), 'pledge: 300\n\nI can order these myself.');
+  await bottom.locator('textarea[name="body"]').fill('');
+  // The opening post's Reply link goes to the reply box, not the pledge form.
+  await writer.page.locator('[data-inline-reply-link]').first().click();
+  assert.equal(await bottom.locator('textarea[name="body"]').evaluate(el => el === document.activeElement), true);
+  // A failed first press keeps the amount and note, and a second press posts the pledge.
+  await writer.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await reply.getByRole('button', { name: 'Post pledge' }).click();
+  await writer.page.locator('.pledge-form [data-role="compose-identity-status"][data-kind="error"]').waitFor({ state: 'visible', timeout: 30000 });
+  assert.equal(await amount.inputValue(), '300');
+  assert.equal(await body.inputValue(), 'pledge: 300\n\nI can order these myself.');
+  assert.equal(await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').count(), 0);
   const replied = writer.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
-  await reply.getByRole('button', { name: 'Post reply' }).click();
+  await reply.getByRole('button', { name: 'Post pledge' }).click();
   assert.equal((await replied).status(), 200);
   await settled(writer.page);
   await writer.page.goto(base + '/threads/' + threadId);
   await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').waitFor();
   assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '300 of 1000 coffees pledged');
   assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '1 pledge');
-  assert.equal((await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').textContent()).trim(), '300 coffees');
+  assert.equal((await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').textContent()).trim(), '300 coffees Open');
   assert.equal(await writer.page.locator('.pledge-bar__fill').evaluate(e => e.style.width), '30%');
+  // A reply saved on this device is listed by the reply box at the bottom, not by the pledge form.
+  const unsentBesideReplyBox = await writer.page.evaluate(async (thread) => {
+    const item = window.forumOutboxCompose.replyItem({ threadId: thread, parentId: thread, body: 'Saved for later' });
+    await window.forumOutboxStorage.save(item);
+    await window.forumOutboxCompose.showUnsentReplies();
+    const list = document.querySelector('[data-role="outbox-unsent-replies"]');
+    const beside = !!list && !list.closest('[data-pledge-totals]') && list.nextElementSibling === document.querySelector('[data-inline-reply-compose]').closest('[data-compose-root]');
+    await window.forumOutboxStorage.remove(item.id);
+    await window.forumOutboxCompose.showUnsentReplies();
+    return beside;
+  }, threadId);
+  assert.equal(unsentBesideReplyBox, true);
 
   // Past the goal the bar shows a goal mark.
   await settled(writer.page);
   await amount.fill('1,000');
   const second = writer.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
-  await reply.getByRole('button', { name: 'Post reply' }).click();
+  await reply.getByRole('button', { name: 'Post pledge' }).click();
   assert.equal((await second).status(), 200);
   await settled(writer.page);
   await writer.page.goto(base + '/threads/' + threadId);
   await writer.page.locator('.pledge-bar__goal').waitFor({ state: 'attached' });
-  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged Goal reached');
 
   // Withdraw: the pledger posts a third pledge with a note and takes it back with one press.
   await settled(writer.page);
   await body.fill('Half a tray more.');
   await amount.fill('5');
   const third = writer.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
-  await reply.getByRole('button', { name: 'Post reply' }).click();
+  await reply.getByRole('button', { name: 'Post pledge' }).click();
   assert.equal((await third).status(), 200);
   await settled(writer.page);
   await writer.page.goto(base + '/threads/' + threadId);
   await settled(writer.page);
-  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1305 of 1000 coffees pledged');
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1305 of 1000 coffees pledged Goal reached');
   const withdrawForms = writer.page.locator('[data-role="pledge-withdraw"]');
   assert.equal(await withdrawForms.count(), 3, 'each of the pledger\'s counted pledges has the button');
   const cardsBefore = await writer.page.locator('article.post-card').count();
@@ -117,13 +147,13 @@ try {
   await failure.waitFor({ state: 'visible' });
   assert.match((await failure.textContent()).trim(), /^Withdrawal failed\. Try again\./);
   assert.equal(await withdrawForm.getByRole('button', { name: 'Withdraw pledge' }).isEnabled(), true);
-  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1305 of 1000 coffees pledged');
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1305 of 1000 coffees pledged Goal reached');
   const withdrew = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
   await withdrawForm.getByRole('button', { name: 'Withdraw pledge' }).click();
   assert.equal((await withdrew).status(), 200);
   await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"]').waitFor({ timeout: 30000 });
   await settled(writer.page);
-  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged Goal reached');
   assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges');
   assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"]').textContent()).trim(), /^5 coffees · Withdrawn [A-Z][a-z]{2} \d{1,2}$/);
   assert.equal(await writer.page.locator('.pledge-amount[data-pledge-state="withdrawn"] strong').evaluate(e => getComputedStyle(e).textDecorationLine), 'line-through');
@@ -162,8 +192,8 @@ try {
   await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').waitFor({ timeout: 30000 });
   await settled(writer.page);
   assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').textContent()).trim(), /^Delivered by \S+$/);
-  assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges · 300 filled · 0 confirmed');
-  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+  assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges · 300 delivered');
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged Goal reached');
   assert.equal(await writer.page.locator('article.post-card').count(), fillCards, 'the bare fill adds no card');
   assert.equal(await writer.page.locator('[data-role="pledge-line"]').count(), 1, 'a filled pledge has no fill button');
   assert.equal(await writer.page.locator('[data-role="pledge-withdraw"]').count(), 1, 'a filled pledge cannot be withdrawn');
@@ -172,24 +202,26 @@ try {
   // Without JavaScript the server writes the line. The post has no name, so it counts only with --count-unnamed.
   const plain = await open(false);
   await plain.page.goto(base + '/threads/' + threadId);
-  await plain.page.locator('[data-compose-kind="reply"] [data-role="pledge-amount"]').fill('12.5');
-  await plain.page.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('Decaf, then.');
-  await plain.page.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]').click();
+  await plain.page.locator('[data-pledge-form] [data-role="pledge-amount"]').fill('12.5');
+  await plain.page.locator('[data-pledge-form] textarea[name="body"]').fill('Decaf, then.');
+  await plain.page.locator('[data-pledge-form] .compose-form-actions > button[type="submit"]').click();
   await plain.page.waitForLoadState('load');
   await plain.page.goto(base + '/threads/' + threadId);
   if (countUnnamed) {
     assert.equal(await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').count(), 0);
-    assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="counted"]').last().textContent()).trim(), '12.5 coffees');
-    assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1312.5 of 1000 coffees pledged');
-    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges · 300 filled · 0 confirmed');
+    assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="counted"]').last().textContent()).trim(), '12.5 coffees Open');
+    assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1312.5 of 1000 coffees pledged Goal reached');
+    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges · 300 delivered');
   } else {
     assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').textContent()).trim(), '12.5 coffees · Not counted: no name');
-    assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+    assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged Goal reached');
   }
-  assert.equal(await plain.page.getByText('pledge: 12.5').first().isVisible(), true);
+  // The card shows the amount, so the thread page leaves the written line out; the note stays.
+  assert.equal(await plain.page.getByText('pledge: 12.5').count(), 0);
+  assert.equal(await plain.page.getByText('Decaf, then.').first().isVisible(), true);
   // A line that is not a number stays a reply and says why.
-  await plain.page.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('pledge: a few');
-  await plain.page.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]').click();
+  await plain.page.locator('[data-inline-reply-compose] textarea[name="body"]').fill('pledge: a few');
+  await plain.page.locator('[data-inline-reply-compose] .compose-form-actions > button[type="submit"]').click();
   await plain.page.waitForLoadState('load');
   await plain.page.goto(base + '/threads/' + threadId);
   assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unreadable"]').textContent()).trim(), 'Not counted: “a few” is not a number');
@@ -201,9 +233,9 @@ try {
   await pledger.page.goto(base + '/threads/' + threadId);
   await settled(pledger.page);
   for (const n of ['20', '30']) {
-    await pledger.page.locator('[data-compose-kind="reply"] [data-role="pledge-amount"]').fill(n);
+    await pledger.page.locator('[data-pledge-form] [data-role="pledge-amount"]').fill(n);
     const posted = pledger.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
-    await pledger.page.locator('[data-compose-kind="reply"]').getByRole('button', { name: 'Post reply' }).click();
+    await pledger.page.locator('[data-pledge-form]').getByRole('button', { name: 'Post pledge' }).click();
     assert.equal((await posted).status(), 200);
     await settled(pledger.page);
     await pledger.page.goto(base + '/threads/' + threadId);
@@ -223,7 +255,7 @@ try {
 
   await writer.page.goto(base + '/threads/' + threadId);
   await settled(writer.page);
-  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 350 filled · 0 confirmed$/);
+  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 350 delivered$/);
   const confirmForms = writer.page.locator('[data-role="pledge-line"]').filter({ has: writer.page.locator('input[name="body"][value="confirm"]') });
   assert.equal(await confirmForms.count(), 2, 'each unreviewed delivery has Confirm for the author');
   const confirmForm = confirmForms.first();
@@ -238,7 +270,7 @@ try {
   assert.equal((await confirmed).status(), 200);
   await writer.page.waitForLoadState('load');
   await settled(writer.page);
-  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 350 filled · 20 confirmed$/);
+  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 350 delivered \(20 confirmed\)$/);
   assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="fill"]', { hasText: 'confirmed by' }).textContent()).trim(), /^Delivered by \S+ · confirmed by \S+$/);
   const reviewCards = await writer.page.locator('article.post-card').count();
 
@@ -249,7 +281,7 @@ try {
   assert.equal((await disputed).status(), 200);
   await writer.page.waitForLoadState('load');
   await settled(writer.page);
-  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 320 filled · 20 confirmed$/);
+  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 320 delivered \(20 confirmed\)$/);
   const struck = writer.page.locator('.pledge-amount[data-pledge-state="fill-disputed"]');
   assert.match((await struck.textContent()).trim(), /^Delivered by \S+ · disputed by \S+$/);
   assert.equal(await struck.locator('s').evaluate(e => getComputedStyle(e).textDecorationLine), 'line-through');

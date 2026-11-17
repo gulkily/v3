@@ -2300,18 +2300,26 @@ pre {
 .post-photo-details-disclosure > .post-photo-details { margin-top: 0; }
 .post-photo-details { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .75rem; row-gap: .15rem; margin: .35rem 0; font-size: .9em; overflow-wrap: anywhere; }
 
-/* Pledge campaign (thread page): totals under the opening post, amount on each pledge reply */
-.pledge-totals { margin: 0.75rem 0; }
-.pledge-totals__sum { margin: 0 0 0.4rem; }
-.pledge-totals__sum strong { font-size: 1.5em; }
-.pledge-totals__count { margin: 0.3rem 0 0; }
-.pledge-bar { position: relative; height: 0.9rem; border: 1px solid var(--line); background: var(--input-bg); overflow: hidden; }
-.pledge-bar__fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
-.pledge-bar__goal { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--input-bg); }
+/* Pledge campaign (thread page): totals under the title, amount on each pledge reply */
+/* Totals under the title: delivered (the ink) over pledged (the ink, faded) on the card itself,
+   which the ink always contrasts with. The goal mark shows once pledges pass the goal. */
+.pledge-totals { margin: 0.6rem 0 1rem; }
+.pledge-totals__sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.4rem; margin: 0 0 0.5rem; color: var(--ink-soft); }
+.pledge-totals__sum strong { font-size: 2em; line-height: 1; color: var(--ink); }
+.pledge-status { align-self: center; padding: 0.15em 0.6em; border: 1px solid var(--active-line, var(--line)); border-radius: 999px; background: var(--active-bg, var(--panel)); color: var(--active-ink, var(--ink)); font: 600 0.8rem/1.3 var(--ui-font); white-space: nowrap; }
+.pledge-totals[data-pledge-status="complete"] .pledge-status { border-color: var(--status-ok, var(--line)); color: var(--status-ok, var(--ink)); }
+.pledge-totals__count { margin: 0.4rem 0 0; }
+.pledge-bar { position: relative; height: 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: transparent; overflow: hidden; }
+.pledge-bar__fill, .pledge-bar__delivered { position: absolute; inset: 0 auto 0 0; }
+.pledge-bar__fill { background: var(--ink); opacity: 0.35; }
+.pledge-bar__delivered { background: var(--ink); }
+.pledge-bar__goal { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); }
 .pledge-amount { margin: 0.4rem 0 0; }
 .pledge-amount strong { font-size: 1.25em; }
+.pledge-amount .pledge-status { margin-left: 0.25rem; vertical-align: 0.15em; }
 .pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
 .pledge-withdraw { margin: 0.3rem 0 0; }
+.pledge-form { margin: 0.9rem 0 0; }
 .pledge-field { display: flex; align-items: center; gap: 0.5rem; }
 .pledge-field input { flex: 0 1 8rem; min-width: 0; width: 8rem; }
 .pledge-field__unit { color: var(--ink-soft); overflow-wrap: anywhere; }

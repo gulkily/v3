@@ -12,6 +12,7 @@ use ForumRewrite\Support\FilledDirective;
 use ForumRewrite\Support\GoalDirective;
 use ForumRewrite\Support\PledgeAmount;
 use ForumRewrite\Support\PledgeDirective;
+use ForumRewrite\Support\PledgeLines;
 use ForumRewrite\Support\ReviewDirective;
 use ForumRewrite\Support\WithdrawDirective;
 use ForumRewrite\View\PledgeCampaign;
@@ -148,7 +149,7 @@ final class PledgeCampaignTest
         pledgeAssertContains('style="width: 30%"', $on);
         pledgeAssertNotContains('pledge-bar__goal', $on);
         pledgeAssertContains('1 pledge</p>', $on);
-        pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees</p>', $on);
+        pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $on);
         pledgeAssertContains('data-pledge-state="unverified"><strong>250</strong> coffees · <span class="meta">Not counted: unverified</span>', $on);
         pledgeAssertContains('data-pledge-state="unnamed"><strong>40</strong> coffees · <span class="meta">Not counted: no name</span>', $on);
         pledgeAssertContains('data-pledge-state="unreadable"><span class="meta">Not counted: “a few” is not a number</span>', $on);
@@ -163,7 +164,7 @@ final class PledgeCampaignTest
         }
         pledgeAssertContains('<strong>340</strong> of 1000 coffees pledged', $counting);
         pledgeAssertContains('2 pledges</p>', $counting);
-        pledgeAssertContains('data-pledge-state="counted"><strong>40</strong> coffees</p>', $counting);
+        pledgeAssertContains('data-pledge-state="counted"><strong>40</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $counting);
         pledgeAssertNotContains('Not counted: no name', $counting);
         pledgeAssertContains('Not counted: unverified', $counting);
         // The second flag does nothing while Pledges is off.
@@ -173,8 +174,12 @@ final class PledgeCampaignTest
         } finally {
             putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
         }
-        // The lines stay in the posts as written.
-        pledgeAssertContains('goal: 1000 coffees', $on);
+        // The thread page leaves out the lines its totals and cards already show; an unread line stays.
+        pledgeAssertNotContains('goal: 1000 coffees', $on);
+        pledgeAssertContains('We need coffee.', $on);
+        pledgeAssertNotContains('pledge: 300', $on);
+        pledgeAssertContains('I&#039;ll order these myself.', $on);
+        pledgeAssertNotContains('pledge: 250', $on);
         pledgeAssertContains('pledge: a few', $on);
         // A pledge line outside a campaign is an ordinary reply.
         pledgeAssertNotContains('pledge-totals', $other);
@@ -238,6 +243,18 @@ final class PledgeCampaignTest
             pledgeAssertContains('<label class="pledge-field">Pledge<input type="text" name="pledge_amount" inputmode="decimal"', $page);
             pledgeAssertContains('<span class="pledge-field__unit">coffees</span>', $page);
             pledgeAssertContains('/assets/pledge_field.', $page);
+            // The field lives in the pledge form in the totals block, which has its own draft and button;
+            // the reply box at the bottom no longer carries it.
+            pledgeAssertSame(1, substr_count($page, 'name="pledge_amount"'));
+            pledgeAssertContains('data-compose-kind="reply" data-pledge-form data-compose-draft-scope="pledge">', $page);
+            $pledgeForm = substr($page, (int) strpos($page, 'data-pledge-form'), 6000);
+            pledgeAssertContains('name="pledge_amount"', $pledgeForm);
+            pledgeAssertContains('placeholder="Note (optional)"', $pledgeForm);
+            pledgeAssertContains('Post pledge', $pledgeForm);
+            pledgeAssertNotContains('data-compose-disclosure="options"', substr($pledgeForm, 0, (int) strpos($pledgeForm, '</form>')));
+            $bottom = substr($page, (int) strpos($page, 'data-inline-reply-compose'));
+            pledgeAssertNotContains('name="pledge_amount"', $bottom);
+            pledgeAssertNotContains('data-pledge-form', $bottom);
             $other = $this->render($application(), '/threads/' . rawurlencode($plain));
             pledgeAssertNotContains('name="pledge_amount"', $other);
             pledgeAssertNotContains('pledge_field.', $other);
@@ -498,7 +515,7 @@ final class PledgeCampaignTest
             pledgeAssertContains('order these myself.', $on);
             pledgeAssertContains('The order fell through.', $on);
             pledgeAssertContains('data-pledge-state="withdraw-uncounted"><span class="meta">Not counted: write “withdraw” alone on its line</span>', $on);
-            pledgeAssertContains('data-pledge-state="counted"><strong>200</strong> coffees</p>', $on);
+            pledgeAssertContains('data-pledge-state="counted"><strong>200</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $on);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
         }
@@ -535,7 +552,7 @@ final class PledgeCampaignTest
             // The reply drops the baked page, so the next build carries the new totals.
             pledgeAssertSame(false, is_file($path));
             pledgeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
-            pledgeAssertContains('2 pledges · 700 filled · 400 confirmed</p>', (string) file_get_contents($path));
+            pledgeAssertContains('2 pledges · 700 delivered (400 confirmed)</p>', (string) file_get_contents($path));
 
             $on = $page();
             pledgeAssertContains('data-pledge-state="fill"><a href="/posts/' . $delivered . '">Delivered by ', $on);
@@ -546,10 +563,14 @@ final class PledgeCampaignTest
             pledgeAssertContains('data-pledge-state="fill-capped"><span class="meta">Counted 300 of 500</span>', $on);
             pledgeAssertContains('data-pledge-state="fill-uncounted"><span class="meta">Not counted: no name</span>', $on);
             pledgeAssertSame(true, $nameless !== '');
-            // The bare fill folds into its pledge; fills with an amount or a reason stay.
+            // A fill that is only its line folds into its pledge, with or without an amount; one
+            // counted in part, or not counted, stays for its reason.
             pledgeAssertNotContains('data-post-id="' . $delivered . '"', $on);
-            pledgeAssertContains('data-post-id="' . $filled . '"', $on);
+            pledgeAssertNotContains('data-post-id="' . $filled . '"', $on);
+            pledgeAssertContains('data-post-id="' . $over . '"', $on);
             pledgeAssertContains('data-post-id="' . $nameless . '"', $on);
+            // The post's own page keeps the line as written.
+            pledgeAssertContains('pledge: 300', $this->render(new Application(dirname(__DIR__), $root, $database), '/posts/' . rawurlencode($own)));
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
             putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
@@ -597,7 +618,7 @@ final class PledgeCampaignTest
             (new PDO('sqlite:' . $database))->prepare("UPDATE posts SET retracted_at = '2026-11-16T09:00:00Z', body = '' WHERE post_id = ?")->execute([$bare]);
             $undone = $this->render($application(), '/threads/' . rawurlencode($thread));
             pledgeAssertContains('<strong>300</strong> of 1000 coffees pledged', $undone);
-            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees</p>', $undone);
+            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $undone);
             pledgeAssertNotContains($card($bare), $undone);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
@@ -853,7 +874,7 @@ final class PledgeCampaignTest
         putenv('FORUM_PLEDGES_ENABLED=1');
         try {
             $html = $page();
-            pledgeAssertContains('2 pledges · 300 filled</p>', $html);
+            pledgeAssertContains('2 pledges · 300 delivered</p>', $html);
             pledgeAssertContains('data-pledge-state="fill"><a href="/posts/rv-kept">Delivered by ', $html);
             pledgeAssertContains(' · <a href="/posts/rv-confirm">confirmed by ', $html);
             pledgeAssertContains('data-pledge-state="fill-disputed"><s><a href="/posts/rv-lost">Delivered by ', $html);
@@ -912,6 +933,85 @@ final class PledgeCampaignTest
             $_COOKIE = $oldCookies;
             putenv('FORUM_PLEDGES_ENABLED');
         }
+    }
+
+    public function testTotalsSitUnderTheTitleWithAStatusOnceTheGoalIsReached(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Coffee for the hack weekend', "We need coffee.\ngoal: 100 coffees");
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $open = $page();
+            $pledge = $this->reply($service, $thread, "pledge: 120\n\nFrom the lab.");
+            $reached = $page();
+            $this->replyTo($service, $thread, $pledge, 'filled: 30');
+            $part = $page();
+            $this->replyTo($service, $thread, $pledge, 'filled');
+            $complete = $page();
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+        // The block comes before the pitch, straight after the title.
+        $title = strpos($open, 'Coffee for the hack weekend</h1>');
+        $totals = strpos($open, 'data-pledge-totals');
+        $pitch = strpos($open, 'We need coffee.');
+        pledgeAssertSame(true, $title !== false && $totals !== false && $pitch !== false && $title < $totals && $totals < $pitch);
+        pledgeAssertContains('data-pledge-status="open"', $open);
+        pledgeAssertNotContains('data-role="pledge-status"', $open);
+        pledgeAssertNotContains('pledge-bar__delivered', $open);
+        pledgeAssertContains('data-pledge-status="goal_reached"', $reached);
+        pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Goal reached</span>', $reached);
+        pledgeAssertContains('<span class="pledge-bar__delivered" style="width: 25%"></span>', $part);
+        pledgeAssertContains('aria-label="120 of 100 coffees pledged, 30 delivered"', $part);
+        // The author filled it, so delivered and confirmed are equal and "confirmed" is not repeated.
+        pledgeAssertContains('1 pledge · 30 delivered</p>', $part);
+        pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Complete</span>', $complete);
+        pledgeAssertContains('1 pledge · 120 delivered</p>', $complete);
+        // Each pledge card leads with its amount and one status, then the note.
+        pledgeAssertContains('<strong>120</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span>', $reached);
+        pledgeAssertSame(true, strpos($reached, 'data-role="pledge-card-status"') < strpos($reached, 'From the lab.'));
+        pledgeAssertContains('data-role="pledge-card-status">Part delivered: 30 of 120</span>', $part);
+        pledgeAssertContains('data-role="pledge-card-status">Delivered</span>', $complete);
+    }
+
+    public function testPledgeLinesLeaveOutOnlyTheLineTheReaderUsed(): void
+    {
+        pledgeAssertSame("I'll order these myself.", PledgeLines::hide("pledge: 300\n\nI'll order these myself.", PledgeLines::PLEDGE));
+        pledgeAssertSame("We need coffee.\nPledge any number.", PledgeLines::hide("We need coffee.\ngoal: 1000 coffees\nPledge any number.", PledgeLines::GOAL));
+        pledgeAssertSame("Three days.\n\nPledge any number.", PledgeLines::hide("Three days.\n\ngoal: 1000 coffees\n\nPledge any number.", PledgeLines::GOAL));
+        // A quoted line is never the one removed, as the readers skip it too.
+        pledgeAssertSame("> pledge: 50\nAgreed.", PledgeLines::hide("> pledge: 50\npledge: 20\nAgreed.", PledgeLines::PLEDGE));
+        // Only the first match goes; a body with no such line is unchanged.
+        pledgeAssertSame("filled: 5", PledgeLines::hide("filled\nfilled: 5", PledgeLines::FILLED));
+        pledgeAssertSame("Just talking.", PledgeLines::hide("Just talking.", PledgeLines::PLEDGE));
+        pledgeAssertSame(true, PledgeLines::isOnlyLine("filled: 5", PledgeLines::FILLED));
+        pledgeAssertSame(true, PledgeLines::isOnlyLine("\nconfirm\n", PledgeLines::REVIEW));
+        pledgeAssertSame(false, PledgeLines::isOnlyLine("filled\n\nArrived Tuesday.", PledgeLines::FILLED));
+        pledgeAssertSame(false, PledgeLines::isOnlyLine("", PledgeLines::WITHDRAW));
+    }
+
+    public function testThreadPageKeepsTheLinesThatDidNotCount(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Kept lines', 'goal: 100 coffees');
+        $pledge = $this->reply($service, $thread, 'pledge: 30');
+        $quiet = $this->reply($service, $thread, 'pledge: 20');
+        // Text after a withdraw or review line stops it counting, so the line and its reason stay.
+        $this->replyTo($service, $thread, $pledge, 'withdraw: 10');
+        $this->replyTo($service, $thread, $pledge, 'confirm: yes');
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $on = $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+        pledgeAssertContains('withdraw: 10', $on);
+        pledgeAssertContains('confirm: yes', $on);
+        // A pledge with no note shows its amount and no empty text box.
+        pledgeAssertNotContains('pledge: 20', $on);
+        $card = substr($on, (int) strpos($on, 'data-post-id="' . $quiet . '"'), 1500);
+        pledgeAssertNotContains('<div class="body"></div>', $card);
     }
 
     private function environment(): array

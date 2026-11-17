@@ -46,9 +46,30 @@ $fillButtonLabel = !$pledgeOpen || $withdrawViewerId === '' ? '' : match (true) 
 $viewerCanReview = $withdrawViewerId !== '' && is_array($pledgeEntry)
     && ($withdrawViewerId === (string) ($pledgeCampaign['author'] ?? '') || (bool) ($viewerCanRetractOthers ?? false))
     && $withdrawViewerId !== (string) ($post['author_identity_id'] ?? '');
+// One status for a counted pledge, drawn beside its amount: Open, Part delivered or Delivered.
+$pledgeCardStatus = '';
+if (is_array($pledgeEntry) && $pledgeEntry['state'] === \ForumRewrite\View\PledgeCampaign::COUNTED) {
+    $pledgeFilled = (string) ($pledgeEntry['filled'] ?? '0');
+    $pledgeCardStatus = match (true) {
+        $pledgeFilled === '0' => 'Open',
+        $pledgeFilled === $pledgeEntry['amount'] => 'Delivered',
+        default => 'Part delivered: ' . $pledgeFilled . ' of ' . $pledgeEntry['amount'],
+    };
+}
+// The card draws the amount line above the post's text ('head') and the rest under it. An
+// unreadable pledge has no amount, so its reason goes under the text with the line it explains.
+$pledgePart = (string) ($pledgePart ?? 'all');
+$pledgeLineHere = is_array($pledgeEntry) && match ($pledgePart) {
+    'head' => $pledgeEntry['amount'] !== null,
+    'rest' => $pledgeEntry['amount'] === null,
+    default => true,
+};
 ?>
+<?php if ($pledgeLineHere): ?>
+  <p class="pledge-amount" data-pledge-state="<?= $e($pledgeEntry['state']) ?>"><?php if ($pledgeEntry['amount'] !== null): ?><strong><?= $e($pledgeEntry['amount']) ?></strong><?= $pledgeCampaign['unit'] !== '' ? ' ' . $e($pledgeCampaign['unit']) : '' ?><?php endif; ?><?php if ($pledgeCardStatus !== ''): ?> <span class="pledge-status" data-role="pledge-card-status"><?= $e($pledgeCardStatus) ?></span><?php endif; ?><?php if ($withdrawnBy !== ''): ?> · <a href="/posts/<?= $e($withdrawnBy) ?>">Withdrawn</a><?= $withdrawnDate !== '' ? ' <span class="meta">' . $e($withdrawnDate) . '</span>' : '' ?><?php endif; ?><?php if ($pledgeEntry['note'] !== ''): ?><?= $pledgeEntry['amount'] !== null ? ' · ' : '' ?><span class="meta"><?= $e($pledgeEntry['note']) ?></span><?php endif; ?></p>
+<?php endif; ?>
+<?php if ($pledgePart !== 'head'): ?>
 <?php if (is_array($pledgeEntry)): ?>
-  <p class="pledge-amount" data-pledge-state="<?= $e($pledgeEntry['state']) ?>"><?php if ($pledgeEntry['amount'] !== null): ?><strong><?= $e($pledgeEntry['amount']) ?></strong><?= $pledgeCampaign['unit'] !== '' ? ' ' . $e($pledgeCampaign['unit']) : '' ?><?php endif; ?><?php if ($withdrawnBy !== ''): ?> · <a href="/posts/<?= $e($withdrawnBy) ?>">Withdrawn</a><?= $withdrawnDate !== '' ? ' <span class="meta">' . $e($withdrawnDate) . '</span>' : '' ?><?php endif; ?><?php if ($pledgeEntry['note'] !== ''): ?><?= $pledgeEntry['amount'] !== null ? ' · ' : '' ?><span class="meta"><?= $e($pledgeEntry['note']) ?></span><?php endif; ?></p>
 <?php foreach ($fillList as $fill): ?>
 <?php $fillDisputed = ($fill['review'] ?? '') === 'disputed'; ?>
   <p class="pledge-amount" data-pledge-state="<?= $fillDisputed ? 'fill-disputed' : 'fill' ?>"><?= $fillDisputed ? '<s>' : '' ?><a href="/posts/<?= $e($fill['post_id']) ?>"><?= $fill['role'] === 'pledger' ? 'Delivered' : 'Filled' ?> by <?= $e($fill['by'] !== '' ? $fill['by'] : 'unnamed') ?></a><?= $fill['amount'] !== $pledgeEntry['amount'] ? ' · ' . $e($fill['amount']) : '' ?><?= $fillDisputed ? '</s>' : '' ?><?php if (($fill['review'] ?? '') !== ''): ?> · <a href="/posts/<?= $e($fill['review_post_id']) ?>"><?= $e($fill['review']) ?> by <?= $e($fill['review_by'] !== '' ? $fill['review_by'] : 'unnamed') ?></a><?php endif; ?></p>
@@ -97,4 +118,5 @@ $viewerCanReview = $withdrawViewerId !== '' && is_array($pledgeEntry)
 <?php endif; ?>
 <?php if ($withdrawNote !== ''): ?>
   <p class="pledge-amount" data-pledge-state="withdraw-uncounted"><span class="meta"><?= $e($withdrawNote) ?></span></p>
+<?php endif; ?>
 <?php endif; ?>
