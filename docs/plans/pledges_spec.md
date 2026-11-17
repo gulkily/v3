@@ -2,7 +2,7 @@
 
 Status: draft for discussion, 2026-11-15; code check added 2026-11-16. Cycles are tracked in [pledges_checklist.md](./pledges_checklist.md). Working name: "pledges". Feature flag: `pledges`.
 
-Replanned 2026-11-17 as an MVP: stages, the cushion, marker posts, the celebration and configuration are cut. Only a status word ("Goal reached", "Complete") remains, in the `pledge_frontend` cycle. Board rows and the agent text view are parked. Sections below keep the earlier design for reference.
+Replanned 2026-11-17 as an MVP: stages, the cushion, marker posts, the celebration and configuration are cut. Only a status word ("Goal reached", "Complete") remains, in the `pledge_frontend` cycle. Board rows were built on 2026-11-17 (`pledge_board_rows`); the agent text view is parked. Sections below keep the earlier design for reference.
 
 ## Summary
 
@@ -122,7 +122,7 @@ Same unit as the goal. With no cushion line, the Cushioned stage is skipped.
 ## Pages
 
 - **Campaign thread.** (Built 2026-11-17 by `pledge_frontend`: the block sits under the title, with a pledge form, a status word and one status per pledge.) The normal thread page with a summary block under the first post: goal, pledged, filled, a bar, and a pledge box (one number field, one optional note, one button). Each pledge reply shows its amount and state: open, filled, part filled, or withdrawn.
-- **Board.** A campaign's row shows a compact "620 / 1000 coffees" next to the title.
+- **Board.** (Built 2026-11-17 by `pledge_board_rows`: one line under the title, on the `list` board only.) A campaign's row shows a compact "620 / 1000 coffees" next to the title.
 - **Text view.** `<thread-url>.txt` includes the goal line, the totals, and each pledge with its state, so agents can read and pledge without scraping HTML.
 - **User page (later).** Pledged and filled counts per username.
 

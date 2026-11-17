@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/pledge_board_rows`; [ledger](../effort_le
 
 Extended estimates: enabled
 
-Status: Step 3 approved by the maintainer 2026-11-17 ("approved step 3"). Building on `feat/pledge-board-rows`.
+Status: Step 3 approved by the maintainer 2026-11-17 ("approved step 3"). Built on `feat/pledge-board-rows` in four stages; release check pending.
 
 **Cycle estimate: 0.35**
 
@@ -88,5 +88,38 @@ Status: Step 3 approved by the maintainer 2026-11-17 ("approved step 3"). Buildi
   - Already covered, checked by reading: a retraction runs `invalidateRemovedPost()`, which clears every top-level `*.html` and `*/index.html`. An operator grant and a key retirement, the only way an operator stops being one, run `invalidateApprovalSeed()`, which clears every generated page.
   - High-traffic mode keeps its own cached copies of `/` and `/threads/`, which may lag, as the maintainer accepted for that mode.
 - Estimate details: original scope as planned; the operator paths needed no change. Retrospective lower for that reason.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Replay and records
+
+**Original estimate: 0.06**
+
+**Retrospective: 0.07**
+
+- Changes:
+  - `docs/concepts/pledge_campaign.md`: a "Board row" entry and its source link.
+  - `docs/plans/pledges_spec.md`: the replan note and the "Board" bullet say the row is built.
+  - `docs/plans/pledges_checklist.md`: cycle 5 marked built, with checks, omissions and the pending release check.
+  - The ledger's closeout line and this summary's retrospective.
+- Verification:
+  - Passed: a local replay with scripts kept outside the repository. Setup: a copy of the test fixture, a "50 coffees" campaign with 40 from an approved member and 20 from a member not yet approved, and the board baked with `StaticArtifactBuilder`. It was served through `FrontController`, as production serves it, to a visitor with no cookies at 375 by 667 px, with and without JavaScript.
+    - Before approval, the baked board read "40 / 50 coffees" and the thread page 40.
+    - `LocalWriteService::approveUser()` then deleted the baked `/index.html` and `/threads.html`.
+    - The next view read "60 / 50 coffees · Goal reached" and the thread page 60, both with and without JavaScript.
+  - Passed: `git diff --check`; the diff against `origin/main` was read for duplication and scope. The status labels repeat the totals block's two-line `match` in `thread_row.php`, kept local rather than adding a helper for two words. No files outside the plan's list changed, apart from the summary's recorded refinement.
+- Notes:
+  - Pending: the release check by the maintainer on his iPhone SE on zenmemes.com. The demo thread appears in the Liked view only if it has a like; otherwise it is under All.
+- Estimate details: original scope as planned; the replay needed scratch scripts because the browser fixture's router does not bake pages.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Cycle retrospective
+
+- Delivered scope: Option A as approved, on the `list` board, plus the excerpt refinement. Starting revision `1446b8a5`; planning commit `293bc17a`; stage commits `241c4111`, `94b9c78e`, `ba771493` and Stage 4's.
+- Retrospective scope assessment: **0.35**, the same as the projection. Stage retrospectives 0.08, 0.14, 0.06, 0.07, not summed. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified.
+- Verification: as recorded per stage. The full suite was not run. A thumbnail row was not exercised. The maintainer's iPhone SE check is pending.
+- Corrective work versus new requests: no corrections; one in-scope refinement found during Stage 2.
+- Maintainer comfortable-fit judgment: pending.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
