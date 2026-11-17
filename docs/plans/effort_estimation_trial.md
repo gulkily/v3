@@ -2265,6 +2265,20 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-16: import-instance GUI Step 3 approved; Step 4 entry 0.65 reaffirmed, scope v3. Closeout: six stages done on `feat/import_instance_gui`; retrospective scope assessment 0.70 (stage retrospectives S1 0.18, S2 0.05, S3 0.16, S4 0.14, S5 0.08, S6 0.09; not summed). Claude single exposed rater; R1 hashes not re-verified; no measured time. Maintainer comfortable-fit judgment and acceptance pending.
 
+## Cycle v3/asset_bypass
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/asset_bypass` | Technically complete; production release and maintainer acceptance pending | v1 / R1 / P2 | 0.4 (Step 1 0.35; Step 2 0.4; Step 3 0.4; Step 4 entry 0.4; retrospective 0.45) | [Step 1](./asset_bypass/asset_bypass_step1_solution_assessment.md) · [Step 2](./asset_bypass/asset_bypass_step2_feature_description.md) · [Step 3](./asset_bypass/asset_bypass_step3_development_plan.md) · [Step 4](./asset_bypass/asset_bypass_step4_implementation_summary.md) | Found during `v3/tour_snapshots`; acceptance pending |
+
+2026-11-16: standing P2 enrollment, staged. Step 1 0.35 (Option A; B 0.4; C 0.05). Baseline `34d87c86`; branch `feat/asset_bypass`. Single exposed rater Claude (claude-opus-5-5).
+
+2026-11-17 Step 2: 0.4, up from 0.35. New understanding, same Option A: turn-on while already on must also create the asset link and refresh the saved rules; plain files need PHP's 300-second header from Apache; a refusal rule for the new link path. Scope v1 unchanged; same single exposed rater.
+
+2026-11-17 Step 3: 0.4 reaffirmed (stage work 0.08 / 0.1 / 0.12 / 0.08, not summed). Scope v1 unchanged; same single exposed rater.
+
+2026-11-17 Step 4: entry 0.4 reaffirmed. Closeout: retrospective scope assessment **0.45** (Apache-test triage on the base commit; a deploy-conflict fix found by the planned replay). Retrospective stage work 0.1 / 0.08 / 0.14 / 0.1. Approved scope delivered. No measured effort, independent rating or accepted-count increment; maintainer judgment pending.
+
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
 | `v3/import_review_summary` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./import_review_summary/import_review_summary_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |

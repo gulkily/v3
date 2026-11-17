@@ -550,6 +550,8 @@ and repair its navigation and affected references. See the
 
 - [Tour snapshots](tour_snapshots/tour_snapshots_step1_solution_assessment.md) — staged: the feature tour as one row per feature with essays, served from pre-rendered HTML snapshots refreshed by deploy, cron or Tools → Operations.
 - [Approval root suggestions](approval_suggest_roots/approval_suggest_roots_one_shot.md) — one-shot: read-only `./v3 approval suggest-roots` that finds which keys to seed as roots after importing a site without its approval seeds.
+- [Asset bypass](asset_bypass/asset_bypass_step1_solution_assessment.md) — staged: high-traffic mode serves its verified asset copies through Apache; fix the broken /assets/ bypass condition.
+
 - [Import with approvals](import_with_approvals/import_with_approvals_one_shot.md) — one-shot: `import-instance --with-approvals` imports approval/invitation posts and receipts (never seeds) and points to `./v3 approval suggest-roots`.
 
 - [Local start PR integration repair](local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md) — one-shot repair of open PR #284.
