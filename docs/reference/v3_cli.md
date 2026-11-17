@@ -664,6 +664,11 @@ Preview an import:
 
 Remove `--dry-run` to perform the import.
 
+A name from `resources/known_instances.txt` (shipped with the code; currently
+`zenmemes`) works in place of a URL, for example `./v3 import-instance zenmemes`.
+A `--sources` file can override those names. Tools → Import and the local start
+page offer the same list, leaving out the instance's own address.
+
 Source HTTP failures report bounded, sanitized plain-text error detail when
 available. Repair the source download and retry; `--resume` advice appears only
 when the selected destination has an interrupted-import journal. Supported legacy

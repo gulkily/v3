@@ -42,6 +42,12 @@ under Advanced (first 500; the rest stay in the saved `report.json`). Preview
 (`--dry-run`), named sources from `--sources` and path overrides stay
 command-line only.
 
+Known instances: `resources/known_instances.txt` ships with the code and lists
+public instances by `Name:`, `Title:` and `URL:` (currently only ZenMemes). The
+page offers them after remembered sources, and the command accepts their names
+(`./v3 import-instance zenmemes`). An instance never offers its own address. Add
+an instance by adding a block to that file.
+
 ## Run an import
 
 Run from the application checkout as the operator who owns the destination

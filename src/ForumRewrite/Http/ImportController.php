@@ -223,6 +223,7 @@ final class ImportController
         $task = InstanceImportTask::forQueue($this->queueDatabasePath);
         $state = (new InstanceImportStatus($this->repositoryRoot))->read() + [
             'sources' => $task->sources()->all(),
+            'known' => \ForumRewrite\Import\KnownInstances::others((string) ($_SERVER['HTTP_HOST'] ?? '')),
             'worker' => 'not_observed',
             'task' => null,
             'progress' => [],

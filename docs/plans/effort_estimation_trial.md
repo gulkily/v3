@@ -2349,6 +2349,9 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
+| `v3/known_instances` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.10 | [One-shot record](./known_instances/known_instances_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
+
+2026-11-17: one-shot known instances; baseline `96462cfd`. Intake and closeout retrospective both 0.10; Claude single exposed rater; R1 hashes not re-verified.
 | `v3/worker_before_read_model` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.05 | [One-shot record](./worker_before_read_model/worker_before_read_model_one_shot.md) | Follow-up to `v3/import_without_worker`; acceptance pending |
 
 2026-11-17: one-shot worker before the read model; baseline `96462cfd`. Intake 0.05 after reproduction; closeout retrospective 0.06; Claude single exposed rater; R1 hashes not re-verified.
