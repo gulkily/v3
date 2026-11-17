@@ -3,8 +3,9 @@
   // A "Pending" chip beside an author's name opens a short summary of that
   // key in place, with Approve for viewers remembered as approved members
   // (the button is [data-member-only]; the server still checks authority).
-  // Approving removes every chip for that key on the page. Without this
-  // script the chip is a plain link to the profile.
+  // Approving removes every chip for that key on the page, and reloads a
+  // campaign thread where that key has a reply. Without this script the
+  // chip is a plain link to the profile.
 
   let dialog = null;
   let current = '';
@@ -198,12 +199,16 @@
     }
   }
 
-  // The key is approved: its chips go, and the open summary closes.
+  // The key is approved: its chips go, and the open summary closes. On a campaign thread where
+  // the key has a reply, its pledges and fills now count, so the page reloads to show the totals.
   function settle(slug) {
-    document.querySelectorAll('[data-pending-profile]').forEach(function (chip) {
-      if (chip.getAttribute('data-pending-profile') === slug) chip.remove();
+    const chips = Array.from(document.querySelectorAll('[data-pending-profile]')).filter(function (chip) {
+      return chip.getAttribute('data-pending-profile') === slug;
     });
+    const countsChange = !!document.querySelector('[data-pledge-totals]') && chips.some(function (chip) { return !!chip.closest('article'); });
+    chips.forEach(function (chip) { chip.remove(); });
     if (dialog && current === slug && dialog.open) dialog.close();
+    if (countsChange) window.location.reload();
   }
 
   document.addEventListener('click', function (event) {

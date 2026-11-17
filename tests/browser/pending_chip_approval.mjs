@@ -9,6 +9,12 @@ const css = fs.readFileSync('public/assets/site.css', 'utf8');
 const summaryScript = fs.readFileSync('public/assets/pending_user_summary.js', 'utf8');
 const signingScript = fs.readFileSync('public/assets/browser_signing.js', 'utf8');
 const chip = (slug, name) => `<a class="pending-chip" href="/profiles/${slug}" data-pending-profile="${slug}" data-pending-username="${name}"><span class="chip chip--pending">Pending</span></a>`;
+const campaign_html = () => `<!doctype html><meta charset="utf-8"><html data-member="approved"><head><style>${css}</style>
+<script>window.__forumAssetPaths = { openpgpLoader: '/assets/openpgp_loader.js', browserSigning: '/assets/browser_signing.js' };</script>
+<script src="/assets/pending_user_summary.js" defer></script></head><body>
+<div class="pledge-totals" data-pledge-totals><p class="pledge-totals__sum"><strong>20</strong> of 100 coffees pledged</p></div>
+<article class="card post-card pledge-row" data-post-id="p1"><p class="meta" data-post-byline id="one">Oct 6 ${chip('mouse', 'mouse')}</p></article>
+</body></html>`;
 const page_html = (member) => `<!doctype html><meta charset="utf-8"><html${member ? ' data-member="approved"' : ''}><head><style>${css}</style>
 <script>window.__forumAssetPaths = { openpgpLoader: '/assets/openpgp_loader.js', browserSigning: '/assets/browser_signing.js' };</script>
 <script src="/assets/pending_user_summary.js" defer></script></head><body>
@@ -23,11 +29,11 @@ try {
     for (const member of [true, false]) {
       const context = await browser.newContext({ viewport });
       const page = await context.newPage();
-      const calls = { profile: 0, prepare: 0, create: 0, signingLoads: 0 };
+      const calls = { profile: 0, prepare: 0, create: 0, signingLoads: 0, pageLoads: 0 };
       let failNextSign = true;
       await context.route('http://pending.test/**', async route => {
         const url = new URL(route.request().url());
-        if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: page_html(member) });
+        if (url.pathname === '/') { calls.pageLoads++; return route.fulfill({ contentType: 'text/html', body: page_html(member) }); }
         if (url.pathname === '/assets/pending_user_summary.js') return route.fulfill({ contentType: 'text/javascript', body: summaryScript });
         if (url.pathname === '/assets/openpgp_loader.js') return route.fulfill({ contentType: 'text/javascript', body: `
           window.openpgp = {
@@ -123,9 +129,40 @@ try {
       });
       assert.equal(prevented, false);
       assert.equal(await dialog.isVisible(), false, 'modified click opens no summary');
+      assert.equal(calls.pageLoads, 1, 'approving on a page without a campaign does not reload');
       await context.close();
     }
   }
+  // On a campaign thread, approving a key with a reply on the page reloads it, so the totals count them.
+  {
+    const context = await browser.newContext({ viewport: { width: 375, height: 667 } });
+    let loads = 0;
+    await context.route('http://pending.test/**', async route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/') { loads++; return route.fulfill({ contentType: 'text/html', body: campaign_html() }); }
+      if (url.pathname === '/assets/pending_user_summary.js') return route.fulfill({ contentType: 'text/javascript', body: summaryScript });
+      if (url.pathname === '/assets/openpgp_loader.js') return route.fulfill({ contentType: 'text/javascript', body: `
+        window.openpgp = { async readKey() { return { getFingerprint: () => '${'a'.repeat(40)}' }; }, async readPrivateKey() { return { getFingerprint: () => '${'a'.repeat(40)}' }; }, async createMessage(input) { return input; }, async sign() { return 'signature'; } };` });
+      if (url.pathname === '/assets/browser_signing.js') return route.fulfill({ contentType: 'text/javascript', body: signingScript });
+      if (url.pathname === '/api/get_profile') return route.fulfill({ contentType: 'text/plain', body: 'Username: mouse\nApproved: no\nPosts: 1\nThreads: 0\n' });
+      if (url.pathname === '/api/prepare_approval') return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ status: 'ok', prepare_token: 'token', post_id: 'approval', canonical_record: 'Author-Identity-ID: openpgp:' + 'a'.repeat(40) + '\n', approval_review: { label: 'Approve new member mouse', consequence: 'You vouch for them.', target_identity_id: 'openpgp:' + 'b'.repeat(40) } }) });
+      if (url.pathname === '/api/create_prepared_approval') return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ status: 'ok' }) });
+      return route.fulfill({ contentType: 'text/plain', body: 'status=ok\n' });
+    });
+    const page = await context.newPage();
+    await page.addInitScript((fp) => {
+      for (const [key, value] of Object.entries({ fingerprint: fp, public_key: 'public', private_key: 'private', published_fingerprint: fp })) localStorage.setItem('forum_pki_' + key, value);
+    }, 'a'.repeat(40));
+    page.on('pageerror', error => assert.fail(error.message));
+    await page.goto('http://pending.test/?campaign');
+    await page.locator('#one .pending-chip').click();
+    const dialog = page.locator('dialog.pending-user-dialog');
+    await page.waitForFunction(() => document.querySelector('[data-role="counts"]').textContent.includes('post'));
+    await Promise.all([page.waitForEvent('load'), dialog.getByRole('button', { name: 'Approve' }).click()]);
+    assert.equal(loads, 2, 'the campaign thread reloads after approval');
+    await context.close();
+  }
+
   // Themes that give `.card` position: relative must not make the dialog
   // non-fixed; that put it at the top of the document and opening scrolled
   // the page there.
@@ -157,5 +194,5 @@ try {
     await context.close();
   }
 
-  console.log('PASS pending chip: summary with recent posts beside the chip, member-only Approve, lazy signing, failure and retry, chips removed, modified click left to the browser, no scroll on open in themes that position cards; desktop and phone');
+  console.log('PASS pending chip: summary with recent posts beside the chip, member-only Approve, lazy signing, failure and retry, chips removed, a campaign thread reloads, modified click left to the browser, no scroll on open in themes that position cards; desktop and phone');
 } finally { await browser.close(); }
