@@ -2349,6 +2349,10 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
+| `v3/worker_before_read_model` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.05 | [One-shot record](./worker_before_read_model/worker_before_read_model_one_shot.md) | Follow-up to `v3/import_without_worker`; acceptance pending |
+
+2026-11-17: one-shot worker before the read model; baseline `96462cfd`. Intake 0.05 after reproduction; closeout retrospective 0.06; Claude single exposed rater; R1 hashes not re-verified.
+
 | `v3/high_traffic_coverage` | Complete (documentation-only); acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./high_traffic_coverage/high_traffic_coverage_one_shot.md) | Follows `v3/asset_bypass` (PR #293, merged); acceptance pending |
 
 2026-11-17: one-shot high-traffic coverage checklist; baseline `f83c0b0d`. Intake 0.08, recorded after route inspection; closeout retrospective 0.08. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
