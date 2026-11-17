@@ -1063,6 +1063,13 @@ final class PledgeCampaignTest
         }
         pledgeAssertContains('<span class="pledge-row-name">', $card($html, $first));
         pledgeAssertContains('First one.', $card($html, $first));
+        // The row names the pledger, so the byline under it shows only the date; a question keeps its name.
+        $byline = static function (string $card): string {
+            $start = (int) strpos($card, 'data-post-byline>') + strlen('data-post-byline>');
+            return substr($card, $start, (int) strpos($card, '</p>', $start) - $start);
+        };
+        pledgeAssertSame(true, str_starts_with($byline($card($html, $first)), '<time'));
+        pledgeAssertSame(false, str_starts_with($byline($card($html, $question)), '<time'));
         // Two pledges in a row from one key are two rows, not one merged card; a question stays a card.
         pledgeAssertSame(2, substr_count($html, 'class="card post-card pledge-row'));
         pledgeAssertNotContains('pledge-row', substr($html, (int) strpos($html, 'data-post-id="' . $question . '"') - 200, 200));
@@ -1107,6 +1114,10 @@ final class PledgeCampaignTest
         $more = substr($card($campaign, $pledge), (int) strpos($card($campaign, $pledge), 'data-role="post-more"'));
         pledgeAssertContains('>Mark delivered</button>', $more);
         pledgeAssertContains('>Withdraw pledge</button>', $more);
+        // Retract sits in "More" as a plain button, not behind a second "…" menu; other threads keep the menu.
+        pledgeAssertContains('data-action="retract-post"', $more);
+        pledgeAssertNotContains('post-more-actions', $card($campaign, $pledge));
+        pledgeAssertContains('<details class="post-more-actions">', $card($other, $plainReply));
         // Other threads keep the full byline and the open action row.
         pledgeAssertNotContains('data-role="post-more"', $card($other, $plainReply));
         pledgeAssertContains('data-post-byline>by ', $card($other, $plainReply));

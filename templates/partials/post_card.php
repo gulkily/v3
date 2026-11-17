@@ -79,7 +79,7 @@ $hoverTimeLabel = $isRunTail ? '' : $postTimeLabel;
 // byline-above-body order.
 $metaLine = '';
 if ($isRunTail) {
-    $metaLine = '<p class="meta" data-post-byline>' . ($compactCard ? $rowMeta($post) : $contentMeta($post, 'created_at', ''));
+    $metaLine = '<p class="meta" data-post-byline>' . ($compactCard ? $rowMeta($post, 'created_at', !$isPledgeRow) : $contentMeta($post, 'created_at', ''));
     if ($postFoldable) {
         $metaLine .= ' <span class="post-resolution-state" data-role="post-state-label"' . ($postStateLabel === '' ? ' hidden' : '') . '>' . $e($postStateLabel) . '</span>';
     }
@@ -221,7 +221,7 @@ if (!is_array($postAnalysisLabels)) {
       data-post-id="<?= $e($post['post_id']) ?>"
     >Agent</button>
 <?php endif; ?>
-<?= $partial('partials/retract_post_control.php') ?>
+<?= $partial('partials/retract_post_control.php', ['retractInline' => $compactCard]) ?>
     <p class="meta thread-reaction-feedback" data-role="post-reaction-feedback" hidden></p>
 <?php if (!$agentReplyIsUnfinished): ?>
     <p class="meta agent-reply-feedback" data-role="agent-reply-feedback"<?= $agentReplyFeedbackText === '' ? ' hidden' : '' ?>><?= $e($agentReplyFeedbackText) ?></p>
