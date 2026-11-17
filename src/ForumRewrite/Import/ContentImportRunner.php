@@ -63,7 +63,9 @@ final class ContentImportRunner
                     }
                     $this->assertClean([]);
                     $this->say('Planning public records, dependencies, and conflicts...');
-                    $entries = (new ContentImportPlanner($this->withApprovals))->plan($source, $this->repositoryRoot);
+                    // Reading the local records comes first and takes a while on a large instance.
+                    $this->say('Progress: plan');
+                    $entries = (new ContentImportPlanner($this->withApprovals, fn (string $line) => $this->say($line)))->plan($source, $this->repositoryRoot);
                     $id = gmdate('YmdTHis') . '-' . bin2hex(random_bytes(6));
                     $directory = $this->stateRoot . '/' . $id;
                     $this->directory($directory);
@@ -124,6 +126,7 @@ final class ContentImportRunner
                         $this->assertClean($run['writes']);
                         $copied = 0;
                         $this->say('Installing ' . count($run['writes']) . ' record file(s)...');
+                        $this->say('Progress: install 0/' . count($run['writes']));
                         foreach ($run['writes'] as $path => $hash) {
                             $target = $this->repositoryRoot . '/' . $path;
                             $this->assertSafeParents($path);
@@ -150,14 +153,19 @@ final class ContentImportRunner
                                 }
                             }
                             $this->at('copied', $path);
-                            if (++$copied % 100 === 0) { $this->say('Installed ' . $copied . ' record files...'); }
+                            if (++$copied % 100 === 0) {
+                                $this->say('Installed ' . $copied . ' record files...');
+                                $this->say('Progress: install ' . $copied . '/' . count($run['writes']));
+                            }
                         }
+                        $this->say('Progress: install ' . count($run['writes']) . '/' . count($run['writes']));
                         foreach (array_chunk(array_keys($run['writes']), 100) as $paths) {
                             $this->git(['add', '--', ...$paths]);
                         }
                         $this->at('staged');
                         if ($run['writes'] !== []) {
                             $this->say('Committing imported content...');
+                            $this->say('Progress: commit');
                             $this->git(['commit', '-m', $message]);
                         }
                         $this->at('committed');
@@ -179,6 +187,7 @@ final class ContentImportRunner
                 $this->save($pending, $run);
                 // Publication is required even on duplicate-only runs and interrupted retries.
                 $this->say('Refreshing read model and applicable offline data...');
+                $this->say('Progress: publish');
                 $publisher();
                 $this->at('published');
                 $run['phase'] = 'complete';

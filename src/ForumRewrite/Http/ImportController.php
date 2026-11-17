@@ -19,10 +19,19 @@ use PDO;
  */
 final class ImportController
 {
+    /** Seconds after a launch with the task still queued before the page says it didn't start. */
+    public const START_TIMEOUT_SECONDS = 15;
+
+    /**
+     * @param (\Closure():string)|null $launchWorker starts one detached worker; returns launched|unavailable|failed
+     * @param (\Closure():int)|null $clock
+     */
     public function __construct(
         private readonly RouteServices $routeServices,
         private readonly string $repositoryRoot,
         private readonly string $queueDatabasePath,
+        private readonly ?\Closure $launchWorker = null,
+        private readonly ?\Closure $clock = null,
     ) {
     }
 
@@ -63,12 +72,20 @@ final class ImportController
         }
         $input = $this->routeServices->requestData($query);
         $action = (string) ($input['action'] ?? '');
-        if ($action !== 'status' && !in_array($action, InstanceImportTask::ACTIONS, true)) {
+        if (!in_array($action, ['status', 'start_worker'], true) && !in_array($action, InstanceImportTask::ACTIONS, true)) {
             $this->respond($wantsJson, 400, ['status' => 'error', 'error' => 'Unknown import action.'], $headers);
             return;
         }
         $message = '';
-        if ($action !== 'status') {
+        if ($action === 'start_worker') {
+            // Try again after a worker didn't start: only for a request still waiting in the queue.
+            $state = $this->state();
+            if (($state['task']['status'] ?? null) !== 'queued') {
+                $this->respond($wantsJson, 409, ['status' => 'error', 'error' => 'No import is waiting for a worker.', 'state' => $this->publicState()], $headers);
+                return;
+            }
+            $message = $this->startWorker((int) $state['task']['id']) === 'launched' ? 'Starting a worker…' : 'The worker could not be started here.';
+        } elseif ($action !== 'status') {
             $state = $this->state();
             $refusal = match (true) {
                 $state['busy'] => 'An import is already queued or running.',
@@ -96,6 +113,9 @@ final class ImportController
                 return;
             }
             $message = $queued['enqueued'] ? 'Queued for the task worker.' : $queued['message'];
+            if ($queued['enqueued'] && $state['worker'] !== 'fresh') {
+                $message = $this->startWorker($queued['task_id']) === 'launched' ? 'Starting a worker…' : 'The worker could not be started here.';
+            }
         }
         $this->respond($wantsJson, 200, ['status' => 'ok', 'action' => $action, 'message' => $message, 'state' => $this->publicState()], $headers);
     }
@@ -116,7 +136,57 @@ final class ImportController
             'progress' => $state['progress'],
             'pending' => $state['pending'] !== null,
             'last_id' => $state['last']['id'] ?? null,
+            'start' => $state['start'],
+            'worker_command' => $state['worker_command'],
+            'steps' => $state['steps'],
+            'timing' => $state['timing'],
         ];
+    }
+
+    /**
+     * The run's steps with the worker start first: queued shows it current and the import's
+     * steps pending; once running, the import's own steps from its progress lines.
+     *
+     * @param array<string, mixed> $state
+     * @return list<array{key: string, label: string, status: string, done: ?int, total: ?int}>
+     */
+    private static function steps(array $state): array
+    {
+        $queued = ($state['task']['status'] ?? null) === 'queued';
+        $worker = ['key' => 'worker', 'label' => $state['start'] === 'starting' ? 'Starting the task worker' : 'Waiting for the task worker',
+            'status' => $queued ? 'current' : 'done', 'done' => null, 'total' => null];
+        if ($queued) {
+            if (($state['task']['action'] ?? '') !== 'import') {
+                return [$worker];
+            }
+            $pending = [];
+            foreach (\ForumRewrite\Import\ImportProgressView::STEPS as $key => $label) {
+                $pending[] = ['key' => $key, 'label' => $label, 'status' => 'pending', 'done' => null, 'total' => null];
+            }
+
+            return [$worker, ...$pending];
+        }
+        $worker['label'] = 'Task worker started';
+
+        return [$worker, ...($state['view']['steps'] ?? [])];
+    }
+
+    /** Start one detached worker for this task and note the attempt on its request. */
+    private function startWorker(int $taskId): string
+    {
+        $status = $this->launchWorker !== null ? (string) ($this->launchWorker)() : 'unavailable';
+        $task = InstanceImportTask::forQueue($this->queueDatabasePath);
+        $row = $this->existingStore()?->findById($taskId);
+        if ($row !== null) {
+            $task->annotate((string) $row['deduplication_key'], ['Worker-Launch' => $status, 'Worker-Launch-At' => (string) $this->now()]);
+        }
+
+        return $status;
+    }
+
+    private function now(): int
+    {
+        return $this->clock !== null ? (int) ($this->clock)() : time();
     }
 
     /**
@@ -156,6 +226,7 @@ final class ImportController
             'worker' => 'not_observed',
             'task' => null,
             'progress' => [],
+            'view' => null,
         ];
         $store = $this->existingStore();
         if ($store !== null) {
@@ -171,14 +242,48 @@ final class ImportController
                         'source' => $request['Source'] ?? '',
                         'requested_at' => (string) ($latest['requested_at'] ?? ''),
                         'failure' => (string) ($latest['failure_message'] ?? ''),
+                        'launch' => $request['Worker-Launch'] ?? '',
+                        'launch_at' => (int) ($request['Worker-Launch-At'] ?? 0),
                     ];
-                    $state['progress'] = array_column($store->taskProgress((int) $latest['id'], 40), 'message');
+                    $events = $store->taskProgress((int) $latest['id'], 2000);
+                    // Structured `Progress:` lines feed the step list; the rest is the raw log tail.
+                    $lines = array_values(array_filter(array_column($events, 'message'), static fn ($line): bool => !str_starts_with((string) $line, 'Progress: ')));
+                    $state['progress'] = array_slice($lines, -40);
+                    $state['view'] = \ForumRewrite\Import\ImportProgressView::build(
+                        array_map(static fn (array $event): array => ['message' => (string) $event['message'], 'created_at' => (string) $event['created_at']], $events),
+                        $this->now(),
+                        $task->previousStepSeconds((string) $latest['deduplication_key']),
+                    );
                 }
             } catch (\Throwable) {
                 $state['worker'] = 'unavailable';
             }
         }
         $state['busy'] = in_array($state['task']['status'] ?? null, ['queued', 'running'], true);
+        // waiting: queued and a worker is fresh or was just started; not_started: queued with no
+        // worker in sight (launch failed, unavailable, or no claim within the timeout).
+        $state['start'] = null;
+        if (($state['task']['status'] ?? null) === 'queued') {
+            $launch = $state['task']['launch'];
+            $state['start'] = match (true) {
+                $state['worker'] === 'fresh' || $state['worker'] === 'running' => 'waiting',
+                $launch === 'launched' && $this->now() - $state['task']['launch_at'] < self::START_TIMEOUT_SECONDS => 'starting',
+                default => 'not_started',
+            };
+        } elseif (in_array($state['task']['status'] ?? null, ['running', 'completed', 'failed'], true)) {
+            $state['start'] = 'started';
+        }
+        $state['worker_command'] = 'php scripts/task_queue.php run --limit=1';
+        $view = $state['view'];
+        $state['steps'] = $state['busy'] ? self::steps($state) : [];
+        // Until the import prints its first line, time counts from the request.
+        $runStart = $view['started_at'] ?? (strtotime((string) ($state['task']['requested_at'] ?? '')) ?: null);
+        $state['timing'] = $state['busy'] && $runStart !== null ? [
+            'elapsed' => max(0, $this->now() - $runStart),
+            'since_update' => max(0, $this->now() - (int) ($view['last_update_at'] ?? $runStart)),
+            'step_seconds_left' => $view['step_seconds_left'] ?? null,
+            'seconds_left' => $view['seconds_left'] ?? null,
+        ] : null;
         // Image copying happens after the merge and is reported only in the command output.
         $state['images'] = null;
         if (($state['task']['status'] ?? null) === 'completed') {

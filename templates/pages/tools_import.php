@@ -7,12 +7,14 @@ $counts = is_array($report['counts'] ?? null) ? $report['counts'] : [];
 // The Review row groups causes by state and the reason before any per-record detail
 // ("Missing dependency: post …" counts as "Missing dependency"); paths are under Advanced.
 $causes = [];
+$exclusions = is_array($report['exclusion_reasons'] ?? null) ? $report['exclusion_reasons'] : [];
 foreach (is_array($report['review_causes'] ?? null) ? $report['review_causes'] : [] as $cause) {
+    // Exclusions are counted in full by exclusion_reasons; their root causes would repeat them.
+    if (($cause['state'] ?? '') === 'excluded' && isset($exclusions[explode(': ', (string) ($cause['reason'] ?? ''), 2)[0]])) continue;
     $label = (string) ($cause['state'] ?? '') . ': ' . explode(': ', (string) ($cause['reason'] ?? ''), 2)[0];
     $causes[$label] = ($causes[$label] ?? 0) + max(1, (int) ($cause['affected_count'] ?? 1));
 }
 arsort($causes);
-$exclusions = is_array($report['exclusion_reasons'] ?? null) ? $report['exclusion_reasons'] : [];
 $detailLimit = 500;
 $details = [];
 // Records needing attention come before excluded ones, so the cap hides exclusions first.
@@ -70,10 +72,6 @@ $details = array_slice($details, 0, $detailLimit);
           </td>
         </tr>
 <?php endif; ?>
-        <tr>
-          <th scope="row">Task worker</th>
-          <td><?= $e($workerLabels[$s['worker']] ?? $s['worker']) ?></td>
-        </tr>
       </tbody>
     </table>
 <?php if ($details !== []): ?>
@@ -89,19 +87,53 @@ $details = array_slice($details, 0, $detailLimit);
 <?php endif; ?>
     </details>
 <?php endif; ?>
-<?php if ($s['task'] !== null && ($s['busy'] || $s['task']['status'] === 'failed')): ?>
-    <ol class="import-progress" data-import-progress<?= $s['progress'] === [] ? ' hidden' : '' ?>>
-<?php foreach ($s['progress'] as $line): ?>
-      <li><?= $e($line) ?></li>
+<?php
+$formatCount = static function (array $step): string {
+    if ($step['done'] === null || ($step['done'] === 0 && $step['total'] === null)) return '';
+    if ($step['key'] === 'download') {
+        $size = static fn (int $bytes): string => $bytes < 1048576 ? max(1, (int) round($bytes / 1024)) . ' KB' : number_format($bytes / 1048576, 1) . ' MB';
+        return $step['total'] !== null ? $size($step['done']) . ' of ' . $size($step['total']) : $size($step['done']);
+    }
+    return number_format($step['done']) . ($step['total'] !== null ? ' of ' . number_format($step['total']) : '');
+};
+$timing = $s['timing'] ?? null;
+// Same wording as import_control.js, which keeps the numbers ticking between polls.
+$timingText = '';
+if ($timing !== null) {
+    $clock = static fn (int $seconds): string => intdiv($seconds, 60) . ':' . str_pad((string) ($seconds % 60), 2, '0', STR_PAD_LEFT);
+    $left = $timing['seconds_left'] ?? $timing['step_seconds_left'];
+    $scope = $timing['seconds_left'] === null && $timing['step_seconds_left'] !== null ? ' in this step' : '';
+    $leftText = $left === null ? 'estimating time left' : ($left < 60 ? 'under a minute left' . $scope : 'about ' . (int) ceil($left / 60) . ' min left' . $scope);
+    $timingText = 'Elapsed ' . $clock($timing['elapsed']) . ' · updated ' . $timing['since_update'] . ' s ago · ' . $leftText;
+}
+?>
+    <div class="import-run" data-import-run<?= ($s['steps'] ?? []) === [] ? ' hidden' : '' ?>>
+      <ol class="import-steps" data-import-steps>
+<?php foreach ($s['steps'] ?? [] as $step): ?>
+        <li class="is-<?= $e($step['status']) ?>"><span><?= $e($step['label']) ?></span><?php $count = $formatCount($step); if ($count !== ''): ?> <span class="meta"><?= $e($count) ?></span><?php endif; ?></li>
 <?php endforeach; ?>
-    </ol>
+      </ol>
+      <p class="meta import-timing" data-import-timing<?= $timing === null ? ' hidden' : '' ?> data-elapsed="<?= $e((string) ($timing['elapsed'] ?? 0)) ?>" data-since-update="<?= $e((string) ($timing['since_update'] ?? 0)) ?>" data-seconds-left="<?= $e((string) ($timing['seconds_left'] ?? $timing['step_seconds_left'] ?? '')) ?>" data-left-scope="<?= $timing !== null && $timing['seconds_left'] === null && $timing['step_seconds_left'] !== null ? 'step' : 'total' ?>"><?= $e($timingText) ?></p>
+    </div>
+<?php if ($s['task'] !== null && ($s['busy'] || $s['task']['status'] === 'failed') && $s['progress'] !== []): ?>
+    <details class="import-log">
+      <summary>Log</summary>
+      <ol class="import-progress" data-import-progress>
+<?php foreach ($s['progress'] as $line): ?>
+        <li><?= $e($line) ?></li>
+<?php endforeach; ?>
+      </ol>
+    </details>
 <?php else: ?>
-    <ol class="import-progress" data-import-progress hidden></ol>
+    <details class="import-log" hidden>
+      <summary>Log</summary>
+      <ol class="import-progress" data-import-progress></ol>
+    </details>
 <?php endif; ?>
 <?php if ($s['task'] !== null && $s['task']['status'] === 'failed' && !$s['busy']): ?>
     <p><strong>Last request failed:</strong> <?= $e($s['task']['failure']) ?></p>
 <?php endif; ?>
-    <form method="post" action="/tools/import/" class="deploy-actions import-actions" data-import-form>
+    <form method="post" action="/tools/import/" class="deploy-actions import-actions" data-import-form<?= $s['busy'] ? ' hidden' : '' ?>>
 <?php if ($s['pending'] === null): ?>
       <label>Source <input type="text" name="source" required inputmode="url" autocomplete="off" spellcheck="false" placeholder="forum.example" list="import-sources"<?= $s['sources'] !== [] ? ' value="' . $e($s['sources'][0]['source']) . '"' : '' ?><?= $s['busy'] ? ' disabled' : '' ?>></label>
 <?php if ($s['sources'] !== []): ?>
@@ -119,10 +151,14 @@ $details = array_slice($details, 0, $detailLimit);
 <?php endif; ?>
 <?php endif; ?>
     </form>
-<?php if (in_array($s['worker'], ['stale', 'not_observed', 'failed', 'unavailable'], true)): ?>
-    <p class="meta">Imports wait for the task worker, which <?= $e(['stale' => 'has not run recently', 'not_observed' => 'has not run on this server yet', 'failed' => 'failed on its last run', 'unavailable' => 'cannot be checked'][$s['worker']]) ?>.</p>
-<?php endif; ?>
-<?php $statusText = ($importNotice ?? '') !== '' ? $importNotice : ($s['busy'] ? (($s['task']['status'] ?? '') === 'running' ? 'Importing…' : 'Queued; waiting for the task worker.') : ''); ?>
+    <div class="import-not-started" data-import-not-started<?= ($s['start'] ?? null) === 'not_started' ? '' : ' hidden' ?>>
+      <p><strong>The task worker didn't start.</strong> Run this in the application checkout, or try again:</p>
+      <p><code><?= $e($s['worker_command']) ?></code></p>
+      <form method="post" action="/tools/import/" data-import-form-retry>
+        <button type="submit" name="action" value="start_worker">Try again</button>
+      </form>
+    </div>
+<?php $statusText = (string) ($importNotice ?? ''); ?>
     <p class="meta" role="status" aria-live="polite" data-import-status<?= $statusText === '' ? ' hidden' : '' ?>><?= $e($statusText) ?></p>
 <?php endif; ?>
 <?php if (!$canImport && ($importNotice ?? '') !== ''): ?>

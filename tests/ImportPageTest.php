@@ -35,7 +35,7 @@ try {
     $app = new Application($argv[1], $argv[2], $databasePath);
     $render($app, '/threads/');
     $page = $render($app, '/tools/import/');
-    foreach (['<h1>Import</h1>', 'Last import', 'Task worker', 'never seen', 'href="/tools/import/"'] as $needle) {
+    foreach (['<h1>Import</h1>', 'Last import', 'href="/tools/import/"'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Operator page missing: ' . $needle);
     }
     $tools = $render($app, '/tools/');
@@ -101,7 +101,16 @@ PHP;
 
         $queued = $this->postAction($queue, self::OPERATOR, $same, ['action' => 'import', 'source' => 'forum.example']);
         assertSame('ok', $queued['status'] ?? null, json_encode($queued));
-        assertSame('Queued for the task worker.', $queued['message']);
+        assertSame('Starting a worker…', $queued['message'], 'no fresh worker: the page starts one');
+        assertSame('starting', $queued['state']['start']);
+        assertSame('php scripts/task_queue.php run --limit=1', $queued['state']['worker_command']);
+        $task = \ForumRewrite\Import\InstanceImportTask::forQueue($queue);
+        $pdo = new PDO('sqlite:' . $queue);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $key = (string) (new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo))->findById((int) $queued['state']['task']['id'])['deduplication_key'];
+        assertSame('launched', $task->request($key)['Worker-Launch'] ?? null);
+        $retry = $this->postAction($queue, self::OPERATOR, $same, ['action' => 'start_worker']);
+        assertSame('Starting a worker…', $retry['message'] ?? null, json_encode($retry));
         assertSame(true, $queued['state']['busy']);
         assertSame('import', $queued['state']['task']['action']);
         assertSame('forum.example', $queued['state']['task']['source']);
@@ -138,7 +147,7 @@ try {
     TestViewerSession::signIn($argv[3]);
     $app = new Application($argv[1], $argv[2], $databasePath);
     $page = $render($app);
-    foreach (['data-import-form', 'name="source"', 'value="import"', '/assets/import_control', 'data-import-busy="0"', 'has not run on this server yet'] as $needle) {
+    foreach (['data-import-form', 'name="source"', 'value="import"', '/assets/import_control', 'data-import-busy="0"', 'data-import-not-started hidden'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Idle page missing: ' . $needle);
     }
     if (str_contains($page, '<datalist')) throw new RuntimeException('No sources yet: no list.');
@@ -147,11 +156,14 @@ try {
     $queued = InstanceImportTask::forQueue($queuePath)->queue($store, 'import', 'https://forum.example', 'openpgp:x');
     $store->claimNext();
     $store->recordTaskProgress($queued['task_id'], 'Downloading repository archive...');
+    $store->recordTaskProgress($queued['task_id'], 'Progress: download 1048576/4194304');
     $page = $render($app);
-    foreach (['data-import-busy="1"', 'Downloading repository archive...', 'Importing…', '<option value="https://forum.example">', 'value="https://forum.example"'] as $needle) {
+    foreach (['data-import-busy="1"', 'Downloading repository archive...', '<li class="is-done"><span>Task worker started</span></li>',
+        '<li class="is-current"><span>Downloading</span> <span class="meta">1.0 MB of 4.0 MB</span></li>', '<li class="is-pending"><span>Installing records</span></li>',
+        'Elapsed 0:0', 'estimating time left', '<option value="https://forum.example">', 'value="https://forum.example"'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Running page missing: ' . $needle);
     }
-    if (!str_contains($page, 'value="import" disabled')) throw new RuntimeException('Import button must be disabled while running.');
+    if (!str_contains($page, 'data-import-form hidden')) throw new RuntimeException('The form must be hidden while running.');
 
     $store->markFailed($queued['task_id'], 'instance_import_failed', 'Import failed: source unreachable', false);
     $page = $render($app);
@@ -199,6 +211,7 @@ file_put_contents($run . '/report.json', json_encode([
         [['path' => 'records/posts/c0.txt', 'state' => 'conflict', 'reason' => 'local <b>differs</b>', 'affected_count' => 3]],
         array_map(static fn (int $i): array => ['path' => 'records/thread-labels/l' . $i . '.txt', 'state' => 'invalid', 'reason' => 'Missing dependency: post thread-' . $i, 'affected_count' => 1], range(1, 193)),
         array_map(static fn (int $i): array => ['path' => 'records/post-formats/f' . $i . '.txt', 'state' => 'unsupported', 'reason' => 'Unsupported record family or path', 'affected_count' => 1], range(1, 31)),
+        [['path' => 'records/posts/private.txt', 'state' => 'excluded', 'reason' => 'private record', 'affected_count' => 2]],
     ),
     'exclusion_reasons' => ['private record' => 2],
     'entries' => $entries,
@@ -228,7 +241,8 @@ try {
         if (!str_contains($page, $needle)) throw new RuntimeException('Result page missing: ' . $needle);
     }
     if (str_contains($page, '<details class="import-advanced" open')) throw new RuntimeException('Advanced must start closed.');
-    $review = substr($page, (int) strpos($page, '<th scope="row">Review</th>'), (int) strpos($page, 'Task worker') - (int) strpos($page, '<th scope="row">Review</th>'));
+    $review = substr($page, (int) strpos($page, '<th scope="row">Review</th>'), (int) strpos($page, '</tbody>') - (int) strpos($page, '<th scope="row">Review</th>'));
+    if (substr_count($review, 'private record') !== 1) throw new RuntimeException('Exclusion listed twice: ' . $review);
     if (str_contains($review, '<code>') || substr_count($review, '<li>') !== 4) throw new RuntimeException('Review row should list grouped causes only: ' . $review);
     if (strpos($review, 'Missing dependency') > strpos($review, 'Unsupported record')) throw new RuntimeException('Largest group first.');
     if (str_contains($page, 'records/a-excluded/')) throw new RuntimeException('Exclusions should be hidden before conflicts.');
@@ -266,6 +280,8 @@ require $argv[1] . '/tests/Support/TestViewerSession.php';
 use ForumRewrite\Application;
 
 [$queuePath, $identity, $server, $post, $hint] = json_decode($argv[3], true);
+// A worker launch runs `nohup <php> …`; /bin/false makes it start nothing in tests.
+putenv('FORUM_PHP_CLI=' . (getenv('IMPORT_TEST_PHP_CLI') ?: '/bin/false'));
 $databasePath = sys_get_temp_dir() . '/import-actions-' . bin2hex(random_bytes(6)) . '.sqlite3';
 putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $queuePath);
 putenv('FORUM_INSTANCE_IMPORT_PAGE_ENABLED=1');
@@ -354,6 +370,61 @@ PHP;
         assertTrue(!is_file($target . '/records/posts/page-second.txt'));
         assertSame(false, $status()['state']['pending']);
         assertSame('', trim($w->command(['git', '-C', $target, 'status', '--porcelain'])[1]));
+    }
+
+    public function testStartStateFollowsLaunchHeartbeatAndTimeout(): void
+    {
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
+
+use ForumRewrite\Application;
+use ForumRewrite\Http\ImportController;
+use ForumRewrite\Import\InstanceImportTask;
+use ForumRewrite\TaskQueue\SqliteTaskQueueStore;
+
+$base = sys_get_temp_dir() . '/import-start-' . bin2hex(random_bytes(6));
+mkdir($base . '/private', 0700, true);
+$queuePath = $base . '/private/tasks.sqlite3';
+$pdo = new PDO('sqlite:' . $queuePath);
+$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+$store = new SqliteTaskQueueStore($pdo);
+$task = InstanceImportTask::forQueue($queuePath);
+$queued = $task->queue($store, 'import', 'forum.example', 'openpgp:x');
+$key = (string) $store->findById($queued['task_id'])['deduplication_key'];
+$application = new Application($argv[1], $argv[2], $base . '/index.sqlite3');
+ob_start(); $application->handle('GET', '/threads/'); ob_end_clean();
+$routeServices = (fn () => $this->routeServices())->call($application);
+$now = 1000;
+$controller = new ImportController($routeServices, $base . '/repo', $queuePath, null, static function () use (&$now): int { return $now; });
+$check = static function (string $expected, string $why) use ($controller): void {
+    $start = $controller->state()['start'];
+    if ($start !== $expected) throw new RuntimeException($why . ': expected ' . $expected . ', got ' . var_export($start, true));
+};
+$check('not_started', 'queued, no worker, no launch');
+$task->annotate($key, ['Worker-Launch' => 'launched', 'Worker-Launch-At' => '1000']);
+$now = 1005;
+$check('starting', 'just launched');
+$now = 1000 + ImportController::START_TIMEOUT_SECONDS;
+$check('not_started', 'launched but not claimed in time');
+$task->annotate($key, ['Worker-Launch' => 'failed', 'Worker-Launch-At' => (string) $now]);
+$check('not_started', 'launch failed');
+$run = $store->startExecutorRun();
+$store->completeExecutorRun((int) $run['id'], [], []);
+$check('waiting', 'fresh worker heartbeat');
+$store->claimNext();
+$check('started', 'claimed');
+if ($task->request('../x') !== null) throw new RuntimeException('bad key');
+PHP;
+        $command = sprintf(
+            'php -r %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(dirname(__DIR__)),
+            escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1'),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+
+        assertSame(0, $exitCode, implode("\n", $output));
     }
 
     public function testStatusReadsPendingAndNewestFinishedOrCanceledRun(): void

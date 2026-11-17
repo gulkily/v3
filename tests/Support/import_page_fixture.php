@@ -27,7 +27,7 @@ if ($state === 'running') {
     $queued = $task->queue($store, 'import', $longSource, 'openpgp:x');
     $task->sources()->remember('qdb.us');
     $store->claimNext();
-    foreach (['Import time limit: 300 seconds', 'Source: ' . $longSource, 'Downloading repository archive...', 'Downloaded 48211 bytes; validating and extracting archive...', 'Planning public records, dependencies, and conflicts...', 'Installing 412 record file(s)...'] as $line) {
+    foreach (['Import time limit: 300 seconds', 'Source: ' . $longSource, 'Downloading repository archive...', 'Progress: download 0/?', 'Progress: download 48211/48211', 'Downloaded 48211 bytes; validating and extracting archive...', 'Progress: extract', 'Planning public records, dependencies, and conflicts...', 'Progress: plan', 'Installing 7172 record file(s)...', 'Progress: install 0/7172', 'Progress: install 1200/7172'] as $line) {
         $store->recordTaskProgress($queued['task_id'], $line);
     }
 }
