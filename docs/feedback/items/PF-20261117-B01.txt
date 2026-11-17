@@ -1,0 +1,18 @@
+ID: PF-20261117-B01
+Title: Task worker logs "unable to open database file" on a fresh ./v3 start
+Kind: bug
+Workflow: blocked
+Created: 2026-11-17
+Evidence: locally-verified
+
+Request:
+please add a fix for the "unable to open database file" error
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+On a fresh checkout, ./v3 start's first worker run (before any page request) completes without writing retraction_discovery_failed or run_error to state/private/task_queue_errors.log, and creates neither the repository nor an empty read model.
+
+Notes:
+2026-11-17: one-shot on fix/worker_before_read_model (record docs/plans/worker_before_read_model/worker_before_read_model_one_shot.md); verified locally; awaiting PR review.

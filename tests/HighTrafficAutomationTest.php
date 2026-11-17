@@ -53,8 +53,52 @@ final class HighTrafficAutomationTest
     {
         putenv('FORUM_PUBLIC_ARTIFACT_ROOT');
         @unlink($root . '/public/.high-traffic');
+        @unlink($root . '/public/' . HighTrafficMode::ASSET_LINK);
         HighTrafficCache::removeTemporaryTree($this->caches[$root]);
         HighTrafficCache::removeTemporaryTree($root);
+    }
+
+    public function testAssetLinkIsCreatedAndRemovedWithTheMode(): void
+    {
+        [$root, $mode] = $this->site();
+        $link = $root . '/public/' . HighTrafficMode::ASSET_LINK;
+        $saved = $mode->cache->root . '/normal.htaccess';
+        try {
+            $mode->change(true, 'Operator CLI enable');
+            assertSame($mode->cache->root . '/assets', readlink($link));
+            $rules = (string) file_get_contents($mode->cache->root . '/assets/.htaccess');
+            assertStringContains('Header set Cache-Control "public, max-age=31536000, immutable"', $rules);
+            assertStringContains('Header set X-Content-Type-Options "nosniff"', $rules);
+            assertStringContains('Options -Indexes', $rules);
+
+            // A server already in the mode when this release arrives: no asset link, old saved rules.
+            unlink($link);
+            file_put_contents($saved, "old normal rules\n");
+            $mode->change(true, 'Operator CLI enable');
+            assertSame($mode->cache->root . '/assets', readlink($link), 'enabling while on adds the asset link');
+            assertSame(true, str_contains((string) file_get_contents($saved), 'RewriteRule ^ index.php [L]'), 'enabling while on refreshes the saved normal rules');
+            assertSame('high-traffic', $mode->status()['effective_mode']);
+
+            $mode->change(false, 'Operator CLI disable');
+            assertSame(false, is_link($link) || is_link($root . '/public/.high-traffic'), 'off removes both links');
+
+            $mode->change(true, 'Operator CLI enable');
+            HighTrafficSafety::withdraw($root . '/public');
+            assertSame(false, is_link($link) || is_link($root . '/public/.high-traffic'), 'a withdrawal removes both links');
+
+            $mode->change(true, 'Operator CLI enable');
+            $mode->restore();
+            assertSame(false, is_link($link) || is_link($root . '/public/.high-traffic'), 'restore removes both links');
+
+            file_put_contents($link, 'not a link');
+            $threw = false;
+            try { $mode->change(true, 'Operator CLI enable'); } catch (RuntimeException) { $threw = true; }
+            assertSame(true, $threw, 'a regular file at the asset path is refused');
+            assertSame(false, is_link($root . '/public/.high-traffic'), 'a refused asset path leaves pages unexposed');
+            unlink($link);
+        } finally {
+            $this->cleanup($root);
+        }
     }
 
     public function testChangesRecordTheirSourceAndAnOperatorOffHoldsAgainstAutomation(): void

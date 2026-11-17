@@ -49,6 +49,9 @@ final class ApiRouteCatalog
             ['GET', '/api/auth_challenge', 'public', 'text', 'Challenge to sign for authenticate_identity.'],
             ['POST', '/api/authenticate_identity', 'signed', 'text', 'Start a session with a signed challenge.'],
             ['GET', '/api/auth_status', 'session', 'text', 'Current session identity.'],
+            ['GET', '/api/key_bootstrap_status', 'session', 'json', 'Whether this session may vouch for a new key in a browser that lost its key, and under which username.'],
+            ['POST', '/api/prepare_key_bootstrap', 'session', 'json', 'Prepare the key bootstrap record the new key (identity_id) signs, or answer pending when the browser does not match.'],
+            ['POST', '/api/finalize_key_bootstrap', 'session', 'json', 'Accept the signed key bootstrap record; once per session.'],
             ['POST', '/api/prepare_profile_name', 'signed', 'json', 'Prepare an initial guest name, or a later rename when username changes are enabled.'],
             ['POST', '/api/finalize_profile_name', 'signed', 'json', 'Submit a signed username change.'],
             // Posting

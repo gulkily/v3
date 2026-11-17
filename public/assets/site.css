@@ -1350,6 +1350,12 @@ pre {
   color: var(--status-ok, var(--ink));
 }
 
+/* A key a session replaced (key bootstrap): still approved, waiting to be retired or kept. */
+.chip--replaced {
+  border-style: dashed;
+  color: var(--ink-soft, var(--ink));
+}
+
 /* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
    only page-specific layout lives here. */
 /* A search field inside the board toolbar. Users filters the list already on the page, so its field is script-only;
@@ -2183,16 +2189,22 @@ pre {
 
 /* The pending author summary (pending_user_summary.js). */
 .pending-user-dialog {
-  /* Placed beside the clicked chip by pending_user_summary.js. */
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 1rem);
+  overflow: auto;
+  color: var(--ink);
+}
+
+/* Placed beside the clicked chip by pending_user_summary.js. Specific enough
+   to beat themes' `:root[data-theme="..."] .card { position: relative }`: a
+   non-fixed modal dialog sits at the top of the document, and opening it
+   scrolled the page there. */
+:root dialog.pending-user-dialog.card {
   position: fixed;
   inset: auto;
   top: 0;
   left: 0;
   margin: 0;
-  width: min(22rem, calc(100vw - 1rem));
-  max-height: calc(100vh - 1rem);
-  overflow: auto;
-  color: var(--ink);
 }
 
 .pending-user-dialog::backdrop {

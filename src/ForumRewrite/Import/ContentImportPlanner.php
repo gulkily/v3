@@ -20,6 +20,14 @@ final class ContentImportPlanner
 {
     private int $dependencyVisits = 0;
 
+    /**
+     * $withApprovals also imports approval and invitation posts and their acceptance
+     * receipts. They stay inert until a key that wrote them is approved here, so
+     * local seeds remain the only authority. Seeds and other authority stay excluded.
+     */
+    /** $progress, when given, receives `Progress: plan <done>/<total>` lines while source files are read. */
+    public function __construct(private readonly bool $withApprovals = false, private readonly ?\Closure $progress = null) {}
+
     /** @internal Test hook: diagnostic work counter; enables deterministic complexity regression checks. */
     public function dependencyVisits(): int { return $this->dependencyVisits; }
 
@@ -42,8 +50,20 @@ final class ContentImportPlanner
 
     public function plan(string $source, string $destination): array
     {
+        // Progress counts two passes over the local records plus one over the source's.
+        $localFiles = self::files($destination);
+        $sourceFiles = self::files($source);
+        $work = 2 * count($localFiles) + count($sourceFiles);
+        $worked = 0;
+        $tick = function () use (&$worked, $work): void {
+            if (++$worked % 250 === 0) {
+                $this->progress?->__invoke('Progress: plan ' . $worked . '/' . $work);
+            }
+        };
+        $this->progress?->__invoke('Progress: plan 0/' . $work);
         // Local limit violations must fail before tolerant identity/removal discovery.
-        foreach (self::files($destination) as $localPath) {
+        foreach ($localFiles as $localPath) {
+            $tick();
             if (ArchiveRecordCatalog::isRecordPath($localPath) || ArchiveRecordCatalog::isSignaturePath($localPath)) {
                 RecordLimits::assertFile($destination . '/' . $localPath);
             }
@@ -51,7 +71,8 @@ final class ContentImportPlanner
         $removals = \ForumRewrite\Canonical\AcceptedRemoval::all($destination);
         $reactionRemovals = \ForumRewrite\Canonical\AcceptedRemoval::reactions($destination);
         $target = [];
-        foreach (self::files($destination) as $path) {
+        foreach ($localFiles as $path) {
+            $tick();
             $key = ArchiveRecordCatalog::identityKey($destination, $path);
             if ($key !== null) {
                 $target[$key][] = $path;
@@ -60,7 +81,8 @@ final class ContentImportPlanner
         foreach ($removals as $id => $removal) if ($removal['operation'] === 'delete') $target['post:' . $id] = [];
         $entries = [];
         $byKey = [];
-        foreach (self::files($source) as $path) {
+        foreach ($sourceFiles as $path) {
+            $tick();
             $entry = $this->describe($source, $path, $destination);
             $entry['hash'] = hash_file('sha256', $source . '/' . $path);
             $postPath = preg_replace('/\.(?:asc|sig)$/D', '', $path);
@@ -265,6 +287,18 @@ final class ContentImportPlanner
             }
             return [...$parent, 'key' => $parent['key'] === null ? null : 'signature:' . $parent['key'] . ':' . substr($path, -4), 'record' => $record];
         }
+        if ($this->withApprovals && preg_match('#^records/approval-acceptances/([A-Za-z0-9][A-Za-z0-9._-]*)\.(?:txt|json)$#D', $path, $match) === 1) {
+            try {
+                // Validates the receipt against the exact grant bytes it names.
+                if (\ForumRewrite\Security\ApprovalAcceptance::read($root, \ForumRewrite\Security\ApprovalAcceptance::grantPath($root, $match[1])) === null) {
+                    throw new RuntimeException('Approval receipt is unreadable.');
+                }
+                return [...$entry, 'key' => ArchiveRecordCatalog::identityKey($root, $path) ?? ArchiveRecordCatalog::pathIdentityKey($path),
+                    'dependencies' => ['post:' . $match[1]]];
+            } catch (OperationLimitException|RecordReadException $error) { throw $error; } catch (RuntimeException|\JsonException $error) {
+                return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)];
+            }
+        }
         if (preg_match('#^records/(instance|approval-seeds|approval-acceptances|key-retirements|key-retirement-acceptances|feature-flag-changes|operator-grants|attribution-cutoffs|private-messages|invitations)/#', $path)) {
             return [...$entry, 'state' => 'excluded', 'reason' => 'Instance authority, settings, or private data'];
         }
@@ -285,8 +319,8 @@ final class ContentImportPlanner
                     if ($error->getMessage() !== 'Missing required post header: Created-At') { throw $error; }
                     $entry['dependencies'][] = 'post-timestamp:' . $post->postId;
                 }
-                if ((in_array('identity', $post->boardTags, true) && in_array('approval', $post->boardTags, true))
-                    || in_array('invitation', $post->boardTags, true)) {
+                if (!$this->withApprovals && ((in_array('identity', $post->boardTags, true) && in_array('approval', $post->boardTags, true))
+                    || in_array('invitation', $post->boardTags, true))) {
                     return [...$entry, 'state' => 'excluded', 'reason' => 'Approval or invitation authority post'];
                 }
                 foreach ([$post->threadId, $post->parentId] as $id) {

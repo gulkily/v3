@@ -191,7 +191,10 @@ try {
   }
 
   // Other pages: the same ruler, and a saved column applies there on first paint.
-  const listings = ['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
+  // The board is /?view=liked (its default view): under ./v3 start a bare / is the
+  // local development page (LocalDevelopmentImport::isEntry).
+  const board = '/?view=liked';
+  const listings = [board, '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
     '/messages/', '/about/', '/tools/', '/tools/bookmarklets', '/docs/', '/docs/reference/agent_api.md'];
   for (const theme of themes) {
     await page.evaluate(([themeKey, theme, marginsKey]) => {
@@ -205,10 +208,10 @@ try {
       const first = await firstPaintColumn();
       assert.ok(first && Math.abs(first.left - settled.left) <= 1 && Math.abs(first.right - settled.right) <= 1, `${theme} ${listing}: column final on first paint`);
       assert.equal(await pageScrollsSideways(), false, `${theme} ${listing}: no sideways scroll`);
-      if (shots && listing === '/') await page.screenshot({ path: join(shots, `${theme}-board-23-95.png`) });
+      if (shots && listing === board) await page.screenshot({ path: join(shots, `${theme}-board-23-95.png`) });
     }
     if (shots) await page.evaluate(k => localStorage.removeItem(k), runtime.readingMarginsStorageKey);
-    if (shots) { await page.goto(base + '/'); await page.screenshot({ path: join(shots, `${theme}-board-default.png`) }); }
+    if (shots) { await page.goto(base + board); await page.screenshot({ path: join(shots, `${theme}-board-default.png`) }); }
   }
 
   // Phones: no ruler, and a saved column does not narrow the page.

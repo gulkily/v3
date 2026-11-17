@@ -126,5 +126,36 @@ try {
       await context.close();
     }
   }
-  console.log('PASS pending chip: summary with recent posts beside the chip, member-only Approve, lazy signing, failure and retry, chips removed, modified click left to the browser; desktop and phone');
+  // Themes that give `.card` position: relative must not make the dialog
+  // non-fixed; that put it at the top of the document and opening scrolled
+  // the page there.
+  for (const theme of ['bubblegum', 'sticker']) {
+    const themeCss = fs.readFileSync(`public/assets/theme-${theme}.css`, 'utf8');
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await context.route('http://pending.test/**', async route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: page_html(false).replace('<html', `<html data-theme="${theme}"`).replace('</style>', `</style><style>${themeCss}</style>`).replace('<body>', '<body><div style="height:3000px"></div>') });
+      if (url.pathname === '/assets/pending_user_summary.js') return route.fulfill({ contentType: 'text/javascript', body: summaryScript });
+      if (url.pathname === '/api/get_profile') return route.fulfill({ contentType: 'text/plain', body: 'Username: mouse\nPosts: 1\nThreads: 1\n' });
+      return route.fulfill({ status: 404, body: '' });
+    });
+    const page = await context.newPage();
+    await page.goto('http://pending.test/');
+    await page.locator('#two .pending-chip').evaluate(el => el.scrollIntoView({ block: 'center' }));
+    const before = await page.evaluate(() => scrollY);
+    assert.ok(before > 2000, 'page is scrolled before opening');
+    await page.locator('#two .pending-chip').click();
+    const dialog = page.locator('dialog.pending-user-dialog');
+    await page.waitForFunction(() => document.querySelector('[data-role="counts"]').textContent.includes('post'));
+    assert.equal(await page.evaluate(() => scrollY), before, `${theme}: opening does not scroll the page`);
+    assert.equal(await dialog.evaluate(el => getComputedStyle(el).position), 'fixed', `${theme}: dialog stays fixed`);
+    const box = await dialog.boundingBox();
+    const chipBox = await page.locator('#two .pending-chip').boundingBox();
+    const below = Math.abs(box.y - (chipBox.y + chipBox.height + 6)) <= 2;
+    const above = Math.abs(box.y + box.height - (chipBox.y - 6)) <= 2;
+    assert.ok(below || above, `${theme}: dialog opens right beside the chip: ${JSON.stringify({ box, chipBox })}`);
+    await context.close();
+  }
+
+  console.log('PASS pending chip: summary with recent posts beside the chip, member-only Approve, lazy signing, failure and retry, chips removed, modified click left to the browser, no scroll on open in themes that position cards; desktop and phone');
 } finally { await browser.close(); }

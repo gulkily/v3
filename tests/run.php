@@ -15,6 +15,20 @@ file_put_contents($testGitConfig, "[user]\n\tname = Forum Rewrite Tests\n\temail
 putenv('GIT_CONFIG_GLOBAL=' . $testGitConfig);
 register_shutdown_function(static fn () => @unlink($testGitConfig));
 
+// Tests must not see the checkout's own task queue: `./v3 start` keeps its worker heartbeat
+// fresh, which changes how pages recover the read model. Tests that need a queue set their own.
+if (getenv('FORUM_TASK_QUEUE_DATABASE_PATH') === false) {
+    $testQueueDirectory = sys_get_temp_dir() . '/v3-test-queue-' . getmypid();
+    putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $testQueueDirectory . '/internal_tasks.sqlite3');
+    register_shutdown_function(static function () use ($testQueueDirectory): void {
+        if (getmypid() !== (int) substr($testQueueDirectory, strrpos($testQueueDirectory, '-') + 1)) return;
+        foreach (glob($testQueueDirectory . '/{,.}*', GLOB_BRACE) ?: [] as $file) {
+            if (is_file($file)) @unlink($file);
+        }
+        @rmdir($testQueueDirectory);
+    });
+}
+
 $testFiles = [
     __DIR__ . '/DeleteRecordCommandTest.php',
     __DIR__ . '/DeleteThreadCommandTest.php',
@@ -89,6 +103,7 @@ $testFiles = [
     __DIR__ . '/AbsentRetractionSnapshotTest.php',
     __DIR__ . '/AssetFingerprintTest.php',
     __DIR__ . "/HighTrafficTest.php",
+    __DIR__ . "/TourSnapshotsTest.php",
     __DIR__ . "/HighTrafficPostRefreshTest.php",
     __DIR__ . "/HighTrafficAutomationTest.php",
     __DIR__ . "/AccessHistoryPresenterTest.php",
@@ -113,6 +128,12 @@ $testFiles = [
     __DIR__ . '/LegacyTimestampImportTest.php',
     __DIR__ . '/InstanceSourceResolverTest.php',
     __DIR__ . '/ImportInstanceCommandTest.php',
+    __DIR__ . '/InstanceImportTaskTest.php',
+    __DIR__ . '/ImportPageTest.php',
+    __DIR__ . '/DevServerWorkerTest.php',
+    __DIR__ . '/ImportProgressViewTest.php',
+    __DIR__ . '/KnownInstancesTest.php',
+    __DIR__ . '/LocalDevelopmentImportTest.php',
     __DIR__ . '/ImportedContentPublicationTest.php',
     __DIR__ . '/ContentImportRecoveryTest.php',
     __DIR__ . '/RepositoryArchiveValidationTest.php',
@@ -126,6 +147,7 @@ $testFiles = [
     __DIR__ . '/InboxPageTest.php',
     __DIR__ . '/InboxFeedTest.php',
     __DIR__ . '/ApprovalAuditCommandTest.php',
+    __DIR__ . '/ApprovalRootSuggestionsCommandTest.php',
     __DIR__ . '/ApprovalPolicyTest.php',
     __DIR__ . '/ApprovalAcceptanceTest.php',
     __DIR__ . '/ApprovalReceiptMaintenanceTest.php',
@@ -315,6 +337,7 @@ $testFiles = [
     __DIR__ . '/GpgAvailabilityTest.php',
     __DIR__ . '/ScriptsIndexTest.php',
     __DIR__ . '/TestFileRegistrationTest.php',
+    __DIR__ . '/FastNavigationLayoutTest.php',
     __DIR__ . '/ThemeToggleScriptTest.php',
     __DIR__ . '/Word97ThemeCoverageTest.php',
     __DIR__ . '/NavIconSetsTest.php',
@@ -325,6 +348,9 @@ $testFiles = [
     __DIR__ . '/TerminalOperatorUiDashboardTest.php',
     __DIR__ . '/TaskQueueStoreTest.php',
     __DIR__ . '/ViewerSessionStoreTest.php',
+    __DIR__ . '/DeviceFingerprintTest.php',
+    __DIR__ . '/KeyBootstrapScriptTest.php',
+    __DIR__ . '/KeyBootstrapTest.php',
     __DIR__ . '/TaskQueueCommandTest.php',
     __DIR__ . '/TaskQueueWorkerTest.php',
     __DIR__ . '/TestRunHistoryStoreTest.php',
