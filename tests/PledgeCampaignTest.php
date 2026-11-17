@@ -12,6 +12,8 @@ use ForumRewrite\Support\FilledDirective;
 use ForumRewrite\Support\GoalDirective;
 use ForumRewrite\Support\PledgeAmount;
 use ForumRewrite\Support\PledgeDirective;
+use ForumRewrite\Support\PledgeLines;
+use ForumRewrite\Support\ReviewDirective;
 use ForumRewrite\Support\WithdrawDirective;
 use ForumRewrite\View\PledgeCampaign;
 use ForumRewrite\Write\LocalWriteService;
@@ -147,7 +149,7 @@ final class PledgeCampaignTest
         pledgeAssertContains('style="width: 30%"', $on);
         pledgeAssertNotContains('pledge-bar__goal', $on);
         pledgeAssertContains('1 pledge</p>', $on);
-        pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees</p>', $on);
+        pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $on);
         pledgeAssertContains('data-pledge-state="unverified"><strong>250</strong> coffees · <span class="meta">Not counted: unverified</span>', $on);
         pledgeAssertContains('data-pledge-state="unnamed"><strong>40</strong> coffees · <span class="meta">Not counted: no name</span>', $on);
         pledgeAssertContains('data-pledge-state="unreadable"><span class="meta">Not counted: “a few” is not a number</span>', $on);
@@ -162,7 +164,7 @@ final class PledgeCampaignTest
         }
         pledgeAssertContains('<strong>340</strong> of 1000 coffees pledged', $counting);
         pledgeAssertContains('2 pledges</p>', $counting);
-        pledgeAssertContains('data-pledge-state="counted"><strong>40</strong> coffees</p>', $counting);
+        pledgeAssertContains('data-pledge-state="counted"><strong>40</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $counting);
         pledgeAssertNotContains('Not counted: no name', $counting);
         pledgeAssertContains('Not counted: unverified', $counting);
         // The second flag does nothing while Pledges is off.
@@ -172,8 +174,12 @@ final class PledgeCampaignTest
         } finally {
             putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
         }
-        // The lines stay in the posts as written.
-        pledgeAssertContains('goal: 1000 coffees', $on);
+        // The thread page leaves out the lines its totals and cards already show; an unread line stays.
+        pledgeAssertNotContains('goal: 1000 coffees', $on);
+        pledgeAssertContains('We need coffee.', $on);
+        pledgeAssertNotContains('pledge: 300', $on);
+        pledgeAssertContains('I&#039;ll order these myself.', $on);
+        pledgeAssertNotContains('pledge: 250', $on);
         pledgeAssertContains('pledge: a few', $on);
         // A pledge line outside a campaign is an ordinary reply.
         pledgeAssertNotContains('pledge-totals', $other);
@@ -237,6 +243,18 @@ final class PledgeCampaignTest
             pledgeAssertContains('<label class="pledge-field">Pledge<input type="text" name="pledge_amount" inputmode="decimal"', $page);
             pledgeAssertContains('<span class="pledge-field__unit">coffees</span>', $page);
             pledgeAssertContains('/assets/pledge_field.', $page);
+            // The field lives in the pledge form in the totals block, which has its own draft and button;
+            // the reply box at the bottom no longer carries it.
+            pledgeAssertSame(1, substr_count($page, 'name="pledge_amount"'));
+            pledgeAssertContains('data-compose-kind="reply" data-pledge-form data-compose-draft-scope="pledge">', $page);
+            $pledgeForm = substr($page, (int) strpos($page, 'data-pledge-form'), 6000);
+            pledgeAssertContains('name="pledge_amount"', $pledgeForm);
+            pledgeAssertContains('placeholder="Note (optional)"', $pledgeForm);
+            pledgeAssertContains('Post pledge', $pledgeForm);
+            pledgeAssertNotContains('data-compose-disclosure="options"', substr($pledgeForm, 0, (int) strpos($pledgeForm, '</form>')));
+            $bottom = substr($page, (int) strpos($page, 'data-inline-reply-compose'));
+            pledgeAssertNotContains('name="pledge_amount"', $bottom);
+            pledgeAssertNotContains('data-pledge-form', $bottom);
             $other = $this->render($application(), '/threads/' . rawurlencode($plain));
             pledgeAssertNotContains('name="pledge_amount"', $other);
             pledgeAssertNotContains('pledge_field.', $other);
@@ -497,7 +515,7 @@ final class PledgeCampaignTest
             pledgeAssertContains('order these myself.', $on);
             pledgeAssertContains('The order fell through.', $on);
             pledgeAssertContains('data-pledge-state="withdraw-uncounted"><span class="meta">Not counted: write “withdraw” alone on its line</span>', $on);
-            pledgeAssertContains('data-pledge-state="counted"><strong>200</strong> coffees</p>', $on);
+            pledgeAssertContains('data-pledge-state="counted"><strong>200</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $on);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
         }
@@ -534,7 +552,7 @@ final class PledgeCampaignTest
             // The reply drops the baked page, so the next build carries the new totals.
             pledgeAssertSame(false, is_file($path));
             pledgeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
-            pledgeAssertContains('2 pledges · 700 filled · 400 confirmed</p>', (string) file_get_contents($path));
+            pledgeAssertContains('2 pledges · 700 delivered (400 confirmed)</p>', (string) file_get_contents($path));
 
             $on = $page();
             pledgeAssertContains('data-pledge-state="fill"><a href="/posts/' . $delivered . '">Delivered by ', $on);
@@ -545,10 +563,14 @@ final class PledgeCampaignTest
             pledgeAssertContains('data-pledge-state="fill-capped"><span class="meta">Counted 300 of 500</span>', $on);
             pledgeAssertContains('data-pledge-state="fill-uncounted"><span class="meta">Not counted: no name</span>', $on);
             pledgeAssertSame(true, $nameless !== '');
-            // The bare fill folds into its pledge; fills with an amount or a reason stay.
+            // A fill that is only its line folds into its pledge, with or without an amount; one
+            // counted in part, or not counted, stays for its reason.
             pledgeAssertNotContains('data-post-id="' . $delivered . '"', $on);
-            pledgeAssertContains('data-post-id="' . $filled . '"', $on);
+            pledgeAssertNotContains('data-post-id="' . $filled . '"', $on);
+            pledgeAssertContains('data-post-id="' . $over . '"', $on);
             pledgeAssertContains('data-post-id="' . $nameless . '"', $on);
+            // The post's own page keeps the line as written.
+            pledgeAssertContains('pledge: 300', $this->render(new Application(dirname(__DIR__), $root, $database), '/posts/' . rawurlencode($own)));
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
             putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
@@ -596,7 +618,7 @@ final class PledgeCampaignTest
             (new PDO('sqlite:' . $database))->prepare("UPDATE posts SET retracted_at = '2026-11-16T09:00:00Z', body = '' WHERE post_id = ?")->execute([$bare]);
             $undone = $this->render($application(), '/threads/' . rawurlencode($thread));
             pledgeAssertContains('<strong>300</strong> of 1000 coffees pledged', $undone);
-            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees</p>', $undone);
+            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $undone);
             pledgeAssertNotContains($card($bare), $undone);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
@@ -711,6 +733,287 @@ final class PledgeCampaignTest
     }
 
     /** @return array{string,string,LocalWriteService,string} */
+    public function testReviewLineIsBareOrCarriesText(): void
+    {
+        pledgeAssertSame(['word' => 'confirm', 'after' => ''], ReviewDirective::extract(ReviewDirective::CONFIRM));
+        pledgeAssertSame(['word' => 'dispute', 'after' => ''], ReviewDirective::extract("It never came.\n  Dispute:  "));
+        pledgeAssertSame(['word' => 'confirm', 'after' => 'yes'], ReviewDirective::extract('CONFIRM: yes'));
+        pledgeAssertSame(null, ReviewDirective::extract('> confirm'));
+        pledgeAssertSame(null, ReviewDirective::extract('I confirm it'));
+        pledgeAssertSame(null, ReviewDirective::extract('disputed'));
+        pledgeAssertSame(true, ReviewDirective::isBare("\n confirm \n"));
+        pledgeAssertSame(true, ReviewDirective::isBare('Dispute:'));
+        pledgeAssertSame(false, ReviewDirective::isBare("dispute\n\nNothing arrived."));
+        pledgeAssertSame(false, ReviewDirective::isBare('confirm: yes'));
+    }
+
+    public function testTheAuthorOrAnOperatorConfirmsOrDisputesAPledgersFill(): void
+    {
+        $author = 'openpgp:' . str_repeat('a', 40);
+        $mara = 'openpgp:' . str_repeat('b', 40);
+        $op = 'openpgp:' . str_repeat('c', 40);
+        $rin = 'openpgp:' . str_repeat('d', 40);
+        $post = static fn (string $id, string $body, string $parent, string $by, array $more = []): array => $more + [
+            'post_id' => $id, 'thread_id' => 'root', 'parent_id' => $parent, 'body' => $body, 'retracted_at' => null,
+            'author_identity_id' => $by, 'author_label' => ['' => '', $author => 'ilyag', $mara => 'mara', $op => 'opal', $rin => 'rin'][$by],
+            'attribution_counted' => 1, 'created_at' => '2026-11-17T05:00:00Z',
+        ];
+        $posts = [
+            $post('root', 'goal: 1000 coffees', '', $author),
+            $post('a', 'pledge: 300', 'root', $mara),
+            $post('b', 'pledge: 400', 'root', $rin),
+            $post('c', 'pledge: 50', 'root', $rin),
+            $post('fa', 'filled', 'a', $mara),
+            $post('fb', 'filled', 'b', $rin),
+            $post('fc', 'filled: 20', 'c', $author),
+            $post('ca', 'confirm', 'fa', $author),
+            $post('db', "dispute\nNothing arrived.", 'fb', $op),
+            $post('r-other', 'confirm', 'fa', $rin),
+            $post('r-own', 'dispute', 'fa', $mara),
+            $post('r-text', 'confirm: thanks', 'fa', $author),
+            $post('r-author-fill', 'dispute', 'fc', $op),
+            $post('r-pledge', 'confirm', 'a', $author),
+            $post('r-unverified', 'dispute', 'fa', $author, ['attribution_counted' => 0]),
+            $post('r-nameless', 'dispute', 'fa', ''),
+            $post('r-retracted', 'dispute', 'fa', $author, ['retracted_at' => '2026-11-17T06:00:00Z']),
+        ];
+        $isOp = static fn (string $id): bool => $id === $op;
+        $campaign = PledgeCampaign::fromPosts($posts, 'root', false, $isOp);
+
+        // a: 300 confirmed; b: disputed, nothing counts; c: 20 by the author.
+        pledgeAssertSame('320', $campaign['filled']);
+        pledgeAssertSame('320', $campaign['confirmed']);
+        pledgeAssertSame([['post_id' => 'fa', 'by' => 'mara', 'role' => 'pledger', 'amount' => '300',
+            'review' => 'confirmed', 'review_by' => 'ilyag', 'review_post_id' => 'ca']], $campaign['pledges']['a']['fill_list']);
+        pledgeAssertSame([['post_id' => 'fb', 'by' => 'rin', 'role' => 'pledger', 'amount' => '400',
+            'review' => 'disputed', 'review_by' => 'opal', 'review_post_id' => 'db']], $campaign['pledges']['b']['fill_list']);
+        pledgeAssertSame(false, isset($campaign['pledges']['b']['filled']));
+        pledgeAssertSame(['effective' => false, 'note' => 'Not counted: disputed by opal'], $campaign['fills']['fb']);
+        pledgeAssertSame([
+            'ca' => ['effective' => true, 'note' => ''],
+            'db' => ['effective' => true, 'note' => ''],
+            'r-other' => ['effective' => false, 'note' => 'Not counted: only the author or an operator can review'],
+            'r-own' => ['effective' => false, 'note' => 'Not counted: a fill cannot be reviewed by its own author'],
+            'r-text' => ['effective' => false, 'note' => 'Not counted: write “confirm” alone on its line'],
+            'r-author-fill' => ['effective' => false, 'note' => "Not counted: not a reply to a pledger's fill"],
+            'r-pledge' => ['effective' => false, 'note' => "Not counted: not a reply to a pledger's fill"],
+            'r-unverified' => ['effective' => false, 'note' => 'Not counted: unverified'],
+            'r-nameless' => ['effective' => false, 'note' => 'Not counted: no name'],
+        ], $campaign['reviews']);
+
+        // Without an operator check the operator's dispute does not count, so rin's fill does.
+        $plain = PledgeCampaign::fromPosts($posts, 'root');
+        pledgeAssertSame('Not counted: only the author or an operator can review', $plain['reviews']['db']['note']);
+        pledgeAssertSame('720', $plain['filled']);
+        pledgeAssertSame('320', $plain['confirmed']);
+
+        // Retracting the dispute undoes it.
+        $posts[8]['retracted_at'] = '2026-11-17T07:00:00Z';
+        $undone = PledgeCampaign::fromPosts($posts, 'root', false, $isOp);
+        pledgeAssertSame('720', $undone['filled']);
+        pledgeAssertSame(false, isset($undone['pledges']['b']['fill_list'][0]['review']));
+    }
+
+    public function testTheLatestReviewDecidesAndADisputedFillLeavesRoom(): void
+    {
+        $author = 'openpgp:' . str_repeat('a', 40);
+        $mara = 'openpgp:' . str_repeat('b', 40);
+        $post = static fn (string $id, string $body, string $parent, string $by): array => [
+            'post_id' => $id, 'thread_id' => 'root', 'parent_id' => $parent, 'body' => $body, 'retracted_at' => null,
+            'author_identity_id' => $by, 'author_label' => $by === $author ? 'ilyag' : 'mara',
+            'attribution_counted' => 1, 'created_at' => '2026-11-17T05:00:00Z',
+        ];
+        $base = [$post('root', 'goal: 1000', '', $author), $post('a', 'pledge: 300', 'root', $mara), $post('f1', 'filled', 'a', $mara)];
+
+        // Fill, dispute, fill again: the second fill has the whole pledge to fill.
+        $again = PledgeCampaign::fromPosts([...$base, $post('d', 'dispute', 'f1', $author), $post('f2', 'filled: 250', 'a', $mara)], 'root');
+        pledgeAssertSame('250', $again['filled']);
+        pledgeAssertSame('0', $again['confirmed']);
+        pledgeAssertSame(['effective' => true, 'note' => ''], $again['fills']['f2']);
+        pledgeAssertSame('300', $again['pledges']['a']['fill_list'][0]['amount']);
+
+        // Confirm then dispute, then confirm again: the latest decides.
+        $flip = [...$base, $post('c1', 'confirm', 'f1', $author), $post('d1', 'dispute', 'f1', $author)];
+        pledgeAssertSame('0', PledgeCampaign::fromPosts($flip, 'root')['filled']);
+        $back = PledgeCampaign::fromPosts([...$flip, $post('c2', 'confirm', 'f1', $author)], 'root');
+        pledgeAssertSame('300', $back['filled']);
+        pledgeAssertSame('300', $back['confirmed']);
+
+        // A capped fill is confirmed for the part that counted.
+        $capped = PledgeCampaign::fromPosts([$post('root', 'goal: 1000', '', $author), $post('a', 'pledge: 300', 'root', $mara),
+            $post('f1', 'filled: 500', 'a', $mara), $post('c', 'confirm', 'f1', $author)], 'root');
+        pledgeAssertSame('300', $capped['confirmed']);
+        pledgeAssertSame('Counted 300 of 500', $capped['fills']['f1']['note']);
+
+        // After a dispute the pledge is open again, so it can be withdrawn.
+        $withdrawn = PledgeCampaign::fromPosts([...$base, $post('d', 'dispute', 'f1', $author), $post('w', 'withdraw', 'a', $mara)], 'root');
+        pledgeAssertSame('withdrawn', $withdrawn['pledges']['a']['state']);
+        pledgeAssertSame('0', $withdrawn['pledged']);
+        pledgeAssertSame(['effective' => true, 'note' => ''], $withdrawn['withdrawals']['w']);
+    }
+
+    public function testThreadPageShowsEachReviewAndWhyAReviewDidNotCount(): void
+    {
+        [$root, $database] = $this->environment();
+        // The fixture has one key. The pledger here is a second key, written as records and read back
+        // by a rebuild, so the member (the campaign author) can review the pledger's fills.
+        $pledger = 'openpgp:' . str_repeat('b', 40);
+        $records = [
+            'rv-root' => ['', self::MEMBER, "Subject: Review campaign\n", 'goal: 1000 coffees'],
+            'rv-first' => ['rv-root', $pledger, '', 'pledge: 300'],
+            'rv-second' => ['rv-root', $pledger, '', 'pledge: 400'],
+            'rv-kept' => ['rv-first', $pledger, '', 'filled'],
+            'rv-lost' => ['rv-second', $pledger, '', 'filled: 100'],
+            'rv-confirm' => ['rv-kept', self::MEMBER, '', 'confirm'],
+            'rv-dispute' => ['rv-lost', self::MEMBER, '', "dispute\nNothing came."],
+            'rv-stray' => ['rv-first', self::MEMBER, '', 'confirm'],
+        ];
+        $this->writeThread($root, $database, $records);
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/rv-root');
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $html = $page();
+            pledgeAssertContains('2 pledges · 300 delivered</p>', $html);
+            pledgeAssertContains('data-pledge-state="fill"><a href="/posts/rv-kept">Delivered by ', $html);
+            pledgeAssertContains(' · <a href="/posts/rv-confirm">confirmed by ', $html);
+            pledgeAssertContains('data-pledge-state="fill-disputed"><s><a href="/posts/rv-lost">Delivered by ', $html);
+            pledgeAssertContains('</a> · 100</s> · <a href="/posts/rv-dispute">disputed by ', $html);
+            pledgeAssertContains('data-pledge-state="fill-uncounted"><span class="meta">Not counted: disputed by ', $html);
+            pledgeAssertContains('data-pledge-state="review-uncounted"><span class="meta">Not counted: not a reply to a pledger&#039;s fill</span>', $html);
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+
+        pledgeAssertNotContains('pledge-amount', $page());
+    }
+
+    public function testReviewButtonsShowForTheAuthorOnUnreviewedPledgerFillsAndABareConfirmFolds(): void
+    {
+        [$root, $database] = $this->environment();
+        $pledger = 'openpgp:' . str_repeat('b', 40);
+        $this->writeThread($root, $database, [
+            'rb-root' => ['', self::MEMBER, "Subject: Button campaign\n", 'goal: 1000 coffees'],
+            'rb-a' => ['rb-root', $pledger, '', 'pledge: 300'],
+            'rb-b' => ['rb-root', $pledger, '', 'pledge: 200'],
+            'rb-c' => ['rb-root', self::MEMBER, '', 'pledge: 100'],
+            'rb-open' => ['rb-a', $pledger, '', 'filled'],
+            'rb-done' => ['rb-b', $pledger, '', 'filled'],
+            'rb-confirm' => ['rb-done', self::MEMBER, '', 'confirm'],
+            'rb-own' => ['rb-c', self::MEMBER, '', 'filled'],
+        ]);
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/rb-root');
+        $oldCookies = $_COOKIE;
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $_COOKIE = [];
+            $html = $page();
+            pledgeAssertNotContains('>Confirm</button>', $html);
+            // The bare confirm folds, and so does the bare fill it answered; the open fill folds too.
+            pledgeAssertNotContains('data-post-id="rb-confirm"', $html);
+            pledgeAssertNotContains('data-post-id="rb-done"', $html);
+            pledgeAssertNotContains('data-post-id="rb-open"', $html);
+
+            // The member is the campaign author: buttons on the open pledger fill only, not on the
+            // confirmed one or the member's own fill.
+            $_COOKIE = ['identity_hint' => self::MEMBER];
+            $html = $page();
+            pledgeAssertSame(1, substr_count($html, '>Confirm</button>'));
+            pledgeAssertSame(1, substr_count($html, '>Dispute</button>'));
+            pledgeAssertSame(2, substr_count($html, '<input type="hidden" name="parent_id" value="rb-open">'));
+            pledgeAssertContains('<input type="hidden" name="body" value="confirm">', $html);
+            pledgeAssertContains('<input type="hidden" name="body" value="dispute">', $html);
+            pledgeAssertContains('data-failure="Review failed. Try again."', $html);
+
+            // The pledger sees no review buttons on their own fills.
+            $_COOKIE = ['identity_hint' => $pledger];
+            pledgeAssertNotContains('>Confirm</button>', $page());
+        } finally {
+            $_COOKIE = $oldCookies;
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+    }
+
+    public function testTotalsSitUnderTheTitleWithAStatusOnceTheGoalIsReached(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Coffee for the hack weekend', "We need coffee.\ngoal: 100 coffees");
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $open = $page();
+            $pledge = $this->reply($service, $thread, "pledge: 120\n\nFrom the lab.");
+            $reached = $page();
+            $this->replyTo($service, $thread, $pledge, 'filled: 30');
+            $part = $page();
+            $this->replyTo($service, $thread, $pledge, 'filled');
+            $complete = $page();
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+        // The block comes before the pitch, straight after the title.
+        $title = strpos($open, 'Coffee for the hack weekend</h1>');
+        $totals = strpos($open, 'data-pledge-totals');
+        $pitch = strpos($open, 'We need coffee.');
+        pledgeAssertSame(true, $title !== false && $totals !== false && $pitch !== false && $title < $totals && $totals < $pitch);
+        pledgeAssertContains('data-pledge-status="open"', $open);
+        pledgeAssertNotContains('data-role="pledge-status"', $open);
+        pledgeAssertNotContains('pledge-bar__delivered', $open);
+        pledgeAssertContains('data-pledge-status="goal_reached"', $reached);
+        pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Goal reached</span>', $reached);
+        pledgeAssertContains('<span class="pledge-bar__delivered" style="width: 25%"></span>', $part);
+        pledgeAssertContains('aria-label="120 of 100 coffees pledged, 30 delivered"', $part);
+        // The author filled it, so delivered and confirmed are equal and "confirmed" is not repeated.
+        pledgeAssertContains('1 pledge · 30 delivered</p>', $part);
+        pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Complete</span>', $complete);
+        pledgeAssertContains('1 pledge · 120 delivered</p>', $complete);
+        // Each pledge card leads with its amount and one status, then the note.
+        pledgeAssertContains('<strong>120</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span>', $reached);
+        pledgeAssertSame(true, strpos($reached, 'data-role="pledge-card-status"') < strpos($reached, 'From the lab.'));
+        pledgeAssertContains('data-role="pledge-card-status">Part delivered: 30 of 120</span>', $part);
+        pledgeAssertContains('data-role="pledge-card-status">Delivered</span>', $complete);
+    }
+
+    public function testPledgeLinesLeaveOutOnlyTheLineTheReaderUsed(): void
+    {
+        pledgeAssertSame("I'll order these myself.", PledgeLines::hide("pledge: 300\n\nI'll order these myself.", PledgeLines::PLEDGE));
+        pledgeAssertSame("We need coffee.\nPledge any number.", PledgeLines::hide("We need coffee.\ngoal: 1000 coffees\nPledge any number.", PledgeLines::GOAL));
+        pledgeAssertSame("Three days.\n\nPledge any number.", PledgeLines::hide("Three days.\n\ngoal: 1000 coffees\n\nPledge any number.", PledgeLines::GOAL));
+        // A quoted line is never the one removed, as the readers skip it too.
+        pledgeAssertSame("> pledge: 50\nAgreed.", PledgeLines::hide("> pledge: 50\npledge: 20\nAgreed.", PledgeLines::PLEDGE));
+        // Only the first match goes; a body with no such line is unchanged.
+        pledgeAssertSame("filled: 5", PledgeLines::hide("filled\nfilled: 5", PledgeLines::FILLED));
+        pledgeAssertSame("Just talking.", PledgeLines::hide("Just talking.", PledgeLines::PLEDGE));
+        pledgeAssertSame(true, PledgeLines::isOnlyLine("filled: 5", PledgeLines::FILLED));
+        pledgeAssertSame(true, PledgeLines::isOnlyLine("\nconfirm\n", PledgeLines::REVIEW));
+        pledgeAssertSame(false, PledgeLines::isOnlyLine("filled\n\nArrived Tuesday.", PledgeLines::FILLED));
+        pledgeAssertSame(false, PledgeLines::isOnlyLine("", PledgeLines::WITHDRAW));
+    }
+
+    public function testThreadPageKeepsTheLinesThatDidNotCount(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Kept lines', 'goal: 100 coffees');
+        $pledge = $this->reply($service, $thread, 'pledge: 30');
+        $quiet = $this->reply($service, $thread, 'pledge: 20');
+        // Text after a withdraw or review line stops it counting, so the line and its reason stay.
+        $this->replyTo($service, $thread, $pledge, 'withdraw: 10');
+        $this->replyTo($service, $thread, $pledge, 'confirm: yes');
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $on = $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+        pledgeAssertContains('withdraw: 10', $on);
+        pledgeAssertContains('confirm: yes', $on);
+        // A pledge with no note shows its amount and no empty text box.
+        pledgeAssertNotContains('pledge: 20', $on);
+        $card = substr($on, (int) strpos($on, 'data-post-id="' . $quiet . '"'), 1500);
+        pledgeAssertNotContains('<div class="body"></div>', $card);
+    }
+
     private function environment(): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-pledge-repo-' . bin2hex(random_bytes(6));
@@ -729,6 +1032,25 @@ final class PledgeCampaignTest
         $service = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root), featureFlags: FeatureFlagEvaluator::forRepository($root));
 
         return [$root, $database, $service, $artifacts];
+    }
+
+    /**
+     * Writes one thread as post records, root first, and rebuilds the read model. Lets a test use a
+     * second key, which the fixture does not have. Each record is [parent, author, extra headers, body].
+     *
+     * @param array<string, array{0: string, 1: string, 2: string, 3: string}> $records
+     */
+    private function writeThread(string $root, string $database, array $records): void
+    {
+        $rootId = (string) array_key_first($records);
+        $minute = 0;
+        foreach ($records as $id => [$parent, $author, $headers, $body]) {
+            $minute++;
+            $thread = $parent === '' ? '' : "Thread-ID: {$rootId}\nParent-ID: {$parent}\n";
+            file_put_contents($root . '/records/posts/' . $id . '.txt', "Post-ID: {$id}\nCreated-At: 2026-11-17T06:" . sprintf('%02d', $minute)
+                . ":00Z\nBoard-Tags: general\n{$thread}{$headers}Author-Identity-ID: {$author}\n\n{$body}\n");
+        }
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new CanonicalRecordRepository($root), 'pledge_review_test'))->rebuild();
     }
 
     private function thread(LocalWriteService $service, string $subject, string $body): string

@@ -1,0 +1,18 @@
+ID: PF-20261117-F09
+Title: Thread title in copied links (readable thread URLs or a "Copy for agent" button)
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-17
+Evidence: unknown
+
+Request:
+every time i paste a thread like this, we end up with a conversation titled "zenmemes thread request", which is not terribly helpful. how to fix? Chose to file this option: put the thread's title into what people copy, either with readable thread URLs that carry a title slug (e.g. /threads/thread-20261113042243-1cbe8b8a/import-instance-needs-a-gui, old URLs still working) or a "Copy for agent" button that copies "<thread title> — <URL>".
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+Copying a thread's address from ZenMemes gives text that names the thread, so an agent chat started from a paste can be titled after it; existing thread URLs keep working.
+
+Notes:
+2026-11-17: filed at the maintainer's request from the import-instance GUI conversation. Which form (slug URL, copy button, or both) is not decided; a slug fits the project's readable-URL preference (Flickr-style: short, readable, hackable, guessable, permanent), and the button fits the planned "paste this into your agent" prompt.

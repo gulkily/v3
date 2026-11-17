@@ -1,7 +1,7 @@
 ID: PF-20261116-F02
 Title: Import another instance from the site (Tools → Import)
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-16
 Evidence: locally-verified
 
@@ -18,3 +18,4 @@ Notes:
 2026-11-16: staged cycle on feat/import_instance_gui (docs/plans/import_instance_gui/); verified locally with the worker and in Chromium; awaiting PR review, deployment, flag enable and one real import on zenmemes.com.
 2026-11-17: production screenshot after a real import showed the Review row listing every cause path; grouped by state and reason in fix/import_review_summary (record docs/plans/import_review_summary/import_review_summary_one_shot.md).
 2026-11-17: import runs without cron (dev-server worker, page-started worker) and shows steps, elapsed time and time left; verified locally with real zenmemes.com imports on ./v3 start (feat/import_without_worker).
+2026-11-17: merged in #287, #288 and #290. The maintainer says the feature is largely for localhost for now; his screenshot of a real zenmemes.com import was from localhost, which meets the completion checks there. A hosted check stays open only if hosting becomes a goal. Done.

@@ -8,6 +8,8 @@ namespace ForumRewrite\Security;
 final class ReactionSignature
 {
     private static array $cache = [];
+    /** Shared so each signer key is imported into GPG once per process, not once per record. */
+    private static ?OpenPgpSignatureVerifier $verifier = null;
 
     public static function status(string $root, string $path, string $contents, ?string $author, ?string $keyFallbackRoot = null): string
     {
@@ -36,7 +38,7 @@ final class ReactionSignature
                 $saved = SignatureCheckCache::has($cacheKey);
                 if (!$saved) {
                     try {
-                        $saved = (new OpenPgpSignatureVerifier())->verifyDetached($key, $contents, $signature, $fingerprint)['ok'];
+                        $saved = (self::$verifier ??= new OpenPgpSignatureVerifier(reuseKeyHomes: true))->verifyDetached($key, $contents, $signature, $fingerprint)['ok'];
                     } catch (\ForumRewrite\Support\OperationLimitException $error) {
                         throw new \ForumRewrite\Support\OperationLimitException('Verification for ' . $path . ': ' . $error->getMessage(), 0, $error);
                     }

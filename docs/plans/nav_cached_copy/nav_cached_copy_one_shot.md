@@ -8,7 +8,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.40**
 
-Status: technically complete on `feat/nav-cached-copy`; release check pending maintainer; next permitted action: maintainer review. Cycle 4 (`page_weight`) waits for the maintainer.
+Status: merged into `main` (PR #292); flag off by default; release check pending maintainer; next permitted action: the maintainer turns the flag on at zenmemes.com and checks it on his iPhone.
 
 # Navbar pages from the last copy, refreshed in the background
 
@@ -95,7 +95,7 @@ Diff read: one flag, renderer path and layout attribute, the worker's copy handl
 
 ## Commit, merge and publication status
 
-Planning commit `6e9f9d01`. Completion commit pending in this record; see the PR. Not merged. Contains PR #291's commits.
+Planning commit `6e9f9d01`. Completion commit `8771374c`. PR #292 (contains PR #291's commits). Merged into `main` with #291 on 2026-11-17: `aa49a68f`, then `aa8190d3`; see the nav quick wins record.
 
 ## Study history
 

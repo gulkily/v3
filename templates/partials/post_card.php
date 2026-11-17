@@ -104,8 +104,16 @@ if ($isRunTail) {
 <?php if ($isRetracted): ?>
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
 <?php else: ?>
-  <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post) ?></div>
-<?= $partial('partials/pledge_amount.php', ['post' => $post]) ?>
+<?php
+// On a campaign's thread page, the pledge line this post's card already shows is left out of its text.
+$pledgeLineKind = is_array($pledgeCampaign ?? null) ? ($pledgeCampaign['used_lines'][(string) $post['post_id']] ?? null) : null;
+$pledgeShownBody = $pledgeLineKind !== null ? \ForumRewrite\Support\PledgeLines::hide((string) ($post['body'] ?? ''), $pledgeLineKind) : null;
+?>
+<?= $partial('partials/pledge_amount.php', ['post' => $post, 'pledgePart' => 'head']) ?>
+<?php if ($pledgeShownBody === null || trim($pledgeShownBody) !== ''): ?>
+  <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post, $pledgeShownBody) ?></div>
+<?php endif; ?>
+<?= $partial('partials/pledge_amount.php', ['post' => $post, 'pledgePart' => 'rest']) ?>
 <?php endif; ?>
 <?php if ($metaLine !== '' && $isContinuation): ?>
   <?= $metaLine ?>

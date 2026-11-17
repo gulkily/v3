@@ -224,11 +224,13 @@ try {
         $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $errorLog, $usesInstancePaths): void {
             $startedAt = microtime(true);
             $retractionSweep = \ForumRewrite\Retraction\RetractionSweepFactory::create($projectRoot, $repositoryRoot, $staticHtmlRoot);
-            if ($taskId === null) {
+            // A fresh instance has no repository or read model until its first page request
+            // creates them; there is nothing to discover yet, so skip instead of logging errors.
+            if ($taskId === null && is_dir($repositoryRoot . '/.git')) {
                 try { \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($retractionSweep, $store); }
                 catch (Throwable) { $errorLog->write('retraction_discovery_failed', 'Cannot discover retraction cleanup. Run retraction-sweep status.'); }
             }
-            $reconciledAgentReplyTasks = $taskId === null ? reconcileAgentReplyTasks($store, $databasePath) : 0;
+            $reconciledAgentReplyTasks = $taskId === null && is_file($databasePath) ? reconcileAgentReplyTasks($store, $databasePath) : 0;
             $executorRun = $store->startExecutorRun();
             $taskOutcomes = [];
             $before = $store->counts();

@@ -150,7 +150,7 @@ try {
     foreach (['data-import-form', 'name="source"', 'value="import"', '/assets/import_control', 'data-import-busy="0"', 'data-import-not-started hidden'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Idle page missing: ' . $needle);
     }
-    if (str_contains($page, '<datalist')) throw new RuntimeException('No sources yet: no list.');
+    if (!str_contains($page, 'value="https://zenmemes.com"') || !str_contains($page, '<option value="https://zenmemes.com">')) throw new RuntimeException('No sources yet: known instances are offered.');
 
     $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
     $queued = InstanceImportTask::forQueue($queuePath)->queue($store, 'import', 'https://forum.example', 'openpgp:x');

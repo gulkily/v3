@@ -1,0 +1,18 @@
+ID: PF-20261117-F02
+Title: Offer known public instances as import sources
+Kind: feature
+Workflow: blocked
+Created: 2026-11-17
+Evidence: locally-verified
+
+Request:
+we should also offer some existing instance choices. Only list zenmemes.com for now, but anticipate adding more; an instance should hide its own address (generally for localhost); the list ships with the code for now.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+Tools → Import and the local start page offer zenmemes.com from a shipped list that can grow by adding a block, ./v3 import-instance accepts the name zenmemes, and zenmemes.com itself does not offer its own address.
+
+Notes:
+2026-11-17: one-shot on feat/known_instances (record docs/plans/known_instances/known_instances_one_shot.md); verified locally; awaiting PR review.
