@@ -2,6 +2,8 @@
 
 ## Cycle v3/qdb_moderated_submissions
 
+2026-11-17T19:00:00Z — v3/qdb_moderated_submissions Step 4 closeout on `feat/qdb-moderated-submissions`: Stages 1-6 committed; qdb.us replay pending maintainer deploy. [Summary](./qdb_moderated_submissions/qdb_moderated_submissions_step4_implementation_summary.md#study-closeout). Retrospective cycle assessment **0.65** (projection 0.65); stage retrospectives 0.15/0.10/0.06/0.14/0.10/0.06, non-additive. One in-cycle correction, no new requests. Comfortable-fit judgment and acceptance pending.
+
 2026-11-17T18:40:00Z — v3/qdb_moderated_submissions Step 4 entry: Step 3 approved; branch `feat/qdb-moderated-submissions` from `6bfe1243`, planning `3b34a30`. [Summary](./qdb_moderated_submissions/qdb_moderated_submissions_step4_implementation_summary.md#step-4-entry). Projection **0.65** reaffirmed; stage originals 0.15/0.12/0.08/0.12/0.08/0.06, non-additive.
 
 2026-11-17T18:20:00Z — v3/qdb_moderated_submissions Step 3 handoff: Step 2 approved. [Plan/checkpoint](./qdb_moderated_submissions/qdb_moderated_submissions_step3_development_plan.md#study-checkpoint). Six stages. Projected total 0.60 → **0.65** (new understanding, same scope v2: nav icons, pre-paint operator controls). Stage work 0.15/0.12/0.08/0.12/0.08/0.06, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.

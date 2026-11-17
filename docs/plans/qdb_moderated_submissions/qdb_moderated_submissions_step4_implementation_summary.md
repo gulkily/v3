@@ -136,3 +136,43 @@ Branch `feat/qdb-moderated-submissions` from `6bfe1243`; planning commit `3b34a3
 - Estimate details: original scope; no revision. Retrospective higher: `/recent/` had its own copy of the score rule, which the Stage 1 inventory missed.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 6 - Documentation and live-site check
+
+**Original estimate: 0.06**
+
+**Retrospective: 0.06**
+
+- Changes:
+  - New concept entry [Quote queue](../../concepts/quote_queue.md).
+  - New runbook [`docs/runbooks/qdb_quote_queue.md`](../../runbooks/qdb_quote_queue.md): how to turn the queue on, the live-site check and recovery.
+  - The classic URLs and theme fidelity checklists now note that Queue and the pending count exist.
+- Verification:
+  - `git diff --check` passed. Relative links in the concept entry and runbook resolve.
+  - Final smoke run with every touched test class: `./v3 test --smoke QdbModerationTest QdbPageTest QdbWelcomeSelectionTest QdbExperienceRoutingTest QdbBoardPolicyTest QuoteCardDisplayNumberTest NavIconSetsTest ScoreVisibilityTest RecentPostTest PublicOfflineSnapshotBuilderTest FeatureFlagEvaluatorTest FeatureFlagChangePageTest TagScoreTest BoardSearchTest` plus four `WriteApiSmokeTest` qdb and reaction methods: 524 passed. Full suite not run.
+  - **Pending:** the qdb.us check in the runbook (Step 2 known environment). Local acceptance in Stage 4 does not satisfy it.
+- Notes:
+  - Production needs only a deploy and the signed flag change; there is no read-model schema change or migration.
+- Estimate details: original scope; no revision.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Cycle closeout
+
+- Completion contract:
+  - Normal entry: passed locally for Add, `/api/create_quote` and the Queue page.
+  - End-to-end outcome (submit, queue, approve, listed): passed in local headless Chrome with real operator signing.
+  - Recovery: a refused approval keeps the quote pending and shows the server's error through the existing reaction feedback (write tests); turning the flag off lists every quote (tests). Passed.
+  - Deployment and qdb.us replay: **pending** maintainer deploy.
+  - Release: the flag ships off. Passed.
+- Final diff review: 33 files against the planning commit. One listing rule reaches every listing; no duplicated queue logic. `AttributionCutoff` now shares `FeatureFlagSwitchOn`. Nothing outside the approved scope.
+- Commits: planning `3b34a30`; stages `ea9d7d3`, `bc7ea31`, `5399a1c`, `2aa1d23`, `f7ebe47`, and this Stage 6 commit; seven commits for six stages plus planning.
+- Deviations from Step 3, all new understanding within scope: start time from the signed switch-on instead of a private setting; the rule in `ScoreVisibility`; no Add-page copy; rejected quotes 404 for everyone; decided cards stay until reload.
+
+## Study closeout
+
+- Retrospective cycle assessment: **0.65**, matching the 0.65 projection. Scope v2 delivered as planned with six stages. One correction inside the cycle (`/recent/` had its own score rule); no new requests.
+- Stage retrospectives 0.15/0.10/0.06/0.14/0.10/0.06 against originals 0.15/0.12/0.08/0.12/0.08/0.06; independent annotations, not summed.
+- Active work time was not measured. Maintainer comfortable-fit judgment: **pending**. Study acceptance: pending.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

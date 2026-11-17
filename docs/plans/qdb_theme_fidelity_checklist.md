@@ -144,6 +144,9 @@ reference (bash.org 2007 for base look, qdb.us 2016 for voting UX).
   number would be fabricated data, not a real stat. Showing just the real
   total felt more honest than faking a second number to look more
   authentic._
+  _2026-11-17: with the quote queue on, the footer now shows real
+  "N quotes approved; M pending" counts; see the
+  [quote queue concept](../concepts/quote_queue.md)._
 - [x] **No quote-number jump box.** Original had a `#` + text input in the
   nav to jump straight to a quote by ID. We have no equivalent — low
   priority unless you want real quote-number navigation.
