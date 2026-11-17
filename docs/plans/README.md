@@ -559,3 +559,5 @@ and repair its navigation and affected references. See the
 - [Local start and import MVP](local_start_import/local_start_import_one_shot.md) — one-shot.
 
 - [Session member gates](session_member_gates/session_member_gates_one_shot.md) — one-shot: member-only agent, analysis and LLM Exchanges gates require a signed-in session, not the hint cookie.
+
+- [High-traffic coverage](high_traffic_coverage/high_traffic_coverage_one_shot.md) — one-shot, documentation-only: checklist of what still reaches PHP while high-traffic mode is on.
