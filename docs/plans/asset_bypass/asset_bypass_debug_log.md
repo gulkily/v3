@@ -55,3 +55,24 @@
 **Uncertain assessments**
 
 - The approval arrived without answers to the open Step 2 questions. The instructions do not say how an approval relates to recommended defaults stated in the artifact. I treated it as covering the recommendations and kept the unanswerable question as a risk.
+
+## 2026-11-17T05:05Z — Step 4 completed
+
+**Necessary/useful instructions**
+
+- Step 3 requirement to replay a known-environment failure (`step3_development_plan_do.md`, carried into Stage 4): the stand-in deploy replay found a real conflict. The plain-file header block sat at the end of `public/.htaccess`, so any server edit appended there would have made the deploy refuse. Retain.
+- `implementation_standards.md` "identifying reproduced baseline failures": running the Apache test on the base commit separated four pre-existing failures from this branch's changes. Retain.
+- Key Risks with early validation (Step 3): Stage 1's throwaway Apache showed that the planned risk did not hold. Without the experiment, a wrong comment would have shipped. Retain.
+
+**Redundant/unnecessary instructions**
+
+- No supported findings.
+
+**Inapplicable instructions**
+
+- Documentation-only rules; UI and navigation icon checks (no UI change).
+
+**Uncertain assessments**
+
+- The user's standing rule says to fix tests that fail on the base commit as part of the work, but two of those fixes are product decisions under another plan's approval boundary (the retraction handoff). Railspike's enhancement classification ("Ambiguous: clarify before dependent work") covered it, but only indirectly. A line on pre-existing failures that need a product decision might help.
+- `StatusCommandTest` fails whenever `public/.htaccess` has uncommitted edits. Stage-boundary test runs before the commit therefore show a false failure, and I reran after each commit. The Stage Boundary Protocol puts verification before the commit; it does not cover tests that depend on a clean working tree.
