@@ -26,6 +26,7 @@ use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadSubjectRecordParser;
 use ForumRewrite\Security\TitleDirectiveAuthority;
 use ForumRewrite\Support\TitleDirective;
+use ForumRewrite\Qdb\QdbModeration;
 use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
@@ -1579,6 +1580,9 @@ class LocalWriteService
             }
 
             $signed = $this->signedReactionInput('thread', $input, $threadId, $tag, $authorIdentityId);
+            if (in_array($tag, QdbModeration::TAGS, true)) {
+                $this->assertQdbModerationTag($threadId, $signed !== null, $authorIdentityId);
+            }
 
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
             if (($isQdbCaptionVote && $this->hasQdbVoteFromIdentity($threadId, $authorIdentityId))
@@ -2381,6 +2385,7 @@ class LocalWriteService
             $timings = array_merge($timings, $this->synchronizeApprovalDerivedState($record, $commitSha));
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateApproval($targetProfileSlug, $threadId, $parentId, $postId);
+            $this->invalidateThreadsAuthoredBy($targetProfileSlug);
             $this->invalidateAccountHistory($context);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
             $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
@@ -2607,6 +2612,7 @@ class LocalWriteService
 
             $phaseStartedAt = hrtime(true);
             $this->invalidator()->invalidateApproval($targetProfileSlug, $threadId, (string) $prepared['parent_id'], $postId);
+            $this->invalidateThreadsAuthoredBy($targetProfileSlug);
             $this->invalidateAccountHistory($context);
             $timings['artifact_invalidate'] = $this->elapsedMilliseconds($phaseStartedAt);
             $this->deletePreparedPost($prepareToken);
@@ -2722,6 +2728,7 @@ class LocalWriteService
                 'Bootstrap key ' . $identityId . ' from the session of ' . $fromIdentityId);
             $this->synchronizeApprovalDerivedState($record, $commit['commit_sha']);
             $this->invalidator()->invalidateApproval($context['target_profile_slug'], $context['target_thread_id'], $context['target_post_id'], $postId);
+            $this->invalidateThreadsAuthoredBy($context['target_profile_slug']);
             $this->invalidateAccountHistory($context);
             $this->deletePreparedPost($token);
 
@@ -2930,6 +2937,7 @@ class LocalWriteService
                 // approval, so it needs the approval-aware projection update.
                 $this->synchronizeApprovalDerivedState($record->post, $commitResult['commit_sha']);
                 $this->invalidator()->invalidateApproval($context['target_profile_slug'], $context['target_thread_id'], $context['target_post_id'], $postId);
+                $this->invalidateThreadsAuthoredBy($context['target_profile_slug']);
                 $this->invalidateAccountHistory($context);
             } else {
                 $this->synchronizePostDerivedState($record->post, $commitResult['commit_sha']);
@@ -4031,6 +4039,15 @@ class LocalWriteService
         return $context;
     }
 
+    /** Approval changes how this person's posts count, so every thread they posted in is baked again. */
+    private function invalidateThreadsAuthoredBy(string $profileSlug): void
+    {
+        $query = $this->readModelPdo()->prepare('SELECT DISTINCT posts.thread_id FROM posts
+            JOIN profiles ON profiles.identity_id = posts.author_identity_id WHERE profiles.profile_slug = ?');
+        $query->execute([$profileSlug]);
+        $this->invalidator()->invalidateThreads(array_map('strval', $query->fetchAll(\PDO::FETCH_COLUMN)));
+    }
+
     private function readModelPdo(): \PDO
     {
         return (new ReadModelConnection($this->databasePath))->open();
@@ -4172,6 +4189,7 @@ class LocalWriteService
         $context = $receipt['context'];
         try {
             $this->invalidator()->invalidateApproval($context['target_profile_slug'], $context['target_thread_id'], $context['target_post_id'], $post->postId);
+            $this->invalidateThreadsAuthoredBy($context['target_profile_slug']);
             $this->invalidateAccountHistory($context);
         } catch (\Throwable $error) {
             throw new RuntimeException('Approval already committed at ' . $head . ' but cached-view refresh failed. Retry refresh; do not approve again.', 0, $error);
@@ -4617,6 +4635,17 @@ class LocalWriteService
         }
     }
 
+    /** Approve and reject are signed operator decisions on quotes; nothing else may write them. */
+    private function assertQdbModerationTag(string $threadId, bool $signed, string $authorIdentityId): void
+    {
+        if (QdbQuoteNumbers::fromThreadId($threadId) === null) {
+            throw new RuntimeException('Only quotes can be approved or rejected.');
+        }
+        if (!$signed || !ApprovalPolicy::isActiveOperator($this->repositoryRoot, $authorIdentityId)) {
+            throw new RuntimeException('Only an operator signing in this browser can approve or reject quotes.');
+        }
+    }
+
     private function assertQdbQuoteAuthoring(): void
     {
         if (SiteProfileRegistry::active()['name'] !== 'qdb') {
@@ -4886,7 +4915,8 @@ class LocalWriteService
     {
         $tag = strtolower(trim($value));
         if (!TagScore::isScoredTag($tag)
-            && !($allowQdbCaptionTag && $this->qdbVoteCaptionCatalog()->isActiveTag($tag))) {
+            && !($allowQdbCaptionTag && $this->qdbVoteCaptionCatalog()->isActiveTag($tag))
+            && !($allowQdbCaptionTag && in_array($tag, QdbModeration::TAGS, true))) {
             throw new RuntimeException('tag must be one of: ' . implode(', ', array_keys(TagScore::scoredTags())));
         }
 

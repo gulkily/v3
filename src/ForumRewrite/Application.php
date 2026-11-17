@@ -116,6 +116,7 @@ final class Application
         private readonly ?int $readerWaitMilliseconds = null,
     ) {
         SignatureCheckCache::useBeside($databasePath);
+        \ForumRewrite\Qdb\QdbModeration::useRepository($repositoryRoot);
     }
 
     /**
@@ -2544,13 +2545,13 @@ final class Application
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/read_event_phrase', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt',
-            '/latest', '/top', '/leetness', '/add', '/random', '/search',
+            '/latest', '/top', '/leetness', '/queue', '/add', '/random', '/search',
         ], true)) {
             return true;
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|posts/[^/]+|records/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|posts/[^/]+|records/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+|queue/\d+)/?$#',
             $path,
         ) === 1;
     }

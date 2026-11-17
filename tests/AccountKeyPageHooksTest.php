@@ -100,6 +100,21 @@ final class AccountKeyPageHooksTest
         assertStringContains("    syncSimpleUI();\n    document.addEventListener('DOMContentLoaded'", $script);
     }
 
+    /** "Test lost-key recovery" exists only while session key bootstrap is on; key_bootstrap.js binds it. */
+    public function testKeyLossTestButtonFollowsTheBootstrapFlag(): void
+    {
+        $render = static fn (bool $on): string => (new TemplateRenderer(dirname(__DIR__) . '/templates'))
+            ->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null, 'keyLossTestEnabled' => $on], 'Account', 'account');
+        foreach (['data-action="test-key-loss"', 'data-role="key-loss-dialog"', 'data-action="confirm-key-loss"'] as $hook) {
+            assertStringContains($hook, $render(true));
+            assertSame(false, str_contains($render(false), $hook), $hook);
+        }
+        $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/key_bootstrap.js');
+        foreach (['[data-action="test-key-loss"]', '[data-role="key-loss-dialog"]', '[data-action="confirm-key-loss"]'] as $selector) {
+            assertStringContains($selector, $script);
+        }
+    }
+
     public function testSigningScriptStillTargetsPageHooks(): void
     {
         $script = (string) file_get_contents(dirname(__DIR__) . '/public/assets/browser_signing.js');

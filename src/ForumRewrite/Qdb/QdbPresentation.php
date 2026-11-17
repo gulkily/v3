@@ -15,6 +15,7 @@ final class QdbPresentation
             ['href' => '/top', 'label' => 'Top', 'section' => 'top'],
             ['href' => '/leetness', 'label' => '1337', 'section' => 'leetness'],
             ['href' => '/random', 'label' => 'Random', 'section' => 'random'],
+            ...(QdbModeration::current()->isActive() ? [['href' => '/queue', 'label' => 'Queue', 'section' => 'queue']] : []),
             ['href' => '/add', 'label' => 'Add Quote', 'section' => 'compose'],
             ['href' => '/search', 'label' => 'Search', 'section' => 'search'],
         ];

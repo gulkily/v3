@@ -41,40 +41,19 @@ final class AttributionCutoff
             return $moved;
         }
 
-        $switchOn = null;
-        foreach (self::paths($repositoryRoot, 'records/feature-flag-changes') as $path) {
-            try {
-                $record = $repository->loadFeatureFlagChange($path);
-            } catch (CanonicalRecordParseException) {
-                continue;
-            }
-            if ($record->flagKey !== FeatureFlagRegistry::VERIFIED_ATTRIBUTION || !$record->value
-                || !self::signedByOperator($repositoryRoot, $path, $record->operatorIdentityId)) {
-                continue;
-            }
-            if ($switchOn === null || [$record->createdAt, $path] < [$switchOn['cutoff_at'], $switchOn['source_path']]) {
-                $switchOn = ['cutoff_at' => $record->createdAt, 'source' => 'switch-on', 'source_path' => $path];
-            }
-        }
+        $switchOn = FeatureFlagSwitchOn::earliest($repositoryRoot, FeatureFlagRegistry::VERIFIED_ATTRIBUTION);
 
-        return $switchOn;
+        return $switchOn === null ? null : ['cutoff_at' => $switchOn['at'], 'source' => 'switch-on', 'source_path' => $switchOn['source_path']];
     }
 
     private static function signedByOperator(string $repositoryRoot, string $path, string $operatorIdentityId): bool
     {
-        $contents = @file_get_contents($repositoryRoot . '/' . $path);
-
-        return is_string($contents)
-            && ApprovalPolicy::isOperator($repositoryRoot, $operatorIdentityId)
-            && ReactionSignature::status($repositoryRoot, $path, $contents, $operatorIdentityId) === 'verified';
+        return FeatureFlagSwitchOn::signedByOperator($repositoryRoot, $path, $operatorIdentityId);
     }
 
     /** @return list<string> */
     private static function paths(string $repositoryRoot, string $directory): array
     {
-        $files = glob($repositoryRoot . '/' . $directory . '/*.txt') ?: [];
-        sort($files);
-
-        return array_map(static fn (string $file): string => $directory . '/' . basename($file), $files);
+        return FeatureFlagSwitchOn::paths($repositoryRoot, $directory);
     }
 }

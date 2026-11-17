@@ -29,6 +29,30 @@ final class QdbExperienceRoutingTest
         }
     }
 
+    public function testQueueRoutesExistOnlyWhileTheQueueRuns(): void
+    {
+        $application = $this->application();
+        $routes = ['/queue', '/queue/1', '/queue/2/', '/?queue', '/?queue=2'];
+        putenv('FORUM_SITE_ID=qdb');
+        try {
+            foreach ($routes as $requestUri) {
+                // Off, the query flag is just an unknown flag on the welcome page, as before.
+                assertSame(str_starts_with($requestUri, '/?') ? 200 : 404, $this->statusFor($application, $requestUri), "Queue off: {$requestUri}");
+            }
+            assertTrue(!str_contains($this->render($application, '/latest'), 'href="/queue"'));
+            \ForumRewrite\Qdb\QdbModeration::override(new \ForumRewrite\Qdb\QdbModeration('2026-11-17T00:00:00Z'));
+            foreach ($routes as $requestUri) {
+                assertSame(200, $this->statusFor($application, $requestUri), "Queue on: {$requestUri}");
+            }
+            $page = $this->render($application, '/queue');
+            assertStringContains('<title>Queue', $page);
+            assertStringContains('href="/queue"', $page);
+        } finally {
+            \ForumRewrite\Qdb\QdbModeration::override(null);
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
     public function testFourthProfileFixtureUsesTheSameExperienceRouteMatrix(): void
     {
         ProfileRegressionFixture::withFourthProfile(fn (): mixed => $this->testRegisteredProfilesHonorTheSelectedExperienceRoutes());

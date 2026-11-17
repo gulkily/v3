@@ -82,6 +82,10 @@ final class ThreadAndPostPageController
         if ($threadRow === null) {
             return null;
         }
+        $qdbModerationState = \ForumRewrite\Qdb\QdbModeration::current()->state($this->routeServices->pdo(), $threadId);
+        if ($qdbModerationState === \ForumRewrite\Qdb\QdbModeration::REJECTED) {
+            return null;
+        }
 
         $service = $this->postWorkflowService();
         $title = ($this->displayThreadTitle)($threadRow);
@@ -139,7 +143,6 @@ final class ThreadAndPostPageController
             ? \ForumRewrite\View\PledgeCampaign::fromPosts(
                 $posts,
                 $threadId,
-                $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED),
                 fn (string $identityId): bool => \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->routeServices->repositoryRoot(), $identityId),
             )
             : null;
@@ -174,6 +177,7 @@ final class ThreadAndPostPageController
                 'viewerPostLikes' => $viewerPostLikes,
                 'signalActors' => $signalActors,
                 'createdPostId' => $createdPostId,
+                'qdbModerationState' => $qdbModerationState,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
                 'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],

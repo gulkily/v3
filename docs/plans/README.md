@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[QDB moderated submissions](qdb_moderated_submissions/qdb_moderated_submissions_step3_development_plan.md) — new qdb quotes wait on a public `/queue` until an operator approves them, behind `FORUM_QDB_QUEUE_ENABLED`; Steps 1–3 approved.
+
 [Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
 
 [Draggable windows](draggable_windows/draggable_windows_step3_development_plan.md) — in Bubblegum, every window gets a working collapse button, collapsed posts stay collapsed after a reload, and a desktop Float mode lets you drag windows and Reset them; behind `FORUM_DRAGGABLE_WINDOWS_ENABLED`, with a Preferences row.
@@ -31,6 +33,8 @@ checklists, and proposals remain at the top level or in the collections below.
 [Import cancel one-shot](import_cancel/import_cancel_one_shot.md) — `./v3 import-instance --cancel` discards an interrupted import that has not committed its content; prerequisite for the import-instance GUI.
 
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
+
+[Pledge cards](pledge_cards/pledge_cards_step3_development_plan.md) — each pledge is a one-line row, buttons behind "More", and only approved members' pledges count.
 
 [Pledge frontend](pledge_frontend/pledge_frontend_step3_development_plan.md) — the campaign thread looks right on a phone: totals under the title, a pledge form beside them, used lines hidden and one status per pledge.
 
@@ -139,6 +143,7 @@ checklists, and proposals remain at the top level or in the collections below.
 ## Feature folders
 
 - [Thread activity record links](thread_activity_record_links/thread_activity_record_links_one_shot.md) — one-shot follow-up to the thread activity drawer: with Post records on, each name in the drawer's like and flag lists links to the record that added it; one `git grep` per thread view; PR pending.
+- [Key bootstrap test button](key_bootstrap_test_button/key_bootstrap_test_button_one_shot.md) — one-shot: Account → Key → Advanced button that clears the site's local storage and keeps cookies, to test session key bootstrap.
 - [Session key bootstrap](session_key_bootstrap/session_key_bootstrap_step3_development_plan.md) — a browser with a live session but no key (iPhone Safari's storage wipe) gets a new approved key from the session, with a coarse fingerprint as tie-breaker; the lost key shows a Replaced pill and waits in a queue; behind two flags; Stages 1–6 committed, iPhone Safari replay (Stage 7) pending deploy.
 - [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes and flags by post; follows Pollyanna's `#notext`; behind a new flag; Step 4 complete, release pending.
 - [Usage reports UI](usage_reports_ui/usage_reports_ui_step3_development_plan.md) — readable page and control names, phone-first Usage Reports with shortcut-idea cards, and a readable Usage Log with the exact upload text behind a disclosure; follow-up to the local usage log; Step 4 in progress.

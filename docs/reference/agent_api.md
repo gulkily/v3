@@ -489,6 +489,10 @@ registration with the identity API flow above using that key.
 anonymous. With it, the post names that identity but carries no signature, so
 anyone could have sent it; to post as an identity, use prepare and create.
 
+On qdb with the quote queue on, `create_quote` also answers `moderation=pending`
+when the quote waits for an operator, or `moderation=approved` when it is listed
+at once. A pending quote shows on `/queue` and at its own address until approved.
+
 ## Attribution
 
 `/llms.txt` reports the instance's attribution setting:

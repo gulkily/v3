@@ -53,7 +53,7 @@ final class RecentPostRepository
     public static function since(PDO $pdo, string $after, string $filter, array $params, int $limit): array
     {
         $limit = max(1, min(500, $limit));
-        $query = $pdo->prepare(self::SELECT . 'WHERE ' . self::ELIGIBLE . " AND posts.created_at > ? AND ($filter)
+        $query = $pdo->prepare(self::SELECT . 'WHERE ' . self::eligible(false) . " AND posts.created_at > ? AND ($filter)
             ORDER BY posts.created_at ASC, posts.post_id ASC LIMIT $limit");
         $query->execute([$after, ...$params]);
         return $query->fetchAll(PDO::FETCH_ASSOC);
@@ -62,7 +62,7 @@ final class RecentPostRepository
     /** @param list<string> $params values for the placeholders in $filter */
     public static function countSince(PDO $pdo, string $after, string $filter, array $params): int
     {
-        $query = $pdo->prepare('SELECT count(*) FROM posts WHERE ' . self::ELIGIBLE . " AND posts.created_at > ? AND ($filter)");
+        $query = $pdo->prepare('SELECT count(*) FROM posts WHERE ' . self::eligible(false) . " AND posts.created_at > ? AND ($filter)");
         $query->execute([$after, ...$params]);
         return (int) $query->fetchColumn();
     }
@@ -83,6 +83,7 @@ final class RecentPostRepository
 
     private static function eligible(bool $imagesOnly): string
     {
-        return self::ELIGIBLE . ($imagesOnly ? " AND instr(posts.body, '" . \ForumRewrite\Images\ImageReference::PREFIX . "') > 0" : '');
+        return self::ELIGIBLE . \ForumRewrite\Qdb\QdbModeration::current()->listedSqlSuffix('posts')
+            . ($imagesOnly ? " AND instr(posts.body, '" . \ForumRewrite\Images\ImageReference::PREFIX . "') > 0" : '');
     }
 }
