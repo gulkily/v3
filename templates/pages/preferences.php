@@ -39,6 +39,15 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
         <button type="button" class="account-row__action" data-preference-reset="reading-margins" hidden>Reset</button>
       </div>
 <?php endif; ?>
+<?php if ($draggableWindowsEnabled ?? false): ?>
+      <div class="account-row" data-tone="neutral">
+        <label class="account-row__title" for="preference-window-controls">Window controls</label>
+        <select id="preference-window-controls" class="preferences-page__select" data-preference="window-controls">
+          <option value="on">On</option>
+          <option value="off">Off</option>
+        </select>
+      </div>
+<?php endif; ?>
       <div class="account-row" data-tone="neutral">
         <span class="account-row__title">Table text size</span>
         <span class="account-row__value" data-preference-value="table-size">Site default</span>
@@ -89,6 +98,8 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
       paletteSuffix: '-palette',
       density: runtime.threadDensityStorageKey || '',
       margins: runtime.readingMarginsStorageKey || '',
+      windowControls: runtime.windowControlsStorageKey || '',
+      collapsedWindows: runtime.collapsedWindowsStorageKey || '',
       tableSizes: <?= json_encode($tableZoomKeys, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>,
       gallerySize: 'gallery-zoom',
       navSlots: 'forum_nav_slots',
@@ -133,6 +144,8 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
       if (theme) theme.value = savedTheme(theme);
       var density = page.querySelector('[data-preference="thread-view"]');
       if (density) density.value = get(keys.density) === 'compact' ? 'compact' : 'comfortable';
+      var windowControls = page.querySelector('[data-preference="window-controls"]');
+      if (windowControls) windowControls.value = get(keys.windowControls) === 'off' ? 'off' : 'on';
       var margins = root.hasAttribute('data-reading-margins');
       show('reading-margins', margins ? 'Custom' : 'Site default', margins);
       var tableSize = keys.tableSizes.some(function (key) { return get(key) !== null; });
