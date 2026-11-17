@@ -2,6 +2,8 @@
 
 Status: draft for discussion, 2026-11-15; code check added 2026-11-16. Cycles are tracked in [pledges_checklist.md](./pledges_checklist.md). Working name: "pledges". Feature flag: `pledges`.
 
+Replanned 2026-11-17 as an MVP: stages, the cushion, marker posts, the celebration and configuration are cut. Only a status word ("Goal reached", "Complete") remains, in the `pledge_frontend` cycle. Board rows and the agent text view are parked. Sections below keep the earlier design for reference.
+
 ## Summary
 
 A campaign is a thread that states a goal in a unit the author picks ("1000 coffees"). People reply with pledges, each a number in that unit. No money moves through the site. The thread shows a running total, and the author marks pledges filled as they come through. Pledges can be withdrawn. Going over the goal is allowed and expected, because some pledges will not be filled.
@@ -78,6 +80,8 @@ The thread header shows goal, pledged and filled. Pledged may exceed the goal ("
 
 ## Stages and milestones
 
+Cut 2026-11-17 except the status word; see the note at the top.
+
 A campaign has two numbers that can each reach the goal, and each gets its own moment.
 
 | Stage | When | What the thread shows |
@@ -125,6 +129,8 @@ Same unit as the goal. With no cushion line, the Cushioned stage is skipped.
 URLs stay the ordinary thread URLs. No new opaque state.
 
 ## Configuration
+
+Cut 2026-11-17.
 
 Two choices are meant to be configurable, in keeping with v3's feature-flag approach. Whether each is set per instance, per campaign, or both is still open.
 
