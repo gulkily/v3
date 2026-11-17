@@ -1,5 +1,15 @@
 # Effort estimation trial ledger
 
+## Cycle v3/prompt_plain_text_and_revise
+
+2026-11-16T10:35Z — v3/prompt_plain_text_and_revise **backlogged** at the maintainer's request, incomplete: Step 1 approved, Step 2 (scope v2) unapproved, nothing implemented. Artifacts in [backlog](./backlog/prompt_plain_text_and_revise_step2_feature_description.md). No outcome score.
+
+2026-11-16T09:50Z — scope v2 (maintainer split): the listing display moved to one-shot v3/prompt_plain_text; versions and Edit remain. Step 2 revised, projected total **0.4**.
+
+2026-11-16T09:45Z — Step 1 approved (Option B; author's version; "Show all"). Step 2 projected total **0.55**, same rater.
+
+2026-11-16T09:30Z — staged (standing P2 enrollment; follows v3/prompt_copy_quiet): [Step 1](./backlog/prompt_plain_text_and_revise_step1_solution_assessment.md). Prompts shown as plain text with Copy; Edit on a prompt version opens the reply form filled in. Intake **0.5** after reading the prompt library record and thread templates (no pristine intake); Step 1 projected total for recommended Option B **0.5** (A 0.3, C 0.45), single exposed Claude rater. Baseline `65b98d0`.
+
 ## Cycle v3/prompt_plain_text
 
 2026-11-16T10:25Z — v3/prompt_plain_text one-shot (standing P2 enrollment; split from the staged v3/prompt_plain_text_and_revise at the maintainer's request): [record](./prompt_plain_text/prompt_plain_text_one_shot.md#study-history). /agent/ prompts become selectable text with Copy in the corner; tall shared prompts cut off with Show all; intake **0.15** after source inspection (no pristine intake), retrospective 0.15, single exposed Claude rater. Baseline `6685625`; maintainer fit judgment pending; no accepted-count change.
