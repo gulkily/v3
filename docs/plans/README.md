@@ -530,6 +530,7 @@ and repair its navigation and affected references. See the
 - [Railspike feature gating](./railspike_feature_gating/railspike_feature_gating_step1_solution_assessment.md) — default-off workflow flag and polling only on visible Railspike threads; locally implemented, production acceptance pending.
 
 - [Fastmod score transfer](./fastmod_score_transfer/fastmod_score_transfer_step4_implementation_summary.md) — automatic score export/import; locally complete, review pending.
+- [Fastmod Bayes meta](fastmod_bayes_meta/fastmod_bayes_meta_step1_solution_assessment.md) — a local word-count model scores the meta rubric from production's stored labels, with no LLM call.
 
 - [Agent response text](agent_response_text/agent_response_text_step4_implementation_summary.md) — F05; implemented and verified, maintainer acceptance pending.
 - [Private-message idle synchronization](private_message_sync_idle/private_message_sync_idle_step1_solution_assessment.md) — account history gate and combined work check.

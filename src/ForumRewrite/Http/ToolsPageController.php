@@ -45,7 +45,7 @@ final class ToolsPageController
     ) {
     }
 
-    public function fastmod(): string
+    public function fastmod(?string $notice = null): string
     {
         $viewer = ($this->resolveViewerProfileFromIdentityHint)();
         $data = ['rubrics' => [], 'enabledRubrics' => [], 'settingsError' => null];
@@ -54,10 +54,36 @@ final class ToolsPageController
         } catch (\Throwable $error) {
             $data['settingsError'] = $error->getMessage();
         }
-        return $this->routeServices->renderPageTemplate('fastmod.php', $data + [
+        return $this->routeServices->renderPageTemplate('fastmod.php', $data + $this->routeServices->localMetaView() + [
+            'localNotice' => $notice,
             'toolNavOptions' => ToolsPageSupport::navOptions('fastmod'),
             'canManageFastmod' => $this->viewerCanManageFeatureFlags($viewer),
         ], 'Fastmod', 'tools', ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/fastmod.js']);
+    }
+
+    /** POST /tools/fastmod/ with `action=retrain` queues local meta training, like Deploy's queue button. */
+    public function fastmodSubmit(array $query): void
+    {
+        $headers = $this->routeServices->noStoreHeaders();
+        if (!SameOriginRequest::check()) {
+            $this->routeServices->sendHtml($this->fastmod('Same-origin request required.'), 403, $headers);
+            return;
+        }
+        if (!$this->routeServices->securityReviewAllowed()) {
+            $this->routeServices->sendHtml($this->fastmod('Retraining requires a signed-in root-approved operator.'), 403, $headers);
+            return;
+        }
+        if ((string) ($this->routeServices->requestData($query)['action'] ?? '') !== 'retrain') {
+            $this->routeServices->sendHtml($this->fastmod('Unknown action.'), 400, $headers);
+            return;
+        }
+        try {
+            $task = $this->routeServices->queueLocalMetaTrain();
+            $notice = ($task['enqueued'] ?? true) ? 'Retraining queued for the task worker.' : 'Retraining is already queued.';
+            $this->routeServices->sendHtml($this->fastmod($notice), 200, $headers);
+        } catch (\Throwable $error) {
+            $this->routeServices->sendHtml($this->fastmod('Could not queue retraining: ' . $error->getMessage()), 500, $headers);
+        }
     }
 
     public function fastmodChangeApi(string $method, array $query, bool $finalize): void

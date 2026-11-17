@@ -25,6 +25,42 @@
 <?php endif; ?>
     </form>
 <?php endif; ?>
+    <h2>Local meta model</h2>
+<?php if (($localNotice ?? null) !== null): ?>
+    <p role="status"><?= $e($localNotice) ?></p>
+<?php endif; ?>
+<?php if (is_array($localReport ?? null)): ?>
+    <table class="codebase-facts">
+      <tbody>
+<?php foreach ($localReport['summary'] as [$key, $value]): ?>
+        <tr><th scope="row"><?= $e(str_replace('-', ' ', $key)) ?></th><td><?= $e($value) ?></td></tr>
+<?php endforeach; ?>
+<?php foreach (['train' => 'Training', 'sweep' => 'Scoring'] as $kind => $label): ?>
+<?php $task = $localTasks[$kind] ?? null; if (is_array($task)): ?>
+        <tr><th scope="row"><?= $e($label) ?></th><td><?= $e((string) $task['status']) ?> <?= $e(str_replace('T', ' ', substr((string) ($task['completed_at'] ?? $task['requested_at'] ?? ''), 0, 16))) ?><?= ($task['status'] ?? '') === 'failed' && ($task['failure_message'] ?? '') !== '' ? ': ' . $e((string) $task['failure_message']) : '' ?></td></tr>
+<?php endif; endforeach; ?>
+      </tbody>
+    </table>
+<?php else: ?>
+<?php $task = $localTasks['train'] ?? null; ?>
+    <p><?= is_array($task) ? $e('Training ' . $task['status'] . (($task['failure_message'] ?? '') !== '' ? ': ' . $task['failure_message'] : '.')) : 'Not trained yet.' ?></p>
+<?php endif; ?>
+<?php if (!empty($canRetrain)): ?>
+    <form method="post" action="/tools/fastmod/">
+      <input type="hidden" name="action" value="retrain">
+      <button type="submit">Retrain</button>
+    </form>
+<?php if (is_array($localReport ?? null) && $localReport['disagreements'] !== []): ?>
+    <details>
+      <summary>Disagreements (<?= count($localReport['disagreements']) ?>)</summary>
+      <ul>
+<?php foreach ($localReport['disagreements'] as $item): ?>
+        <li><a href="/threads/<?= $e($item['Post'] ?? '') ?>"><?= $e($item['Subject'] ?? '') ?></a> · <?= $e($item['Label'] ?? '') ?> · <?= $e($item['Score'] ?? '') ?> · <?= $e($item['Words'] ?? '') ?></li>
+<?php endforeach; ?>
+      </ul>
+    </details>
+<?php endif; ?>
+<?php endif; ?>
   </article>
 <?= $indent($partial('partials/tools_nav_card.php'), 2) ?>
 </section>

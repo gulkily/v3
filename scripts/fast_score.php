@@ -53,11 +53,67 @@ try {
             'matching_score_candidates'=>count(\ForumRewrite\Scoring\FastmodDerivedTags::candidates($scorePath,
                 FastScoringRubricRevision::fromConfig($config,$projectRoot),\ForumRewrite\Scoring\FastmodDerivedTags::mappings($privateConfig))),
         ];
+        try {
+            $localModel=(new \ForumRewrite\Scoring\LocalMetaFiles($projectRoot))->loadModel();
+            $status['local_model']=$localModel===null ? 'none' : $localModel->buildId().' ('.$localModel->builtAt().')';
+            $status['local_threshold']=$localModel?->threshold()===null ? 'none' : number_format((float)$localModel->threshold(),2);
+            $status['local_scores']=$localModel===null ? 0
+                : (\ForumRewrite\Scoring\LocalMetaScores::readOnly($scorePath)?->countForBuild($localModel->buildId()) ?? 0);
+        } catch (\Throwable $error) {
+            $status['local_model']='unreadable: '.$error->getMessage();
+        }
         if ($options['json'] ?? false) fwrite(STDOUT,json_encode($status,JSON_THROW_ON_ERROR)."\n");
         else {
             foreach ($status as $key=>$value) fwrite(STDOUT,ucfirst(str_replace('_',' ',$key)).': '.(is_bool($value) ? ($value?'true':'false') : $value)."\n");
             fwrite(STDOUT,"Candidate scores still require matching visible root content. Refresh static/offline output after policy or score changes.\n");
         }
+        exit(0);
+    }
+    if ($command === 'local-train') {
+        $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+        if (!is_file($databasePath)) {
+            throw new InvalidArgumentException('Read-model database not found.');
+        }
+        $training = new \ForumRewrite\Scoring\LocalMetaTraining(new PDO('sqlite:' . $databasePath), is_file($scorePath) ? new PDO('sqlite:' . $scorePath) : null);
+        $files = new \ForumRewrite\Scoring\LocalMetaFiles($projectRoot);
+        try {
+            $report = $training->runAndSave($files, ($options['weak-negatives'] ?? false) === true);
+        } catch (\ForumRewrite\Scoring\LocalMetaTrainingRefused $refused) {
+            fwrite(STDERR, $refused->getMessage() . "\n");
+            exit(2);
+        }
+        if ($options['json'] ?? false) {
+            fwrite(STDOUT, json_encode($report, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) . "\n");
+        } else {
+            $text = \ForumRewrite\Scoring\LocalMetaFiles::reportText($report);
+            fwrite(STDOUT, strstr($text, "\n\n", true) ?: $text);
+            fwrite(STDOUT, "\nReport: " . $files->reportPath() . "\n");
+        }
+        try {
+            \ForumRewrite\Scoring\LocalMetaSweep::enqueue($projectRoot);
+            if (!($options['json'] ?? false)) fwrite(STDOUT, "Queued a local score sweep; or run ./v3 fast-score local-score now.\n");
+        } catch (\Throwable $error) {
+            fwrite(STDERR, 'Could not queue the local score sweep: ' . $error->getMessage() . "\nRun ./v3 fast-score local-score instead.\n");
+        }
+        exit(0);
+    }
+    if ($command === 'local-score') {
+        $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+        if (!is_file($databasePath)) {
+            throw new InvalidArgumentException('Read-model database not found.');
+        }
+        $sweep = \ForumRewrite\Scoring\LocalMetaSweep::forProject($projectRoot, new PDO('sqlite:' . $databasePath), $scorePath);
+        if ($sweep === null) {
+            fwrite(STDERR, "No local meta model yet. Run ./v3 fast-score local-train first.\n");
+            exit(2);
+        }
+        $started = microtime(true);
+        $scored = 0;
+        do {
+            $result = $sweep->run();
+            $scored += $result['scored'];
+        } while ($result['remaining']);
+        fwrite(STDOUT, sprintf("Scored: %d\nAlready current: %d\nModel: %s\nSeconds: %.1f\n", $scored, $result['skipped'] - ($scored - $result['scored']), $result['model_build'], microtime(true) - $started));
         exit(0);
     }
     if ($command === 'audit') {
@@ -332,6 +388,8 @@ function fastScoreOptions(string $command, array $arguments): array
 {
     $definitions = [
         'meta-status' => ['repository-root'=>true,'json'=>false],
+        'local-train' => ['weak-negatives'=>false,'json'=>false,'database-path'=>true],
+        'local-score' => ['database-path'=>true],
         'meta-remove' => ['post-id'=>true,'repository-root'=>true],
         'meta-rollback' => ['repository-root'=>true],
         'meta-retry' => ['database-path'=>true,'repository-root'=>true],
@@ -437,6 +495,7 @@ function fastScoreRecorder(string $projectRoot, string $repositoryRoot, array $p
 function fastScoreUsage($stream): void
 {
     fwrite($stream, "Derived tags: ./v3 fast-score meta-status [--repository-root=PATH] [--json] (read-only)\n");
+    fwrite($stream, "Local meta model: ./v3 fast-score local-train [--weak-negatives] [--json] [--database-path=PATH]; ./v3 fast-score local-score [--database-path=PATH]\n");
     fwrite($stream, "Usage:\n  php scripts/fast_score.php status [--limit=10] [--verbose] [--queue-database-path=/private/tasks.sqlite3]\n  php scripts/fast_score.php audit --include-existing [--database-path=/path/read-model.sqlite3] [--input-usd-per-million=N --output-usd-per-million=N]\n  php scripts/fast_score.php backfill --include-existing --confirm --max-posts=N --max-cost-usd=N [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php retry --post-id=... --content-hash=... --rubric-revision=... [--run]\n  php scripts/fast_score.php invalidate --post-id=... --content-hash=... --rubric-revision=...\n  php scripts/fast_score.php smoke --post-id=... [--database-path=/path/read-model.sqlite3]\n  php scripts/fast_score.php prune [--before=ISO-8601]\n");
 }
 
