@@ -1053,7 +1053,7 @@ final class PledgeCampaignTest
         };
         foreach ([$first, $second] as $postId) {
             $row = $card($html, $postId);
-            pledgeAssertSame(1, substr_count($row, '<details'));
+            pledgeAssertSame(1, substr_count($row, '<details class="post-resolution'));
             pledgeAssertContains('<details class="post-resolution pledge-row-fold" data-role="pledge-row">', $row);
             pledgeAssertNotContains('data-role="post-resolution"', $row);
         }
@@ -1063,6 +1063,49 @@ final class PledgeCampaignTest
         pledgeAssertSame(2, substr_count($html, 'class="card post-card pledge-row'));
         pledgeAssertNotContains('pledge-row', substr($html, (int) strpos($html, 'data-post-id="' . $question . '"') - 200, 200));
         pledgeAssertSame(false, str_contains(substr($html, (int) strpos($html, 'data-post-id="' . $second . '"') - 200, 200), ' continuation'));
+    }
+
+    public function testCampaignRepliesShowAShortBylineAndKeepTheirButtonsInMore(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'More campaign', 'goal: 100 coffees');
+        $pledge = $this->reply($service, $thread, "pledge: 20\n\nFrom me.");
+        $question = $this->reply($service, $thread, 'Does decaf count?');
+        $plain = $this->thread($service, 'No campaign', 'Just talking.');
+        $plainReply = $this->reply($service, $plain, 'A plain reply.');
+        $page = fn (string $id): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($id));
+        $card = static function (string $html, string $postId): string {
+            $start = (int) strpos($html, 'data-post-id="' . $postId . '"');
+            return substr($html, $start, (int) strpos($html, '</article>', $start) - $start);
+        };
+        $oldCookies = $_COOKIE;
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $_COOKIE = ['identity_hint' => self::MEMBER];
+            $campaign = $page($thread);
+            $other = $page($plain);
+        } finally {
+            $_COOKIE = $oldCookies;
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+        foreach ([$pledge, $question] as $postId) {
+            $html = $card($campaign, $postId);
+            // The list byline ("name · Nov 17"), not "by name on … at … UTC".
+            pledgeAssertNotContains('data-post-byline>by ', $html);
+            // Reply and every other button sit inside "More".
+            $more = substr($html, (int) strpos($html, '<details class="post-more" data-role="post-more">'));
+            pledgeAssertContains('<summary class="meta post-more-summary">More</summary>', $html);
+            pledgeAssertContains('>Reply</a>', $more);
+            pledgeAssertContains('data-tag="like"', $more);
+            pledgeAssertNotContains('>Reply</a>', substr($html, 0, (int) strpos($html, '<details class="post-more"')));
+        }
+        // The pledger's own buttons are in "More" too.
+        $more = substr($card($campaign, $pledge), (int) strpos($card($campaign, $pledge), 'data-role="post-more"'));
+        pledgeAssertContains('>Mark delivered</button>', $more);
+        pledgeAssertContains('>Withdraw pledge</button>', $more);
+        // Other threads keep the full byline and the open action row.
+        pledgeAssertNotContains('data-role="post-more"', $card($other, $plainReply));
+        pledgeAssertContains('data-post-byline>by ', $card($other, $plainReply));
     }
 
     private function environment(): array

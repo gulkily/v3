@@ -64,3 +64,28 @@ Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-17. Step 
   - Estimate details: original scope as in Step 3; no revision. Retrospective slightly higher: the browser check needed a row-opening helper throughout.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - A short byline and "More" on campaign threads
+
+**Original estimate: 0.17**
+
+**Retrospective: 0.16**
+
+- Changes:
+  - `templates/partials/post_card.php`: one switch, `$compactCard`, on for every reply card on a campaign thread (the opening post is unchanged). With it, the byline uses the list byline `$rowMeta` ("mara · Nov 17"), and the action row sits in a closed `<details class="post-more">` "More". Reply, Like, Flag, unlocked tags, Agent and Retract are inside it, and so are the pledge's own buttons, placed right after Reply.
+  - `templates/partials/pledge_amount.php`: a `buttons` part holds Mark delivered or Mark filled, Withdraw pledge, and Confirm and Dispute for each delivery awaiting review; the `rest` part keeps only lines and reasons. When more than one delivery awaits review, each pair names its amount ("Confirm 20").
+  - `public/assets/site.css`: the "More" summary and its row.
+  - `tests/PledgeCampaignTest.php`: one new test (short byline and "More" on a pledge and a question, the pledger's buttons inside "More", other threads unchanged); the row test counts fold disclosures only.
+  - `tests/browser/pledge_campaign.mjs`: the opening helper also opens "More"; a `press()` helper centres a control before pressing it; a new check that "More" starts closed, then Like works from inside it and Reply links to the right reply.
+- Verification:
+  - Passed: `./v3 test PledgeCampaignTest WithdrawLeafFilterTest` (31 tests, 1 new).
+  - Passed: the browser check, all 34 theme and width passes. Withdraw, Mark delivered, Confirm (with a failed first press) and Dispute are pressed from inside "More", with JavaScript; the no-JavaScript visitor opens rows and posts as before.
+  - Passed: the light theme at 375 pixels, closed and opened, looked at.
+  - Passed: `./v3 test --smoke PledgeCampaignTest WithdrawLeafFilterTest FeatureFlagEvaluatorTest ThreadActivityTest` (511 tests). The full suite was not run.
+- Notes:
+  - Deviation from Step 2's decision 4 ("(unapproved)" leaves the header): the card reuses the site's list byline, which shows an unapproved author as a small "Pending" chip, and for an approver the chip opens Approve. It reuses an existing component, and it lets the author approve a waiting pledger from the card.
+  - Inside "More", authors and operators also see the Retract control's own "…" menu (Show as Markdown, Retract): a second level for two rare actions. Left as is, since that control is shared with every page.
+  - An opened row names the pledger twice: in the row and in the byline, whose name links to the profile and carries the Pending chip. Left for the maintainer to judge.
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

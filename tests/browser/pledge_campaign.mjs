@@ -42,14 +42,20 @@ async function settled(page) {
   }
   await openRows(page);
 }
-// Each pledge is a closed row; a reader opens one by pressing its summary, as this does for every row.
+// Each pledge is a closed row, and a campaign card's buttons sit in a closed "More"; a reader opens
+// one by pressing its summary, as this does for every row and every "More".
 async function openRows(page) {
-  const closed = page.locator('details.pledge-row-fold:not([open]) > summary');
+  const closed = page.locator('details.pledge-row-fold:not([open]) > summary, details.post-more:not([open]) > summary');
   for (let n = await closed.count(); n > 0; n--) {
     // Centre it first: on a phone the fixed bottom bar covers a row scrolled only to the edge.
     await closed.first().evaluate(e => e.scrollIntoView({ block: 'center' }));
     await closed.first().click();
   }
+}
+// Presses a control after centring it: on a phone the fixed bottom bar covers one scrolled only to the edge.
+async function press(locator) {
+  await locator.evaluate(e => e.scrollIntoView({ block: 'center' }));
+  await locator.click();
 }
 // A pledge row's amount and status, as "300 · Open".
 const rowText = async (row) => `${(await row.locator('.pledge-amount').textContent()).trim()} · ${(await row.locator('[data-role="pledge-card-status"]').textContent()).trim()}`;
@@ -248,7 +254,7 @@ try {
   assert.equal(await plain.page.getByText('Decaf, then.').first().isVisible(), true);
   // A line that is not a number stays a reply and says why.
   await plain.page.locator('[data-inline-reply-compose] textarea[name="body"]').fill('pledge: a few');
-  await plain.page.locator('[data-inline-reply-compose] .compose-form-actions > button[type="submit"]').click();
+  await press(plain.page.locator('[data-inline-reply-compose] .compose-form-actions > button[type="submit"]'));
   await plain.page.waitForLoadState('load');
   await plain.page.goto(base + '/threads/' + threadId);
   assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unreadable"]').textContent()).trim(), 'Not counted: “a few” is not a number');
@@ -332,6 +338,24 @@ try {
   // The dispute and the fill it answers both show as cards.
   assert.equal(await writer.page.locator('article.post-card').count(), reviewCards + 2, 'the dispute and its fill stay in the conversation');
   assert.equal(await writer.page.locator('[data-role="pledge-line"] input[name="body"][value="confirm"]').count(), 0);
+  assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
+
+  // "More": a card on a campaign thread shows only its short byline until "More" is opened; Reply
+  // and Like work from inside it.
+  await writer.page.goto(base + '/threads/' + threadId);
+  await writer.page.waitForLoadState('load');
+  const firstMore = writer.page.locator('article.pledge-row details.post-more').first();
+  await press(writer.page.locator('article.pledge-row details.pledge-row-fold:not([open]) > summary').first());
+  assert.equal(await firstMore.evaluate(d => d.open), false);
+  assert.equal(await firstMore.locator('.post-card-actions').isVisible(), false);
+  await press(firstMore.locator(':scope > summary'));
+  const like = firstMore.locator('button[data-tag="like"]');
+  assert.equal(await like.isVisible(), true);
+  const liked = writer.page.waitForResponse(r => /\/api\//.test(r.url()) && r.request().method() === 'POST', { timeout: 60000 });
+  await press(like);
+  assert.equal((await liked).ok(), true);
+  await writer.page.waitForFunction(() => document.querySelector('article.pledge-row details.post-more button[data-tag="like"]')?.getAttribute('aria-pressed') === 'true', null, { timeout: 30000 });
+  assert.match(await firstMore.getByRole('link', { name: 'Reply' }).getAttribute('href'), /^\/compose\/reply\?thread_id=.+&parent_id=/);
   assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
 
   // Every theme: nothing overflows, and the sum, bar and field are on the page.

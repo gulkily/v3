@@ -55,6 +55,9 @@ if ($postFoldable) {
 // card never has two.
 $isPledgeRow = is_array($pledgeCampaign ?? null) && !$isRetracted
     && (($pledgeCampaign['pledges'][(string) $post['post_id']]['amount'] ?? null) !== null);
+// On a campaign's thread page every reply card is compact: the list byline ("mara · Nov 17", with
+// the Pending chip for an unapproved author) and its buttons in a "More" menu.
+$compactCard = is_array($pledgeCampaign ?? null);
 $viewerHasLikedPost = isset($viewerPostLikes[(string) $post['post_id']]);
 $viewerHasFlaggedPost = isset($viewerPostFlags[(string) $post['post_id']]);
 $postPermalinkLabel = 'Post ' . (string) $post['post_id'];
@@ -76,7 +79,7 @@ $hoverTimeLabel = $isRunTail ? '' : $postTimeLabel;
 // byline-above-body order.
 $metaLine = '';
 if ($isRunTail) {
-    $metaLine = '<p class="meta" data-post-byline>' . $contentMeta($post, 'created_at', '');
+    $metaLine = '<p class="meta" data-post-byline>' . ($compactCard ? $rowMeta($post) : $contentMeta($post, 'created_at', ''));
     if ($postFoldable) {
         $metaLine .= ' <span class="post-resolution-state" data-role="post-state-label"' . ($postStateLabel === '' ? ' hidden' : '') . '>' . $e($postStateLabel) . '</span>';
     }
@@ -176,8 +179,15 @@ if (!is_array($postAnalysisLabels)) {
     'signals' => ['like' => $postSignals['like'] ?? [], 'flag' => $postSignals['flag'] ?? [], 'title_author' => null],
     'signalsScope' => 'post',
 ]), 1) ?>
+<?php if ($compactCard): ?>
+  <details class="post-more" data-role="post-more">
+    <summary class="meta post-more-summary">More</summary>
+<?php endif; ?>
   <div class="button-row button-row-natural post-card-actions">
     <a href="/compose/reply?thread_id=<?= $e($post['thread_id']) ?>&amp;parent_id=<?= $e($post['post_id']) ?>">Reply</a>
+<?php if ($compactCard && !$isRetracted): ?>
+<?= $partial('partials/pledge_amount.php', ['post' => $post, 'pledgePart' => 'buttons']) ?>
+<?php endif; ?>
 <?php if (!$isRetracted): ?>
     <button
       type="button"
@@ -262,6 +272,9 @@ if (!is_array($postAnalysisLabels)) {
   </details>
 <?php endif; ?>
   </div>
+<?php if ($compactCard): ?>
+  </details>
+<?php endif; ?>
 <?php if ($postFoldable || $isPledgeRow): ?>
 </details>
 <?php endif; ?>
