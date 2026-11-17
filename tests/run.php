@@ -129,6 +129,7 @@ $testFiles = [
     __DIR__ . '/LegacyTimestampImportTest.php',
     __DIR__ . '/InstanceSourceResolverTest.php',
     __DIR__ . '/ImportInstanceCommandTest.php',
+    __DIR__ . '/ImportOutputFilterTest.php',
     __DIR__ . '/InstanceImportTaskTest.php',
     __DIR__ . '/ImportPageTest.php',
     __DIR__ . '/DevServerWorkerTest.php',

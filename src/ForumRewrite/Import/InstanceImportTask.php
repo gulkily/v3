@@ -104,6 +104,8 @@ final class InstanceImportTask
             'cancel' => '--cancel',
             default => throw new RuntimeException('Unknown import action in request.'),
         };
+        // The page's step list reads these; a terminal run leaves them out.
+        $command[] = '--progress-lines';
         $command[] = '--repository-root=' . $destination['repository_root'];
         $command[] = '--database-path=' . $destination['database_path'];
         if (($request['Action'] ?? '') !== 'cancel') {
