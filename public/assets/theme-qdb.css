@@ -125,6 +125,10 @@
   margin: 0.2rem 0;
 }
 
+:root[data-theme="qdb"] .qdb-footer a {
+  color: inherit;
+}
+
 :root[data-theme="qdb"] .quote-card-vote-button {
   width: auto;
   margin-top: 0;

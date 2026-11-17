@@ -56,6 +56,15 @@ final class BoardPageController
             $threads = $qdbPresentation['threads'] ?? $threads;
             $pagination = $qdbPresentation['pagination'] ?? null;
         }
+        $qdbPendingCount = null;
+        if ($qdbPolicy !== null && \ForumRewrite\Qdb\QdbModeration::current()->isActive()) {
+            // The footer counts approved and pending quotes, as the original did, on every board page.
+            $pdo = $this->routeServices->pdo();
+            $qdbPendingCount = $activeSection === 'queue' ? $qdbQuoteCount : \ForumRewrite\ReadModel\QdbPage::count($pdo, 'queue');
+            if ($activeSection === 'queue') {
+                $qdbQuoteCount = \ForumRewrite\ReadModel\QdbPage::count($pdo, 'latest');
+            }
+        }
         $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['voted' => [], 'flagged' => []];
         $voteCaptionPair = $qdbPolicy?->selectCaptionPair();
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
@@ -89,6 +98,7 @@ final class BoardPageController
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
                 'qdbVoteTags' => $qdbVoteTags,
                 'qdbQuoteCount' => $qdbQuoteCount,
+                'qdbPendingCount' => $qdbPendingCount,
                 'pagination' => $pagination,
             ],
             $qdbPolicy !== null ? match ($activeSection) {

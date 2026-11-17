@@ -41,7 +41,7 @@
 <?php endif; ?>
 </section>
 <?php if ($boardFooterPartial !== null): ?>
-<?= $partial($boardFooterPartial, ['qdbQuoteCount' => $qdbQuoteCount]) ?>
+<?= $partial($boardFooterPartial, ['qdbQuoteCount' => $qdbQuoteCount, 'qdbPendingCount' => $qdbPendingCount ?? null]) ?>
 <?php endif; ?>
 <?php if (!empty($listingQuery)): ?>
 <footer class="listing-query-footer">

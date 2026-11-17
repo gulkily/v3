@@ -63,11 +63,22 @@ final class QdbModeration
     {
         $site = SiteProfileRegistry::active()['name'];
         if (self::$current === null || (!self::$overridden && self::$currentSite !== $site)) {
-            self::$current = self::$repositoryRoot === null ? self::inactive() : self::forRepository(self::$repositoryRoot);
+            self::$current = $site !== 'qdb' ? self::inactive()
+                : self::forRepository(self::$repositoryRoot ?? self::deployedRepositoryRoot());
             self::$currentSite = $site;
         }
 
         return self::$current;
+    }
+
+    /** Command-line builders that never register a repository read the deployed one, as the web entry does. */
+    private static function deployedRepositoryRoot(): string
+    {
+        $projectRoot = dirname(__DIR__, 3);
+        $configured = \ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT', $projectRoot);
+
+        // Never create the local repository just to answer a listing query.
+        return $configured ?: $projectRoot . '/state/local_repository';
     }
 
     public static function forRepository(string $repositoryRoot): self

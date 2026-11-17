@@ -15,9 +15,9 @@ final class QdbModerationTest
     private const VISITOR = 'openpgp:' . 'b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2';
 
     /** @return array{PDO, array<string, string>} */
-    private function fixture(): array
+    private function fixture(string $dsn = 'sqlite::memory:'): array
     {
-        $pdo = new PDO('sqlite::memory:', null, null, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $pdo = new PDO($dsn, null, null, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         foreach (ReadModelSchema::statements() as $sql) $pdo->exec($sql);
         $post = $pdo->prepare('INSERT INTO posts(post_id,thread_id,created_at,body,board_tags_json,author_identity_id,sequence_number) VALUES(?,?,?,?,?,?,?)');
         $thread = $pdo->prepare('INSERT INTO threads(root_post_id,root_post_created_at,last_activity_at,body_preview,reply_count,last_post_id,board_tags_json,thread_labels_json) VALUES(?,?,?,?,0,?,?,\'[]\')');
@@ -95,6 +95,23 @@ final class QdbModerationTest
             assertSame(0, QdbPage::page($pdo, 'queue', 1)['count']);
         } finally {
             QdbModeration::override(null);
+        }
+    }
+
+    public function testOfflineSnapshotLeavesOutPendingAndRejectedQuotes(): void
+    {
+        $source = sys_get_temp_dir() . '/qdb-moderation-source-' . bin2hex(random_bytes(4)) . '.sqlite3';
+        $target = $source . '.snapshot';
+        [, $ids] = $this->fixture('sqlite:' . $source);
+        QdbModeration::override(self::active());
+        try {
+            (new \ForumRewrite\Offline\PublicOfflineSnapshotBuilder())->build($source, $target);
+            $rows = (new PDO('sqlite:' . $target))->query('SELECT root_post_id FROM threads')->fetchAll(PDO::FETCH_COLUMN);
+            assertSame(['approved', 'archived', 'dashapproved', 'news', 'operator', 'plain'], self::names($ids, array_map(static fn ($id) => ['root_post_id' => $id], $rows)));
+        } finally {
+            QdbModeration::override(null);
+            @unlink($source);
+            @unlink($target);
         }
     }
 

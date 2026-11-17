@@ -5358,8 +5358,13 @@ NODE;
             assertSame('pending', $this->extractValue($response, 'moderation'));
             $threadId = $this->extractValue($response, 'thread_id');
 
-            assertStringNotContains('Waiting quote', $this->renderMethod($application, 'GET', '/latest'));
-            assertStringContains('Waiting quote', $this->renderMethod($application, 'GET', '/queue'));
+            $latest = $this->renderMethod($application, 'GET', '/latest');
+            assertStringNotContains('Waiting quote', $latest);
+            assertStringContains('0 quotes approved; <a href="/queue">1 pending</a>', $latest);
+            $queue = $this->renderMethod($application, 'GET', '/queue');
+            assertStringContains('Waiting quote', $queue);
+            assertStringContains('0 quotes approved; <a href="/queue">1 pending</a>', $queue);
+            assertStringNotContains('Waiting quote', $this->renderMethod($application, 'GET', '/recent/'));
             $permalink = $this->renderMethod($application, 'GET', '/threads/' . $threadId);
             assertStringContains('Waiting quote', $permalink);
             assertStringContains('data-qdb-moderation="pending"', $permalink);

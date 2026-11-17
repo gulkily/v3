@@ -37,6 +37,7 @@ final class FrontController
         ?string $publicRoot = null,
     ) {
         $this->publicRoot = $publicRoot ?? ($projectRoot . '/public');
+        \ForumRewrite\Qdb\QdbModeration::useRepository($repositoryRoot);
     }
 
     /**

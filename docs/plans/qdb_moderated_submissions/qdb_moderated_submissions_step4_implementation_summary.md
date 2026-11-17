@@ -113,3 +113,26 @@ Branch `feat/qdb-moderated-submissions` from `6bfe1243`; planning commit `3b34a3
 - Estimate details: original scope; no revision. Retrospective slightly higher for the browser acceptance harness.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 5 - Counts and published copies
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - With the queue on, the qdb footer reads "N quotes approved; M pending", and "M pending" links to the Queue page. With it off, the footer is unchanged.
+  - `QdbPage::count` counts Latest or the queue without loading rows; `QdbPage::page` and `count` share one `base` query.
+  - `RecentPostRepository` applies the moderation rule beside its own score rule, so `/recent/`, the gallery and Inbox leave pending quotes out.
+  - The offline snapshot uses the shared rule already. `FrontController` and `./v3 offline publish` now register the repository, and `QdbModeration` falls back to the configured `FORUM_REPOSITORY_ROOT` for other command-line builders. The fallback never creates the local repository.
+  - `theme-qdb.css`: footer links take the footer's ink color.
+- Verification:
+  - `./v3 test --smoke WriteApiSmokeTest::testQdbQueueHoldsANewQuoteOffListingsButOnItsPermalink WriteApiSmokeTest::testQdbQueueApprovalAndRejectionAreSignedOperatorDecisions QdbModerationTest QdbPageTest PublicOfflineSnapshotBuilderTest QdbWelcomeSelectionTest QdbExperienceRoutingTest LocalAppSmokeTest RecentPostTest`: all passed. Full suite not run.
+  - New `QdbModerationTest::testOfflineSnapshotLeavesOutPendingAndRejectedQuotes`. The end-to-end queue test now checks the footer on Latest and Queue and checks that `/recent/` leaves the pending quote out.
+  - `./v3 build-static` against the local acceptance instance (one approved, one rejected, one pending quote): `latest.html`, `top.html`, `index.html`, `recent.html` and the offline snapshot leave out the pending and rejected quotes. The footer reads "1 quote approved; 1 pending". Screenshot checked in the qdb theme.
+- Notes:
+  - The instance page's "Recent included items" still lists the pending quote's record, as Activity does. Both describe repository contents, and the queue is public.
+  - llms.txt lists no threads, so it needed no change.
+- Estimate details: original scope; no revision. Retrospective higher: `/recent/` had its own copy of the score rule, which the Stage 1 inventory missed.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
