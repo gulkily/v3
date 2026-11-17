@@ -408,6 +408,8 @@ final class ComposeAndAccountKeyController
             'testingSelfApprovalEnabled' => $this->routeServices->testingSelfApprovalEnabled(),
             'identityHint' => $_COOKIE['identity_hint'] ?? '',
             'viewerProfile' => $viewerProfile,
+            // A testing control for session key bootstrap; useless, so absent, without it.
+            'keyLossTestEnabled' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::SESSION_KEY_BOOTSTRAP_ENABLED),
             'notice' => $notice,
             'error' => $error,
         // The page signs in itself (data-auth-in-place) instead of the reloading public resume.

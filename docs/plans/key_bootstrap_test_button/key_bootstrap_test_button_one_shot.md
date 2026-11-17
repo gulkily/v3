@@ -8,7 +8,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.08**
 
-Status: planned; next permitted action: implement on `feat/key-bootstrap-test-button`.
+Status: technically complete; PR open, not merged or deployed. Next: Ilya merges, deploys with the flag on, and uses the button for the iPhone replay.
 
 # One-shot: a button to test lost-key recovery
 
@@ -65,10 +65,37 @@ Branch `feat/key-bootstrap-test-button` from `origin/main`.
 
 ## Planning commit
 
-Pending.
+`94d57768` (confirmed with Git), before any implementation.
+
+## Dated execution history
+
+- 2026-11-17: built as planned. The button sits in Advanced → Storage and privacy, beside the page's storage facts. The dialog copies the "Remove this key" sheet, including "Save a copy first". The handler records the browser first if this session has not, then clears local and session storage and reloads.
+- 2026-11-17: the browser check now drives the wipe through the button, and adds a check that Cancel keeps the key.
+
+## Outcome
+
+Delivered as planned. Limitation: Safari's rule also clears IndexedDB and caches; the button clears local and session storage only, which is where the key lives. The outbox and offline cache stay.
+
+## Verification
+
+- Passed: `node tests/browser/key_bootstrap.mjs` (headless Chrome). It opens Account → Key → Advanced → Storage and privacy, clicks the button, confirms, and after the reload sees the notice, a new approved key and `auth_status` 200. Cancel keeps the key; a second reload makes no second key; a deliberate removal gets none.
+- Passed: `AccountKeyPageHooksTest::testKeyLossTestButtonFollowsTheBootstrapFlag`: the button and dialog render only with the flag on, and the script targets their hooks.
+- Passed: `./v3 test --smoke AccountKeyPageHooksTest KeyBootstrapScriptTest KeyBootstrapTest` (490 of 490). The full suite was not run.
+- Looked at: a screenshot of the open dialog in Gloss; it matches the Remove dialog.
+- Pending: on a real iPhone. This button exists for that check; it is recorded as Stage 7 of `session_key_bootstrap`.
+
+## Final review
+
+The diff touches the controller, the key page template, `key_bootstrap.js`, two tests and this cycle's docs. No new component: the dialog, backup button and flag are reused. No concept entry changed. No read-model change.
+
+## Commit, merge and publication status
+
+Planning `94d57768`; completion commit pending at the time of writing (its hash goes in the PR). Not merged, not deployed.
 
 ## Study history
 
 - Intake, 2026-11-17 UTC: **0.08**, after reading the key page and bootstrap script (no pristine intake). Reference R1, protocol P2. Single exposed rater: Claude.
+- Execution entry, 2026-11-17 UTC: 0.08 reaffirmed.
+- Closeout, 2026-11-17 UTC: **Retrospective cycle scope: 0.08**. Delivered as planned. Maintainer fit pending.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
