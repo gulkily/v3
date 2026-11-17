@@ -107,3 +107,15 @@
 **Uncertain assessments**
 - Approval in tests: PHP tests set the profile row directly and the browser check writes an approval seed. Neither exercises the site's own Approve flow; recorded as not exercised.
 - Screenshots were looked at by the agent; no independent visual review was run.
+
+## 2026-11-17T20:10Z — Correction after closeout
+
+**Necessary/useful instructions**
+- `AGENTS.md` "pages must look final on first paint": the stale rows were a baked page, not a script, so the fix is in invalidation rather than a client update. Retain.
+- `AGENTS.md` "a same-cycle correction may continue that cycle's unmerged branch": PR #316 was still open, so the fix went to its branch. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Uncertain assessments**
+- The site's own Approve flow is still not exercised end to end in a browser; the new check calls `approveUser` directly.

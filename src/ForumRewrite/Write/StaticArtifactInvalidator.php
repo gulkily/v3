@@ -61,6 +61,19 @@ final class StaticArtifactInvalidator
         ]);
     }
 
+    /** @param list<string> $threadIds */
+    public function invalidateThreads(array $threadIds): void
+    {
+        $paths = [];
+        foreach ($threadIds as $threadId) {
+            $paths[] = '/threads/' . $threadId . '.html';
+            $paths[] = '/threads/' . $threadId . '/index.html';
+        }
+        if ($paths !== []) {
+            $this->deletePaths($paths);
+        }
+    }
+
     public function invalidateIdentityLink(string $profileSlug, string $threadId, string $postId): void
     {
         $this->deletePaths([
