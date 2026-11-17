@@ -132,6 +132,7 @@ $testFiles = [
     __DIR__ . '/ImportPageTest.php',
     __DIR__ . '/DevServerWorkerTest.php',
     __DIR__ . '/ImportProgressViewTest.php',
+    __DIR__ . '/KnownInstancesTest.php',
     __DIR__ . '/LocalDevelopmentImportTest.php',
     __DIR__ . '/ImportedContentPublicationTest.php',
     __DIR__ . '/ContentImportRecoveryTest.php',

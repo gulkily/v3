@@ -14,6 +14,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Nav speed checklist](nav_speed_checklist.md) — cutting click-to-done time on navbar links, in five cycles. Cycle 2: [nav quick wins](nav_quick_wins/nav_quick_wins_one_shot.md) — navigation preload, an early fetch on tap, and an immediate highlight. Cycle 3: [nav cached copy](nav_cached_copy/nav_cached_copy_one_shot.md) — navbar pages from the last copy, refreshed in the background.
 
+[Known instances one-shot](known_instances/known_instances_one_shot.md) — a shipped list of public instances (ZenMemes for now) offered as import sources, never including the site's own address.
+
 [Import without a worker](import_without_worker/import_without_worker_step1_solution_assessment.md) — Tools → Import starts a worker when none runs, `./v3 start` runs one by default, and the page shows steps, elapsed time and time left.
 
 [Import review summary one-shot](import_review_summary/import_review_summary_one_shot.md) — Tools → Import groups review causes by state and reason instead of listing every path.
