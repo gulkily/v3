@@ -1,0 +1,18 @@
+ID: PF-20261117-F04
+Title: User-level import for approved members
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-17
+Evidence: unknown
+
+Request:
+doing a big import should be root-only, but doing a user-level import should be for any approved user.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+An approved member can import their own content from another instance through the site, within limits that keep it from becoming a full-instance import; scope to be settled in a staged cycle.
+
+Notes:
+2026-11-17: filed from the import-instance GUI thread at the maintainer's request ("file anything we have not finished or addressed yet"). Split out of v3/import_instance_gui Step 2; what a user-level import covers is not decided.

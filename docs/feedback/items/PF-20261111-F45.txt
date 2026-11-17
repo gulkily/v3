@@ -1,0 +1,16 @@
+ID: PF-20261111-F45
+Title: @mentions
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Writing @username in a post or reply should link to that person's profile.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111022854-1f4ffc8d
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Maintainer's request written up by Claude, with open questions (notification, shared usernames, autocomplete).

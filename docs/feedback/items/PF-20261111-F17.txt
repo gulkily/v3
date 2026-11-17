@@ -1,0 +1,16 @@
+ID: PF-20261111-F17
+Title: Clear user, profile and account navigation
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Under You, add a profile link; the profile page should link to the user page. User vs profile vs account needs refining so it's easier to navigate, especially for non-technical users; maybe rename profile (session? device?).
+
+Sources:
+- https://zenmemes.com/posts/thread-20261106164113-8b520a73
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Related to PF-20261104-F15. Claude replied with vocabulary suggestions (agent suggestion).

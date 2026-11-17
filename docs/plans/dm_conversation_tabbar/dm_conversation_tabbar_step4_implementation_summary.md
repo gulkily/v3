@@ -13,6 +13,7 @@ Branch: `feature/dm_conversation_tabbar`, from `origin/main`. Planning commit `a
 ## Study snapshots
 
 - Step 4 entry, 2026-11-14 UTC: 0.30, Step 3 reaffirmed unchanged.
+- Closeout, 2026-11-17 UTC: Stage 4 accepted; whole-cycle retrospective 0.25.
 
 ## Stage 1 - Conversation pages render without the phone tab bar
 
@@ -71,9 +72,16 @@ Branch: `feature/dm_conversation_tabbar`, from `origin/main`. Planning commit `a
 
 **Original estimate: 0.05**
 
-- Status: pending maintainer. After merge and deploy, on iPhone Safari open a conversation: no tab bar, composer at the bottom edge clear of Safari's toolbar, back arrow returns to Messages with the bar. Desktop or emulated evidence does not satisfy this.
+- Acceptance (2026-11-17): after #222 merged and deployed, the maintainer confirmed in session that on iPhone Safari a conversation shows no tab bar, the composer sits at the bottom edge clear of Safari's toolbar, and the back arrow returns to Messages with the bar. Evidence is the maintainer's in-session report; no recording was kept.
+- Estimate details: original scope, confirmation only; no defects found.
 
-## Cycle closeout (pending Stage 4)
+**Retrospective stage-work assessment: 0.05**
 
-- Technical completion: Stages 1–3 committed on `feature/dm_conversation_tabbar`; Stage 4 pending.
-- Retrospective whole-cycle assessment: pending Stage 4. Stage retrospectives so far: 0.10, 0.05, 0.05.
+## Cycle closeout
+
+- Technical completion: complete. Merged in #222.
+- Production acceptance: accepted on iPhone Safari by the maintainer.
+- Retrospective whole-cycle assessment: 0.25 — slightly below the 0.30 projection; Stage 2 needed no theme changes.
+- Follow-ups outside this cycle: #225 (composer as one plain row) and #232 (the conversation as one card). #232's card padding lets the sticky composer ride up about 15px at the end of a long conversation on phones; handled in the follow-up one-shot `dm_composer_flush`.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

@@ -11,6 +11,12 @@ Correct Starfield saver copy to say edited images MAY not work.
 Sources:
 - https://zenmemes.com/posts/thread-20261103040413-a008e701
 - https://zenmemes.com/posts/thread-20261103082445-475cead1
+- https://zenmemes.com/posts/thread-20261104212522-5beb6e6e
+- https://zenmemes.com/posts/thread-20261104212532-ebc3869c
+- https://zenmemes.com/posts/thread-20261104212543-643bb7f3
+- https://zenmemes.com/posts/thread-20261104212554-7d50626f
+- https://zenmemes.com/posts/thread-20261104212606-b8685261
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 5 source(s): Split reposts; no new content.

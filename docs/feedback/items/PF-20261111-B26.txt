@@ -1,0 +1,17 @@
+ID: PF-20261111-B26
+Title: First visits are slow
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+First visits take about 3-4 s before the first byte (home, /api/list_index, /recent/, search), with cold mobile first paint 4.5-7.2 s; warm loads 1-2 s.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111134829-b2127874
+- https://zenmemes.com/posts/reply-20261111132234-e73c3651e677d2d34e3e64f4baef0ceb
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude) from Manus measurements on Nov 11 before high-traffic mode was re-enabled; a later Manus retest with the cache on measured far lower times.

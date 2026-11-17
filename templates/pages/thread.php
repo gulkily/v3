@@ -33,6 +33,16 @@ foreach ($posts as $post) {
     $replyPosts[] = $post;
 }
 $replyPosts = \ForumRewrite\ReadModel\RetractedLeafFilter::apply($replyPosts);
+// A bare pledge withdrawal or fill folds into its pledge, which links to it.
+if (is_array($pledgeCampaign ?? null)) {
+    $replyPosts = \ForumRewrite\ReadModel\WithdrawLeafFilter::apply($replyPosts, $pledgeCampaign['withdrawals'] ?? [], $pledgeCampaign['fills'] ?? [], $pledgeCampaign['reviews'] ?? []);
+}
+// Tag-only leaves leave the conversation for the Activity drawer; filter before runs are computed.
+$threadActivityEntries = [];
+if ($threadActivityDrawerEnabled ?? false) {
+    ['shown' => $replyPosts, 'entries' => $threadActivityEntries] = \ForumRewrite\View\ThreadActivity::partition(
+        $rootPost, $replyPosts, $signalActors ?? null, $postRecordsEnabled ?? false);
+}
 
 // Pre-compute continuation flags so the root card can show a true reply count before the reply loop runs.
 $replyContinuationFlags = [];
@@ -82,6 +92,9 @@ $showRootMetaExtras = $index === $rootRunTailIndex;
     'trueReplyCount' => $trueReplyCount,
 ]), 1) ?>
 <?php endforeach; ?>
+<?php if ($threadActivityEntries !== []): ?>
+<?= $indent($partial('partials/thread_activity_drawer.php', ['entries' => $threadActivityEntries]), 1) ?>
+<?php endif; ?>
   <article class="card inline-reply-composer" data-compose-root data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
     <div class="inline-reply-expanded" data-inline-reply-compose data-inline-reply-expanded="0" data-reply-panel>
         <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>

@@ -6,12 +6,68 @@ namespace ForumRewrite\Security;
 
 final class OpenPgpSignatureVerifier
 {
+    private const MAX_PREPARED_HOMES = 64;
+
     private \ForumRewrite\Support\OperationBudget $budget;
     private int $outputBytes = 0;
+    /** @var array<string, array{home:string,diagnostics:array}> Each home holds exactly one imported key, keyed by its bytes and expected fingerprint. */
+    private array $preparedHomes = [];
+    /** Parent of the prepared homes, named with the owning process ID so a killed process's homes can be found. */
+    private ?string $keysRoot = null;
+    private ?int $keysRootPid = null;
 
-    public function __construct(private readonly array $gpgCommand = ['gpg'], private readonly float $seconds = 10.0)
-    {
+    /**
+     * With $reuseKeyHomes, a key's first check imports it into a home of its own, and later checks
+     * with the same key bytes and expected fingerprint run only `gpg --verify` there. The homes
+     * are removed by releasePreparedKeys() or when the verifier is dropped.
+     */
+    public function __construct(
+        private readonly array $gpgCommand = ['gpg'],
+        private readonly float $seconds = 10.0,
+        private readonly bool $reuseKeyHomes = false,
+    ) {
         if (!is_finite($seconds) || $seconds <= 0 || $seconds > 10) throw new \InvalidArgumentException('Verification budget must be positive and at most 10 seconds.');
+    }
+
+    public function __destruct()
+    {
+        $this->releasePreparedKeys();
+    }
+
+    public function releasePreparedKeys(): void
+    {
+        if ($this->keysRoot !== null && $this->keysRootPid === getmypid()) {
+            $this->cleanup($this->keysRoot);
+        }
+        // After a fork the homes belong to the other process, which removes them itself.
+        $this->preparedHomes = [];
+        $this->keysRoot = null;
+        $this->keysRootPid = null;
+    }
+
+    /** A new home for one key under this process's parent folder, removing folders left by dead processes first. */
+    private function newPreparedHome(): string
+    {
+        if ($this->keysRoot !== null && $this->keysRootPid !== getmypid()) {
+            $this->releasePreparedKeys();
+        }
+        if ($this->keysRoot === null) {
+            $prefix = sys_get_temp_dir() . '/forum-rewrite-gpg-keys-';
+            if (function_exists('posix_kill')) {
+                foreach (glob($prefix . '*', GLOB_ONLYDIR) ?: [] as $stale) {
+                    if (preg_match('/-([0-9]+)-[a-f0-9]{12}$/D', $stale, $match) === 1 && (int) $match[1] !== getmypid()
+                        && !@posix_kill((int) $match[1], 0) && posix_get_last_error() === 3) {
+                        $this->cleanup($stale);
+                    }
+                }
+            }
+            $root = $prefix . getmypid() . '-' . bin2hex(random_bytes(6));
+            mkdir($root, 0700, true);
+            $this->keysRoot = $root;
+            $this->keysRootPid = getmypid();
+        }
+
+        return $this->keysRoot . '/' . bin2hex(random_bytes(6));
     }
 
     /**
@@ -44,42 +100,38 @@ final class OpenPgpSignatureVerifier
             return $this->failure('invalid_expected_fingerprint', null, 'Expected fingerprint is invalid.', $timings, $diagnostics);
         }
 
-        $tempDir = sys_get_temp_dir() . '/forum-rewrite-gpg-verify-' . bin2hex(random_bytes(6));
-        mkdir($tempDir, 0700, true);
+        $homeKey = hash('sha256', $expectedFingerprint . "\0" . $armoredPublicKey);
+        $prepared = $this->reuseKeyHomes && $this->keysRootPid === getmypid() ? ($this->preparedHomes[$homeKey] ?? null) : null;
+        if ($prepared !== null && !is_file($prepared['home'] . '/key.asc')) {
+            // Someone removed the home; import the key again rather than report a false failure.
+            unset($this->preparedHomes[$homeKey]);
+            $prepared = null;
+        }
+        if ($prepared === null && $this->reuseKeyHomes && count($this->preparedHomes) >= self::MAX_PREPARED_HOMES) {
+            $this->releasePreparedKeys();
+        }
+        $tempDir = $prepared['home'] ?? ($this->reuseKeyHomes ? $this->newPreparedHome() : sys_get_temp_dir() . '/forum-rewrite-gpg-verify-' . bin2hex(random_bytes(6)));
+        // A kept home holds only the key; each check's text and signature are removed afterwards.
+        $keep = $prepared !== null;
+        $textPath = $tempDir . '/signed-' . bin2hex(random_bytes(6)) . '.txt';
+        $signaturePath = $textPath . '.asc';
 
         try {
-            $keyPath = $tempDir . '/key.asc';
-            $textPath = $tempDir . '/signed.txt';
-            $signaturePath = $tempDir . '/signed.txt.asc';
-            file_put_contents($keyPath, $armoredPublicKey);
+            if ($prepared !== null) {
+                $diagnostics = $prepared['diagnostics'];
+            } else {
+                mkdir($tempDir, 0700, true);
+                $failure = $this->importKey($tempDir, $armoredPublicKey, $expectedFingerprint, $timings, $diagnostics);
+                if ($failure !== null) {
+                    return $failure;
+                }
+                if ($this->reuseKeyHomes) {
+                    $this->preparedHomes[$homeKey] = ['home' => $tempDir, 'diagnostics' => $diagnostics];
+                    $keep = true;
+                }
+            }
             file_put_contents($textPath, $signedText);
             file_put_contents($signaturePath, $armoredDetachedSignature);
-
-            $keyPacketInspection = $this->runGpg($tempDir, ['--list-packets', $keyPath]);
-            $timings['gpg_public_key_packet_inspection'] = $keyPacketInspection['duration_ms'];
-            $diagnostics['public_key_packet_inspection_exit_code'] = $keyPacketInspection['exit_code'];
-            $diagnostics['public_key_creation_epoch'] = $this->publicKeyCreationEpoch($keyPacketInspection['output']);
-            $diagnostics['gpg_import_started_at_epoch'] = time();
-            if ($diagnostics['public_key_creation_epoch'] !== null) {
-                $diagnostics['public_key_creation_offset_seconds'] = $diagnostics['public_key_creation_epoch'] - $diagnostics['gpg_import_started_at_epoch'];
-            }
-
-            $import = $this->runGpg($tempDir, ['--status-fd', '1', '--import', $keyPath]);
-            $timings['gpg_public_key_import'] = $import['duration_ms'];
-            $diagnostics['import_exit_code'] = $import['exit_code'];
-            $diagnostics['import_accepted'] = $import['exit_code'] === 0 || $this->hasSuccessfulImport($import['output']);
-            $diagnostics['gpg_status_codes'] = $this->statusCodes($import['output']);
-            if ($import['exit_code'] === 0 && !$this->hasSuccessfulImport($import['output'])) {
-                $diagnostics['import_result_counts'] = $this->importResultCounts($import['output']);
-                $diagnostics['import_debug_output'] = $this->limitedOutput($import['output']);
-            }
-            $keyLookup = $this->runGpg($tempDir, ['--with-colons', '--list-keys', $expectedFingerprint]);
-            $timings['gpg_post_import_key_lookup'] = $keyLookup['duration_ms'];
-            $diagnostics['post_import_key_lookup_exit_code'] = $keyLookup['exit_code'];
-            $diagnostics['post_import_key_lookup_found'] = $this->keyListingIncludesFingerprint($keyLookup['output'], $expectedFingerprint);
-            if (!$diagnostics['import_accepted']) {
-                return $this->failure('public_key_import_failed', null, $this->compactOutput($import['output']), $timings, $diagnostics);
-            }
 
             $verification = $this->runGpg($tempDir, ['--status-fd', '1', '--verify', $signaturePath, $textPath]);
             $timings['gpg_signature_verify'] = $verification['duration_ms'];
@@ -107,8 +159,48 @@ final class OpenPgpSignatureVerifier
                 'diagnostics' => $diagnostics,
             ];
         } finally {
-            $this->cleanup($tempDir);
+            if ($keep) {
+                @unlink($textPath);
+                @unlink($signaturePath);
+            } else {
+                $this->cleanup($tempDir);
+            }
         }
+    }
+
+    /** Imports one key into an empty home; returns a failure result when GPG rejects it. */
+    private function importKey(string $tempDir, string $armoredPublicKey, string $expectedFingerprint, array &$timings, array &$diagnostics): ?array
+    {
+        $keyPath = $tempDir . '/key.asc';
+        file_put_contents($keyPath, $armoredPublicKey);
+
+        $keyPacketInspection = $this->runGpg($tempDir, ['--list-packets', $keyPath]);
+        $timings['gpg_public_key_packet_inspection'] = $keyPacketInspection['duration_ms'];
+        $diagnostics['public_key_packet_inspection_exit_code'] = $keyPacketInspection['exit_code'];
+        $diagnostics['public_key_creation_epoch'] = $this->publicKeyCreationEpoch($keyPacketInspection['output']);
+        $diagnostics['gpg_import_started_at_epoch'] = time();
+        if ($diagnostics['public_key_creation_epoch'] !== null) {
+            $diagnostics['public_key_creation_offset_seconds'] = $diagnostics['public_key_creation_epoch'] - $diagnostics['gpg_import_started_at_epoch'];
+        }
+
+        $import = $this->runGpg($tempDir, ['--status-fd', '1', '--import', $keyPath]);
+        $timings['gpg_public_key_import'] = $import['duration_ms'];
+        $diagnostics['import_exit_code'] = $import['exit_code'];
+        $diagnostics['import_accepted'] = $import['exit_code'] === 0 || $this->hasSuccessfulImport($import['output']);
+        $diagnostics['gpg_status_codes'] = $this->statusCodes($import['output']);
+        if ($import['exit_code'] === 0 && !$this->hasSuccessfulImport($import['output'])) {
+            $diagnostics['import_result_counts'] = $this->importResultCounts($import['output']);
+            $diagnostics['import_debug_output'] = $this->limitedOutput($import['output']);
+        }
+        $keyLookup = $this->runGpg($tempDir, ['--with-colons', '--list-keys', $expectedFingerprint]);
+        $timings['gpg_post_import_key_lookup'] = $keyLookup['duration_ms'];
+        $diagnostics['post_import_key_lookup_exit_code'] = $keyLookup['exit_code'];
+        $diagnostics['post_import_key_lookup_found'] = $this->keyListingIncludesFingerprint($keyLookup['output'], $expectedFingerprint);
+        if (!$diagnostics['import_accepted']) {
+            return $this->failure('public_key_import_failed', null, $this->compactOutput($import['output']), $timings, $diagnostics);
+        }
+
+        return null;
     }
 
     private function looksLikeArmoredPublicKey(string $value): bool

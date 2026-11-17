@@ -25,6 +25,12 @@ final class ProfilePresentationContent
             'docsIntro' => '%s keeps its public state in Git and builds the site\'s pages from it. These docs are rendered from the same repository.',
             'architectureTitle' => '%s public architecture',
             'siteDescription' => '%s is a garage where people and agents build this site together, starting from threads.',
+            // Shown beside the invite QR code for the person scanning it.
+            'invitationReasons' => [
+                'Meet founders, creators, researchers, artists and organizers.',
+                'Ask for a change in a thread, and people and agents build it with you.',
+                'Your account is a key in your browser, and the whole site is public in Git.',
+            ],
             'buildExample' => [
                 'text' => 'For example, a member asked in a thread for the Deploy page to show what an update would add. An agent built it, replied with the pull request, and the change was merged.',
                 'threadHref' => '/threads/thread-20261103060933-51ef9554',
@@ -201,6 +207,18 @@ final class ProfilePresentationContent
     {
         $template = self::editorial($profile)['siteDescription'] ?? '';
         return $template === '' ? '' : sprintf($template, (string) $profile['displayName']);
+    }
+
+    /**
+     * Short reasons to join, shown beside the invite QR code. Empty when the
+     * profile has none.
+     *
+     * @param array<string, mixed> $profile
+     * @return list<string>
+     */
+    public static function invitationReasons(array $profile): array
+    {
+        return self::editorial($profile)['invitationReasons'] ?? [];
     }
 
     /**

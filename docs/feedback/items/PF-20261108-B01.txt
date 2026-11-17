@@ -10,9 +10,14 @@ After posting a reply in the browser, it shows "Posting...", then only its text 
 
 Sources:
 - https://zenmemes.com/threads/thread-20261108165120-2cbd3bf2
+- https://zenmemes.com/posts/thread-20261105144740-03f36390
+- https://zenmemes.com/posts/thread-20261105144747-d4d27225
+- https://zenmemes.com/posts/thread-20261105144752-bb833db0
 
 Done when:
 A reply sent from the thread page or the reply page stays as the pending card with its posting status until the full post with byline and actions replaces it.
 
 Notes:
 2026-11-08: one-shot on fix/reply-bare-card (record docs/plans/reply_bare_card/reply_bare_card_one_shot.md); built and verified locally in headless Chrome; awaiting review and deployment.
+2026-11-14: Triage 2026-11-11 attached 3 source(s): Earlier report of the same three-stage reply (Nov 5), submitted three times.
+2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PR #72 (ef72ce2b) merged 2026-11-08; deployment and acceptance not checked.

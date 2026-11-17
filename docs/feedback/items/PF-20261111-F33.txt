@@ -1,0 +1,15 @@
+ID: PF-20261111-F33
+Title: Expanded phone navbar looks like content
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+On iPhone the expanded navbar looks a bit like content, which is confusing. How do we improve on this?
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109175829-d767228f
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

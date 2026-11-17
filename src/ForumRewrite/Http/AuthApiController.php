@@ -6,6 +6,7 @@ namespace ForumRewrite\Http;
 
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\Security\OpenPgpSignatureVerifier;
+use ForumRewrite\Session\DeviceFingerprint;
 
 /**
  * Twentieth Phase 2 slice (see docs/plans/codebase_cleanup_audit_plan_v1.md):
@@ -86,8 +87,10 @@ final class AuthApiController
         }
         try {
             // A retired key cannot start a session.
-            $this->routeServices->withActiveIdentity($identityId, function () use ($sessions, $identityId): void {
-                $sessions->signIn($identityId);
+            // The browser that just signed is the one the session describes; see DeviceFingerprint.
+            $device = DeviceFingerprint::fromUserAgent((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+            $this->routeServices->withActiveIdentity($identityId, function () use ($sessions, $identityId, $device): void {
+                $sessions->signIn($identityId, $device);
             });
         } catch (\RuntimeException $error) {
             $this->routeServices->sendText("error=" . $error->getMessage() . "\n", 403, $this->routeServices->noStoreHeaders());
@@ -95,7 +98,9 @@ final class AuthApiController
         }
         if ($this->recordHistoryActivity) ($this->recordHistoryActivity)($profile);
         $approved = ((int) ($profile['is_approved'] ?? 0)) === 1 ? '1' : '0';
-        $this->routeServices->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n", 200, $this->routeServices->noStoreHeaders());
+        // Tells the browser its session now describes it, so it stops re-signing for that reason.
+        $deviceLine = $device !== '' ? "device=recorded\n" : '';
+        $this->routeServices->sendText("status=ok\nidentity_id={$identityId}\napproved={$approved}\n{$deviceLine}", 200, $this->routeServices->noStoreHeaders());
     }
 
     public function authenticationStatus(string $method): void

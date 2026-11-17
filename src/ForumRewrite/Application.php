@@ -193,6 +193,16 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
+                new \ForumRewrite\Support\LocalDevelopmentImport(
+                    $this->projectRoot, $this->repositoryRoot, $this->databasePath,
+                    $this->staticHtmlRoot ?? \ForumRewrite\PresentationPathResolver::staticHtmlRoot($this->projectRoot, \ForumRewrite\SiteProfileRegistry::active()),
+                )
+            ))->handle($method);
+            return;
+        }
+
         if ($securityReviewRequest) {
             if (!$this->routeServices()->securityReviewAllowed()) {
                 if (!str_starts_with($path, '/api/') && ($query['format'] ?? '') !== 'rss') {
@@ -291,6 +301,16 @@ final class Application
 
         if ($path === '/api/auth_status') {
             $this->authApiController()->authenticationStatus($method);
+            return;
+        }
+
+        if (in_array($path, ['/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap'], true)) {
+            $controller = new \ForumRewrite\Http\KeyBootstrapApiController($this->routeServices());
+            match ($path) {
+                '/api/key_bootstrap_status' => $controller->status($method),
+                '/api/prepare_key_bootstrap' => $controller->prepare($method, $query),
+                default => $controller->finalize($method, $query),
+            };
             return;
         }
 
@@ -633,8 +653,19 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/operations/' || $path === '/tools/operations') && $method === 'POST') {
+            $this->toolsPageController()->operationsSubmit($query);
+            return;
+        }
+
         if (($path === '/tools/deploy/' || $path === '/tools/deploy') && $method === 'POST') {
             $this->deployController()->submit($query);
+            return;
+        }
+
+        if (($path === '/tools/import/' || $path === '/tools/import') && $method === 'POST'
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $this->importController()->submit($query);
             return;
         }
 
@@ -690,7 +721,7 @@ final class Application
             }
 
             $location = $this->qdbExperience()->isEnabled() ? null : $this->boardPageController()->listWithLocation(
-                (string) ($query['view'] ?? 'liked'),
+                (string) ($query['view'] ?? ''),
                 (string) ($query['sort'] ?? 'newest'),
                 $query['with'] ?? null,
             );
@@ -700,12 +731,17 @@ final class Application
             }
             $this->sendHtml(
                 $this->boardPageController()->board(
-                    (string) ($query['view'] ?? 'liked'),
+                    (string) ($query['view'] ?? ''),
                     (string) ($query['sort'] ?? 'newest'),
                     listPage: $query['page'] ?? null,
                 ),
                 200
             );
+            return;
+        }
+
+        if ($path === '/start/' || $path === '/start') {
+            $this->sendHtml($this->renderGettingStarted(), 200);
             return;
         }
 
@@ -724,7 +760,7 @@ final class Application
         }
 
         if ($path === '/themes/' || $path === '/themes') {
-            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot))->render(), 200);
+            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot, $this->featureFlags()))->render(), 200);
             return;
         }
 
@@ -1015,6 +1051,12 @@ final class Application
 
         if ($path === '/tools/deploy/' || $path === '/tools/deploy') {
             $this->sendHtml($this->deployController()->render(), 200, ['Cache-Control: no-store']);
+            return;
+        }
+
+        if (($path === '/tools/import/' || $path === '/tools/import')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $this->sendHtml($this->importController()->render(), 200, ['Cache-Control: no-store']);
             return;
         }
 
@@ -1473,6 +1515,18 @@ final class Application
         );
     }
 
+    private function importController(): \ForumRewrite\Http\ImportController
+    {
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+
+        return new \ForumRewrite\Http\ImportController(
+            $this->routeServices(),
+            $this->repositoryRoot,
+            $queuePath,
+            fn (): string => (new \ForumRewrite\TaskQueue\DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchForOperator(),
+        );
+    }
+
     private function calendarPageController(): \ForumRewrite\Http\CalendarPageController
     {
         return new \ForumRewrite\Http\CalendarPageController($this->routeServices(), $this->repositoryRoot);
@@ -1590,6 +1644,7 @@ final class Application
             [
                 'accessManagement' => $accessManagement,
                 'retirementActors' => $accessManagement ? (new \ForumRewrite\Security\KeyRetirementPolicy($this->pdo(),$this->repositoryRoot))->presentationActors($profile) : [],
+                'replacedKey' => $accessManagement ? \ForumRewrite\ReadModel\ReplacedKeys::forIdentity($this->pdo(), (string) $profile['identity_id']) : null,
                 'operatorGrantActors' => $accessManagement ? \ForumRewrite\Security\ApprovalPolicy::operatorGrantActors($this->repositoryRoot, $profile) : [],
                 'toolNavOptions' => \ForumRewrite\Tools\ToolsPageSupport::navOptions('user-access'),
                 'profile' => $profile,
@@ -1642,6 +1697,14 @@ final class Application
             $this->projectRoot,
             $this->fetchActivity(...),
         );
+    }
+
+    private function renderGettingStarted(): string
+    {
+        return $this->renderPageTemplate('getting_started.php', [
+            'knownInstances' => \ForumRewrite\Import\KnownInstances::others((string) ($_SERVER['HTTP_HOST'] ?? '')),
+            'importPageEnabled' => $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED),
+        ], 'Getting started', 'board');
     }
 
     private function renderAbout(): string
@@ -1773,8 +1836,7 @@ final class Application
         $viewerProfile = $this->resolveViewerProfileFromIdentityHint();
 
         return $this->featureFlags()->isEnabled(FeatureFlagRegistry::LLM_CONVERSATION_UI_ENABLED)
-            && $viewerProfile !== null
-            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+            && RouteServices::signedInApproved($viewerProfile);
     }
 
     private function renderLlmsTxt(): string
@@ -2436,7 +2498,7 @@ final class Application
         if (in_array($path, [
             '', '/',
             '/threads', '/threads/',
-            '/about', '/about/',
+            '/about', '/about/', '/start', '/start/',
             '/themes', '/themes/',
             '/agent', '/agent/',
             '/docs', '/docs/',
@@ -2454,7 +2516,7 @@ final class Application
             '/tags', '/tags/',
             '/calendar', '/calendar/',
             '/tools', '/tools/', '/tools/preferences', '/tools/preferences/', '/tools/bookmarklets', '/tools/bookmarklets/', '/tools/outbox', '/tools/outbox/',
-            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/',
+            '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/', '/tools/import', '/tools/import/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
@@ -2467,6 +2529,7 @@ final class Application
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
+            '/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/prepare_post_format', '/api/create_prepared_post_format', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status',
@@ -2821,25 +2884,6 @@ final class Application
     }
 
     /**
-     * @param array<string, float|int> $timings
-     * @return list<string>
-     */
-    private function noStoreTimingHeaders(array $timings): array
-    {
-        return array_merge($this->noStoreHeaders(), $this->serverTimingHeaders(['timings' => $timings]));
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     * @param array<string, float|int> $timings
-     * @return array<string, mixed>
-     */
-    private function mergeResultTimings(array $result, array $timings, int $totalStartedAt): array
-    {
-        return $this->routeServices()->mergeResultTimings($result, $timings, $totalStartedAt);
-    }
-
-    /**
      * @param array<string, mixed> $query
      */
     private function handleApproveUserSubmit(string $slug, array $query): void
@@ -3008,14 +3052,6 @@ final class Application
         }
 
         return implode("\n", $lines) . "\n";
-    }
-
-    /**
-     * @return list<array{status:string,path:string,previous_path:string,role:string,href:string,signature_signer_identity:string,signature_public_key_path:string,signature_public_key_href:string,signature_key_status:string}>|null
-     */
-    private function activityCommitManifest(string $commitSha): ?array
-    {
-        return $this->routeServices()->activityService()->activityCommitManifest($commitSha);
     }
 
     /**

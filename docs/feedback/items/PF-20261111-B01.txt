@@ -1,0 +1,16 @@
+ID: PF-20261111-B01
+Title: Compose menu cut off near viewport top
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The ... menu in the compose form gets cut off when the form is displayed near the top of the viewport (screenshot).
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104155019-1d2637f7
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+A 2026-11-09 agent reply (reply-20261109180752-2b6da3a09adc1c354370015832280e84) says PR #103 makes the menu open downward when there is no room above; not verified here.

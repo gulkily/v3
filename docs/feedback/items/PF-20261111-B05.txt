@@ -1,0 +1,16 @@
+ID: PF-20261111-B05
+Title: New like attribution not linked until reload
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+When "Liked by ilyag" is first injected into the page the username is not linked; it is linked after reload.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Point 2 of a multi-point like-button post.
