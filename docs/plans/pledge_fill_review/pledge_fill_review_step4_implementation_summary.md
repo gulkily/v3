@@ -36,3 +36,21 @@ Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-16 and 20
   - Estimate details: original scope as in Step 3; no revision. Retrospective lower: the reasons table and the reading order fitted the fills pattern directly.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - Show each review and why a review did not count
+
+**Original estimate: 0.06**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - `templates/partials/pledge_amount.php`: a reviewed fill line ends with "· confirmed by ilyag" or "· disputed by ilyag", linked to the review reply. A disputed line wraps "Delivered by mara" (and its amount) in `<s>`, with `data-pledge-state="fill-disputed"`. A review reply that does not count shows its reason (`data-pledge-state="review-uncounted"`). The disputed fill reply's own card shows "Not counted: disputed by …" through the existing fill-reason line. Totals block unchanged.
+  - `tests/PledgeCampaignTest.php`: one render test. The fixture has one key, so the pledger is a second key written as post records and read back by a rebuild.
+- Verification:
+  - Passed: `./v3 test PledgeCampaignTest` (21 tests, 1 new): both labels and links, the struck-through disputed line with its amount, the disputed fill's reason, a stray review's reason, nothing with the flag off.
+  - Pending to Stage 3: the look at one theme at 375 pixels. It needs a reviewed fill on a served page, which the Stage 3 browser run creates.
+- Notes:
+  - Refinement within scope: `<s>` instead of the withdrawn state's CSS. That rule strikes the `<strong>` amount, and a fill line has none; `<s>` strikes in every theme with no CSS change.
+  - Estimate details: original scope as in Step 3; no revision. Retrospective higher: the fixture's single key needed a records-and-rebuild test setup.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

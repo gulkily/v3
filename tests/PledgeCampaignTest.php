@@ -831,6 +831,49 @@ final class PledgeCampaignTest
         pledgeAssertSame(['effective' => true, 'note' => ''], $withdrawn['withdrawals']['w']);
     }
 
+    public function testThreadPageShowsEachReviewAndWhyAReviewDidNotCount(): void
+    {
+        [$root, $database] = $this->environment();
+        // The fixture has one key. The pledger here is a second key, written as records and read back
+        // by a rebuild, so the member (the campaign author) can review the pledger's fills.
+        $pledger = 'openpgp:' . str_repeat('b', 40);
+        $records = [
+            'rv-root' => ['', self::MEMBER, "Subject: Review campaign\n", 'goal: 1000 coffees'],
+            'rv-first' => ['rv-root', $pledger, '', 'pledge: 300'],
+            'rv-second' => ['rv-root', $pledger, '', 'pledge: 400'],
+            'rv-kept' => ['rv-first', $pledger, '', 'filled'],
+            'rv-lost' => ['rv-second', $pledger, '', 'filled: 100'],
+            'rv-confirm' => ['rv-kept', self::MEMBER, '', 'confirm'],
+            'rv-dispute' => ['rv-lost', self::MEMBER, '', "dispute\nNothing came."],
+            'rv-stray' => ['rv-first', self::MEMBER, '', 'confirm'],
+        ];
+        $minute = 0;
+        foreach ($records as $id => [$parent, $author, $subject, $body]) {
+            $minute++;
+            $thread = $parent === '' ? '' : "Thread-ID: rv-root\nParent-ID: {$parent}\n";
+            file_put_contents($root . '/records/posts/' . $id . '.txt', "Post-ID: {$id}\nCreated-At: 2026-11-17T06:" . sprintf('%02d', $minute)
+                . ":00Z\nBoard-Tags: general\n{$thread}{$subject}Author-Identity-ID: {$author}\n\n{$body}\n");
+        }
+        (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new CanonicalRecordRepository($root), 'pledge_review_test'))->rebuild();
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/rv-root');
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $html = $page();
+            pledgeAssertContains('2 pledges · 300 filled</p>', $html);
+            pledgeAssertContains('data-pledge-state="fill"><a href="/posts/rv-kept">Delivered by ', $html);
+            pledgeAssertContains(' · <a href="/posts/rv-confirm">confirmed by ', $html);
+            pledgeAssertContains('data-pledge-state="fill-disputed"><s><a href="/posts/rv-lost">Delivered by ', $html);
+            pledgeAssertContains('</a> · 100</s> · <a href="/posts/rv-dispute">disputed by ', $html);
+            pledgeAssertContains('data-pledge-state="fill-uncounted"><span class="meta">Not counted: disputed by ', $html);
+            pledgeAssertContains('data-pledge-state="review-uncounted"><span class="meta">Not counted: not a reply to a pledger&#039;s fill</span>', $html);
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+
+        pledgeAssertNotContains('pledge-amount', $page());
+    }
+
     private function environment(): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-pledge-repo-' . bin2hex(random_bytes(6));
