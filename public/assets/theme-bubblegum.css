@@ -812,3 +812,15 @@
 :root[data-theme="bubblegum"] .visitor-statistics-table tbody tr:nth-child(even) {
   background: rgba(228, 91, 156, 0.07);
 }
+
+/* Deploy page: only Deploy now is the filled pink button; the other two
+   keep the pale candy look so the main action stands out. */
+:root[data-theme="bubblegum"] .deploy-actions > button.deploy-actions__secondary:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--button-bg);
+  background-image: var(--bubblegum-shine), var(--bubblegum-candy);
+  color: var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] .deploy-actions > button.deploy-actions__secondary:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  background-color: #ffc7e0;
+}

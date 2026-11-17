@@ -84,6 +84,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
 
+[Deploy page buttons one-shot](deploy_buttons/deploy_buttons_one_shot.md) — deploy buttons share one row, with Deploy now as the main action in every theme.
+
 [Bubblegum open More tab one-shot](bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md) — in Bubblegum on phones, the open More tab gets the selected look instead of a white label on a pale bar.
 
 [Scoped post reaction update one-shot](scoped_post_reaction_update/scoped_post_reaction_update_one_shot.md) — a like or state mark reads only that post's reaction files, so quick successive clicks no longer hit "server is busy".
