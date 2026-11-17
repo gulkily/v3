@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/calendar_ics_feed`; [host ledger](../effo
 
 **Cycle estimate: 0.55**
 
-Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrived; planning commit `ab5c89f`, Stage 1 `fc4c007`. Draft PR [#324](https://github.com/gulkily/v3/pull/324).
+Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrived; planning commit `ab5c89f`, Stage 1 `fc4c007`. PR [#324](https://github.com/gulkily/v3/pull/324) (Steps 1–3, Stages 1–2) was merged 2026-11-17. Later stages continue on `feat/calendar-ics-routes` from `3e1b719`, per AGENTS.md follow-up rules.
 
 ## Step 4 entry
 
@@ -55,5 +55,25 @@ Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrive
   - Step 3 named no end for timed events. **Decision:** a one-hour length, because `Event-Time` has no end time and a calendar entry with no end shows as a zero-length tick. New understanding, not changed scope.
   - Nothing reads the flag yet; Stage 3 adds the routes.
 - Estimate details: as planned; the writer was simpler than estimated.
+
+## Stage 3 - Feed routes
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.10**
+
+- Trigger: after deploying #324, the maintainer got a 404 at `/calendar.ics`. That was expected, because #324 had no routes; this stage adds them.
+- Changes:
+  - `CalendarQuery::eventsBetween` also selects `event_link` and `event_when`.
+  - New `CalendarPageController::feed(?string $tag)`. It reads events from 90 days ago to two years ahead with the grid's query and states, drops declined events, and writes them with `CalendarIcs`. The site origin comes from `TemplateRenderer::requestOrigin()`. The calendar name is the site's display name, plus `#tag` for a tag feed. Returns null while event support or the feed flag is off.
+  - `Application`: `/calendar.ics` and `/calendar/<tag>.ics`, checked before the calendar page routes. They send `text/calendar; charset=utf-8` with a five-minute public cache, or 404. Both are added to `isApplicationRoute`. `membersOnlyRequestAllowed` is unchanged, so members-only sites keep the feed behind sign-in.
+- Verification:
+  - `./v3 test --smoke CalendarPageTest CalendarIcsTest`: 490 passed. Full suite not run.
+  - New `CalendarPageTest` cases: the feed lists the grid's events with dates relative to today, leaving out declined, anonymous and too-old events; confirmed and tentative status; the tag feed lists only its tag; 404 with event support off and with the feed flag off, while the tag page still works; and on a members-only site, signed-out visitors don't get the feed.
+  - Local server with event support on: `/calendar.ics` returned 200, `text/calendar; charset=utf-8`, `Cache-Control: public, max-age=300`. `/calendar/general.ics` returned 200 and `/calendar.ics/` returned 404.
+  - zenmemes.com: pending deploy.
+- Notes:
+  - The Stage 1 time checks are still open. The live feed can now stand in for the probe file.
+- Estimate details: as planned.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

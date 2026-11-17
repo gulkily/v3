@@ -257,13 +257,82 @@ final class CalendarPageTest
         }
     }
 
+    public function testFeedListsTheCalendarsEventsAndTagFeedsListTheirOwn(): void
+    {
+        [, $service, $application] = $this->environment();
+        $day = static fn (int $offset): string => gmdate('Y-m-d', strtotime($offset . ' days'));
+        $span = $this->event($service, 'couches', 'Spare room', 'Couch for three nights', $day(12), $day(14));
+        $this->event($service, 'general', 'Futon', 'Futon available #couches', $day(3));
+        $cypher = $this->event($service, 'general', 'Cypher night', 'Doors at seven', $day(5));
+        $service->createReply(['thread_id' => $cypher, 'parent_id' => $cypher, 'body' => 'event: confirmed', 'author_identity_id' => self::OPERATOR]);
+        $declined = $this->event($service, 'couches', 'Declined couch', 'Not this time', $day(4));
+        $service->createReply(['thread_id' => $declined, 'parent_id' => $declined, 'body' => 'event: declined', 'author_identity_id' => self::OPERATOR]);
+        $this->event($service, 'couches', 'Anonymous couch', 'Couch', $day(6), null, '');
+        $this->event($service, 'couches', 'Long ago couch', 'Couch', $day(-200));
+
+        $all = $this->render($application, '/calendar.ics');
+        calendarAssertSame(200, http_response_code());
+        calendarAssertSame(0, strpos($all, "BEGIN:VCALENDAR\r\n"));
+        foreach (['Spare room', 'Futon', 'Cypher night'] as $title) {
+            calendarAssertContains('SUMMARY:' . $title . "\r\n", $all);
+        }
+        foreach (['Declined couch', 'Anonymous couch', 'Long ago couch'] as $title) {
+            calendarAssertNotContains($title, $all);
+        }
+        calendarAssertSame(3, substr_count($all, 'BEGIN:VEVENT'));
+        calendarAssertContains("UID:{$cypher}@", $all);
+        calendarAssertContains('DTSTART;VALUE=DATE:' . str_replace('-', '', $day(12)) . "\r\n", $all);
+        calendarAssertContains('DTEND;VALUE=DATE:' . str_replace('-', '', $day(15)) . "\r\n", $all);
+        calendarAssertContains("STATUS:CONFIRMED\r\n", $all);
+        calendarAssertContains("STATUS:TENTATIVE\r\n", $all);
+        calendarAssertContains("/threads/{$span}\r\n", $all);
+
+        $couches = $this->render($application, '/calendar/couches.ics');
+        calendarAssertSame(200, http_response_code());
+        calendarAssertContains('SUMMARY:Spare room', $couches);
+        calendarAssertContains('SUMMARY:Futon', $couches);
+        calendarAssertNotContains('Cypher night', $couches);
+        calendarAssertContains('#couches', $couches);
+    }
+
+    public function testFeedIsNotFoundWhileEventSupportOrTheFeedIsOff(): void
+    {
+        [, , $off] = $this->environment(false);
+        $this->render($off, '/calendar.ics');
+        calendarAssertSame(404, http_response_code());
+
+        [, $service, $feedOff] = $this->environment(true, "FORUM_CALENDAR_FEED_ENABLED: false\n");
+        $this->event($service, 'couches', 'Spare room', 'Couch', gmdate('Y-m-d', strtotime('+3 days')));
+        foreach (['/calendar.ics', '/calendar/couches.ics'] as $path) {
+            calendarAssertNotContains('BEGIN:VCALENDAR', $this->render($feedOff, $path));
+            calendarAssertSame(404, http_response_code());
+        }
+        calendarAssertContains('Spare room', $this->render($feedOff, '/calendar/couches'));
+    }
+
+    public function testMembersOnlySiteKeepsTheFeedFromUnapprovedVisitors(): void
+    {
+        [, $service, $application] = $this->environment();
+        $this->event($service, 'couches', 'Private couch', 'Couch', gmdate('Y-m-d', strtotime('+3 days')));
+        try {
+            putenv('FORUM_APPROVED_MEMBERS_ONLY=true');
+            TestViewerSession::signedOut();
+            $ics = $this->render($application, '/calendar.ics');
+            calendarAssertSame(true, http_response_code() !== 200);
+            calendarAssertNotContains('Private couch', $ics);
+        } finally {
+            putenv('FORUM_APPROVED_MEMBERS_ONLY');
+            TestViewerSession::reset();
+        }
+    }
+
     /** @return array{string, LocalWriteService, Application} */
-    private function environment(bool $events = true): array
+    private function environment(bool $events = true, string $extraFlags = ''): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-calendar-repo-' . bin2hex(random_bytes(6));
         mkdir($root, 0777, true);
         $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $root);
-        file_put_contents($root . '/records/instance/feature-flags.txt', "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: " . ($events ? 'true' : 'false') . "\n");
+        file_put_contents($root . '/records/instance/feature-flags.txt', "Schema: site-feature-flags-v1\n\nFORUM_EVENT_SUPPORT_ENABLED: " . ($events ? 'true' : 'false') . "\n" . $extraFlags);
         foreach (['git init', 'git config user.name "Forum Rewrite"', 'git config user.email "forum-rewrite@example.invalid"', 'git add .', 'git -c commit.gpgsign=false commit -m init'] as $command) {
             exec('cd ' . escapeshellarg($root) . ' && ' . $command . ' 2>&1', $output, $status);
             if ($status !== 0) {

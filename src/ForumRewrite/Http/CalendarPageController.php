@@ -7,9 +7,13 @@ namespace ForumRewrite\Http;
 use DateTimeImmutable;
 use DateTimeZone;
 use ForumRewrite\Calendar\CalendarDays;
+use ForumRewrite\Calendar\CalendarIcs;
 use ForumRewrite\Calendar\CalendarQuery;
 use ForumRewrite\Calendar\EventStatus;
+use ForumRewrite\SiteConfig;
+use ForumRewrite\Support\EventStatusDirective;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\View\TemplateRenderer;
 
 /**
  * /calendar and /calendar/<tag>: month grids over event threads. Two months show at a
@@ -61,6 +65,44 @@ final class CalendarPageController
             'calendarNext' => $base . '?month=' . $first->modify('+1 month')->format('Y-m'),
             'calendarEntriesPerCell' => self::ENTRIES_PER_CELL,
         ], $tag);
+    }
+
+    public const FEED_DAYS_BACK = 90;
+    public const FEED_YEARS_AHEAD = 2;
+
+    /**
+     * /calendar.ics and /calendar/<tag>.ics: the calendar's events as an iCal feed,
+     * from FEED_DAYS_BACK days ago, with the same selection as the grid. Declined
+     * events are left out. Null while event support or the feed is off.
+     */
+    public function feed(?string $tag, ?string $today = null, ?string $siteUrl = null): ?string
+    {
+        $flags = $this->routeServices->featureFlags();
+        if (!$flags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)
+            || !$flags->isEnabled(FeatureFlagRegistry::CALENDAR_FEED_ENABLED)) {
+            return null;
+        }
+
+        $tag = $tag === null ? null : strtolower($tag);
+        $day = new DateTimeImmutable($today ?? gmdate('Y-m-d'), new DateTimeZone('UTC'));
+        $from = $day->modify('-' . self::FEED_DAYS_BACK . ' days')->format('Y-m-d');
+        $to = $day->modify('+' . self::FEED_YEARS_AHEAD . ' years')->format('Y-m-d');
+
+        $pdo = $this->routeServices->pdo();
+        $events = CalendarQuery::eventsBetween($pdo, $from, $to, $tag);
+        $states = EventStatus::forThreads($pdo, $this->repositoryRoot, array_map('strval', array_column($events, 'root_post_id')));
+        $events = array_values(array_filter(
+            $events,
+            static fn (array $event): bool => ($states[(string) $event['root_post_id']] ?? null) !== EventStatusDirective::DECLINED,
+        ));
+
+        $origin = $siteUrl ?? TemplateRenderer::requestOrigin();
+        if ($origin === '{origin}') {
+            $origin = 'http://localhost';
+        }
+        $name = SiteConfig::displayName() . ($tag === null ? '' : ' #' . $tag);
+
+        return CalendarIcs::document($events, $states, $origin, $name);
     }
 
     /** /calendar/<date> and /calendar/<tag>/<date>; null for a date that does not exist. */

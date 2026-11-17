@@ -1243,6 +1243,17 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/calendar(?:/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*))?\.ics$#', $path, $matches) === 1) {
+            $ics = $this->calendarPageController()->feed(($matches[1] ?? '') !== '' ? $matches[1] : null);
+            if ($ics === null) {
+                $this->notFound();
+                return;
+            }
+
+            $this->sendText($ics, 200, ['Content-Type: text/calendar; charset=utf-8', 'Cache-Control: public, max-age=300']);
+            return;
+        }
+
         if ($path === '/calendar' || $path === '/calendar/') {
             $this->sendHtml($this->calendarPageController()->grid(null, $query['month'] ?? null), 200);
             return;
@@ -2552,7 +2563,7 @@ final class Application
         }
 
         return preg_match(
-            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|posts/[^/]+|records/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+|queue/\d+)/?$#',
+            '#^/(?:docs/.+|tools/llm-exchanges/\d+|tools/user-access/(?:accounts|profiles)/[^/]+|approvals/root/[^/]+|tools/feature-flags/changes/[^/]+|source/current/.+|source/blob/[^/]+/.+|source/commits/[^/]+|threads/[^/]+(?:/forte)?|forte/threads/[^/]+/replies|tags/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*|calendar/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:/\d{4}-\d{2}-\d{2})?|calendar(?:/[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)?\.ics|posts/[^/]+|records/[^/]+|profiles/[^/]+(?:/approve)?|user/[^/]+|latest/\d+|top/\d+|queue/\d+)/?$#',
             $path,
         ) === 1;
     }
