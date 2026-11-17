@@ -2888,9 +2888,13 @@ PHP;
             assertStringContains('data-role="reading-margins"', $thread);
             assertStringContains('localStorage.getItem(browserRuntime.readingMarginsStorageKey)', $thread);
             assertStringContains('"readingMarginsStorageKey":"forum-zenmemes-reading-margins"', $thread);
-            foreach ([5, 23, 41, 59, 77, 95] as $position) {
-                assertStringContains('name="reading-margin-' . $position . '" value="' . $position . '"', $thread);
-                assertStringContains('style="--at: ' . $position . '"', $thread);
+            // Stops -8 to 13 in fifths of the normal column; 0 and 5 are its
+            // edges, checked in the server's HTML. Stops outside it start hidden.
+            foreach (range(-8, 13) as $index => $position) {
+                $home = $position === 0 || $position === 5;
+                $outside = $position < 0 || $position > 5;
+                assertStringContains('name="reading-margin-' . $index . '" value="' . $position . '"', $thread);
+                assertStringContains('style="--at: ' . $position . '"' . ($home ? ' checked' : '') . ($outside ? ' hidden' : '') . '>', $thread);
             }
             assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
@@ -2917,6 +2921,8 @@ PHP;
 
             $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/reading-margins.css');
             assertStringContains(':root[data-reading-margins] .main', $css);
+            // The header follows a chosen column.
+            assertStringContains(':root[data-reading-margins] .shell > .site-header', $css);
         } finally {
             if ($previousFlag === false) {
                 putenv('FORUM_READING_MARGINS_ENABLED');

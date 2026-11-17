@@ -1,15 +1,54 @@
 /* Reading margins (FORUM_READING_MARGINS_ENABLED): one row of evenly spaced
-   radio buttons placed at the viewport positions they stand for; the two
-   checked ones are the column's edges. The row and the column
-   break out of the centred shell with calc(50% - 50vw), which measures from
-   the viewport's left edge, so a radio at --at vw lines up with the column
-   edge it sets. The row itself has no width, so it never adds a scrollbar. */
+   radio buttons placed at the positions they stand for; the two checked ones
+   are the column's edges. Positions count fifths of the site's normal column
+   (the shell's content box) from its left edge, so every length here is a
+   percentage of that box: stop 0 is its left edge and stop 5 its right. The
+   row is as wide as the normal column and stops outside it overflow the row;
+   reading_margins.php hides the ones that fall outside the window. */
+
+:root {
+  --reading-left: 0;
+  --reading-right: 5;
+}
+
+/* The column's width and left offset, for the bar on the ruler, .main and the
+   header. Unregistered custom properties are substituted as written, so the
+   percentages resolve where they are used: against the shell's content box.
+   The column is never narrower than a small phone (20rem), which every page
+   is built to fit; when the chosen edges are closer than that, it grows evenly
+   around the point halfway between them, but stays inside the window. */
+.shell {
+  --reading-width: max(20rem, calc((var(--reading-right) - var(--reading-left)) * 20%));
+  --reading-offset: clamp(calc(50% - 50vw + 0.5rem), calc((var(--reading-left) + var(--reading-right)) * 10% - var(--reading-width) / 2), calc(50% + 50vw - 0.5rem - var(--reading-width)));
+}
 
 .reading-margins {
   position: relative;
-  width: 0;
   height: 1.75rem;
-  margin-left: calc(50% - 50vw);
+}
+
+/* A hairline across the page through the radios. A border-image outset, unlike
+   a wide element, cannot cause sideways scrolling. */
+.reading-margins::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--line, currentColor);
+  border-image: linear-gradient(var(--line, currentColor), var(--line, currentColor)) 1 / 1px 0 0 / 0 100vw;
+  opacity: 0.45;
+}
+
+/* The column itself, drawn on the ruler between its two edges. */
+.reading-margins__column {
+  position: absolute;
+  top: calc(50% - 1px);
+  left: var(--reading-offset);
+  width: var(--reading-width);
+  height: 3px;
+  border-radius: 2px;
+  background: var(--active-line, currentColor);
 }
 
 .reading-margins__row {
@@ -17,38 +56,117 @@
   padding: 0;
   border: 0;
   min-width: 0;
-  width: 0;
 }
 
-.reading-margins .reading-margins__stop {
+/* The radios are drawn here, not by the browser, so a column edge looks the
+   same in every theme and the ring below can be round. `input` in the selector
+   outranks themes' general input borders and bevels. */
+.reading-margins input.reading-margins__stop {
   position: absolute;
-  top: 0.25rem;
-  left: calc(var(--at) * 1vw);
-  /* Undo site and theme rules that size text inputs to their container. */
-  width: auto;
-  height: auto;
+  top: 50%;
+  left: calc(var(--at) * 20%);
+  box-sizing: border-box;
+  /* Fixed sizes also undo site and theme rules that size inputs to their container. */
+  width: 0.8rem;
+  height: 0.8rem;
   min-width: 0;
+  min-height: 0;
   margin: 0;
   padding: 0;
-  transform: translateX(-50%);
+  border: 1.5px solid var(--ink-soft, var(--line, currentColor));
+  border-radius: 50%;
+  background: linear-gradient(var(--panel, Canvas), var(--panel, Canvas)), var(--page-bg, Canvas);
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+  appearance: none;
+  -webkit-appearance: none;
   cursor: pointer;
 }
 
-/* The column is never narrower than a small phone (20rem), which every page
-   is built to fit. When the chosen edges are closer than that, the column
-   grows evenly on both sides of the point halfway between them. */
-/* Shown when a stop sits midway between the edges: a click there moves this
-   edge, the one clicked longer ago. */
-.reading-margins .reading-margins__stop[data-reading-margin-next] {
-  outline: 2px dashed currentColor;
-  outline-offset: 3px;
+.reading-margins input.reading-margins__stop[hidden] {
+  display: none;
 }
 
+.reading-margins input.reading-margins__stop:hover {
+  border-color: var(--active-line, currentColor);
+}
+
+/* A column edge: larger, filled with the bar's colour around a clear centre. */
+.reading-margins input.reading-margins__stop:checked {
+  width: 1rem;
+  height: 1rem;
+  border: 0.3rem solid var(--active-line, currentColor);
+}
+
+.reading-margins input.reading-margins__stop:focus-visible {
+  outline: 2px solid var(--active-line, currentColor);
+  outline-offset: 2px;
+}
+
+/* Shown when a stop sits midway between the edges: a click there moves this
+   edge, the one clicked longer ago. */
+.reading-margins input.reading-margins__stop[data-reading-margin-next] {
+  outline: 2px dashed var(--active-line, currentColor);
+  outline-offset: 2px;
+}
+
+/* A chosen column moves the page and the header with it. In the normal column
+   the header keeps its own layout, which is wider than the column. */
 @media (min-width: 640px) {
-  :root[data-reading-margins] .main {
-    --reading-width: max(20rem, calc((var(--reading-right) - var(--reading-left)) * 1vw));
+  :root[data-reading-margins] .main,
+  :root[data-reading-margins] .shell > .site-header,
+  :root[data-reading-margins] [data-shell="app"] .site-header--app {
     width: var(--reading-width);
-    margin-left: calc(50% - 50vw + (var(--reading-left) + var(--reading-right)) * 0.5vw - var(--reading-width) / 2);
+    margin-left: var(--reading-offset);
+    margin-right: 0;
+  }
+
+  /* The app header lays itself out by the column's width, not the window's.
+     Being a container makes it a stacking context, so it takes the account
+     menu's level to keep the open menu above the page. */
+  :root[data-reading-margins] [data-shell="app"] .site-header--app {
+    position: relative;
+    z-index: 30;
+    flex-wrap: wrap;
+    container: reading-header / inline-size;
+  }
+
+  /* Too narrow for one row: the name, New post and the menu share the first
+     row and the links wrap below. */
+  @container reading-header (max-width: 62rem) {
+    :root[data-reading-margins] [data-shell="app"] .site-header--app .site-header-actions {
+      display: contents;
+    }
+
+    :root[data-reading-margins] [data-shell="app"] .site-header--app .eyebrow {
+      margin-top: 0;
+      align-self: center;
+    }
+
+    :root[data-reading-margins] [data-shell="app"] .site-header--app .new-post-button {
+      order: 1;
+    }
+
+    :root[data-reading-margins] [data-shell="app"] .site-header--app .account-menu {
+      order: 2;
+    }
+
+    :root[data-reading-margins] [data-shell="app"] .site-header--app .nav {
+      order: 3;
+      flex: 1 1 100%;
+    }
+  }
+}
+
+/* site.css moves the name out into the margin at this width; inside a chosen
+   column it goes back in line with the links. */
+@media (min-width: 1240px) {
+  :root[data-reading-margins]:not([data-theme="word97"], [data-theme="midnight"], [data-theme="chicago"], [data-theme="lcd"]) [data-shell="app"] .site-header--app {
+    padding-left: 0;
+  }
+
+  :root[data-reading-margins]:not([data-theme="word97"], [data-theme="midnight"], [data-theme="chicago"], [data-theme="lcd"]) [data-shell="app"] .site-header--app .eyebrow {
+    position: static;
   }
 }
 

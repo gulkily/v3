@@ -388,7 +388,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::READING_MARGINS_ENABLED,
                 'Reading margins',
-                'Show a row of radio buttons at the top of pages; the two checked ones are the text column\'s edges, and a click moves the nearer edge. The choice stays in their browser and is ignored on phones.',
+                'Show a row of radio buttons at the top of pages; the two checked ones are the text column\'s edges, a click moves the nearer edge, and the header follows a chosen column. The choice stays in their browser and is ignored on phones.',
                 false,
                 self::READING_MARGINS_ENABLED,
                 siteMutable: true,
