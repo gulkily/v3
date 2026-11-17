@@ -32,6 +32,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
 
+[Pledge form place](pledge_form_place/pledge_form_place_one_shot.md) — the pledge form moves below the opening post and gets a border; the totals stay under the title.
+
 [Pledge cards](pledge_cards/pledge_cards_step3_development_plan.md) — each pledge is a one-line row, buttons behind "More", and only approved members' pledges count.
 
 [Pledge frontend](pledge_frontend/pledge_frontend_step3_development_plan.md) — the campaign thread looks right on a phone: totals under the title, a pledge form beside them, used lines hidden and one status per pledge.
