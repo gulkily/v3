@@ -45,3 +45,21 @@
 
 **Uncertain assessments**
 - Whether a dry-run preview may write the derived cache is a maintainer choice; recorded as a Stage 1 open question.
+
+## 2026-11-17T06:40Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md` planning-commit gate: rebasing onto a moved `main` before the planning commit kept the cycle's history clean after a four-day pause; retain.
+- `implementation_standards.md` "Check affected shared consumers": running every `ReactionSignature` consumer's tests found the killed-process leak in `ImportDeadlineRecoveryTest`, which the verifier tests alone missed; retain.
+- `step3_development_plan_do.md` replay stage for the named environment: kept cloud timings from closing the cycle; Stage 4 stays pending for WSL; retain.
+
+**Redundant/unnecessary instructions**
+- Ledger rows duplicate the stage estimate history already in the Step 4 summary. Suggest a single "see summary" link per stage.
+
+**Inapplicable instructions**
+- Documentation-only verification fields: application change.
+- Database migration checks: the cache table already existed.
+
+**Uncertain assessments**
+- Missing guidance: nothing in Step 4 says what to do when `main` gains overlapping work (here, planning progress) while Step 3 awaits approval. Recorded it as reference drift in the summary; suggest a named rule.
+- Missing guidance: no instruction covers a sandbox that can no longer reach the source (PHP downloads failed after the pause). Served a fresh archive on loopback and labeled it.
