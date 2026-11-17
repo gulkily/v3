@@ -132,7 +132,7 @@ try {
   await assertNoNewMessage(page);
   await page.getByRole('link', { name: 'Users', exact: true }).click();
   // Users rows and the person page's Message button (cycle 7) lead to the conversation.
-  await page.locator('a.account-row[href="/user/bob"]').click();
+  await page.locator('.thread-row__title a[href="/user/bob"]').click();
   await page.getByRole('button', { name: 'Message', exact: true }).click();
   await page.waitForURL(/\/messages\/conversation\/bob\??$/);
   await page.locator('[data-private-message-composer] textarea').fill('Started from user page');
@@ -173,6 +173,10 @@ try {
   assert.equal(await page.locator('[data-private-message-history-status]').count(), 0);
   assert.equal(await page.getByRole('button', { name: 'Retry history', exact: true }).count(), 0);
   await page.route('**/api/private_messages/history_sync/**', route => route.fulfill({ status: 503, json: { status: 'error' } }));
+  // The sends above can leave the server's history rate limit (429) in force, and the client then defers its next run.
+  // Reloading under the failing route starts the client without that deferral, so the refresh below really runs.
+  await page.reload();
+  await page.locator('[data-private-message-composer] textarea').waitFor();
   await page.locator('textarea').fill('Draft survives background history retry');
   await page.locator('textarea').focus();
   await page.evaluate(() => window.ForumPrivateMessageHistorySync.refresh());
@@ -223,7 +227,7 @@ try {
   await unavailableRow.waitFor({ state: 'visible' });
   // A revoked recipient's old outgoing message can still verify against Alice's key.
   let failKey = true;
-  await page.route('**/api/private_messages/recipient_keys?username_token=user-57', route => failKey ? route.abort() : route.continue());
+  await page.route('**/api/private_messages/recipient_keys?username_token=user-57&*', route => failKey ? route.abort() : route.continue());
   await page.reload();
   const retryRow = page.locator('[data-role="rows"] [data-counterpart="user-57"]');
   await retryRow.getByRole('button', { name: 'Retry preview' }).waitFor();

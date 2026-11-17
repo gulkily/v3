@@ -2352,3 +2352,11 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 | `v3/high_traffic_coverage` | Complete (documentation-only); acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./high_traffic_coverage/high_traffic_coverage_one_shot.md) | Follows `v3/asset_bypass` (PR #293, merged); acceptance pending |
 
 2026-11-17: one-shot high-traffic coverage checklist; baseline `f83c0b0d`. Intake 0.08, recorded after route inspection; closeout retrospective 0.08. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
+
+## Cycle v3/dm_composer_flush
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/dm_composer_flush` | Technically complete; merge, deploy and iPhone acceptance pending | v2 / R1 / P2 | 0.25 (intake 0.10; entry 0.10; revision 0.25; retrospective 0.25) | [One-shot record](./dm_composer_flush/dm_composer_flush_one_shot.md#study-history) | Follow-up to `v3/dm_conversation_tabbar` and #232; one-shot |
+
+2026-11-17T06:11Z: standing P2 enrollment, one-shot. Intake and execution entry **0.10** (intake recorded after inspection); revised to **0.25** when baseline browser-test fixes were added under the maintainer's standing rule; retrospective scope assessment **0.25**. Baseline `6bdc52d7`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
