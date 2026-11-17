@@ -62,3 +62,21 @@
 
 **Uncertain assessments**
 - Whether query-time evaluation is fast enough on the shared host is unknown until Stage 1 timing; the fallback needs a plan revision.
+
+## 2026-11-17T19:05Z — Step 4
+
+**Necessary/useful instructions**
+- `implementation_standards.md` "Inspect existing implementations": led to `AttributionCutoff`'s signed switch-on and `ScoreVisibility::listedSql`, which replaced a planned private setting and three separate filters; retain.
+- `step4_implementation_do.md` Stage Boundary Protocol: one commit per stage kept the summary current and the deviations dated; retain.
+- `implementation_standards.md` "Replay each reported failure in the relevant user/environment": kept the qdb.us check marked pending instead of letting local Chrome acceptance stand in for it; retain.
+- `AGENTS.md` "Navigation icons": produced the hourglass in both sets and a six-theme render check; retain.
+
+**Redundant/unnecessary instructions**
+- `step4_implementation_do.md` per-stage retrospective estimate lines: low signal when they match the original within 0.02; suggest allowing "as planned".
+
+**Inapplicable instructions**
+- Documentation-only verification rules: application change.
+- `CONTRIBUTING.md` read-model schema checklist: the plan avoided a schema change, so no version bump was needed.
+
+**Uncertain assessments**
+- Whether pending quotes should also leave the instance page's "Recent included items" was judged out of scope, since it lists repository contents like Activity; recorded for the maintainer.
