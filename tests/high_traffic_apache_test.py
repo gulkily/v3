@@ -117,6 +117,31 @@ try:
     assert 'no-cache' in headers.get('Cache-Control','')
     retained=cache_pages.parent/'assets/assets/retained.012345abcdef.css';retained.parent.mkdir(parents=True,exist_ok=True);retained.write_text('body { color: navy; }')
     code,_,css=request('/assets/retained.012345abcdef.css');assert code==200 and css==b'body { color: navy; }'
+    # Asset copies: Apache serves every allowlisted fingerprinted asset of the warm page.
+    import re
+    types={'css':'text/css; charset=utf-8','js':'application/javascript; charset=utf-8','ico':'image/x-icon','png':'image/png','svg':'image/svg+xml','webp':'image/webp','woff2':'font/woff2'}
+    assets=sorted(set(re.findall(rb'/assets/[A-Za-z0-9_./-]+\.[a-f0-9]{12}\.(?:css|js|ico|png|svg|webp|woff2)\b',warm)))
+    assert len(assets)>=5,assets
+    assert all((cache_pages.parent/'assets'/a.decode().lstrip('/')).is_file() for a in assets)
+    before=count()
+    for asset in [a.decode() for a in assets]+['/assets/retained.012345abcdef.css']:
+        code,headers,content=request(asset)
+        assert code==200 and content,(asset,code)
+        assert headers.get('X-V3-High-Traffic')=='hit' and headers.get('Cache-Control')=='public, max-age=31536000, immutable',(asset,dict(headers))
+        assert headers.get('X-Content-Type-Options')=='nosniff' and headers.get('Content-Type')==types[asset.rsplit('.',1)[1]],(asset,dict(headers))
+    code,headers,content=request(assets[0].decode(),'HEAD');assert code==200 and content==b'' and headers.get('X-V3-High-Traffic')=='hit'
+    assert count()==before,'asset copies reached PHP'
+    def asset_via_php(path='/assets/retained.012345abcdef.css',**options):
+        before=count();code,headers,_=request(path,**options)
+        assert count()>before and headers.get('X-V3-High-Traffic') is None,(path,code,dict(headers))
+    asset_via_php('/assets/retained.012345abcdef.css?x=1')
+    asset_via_php(headers={'Authorization':'Bearer test'})
+    asset_via_php('/assets/missing.0123456789ab.css')
+    for path in ['/.high-traffic-assets/assets/retained.012345abcdef.css','/.high-traffic-assets/','/.high-traffic-assets']:
+        assert request(path)[0]==403,path
+    cli('restore')
+    assert not (public/'.high-traffic-assets').is_symlink();asset_via_php()
+    cli('enable');assert (public/'.high-traffic-assets').is_symlink()
     before=count()
     status,headers,head=request('/about/','HEAD')
     assert status==200 and head==b'' and count()==before
@@ -198,6 +223,7 @@ try:
     assert marker.exists()
     cli('disable');racing.communicate(timeout=40)
     assert racing.returncode==1 and not (public/'.high-traffic').is_symlink()
+    assert not (public/'.high-traffic-assets').is_symlink();asset_via_php()
     before=count();request('/about/');assert count()==before+1
     # Real canonical private transition withdraws routing before the flag is committed.
     cli('enable');request('/about/')
@@ -205,6 +231,7 @@ try:
     def set_private(value):subprocess.run(['php','-r',writer,str(project),str(repo),str(root/'read.sqlite3'),str(public),value],env=env,check=True,capture_output=True)
     set_private('true')
     assert not (public/'.high-traffic').is_symlink()
+    assert not (public/'.high-traffic-assets').is_symlink();asset_via_php()
     assert request('/about/')[1].get('X-V3-High-Traffic') is None
     set_private('false')
     # Native import retires direct serving before its publication callback.
@@ -314,7 +341,7 @@ try:
     assert_qdb_home(request('/')[2])
     cli('disable')
     (root/'secrets.php').write_text('<?php return [];')
-    print(json.dumps({'status':'passed','checks':['Apache request-scoped QDB profile survives cold/warm/CLI rendering','private-file QDB profile without SetEnv or FORUM_SITE_ID survives normal/cold/warm/CLI rendering','plain presentation files bypass PHP; HTML, maps and unknown fingerprints do not','Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
+    print(json.dumps({'status':'passed','checks':['Apache request-scoped QDB profile survives cold/warm/CLI rendering','private-file QDB profile without SetEnv or FORUM_SITE_ID survives normal/cold/warm/CLI rendering','plain presentation files bypass PHP; HTML, maps and unknown fingerprints do not','Apache warm hits bypass PHP with sessions','asset copies bypass PHP with immutable headers and fixed types; query/auth/miss/off/withdrawal/restore reach PHP; direct asset storage denied','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
 except Exception:
     print('Fixture:',root)
     if (root/'error.log').exists():print((root/'error.log').read_text()[-5000:])

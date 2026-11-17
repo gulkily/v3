@@ -64,3 +64,27 @@ Original stage work, copied from Step 3: Stage 1 0.08 · Stage 2 0.1 · Stage 3 
   - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Apache serves the asset copies
+
+**Original estimate: 0.12**
+
+**Retrospective stage work: 0.14**
+
+- Changes:
+  - New rule in `HighTrafficMode::routingRules()` and the shipped block in `public/.htaccess`. It matches GET/HEAD with no query and no `Authorization`, a 12-hex name and an allowlisted extension, with no `..`. When the copy exists under `.high-traffic-assets/assets/`, the request is served from there (END). A miss falls through to PHP.
+  - The refusal rule now covers `/.high-traffic-assets` as well as `/.high-traffic`.
+  - `tests/high_traffic_apache_test.py`: new checks.
+    - Every allowlisted fingerprinted asset on the warm `/about/` page, plus a hand-written copy, is served with zero PHP requests. Each carries `X-V3-High-Traffic: hit`, the one-year immutable header, `nosniff` and the exact PHP content type. HEAD returns no body.
+    - A query string, `Authorization`, a missing copy, `restore`, turn-off and the private-instance withdrawal all reach PHP. Direct requests to the storage path return 403.
+- Verification:
+  - Passed: the Apache test's Stage 3 checks, up to the import check, which fails as described in Stage 1.
+  - Passed: a scratch copy (not committed) skipped only the pre-existing failing checks and ran to the QDB section. It found nothing caused by this branch.
+  - Failed at `fb90541`, pre-existing: on the base, with the same skips, the absent-target section's `live_hash` check fails. The QDB section's first check also fails: a `SetEnv FORUM_SITE_ID qdb` added to `.htaccess` does not reach PHP on the ordinary page in my workspace. These are recorded with the pending decision; I made no fix.
+  - Passed: `./v3 test --smoke WebServerRoutingTest HighTrafficTest HighTrafficAutomationTest` (see the Stage 4 rerun).
+  - Full suite not run.
+- Notes:
+  - Key Risk 3 is mitigated: the types are fixed in the cache folder's `.htaccess`. This host's `mime.types` would have sent `text/javascript` and `image/vnd.microsoft.icon`.
+  - Estimate details: original scope unchanged; extra base-commit runs to attribute the failures.
+
+*— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*

@@ -1,8 +1,14 @@
 # BEGIN V3 HIGH TRAFFIC
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteCond %{THE_REQUEST} \s/+\.high-traffic(?:[/\s?]) [NC]
-RewriteRule ^\.high-traffic(?:/|$) - [F,END]
+RewriteCond %{THE_REQUEST} \s/+\.high-traffic(?:-assets)?(?:[/\s?]) [NC]
+RewriteRule ^\.high-traffic(?:-assets)?(?:/|$) - [F,END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond $1 !\.\.
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic-assets/assets/$1 -f
+RewriteRule ^assets/([A-Za-z0-9_-][A-Za-z0-9_./-]*\.[a-f0-9]{12}\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?))$ .high-traffic-assets/assets/$1 [END]
 RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{HTTP:Authorization} ^$
