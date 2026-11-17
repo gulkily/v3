@@ -64,3 +64,26 @@ Status: Steps 1 (Option C), 2 and 3 approved by the maintainer 2026-11-17. Step 
   - Estimate details: original scope as in Step 3; no revision. Retrospective lower: the directive readers already worked per line.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Pledge cards lead with the amount and one status
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - `templates/partials/pledge_amount.php`: a counted pledge's amount line gains one status, Open, "Part delivered: 30 of 120" or Delivered, using the totals block's pill style. The partial takes a `pledgePart` of `head` (the amount line) or `rest` (fill lines, buttons and reasons). An unreadable pledge has no amount, so its reason stays under the text.
+  - `templates/partials/post_card.php`: draws the head above the post's text and the rest under it.
+  - `public/assets/site.css`: one rule to sit the pill beside the amount.
+  - Tests: the Stage 1 test gains the three labels and the amount-before-note order; four amount expectations gain "Open". The browser check's two card texts gain "Open".
+- Verification:
+  - Passed: the browser check unchanged before the reorder (Stage 2's run), then `./v3 test PledgeCampaignTest WithdrawLeafFilterTest` (28 tests).
+  - Passed: the browser check, all 34 theme and width passes, and the `--count-unnamed` run. The withdraw, fill, confirm and dispute presses, each with a failed first press, still pass.
+  - Passed: light, Gloss and Word97 at 375 pixels, looked at. Each card leads with "300 coffees · Delivered" or "1000 coffees · Open", then the note, then the fill lines.
+  - Passed: `./v3 test --smoke PledgeCampaignTest WithdrawLeafFilterTest`. The full suite was not run.
+- Notes:
+  - "Delivered" is used whoever filled it; the fill line under it still says "Filled by" or "Delivered by" and any review.
+  - Refinement within scope, found in the screenshots: the unreadable pledge's reason first rendered above its own line; moved under it.
+  - Estimate details: original scope as in Step 3; no revision. Retrospective lower: splitting the partial needed no change to the buttons or `pledge_withdraw.js`.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

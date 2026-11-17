@@ -2316,6 +2316,7 @@ pre {
 .pledge-bar__goal { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); }
 .pledge-amount { margin: 0.4rem 0 0; }
 .pledge-amount strong { font-size: 1.25em; }
+.pledge-amount .pledge-status { margin-left: 0.25rem; vertical-align: 0.15em; }
 .pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
 .pledge-withdraw { margin: 0.3rem 0 0; }
 .pledge-field { display: flex; align-items: center; gap: 0.5rem; }

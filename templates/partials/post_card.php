@@ -109,10 +109,11 @@ if ($isRunTail) {
 $pledgeLineKind = is_array($pledgeCampaign ?? null) ? ($pledgeCampaign['used_lines'][(string) $post['post_id']] ?? null) : null;
 $pledgeShownBody = $pledgeLineKind !== null ? \ForumRewrite\Support\PledgeLines::hide((string) ($post['body'] ?? ''), $pledgeLineKind) : null;
 ?>
+<?= $partial('partials/pledge_amount.php', ['post' => $post, 'pledgePart' => 'head']) ?>
 <?php if ($pledgeShownBody === null || trim($pledgeShownBody) !== ''): ?>
   <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post, $pledgeShownBody) ?></div>
 <?php endif; ?>
-<?= $partial('partials/pledge_amount.php', ['post' => $post]) ?>
+<?= $partial('partials/pledge_amount.php', ['post' => $post, 'pledgePart' => 'rest']) ?>
 <?php endif; ?>
 <?php if ($metaLine !== '' && $isContinuation): ?>
   <?= $metaLine ?>

@@ -149,7 +149,7 @@ final class PledgeCampaignTest
         pledgeAssertContains('style="width: 30%"', $on);
         pledgeAssertNotContains('pledge-bar__goal', $on);
         pledgeAssertContains('1 pledge</p>', $on);
-        pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees</p>', $on);
+        pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $on);
         pledgeAssertContains('data-pledge-state="unverified"><strong>250</strong> coffees · <span class="meta">Not counted: unverified</span>', $on);
         pledgeAssertContains('data-pledge-state="unnamed"><strong>40</strong> coffees · <span class="meta">Not counted: no name</span>', $on);
         pledgeAssertContains('data-pledge-state="unreadable"><span class="meta">Not counted: “a few” is not a number</span>', $on);
@@ -164,7 +164,7 @@ final class PledgeCampaignTest
         }
         pledgeAssertContains('<strong>340</strong> of 1000 coffees pledged', $counting);
         pledgeAssertContains('2 pledges</p>', $counting);
-        pledgeAssertContains('data-pledge-state="counted"><strong>40</strong> coffees</p>', $counting);
+        pledgeAssertContains('data-pledge-state="counted"><strong>40</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $counting);
         pledgeAssertNotContains('Not counted: no name', $counting);
         pledgeAssertContains('Not counted: unverified', $counting);
         // The second flag does nothing while Pledges is off.
@@ -503,7 +503,7 @@ final class PledgeCampaignTest
             pledgeAssertContains('order these myself.', $on);
             pledgeAssertContains('The order fell through.', $on);
             pledgeAssertContains('data-pledge-state="withdraw-uncounted"><span class="meta">Not counted: write “withdraw” alone on its line</span>', $on);
-            pledgeAssertContains('data-pledge-state="counted"><strong>200</strong> coffees</p>', $on);
+            pledgeAssertContains('data-pledge-state="counted"><strong>200</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $on);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
         }
@@ -606,7 +606,7 @@ final class PledgeCampaignTest
             (new PDO('sqlite:' . $database))->prepare("UPDATE posts SET retracted_at = '2026-11-16T09:00:00Z', body = '' WHERE post_id = ?")->execute([$bare]);
             $undone = $this->render($application(), '/threads/' . rawurlencode($thread));
             pledgeAssertContains('<strong>300</strong> of 1000 coffees pledged', $undone);
-            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees</p>', $undone);
+            pledgeAssertContains('data-pledge-state="counted"><strong>300</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span></p>', $undone);
             pledgeAssertNotContains($card($bare), $undone);
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
@@ -931,7 +931,7 @@ final class PledgeCampaignTest
         putenv('FORUM_PLEDGES_ENABLED=1');
         try {
             $open = $page();
-            $pledge = $this->reply($service, $thread, 'pledge: 120');
+            $pledge = $this->reply($service, $thread, "pledge: 120\n\nFrom the lab.");
             $reached = $page();
             $this->replyTo($service, $thread, $pledge, 'filled: 30');
             $part = $page();
@@ -956,6 +956,11 @@ final class PledgeCampaignTest
         pledgeAssertContains('1 pledge · 30 delivered</p>', $part);
         pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Complete</span>', $complete);
         pledgeAssertContains('1 pledge · 120 delivered</p>', $complete);
+        // Each pledge card leads with its amount and one status, then the note.
+        pledgeAssertContains('<strong>120</strong> coffees <span class="pledge-status" data-role="pledge-card-status">Open</span>', $reached);
+        pledgeAssertSame(true, strpos($reached, 'data-role="pledge-card-status"') < strpos($reached, 'From the lab.'));
+        pledgeAssertContains('data-role="pledge-card-status">Part delivered: 30 of 120</span>', $part);
+        pledgeAssertContains('data-role="pledge-card-status">Delivered</span>', $complete);
     }
 
     public function testPledgeLinesLeaveOutOnlyTheLineTheReaderUsed(): void

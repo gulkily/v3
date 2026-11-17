@@ -80,7 +80,7 @@ try {
   await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').waitFor();
   assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '300 of 1000 coffees pledged');
   assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '1 pledge');
-  assert.equal((await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').textContent()).trim(), '300 coffees');
+  assert.equal((await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').textContent()).trim(), '300 coffees Open');
   assert.equal(await writer.page.locator('.pledge-bar__fill').evaluate(e => e.style.width), '30%');
 
   // Past the goal the bar shows a goal mark.
@@ -179,7 +179,7 @@ try {
   await plain.page.goto(base + '/threads/' + threadId);
   if (countUnnamed) {
     assert.equal(await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').count(), 0);
-    assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="counted"]').last().textContent()).trim(), '12.5 coffees');
+    assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="counted"]').last().textContent()).trim(), '12.5 coffees Open');
     assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1312.5 of 1000 coffees pledged Goal reached');
     assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges · 300 delivered');
   } else {
