@@ -92,6 +92,23 @@
     repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
     var(--bubblegum-bar);
   pointer-events: none;
+  /* content-interactions.css hides .meta-deferred::before (its hover time) on
+     every post that starts a run; here ::before is the title bar, so keep it. */
+  opacity: 1;
+}
+
+:root[data-theme="bubblegum"][data-window-controls] .card[data-window-collapsed] {
+  /* Window controls (FORUM_DRAGGABLE_WINDOWS_ENABLED, theme-bubblegum.js): a
+     collapsed window keeps only its title bar; its contents stay in the page,
+     only hidden. layout.php writes the same rules for posts collapsed in this
+     browser, so they show collapsed before the script starts. */
+  padding-top: 1.5rem;
+  padding-bottom: 0;
+  min-height: 0;
+}
+
+:root[data-theme="bubblegum"][data-window-controls] .card[data-window-collapsed] > * {
+  display: none !important;
 }
 
 :root[data-theme="bubblegum"] .thread-rows {

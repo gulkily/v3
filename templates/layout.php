@@ -203,6 +203,30 @@
       } catch (error) {
       }
 <?php endif; ?>
+<?php if ($draggableWindowsEnabled ?? false): ?>
+      try {
+        // Window controls (theme-bubblegum.js) are on unless this browser turned them off in Preferences.
+        if (localStorage.getItem(browserRuntime.windowControlsStorageKey) !== 'off') {
+          document.documentElement.setAttribute('data-window-controls', 'on');
+          // Posts collapsed in this browser show collapsed from the first frame. The rules
+          // match theme-bubblegum.css's [data-window-collapsed]; the script removes this
+          // style once it has marked the posts itself.
+          var collapsedPosts = (localStorage.getItem(browserRuntime.collapsedWindowsStorageKey) || '').split(' ')
+            .filter(function (id) { return /^[A-Za-z0-9_.:-]+$/.test(id); });
+          if (collapsedPosts.length > 0) {
+            var collapsedCards = collapsedPosts.map(function (id) {
+              return ':root[data-theme="bubblegum"][data-window-controls] .card[data-post-id="' + id + '"]';
+            });
+            var collapsedStyle = document.createElement('style');
+            collapsedStyle.id = 'window-controls-collapsed';
+            collapsedStyle.textContent = collapsedCards.join(',') + '{padding-top:1.5rem;padding-bottom:0;min-height:0}'
+              + collapsedCards.map(function (card) { return card + '>*'; }).join(',') + '{display:none!important}';
+            document.head.appendChild(collapsedStyle);
+          }
+        }
+      } catch (error) {
+      }
+<?php endif; ?>
     })();
   </script>
 <?php if ($appVersionNotificationEnabled): ?>

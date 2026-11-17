@@ -2381,3 +2381,11 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 | `v3/invite_qr_pitch` | Implemented; PR open | v1 (one-shot) / R1 / P2 | 0.20 | [One-shot record](./invite_qr_pitch/invite_qr_pitch_one_shot.md#study-history) | New cycle; maintainer acceptance pending |
 
 2026-11-17: one-shot invite QR pitch; baseline `6bdc52d7`. Intake and execution entry 0.20; closeout retrospective 0.20. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
+
+## Cycle v3/draggable_windows
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/draggable_windows` | Step 4 in progress (every step approved by the maintainer) | v2 / R1 / P2 | 0.70 (intake 0.60, exposed; Step 1 0.60; Step 2 0.65, then 0.70 at approval; Step 3 0.70; entry 0.70) | [Intake and Step 1](./draggable_windows/draggable_windows_step1_solution_assessment.md#study-snapshots); [Step 2](./draggable_windows/draggable_windows_step2_feature_description.md#study-snapshots); [Step 3](./draggable_windows/draggable_windows_step3_development_plan.md#study-snapshots); [Step 4](./draggable_windows/draggable_windows_step4_implementation_summary.md) | New cycle from the #draggable thread; no implementation accepted yet |
+
+2026-11-17T06:00Z: standing P2 enrollment for draggable windows, staged. Intake **0.60** was given in chat on 2026-11-15 before the code was read (exposed, not pristine). Step 1 handoff 0.60 for Option A (Bubblegum theme script with Float mode); options A 0.60, B 0.95, C 0.40, not summed. Step 2 0.65 (new understanding: every window gets buttons, the title bar is redrawn as real buttons), then 0.70 at approval (changed scope, v2: a Preferences row). Step 3 0.70 reaffirmed; stage work 0.12, 0.18, 0.07, 0.20, 0.06, 0.07, not summed. Step 4 entry 0.70 reaffirmed on `feat/draggable_windows` from `4a6c8bd`, planning commit `44dd8b3`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. This row was planned for the planning commit but lands with Stage 1, since Step 4's gate keeps the ledger out of the planning commit.

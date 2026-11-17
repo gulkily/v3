@@ -264,6 +264,7 @@ final class TemplateRenderer
             'routeSource' => $routeSource,
             'showThreadDensityToggle' => $showThreadDensityToggle,
             'showReadingMargins' => $showReadingMargins,
+            'draggableWindowsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::DRAGGABLE_WINDOWS_ENABLED),
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,
