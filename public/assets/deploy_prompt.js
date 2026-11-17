@@ -73,7 +73,11 @@
       return;
     }
     const outcome = data.result && data.result.outcome;
-    if (outcome === 'deployed' || outcome === 'up_to_date') { window.location.reload(); return; }
+    if (outcome === 'deployed' || outcome === 'up_to_date') {
+      if (outcome === 'deployed' && window.ForumDeployCelebrate) window.ForumDeployCelebrate.remember(data.result.message);
+      window.location.reload();
+      return;
+    }
     button.disabled = false;
     say((data.result && data.result.message) || 'The deploy did not run.', true);
   };

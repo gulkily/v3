@@ -669,6 +669,61 @@ pre {
   display: none;
 }
 
+/* After a deploy that changed the code (deploy_celebrate.js): a banner and a
+   short burst of confetti on the page that loads next. */
+.deploy-celebration {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 1001;
+  max-width: calc(100vw - 2rem);
+  padding: 0.55rem 1rem;
+  border: 2px solid var(--active-line, var(--line));
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 0.95rem/1.3 var(--ui-font);
+  box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 0.18);
+  cursor: pointer;
+  transform: translateX(-50%);
+  animation: deploy-celebration-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+.deploy-celebration.is-leaving {
+  opacity: 0;
+  transform: translate(-50%, -1rem);
+}
+
+.deploy-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.deploy-confetti i {
+  position: absolute;
+  top: -1rem;
+  width: 0.5rem;
+  height: 0.8rem;
+  animation: deploy-confetti-fall 3s cubic-bezier(0.25, 0.6, 0.5, 1) both;
+}
+
+@keyframes deploy-celebration-in {
+  from { opacity: 0; transform: translate(-50%, -1.5rem) scale(0.8); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
+@keyframes deploy-confetti-fall {
+  to { transform: translate(var(--drift, 0), 110vh) rotate(var(--spin, 720deg)); opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deploy-celebration { animation: none; transition: none; }
+}
+
 .new-post-button__icon {
   font-size: 1.1em;
   line-height: 1;
@@ -909,6 +964,7 @@ pre {
   html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
   html[data-nav-slots~="calendar"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
+  html[data-nav-slots~="agent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="agent"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
   html[data-nav-slots~="inbox"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="inbox"],
@@ -945,6 +1001,7 @@ pre {
   html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
   html[data-nav-slots~="calendar"] [data-shell="app"] .account-menu[data-current="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
+  html[data-nav-slots~="agent"] [data-shell="app"] .account-menu[data-current="agent"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
   html[data-nav-slots~="inbox"] [data-shell="app"] .account-menu[data-current="inbox"],
@@ -983,7 +1040,7 @@ pre {
 
   /* Themes without their own More glyph (all but the icon themes in theme-nav-icons.css): three bars, drawn in the tab's ink. On a
      renamed tab an arrow replaces them, leaving room for the name. */
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"]) [data-shell="app"] .account-menu__icon {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"], [data-theme="spearmint"]) [data-shell="app"] .account-menu__icon {
     display: var(--more-tab-icon, inline-block);
     border: 0;
     border-radius: 0;
@@ -993,7 +1050,7 @@ pre {
       linear-gradient(currentColor, currentColor) 0 85% / 100% 2px no-repeat;
   }
 
-  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"]) [data-shell="app"] .account-menu__label--current::after {
+  :root:not([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"], [data-theme="spearmint"]) [data-shell="app"] .account-menu__label--current::after {
     content: "\25B4";
     position: absolute;
     top: -0.05rem;
@@ -1277,6 +1334,12 @@ pre {
   color: var(--status-warning, var(--ink-soft));
 }
 
+/* The Pending chip beside an author opens their summary
+   (pending_user_summary.js); the chip keeps its own colours. */
+.pending-chip {
+  text-decoration: none;
+}
+
 /* Staged: post IDs are long unbroken strings; let them wrap on phones. */
 .staged-item__id code {
   overflow-wrap: anywhere;
@@ -1285,6 +1348,12 @@ pre {
 .chip--approved {
   border-color: var(--status-ok, var(--line));
   color: var(--status-ok, var(--ink));
+}
+
+/* A key a session replaced (key bootstrap): still approved, waiting to be retired or kept. */
+.chip--replaced {
+  border-style: dashed;
+  color: var(--ink-soft, var(--ink));
 }
 
 /* Users and person pages: built from the board filter, Account's card and grouped rows, and thread rows;
@@ -1304,7 +1373,17 @@ pre {
   margin: 0;
 }
 @media (scripting: none) {
-  .board-toolbar__search[data-users-search] {
+  .board-toolbar__search[data-users-search],
+  [data-view-query],
+  [data-visitor-intro-hide],
+  .thread-reaction-button,
+  .requires-script {
+    display: none;
+  }
+}
+/* Copy that is true only when scripts cannot run (e.g. "Members only" instead of "Reconnecting"). */
+@media (scripting: enabled) {
+  .without-script {
     display: none;
   }
 }
@@ -1369,9 +1448,19 @@ pre {
 }
 
 /* Gallery: justified rows. Each tile's basis is its (clamped) aspect ratio
-   times the row height, so rows fill the width and images keep their shape. */
+   times the row height, so rows fill the width and images keep their shape.
+   --gallery-zoom (Smaller / Larger and pinching on phones, gallery_zoom.js;
+   layout.php restores it before paint) multiplies the row height. */
+.gallery-zoom {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -0.5rem;
+}
+
 .gallery-grid {
-  --gallery-row: 12rem;
+  --gallery-row: calc(12rem * var(--gallery-zoom, 1));
+  /* Caption text follows the zoom too, within readable bounds (themes use it). */
+  --gallery-text-scale: clamp(0.75, var(--gallery-zoom, 1), 1.25);
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -1414,7 +1503,8 @@ pre {
 .gallery-tile__caption {
   display: flex;
   flex-direction: column;
-  padding: 0.3rem 0.5rem 0.4rem;
+  padding: 0.3em 0.5em 0.4em;
+  font-size: calc(var(--gallery-caption-size, 1rem) * var(--gallery-text-scale, 1));
   line-height: 1.3;
 }
 
@@ -1432,7 +1522,10 @@ pre {
 
 @media (max-width: 40rem) {
   .gallery-grid {
-    --gallery-row: 7rem;
+    --gallery-row: calc(7rem * var(--gallery-zoom, 1));
+    --gallery-caption-size: 0.8rem;
+    /* Two fingers on the grid resize the tiles instead of zooming the page. */
+    touch-action: pan-x pan-y;
     gap: 0.35rem;
   }
 }
@@ -1480,6 +1573,18 @@ pre {
    script marks a browser remembered as approved before paint. */
 :root:not([data-member="approved"]) [data-member-only] {
   display: none !important;
+}
+
+/* Gallery zoomed far out (gallery_zoom.js, restored before paint in layout.php):
+   images only. Captions stay readable to screen readers, as .visually-hidden. */
+:root[data-gallery-compact] .gallery-tile__caption {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
 }
 
 /* critical-css-end */
@@ -2060,6 +2165,10 @@ pre {
 .post-record-retracted td { color: var(--muted); }
 .record-fields { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 1rem; margin: 0.5rem 0; }
 .record-fields dt { font-weight: 600; }
+
+/* Thread activity drawer (thread page) */
+.thread-activity-list { margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.9em; }
+.thread-activity-list li { margin-block: 0.15rem; overflow-wrap: anywhere; }
 .record-fields dd { margin: 0; overflow-wrap: anywhere; }
 .record-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 
@@ -2077,3 +2186,121 @@ pre {
     padding-bottom: 0.5rem;
   }
 }
+
+/* The pending author summary (pending_user_summary.js). */
+.pending-user-dialog {
+  /* Placed beside the clicked chip by pending_user_summary.js. */
+  position: fixed;
+  inset: auto;
+  top: 0;
+  left: 0;
+  margin: 0;
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 1rem);
+  overflow: auto;
+  color: var(--ink);
+}
+
+.pending-user-dialog::backdrop {
+  background: rgb(0 0 0 / 0.15);
+}
+
+.pending-user-dialog__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pending-user-dialog__head .chip {
+  flex: none;
+  overflow-wrap: normal;
+}
+
+.pending-user-dialog__head h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pending-user-dialog__head .pending-user-dialog__close {
+  flex: none;
+  width: 2.75rem;
+  min-width: 0;
+  height: 2.75rem;
+  min-height: 0;
+  margin: -0.5rem -0.5rem 0 auto;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.pending-user-dialog__key {
+  overflow-wrap: anywhere;
+}
+
+.pending-user-dialog__recent {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+}
+
+.pending-user-dialog__recent li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.pending-user-dialog__recent a {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-user-dialog__recent .meta {
+  flex: none;
+}
+
+.pending-user-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pending-user-dialog__actions button {
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+}
+
+.pending-user-dialog__actions [data-role="approve"] {
+  background: var(--button-bg);
+}
+
+/* Photo details the poster chose to attach, under the post's image (ImageReference::photoDetails).
+   Two or more fold behind a closed "Photo details" row; one stays visible. */
+.post-photo-details-disclosure { display: block; }
+.post-photo-details-disclosure > summary { cursor: pointer; padding: .7rem 0; font-size: .9em; }
+.post-photo-details-disclosure > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.post-photo-details-disclosure > .post-photo-details { margin-top: 0; }
+.post-photo-details { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .75rem; row-gap: .15rem; margin: .35rem 0; font-size: .9em; overflow-wrap: anywhere; }
+
+/* Pledge campaign (thread page): totals under the opening post, amount on each pledge reply */
+.pledge-totals { margin: 0.75rem 0; }
+.pledge-totals__sum { margin: 0 0 0.4rem; }
+.pledge-totals__sum strong { font-size: 1.5em; }
+.pledge-totals__count { margin: 0.3rem 0 0; }
+.pledge-bar { position: relative; height: 0.9rem; border: 1px solid var(--line); background: var(--input-bg); overflow: hidden; }
+.pledge-bar__fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
+.pledge-bar__goal { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--input-bg); }
+.pledge-amount { margin: 0.4rem 0 0; }
+.pledge-amount strong { font-size: 1.25em; }
+.pledge-amount:not([data-pledge-state="counted"]) strong { text-decoration: line-through; }
+.pledge-withdraw { margin: 0.3rem 0 0; }
+.pledge-field { display: flex; align-items: center; gap: 0.5rem; }
+.pledge-field input { flex: 0 1 8rem; min-width: 0; width: 8rem; }
+.pledge-field__unit { color: var(--ink-soft); overflow-wrap: anywhere; }

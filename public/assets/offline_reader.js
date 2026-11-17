@@ -14,14 +14,44 @@
       .replace(/'/g, "&#039;");
   }
 
+  // Mirrors ImageReference::photoDisplay.
+  function photoDisplay(label, value) {
+    var taken = label === "Taken" && /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):\d\d(?:[+-]\d\d:\d\d)?$/.exec(value);
+    if (taken) {
+      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      var hour = Number(taken[4]), month = months[Number(taken[2]) - 1];
+      if (month && hour < 24) return month + " " + Number(taken[3]) + ", " + taken[1] + ", " + ((hour + 11) % 12 + 1) + ":" + taken[5] + " " + (hour < 12 ? "AM" : "PM");
+    }
+    var place = label === "Location" && /^(-?\d{1,2}\.\d+) (-?\d{1,3}\.\d+)$/.exec(value);
+    if (place && Math.abs(place[1]) <= 90 && Math.abs(place[2]) <= 180) {
+      var lat = Number(place[1]), lon = Number(place[2]);
+      return Math.abs(lat).toFixed(4) + "° " + (lat < 0 ? "S" : "N") + ", " + Math.abs(lon).toFixed(4) + "° " + (lon < 0 ? "W" : "E");
+    }
+    return value;
+  }
+
   function nl2br(value) {
-    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: (\S+))?$/gm, function (line, description) {
-      try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : ""); }
-      catch (error) { return "Image unavailable offline (reference preserved in the snapshot)."; }
+    // Mirrors MediaEmbedRenderer: photo details directly after the image line read as "Label: value";
+    // two or more fold behind a closed "Photo details" row, inserted after escaping through a marker.
+    const folded = [];
+    const text = String(value || "").replace(/^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: (\S+))?((?:\nPhoto-(?:Camera|Lens|Exposure|Taken|Location): [^\x00-\x1f\x7f]{1,120}(?=\n|$))*)$/gm, function (line, description, photo) {
+      const lines = (photo || "").split("\n").filter(Boolean).map(function (detail) {
+        const at = detail.indexOf(": ");
+        return detail.slice(6, at) + ": " + photoDisplay(detail.slice(6, at), detail.slice(at + 2));
+      });
+      let details = lines.map(function (detail) { return "\n" + detail; }).join("");
+      if (lines.length > 1) { folded.push(lines); details = "\u0000" + (folded.length - 1) + "\u0000"; }
+      try { return "Image unavailable offline" + (description ? " — " + decodeURIComponent(description) : "") + details; }
+      catch (error) { return "Image unavailable offline (reference preserved in the snapshot)." + details; }
     });
     var reader = document.querySelector && document.querySelector("[data-offline-reader]");
     var tagLinks = !reader || reader.getAttribute("data-tag-links") !== "0";
-    return (tagLinks ? linkEscapedHashtags(escapeHtml(text)) : escapeHtml(text)).replace(/(\r\n|\r|\n)/g, "<br>$1");
+    return (tagLinks ? linkEscapedHashtags(escapeHtml(text)) : escapeHtml(text)).replace(/(\r\n|\r|\n)/g, "<br>$1")
+      .replace(/\u0000(\d+)\u0000/g, function (marker, index) {
+        if (!folded[Number(index)]) return "";
+        return '<details class="post-photo-details-disclosure"><summary class="meta">Photo details</summary>'
+          + folded[Number(index)].map(function (detail) { return escapeHtml(detail); }).join("<br>") + "</details>";
+      });
   }
 
   // Mirrors View/PostHashtags.php; only escaped post text is passed here.
@@ -121,8 +151,9 @@
     },
     boardRows: function (database) {
       var result = database.exec(
-        "SELECT root_post_id, subject, body_preview, reply_count, last_activity_at, author_label, "
-        + "root_post_created_at, thread_labels_json, board_tags_json, score_total FROM threads"
+        "SELECT t.root_post_id, t.subject, t.body_preview, t.reply_count, t.last_activity_at, t.author_label, "
+        + "t.root_post_created_at, t.thread_labels_json, t.board_tags_json, t.score_total, p.body "
+        + "FROM threads t LEFT JOIN posts p ON p.post_id = t.root_post_id"
       )[0];
       return (result && result.values ? result.values : []).map(function (row) {
         return {
@@ -135,9 +166,21 @@
           createdAt: String(row[6] || ""),
           labels: snapshotPresentation.threadLabels(row[7]),
           boardTags: snapshotPresentation.tagsFromJson(row[8]),
-          score: Number(row[9] || 0)
+          score: Number(row[9] || 0),
+          nextLine: row[2] ? snapshotPresentation.nextBodyLine(row[10]) : ""
         };
       });
+    },
+    // The body line after the one the read model keeps as body_preview (its first non-empty line).
+    // Image references are data, not text, and are skipped as the online thread row does.
+    nextBodyLine: function (body) {
+      var lines = String(body || "").split(/\r\n|\r|\n/).filter(function (line) {
+        return line.trim() !== "";
+      });
+      for (var index = 1; index < lines.length; index += 1) {
+        if (!/^Image-v1: /.test(lines[index])) return lines[index].trim();
+      }
+      return "";
     },
     threadLabels: function (value) {
       return snapshotPresentation.tagsFromJson(value);
@@ -418,10 +461,17 @@
         meta.className = "meta";
         meta.textContent = "by " + thread.author + (thread.createdAt ? " on " + thread.createdAt : "");
         card.appendChild(meta);
-        if (thread.preview.trim() !== snapshotPresentation.threadTitle(thread.subject, thread.preview).trim()) {
+        // Offline cards show one more body line than the first (the online list stays one line).
+        var previewLines = [];
+        if (thread.preview.trim() !== snapshotPresentation.threadTitle(thread.subject, thread.preview).trim()) previewLines.push(thread.preview);
+        if (thread.nextLine) previewLines.push(thread.nextLine);
+        if (previewLines.length) {
           var preview = document.createElement("p");
           preview.className = "thread-card__preview";
-          preview.textContent = thread.preview;
+          previewLines.forEach(function (line, index) {
+            if (index) preview.appendChild(document.createElement("br"));
+            preview.appendChild(document.createTextNode(line));
+          });
           card.appendChild(preview);
         }
         if (thread.replyCount > 0) {

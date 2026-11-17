@@ -1,0 +1,17 @@
+ID: PF-20261111-B09
+Title: View query uses stale cached database
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+View query on the front page fails with "no such column: posts.body_format" because a stale browser-cached database survived a schema change, and the embedded dialog has no refresh. Wanted: separate schema compatibility and freshness, refresh in the background, keep a usable copy on failure, and offer retry inside the dialog.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261105203031-f45eb3a4
+- https://zenmemes.com/posts/reply-20261105225922-8d52151c
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Written up by ChatGPT; the maintainer identified the cause. The maintainer noted the report's GitHub issue link is a mistake (GitHub issues are not used).

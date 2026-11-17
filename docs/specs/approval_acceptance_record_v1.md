@@ -14,7 +14,7 @@ Version 1 has these fields:
 | `post_id` | Exact grant post ID; must match the receipt filename |
 | `record_sha256` | SHA-256 of the unchanged grant bytes |
 | `accepted_at` | Server acceptance time, RFC 3339 UTC with second precision |
-| `kind` | `direct` or `invitation` |
+| `kind` | `direct`, `invitation` or `session` |
 | `context` | Acceptance-time approval-policy evaluation described below |
 
 Context includes `actor_identity_id`, `actor_username`, `target_identity_id`, `target_username`, `target_profile_slug`, `target_thread_id`, `target_post_id`, `existing_key_count`, `classification`, `actor_is_operator`, `cross_account_allowed`, and `allowed` (`true`). Identity IDs are canonical lowercase OpenPGP fingerprints. The usernames, counts, authority, and effective policy are snapshots, not values to recompute from today's profiles or settings.
@@ -22,6 +22,8 @@ Context includes `actor_identity_id`, `actor_username`, `target_identity_id`, `t
 Classifications are `new_account` (no existing approved keys), `own_account_key` (additional key for the authorizer's username), and `cross_account_key` (additional key for another username). Operator authority is recorded separately; an operator-authorized cross-account grant is shown explicitly as an override. A root seed itself has no synthetic receipt.
 
 Signed direct approvals include `Approval-Context-SHA256` in their body. It hashes the server's JSON encoding of the complete reviewed context. The server stores the reviewed context with preparation metadata and compares it with live context under the write lock before acceptance. Changed context requires fresh preparation and review. Receipts validate this digest when present, as well as exact grant bytes, identities, bootstrap thread/parent, classification, count, booleans, and acceptance time. Older/manual grants without the digest do not acquire a member-signed review claim.
+
+A `session` receipt accepts a [key bootstrap record](key_bootstrap_record_v1.md), signed by the new key. Its actor is the key whose signed-in session vouched for the new key, and its classification is always `own_account_key`. The server checked the session, its scheme and the browser's coarse description before writing it; the receipt records none of those details.
 
 An invitation redemption is signed by its recipient. Its receipt identifies the invitation issuer as the authorizing actor and the recipient as the target key. Replay also checks that this authorizer matches issuance. The receipt does not change or replace the issuance/redemption signatures.
 

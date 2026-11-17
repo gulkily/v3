@@ -10,7 +10,9 @@ Request:
 
 Sources:
 - https://zenmemes.com/posts/reply-20261103062223-cece053b
+- https://zenmemes.com/posts/thread-20261105035303-18b09027
 
 Notes:
 Exploratory funding mechanism; no custody or billing implementation authorized.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 1 source(s): Terse note "Pay with api key idea"; probably this item, kept as an attach.

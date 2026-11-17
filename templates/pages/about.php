@@ -10,7 +10,7 @@
 <?php endif; ?>
       <p><?= $e($aboutContent['introduction']) ?></p>
 <?php if ($agentPageEnabled): ?>
-      <p><a href="/agent/">Use with your agent</a></p>
+      <p><a href="/agent/#start">Use with your agent</a></p>
 <?php endif; ?>
 <?php if ($siteGuestbookThreadId !== null): ?>
       <p><a href="/guestbook/">Sign the guestbook</a></p>

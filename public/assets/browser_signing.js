@@ -1214,13 +1214,16 @@
     return field && field.files && field.files[0] || null;
   }
 
-  async function imageSignedFields(fields, preparedImage, description) {
+  const PHOTO_DETAIL_LINE = /^Photo-(?:Camera|Lens|Exposure|Taken|Location): [^\x00-\x1f\x7f]{1,120}$/;
+
+  async function imageSignedFields(fields, preparedImage, description, photoLines = []) {
+    if (!Array.isArray(photoLines) || photoLines.some(line => !PHOTO_DETAIL_LINE.test(line))) throw new Error("Photo details are malformed. Remove the image and attach it again.");
     const file = preparedImage.file, width = preparedImage.width, height = preparedImage.height;
     if (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description)) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())), b => b.toString(16).padStart(2, "0")).join("");
     if (fields.body.includes("Image-v1:")) throw new Error("Remove the existing image reference before attaching a new image.");
     const encodedDescription = encodeURIComponent(description).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
-    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "");
+    fields.body = fields.body.trimEnd() + "\n\nImage-v1: " + [hash, file.type === "image/png" ? "png" : "jpg", file.size, width, height].join(" ") + (encodedDescription ? " " + encodedDescription : "") + photoLines.map(line => "\n" + line).join("");
     return fields;
   }
 
@@ -1231,7 +1234,7 @@
     try {
     await window.ForumImageUpload.assertEligible(form);
     const preparedImage = await window.ForumImageUpload.ready(form);
-    const fields = await imageSignedFields(collectSignedSubmitFields(form), preparedImage, composeFormFieldValue(form, "image_description").trim());
+    const fields = await imageSignedFields(collectSignedSubmitFields(form), preparedImage, composeFormFieldValue(form, "image_description").trim(), window.ForumImageUpload.chosenLines(form));
     const file = preparedImage.file;
     const identity = JSON.stringify(fields);
     let pending = form.__pendingImagePost;
@@ -2918,6 +2921,7 @@
       deriveIdentityFromPrivateKey: deriveIdentityFromPrivateKey,
       saveImportedBrowserIdentity: saveImportedBrowserIdentity,
       readClipboardText: readClipboardText,
+      signCanonicalRecord: signCanonicalRecord,
     };
   }
 
@@ -4029,7 +4033,7 @@
     const continuation = isReplyComposeForm(form) && window.ForumReplyContinuation && !window.location.pathname.startsWith('/forte')
       ? window.ForumReplyContinuation.bind(form, root, {
         card: createPendingReplyCard, insert: insertPendingReplyCard, clearDraft: clearComposeDraft,
-        prepare: async function (captured, attachment, description) {
+        prepare: async function (captured, attachment, description, photoLines) {
           let fields = Object.assign({}, captured);
           try {
             await ensureActionIdentity(null, isRegisteredIdentity() ? null : statusNode);
@@ -4044,7 +4048,7 @@
           let imageFile;
           if (attachment) {
             const image = await window.ForumImagePrepare.prepare(attachment);
-            fields = await imageSignedFields(fields, image, description);
+            fields = await imageSignedFields(fields, image, description, photoLines || []);
             imageFile = image.file;
           }
           const response = await submitUrlEncoded('/api/prepare_reply', fields);
@@ -4158,7 +4162,7 @@
           if (!fields.body.trim() && !attachment) throw new Error("Write a reply before posting.");
           const description = composeFormFieldValue(form, "image_description").trim();
           if (attachment && (new TextEncoder().encode(description).length > 500 || /[\x00-\x1f\x7f]/.test(description))) throw new Error("Image descriptions must be at most 500 bytes and contain no control characters.");
-          continuation.send(fields, attachment, description);
+          continuation.send(fields, attachment, description, attachment && window.ForumImageUpload ? window.ForumImageUpload.chosenLines(form) : []);
           setStatus(statusNode, "", "ok");
           restoreComposeUiState();
           completeActionTiming(timing, "queued");

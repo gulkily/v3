@@ -738,8 +738,12 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
 :root[data-theme="midnight"] .gallery-grid {
   --gallery-fit: cover;
   counter-reset: gallery-figure;
+  --gallery-columns: 4;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* --gallery-zoom (gallery_zoom.js) trades columns for size; browsers without
+     round() keep the line above. */
+  grid-template-columns: repeat(max(1, round(nearest, calc(var(--gallery-columns) / var(--gallery-zoom, 1)), 1)), minmax(0, 1fr));
   gap: 0;
   padding: 1.5rem calc(1.75rem + 1px) calc(1.5rem + 1px) 1.75rem;
   border: 2px solid;
@@ -791,7 +795,7 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
 :root[data-theme="midnight"] .gallery-tile__caption {
   padding: 0.4rem 0 0;
   font-family: var(--body-font);
-  font-size: 0.86rem;
+  font-size: calc(0.86rem * var(--gallery-text-scale, 1));
   line-height: 1.25;
 }
 
@@ -816,12 +820,14 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
   margin-top: 0.15rem;
   color: #9a9a9a;
   font-family: var(--ui-font);
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--gallery-text-scale, 1));
 }
 
 @media (max-width: 40rem) {
   :root[data-theme="midnight"] .gallery-grid {
+    --gallery-columns: 2;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(max(1, round(nearest, calc(var(--gallery-columns) / var(--gallery-zoom, 1)), 1)), minmax(0, 1fr));
     padding: 0.75rem calc(0.75rem + 1px) calc(0.75rem + 1px) 0.75rem;
   }
 }

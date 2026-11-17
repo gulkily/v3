@@ -88,11 +88,15 @@ final class FrontController
             return;
         }
 
+        // Development pages always bypass public/static caches and deployment automation.
+        $localDevelopmentRequest = \ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri)
+            && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER);
+
         $featureFlags = FeatureFlagEvaluator::forApplication($this->repositoryRoot, $this->projectRoot);
         $approvedMembersOnly = $featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY);
 
         $highTraffic = new HighTrafficCache($this->projectRoot, $this->repositoryRoot, $this->databasePath, $this->publicRoot);
-        if (!$approvedMembersOnly && $requestUri !== '/internal/high-traffic/refresh' && HighTrafficAutomation::turnOnEnabled($highTraffic)) {
+        if (!$localDevelopmentRequest && !$approvedMembersOnly && $requestUri !== '/internal/high-traffic/refresh' && HighTrafficAutomation::turnOnEnabled($highTraffic)) {
             $rate = HighTrafficRate::forCache($highTraffic);
             // Only the request that opens a new second checks the rate. Pages are still
             // rendered by the isolated worker, never from this request.
@@ -112,13 +116,13 @@ final class FrontController
             catch (Throwable $error) { $highTraffic->report($error);http_response_code(503);return; }
             http_response_code(204);return;
         }
-        if (!$approvedMembersOnly && in_array($method,['GET','HEAD'],true) && empty($_SERVER['HTTP_AUTHORIZATION'])
+        if (!$localDevelopmentRequest && !$approvedMembersOnly && in_array($method,['GET','HEAD'],true) && empty($_SERVER['HTTP_AUTHORIZATION'])
             && ($canonicalRoute = HighTrafficRoute::alias($requestUri)) !== null && $highTraffic->enabled()) {
             header('Location: ' . $canonicalRoute,true,301);
             header('Cache-Control: no-cache');
             return;
         }
-        if (!$approvedMembersOnly && in_array($method, ['GET', 'HEAD'], true)
+        if (!$localDevelopmentRequest && !$approvedMembersOnly && in_array($method, ['GET', 'HEAD'], true)
             && empty($_SERVER['HTTP_AUTHORIZATION']) && HighTrafficRoute::canonical($requestUri) !== null && $highTraffic->enabled()) {
             try {
                 $html = $highTraffic->generate($requestUri);
@@ -167,6 +171,14 @@ final class FrontController
             return;
         }
 
+        // Tour snapshots live one folder down, which the raw asset path above
+        // does not serve. A file read, never a render; not on private instances.
+        $tourPath = $approvedMembersOnly ? null : $this->resolveTourSnapshotPath($method, $requestUri);
+        if ($tourPath !== null) {
+            $this->sendAsset($tourPath, $method, false);
+            return;
+        }
+
         if (!$approvedMembersOnly && $cookies === [] && $this->sendStaticDocsResource($method, $requestUri)) {
             return;
         }
@@ -185,7 +197,7 @@ final class FrontController
 
         $runtimeProfile = preg_match('#^/profiles/[^/]+/?$#', parse_url($requestUri, PHP_URL_PATH) ?: '/') === 1
             && !$featureFlags->isEnabled(FeatureFlagRegistry::STATIC_PROFILE_PAGES_ENABLED);
-        $staticArtifact = ($approvedMembersOnly || $runtimeProfile) ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
+        $staticArtifact = ($localDevelopmentRequest || $approvedMembersOnly || $runtimeProfile) ? null : $this->resolveStaticArtifactPath($method, $requestUri, $cookies);
         if ($staticArtifact !== null && is_file($staticArtifact)) {
             (new VisitorStatisticsObserver($this->projectRoot))->record($method, parse_url($requestUri, PHP_URL_PATH) ?: '/');
             $contents = file_get_contents($staticArtifact);
@@ -326,6 +338,21 @@ final class FrontController
 
         $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
         return AssetFingerprint::replacementPathForFingerprint($this->publicRoot, $path);
+    }
+
+    private function resolveTourSnapshotPath(string $method, string $requestUri): ?string
+    {
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return null;
+        }
+
+        $path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+        if (preg_match('#^/assets/tour/(?:([a-z0-9][a-z0-9-]{0,63})\.html)?$#D', $path, $matches) !== 1) {
+            return null;
+        }
+
+        $file = $this->publicRoot . '/assets/tour/' . (($matches[1] ?? '') === '' ? 'index' : $matches[1]) . '.html';
+        return is_file($file) && !is_link($file) ? $file : null;
     }
 
     private function resolveRawPublicAssetPath(string $method, string $requestUri): ?string

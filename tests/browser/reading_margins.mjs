@@ -8,12 +8,14 @@ import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
 // Reading margins (FORUM_READING_MARGINS_ENABLED) on a thread page, in every
-// permitted theme: the radios are evenly spaced in one row, the column spans
-// the last two radios clicked and every click moves it at once, the older edge
-// is outlined, each checked radio sits over the column edge it sets, a choice survives reload without moving after paint,
-// choosing a checked radio resets, the column never gets narrower than 20rem,
-// other pages share the saved column, and phones show neither the ruler nor a
-// saved column.
+// permitted theme: the radios are evenly spaced in one row, every click moves
+// the nearer column edge at once and the edges never cross, ties move the edge
+// clicked longer ago, which is outlined only when a tie is possible, each
+// checked radio sits over the column edge it sets, a choice survives reload
+// without moving after paint, choosing a checked radio resets, the column never
+// gets narrower than 20rem, other pages share the saved column, and phones show
+// neither the ruler nor a saved column. The maintainer's recorded session
+// (2026-11-14) is replayed: its mismatched clicks and all 18 click positions.
 // Usage: node tests/browser/reading_margins.mjs [screenshot-dir]
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
@@ -51,6 +53,9 @@ try {
   const nextStop = () => page.locator('[data-reading-margin-next]').evaluateAll(all => all.map(each => each.value).join(' '));
   const stopCentre = async at => { const r = await stop(at).boundingBox(); return r.x + r.width / 2; };
   const fits = async (left, right) => { const c = await column(); return Math.abs(c.left - await stopCentre(left)) <= 2 && Math.abs(c.right - await stopCentre(right)) <= 2; };
+  const stopValues = ['5', '23', '41', '59', '77', '95'];
+  // A stop sits midway between the edges, so a click there is a tie.
+  const tiePossible = (a, b) => (stopValues.indexOf(String(a)) - stopValues.indexOf(String(b))) % 2 === 0;
   const pageScrollsSideways = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   // The first paint already has the saved column: record .main's edges from the
   // earliest point the body is parsed and compare them with the settled page.
@@ -88,18 +93,20 @@ try {
     assert.ok(['5', '23', '41', '59', '77'].includes(other), `${theme}: other edge filled in`);
     assert.equal(await checkedStops(), `${other} 95`, `${theme}: first click sets a column`);
     assert.notDeepEqual(await column(), before, `${theme}: first click moves the column`);
-    assert.equal(await nextStop(), other, `${theme}: filled-in edge moves next`);
+    assert.equal(await nextStop(), tiePossible(other, 95) ? other : '', `${theme}: filled-in edge outlined only when a tie is possible`);
     if (shots) await page.screenshot({ path: join(shots, `${theme}-first-click.png`) });
 
-    // Each click replaces the edge clicked longer ago, whichever side it is on.
+    // Each click moves the nearer edge. 41 is nearer the left edge; 77 is
+    // nearer 95. 41-95 has no midway stop, so nothing is outlined; 41-77 has
+    // 59 midway, so 41, clicked longer ago, is outlined.
     await stop(41).click();
     assert.equal(await checkedStops(), '41 95');
-    assert.ok(await fits(41, 95), `${theme}: 41 replaced the older edge`);
-    assert.equal(await nextStop(), '95', `${theme}: 95 is now the older edge`);
+    assert.ok(await fits(41, 95), `${theme}: 41 moved the left edge`);
+    assert.equal(await nextStop(), '', `${theme}: no tie possible, no outline`);
     await stop(77).click();
-    assert.equal(await checkedStops(), '41 77', `${theme}: 77 replaced 95`);
+    assert.equal(await checkedStops(), '41 77', `${theme}: 77 moved the right edge`);
     assert.ok(await fits(41, 77), `${theme}: column 41-77`);
-    assert.equal(await nextStop(), '41');
+    assert.equal(await nextStop(), '41', `${theme}: older edge outlined when a tie is possible`);
     assert.equal(await page.evaluate(k => localStorage.getItem(k), runtime.readingMarginsStorageKey), '41 77');
     assert.equal(await pageScrollsSideways(), false, `${theme}: no sideways scroll`);
     if (shots) await page.screenshot({ path: join(shots, `${theme}-41-77.png`) });
@@ -112,19 +119,19 @@ try {
     const first = await firstPaintColumn();
     assert.ok(first && Math.abs(first.left - settled.left) <= 1 && Math.abs(first.right - settled.right) <= 1, `${theme}: column final on first paint`);
 
-    // 59 replaces 41: 59-77 is narrower than 20rem here, so the column is
-    // 20rem, centred between the two radios.
+    // 59 is midway, a tie: 41, the outlined edge, moves. 59-77 is narrower
+    // than 20rem here, so the column is 20rem, centred between the two radios.
     await stop(59).click();
-    assert.equal(await checkedStops(), '59 77');
-    assert.equal(await nextStop(), '77');
+    assert.equal(await checkedStops(), '59 77', `${theme}: tie moved the outlined edge`);
+    assert.equal(await nextStop(), '');
     const narrow = await column();
     const halfway = (await stopCentre(59) + await stopCentre(77)) / 2;
     assert.ok(Math.abs(narrow.right - narrow.left - 320) <= 1, `${theme}: column no narrower than 20rem`);
     assert.ok(Math.abs((narrow.left + narrow.right) / 2 - halfway) <= 2, `${theme}: narrow column centred between the radios`);
     await stop(5).click();
-    assert.equal(await checkedStops(), '5 59', `${theme}: 5 replaced 77`);
-    assert.ok(await fits(5, 59), `${theme}: off-centre column`);
-    if (shots) await page.screenshot({ path: join(shots, `${theme}-5-59.png`) });
+    assert.equal(await checkedStops(), '5 77', `${theme}: 5 moved the left edge`);
+    assert.ok(await fits(5, 77), `${theme}: off-centre column`);
+    if (shots) await page.screenshot({ path: join(shots, `${theme}-5-77.png`) });
 
     // Clicking either checked radio returns to the site's normal column.
     await stop(5).click();
@@ -133,9 +140,9 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-reading-margins')), false);
     assert.equal(await page.locator('[data-reading-margin-next]').count(), 0, `${theme}: outline cleared`);
     await stop(23).click();
-    const outlined = await nextStop();
-    await stop(outlined).click();
-    assert.equal(await checkedStops(), '', `${theme}: outlined edge resets`);
+    const [filled] = (await checkedStops()).split(' ').filter(each => each !== '23');
+    await stop(filled).click();
+    assert.equal(await checkedStops(), '', `${theme}: filled-in edge resets`);
 
     // A pair saved in either order is restored; anything else is ignored.
     await page.evaluate(k => localStorage.setItem(k, '95 23'), runtime.readingMarginsStorageKey);
@@ -148,6 +155,39 @@ try {
       await page.reload();
       assert.equal(await checkedStops(), '', `${theme}: saved value ${bad} ignored`);
     }
+  }
+
+  // The recorded session. Saved pairs are "older newer".
+  const start = async saved => {
+    await page.evaluate(([k, v]) => { localStorage.clear(); localStorage.setItem(k, v); }, [runtime.readingMarginsStorageKey, saved]);
+    await page.goto(url);
+  };
+  // Its five mismatches: each click was nearer the newer edge, and the older
+  // edge moved, flipping or sliding the column. Now the nearer edge moves.
+  for (const [saved, click, expected] of [['59 5', 23, '23 59'], ['5 23', 77, '5 77'], ['41 59', 77, '41 77'],
+    ['77 41', 23, '23 77'], ['77 41', 5, '5 77']]) {
+    await start(saved);
+    await stop(click).click();
+    assert.equal(await checkedStops(), expected, `recorded: ${saved}, click ${click}`);
+  }
+  // Its tie: 59 is midway between 41 and 77, and 77, outlined, moves.
+  await start('77 41');
+  assert.equal(await nextStop(), '77', 'recorded tie: older edge outlined on first paint');
+  await stop(59).click();
+  assert.equal(await checkedStops(), '41 59', 'recorded tie: outlined edge moved');
+  // All 18 click positions in order: a click outside the column moves the edge
+  // on its side, so the edges never cross; a click inside moves the nearer edge.
+  await start('23 59');
+  let [left, right] = [23, 59];
+  for (const click of [5, 23, 77, 41, 59, 77, 41, 23, 95, 5, 59, 23, 77, 41, 5, 95, 41, 77]) {
+    const checked = await checkedStops();
+    if (checked.split(' ').includes(String(click))) continue; // a reset, not part of this check
+    const at = each => stopValues.indexOf(String(each));
+    if (click < left || (click < right && at(click) - at(left) < at(right) - at(click))) left = click;
+    else if (click > right || at(right) - at(click) < at(click) - at(left)) right = click;
+    else { await stop(click).click(); [left, right] = (await checkedStops()).split(' ').map(Number); continue; }
+    await stop(click).click();
+    assert.equal(await checkedStops(), `${left} ${right}`, `replay: click ${click}`);
   }
 
   // Other pages: the same ruler, and a saved column applies there on first paint.

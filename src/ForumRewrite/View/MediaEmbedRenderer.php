@@ -44,7 +44,19 @@ final class MediaEmbedRenderer
             if ($available) {
                 $html .= '<img src="/images/' . \ForumRewrite\Images\ImageReference::filename($image) . '" alt="' . $description . '" width="' . $image['width'] . '" height="' . $image['height'] . '" loading="lazy" style="max-width:100%;height:auto">';
             }
-            $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable' . ($description === '' ? '' : ' — ')) . $description . '</span></span>';
+            $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable' . ($description === '' ? '' : ' — ')) . $description . '</span>';
+            ['details' => $details, 'rest' => $after] = \ForumRewrite\Images\ImageReference::photoDetails($after);
+            if ($details !== []) {
+                $list = '<span class="post-photo-details">';
+                foreach ($details as $detail) {
+                    $list .= '<span class="meta">' . $this->escape($detail['label']) . '</span><span>' . $this->escape($detail['display']) . '</span>';
+                }
+                $list .= '</span>';
+                // One detail stays visible; two or more fold behind a closed "Photo details" row.
+                $html .= count($details) === 1 ? $list
+                    : '<details class="post-photo-details-disclosure"><summary class="meta">Photo details</summary>' . $list . '</details>';
+            }
+            $html .= '</span>';
             return $this->render($before, $enabled, $inlinePlayerEnabled, false, $markdown, $tagLinks) . $html . $this->render($after, $enabled, $inlinePlayerEnabled, false, $markdown, $tagLinks);
         }
         $matches = $enabled ? $this->detector->detect($body) : [];

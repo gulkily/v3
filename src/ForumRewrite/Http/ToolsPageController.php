@@ -104,6 +104,28 @@ final class ToolsPageController
         );
     }
 
+    /**
+     * /tools/preferences/: the settings this browser keeps, in one place. The
+     * page is the same for everyone; preferences.php reads storage before
+     * paint and preferences.js saves changes.
+     */
+    public function preferences(): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'preferences.php',
+            [
+                'preferenceThemes' => \ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::active()['permittedThemes'], $this->featureFlags),
+                'threadDensityEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED),
+                'readingMarginsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED),
+                'usageLogEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
+                'toolNavOptions' => ToolsPageSupport::navOptions('preferences'),
+            ],
+            'Preferences',
+            'tools',
+            ['/assets/preferences.js'],
+        );
+    }
+
     public function bookmarklets(): string
     {
         return $this->routeServices->renderPageTemplate(
@@ -243,10 +265,15 @@ final class ToolsPageController
         );
     }
 
-    public function operations(): string
+    public function operations(?string $tourNotice = null): string
     {
         $canManage = $this->viewerCanManageFeatureFlags(($this->resolveViewerProfileFromIdentityHint)());
         $status = $this->routeServices->highTrafficStatus();
+        try {
+            $tour = \ForumRewrite\Tour\TourSnapshots::forProject($this->routeServices->projectRoot())->status();
+        } catch (\Throwable) {
+            $tour = [];
+        }
 
         return $this->routeServices->renderPageTemplate(
             'operations.php',
@@ -259,11 +286,41 @@ final class ToolsPageController
                 'highTrafficTurnOff' => ($status['turn_off_automatically'] ?? false) === true,
                 'highTrafficTurnOffUnavailable' => $status['turn_off_unavailable'] ?? null,
                 'highTrafficError' => $canManage ? ($status['error'] ?? null) : null,
+                'tourStatus' => $tour,
+                'tourNotice' => $tourNotice,
             ],
             'Operations',
             'tools',
             $canManage ? ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/high_traffic_control.js'] : [],
         );
+    }
+
+    /**
+     * POST /tools/operations/ with `action` = refresh-tour: start a tour refresh in the
+     * background and show the page again. Same checks as Deploy now.
+     *
+     * @param array<string, mixed> $query
+     */
+    public function operationsSubmit(array $query): void
+    {
+        $headers = ['Cache-Control: no-store'];
+        if (!\ForumRewrite\Http\SameOriginRequest::check()) {
+            $this->routeServices->sendHtml($this->operations('Same-origin request required.'), 403, $headers);
+            return;
+        }
+        if (!$this->routeServices->securityReviewAllowed()) {
+            $this->routeServices->sendHtml($this->operations('Refreshing requires a signed-in root-approved operator.'), 403, $headers);
+            return;
+        }
+        if ((string) ($this->routeServices->requestData($query)['action'] ?? '') !== 'refresh-tour') {
+            $this->routeServices->sendHtml($this->operations('Unknown action.'), 400, $headers);
+            return;
+        }
+        $snapshots = \ForumRewrite\Tour\TourSnapshots::forProject($this->routeServices->projectRoot());
+        $notice = ($snapshots->status()['State'] ?? '') === 'running'
+            ? 'A refresh is already running.'
+            : ((new \ForumRewrite\Tour\TourRefreshLauncher($this->routeServices->projectRoot()))->start() ? 'Refresh started.' : 'Could not start a refresh. Run ./v3 tour refresh.');
+        $this->routeServices->sendHtml($this->operations($notice), 200, $headers);
     }
 
     /**

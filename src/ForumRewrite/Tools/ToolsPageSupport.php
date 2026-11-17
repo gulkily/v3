@@ -46,6 +46,7 @@ final class ToolsPageSupport
     public static function registry(): array
     {
         return [
+            ['key' => 'preferences', 'label' => 'Preferences', 'href' => '/tools/preferences/', 'group' => 'device', 'tone' => 'preferences', 'standalone' => false],
             ['key' => 'outbox', 'label' => 'Outbox', 'href' => '/tools/outbox/', 'group' => 'device', 'tone' => 'outbox', 'standalone' => false],
             ['key' => 'offline-reading', 'label' => 'Offline Reading', 'href' => '/offline/', 'group' => 'device', 'tone' => 'offline', 'standalone' => true],
             ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],
@@ -65,6 +66,7 @@ final class ToolsPageSupport
             ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/', 'group' => 'operator', 'tone' => 'fastmod', 'standalone' => false],
             ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/', 'group' => 'operator', 'tone' => 'operations', 'standalone' => false],
             ['key' => 'deploy', 'label' => 'Deploy', 'href' => '/tools/deploy/', 'group' => 'operator', 'tone' => 'deploy', 'standalone' => false],
+            ['key' => 'import', 'label' => 'Import', 'href' => '/tools/import/', 'group' => 'operator', 'tone' => 'import', 'standalone' => false],
             ['key' => 'usage-reports', 'label' => 'Usage Reports', 'href' => '/tools/usage-reports/', 'group' => 'operator', 'tone' => 'usage-reports', 'standalone' => false],
         ];
     }

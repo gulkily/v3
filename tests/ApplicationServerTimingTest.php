@@ -33,7 +33,7 @@ final class ApplicationServerTimingTest
         );
     }
 
-    public function testNoStoreTimingHeadersCombinesCacheAndTimingHeaders(): void
+    public function testNoStoreAndTimingHeadersCombine(): void
     {
         $application = new Application(
             dirname(__DIR__),
@@ -41,15 +41,16 @@ final class ApplicationServerTimingTest
             sys_get_temp_dir() . '/forum-rewrite-server-timing-' . bin2hex(random_bytes(6)) . '.sqlite3',
         );
 
-        $method = new ReflectionMethod($application, 'noStoreTimingHeaders');
-        $method->setAccessible(true);
+        $routeServices = new ReflectionMethod($application, 'routeServices');
+        $routeServices->setAccessible(true);
+        $services = $routeServices->invoke($application);
 
-        $headers = $method->invoke($application, [
+        $headers = array_merge($services->noStoreHeaders(), $services->serverTimingHeaders(['timings' => [
             'request_data' => 0.2,
             'post_analysis' => 42.25,
             'agent_reply' => 8.0,
             'total' => 55.6,
-        ]);
+        ]]));
 
         assertSame(
             [
@@ -70,12 +71,13 @@ final class ApplicationServerTimingTest
             sys_get_temp_dir() . '/forum-rewrite-server-timing-' . bin2hex(random_bytes(6)) . '.sqlite3',
         );
 
-        $method = new ReflectionMethod($application, 'mergeResultTimings');
-        $method->setAccessible(true);
+        $routeServices = new ReflectionMethod($application, 'routeServices');
+        $routeServices->setAccessible(true);
+        $services = $routeServices->invoke($application);
 
         $startedAt = hrtime(true);
         usleep(1000);
-        $result = $method->invoke($application, [
+        $result = $services->mergeResultTimings([
             'status' => 'ok',
             'timings' => [
                 'lock_wait' => 0.1,

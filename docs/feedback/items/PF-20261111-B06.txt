@@ -1,0 +1,16 @@
+ID: PF-20261111-B06
+Title: Second tag fails while first is pending
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Trying to apply a second tag while the first one is still taking a long time results in "Unable to apply tag."
+
+Sources:
+- https://zenmemes.com/posts/thread-20261104144621-2ff5a3df
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Point 4 of the same post.

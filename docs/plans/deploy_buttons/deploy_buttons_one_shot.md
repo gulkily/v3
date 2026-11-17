@@ -10,7 +10,7 @@ Status: technically complete; PR open for review. Not merged or deployed.
 
 ## Original request
 
-Thread: https://zenmemes.com/threads/thread-20261114191335-d3c062e6, maintainer (ilyag), 2026-11-14, request post `thread-20261114191335-d3c062e6`: "on the deploy module, can you please make the buttons look nicer? perhaps they should be on the same row? what else can we do to make them look nicer?" Screenshot: Bubblegum on a phone, three full-width filled pink buttons stacked. Tagged #meta #todo, @claude. Feedback item: PF-20261114-F01.
+Thread: https://zenmemes.com/threads/thread-20261114191335-d3c062e6, maintainer (ilyag), 2026-11-14, request post `thread-20261114191335-d3c062e6`: "on the deploy module, can you please make the buttons look nicer? perhaps they should be on the same row? what else can we do to make them look nicer?" Screenshot: Bubblegum on a phone, three full-width filled pink buttons stacked. Tagged #meta #todo, @claude. Feedback item: PF-20261114-F04 (renumbered from F01 after a collision with the preferences page item on main).
 
 ## Authorization
 

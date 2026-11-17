@@ -12,8 +12,12 @@ final class BoundedProcess
         return function_exists('proc_open') && function_exists('posix_kill') && is_executable('/usr/bin/setsid');
     }
 
-    /** @return array{exit_code:int,stdout:string,stderr:string,bytes:int} */
-    public static function run(array $command, OperationBudget $budget, int $maxOutput, string $stage, ?string $cwd = null): array
+    /**
+     * $onOutput, when given, receives each chunk as it arrives with its stream (1 stdout, 2 stderr).
+     *
+     * @return array{exit_code:int,stdout:string,stderr:string,bytes:int}
+     */
+    public static function run(array $command, OperationBudget $budget, int $maxOutput, string $stage, ?string $cwd = null, ?callable $onOutput = null): array
     {
         $budget->remaining($stage);
         if (!self::available()) throw new OperationLimitException($stage . ': bounded process support requires Linux setsid and PHP POSIX/proc_open.');
@@ -32,6 +36,7 @@ final class BoundedProcess
                     $bytes += strlen($chunk);
                     if ($bytes > $maxOutput) throw new OperationLimitException($stage . ': output exceeds ' . $maxOutput . ' bytes.');
                     $out[$fd - 1] .= $chunk;
+                    if ($onOutput !== null && $chunk !== '') $onOutput($fd, $chunk);
                 }
                 $status = proc_get_status($process);
                 if (!$status['running'] && feof($pipes[1]) && feof($pipes[2])) break;

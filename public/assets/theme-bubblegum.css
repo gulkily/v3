@@ -327,7 +327,8 @@
   }
 
   :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .nav > .nav-link.is-active,
-  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button.is-active {
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .new-post-button.is-active,
+  :root[data-theme="bubblegum"] [data-shell="app"] .site-header--app .account-menu[open] > .account-menu__trigger {
     background: var(--active-bg);
     color: var(--active-ink);
   }
@@ -361,6 +362,26 @@
 :root[data-theme="bubblegum"] button[type="submit"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option),
 :root[data-theme="bubblegum"] button.feature-flags-chip[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
   background-image: var(--bubblegum-shine-on-pink), var(--bubblegum-candy-on-pink);
+}
+
+/* Copy inside a prompt field (/agent/): a bare icon, since a chunky block with
+   an offset shadow crowds the field's rounded corner. Fill on hover; no
+   press-down shift. */
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button) {
+  border-color: transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):hover,
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):focus-visible {
+  background: var(--button-bg);
+}
+
+:root[data-theme="bubblegum"] button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):active {
+  box-shadow: none;
+  transform: none;
 }
 
 /* Phones: the board's All / Liked / Newest / Tags row fits on one line. */

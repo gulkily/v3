@@ -26,9 +26,10 @@ if (($argv[1] ?? '') === 'canonical') {
     $flags = array_reverse((new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator())->all());
 }
 $e = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
-$indent = static fn (string $html, int $level): string => $html;
+$indent = static fn (string $html, int $level = 1): string => $html;
 $toolNavOptions = [['href' => '/tools/feature-flags/', 'label' => 'Feature Flags', 'is_active' => true]];
-$partial = static function (string $path) use ($e, $toolNavOptions): string {
+// Nested partials (the Tools card renders the Tools nav) need the same helpers.
+$partial = static function (string $path) use ($e, $indent, $toolNavOptions, &$partial): string {
     ob_start();
     require dirname(__DIR__, 2) . '/templates/' . $path;
     return (string) ob_get_clean();

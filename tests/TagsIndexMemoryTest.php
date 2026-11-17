@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TagGroupingReference.php';
 
 use ForumRewrite\ReadModel\TagGrouping;
 use ForumRewrite\ReadModel\ThreadRepository;
@@ -15,7 +16,7 @@ final class TagsIndexMemoryTest
     {
         $pdo = (new BoardListingQueryTest())->fixture();
         $pdo->exec("UPDATE threads SET board_tags_json = '[\"PHP\",\"php\",\"01\",\"1\"]', thread_labels_json = '[\"Php\",\"other\"]' WHERE root_post_id > 'thread-003'");
-        $expected = TagGrouping::limitPreview(TagGrouping::byTag(ThreadRepository::fetchThreads($pdo)), 5);
+        $expected = TagGroupingReference::limitPreview(TagGrouping::byTag(ThreadRepository::fetchThreads($pdo)), 5);
         foreach ($expected as &$group) {
             unset($group['threads']);
             foreach ($group['preview_threads'] as &$thread) {

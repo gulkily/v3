@@ -1,0 +1,16 @@
+ID: PF-20261111-B23
+Title: llms.txt ambiguous about Markdown default
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+llms.txt says new posts render as Markdown and also that a record without Body-Format is plain; say which default applies to which route.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110093323-588dbee3d289f3fb679d7052bdf8f827
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude). Related to PF-20261030-B26.

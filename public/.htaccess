@@ -1,8 +1,14 @@
 # BEGIN V3 HIGH TRAFFIC
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteCond %{THE_REQUEST} \s/+\.high-traffic(?:[/\s?]) [NC]
-RewriteRule ^\.high-traffic(?:/|$) - [F,END]
+RewriteCond %{THE_REQUEST} \s/+\.high-traffic(?:-assets)?(?:[/\s?]) [NC]
+RewriteRule ^\.high-traffic(?:-assets)?(?:/|$) - [F,END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond $1 !\.\.
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic-assets/assets/$1 -f
+RewriteRule ^assets/([A-Za-z0-9_-][A-Za-z0-9_./-]*\.[a-f0-9]{12}\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?))$ .high-traffic-assets/assets/$1 [END]
 RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{HTTP:Authorization} ^$
@@ -31,10 +37,19 @@ RewriteEngine On
 RewriteCond %{THE_REQUEST} \s/+\.static(?:/|\s) [NC]
 RewriteRule ^\.static(?:/|$) - [F,L]
 
-# Only public presentation assets may bypass the PHP access gate.
-RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico)$ [NC]
+# Only public presentation assets may bypass the PHP access gate: files directly
+# in assets/ with a presentation extension. HTML and other files under assets/,
+# and fingerprinted names (not files on disk), go to PHP.
+RewriteCond %{REQUEST_URI} ^/(?:assets/[^/]+\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?)|favicon\.ico)$ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
+# Apache-served presentation files get the headers PHP sends for them.
+<IfModule mod_headers.c>
+<If "%{REQUEST_URI} =~ m#^/(?:assets/[^/]+\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?)|favicon\.ico)$#i && -f %{REQUEST_FILENAME}">
+Header set Cache-Control "public, max-age=300, must-revalidate"
+Header set X-Content-Type-Options "nosniff"
+</If>
+</IfModule>
 
 # Feature and membership state must be evaluated by PHP before serving content.
 # Every content, API, download, and generated-artifact request goes through the

@@ -164,13 +164,13 @@ final class PrivateMessageMailboxServiceTest
         $store->storeEnvelope('mallory-message', '2026-10-09T13:00:00Z', 'mallory', 'alice', 'openpgp:mallory', $this->envelope());
         $service = new PrivateMessageMailboxService($store, $readPdo);
 
-        $messages = $service->conversation($this->viewer('openpgp:alice', 'alice'), 'ilyag');
+        $messages = $service->conversationPage($this->viewer('openpgp:alice', 'alice'), 'ilyag')['messages'];
 
         assertSame(25, count($messages));
         assertSame('message-03', $messages[0]['message_id']);
         assertSame('message-27', $messages[24]['message_id']);
         assertSame(false, in_array('mallory-message', array_column($messages, 'message_id'), true));
-        assertThrowsPrivateMessage(fn (): array => $service->conversation($this->viewer('openpgp:alice', 'alice'), 'alice'), \InvalidArgumentException::class, 'A conversation counterpart must be another user.');
+        assertThrowsPrivateMessage(fn (): array => $service->conversationPage($this->viewer('openpgp:alice', 'alice'), 'alice'), \InvalidArgumentException::class, 'A conversation counterpart must be another user.');
     }
 
     public function testConversationListRequiresApprovalAndRetainsUnavailableCounterparts(): void

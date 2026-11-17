@@ -50,6 +50,23 @@ final class UsageReportUploadTest
         assertSame([null], array_column($anonymousStore->reports(), 'username'));
     }
 
+    /** The Usage log page sends JSON, because some hosts refuse raw line breaks in a POST body. */
+    public function testAcceptsTheLogWrappedInJsonAndStoresTheExactText(): void
+    {
+        [$controller, $store] = $this->controller(static fn (): ?string => 'ilyag');
+        $json = json_encode(['log' => self::LOG], JSON_THROW_ON_ERROR);
+        assertFalse(str_contains($json, "\n"), 'the JSON body has no raw line breaks');
+
+        [$status] = $this->upload($controller, $json);
+        assertSame(201, $status);
+        assertSame([self::LOG], array_column($store->reports(), 'body'));
+
+        assertSame(400, $this->upload($controller, json_encode(['log' => "usage-log v1\nview\t0\t/threads/T1\n"], JSON_THROW_ON_ERROR))[0]);
+        assertSame(400, $this->upload($controller, '{"other": 1}')[0]);
+        assertSame(413, $this->upload($controller, json_encode(['log' => "usage-log v1\n" . str_repeat("view\t0\t/\n", 20000)], JSON_THROW_ON_ERROR))[0]);
+        assertSame(1, count($store->reports()));
+    }
+
     public function testRefusalsUseTheDocumentedStatusesAndStoreNothing(): void
     {
         [$controller, $store] = $this->controller(static fn (): ?string => null);

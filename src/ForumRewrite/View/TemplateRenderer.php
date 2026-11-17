@@ -38,6 +38,7 @@ final class TemplateRenderer
         'root_approval.php' => ['/assets/identity.css'],
         'username.php' => ['/assets/identity.css', '/assets/account.css', '/assets/thread-list.css'],
         'users.php' => ['/assets/account.css'],
+        'preferences.php' => ['/assets/account.css', '/assets/preferences.css'],
         'private_message_list.php' => ['/assets/private_message_list.css'],
         'private_message_access.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
@@ -51,6 +52,7 @@ final class TemplateRenderer
         'feature_flags.php' => ['/assets/tool-details.css'],
         'operations.php' => ['/assets/tool-details.css'],
         'deploy.php' => ['/assets/tool-details.css'],
+        'tools_import.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -63,6 +65,8 @@ final class TemplateRenderer
         'calendar_day.php' => ['/assets/compose.css', '/assets/calendar.css'],
         'thread.php' => ['/assets/identity.css', '/assets/content-interactions.css', '/assets/compose.css'],
         'tools.php' => ['/assets/tools.css'],
+        'usage_log.php' => ['/assets/tools.css'],
+        'usage_reports.php' => ['/assets/tools.css'],
         'tag_unlocks.php' => ['/assets/tools.css'],
         'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
@@ -225,7 +229,7 @@ final class TemplateRenderer
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::ENGAGIFY_PASSWORD_NEWSLETTER)) {
             $browserRuntime['engagifyPasswordNewsletter'] = true;
         }
-        $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $themes = ThemeRegistry::permitted($profile['permittedThemes'], $this->featureFlags);
         $explicitThemeNames = $this->explicitThemeNames($themes);
         $permittedThemeNames = array_column($themes, 'name');
         $themeStylesheetPaths = [];
@@ -284,6 +288,8 @@ final class TemplateRenderer
             'criticalCss' => $this->criticalCss(),
             'themeToggleScriptPath' => $this->assetPath('/assets/theme_toggle.js'),
             'memberApprovalScriptPath' => $this->assetPath('/assets/member_approval.js'),
+            'pendingUserSummaryScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)
+                ? $this->assetPath('/assets/pending_user_summary.js') : null,
             'threadDensityToggleScriptPath' => $this->assetPath('/assets/thread_density_toggle.js'),
             'readingMarginsScriptPath' => $this->assetPath('/assets/reading_margins.js'),
             'composeDraftClearScriptPath' => $this->assetPath('/assets/compose_draft_clear.js'),
@@ -330,8 +336,16 @@ final class TemplateRenderer
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
             'usageLogScriptPath' => $this->assetPath('/assets/usage_log.js'),
+            'fastNavigationScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::FAST_NAVIGATION_ENABLED) ? $this->assetPath('/assets/fast_navigation.js') : null,
+            'navCachedCopyScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED) ? $this->assetPath('/assets/nav_cached_copy.js') : null,
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
+            'deployCelebrateScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_celebrate.js') : null,
+            // Key bootstrap loads the signing scripts only on the rare page load that needs them.
+            'keyBootstrapScriptPath' => ($keyBootstrap = $this->featureFlags->isEnabled(FeatureFlagRegistry::SESSION_KEY_BOOTSTRAP_ENABLED))
+                ? $this->assetPath('/assets/key_bootstrap.js') : null,
+            'keyBootstrapIdentityScriptPaths' => $keyBootstrap ? array_map(fn (string $path): string => $this->assetPath($path),
+                ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js']) : [],
         ]);
     }
 
@@ -431,7 +445,7 @@ final class TemplateRenderer
 
         // Desktop bar order. The account menu keeps only the viewer's own items:
         // Profile, Account and Invite. Everything else is a main destination.
-        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'profiles', 'messages', 'search', 'about', 'tools'];
+        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'agent', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
         // Inbox sits just before Messages on the bar. Messages stays on the bar: its
         // link is where the unread count and history sync start.
@@ -558,6 +572,17 @@ final class TemplateRenderer
             array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/gallery/', 'label' => 'Gallery', 'section' => 'gallery']]);
         }
 
+        // Prompts (/agent/) follows the content destinations while the agent page is on.
+        if (!$isQdbNavigation && $this->agentPageEnabled()) {
+            $sections = array_column($items, 'section');
+            $after = false;
+            foreach (['gallery', 'calendar', 'recent'] as $section) {
+                $after = array_search($section, $sections, true);
+                if ($after !== false) break;
+            }
+            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/agent/', 'label' => 'Prompts', 'section' => 'agent']]);
+        }
+
         // Tools stays reachable by direct URL even when hidden from the nav,
         // same precedent qdb already sets for Account/Invite below.
         if (!$isQdbNavigation && $hideToolsNav) {
@@ -643,7 +668,7 @@ final class TemplateRenderer
         }
 
         $profile = SiteProfileRegistry::active();
-        $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $themes = ThemeRegistry::permitted($profile['permittedThemes'], $this->featureFlags);
         $explicitThemeNames = $this->explicitThemeNames($themes);
         $themeModes = [];
         foreach ($themes as $theme) {
@@ -726,15 +751,21 @@ final class TemplateRenderer
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
+            // The composer's theme choice lists only themes this site offers now.
+            'themeFlags' => $this->featureFlags,
         ], $data);
-        // Drop tools whose pages are off: Agent Prompts opens /agent/, and the
-        // usage tools exist only while the "Usage reports" flag is on.
+        // Drop tools whose pages are off: Agent Prompts opens /agent/, the
+        // usage tools exist only while the "Usage reports" flag is on, and
+        // Import only while the "Import page" flag is on.
         $hiddenTools = [];
         if (!$data['agentPageEnabled']) {
             $hiddenTools[] = 'agent-prompts';
         }
         if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
             array_push($hiddenTools, 'usage-log', 'usage-reports');
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $hiddenTools[] = 'import';
         }
         if ($hiddenTools !== []) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {
@@ -910,7 +941,20 @@ final class TemplateRenderer
             $parts[] = $dateHtml;
         }
 
-        return implode(' · ', $parts) . ($unapproved > 0 ? ' <span class="chip chip--pending">Pending</span>' : '');
+        if ($unapproved === 0) {
+            return implode(' · ', $parts);
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)) {
+            return implode(' · ', $parts) . ' <span class="chip chip--pending">Pending</span>';
+        }
+
+        // The chip opens an in-page summary with Approve (pending_user_summary.js);
+        // without script it is a plain link to the profile, which has Approve too.
+        $profileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
+        $authorLabel = trim((string) ($record['author_label'] ?? ''));
+
+        return implode(' · ', $parts)
+            . ' <a class="pending-chip" href="/profiles/' . $escape($profileSlug) . '" data-pending-profile="' . $escape($profileSlug) . '" data-pending-username="' . $escape($authorLabel) . '"><span class="chip chip--pending">Pending</span></a>';
     }
 
     /**
