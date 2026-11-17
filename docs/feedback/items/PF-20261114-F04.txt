@@ -1,0 +1,19 @@
+ID: PF-20261114-F04
+Title: Deploy page buttons: one row, clearer main action
+Kind: feature
+Workflow: blocked
+Created: 2026-11-14
+Evidence: locally-verified
+
+Request:
+On the deploy page, make the buttons look nicer; perhaps put them on the same row.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261114191335-d3c062e6
+
+Done when:
+On the deploy page the three buttons sit in one row on desktop and wrap neatly on phones, and Deploy now reads as the main action in every theme, Bubblegum included.
+
+Notes:
+2026-11-14: one-shot on deploy-buttons-row (record docs/plans/deploy_buttons/deploy_buttons_one_shot.md); verified locally in headless Chrome; awaiting PR review and deployment.
+2026-11-17: Renumbered from PF-20261114-F01 after a collision with the preferences page item on main.

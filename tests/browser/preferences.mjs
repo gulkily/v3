@@ -11,7 +11,7 @@ import { resolve, join } from 'node:path';
 
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
-const env = { ...process.env, FORUM_THREAD_DENSITY_TOGGLE_ENABLED: '1', FORUM_READING_MARGINS_ENABLED: '1' };
+const env = { ...process.env, FORUM_THREAD_DENSITY_TOGGLE_ENABLED: '1', FORUM_READING_MARGINS_ENABLED: '1', FORUM_DRAGGABLE_WINDOWS_ENABLED: '1' };
 const pages = {};
 const renderApp = path => pages[path] ??= execFileSync('php', [`${project}/tests/Support/usage_app_page_fixture.php`, path], { encoding: 'utf8', env, maxBuffer: 1 << 26 });
 const php = code => JSON.parse(execFileSync('php', ['-r', `require '${project}/autoload.php'; echo json_encode(${code});`], { encoding: 'utf8' }));
@@ -54,6 +54,8 @@ const saved = {
   [runtime.themeStorageKey + '-page-exit:/threads/abc']: '1',
   [runtime.threadDensityStorageKey]: 'compact',
   [runtime.readingMarginsStorageKey]: '23 77',
+  [runtime.windowControlsStorageKey]: 'off',
+  [runtime.collapsedWindowsStorageKey]: 'root-001',
   [tableKeys[0]]: '1.5',
   forum_nav_slots: JSON.stringify({ v: 2, slots: ['board', 'calendar', 'recent'], visits: {} }),
   forum_visitor_intro_hidden: '1',
@@ -71,6 +73,7 @@ try {
     assert.equal(await page.locator('h1').textContent(), 'Preferences');
     assert.equal(await page.locator('#preference-theme').inputValue(), await page.evaluate(() => document.documentElement.getAttribute('data-default-theme') || 'auto'));
     assert.equal(await page.locator('#preference-thread-view').inputValue(), 'comfortable');
+    assert.equal(await page.locator('#preference-window-controls').inputValue(), 'on');
     assert.equal(await value(page, 'reading-margins'), 'Site default');
     assert.equal(await value(page, 'table-size'), 'Site default');
     assert.equal(await value(page, 'gallery-size'), 'Site default');
@@ -95,6 +98,7 @@ try {
     await page.goto(base + '/tools/preferences/');
     assert.equal(await page.locator('#preference-theme').inputValue(), 'word97');
     assert.equal(await page.locator('#preference-thread-view').inputValue(), 'compact');
+    assert.equal(await page.locator('#preference-window-controls').inputValue(), 'off');
     assert.equal(await value(page, 'reading-margins'), 'Custom');
     assert.equal(await value(page, 'table-size'), 'Custom');
     assert.equal(await value(page, 'gallery-size'), 'Custom');
@@ -124,6 +128,15 @@ try {
 
     await page.locator('#preference-thread-view').selectOption('comfortable');
     assert.equal((await storage(page))[runtime.threadDensityStorageKey], 'comfortable');
+
+    await page.locator('#preference-window-controls').selectOption('on');
+    assert.equal((await storage(page))[runtime.windowControlsStorageKey], undefined, 'On is the default: key removed');
+    assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-window-controls')), 'on');
+    await page.locator('#preference-window-controls').selectOption('off');
+    assert.equal((await storage(page))[runtime.windowControlsStorageKey], 'off');
+    assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-window-controls')), false);
+    await page.reload();
+    assert.equal(await page.locator('#preference-window-controls').inputValue(), 'off', 'Off survives reload');
 
     await page.locator('[data-preference-reset="reading-margins"]').click();
     assert.equal((await storage(page))[runtime.readingMarginsStorageKey], undefined);

@@ -1,0 +1,16 @@
+ID: PF-20261111-B25
+Title: Post menu missing on cached pages
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+In high-traffic mode the post ... menu (Retract, Show as Markdown) disappears for everyone, including authors and operators, because cached HTML decides visibility on the server.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111141003-39a043e6
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude) after the maintainer found no menu on a cached page.

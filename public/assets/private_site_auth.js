@@ -222,6 +222,10 @@
     assertCurrentIdentity(identity);
     var approved = /^approved=1$/m.test(authenticationResult);
     if (window.ForumMemberApproval) window.ForumMemberApproval.record(fingerprint, approved);
+    // key_bootstrap.js re-signs once when the session has no device description yet.
+    if (/^device=recorded$/m.test(authenticationResult)) {
+      try { window.localStorage.setItem("forum_session_device_recorded", fingerprint); } catch (error) { /* storage unavailable */ }
+    }
     return {
       status: approved ? "approved" : isApprovedMembersOnly() ? "pending" : "authenticated",
       identityId: identityId

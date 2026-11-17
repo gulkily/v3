@@ -12,7 +12,7 @@ final class BrowserRuntimeProfile
 
     /**
      * @param array<string, mixed> $profile
-     * @return array{namespace:string,themeStorageKey:string,threadDensityStorageKey:string,readingMarginsStorageKey:string,offlineCachePrefix:string,offlineCacheName:string,offlineDiagnosticKey:string,manifestName:string,manifestShortName:string}
+     * @return array{namespace:string,themeStorageKey:string,threadDensityStorageKey:string,readingMarginsStorageKey:string,windowControlsStorageKey:string,collapsedWindowsStorageKey:string,offlineCachePrefix:string,offlineCacheName:string,offlineDiagnosticKey:string,manifestName:string,manifestShortName:string}
      */
     public static function fromProfile(array $profile): array
     {
@@ -29,6 +29,9 @@ final class BrowserRuntimeProfile
             'themeStorageKey' => 'forum-' . $namespace . '-theme',
             'threadDensityStorageKey' => 'forum-' . $namespace . '-thread-density',
             'readingMarginsStorageKey' => 'forum-' . $namespace . '-reading-margins',
+            // Window controls (theme-bubblegum.js): 'off' when turned off in Preferences; the posts collapsed in this browser.
+            'windowControlsStorageKey' => 'forum-' . $namespace . '-window-controls',
+            'collapsedWindowsStorageKey' => 'forum-' . $namespace . '-collapsed-windows',
             'offlineCachePrefix' => $offlineCachePrefix,
             'offlineCacheName' => $offlineCachePrefix . 'v' . self::OFFLINE_CACHE_VERSION,
             'offlineDiagnosticKey' => $namespace . '-offline-registration-error',

@@ -16,13 +16,11 @@ final class FeedbackItem
 
     /**
      * @param array<string, string> $headers
-     * @param array<string, string> $sections section label => text
      * @param list<string> $sources source URLs in file order
      */
     public function __construct(
         public readonly string $path,
         public readonly array $headers,
-        public readonly array $sections,
         public readonly array $sources,
     ) {
     }

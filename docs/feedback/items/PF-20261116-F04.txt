@@ -1,0 +1,14 @@
+ID: PF-20261116-F04
+Title: PHP and Perl versions of Quill
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-16
+
+Request:
+The maintainer wants PHP and Perl versions of the posting client too, like the other multi-language scripts (docs/reference/multi_language_scripts.md).
+
+Sources:
+- Session: Claude session, 2026-11-16, Quill rename one-shot (docs/plans/quill_rename/quill_rename_one_shot.md)
+
+Notes:
+2026-11-16: stated in an earlier session when the name Quill was chosen; not started. Each version should send its own User-Agent so the update notice can tell them apart.

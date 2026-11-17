@@ -1,0 +1,15 @@
+ID: PF-20261111-B27
+Title: Calendar scrolls sideways on phones
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+On mobile view, the calendar is prone to horizontal scrolling.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111220723-33f14ea7
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

@@ -1,0 +1,15 @@
+ID: PF-20261111-B12
+Title: Board composer lost image attachment
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The new-thread module on the board page seems to have lost the ability to attach images; it still works on the dedicated page.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261107000818-f5676279
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

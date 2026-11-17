@@ -1,0 +1,18 @@
+ID: PF-20261111-O03
+Title: Agents comment shell commands
+Kind: other
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Agents should start each shell command with a one-line # comment saying what it does, so long commands are readable on a phone.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110171901-bbdb9c52
+- https://zenmemes.com/posts/reply-20261110182455-d4da4562
+- https://zenmemes.com/posts/reply-20261110213557-833e1ec6
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent instruction proposal (Claude) with the maintainer's input; would go in agent guidance.

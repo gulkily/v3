@@ -795,7 +795,7 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
 :root[data-theme="midnight"] .gallery-tile__caption {
   padding: 0.4rem 0 0;
   font-family: var(--body-font);
-  font-size: 0.86rem;
+  font-size: calc(0.86rem * var(--gallery-text-scale, 1));
   line-height: 1.25;
 }
 
@@ -820,7 +820,7 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
   margin-top: 0.15rem;
   color: #9a9a9a;
   font-family: var(--ui-font);
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--gallery-text-scale, 1));
 }
 
 @media (max-width: 40rem) {

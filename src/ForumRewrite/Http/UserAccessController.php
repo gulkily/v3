@@ -37,6 +37,7 @@ final class UserAccessController
         }
         return $this->services->renderPageTemplate('user_access.php', [
             'users' => ProfileRepository::approvedDirectoryUsers($this->services->pdo()),
+            'replacedKeys' => \ForumRewrite\ReadModel\ReplacedKeys::all($this->services->pdo()),
             'canSecurityReview' => $allowed,
             'canResumeHistory' => $canResume,
             'historyItems' => $items,
@@ -57,6 +58,7 @@ final class UserAccessController
         return $this->render('user_access_account.php', [
             'usernameToken' => $username,
             'profiles' => $profiles,
+            'replacedKeys' => array_column(\ForumRewrite\ReadModel\ReplacedKeys::all($this->services->pdo(), $username), null, 'identity_id'),
             'approvalHistory' => $this->services->approvalHistory()->forUsername($username, 50, max(0, (int) ($query['key_offset'] ?? 0))),
         ]);
     }

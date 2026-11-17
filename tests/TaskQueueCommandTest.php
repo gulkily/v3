@@ -18,6 +18,33 @@ final class TaskQueueCommandTest
         );
     }
 
+    public function testWorkerOnAFreshInstanceRunsCleanlyBeforeTheFirstPageRequest(): void
+    {
+        // `./v3 start` runs the worker right away; the repository and read model only appear
+        // with the first page request. The run must succeed without logging errors or files.
+        $root = sys_get_temp_dir() . '/task-queue-fresh-' . bin2hex(random_bytes(6));
+        $command = sprintf(
+            'FORUM_REPOSITORY_ROOT=%s FORUM_DATABASE_PATH=%s FORUM_STATIC_HTML_ROOT=%s %s %s run --limit=1 --queue-database-path=%s --error-log=%s 2>&1',
+            escapeshellarg($root . '/state/local_repository'),
+            escapeshellarg($root . '/state/cache/index.sqlite3'),
+            escapeshellarg($root . '/state/static_html'),
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg(dirname(__DIR__) . '/scripts/task_queue.php'),
+            escapeshellarg($root . '/state/private/tasks.sqlite3'),
+            escapeshellarg($root . '/errors.log'),
+        );
+        exec($command, $output, $exitCode);
+
+        assertSame(0, $exitCode, implode("\n", $output));
+        assertStringContains('Task queue run complete', implode("\n", $output));
+        assertTrue(!is_file($root . '/errors.log'), (string) @file_get_contents($root . '/errors.log'));
+        assertTrue(!file_exists($root . '/state/cache/index.sqlite3'), 'the worker must not create an empty read model');
+        assertTrue(!file_exists($root . '/state/local_repository'), 'the worker must not create the repository');
+        $pdo = new PDO('sqlite:' . $root . '/state/private/tasks.sqlite3');
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        assertSame('fresh', (new \ForumRewrite\TaskQueue\SqliteTaskQueueStore($pdo))->executorHeartbeatStatus()['status']);
+    }
+
     public function testRootUsageShowsTaskQueueCommands(): void
     {
         [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), './v3');

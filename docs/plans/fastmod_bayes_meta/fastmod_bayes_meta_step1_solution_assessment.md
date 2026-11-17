@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/fastmod_bayes_meta`; [host ledger](../effort_estimation_trial.md#cycle-v3fastmod_bayes_meta). Standing P2 enrollment. No parent cycle; follows [fastmod_meta_score](../fastmod_meta_score/fastmod_meta_score_step1_solution_assessment.md) and [fastmod_virtual_tags](../fastmod_virtual_tags/fastmod_virtual_tags_step1_solution_assessment.md).
+Effort study: `railspike-effort` / `v3/fastmod_bayes_meta`; [cycle ledger](../effort_ledger/fastmod_bayes_meta.md). Standing P2 enrollment. No parent cycle; follows [fastmod_meta_score](../fastmod_meta_score/fastmod_meta_score_step1_solution_assessment.md) and [fastmod_virtual_tags](../fastmod_virtual_tags/fastmod_virtual_tags_step1_solution_assessment.md).
 
 Extended estimates: enabled
 

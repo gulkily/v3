@@ -15,6 +15,9 @@ use PDO;
  * a signed-out session) issues a new token, and the old one forwards to it for
  * FORWARD_SECONDS so requests already in flight act on the new session instead of
  * a stale one. Challenges are single-use and need no session.
+ *
+ * Each session also keeps the coarse DeviceFingerprint of the browser that signed in,
+ * and when it last bootstrapped a key (see KeyBootstrap). Both stay in private state.
  */
 final class ViewerSessionStore
 {
@@ -57,7 +60,7 @@ final class ViewerSessionStore
             $replacedBy = (string) $row['replaced_by_hash'];
             if ($replacedBy === '') {
                 $this->touch($hash, (int) $row['last_seen_at'], $now);
-                return new ViewerSession($token, (string) $row['identity_id'], (string) $row['lobby_identity_id'], (int) $row['expires_at']);
+                return self::session($token, $row);
             }
             if ($now - (int) $row['replaced_at'] > self::FORWARD_SECONDS) {
                 return null;
@@ -71,7 +74,7 @@ final class ViewerSessionStore
      * Records a successful sign-in. Returns the session the browser should hold: the
      * current one when it is already signed in as this identity, otherwise a new one.
      */
-    public function signIn(string $identityId, ?string $currentToken = null): ViewerSession
+    public function signIn(string $identityId, ?string $currentToken = null, string $deviceFingerprint = ''): ViewerSession
     {
         $identityId = strtolower(trim($identityId));
         if ($identityId === '') {
@@ -81,9 +84,11 @@ final class ViewerSessionStore
         $current = $currentToken !== null ? $this->resolveDirect($currentToken) : null;
         if ($current !== null && $current['identity_id'] === $identityId) {
             $expiresAt = $now + self::LIFETIME_SECONDS;
-            $this->pdo->prepare('UPDATE viewer_sessions SET expires_at = :expires, last_seen_at = :now WHERE token_hash = :hash')
-                ->execute(['expires' => $expiresAt, 'now' => $now, 'hash' => $current['token_hash']]);
-            return new ViewerSession((string) $currentToken, $identityId, '', $expiresAt);
+            // A fresh signature from this browser refreshes its fingerprint; an unknown one keeps the old value.
+            $fingerprint = $deviceFingerprint !== '' ? $deviceFingerprint : (string) $current['device_fingerprint'];
+            $this->pdo->prepare('UPDATE viewer_sessions SET expires_at = :expires, last_seen_at = :now, device_fingerprint = :fingerprint WHERE token_hash = :hash')
+                ->execute(['expires' => $expiresAt, 'now' => $now, 'fingerprint' => $fingerprint, 'hash' => $current['token_hash']]);
+            return new ViewerSession((string) $currentToken, $identityId, '', $expiresAt, $fingerprint, (int) $current['key_bootstrapped_at']);
         }
 
         $token = bin2hex(random_bytes(32));
@@ -91,9 +96,9 @@ final class ViewerSessionStore
         $expiresAt = $now + self::LIFETIME_SECONDS;
         $this->pdo->beginTransaction();
         try {
-            $this->pdo->prepare('INSERT INTO viewer_sessions (token_hash, identity_id, lobby_identity_id, created_at, last_seen_at, expires_at, replaced_by_hash, replaced_at)
-                VALUES (:hash, :identity, \'\', :now, :now, :expires, \'\', 0)')
-                ->execute(['hash' => $hash, 'identity' => $identityId, 'now' => $now, 'expires' => $expiresAt]);
+            $this->pdo->prepare('INSERT INTO viewer_sessions (token_hash, identity_id, lobby_identity_id, created_at, last_seen_at, expires_at, replaced_by_hash, replaced_at, device_fingerprint, key_bootstrapped_at)
+                VALUES (:hash, :identity, \'\', :now, :now, :expires, \'\', 0, :fingerprint, 0)')
+                ->execute(['hash' => $hash, 'identity' => $identityId, 'now' => $now, 'expires' => $expiresAt, 'fingerprint' => $deviceFingerprint]);
             if ($current !== null) {
                 // The old token forwards briefly, then stops working.
                 $this->pdo->prepare('UPDATE viewer_sessions SET identity_id = \'\', lobby_identity_id = \'\', replaced_by_hash = :new, replaced_at = :now,
@@ -106,7 +111,23 @@ final class ViewerSessionStore
             throw $error;
         }
         $this->purgeExpired();
-        return new ViewerSession($token, $identityId, '', $expiresAt);
+        return new ViewerSession($token, $identityId, '', $expiresAt, $deviceFingerprint);
+    }
+
+    /**
+     * Marks the signed-in session a token stands for as having bootstrapped a key.
+     * True only for the first call on a signed-in session, so one session bootstraps once.
+     */
+    public function markKeyBootstrapped(string $token): bool
+    {
+        $hash = $this->currentHash($token);
+        if ($hash === null) {
+            return false;
+        }
+        $statement = $this->pdo->prepare('UPDATE viewer_sessions SET key_bootstrapped_at = :now
+            WHERE token_hash = :hash AND key_bootstrapped_at = 0 AND identity_id <> \'\'');
+        $statement->execute(['now' => $this->now(), 'hash' => $hash]);
+        return $statement->rowCount() === 1;
     }
 
     /**
@@ -124,7 +145,7 @@ final class ViewerSessionStore
         $lobby = $session->identityId !== '' ? $session->identityId : $session->lobbyIdentityId;
         $this->pdo->prepare('UPDATE viewer_sessions SET identity_id = \'\', lobby_identity_id = :lobby WHERE token_hash = :hash')
             ->execute(['lobby' => $lobby, 'hash' => $hash]);
-        return new ViewerSession($token, '', $lobby, $session->expiresAt);
+        return new ViewerSession($token, '', $lobby, $session->expiresAt, $session->deviceFingerprint, $session->keyBootstrappedAt);
     }
 
     /** Forgets the Lobby identity of a signed-out session (its profile no longer exists). */
@@ -177,6 +198,28 @@ final class ViewerSessionStore
         $now = $this->now();
         $this->pdo->prepare('DELETE FROM viewer_sessions WHERE expires_at <= :now')->execute(['now' => $now]);
         $this->pdo->prepare('DELETE FROM viewer_auth_challenges WHERE expires_at < :now')->execute(['now' => $now]);
+    }
+
+    /** Undoes markKeyBootstrapped() when the bootstrap it allowed did not commit. */
+    public function clearKeyBootstrapped(string $token): void
+    {
+        $hash = $this->currentHash($token);
+        if ($hash !== null) {
+            $this->pdo->prepare('UPDATE viewer_sessions SET key_bootstrapped_at = 0 WHERE token_hash = :hash')->execute(['hash' => $hash]);
+        }
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function session(string $token, array $row): ViewerSession
+    {
+        return new ViewerSession(
+            $token,
+            (string) $row['identity_id'],
+            (string) $row['lobby_identity_id'],
+            (int) $row['expires_at'],
+            (string) ($row['device_fingerprint'] ?? ''),
+            (int) ($row['key_bootstrapped_at'] ?? 0),
+        );
     }
 
     private static function hash(string $token): string
@@ -260,6 +303,21 @@ final class ViewerSessionStore
             replaced_by_hash TEXT NOT NULL,
             replaced_at INTEGER NOT NULL
         )');
+        // Stores made before key bootstrap gain its two columns in place; their sessions start with none recorded.
+        $columns = array_column($this->pdo->query('PRAGMA table_info(viewer_sessions)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+        foreach (['device_fingerprint' => 'TEXT NOT NULL DEFAULT \'\'', 'key_bootstrapped_at' => 'INTEGER NOT NULL DEFAULT 0'] as $column => $type) {
+            if (in_array($column, $columns, true)) {
+                continue;
+            }
+            try {
+                $this->pdo->exec('ALTER TABLE viewer_sessions ADD COLUMN ' . $column . ' ' . $type);
+            } catch (\PDOException $error) {
+                // Another request added it first.
+                if (!str_contains($error->getMessage(), 'duplicate column')) {
+                    throw $error;
+                }
+            }
+        }
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS viewer_sessions_expires ON viewer_sessions (expires_at)');
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS viewer_auth_challenges (
             challenge TEXT PRIMARY KEY,

@@ -74,7 +74,7 @@ export async function checkChatRecovery(page, context, base, artifacts, seed, en
   ] });
   let keysUnavailable = true;
   const keyRoute = route => keysUnavailable ? route.abort() : route.continue();
-  await page.route('**/api/private_messages/recipient_keys?username_token=bob', keyRoute);
+  await page.route('**/api/private_messages/recipient_keys?username_token=bob&*', keyRoute);
   await page.reload();
   const valid = page.locator('[data-private-message-id="chat-valid"]');
   await valid.getByRole('button', { name: 'Retry reading message' }).waitFor();
@@ -114,7 +114,7 @@ export async function checkChatRecovery(page, context, base, artifacts, seed, en
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Long messages must wrap');
   await valid.scrollIntoViewIfNeeded();
   await page.screenshot({ path: join(artifacts, 'chat-recovery-mobile.png'), fullPage: true });
-  await page.unroute('**/api/private_messages/recipient_keys?username_token=bob', keyRoute);
+  await page.unroute('**/api/private_messages/recipient_keys?username_token=bob&*', keyRoute);
 
   // Initial scrolling must wait for decryption, and user navigation cancels it.
   let unblock, requested;

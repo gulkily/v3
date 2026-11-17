@@ -6,6 +6,11 @@ namespace ForumRewrite\Support;
 
 use RuntimeException;
 
+/**
+ * Server rules for authored text. public/assets/browser_signing.js has a hand-synced twin
+ * (isAllowedVisibleUnicodeCharacter) so compose forms can flag text before submitting;
+ * tests/UnicodeTextRuleParityTest.php fails when the two drift apart.
+ */
 final class UnicodeTextPolicy
 {
     public static function rules(bool $unicode, bool $emoji): array

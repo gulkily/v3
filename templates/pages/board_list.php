@@ -4,6 +4,7 @@
     'viewOptions' => $viewOptions,
     'sortOptions' => $sortOptions,
     'sortLabel' => $sortLabel,
+    'gettingStarted' => $showGettingStarted ?? false,
 ]), 1) ?>
   <article class="card inline-reply-composer compact-thread-compose" data-compose-root data-pending-thread-position="after" data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
     <div class="inline-reply-expanded" data-inline-thread-compose data-inline-thread-expanded="0">
@@ -25,10 +26,11 @@
   <div class="board-empty">
 <?php if ($view === 'liked'): ?>
     <h2>No liked threads yet</h2>
-    <p>Threads you like will show up here.</p>
+    <p>Threads people like show up here.</p>
     <a class="nav-link" href="/threads/?view=all&amp;sort=<?= $e(rawurlencode($sort)) ?>">Show all threads</a>
 <?php else: ?>
     <h2>No threads yet</h2>
+    <a class="nav-link" href="/start/">Getting started</a>
 <?php endif; ?>
   </div>
 <?php endif; ?>

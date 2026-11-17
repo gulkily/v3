@@ -245,6 +245,20 @@ final class RouteServices
             && \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->repositoryRoot, $id);
     }
 
+    /**
+     * Approved and signed in with a viewer session. On a public site a viewer
+     * profile can come from the identity hint cookie alone, which anyone can set
+     * to any name, so anything given to members without a signature asks this.
+     *
+     * @param array<string, mixed>|null $viewerProfile
+     */
+    public static function signedInApproved(?array $viewerProfile): bool
+    {
+        return $viewerProfile !== null
+            && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1
+            && ($viewerProfile['_authenticated_identity'] ?? false) === true;
+    }
+
     public function securityReviewAllowed(): bool
     {
         $id = $this->viewerSessions()->identityId();
@@ -648,7 +662,8 @@ final class RouteServices
         }
         $publicAuthenticationResume = $allowPublicAuthenticationResume
             && !$this->approvedMembersOnlyEnabled
-            && $pageData['viewerProfile'] === null;
+            // A profile known only from the hint cookie is not signed in yet: resume as for no profile.
+            && ($pageData['viewerProfile'] === null || ($pageData['viewerProfile']['_authenticated_identity'] ?? true) === false);
 
         return $this->renderer->renderPageTemplate(
             $pageTemplate,

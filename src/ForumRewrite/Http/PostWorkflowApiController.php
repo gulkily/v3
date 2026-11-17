@@ -74,7 +74,7 @@ final class PostWorkflowApiController
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'post not found'], 404, $headers);
             return;
         }
-        if ($request && (int) ($viewer['is_approved'] ?? 0) !== 1) {
+        if ($request && !RouteServices::signedInApproved($viewer)) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headers);
             return;
         }
@@ -119,7 +119,7 @@ final class PostWorkflowApiController
         }
 
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
-        if ($viewerProfile === null || (int) ($viewerProfile['is_approved'] ?? 0) !== 1) {
+        if (!RouteServices::signedInApproved($viewerProfile)) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $this->routeServices->noStoreHeaders());
             return;
         }
@@ -188,7 +188,7 @@ final class PostWorkflowApiController
 
         $phaseStartedAt = hrtime(true);
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanSeePostAnalysis = RouteServices::signedInApproved($viewerProfile);
         $timings['viewer_profile'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
 
         $phaseStartedAt = hrtime(true);
@@ -272,7 +272,7 @@ final class PostWorkflowApiController
         $phaseStartedAt = hrtime(true);
         $viewerProfile = ($this->resolveViewerProfileFromIdentityHint)();
         $timings['viewer_profile'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
-        if ($viewerProfile === null || ((int) ($viewerProfile['is_approved'] ?? 0)) !== 1) {
+        if (!RouteServices::signedInApproved($viewerProfile)) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'forbidden'], 403, $headersWithTimings());
             return;
         }

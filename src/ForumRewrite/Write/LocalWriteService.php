@@ -54,6 +54,7 @@ use ForumRewrite\Security\OpenPgpSignatureVerifier;
 use ForumRewrite\SiteProfileRegistry;
 use RuntimeException;
 use ForumRewrite\Security\KeyRetirement;
+use ForumRewrite\Security\KeyBootstrapReplay;
 use ForumRewrite\Security\KeyRetirementPolicy;
 use ForumRewrite\Images\ImageReference;
 use ForumRewrite\Images\ImageStore;
@@ -1091,7 +1092,9 @@ class LocalWriteService
             }
             $accepted = AcceptedRetraction::prepare($post, $acceptedRequest, $canonicalRecord, $signature, $attribution, $sourceHash);
             // Decided before the commit: the targeted update needs a read model current at this HEAD.
-            $updateContext = RemovalUpdateContext::forPost($this->repositoryRoot, $this->databasePath, $postId);
+            // A key bootstrap record carries an approval, so its removal refreshes approval state in full.
+            $updateContext = in_array(KeyBootstrapReplay::TAG, $post->boardTags, true)
+                ? null : RemovalUpdateContext::forPost($this->repositoryRoot, $this->databasePath, $postId);
             $commitSha = RetractionDeletion::commit($this->repositoryRoot, $accepted);
             $recordPath = AcceptedRetraction::requestPath($postId);
             $timings['write_file'] = $this->elapsedMilliseconds($phaseStartedAt);
@@ -1425,7 +1428,8 @@ class LocalWriteService
                 && \ForumRewrite\Security\RetractionAuthority::currentOperator($this->repositoryRoot, $authorIdentityId);
             if (!$allowed) throw new RuntimeException('Only the post author can retract this post. An approved operator may also retract it.');
         }
-        if (RetractedPosts::isAuthorityPost($post)) {
+        // An operator (never its author) may retract a key bootstrap record; see RetractedPosts::retractable().
+        if (!RetractedPosts::retractable($post, $post->authorIdentityId !== $authorIdentityId)) {
             throw new RuntimeException('Identity, approval, and invitation records cannot be retracted.');
         }
 
@@ -1736,7 +1740,7 @@ class LocalWriteService
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
-            $timings = array_merge($timings, $this->synchronizePostReactionDerivedState($postId, $commitSha));
+            $timings = array_merge($timings, $this->synchronizePostReactionDerivedState($postId, $commitSha, [$recordPath]));
 
             $phaseStartedAt = hrtime(true);
             if ($post->isReply()) {
@@ -2622,6 +2626,132 @@ class LocalWriteService
     }
 
     /**
+     * Prepares the record a new key signs to be approved on the word of a signed-in
+     * session (see KeyBootstrapReplay). The caller has already checked the session,
+     * its scheme and its device; this checks the accounts and builds the record.
+     *
+     * @param array<string, mixed> $input from_identity_id (the session's key), identity_id (the new key)
+     * @return array<string, mixed>
+     */
+    public function prepareKeyBootstrap(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $fromIdentityId = $this->requireOpenPgpIdentityId((string) ($input['from_identity_id'] ?? ''), 'from_identity_id');
+            $identityId = $this->requireOpenPgpIdentityId((string) ($input['identity_id'] ?? ''), 'identity_id');
+            $context = $this->keyBootstrapContext($fromIdentityId, $identityId);
+
+            $postId = $this->generateRecordId('reply');
+            $createdAt = $this->canonicalTimestampNow();
+            $contents = "Post-ID: {$postId}\n"
+                . "Created-At: {$createdAt}\n"
+                . 'Board-Tags: identity ' . KeyBootstrapReplay::TAG . "\n"
+                . "Thread-ID: {$context['target_thread_id']}\n"
+                . "Parent-ID: {$context['target_post_id']}\n"
+                . "Author-Identity-ID: {$identityId}\n"
+                . "\n" . KeyBootstrapReplay::FROM_HEADER . ": {$fromIdentityId}\n";
+            (new PostRecordParser())->parse($contents);
+            $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
+            $prepared = $this->storePreparedPost($recordPath, $contents, [
+                'kind' => 'key-bootstrap',
+                'approval_context' => $context,
+                'post_id' => $postId,
+                'author_identity_id' => $identityId,
+                'from_identity_id' => $fromIdentityId,
+            ]);
+
+            return $prepared + [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $context['target_thread_id'],
+                'record_path' => $recordPath,
+                'canonical_record' => $contents,
+            ];
+        });
+    }
+
+    /**
+     * Accepts a prepared bootstrap record signed by the new key and commits it with a
+     * `session` receipt. A retry of an accepted record returns the accepted result.
+     *
+     * With $recoveryOnly, nothing new is accepted: only a repeat of an accepted record returns.
+     *
+     * @param array<string, mixed> $input prepare_token, post_id, record_path, author_identity_id, canonical_record, detached_signature
+     * @return array<string, mixed>
+     */
+    public function finalizeKeyBootstrap(array $input, bool $recoveryOnly = false): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $recoveryOnly): array {
+            $this->assertWritableRepository();
+            $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $recovered = $this->recoverAcceptedApproval($input, 'session');
+            if ($recovered !== null) return $recovered;
+            if ($recoveryOnly) throw new RuntimeException('This session already added a key.');
+            $prepared = $this->loadPreparedPost($token);
+            if (($prepared['kind'] ?? '') !== 'key-bootstrap' || strtotime((string) $prepared['expires_at']) < time()) {
+                throw new RuntimeException('Key bootstrap expired. Reload the page to try again.');
+            }
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || !hash_equals((string) $prepared['canonical_sha256'], hash('sha256', $canonicalRecord))) {
+                throw new RuntimeException('Prepared post canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $postId = $this->requirePreparedMatch($input, $prepared, 'post_id');
+            $identityId = $this->requireOpenPgpIdentityId($this->requirePreparedMatch($input, $prepared, 'author_identity_id'), 'author_identity_id');
+            $fromIdentityId = $this->requireOpenPgpIdentityId((string) ($prepared['from_identity_id'] ?? ''), 'from_identity_id');
+
+            $context = $this->keyBootstrapContext($fromIdentityId, $identityId);
+            if (($prepared['approval_context'] ?? null) !== $context) {
+                throw new RuntimeException('Key bootstrap context changed. Reload the page to try again.');
+            }
+            if ($this->postTargetExists($postId)) {
+                throw new RuntimeException('Prepared post target already exists.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $fingerprint] = $this->publicKeyForIdentity($identityId);
+            if (!$this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $fingerprint)['ok']) {
+                throw new RuntimeException('Key bootstrap signature verification failed.');
+            }
+            $record = (new PostRecordParser())->parse($canonicalRecord);
+            if ($record->authorIdentityId !== $identityId || KeyBootstrapReplay::fromIdentityId($record->body) !== $fromIdentityId
+                || CanonicalPathResolver::datedPost($record->postId, $record->createdAt) !== $recordPath) {
+                throw new RuntimeException('Prepared key bootstrap does not match its record.');
+            }
+
+            $commit = $this->commitApprovalAcceptance($recordPath, $canonicalRecord, $signature, $context, 'session',
+                'Bootstrap key ' . $identityId . ' from the session of ' . $fromIdentityId);
+            $this->synchronizeApprovalDerivedState($record, $commit['commit_sha']);
+            $this->invalidator()->invalidateApproval($context['target_profile_slug'], $context['target_thread_id'], $context['target_post_id'], $postId);
+            $this->invalidateAccountHistory($context);
+            $this->deletePreparedPost($token);
+
+            return [
+                'status' => 'ok',
+                'post_id' => $postId,
+                'thread_id' => $context['target_thread_id'],
+                'profile_slug' => $context['target_profile_slug'],
+                'record_path' => $recordPath,
+                'signature_path' => $recordPath . '.asc',
+                'commit_sha' => $commit['commit_sha'],
+            ];
+        });
+    }
+
+    /** Approval policy for a bootstrap: the session's key adds a key to its own account, never another's. */
+    private function keyBootstrapContext(string $fromIdentityId, string $identityId): array
+    {
+        $target = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($this->readModelPdo(), $identityId);
+        if ($target === null) {
+            throw new RuntimeException('Approval target profile not found.');
+        }
+        $context = $this->approvalContext($fromIdentityId, $identityId, (string) $target['bootstrap_thread_id'], (string) $target['bootstrap_post_id']);
+        if ($context['classification'] !== 'own_account_key') {
+            throw new RuntimeException('A session can only add a key with its own username.');
+        }
+        return $context;
+    }
+
+    /**
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
@@ -2873,6 +3003,9 @@ class LocalWriteService
     }
 
     /**
+     * Writes a site feature flag without a signed record. Tools writes flags through signed
+     * records; this stays (tests only today) as the fallback for when records can't be signed.
+     *
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
@@ -3628,7 +3761,8 @@ class LocalWriteService
     /**
      * @return array<string, float>
      */
-    private function synchronizePostReactionDerivedState(string $postId, string $commitSha): array
+    /** @param list<string>|null $writtenPaths reaction records this write added; null scans them all */
+    private function synchronizePostReactionDerivedState(string $postId, string $commitSha, ?array $writtenPaths = null): array
     {
         $phaseStartedAt = hrtime(true);
         if (!$this->canIncrementallyUpdateReadModel()) {
@@ -3645,7 +3779,7 @@ class LocalWriteService
         }
 
         try {
-            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha);
+            $incrementalTimings = $this->incrementalReadModelUpdater()->applyPostReactionWrite($postId, $commitSha, $writtenPaths);
             $this->staleMarker()->clear();
         } catch (\Throwable $throwable) {
             $this->logRebuildFallback('post reaction update', $throwable->getMessage());
@@ -4500,28 +4634,7 @@ class LocalWriteService
      */
     private function extractThreadLabelsFromBody(string $body): array
     {
-        $labels = [];
-        foreach (explode("\n", $body) as $line) {
-            if (preg_match('/^\s*>/', $line) === 1) {
-                continue;
-            }
-
-            if (preg_match_all('/(^|[^A-Za-z0-9-])#([A-Za-z0-9-]+)/', $line, $matches) < 1) {
-                continue;
-            }
-
-            foreach ($matches[2] as $label) {
-                if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $label)) {
-                    continue;
-                }
-
-                if (!in_array($label, $labels, true)) {
-                    $labels[] = $label;
-                }
-            }
-        }
-
-        return $labels;
+        return \ForumRewrite\Support\ThreadLabels::fromBody($body);
     }
 
     private function reactionJournalDirectory(): string
