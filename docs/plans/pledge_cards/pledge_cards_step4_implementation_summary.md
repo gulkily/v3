@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/pledge_cards`; [ledger](../effort_ledger/
 
 Extended estimates: enabled
 
-Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-17. Step 4 in progress on `feat/pledge-cards`, cut from `origin/main` at `6e82449d`.
+Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-17. Step 4 complete on `feat/pledge-cards`, cut from `origin/main` at `6e82449d`. Release check pending: the maintainer's iPhone SE, and whether the "claude" key is approved on zenmemes.com.
 
 **Cycle estimate: 0.65**
 
@@ -87,5 +87,38 @@ Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-17. Step 
   - Inside "More", authors and operators also see the Retract control's own "…" menu (Show as Markdown, Retract): a second level for two rare actions. Left as is, since that control is shared with every page.
   - An opened row names the pledger twice: in the row and in the byline, whose name links to the profile and carries the Pending chip. Left for the maintainer to judge.
   - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Themes, replay at the reported size, documentation and closeout
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - [Pledge campaign](../../concepts/pledge_campaign.md) concept: Counting rewritten for approved-only counting, waiting rows and the flag's removal; a new Rows entry; the thread page entry points to it.
+  - [Spec](../pledges_spec.md) decision 5 notes the overrule; [checklist](../pledges_checklist.md), ledger closeout and this summary.
+- Verification:
+  - Passed: the browser check in all 17 themes at 375 and 1280 pixels on the final code (Stage 3's last run, after the last code change).
+  - Passed: a local replay at 375 by 667 pixels, the iPhone SE screen, of a thread with five approved members, one key not yet approved, eight pledges, a withdrawal, fills and a question, as a visitor, without JavaScript, and as the author. Each view: seven one-line rows joined into lists, broken by the question; one "Waiting for approval" row, struck and out of the sum; the sum 73, which is the five counted pledges. The replay script was kept outside the repository.
+  - Passed: `./v3 test --smoke PledgeCampaignTest WithdrawLeafFilterTest FeatureFlagEvaluatorTest ThreadActivityTest` (511 tests, Stage 3). The full suite was not run.
+  - Passed: `git diff --check`; the whole code diff reviewed (10 files from `6e82449d`; no schema change, no dependency, one flag removed); no current doc names the removed flag except the concept line that records its removal.
+  - Pending: the release check on zenmemes.com from the maintainer's iPhone SE, and whether the "claude" key is approved there. The headless replay does not satisfy it.
+  - Not exercised: an approval made through the site's own Approve flow (tests approve through a seed record or the profile row); the paned layouts.
+- Notes:
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Cycle retrospective
+
+**Retrospective scope assessment: 0.70**
+
+- Delivered scope: as approved in Steps 2 and 3, with one recorded deviation (the list byline's Pending chip instead of dropping "(unapproved)") and two accepted limits (Word97 and Bubblegum keep rows as separate windows; the Retract control's own "…" sits inside "More").
+- Starting revision `6e82449d`; planning commit `2752eebb`; four stage commits. Stage retrospectives 0.22, 0.22, 0.16, 0.10, not summed.
+- Corrective work inside the cycle: test fixtures needed real second identities and canonical approval; the browser check needed helpers to open rows and centre controls under the phone's fixed bar. No new requests.
+- Maintainer comfortable-fit judgment: pending. Release check: pending.
+- Single exposed rater Claude (claude-opus-5-5), 2026-11-17 UTC; R1 hashes not re-verified.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
