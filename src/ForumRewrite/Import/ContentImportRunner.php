@@ -34,6 +34,8 @@ final class ContentImportRunner
             // A repository lock also serializes invocations with different database overrides.
             return (new ExecutionLock($this->repositoryRoot . '/.git/instance-import.lock'))->withExclusiveLock(function () use ($source, $publisher, $dryRun, $sourceLabel, $archiveExclusions): array {
                 $pending = $this->stateRoot . '/pending.json';
+                // Reuse signature checks saved beside the read model; planning would otherwise rerun GPG for each one.
+                \ForumRewrite\Security\SignatureCheckCache::useBeside($this->databasePath);
                 $scoreImport = new FastmodScoreImport($this->projectRoot ?? dirname(__DIR__, 3));
                 if ($dryRun) {
                     if ($source === null) {

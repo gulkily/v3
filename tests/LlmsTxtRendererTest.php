@@ -66,8 +66,9 @@ final class LlmsTxtRendererTest
     {
         $text = $this->render([]);
         assertStringContains('Agents are welcome.', $text);
-        assertTrue(strpos($text, '/frm.py') < strpos($text, '## Publish'));
-        assertStringContains('frm.py --site https://forum.example thread', $text);
+        assertTrue(strpos($text, '/quill.py') < strpos($text, '## Publish'));
+        assertStringContains('quill.py --site https://forum.example thread', $text);
+        assertStringContains('X-Quill-Update', $text);
         assertStringContains('--resume', $text);
         assertStringContains('POST /api/create_signed_post', $text);
         assertStringContains('bootstrap stays separate', $text);

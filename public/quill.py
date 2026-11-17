@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Portable forum client. Python 3 standard library, curl and GPG; no packages."""
-FRM_VERSION = "2026-11-11"
+"""Quill: portable forum client. Python 3 standard library, curl and GPG; no packages."""
+QUILL_VERSION = "2026-11-16"
+FRM_VERSION = QUILL_VERSION  # old name, kept for scripts that read it
 
 import argparse
 import datetime
@@ -25,8 +26,22 @@ class ClientError(Exception):
     pass
 
 
+def program():
+    """The name this copy runs under, so printed commands work whether it was saved as quill.py or frm.py."""
+    name = Path(sys.argv[0]).name if sys.argv and sys.argv[0] else ''
+    return name if name.endswith('.py') else 'quill.py'
+
+
+def setting(name, default=''):
+    """QUILL_<name>, then the older FRM_<name>."""
+    return os.environ.get('QUILL_' + name) or os.environ.get('FRM_' + name) or default
+
+
 # Trouble-report context for this run: last API route, busy retries, operation and identity.
 TRACE = {'route': '', 'busy': 0, 'operation': None, 'identity': ''}
+# Update notices already printed this run; the server sends one on every response.
+NOTICES = set()
+USER_AGENT = 'quill/' + QUILL_VERSION
 REPORT_ERROR_LIMIT = 300
 
 
@@ -41,8 +56,8 @@ def scrub(text):
 
 def trouble_report(command, route, error, outcome, busy_retries=0):
     """Plain-text report from a fixed field list; never includes drafts, keys or local state."""
-    lines = ['Automatic trouble report from frm.py. Turn off with --no-report.', '',
-             'Client: frm.py ' + FRM_VERSION, 'Command: ' + command,
+    lines = ['Automatic trouble report from Quill. Turn off with --no-report.', '',
+             'Client: quill.py ' + QUILL_VERSION, 'Command: ' + command,
              'Route: ' + (route or 'none'), 'Outcome: ' + outcome,
              'Busy-Retries: ' + str(busy_retries), 'Error: ' + (scrub(error) or 'none')]
     return '\n'.join(lines) + '\n'
@@ -63,12 +78,12 @@ def request(site, route, fields=None, timeout=60, files=None):
     if not shutil.which('curl'):
         raise ClientError('curl is required. Install it using your operating system tools.')
     TRACE['route'] = route.split('?', 1)[0]
-    with tempfile.TemporaryDirectory(prefix='frm-http-') as directory:
+    with tempfile.TemporaryDirectory(prefix='quill-http-') as directory:
         body = Path(directory) / 'response'
         headers = Path(directory) / 'headers'
         command = ['curl', '--disable', '--silent', '--show-error', '--max-time', str(timeout),
                    '--proto', '=http,https', '--output', str(body), '--dump-header', str(headers),
-                   '--write-out', '%{http_code}']
+                   '--write-out', '%{http_code}', '--user-agent', USER_AGENT]
         data = None
         if files:
             # Field values go through files so curl never reads @ or < at the start of authored text.
@@ -94,6 +109,10 @@ def request(site, route, fields=None, timeout=60, files=None):
             if ':' in line:
                 key, value = line.split(':', 1)
                 values[key.lower()] = value.strip()
+        notice = values.get('x-quill-update')
+        if notice and notice not in NOTICES:
+            NOTICES.add(notice)
+            print('Update: ' + notice, file=sys.stderr)
         return status, text, values
 
 
@@ -398,7 +417,7 @@ def new_post(args, site, directory, operation=None, saved_meta=None, saved_key=N
             raise error
         print('Resume: ' + recovery_command(operation, meta), file=sys.stderr)
         if meta.get('Post-ID'):
-            print('Check: python3 frm.py --site ' + shlex.quote(site) + ' check ' + shlex.quote(meta['Post-ID']), file=sys.stderr)
+            print('Check: python3 ' + program() + ' --site ' + shlex.quote(site) + ' check ' + shlex.quote(meta['Post-ID']), file=sys.stderr)
         raise error
 
 
@@ -487,7 +506,7 @@ def strip_image_metadata(data, kind):
     out = [b'\xff\xd8']
     for marker, segment in jpeg_segments(data):
         if marker == 0xE1 and jpeg_orientation(segment) != 1:
-            raise ClientError('This photo is stored rotated. Install Pillow (python3 -m pip install Pillow) so frm.py can turn it upright, or export an upright copy.')
+            raise ClientError('This photo is stored rotated. Install Pillow (python3 -m pip install Pillow) so Quill can turn it upright, or export an upright copy.')
         if marker == 0xFE or (0xE1 <= marker <= 0xEF and marker != 0xEE):
             continue
         out.append(segment)
@@ -495,7 +514,7 @@ def strip_image_metadata(data, kind):
 
 
 def pillow():
-    """Pillow's Image and ImageOps modules when installed; frm.py itself needs only the standard library."""
+    """Pillow's Image and ImageOps modules when installed; Quill itself needs only the standard library."""
     try:
         from PIL import Image, ImageOps
     except ImportError:
@@ -553,7 +572,7 @@ def prepare_image(path):
         return prepared, kind, size, 'prepared with Pillow'
     kind = 'png' if data.startswith(b'\x89PNG\r\n\x1a\n') else 'jpg' if data.startswith(b'\xff\xd8\xff') else None
     if kind is None:
-        raise ClientError('Without Pillow, frm.py sends PNG or JPEG only. Install Pillow (python3 -m pip install Pillow) to convert other formats.')
+        raise ClientError('Without Pillow, Quill sends PNG or JPEG only. Install Pillow (python3 -m pip install Pillow) to convert other formats.')
     width, height = image_size(data, kind)
     if not (0 < width <= IMAGE_MAX_SIDE and 0 < height <= IMAGE_MAX_SIDE):
         raise ClientError('Without Pillow, images must already be at most %d pixels per side (this one is %d x %d). Install Pillow (python3 -m pip install Pillow) to resize automatically.' % (IMAGE_MAX_SIDE, width, height))
@@ -622,7 +641,7 @@ STAGED_EXIT = 3
 
 
 def replace_command(meta):
-    command = 'python3 frm.py --site ' + shlex.quote(meta['Site']) + ' ' + meta['Kind'] + ' --replace ' + shlex.quote(meta['Post-ID']) + ' --body-file FIXED_DRAFT'
+    command = 'python3 ' + program() + ' --site ' + shlex.quote(meta['Site']) + ' ' + meta['Kind'] + ' --replace ' + shlex.quote(meta['Post-ID']) + ' --body-file FIXED_DRAFT'
     return command + (' --subject SUBJECT' if meta['Kind'] == 'thread' else '')
 
 
@@ -645,7 +664,7 @@ def rejected(operation):
 
 
 def recovery_command(operation, meta):
-    return 'python3 frm.py --site ' + shlex.quote(meta['Site']) + ' ' + meta['Kind'] + ' --resume ' + shlex.quote(str(operation))
+    return 'python3 ' + program() + ' --site ' + shlex.quote(meta['Site']) + ' ' + meta['Kind'] + ' --resume ' + shlex.quote(str(operation))
 
 
 def source_index(original, canonical, index):
@@ -731,9 +750,20 @@ def resume_post(operation, meta, args):
     return new_post(args, meta['Site'], operation.parent, operation, meta, key)
 
 
+def default_state_dir():
+    """~/.local/state/quill, unless only frm.py's old directory exists: keys and saved operations live there."""
+    base = Path.home() / '.local/state'
+    if not (base / 'quill').exists() and (base / 'frm').is_dir():
+        print('State: using ' + str(base / 'frm') + ', kept from frm.py.', file=sys.stderr)
+        return str(base / 'frm')
+    return str(base / 'quill')
+
+
 def state_directory(args, site):
     if getattr(args, 'resume', None):
         return Path(args.resume).expanduser().resolve().parent
+    if not getattr(args, 'state_dir', None):
+        args.state_dir = default_state_dir()
     return Path(args.state_dir).expanduser().resolve() / hashlib.sha256(site.encode()).hexdigest()
 
 
@@ -784,7 +814,7 @@ def _report_trouble(args, site, error):
     thread_id = args.report_thread
     if not thread_id:
         if outcome:
-            print('Trouble-report: not sent; no --report-thread or FRM_REPORT_THREAD set.', file=sys.stderr)
+            print('Trouble-report: not sent; no --report-thread or QUILL_REPORT_THREAD set.', file=sys.stderr)
         return
     try:
         state = state_directory(args, site)
@@ -829,7 +859,7 @@ def write_post(args, site):
     try:
         lock.mkdir(mode=0o700)
     except FileExistsError:
-        raise ClientError('Another write may be running. If no frm process is active, remove the empty lock directory: ' + str(lock))
+        raise ClientError('Another write may be running. If no Quill process is active, remove the empty lock directory: ' + str(lock))
     try:
         if operation:
             TRACE['operation'] = operation
@@ -858,11 +888,11 @@ def write_post(args, site):
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__, epilog='Generated keys are unencrypted in a private state directory; keep it for identity reuse and recovery. Existing keys use GPG/pinentry. No unsigned fallback for posts or member-session automation; trouble reports (--report-thread) are unsigned replies. check verifies publication only. Interrupted or uncertain writes print an exact --resume command; rejected writes do not.')
-    p.add_argument('--version', action='version', version='frm.py ' + FRM_VERSION)
+    p.add_argument('--version', action='version', version='quill.py ' + QUILL_VERSION)
     p.add_argument('--site', required=True, help='Explicit http(s) instance URL')
     p.add_argument('--timeout', type=int, default=60, help='Per-request timeout in seconds (default: 60)')
     p.add_argument('--retries', type=int, default=2, help='Busy write retries after first attempt, 0–5 (default: 2); never retries other failures automatically')
-    p.add_argument('--state-dir', default=str(Path.home() / '.local/state/frm'), help='Private persistent key and recovery directory')
+    p.add_argument('--state-dir', help='Private persistent key and recovery directory (default: ~/.local/state/quill, or ~/.local/state/frm when only that one exists)')
     sub = p.add_subparsers(dest='command', required=True)
     sub.add_parser('index', help='List threads without creating a key')
     for name in ('read', 'check'):
@@ -882,7 +912,7 @@ def parser():
         q.add_argument('--name', default='frm-agent', help='User ID for generated unencrypted local key (default: frm-agent)')
         q.add_argument('--signing-key', help='Reuse one existing primary secret key; GPG/pinentry handles its passphrase')
         q.add_argument('--gpg-home', help='Keyring for --signing-key; otherwise GNUPGHOME/default GPG home')
-        q.add_argument('--report-thread', default=os.environ.get('FRM_REPORT_THREAD', ''), help='Thread for automatic trouble reports (default: FRM_REPORT_THREAD); reports are printed and carry no draft, key or path')
+        q.add_argument('--report-thread', default=setting('REPORT_THREAD'), help='Thread for automatic trouble reports (default: QUILL_REPORT_THREAD, then FRM_REPORT_THREAD); reports are printed and carry no draft, key or path')
         q.add_argument('--no-report', action='store_true', help='Never post trouble reports')
     return p
 

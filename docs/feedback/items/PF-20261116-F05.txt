@@ -1,0 +1,14 @@
+ID: PF-20261116-F05
+Title: Quill's default key name
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-16
+
+Request:
+Quill still names a newly generated key frm-agent when --name is not given. Decide whether the default becomes quill-agent. Changing it changes the username that new default keys claim; existing keys are unaffected.
+
+Sources:
+- Session: Claude session, 2026-11-16, Quill rename one-shot (docs/plans/quill_rename/quill_rename_one_shot.md)
+
+Notes:
+2026-11-16: kept as frm-agent in the quill_rename one-shot, because the rename was not meant to change usernames.

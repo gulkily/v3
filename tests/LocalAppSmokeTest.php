@@ -2085,8 +2085,9 @@ PHP;
         assertStringNotContains('Sort: Newest', $board);
         assertStringContains('/threads/?view=all&amp;sort=newest', $board);
         assertStringContains('/threads/?view=liked&amp;sort=newest', $board);
-        assertStringContains('/threads/?view=liked&amp;sort=oldest', $board);
-        assertStringContains('/threads/?view=liked&amp;sort=top', $board);
+        // Nothing is liked in this fixture, so the default board shows All and its sort links keep All.
+        assertStringContains('/threads/?view=all&amp;sort=oldest', $board);
+        assertStringContains('/threads/?view=all&amp;sort=top', $board);
         assertStringNotContains('href="/tags/board/', $board);
         assertStringNotContains('href="/tags/label/', $board);
         assertStringNotContains('Score: 0', $board);

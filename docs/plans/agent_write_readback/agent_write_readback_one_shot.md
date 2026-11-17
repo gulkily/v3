@@ -1,6 +1,6 @@
 Cycle: `v3/agent_write_readback`; Mode: one-shot; Record: this file; Index: [plans index](../README.md)
 Debug mode: enabled (project marker `.railspike_debug_on`); no separate log unless something comes up
-Effort study: `railspike-effort` / `v3/agent_write_readback` — [host ledger](../effort_estimation_trial.md#cycle-v3agent_write_readback); standing enrollment under protocol P2
+Effort study: `railspike-effort` / `v3/agent_write_readback` — [cycle ledger](../effort_ledger/agent_write_readback.md); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.35**
 Status: implemented and verified locally; pushed with a PR; merge and deploy need the maintainer
@@ -61,7 +61,7 @@ Planning commit: `0d79dbb`
 - 2026-11-16T05:55Z: correction found in the local replay. The plan assumed `apply_thread_tag` could add `#prompt`; it takes only like, flag and votes, and answers `tag must be one of: like, flag, upvote, downvote`. Topic labels come from hashtags in a post's body, so the working repair is a reply of `#prompt` (replayed: a thread stored with `promptcommunityaccessibility` reached `/agent/` after that reply). The "identity hint" refusal ChatGPT hit was a dead end in front of that. Changes: the identity-hint refusal now says what to send; the tag refusal points at the hashtag reply; `/llms.txt` and the reference describe the hashtag reply as the way to tag an existing thread.
 - 2026-11-16T06:05Z: guest attribution has no repair today. Documented what exists (signed reply claiming the post; signed copy first, then operator removal). A route for moving a guest post to an identity is a follow-up that needs the maintainer's choice.
 - 2026-11-16T08:55Z: maintainer correction on the open PR: telling an agent to ask the operator when its key cannot be recovered adds friction and is often the wrong call; it should post as guest and sort it out later ("rather post something than stop and not post anything"). `/llms.txt` and the reference now say that. The rest of the guidance stands: look for the recovery path first, check the fingerprint, no new key under the same name.
-- 2026-11-17T06:20Z: merged `origin/main` (5709775) so PR #276 can merge. The follow-up item filed as PF-20261116-F01 collided with main's item of the same ID and is now [PF-20261116-F03](../../feedback/items/PF-20261116-F03.txt). Smoke set plus this PR's tests: 739 passed.
+- 2026-11-17T06:20Z: merged `origin/main` (5709775) so PR #276 can merge. The follow-up item filed as PF-20261116-F01 collided with main's item of the same ID and became PF-20261116-F03, which collided again with main's Quill item and is now [PF-20261116-F07](../../feedback/items/PF-20261116-F07.txt) (2026-11-17). Smoke set plus this PR's tests: 739 passed.
 
 ## Study history
 
@@ -72,7 +72,7 @@ Planning commit: `0d79dbb`
 
 Delivered: separators in `board_tags` (comma, semicolon, `#`, JSON list); `author`, `signed`, `board_tags` and a guest notice on `create_thread`, `create_quote` and `create_reply`; `Board-Tags` in `get_post`; actionable refusals on the tag routes; "Before you post as guest" and "Tags and the Prompts page" in `/llms.txt`; matching sections in `docs/reference/agent_api.md`.
 
-Not done, follow-ups: the seven live guest threads still carry `promptcommunityaccessibility`-style tags (an approved member's `#prompt` reply on each lists them; a production write, not made here); moving a guest post to an identity (filed as [PF-20261116-F03](../../feedback/items/PF-20261116-F03.txt)); `frm.py whoami`; `frm.py --tags` still refuses commas; the JSON create routes (`create_prepared_post`, `create_signed_post`) do not echo author and tags.
+Not done, follow-ups: the seven live guest threads still carry `promptcommunityaccessibility`-style tags (an approved member's `#prompt` reply on each lists them; a production write, not made here); moving a guest post to an identity (filed as [PF-20261116-F07](../../feedback/items/PF-20261116-F07.txt)); `frm.py whoami`; `frm.py --tags` still refuses commas; the JSON create routes (`create_prepared_post`, `create_signed_post`) do not echo author and tags.
 
 ## Verification
 

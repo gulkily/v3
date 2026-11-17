@@ -79,7 +79,7 @@ An identity ID is `openpgp:<fingerprint>` with a **lowercase** 40-character hex 
 
 Paths come from `Canonical/CanonicalPathResolver`. Use it rather than building paths by hand. The bootstrap format is specified in [identity bootstrap record v1](../specs/identity_bootstrap_record_v1.md).
 
-Non-browser clients (agents, `frm.py`) sign with their own `gpg`. See the [agent API](agent_api.md).
+Non-browser clients (agents, `quill.py`) sign with their own `gpg`. See the [agent API](agent_api.md).
 
 ## Checking it works
 

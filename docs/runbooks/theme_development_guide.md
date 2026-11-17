@@ -73,6 +73,14 @@ Theme script UI appears after first paint, an exception to the first-paint
 rule in `CONTRIBUTING.md`. Keep it to themes whose point is that behavior.
 `tests/browser/theme_scripts.cjs` covers loading, start and stop.
 
+Bubblegum's script is its window controls (`docs/concepts/window_controls.md`):
+a title bar with a collapse button on every `.card`, and Float mode on desktop.
+`TemplateRenderer` leaves it out of `forumThemeScriptPaths` unless
+`FORUM_DRAGGABLE_WINDOWS_ENABLED` is on. The title bar is appended as the
+card's last child so it shifts no first-child spacing. A post collapsed in
+this browser is restored before paint by `layout.php`, which repeats the
+collapsed rules from `theme-bubblegum.css`; change both together.
+
 ## Shared stylesheets and the cycle button
 
 Two themes with one look should share one stylesheet rather than copy it. Set

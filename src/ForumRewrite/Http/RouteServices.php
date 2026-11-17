@@ -442,6 +442,58 @@ final class RouteServices
         (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::FAST_SCORE_SWEEP, 'fast-score-sweep');
     }
 
+    /**
+     * The local meta score for this post's current text, with `stale` when an older model gave it.
+     *
+     * @param array<string, mixed> $post
+     * @return array<string, mixed>|null
+     */
+    public function latestLocalScoreForPost(array $post): ?array
+    {
+        try {
+            $scorePath = FastScoreDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
+            $scores = \ForumRewrite\Scoring\LocalMetaScores::readOnly($scorePath);
+            if ($scores === null) return null;
+            $hash = (new FastScoreContextFactory(static fn (string $_): ?array => null))->contentHashForPost($post);
+            $score = $scores->latestForPostContent((string) ($post['post_id'] ?? ''), $hash);
+            if ($score === null) return null;
+            $model = (new \ForumRewrite\Scoring\LocalMetaFiles($this->projectRoot))->loadModel();
+            return $score + ['stale' => $model === null || $model->buildId() !== $score['model_build']];
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /** @return array<string, mixed> the last training report and task states for Tools > Fastmod */
+    public function localMetaView(): array
+    {
+        $files = new \ForumRewrite\Scoring\LocalMetaFiles($this->projectRoot);
+        $report = $files->readReport();
+        $tasks = ['train' => null, 'sweep' => null];
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+        if (is_file($queuePath)) {
+            try {
+                $store = new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath));
+                $tasks = ['train' => $store->latestByType(SqliteTaskQueueStore::LOCAL_META_TRAIN),
+                    'sweep' => $store->latestByType(SqliteTaskQueueStore::LOCAL_SCORE_SWEEP)];
+            } catch (\Throwable) {
+            }
+        }
+        return ['localReport' => $report === null ? null : \ForumRewrite\Scoring\LocalMetaFiles::parseReport($report),
+            'localTasks' => $tasks, 'canRetrain' => $this->securityReviewAllowed()];
+    }
+
+    /** @return array<string, mixed> the queued (or already queued) training task */
+    public function queueLocalMetaTrain(): array
+    {
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+        $directory = dirname($queuePath);
+        if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
+            throw new RuntimeException('Task queue directory is not writable.');
+        }
+        return (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::LOCAL_META_TRAIN, 'local-meta-train');
+    }
+
     /** @param array<string, mixed> $post @return array<string, mixed>|null */
     public function latestFastScoreForPost(array $post): ?array
     {

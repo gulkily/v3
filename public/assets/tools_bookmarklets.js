@@ -121,9 +121,23 @@
     );
   }
 
+  // The server host leads the address as a comment (javascript:/*example.com*/...)
+  // so a bookmark editor that shows only the first few characters shows where
+  // the bookmarklet posts. It stays unencoded in the link so it reads as typed.
+  function hostPrefix(baseOrigin) {
+    var host = "";
+    try {
+      host = new URL(baseOrigin).host;
+    } catch (error) {
+      host = String(baseOrigin).replace(/^[a-z]+:\/\//i, "");
+    }
+    host = host.replace(/[^A-Za-z0-9.:\-\[\]]/g, "");
+    return host ? "/*" + host + "*/" : "";
+  }
+
   function bookmarkletSource(baseOrigin, kind, mode) {
     // Encode the URL instead of stripping whitespace from executable JavaScript.
-    return "javascript:" + encodeURIComponent(bookmarkletScript(baseOrigin, kind, mode));
+    return "javascript:" + hostPrefix(baseOrigin) + encodeURIComponent(bookmarkletScript(baseOrigin, kind, mode));
   }
 
   // The copied form is plain, unencoded JavaScript on one physical line so it
@@ -132,7 +146,7 @@
   // the generated source has no line comments, and string content uses \n
   // escapes rather than literal line breaks.
   function bookmarkletCopySource(baseOrigin, kind, mode) {
-    return "javascript:" + bookmarkletScript(baseOrigin, kind, mode).replace(/\s*[\r\n]+\s*/g, " ");
+    return "javascript:" + hostPrefix(baseOrigin) + bookmarkletScript(baseOrigin, kind, mode).replace(/\s*[\r\n]+\s*/g, " ");
   }
 
   async function copySource(source) {

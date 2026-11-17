@@ -365,6 +365,24 @@ try {
                     return $result;
                 },
                 runAppUpdate: static fn (): array => \ForumRewrite\Deploy\AppUpdate::forProject($projectRoot)->runQueued(),
+                runLocalScoreSweep: static function () use ($projectRoot, $databasePath): ?array {
+                    if (!is_file($databasePath)) {
+                        throw new RuntimeException('Read model database not found: ' . $databasePath);
+                    }
+                    $sweep = \ForumRewrite\Scoring\LocalMetaSweep::forProject($projectRoot, new PDO('sqlite:' . $databasePath),
+                        FastScoreDatabaseConfig::path($projectRoot, PrivateConfig::load($projectRoot)));
+                    return $sweep?->run();
+                },
+                runLocalMetaTrain: static function () use ($projectRoot, $databasePath, $store): array {
+                    if (!is_file($databasePath)) {
+                        throw new RuntimeException('Read model database not found: ' . $databasePath);
+                    }
+                    $scorePath = FastScoreDatabaseConfig::path($projectRoot, PrivateConfig::load($projectRoot));
+                    $report = (new \ForumRewrite\Scoring\LocalMetaTraining(new PDO('sqlite:' . $databasePath), is_file($scorePath) ? new PDO('sqlite:' . $scorePath) : null))
+                        ->runAndSave(new \ForumRewrite\Scoring\LocalMetaFiles($projectRoot), false);
+                    $store->enqueue(SqliteTaskQueueStore::LOCAL_SCORE_SWEEP, \ForumRewrite\Scoring\LocalMetaSweep::DEDUPLICATION_KEY);
+                    return $report;
+                },
                 runInstanceImport: static fn (array $task): array => \ForumRewrite\Import\InstanceImportTask::forQueue($queuePath)->run(
                     $task,
                     $projectRoot,
@@ -420,7 +438,10 @@ try {
                     $elapsed,
                     $task['failure_code'] ?? 'none',
                 ));
-                if (isset($task['sweep']) && is_array($task['sweep'])) {
+                if (($task['type'] ?? null) === SqliteTaskQueueStore::LOCAL_SCORE_SWEEP && is_array($task['sweep'] ?? null)) {
+                    emitTaskQueue($quiet, sprintf("  Local score sweep: scored=%d already_current=%d model=%s remaining=%s\n",
+                        $task['sweep']['scored'], $task['sweep']['skipped'], $task['sweep']['model_build'], $task['sweep']['remaining'] ? 'yes' : 'no'));
+                } elseif (isset($task['sweep']) && is_array($task['sweep'])) {
                     emitTaskQueue($quiet, sprintf(
                         "  Fastmod sweep: examined=%d processed=%d provider_calls=%d scored=%d excluded=%d failed=%d remaining=%s\n",
                         (int) ($task['sweep']['examined'] ?? 0),

@@ -239,7 +239,12 @@ final class TemplateRenderer
             }
         }
         $themeScriptPaths = [];
+        // Bubblegum's script is its window controls; with their flag off it isn't loaded.
+        $draggableWindowsEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::DRAGGABLE_WINDOWS_ENABLED);
         foreach (ThemeRegistry::scriptPaths() as $name => $path) {
+            if ($name === 'bubblegum' && !$draggableWindowsEnabled) {
+                continue;
+            }
             if (in_array($name, $explicitThemeNames, true)) {
                 $themeScriptPaths[$name] = $this->assetPath($path);
             }
@@ -264,6 +269,7 @@ final class TemplateRenderer
             'routeSource' => $routeSource,
             'showThreadDensityToggle' => $showThreadDensityToggle,
             'showReadingMargins' => $showReadingMargins,
+            'draggableWindowsEnabled' => $draggableWindowsEnabled,
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,

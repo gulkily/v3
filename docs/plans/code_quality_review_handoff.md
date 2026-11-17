@@ -15,9 +15,10 @@ The two test failures recorded in the findings as baseline, `testLlmExchangeLink
 ## Open
 
 1. **Waiting on the maintainer:** `Host/StaticArtifactBuilder::buildSingleRoute` and `PresentationSlotRegistry::all`. Removal was approved, but both turned out to be test seams: `buildSingleRoute` renders single pages for 9 test files, and `all()` drives a slot-consistency test. The recommendation is to keep both and mark them `@internal` test hooks.
-2. **Checklist areas not started**, cheapest first:
+2. **Waiting on the maintainer:** Unicode version drift between server and browser. The server's PCRE knows Unicode 14, browsers know 16 or 17, so newer characters such as 🫨 pass the browser and fail on the server. See [findings](code_quality_review_findings_v1.md#server-and-browser-text-rules-2026-11-17).
+3. **Checklist areas not started**, cheapest first:
    - sweeps: unused imports repo-wide, commented-out code, unreachable branches, routes with no links, `queries/` `prompts/` `resources/` usage
-   - pairs that must agree: server and browser text rules (`UnicodeTextPolicy` and the compose validator), incremental updater vs full rebuild
+   - pairs that must agree: incremental updater vs full rebuild (text rules done: ASCII gap fixed, `UnicodeTextRuleParityTest` added)
    - database: read-model tables, columns and indexes nothing queries; very old schema upgrade code; record types nothing writes
    - tests: ones that assert nothing; slowest tests; smoke-set coverage
    - JS duplication (`outbox_*`, `private_message_*`) and `Sqlite*Store` boilerplate

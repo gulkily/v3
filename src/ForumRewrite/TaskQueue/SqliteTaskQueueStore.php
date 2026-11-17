@@ -12,6 +12,8 @@ final class SqliteTaskQueueStore
     public const REBUILD_READ_MODEL = 'rebuild_read_model';
     public const RETRACTION_SWEEP = 'retraction_sweep';
     public const FAST_SCORE_SWEEP = 'fast_score_sweep';
+    public const LOCAL_SCORE_SWEEP = 'local_score_sweep';
+    public const LOCAL_META_TRAIN = 'local_meta_train';
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
     public const AGENT_REPLY = 'agent_reply';
     /** Operator-requested application deploy; claimed ahead of all other queued work. */
@@ -850,7 +852,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::APP_UPDATE, self::INSTANCE_IMPORT], true)) {
+        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::LOCAL_SCORE_SWEEP, self::LOCAL_META_TRAIN, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::APP_UPDATE, self::INSTANCE_IMPORT], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

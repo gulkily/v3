@@ -69,9 +69,10 @@ try {
     $static = importAbsolutePath($options['static-html-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, SiteProfileRegistry::active())));
     // A pager may close stdout while an import still needs to finish safely.
     $outputOpen = true;
-    $progress = static function (string $message) use (&$outputOpen): void {
+    $output = new \ForumRewrite\Import\ImportOutputFilter(isset($options['progress-lines']), verbose: isset($options['verbose']));
+    $progress = static function (string $message) use (&$outputOpen, $output): void {
         \ForumRewrite\Support\InvocationSupervisor::stage($message);
-        $line = importTerminalText($message) . "\n";
+        $line = implode('', array_map(static fn (string $printed): string => importTerminalText($printed) . "\n", $output->lines($message)));
         while ($outputOpen && $line !== '') {
             $written = @fwrite(STDOUT, $line);
             if ($written === false || $written === 0) {
@@ -119,9 +120,15 @@ try {
     foreach ($result['excluded_archive_categories'] as $category => $count) {
         $progress('Excluded archive category ' . $category . ': ' . $count);
     }
-    foreach ($result['review_causes'] ?? [] as $cause) {
-        $progress('Review cause: ' . $cause['path'] . ' — ' . $cause['state'] . ': ' . $cause['reason']
-            . ' (' . $cause['affected_count'] . ' affected review entries)');
+    if (isset($options['verbose'])) {
+        foreach ($result['review_causes'] ?? [] as $cause) {
+            $progress('Review cause: ' . $cause['path'] . ' — ' . $cause['state'] . ': ' . $cause['reason']
+                . ' (' . $cause['affected_count'] . ' affected review entries)');
+        }
+    } else {
+        foreach (\ForumRewrite\Import\ImportOutputFilter::groupedReviewCauses($result['review_causes'] ?? []) as $line) {
+            $progress($line);
+        }
     }
     foreach ($result['exclusion_reasons'] ?? [] as $reason => $count) {
         $progress('Excluded: ' . $reason . ' (' . $count . ' entries)');
@@ -202,7 +209,7 @@ function importInstanceOptions(array $arguments): array
 {
     $options = [];
     foreach ($arguments as $argument) {
-        if (in_array($argument, ['--help', '-h', '--dry-run', '--resume', '--cancel', '--verbose', '--with-approvals'], true)) {
+        if (in_array($argument, ['--help', '-h', '--dry-run', '--resume', '--cancel', '--verbose', '--with-approvals', '--progress-lines'], true)) {
             $options[$argument === '-h' ? 'help' : substr($argument, 2)] = true;
         } elseif (preg_match('/^--(repository-root|database-path|static-html-root|sources|time-limit)=(.+)$/D', $argument, $match)) {
             if (isset($options[$match[1]])) { throw new RuntimeException('Duplicate option: --' . $match[1]); }
@@ -250,6 +257,7 @@ function importInstanceUsage(): string
     return <<<'TEXT'
 Usage:
   ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--with-approvals]
+                      [--progress-lines]
   ./v3 import-instance --resume
   ./v3 import-instance --cancel
   Options: --repository-root=/path/repository --database-path=/path/index.sqlite3
@@ -268,7 +276,9 @@ Run ./v3 build-static separately when static output is needed.
 --cancel: discard an interrupted import instead of resuming it. Removes the
           record files it installed (changed files are kept) and keeps its saved
           copies and report. Refused once its content is committed; use --resume.
---verbose: include every rejected/excluded file; the default report groups root causes.
+--verbose: include every rejected/excluded file and rebuild step; the default
+           report groups root causes and prints counters once a second.
+--progress-lines: also print `Progress: <step> [done/total]` lines (used by Tools → Import).
 --with-approvals: also import the source's approval and invitation posts and
           their acceptance receipts (root seeds and other authority stay out).
           They grant nothing until a key that wrote them is approved here;
