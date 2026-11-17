@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\View;
 
+use ForumRewrite\Canonical\PostRecordList;
 use ForumRewrite\ReadModel\TagOnlyLeafFilter;
 use ForumRewrite\Support\ThreadLabels;
 
@@ -21,14 +22,15 @@ final class ThreadActivity
      * @param array<string,mixed>|null $rootPost
      * @param list<array<string,mixed>> $replies replies after RetractedLeafFilter, in thread order
      * @param array<string,mixed>|null $signalActors
+     * @param array<string,string> $recordIds PostRecordList::reactionRecordIds() result; names with a record link to it
      * @return array{shown: list<array<string,mixed>>, moved: list<array<string,mixed>>, entries: list<array<string,mixed>>}
      */
-    public static function partition(?array $rootPost, array $replies, ?array $signalActors, bool $recordsEnabled): array
+    public static function partition(?array $rootPost, array $replies, ?array $signalActors, bool $recordsEnabled, array $recordIds = []): array
     {
         try {
             ['kept' => $shown, 'moved' => $moved] = TagOnlyLeafFilter::split($replies);
 
-            return ['shown' => $shown, 'moved' => $moved, 'entries' => self::build($rootPost, $moved, $shown, $signalActors, $recordsEnabled)];
+            return ['shown' => $shown, 'moved' => $moved, 'entries' => self::build($rootPost, $moved, $shown, $signalActors, $recordsEnabled, $recordIds)];
         } catch (\Throwable) {
             return ['shown' => $replies, 'moved' => [], 'entries' => []];
         }
@@ -39,9 +41,10 @@ final class ThreadActivity
      * @param list<array<string,mixed>> $movedReplies tag-only replies taken out of the conversation
      * @param list<array<string,mixed>> $shownReplies replies still in the conversation
      * @param array<string,mixed>|null $signalActors SignalActors::load() result
+     * @param array<string,string> $recordIds PostRecordList::reactionRecordIds() result
      * @return list<array<string,mixed>>
      */
-    public static function build(?array $rootPost, array $movedReplies, array $shownReplies, ?array $signalActors, bool $recordsEnabled): array
+    public static function build(?array $rootPost, array $movedReplies, array $shownReplies, ?array $signalActors, bool $recordsEnabled, array $recordIds = []): array
     {
         $entries = [];
         foreach ($movedReplies as $reply) {
@@ -58,14 +61,14 @@ final class ThreadActivity
         $posts = $signalActors['posts'] ?? [];
         if ($rootPost !== null) {
             $rootId = (string) $rootPost['post_id'];
-            $entries = self::addReactions($entries, $rootId, 'Root post', $signalActors['thread_likes'] ?? [], $posts[$rootId]['flag'] ?? [], $recordsEnabled);
+            $entries = self::addReactions($entries, $rootId, 'Root post', $signalActors['thread_likes'] ?? [], $posts[$rootId]['flag'] ?? [], $recordsEnabled, $recordIds);
         }
         $replies = [...$shownReplies, ...$movedReplies];
         usort($replies, static fn (array $a, array $b): int => [(int) ($a['sequence_number'] ?? 0), (string) $a['post_id']] <=> [(int) ($b['sequence_number'] ?? 0), (string) $b['post_id']]);
         foreach ($replies as $reply) {
             $id = (string) $reply['post_id'];
             $label = 'Reply by ' . self::author($reply)['username'];
-            $entries = self::addReactions($entries, $id, $label, $posts[$id]['like'] ?? [], $posts[$id]['flag'] ?? [], $recordsEnabled);
+            $entries = self::addReactions($entries, $id, $label, $posts[$id]['like'] ?? [], $posts[$id]['flag'] ?? [], $recordsEnabled, $recordIds);
         }
 
         return $entries;
@@ -76,9 +79,14 @@ final class ThreadActivity
      * @param list<array<string,mixed>> $likes @param list<array<string,mixed>> $flags
      * @return list<array<string,mixed>>
      */
-    private static function addReactions(array $entries, string $postId, string $label, array $likes, array $flags, bool $recordsEnabled): array
+    private static function addReactions(array $entries, string $postId, string $label, array $likes, array $flags, bool $recordsEnabled, array $recordIds): array
     {
         if ($likes !== [] || $flags !== []) {
+            $withRecord = static fn (array $actors, string $tag): array => array_map(static function (array $actor) use ($postId, $tag, $recordIds): array {
+                $recordId = $recordIds[PostRecordList::reactionKey($postId, $tag, (string) ($actor['identity_id'] ?? ''))] ?? null;
+                return $recordId !== null ? $actor + ['record_id' => $recordId] : $actor;
+            }, $actors);
+            [$likes, $flags] = [$withRecord($likes, 'like'), $withRecord($flags, 'flag')];
             $entries[] = ['kind' => 'reactions', 'post_id' => $postId, 'label' => $label, 'like' => $likes, 'flag' => $flags,
                 'href' => self::postHref($postId, $recordsEnabled)];
         }

@@ -126,6 +126,18 @@ final class ThreadAndPostPageController
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
+        $flags = $this->routeServices->featureFlags();
+        $threadActivityDrawerEnabled = $flags->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::THREAD_ACTIVITY_DRAWER_ENABLED);
+        $postRecordsEnabled = $flags->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED);
+        // Record pages exist only with Post records on; look records up only when the drawer has a reaction to link.
+        $hasReactions = ($signalActors['thread_likes'] ?? []) !== []
+            || array_filter($signalActors['posts'] ?? [], static fn (array $tags): bool => ($tags['like'] ?? []) !== [] || ($tags['flag'] ?? []) !== []) !== [];
+        $threadReactionRecordIds = [];
+        if ($threadActivityDrawerEnabled && $postRecordsEnabled && $hasReactions) {
+            try {
+                $threadReactionRecordIds = \ForumRewrite\Canonical\PostRecordList::reactionRecordIds($this->repositoryRoot, array_map('strval', array_column($posts, 'post_id')), $threadId);
+            } catch (\Throwable) { /* names fall back to profile links */ }
+        }
 
         $pledgeCampaign = $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_ENABLED)
             ? \ForumRewrite\View\PledgeCampaign::fromPosts(
@@ -138,15 +150,12 @@ final class ThreadAndPostPageController
         return $this->routeServices->renderPageTemplate(
             'thread.php',
             [
+                'threadReactionRecordIds' => $threadReactionRecordIds,
                 'collapseSameAuthorPostsEnabled' => $this->routeServices->featureFlags()->isEnabled(
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
                 ),
-                'threadActivityDrawerEnabled' => $this->routeServices->featureFlags()->isEnabled(
-                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::THREAD_ACTIVITY_DRAWER_ENABLED
-                ),
-                'postRecordsEnabled' => $this->routeServices->featureFlags()->isEnabled(
-                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED
-                ),
+                'threadActivityDrawerEnabled' => $threadActivityDrawerEnabled,
+                'postRecordsEnabled' => $postRecordsEnabled,
                 'thread' => $threadRow,
                 'eventState' => ((string) ($threadRow['event_date'] ?? '')) !== ''
                     && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)

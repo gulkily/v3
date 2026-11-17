@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Canonical\PostRecordList;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\View\TemplateRenderer;
 
@@ -127,6 +128,74 @@ final class PostSignalsTemplateTest
             // The drawer sits after the last reply and before the reply box.
             assertSame(true, strpos($on, 'thread-activity') < strpos($on, 'inline-reply-composer'));
             assertStringContains('<a href="/posts/root-001#records">Root post</a>', $withRecords);
+        } finally {
+            $fixture->remove();
+        }
+    }
+
+    public function testThreadActivityDrawerLinksEachReactorToTheRecordThatAddedIt(): void
+    {
+        $fixture = new RebuildHistoryFixture(0);
+        try {
+            $repository = $fixture->repository;
+            @mkdir($repository . '/records/post-reactions');
+            $write = static function (string $family, string $id, string $target, string $tag, string $createdAt, string $operation = 'add') use ($repository): void {
+                $kind = $family === 'thread-labels' ? 'thread' : 'post';
+                file_put_contents("{$repository}/records/{$family}/{$id}.txt", "Record-ID: {$id}\nCreated-At: {$createdAt}\nTarget-Kind: {$kind}\nTarget-ID: {$target}\nOperation: {$operation}\nTags: {$tag}\nAuthor-Identity-ID: " . self::APPROVED . "\n\n");
+            };
+            $write('thread-labels', 'thread-label-link-1', 'root-001', 'like', '2026-06-01T00:00:01Z');
+            $write('post-reactions', 'post-reaction-link-old', 'reply-001', 'like', '2026-06-01T00:00:02Z');
+            $write('post-reactions', 'post-reaction-link-new', 'reply-001', 'like', '2026-06-01T00:00:03Z');
+            $write('post-reactions', 'post-reaction-link-flag', 'reply-001', 'flag', '2026-06-01T00:00:04Z');
+            $write('post-reactions', 'post-reaction-link-other', 'not-in-thread', 'like', '2026-06-01T00:00:05Z');
+            $fixture->git('add', '.');
+            $fixture->git('commit', '-qm', 'reactions');
+
+            $ids = PostRecordList::reactionRecordIds($repository, ['root-001', 'reply-001'], 'root-001');
+            ksort($ids);
+            $expected = [
+                PostRecordList::reactionKey('root-001', 'like', self::APPROVED) => 'thread-label-link-1',
+                PostRecordList::reactionKey('reply-001', 'like', self::APPROVED) => 'post-reaction-link-new',
+                PostRecordList::reactionKey('reply-001', 'flag', self::APPROVED) => 'post-reaction-link-flag',
+            ];
+            ksort($expected);
+            assertSame($expected, $ids);
+            assertSame([], PostRecordList::reactionRecordIds($repository, [], 'root-001'));
+
+            // A later remove is not an add, so it never becomes the link target.
+            $write('post-reactions', 'post-reaction-link-remove', 'reply-001', 'flag', '2026-06-01T00:00:06Z', 'remove');
+            $fixture->git('add', '.');
+            $fixture->git('commit', '-qm', 'remove');
+            assertSame('post-reaction-link-flag', PostRecordList::reactionRecordIds($repository, ['reply-001'], 'root-001')[PostRecordList::reactionKey('reply-001', 'flag', self::APPROVED)] ?? null);
+            $fixture->git('rm', '-q', 'records/post-reactions/post-reaction-link-remove.txt');
+            $fixture->git('commit', '-qm', 'drop remove');
+
+            $databasePath = $fixture->root . '/model.sqlite';
+            (new ReadModelBuilder($repository, $databasePath, new CanonicalRecordRepository($repository)))->rebuild();
+            $page = fn (): string => $this->render(new Application(dirname(__DIR__), $repository, $databasePath), 'GET', '/threads/root-001');
+            $drawerOf = static function (string $html): string {
+                $drawer = substr($html, (int) strpos($html, '<details class="card thread-activity"'));
+                return substr($drawer, 0, (int) strpos($drawer, '</details>'));
+            };
+
+            putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED=1');
+            try {
+                $withoutRecords = $drawerOf($page());
+                putenv('FORUM_POST_RECORDS_ENABLED=1');
+                $html = $page();
+                $record = $this->render(new Application(dirname(__DIR__), $repository, $databasePath), 'GET', '/records/post-reaction-link-new');
+            } finally {
+                putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+                putenv('FORUM_POST_RECORDS_ENABLED');
+            }
+            $drawer = $drawerOf($html);
+            assertStringContains('Liked by <a href="/records/thread-label-link-1">', $drawer);
+            assertStringContains('Liked by <a href="/records/post-reaction-link-new">', $drawer);
+            assertStringContains('Flagged by <a href="/records/post-reaction-link-flag">', $drawer);
+            assertStringNotContains('post-reaction-link-old', $drawer);
+            assertStringNotContains('/records/', $withoutRecords);
+            assertStringContains('Record-ID', $record);
+            assertStringContains('post-reaction-link-new', $record);
         } finally {
             $fixture->remove();
         }

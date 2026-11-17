@@ -41,7 +41,7 @@ if (is_array($pledgeCampaign ?? null)) {
 $threadActivityEntries = [];
 if ($threadActivityDrawerEnabled ?? false) {
     ['shown' => $replyPosts, 'entries' => $threadActivityEntries] = \ForumRewrite\View\ThreadActivity::partition(
-        $rootPost, $replyPosts, $signalActors ?? null, $postRecordsEnabled ?? false);
+        $rootPost, $replyPosts, $signalActors ?? null, $postRecordsEnabled ?? false, $threadReactionRecordIds ?? []);
 }
 
 // Pre-compute continuation flags so the root card can show a true reply count before the reply loop runs.

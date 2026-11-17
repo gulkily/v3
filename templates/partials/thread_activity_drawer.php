@@ -8,7 +8,11 @@ $activityActor = static function (array $actor) use ($e): string {
         ? '<a href="/profiles/' . $e((string) $actor['profile_slug']) . '">' . $name . '</a>'
         : $name;
 };
-$activityActors = static fn (array $actors): string => implode(', ', array_map($activityActor, $actors));
+// A reactor's name opens the record that added the reaction when there is one, otherwise the profile.
+$activityReactor = static fn (array $actor): string => isset($actor['record_id'])
+    ? '<a href="/records/' . $e(rawurlencode((string) $actor['record_id'])) . '">' . $e((string) $actor['username']) . '</a>'
+    : $activityActor($actor);
+$activityActors = static fn (array $actors): string => implode(', ', array_map($activityReactor, $actors));
 ?>
 <details class="card thread-activity" id="activity">
   <summary>Activity (<?= count($entries) ?>)</summary>
