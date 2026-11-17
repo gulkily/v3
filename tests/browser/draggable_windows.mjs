@@ -8,9 +8,13 @@ import { once } from 'node:events';
 import { chromium } from 'playwright-core';
 
 // Draggable windows (FORUM_DRAGGABLE_WINDOWS_ENABLED) in the Bubblegum theme.
-// Stage 1: a post collapsed in this browser is collapsed from the first frame
+// A post collapsed in this browser is collapsed from the first frame
 // (no jump once the page settles), every window shows its title bar, and nothing is collapsed with the flag off,
 // in another theme, or with window controls turned off in Preferences.
+// Every window gets one collapse button (mouse, keyboard, tap, or a double-click
+// on the title bar); a post's collapse is saved and shows its author; a
+// composer keeps its draft; switching theme removes every button and switching
+// back restores them; with the flag off the script isn't even loaded.
 // Usage: node tests/browser/draggable_windows.mjs [screenshot-dir]
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
@@ -94,7 +98,75 @@ try {
   await page.goto(url);
   assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-window-controls')), false, 'off: no controls attribute');
   assert.ok(await height(rootId) > 60, 'off: not collapsed');
+  // Working collapse buttons.
+  await setUp('bubblegum', null, null);
+  await page.goto(url);
+  await page.waitForSelector('[data-window-titlebar]');
+  const cards = await page.locator('.card').count();
+  assert.equal(await page.locator('.card > [data-window-titlebar]').count(), cards, 'every window has one title bar');
+  const button = id => page.locator(`.card[data-post-id="${id}"] > [data-window-titlebar] > [data-window-collapse]`).first();
+  const saved = () => page.evaluate(k => localStorage.getItem(k), runtime.collapsedWindowsStorageKey);
+  assert.equal(await button(rootId).getAttribute('aria-expanded'), 'true');
+  assert.match(await button(rootId).getAttribute('aria-label'), /^Window: /, 'button named after its window');
+  await button(rootId).click();
+  assert.ok(await height(rootId) < 40, 'click collapses');
+  assert.equal(await button(rootId).getAttribute('aria-expanded'), 'false');
+  assert.equal(await saved(), rootId, 'post collapse saved');
+  assert.equal(await page.locator(`.card[data-post-id="${rootId}"] [data-window-label]`).first().evaluate(l => getComputedStyle(l).visibility), 'visible', 'collapsed post shows its label');
+  assert.equal(await page.locator(`.card[data-post-id="${rootId}"] [data-window-label]`).first().textContent(),
+    await page.locator(`.card[data-post-id="${rootId}"]`).first().getAttribute('data-author'), 'label is the author');
+  if (shots) await page.screenshot({ path: join(shots, 'bubblegum-buttons-desktop.png') });
+  await page.reload();
+  await page.waitForSelector('[data-window-titlebar]');
+  assert.ok(await height(rootId) < 40, 'still collapsed after reload');
+  assert.equal(await page.evaluate(() => document.getElementById('window-controls-collapsed')), null, 'script replaced the pre-paint style');
+  await page.locator(`.card[data-post-id="${rootId}"] > [data-window-titlebar]`).first().dblclick({ position: { x: 200, y: 8 } });
+  assert.ok(await height(rootId) > 60, 'double-click on the title bar expands');
+  assert.equal(await saved(), null, 'expanded post forgotten');
+  await button(replyId).focus();
+  await page.keyboard.press('Enter');
+  assert.ok(await height(replyId) < 40, 'Enter collapses');
+  await page.keyboard.press('Space');
+  assert.ok(await height(replyId) > 60, 'Space expands');
+
+  // A composer keeps its draft through collapse and expand.
+  const composer = page.locator('.card:has(textarea)').last();
+  await composer.locator('textarea').fill('draft text');
+  await composer.locator('> [data-window-titlebar] > [data-window-collapse]').click();
+  assert.equal(await composer.locator('textarea').isVisible(), false, 'composer collapsed');
+  await composer.locator('> [data-window-titlebar] > [data-window-collapse]').click();
+  assert.equal(await composer.locator('textarea').inputValue(), 'draft text', 'draft kept');
+
+  // Switching theme removes everything; switching back restores it, saved posts included.
+  await button(rootId).click();
+  await page.evaluate(() => window.forumExitTheme('gloss'));
+  assert.equal(await page.locator('[data-window-titlebar]').count(), 0, 'gloss: no title bars');
+  assert.equal(await page.locator('[data-window], [data-window-collapsed]').count(), 0, 'gloss: no window marks');
+  assert.ok(await height(rootId) > 60, 'gloss: nothing collapsed');
+  await page.evaluate(() => window.forumExitTheme('bubblegum'));
+  await page.waitForSelector('[data-window-titlebar]');
+  assert.ok(await height(rootId) < 40, 'back in bubblegum: saved collapse restored');
+
+  // Other pages: every window gets a button.
+  for (const path of ['/tools/', '/tools/preferences/', '/about/']) {
+    await page.goto(on.base + path);
+    await page.waitForFunction(() => window.forumThemeScripts && window.forumThemeScripts.active() === 'bubblegum' && document.querySelector('[data-window]'));
+    assert.equal(await page.locator('.card > [data-window-titlebar]').count(), await page.locator('.card').count(), `${path}: every window has a title bar`);
+  }
   assert.deepEqual(errors, [], 'no page errors with the flag on');
+
+  // Phone width, by tap.
+  const phone = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 380, height: 800 }, hasTouch: true, isMobile: true });
+  const phonePage = await phone.newPage();
+  await phonePage.goto(url);
+  await phonePage.evaluate(([rt]) => { localStorage.clear(); localStorage.setItem(rt.themeStorageKey, 'bubblegum'); }, [runtime]);
+  await phonePage.goto(url);
+  await phonePage.waitForSelector('[data-window-titlebar]');
+  await phonePage.locator(`.card[data-post-id="${replyId}"] > [data-window-titlebar] > [data-window-collapse]`).first().tap();
+  assert.ok(await phonePage.locator(`.card[data-post-id="${replyId}"]`).first().evaluate(c => c.getBoundingClientRect().height) < 40, 'tap collapses on a phone');
+  assert.equal(await phonePage.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false, 'no sideways scroll on a phone');
+  if (shots) await phonePage.screenshot({ path: join(shots, 'bubblegum-buttons-phone.png'), fullPage: true });
+  await phone.close();
   on.stop();
 
   // Flag off: nothing is written before paint.
@@ -105,6 +177,8 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-window-controls')), false, 'flag off: no controls attribute');
   assert.equal(await page.evaluate(() => document.getElementById('window-controls-collapsed')), null, 'flag off: no collapsed style');
   assert.ok(await height(rootId) > 60, 'flag off: not collapsed');
+  assert.equal(await page.evaluate(() => 'bubblegum' in (window.forumThemeScriptPaths || {})), false, 'flag off: script not offered');
+  assert.equal(await page.locator('[data-window-titlebar]').count(), 0, 'flag off: no title bars');
   assert.deepEqual(errors, [], 'no page errors');
   console.log('draggable_windows: ok');
 } finally {

@@ -45,8 +45,22 @@ Ledger note: Step 3 said this cycle's ledger row would go into the planning comm
 ## Stage 2 - Bubblegum theme script and working collapse
 
 **Original estimate: 0.18**
+**Retrospective stage work: 0.20**
 
-- Status: not started.
+- Status: complete.
+- Changes:
+  - New `public/assets/theme-bubblegum.js`, registered with `forumThemeScripts` like `theme-engagify.js`. Start runs only when `data-window-controls` is set. It appends a title bar (label and collapse button) as each `.card`'s last child, so no first-child spacing moves. Clicks and double-clicks on the title bar toggle collapse. A post's collapse is saved by `data-post-id`, newest 500 kept. A `MutationObserver` decorates windows added later. Stop removes every title bar, mark, listener and the observer. `window.forumWindowControls.restart()` is for Stage 5.
+  - `ThemeRegistry.php`: Bubblegum gets `'script' => true`. `TemplateRenderer.php` leaves Bubblegum's script out of `forumThemeScriptPaths` when the flag is off, so flag-off pages load nothing new.
+  - `theme-bubblegum.css`: the drawn three boxes give way to the real button on decorated windows; title bar strip, label (shown when collapsed: a post's author, otherwise the first heading), and a pixel underscore or window glyph with a 44px touch target. The visitor intro keeps its close box at the end of the bar. The collapsed rule spares the title bar and the intro's close box; `layout.php`'s pre-paint copy matches.
+  - `tests/browser/draggable_windows.mjs` extended.
+- Verification:
+  - `node tests/browser/draggable_windows.mjs`: passes. One title bar per window on the thread, Tools, Preferences and About; click, Enter, Space, and double-click on the title bar; `aria-expanded` and the "Window: <label>" name; saved after reload with the pre-paint style removed; label equals `data-author`; a composer keeps "draft text"; Gloss removes every title bar and mark, and Bubblegum restores the saved collapse; tap at 380px collapses with no sideways scroll; flag off offers no Bubblegum script and adds no title bars.
+  - `node tests/browser/theme_scripts.cjs`: passes.
+  - `./v3 test --smoke ThemeRegistryTest FeatureFlagEvaluatorTest`: 475 run, 475 passed.
+  - Screenshots at 1280px and 380px checked by eye. The first phone shot showed Bubblegum's general hover and press styles on the tapped button; the button's selector now outranks them.
+- Notes:
+  - The board (`/`) shows "Temporarily Unavailable" with the `parity_minimal_v1` fixture on unmodified `4a6c8bd` too, so the test checks Tools, Preferences and About instead. The visitor intro only shows on the board, so its title bar gets a screenshot check in Stage 6 on a fuller fixture.
+- Estimate details: original scope as Step 3. Retrospective 0.20, a little over: the title bar CSS fight with the general button rules and the fixture's board took an extra pass. No revision was recorded before the work.
 
 ## Stage 3 - Active window and pop
 

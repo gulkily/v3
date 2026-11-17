@@ -220,7 +220,7 @@
             var collapsedStyle = document.createElement('style');
             collapsedStyle.id = 'window-controls-collapsed';
             collapsedStyle.textContent = collapsedCards.join(',') + '{padding-top:1.5rem;padding-bottom:0;min-height:0}'
-              + collapsedCards.map(function (card) { return card + '>*'; }).join(',') + '{display:none!important}';
+              + collapsedCards.map(function (card) { return card + '>:not([data-window-titlebar]):not([data-visitor-intro-hide])'; }).join(',') + '{display:none!important}';
             document.head.appendChild(collapsedStyle);
           }
         }
