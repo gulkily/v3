@@ -55,7 +55,18 @@ final class UserAccessTest
             assertStringContains('data-approval-return="tools"', $html);
             assertStringContains($target['identity_id'], $html);
             assertStringNotContains('Approval complete.', $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug'] . '?approval=success'));
+            // A thread the person posted in counts them differently once approved, so its baked page goes.
+            $other = (string) $writer->createThread(['board_tags' => 'general', 'subject' => 'Campaign', 'body' => 'goal: 10 coffees'])['thread_id'];
+            $writer->createReply(['thread_id' => $other, 'parent_id' => $other, 'body' => 'pledge: 2', 'author_identity_id' => $target['identity_id']]);
+            $baked = [$workspace->root . '/artifacts/threads/' . $other . '.html', $workspace->root . '/artifacts/threads/' . $other . '/index.html'];
+            foreach ($baked as $path) {
+                @mkdir(dirname($path), 0777, true);
+                file_put_contents($path, 'stale');
+            }
             $writer->approveUser(['approver_identity_id' => $actor, 'target_identity_id' => $target['identity_id'], 'target_profile_slug' => $target['profile_slug'], 'thread_id' => $target['bootstrap_thread_id'], 'parent_id' => $target['bootstrap_post_id']]);
+            foreach ($baked as $path) {
+                assertSame(false, is_file($path), 'approval should clear the baked page ' . $path);
+            }
             assertStringContains('Approval complete.', $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug'] . '?approval=success'));
             assertStringNotContains('data-signed-approval-form', $this->render($root, $db, '/tools/user-access/profiles/' . $target['profile_slug']));
         });

@@ -118,6 +118,7 @@ Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-17. Step 
 - Delivered scope: as approved in Steps 2 and 3, with one recorded deviation (the list byline's Pending chip instead of dropping "(unapproved)") and two accepted limits (Word97 and Bubblegum keep rows as separate windows; the Retract control's own "…" sits inside "More").
 - Starting revision `6e82449d`; planning commit `2752eebb`; four stage commits. Stage retrospectives 0.22, 0.22, 0.16, 0.10, not summed.
 - Corrective work inside the cycle: test fixtures needed real second identities and canonical approval; the browser check needed helpers to open rows and centre controls under the phone's fixed bar. No new requests.
+- Correction after closeout (maintainer report: approving from a Pending pill left "Waiting for approval" rows until reload): approval cleared only the approval thread, the profile and the lists, so a baked campaign thread kept the old rows even on reload. Every approval path now also clears the baked pages of each thread the approved person posted in. Verified: a new check in `UserAccessTest` passes with the fix and fails without it; `./v3 test --smoke UserAccessTest KeyBootstrapTest ApprovalPolicyTest RootApprovalPageTest PledgeCampaignTest` (523 tests). Updating rows in place without a reload is not part of this correction.
 - Maintainer comfortable-fit judgment: pending. Release check: pending.
 - Single exposed rater Claude (claude-opus-5-5), 2026-11-17 UTC; R1 hashes not re-verified.
 
