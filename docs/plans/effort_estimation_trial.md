@@ -2294,3 +2294,20 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 | `v3/session_member_gates` | One-shot technically complete; push, PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.15 (intake 0.15; execution entry 0.15; retrospective 0.25) | [One-shot record](./session_member_gates/session_member_gates_one_shot.md#study-history) | Security audit finding; acceptance pending |
 
 2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer in chat ("Yes, that's exactly what I want") after the audit. Intake **0.15** after the audit and call-site inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**: two pre-existing test defects were fixed on the way (parallel isolation in `WriteApiSmokeTest`; a browser test stale since the retraction simplification). Baseline `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `fix/member-gates-need-session`; planning commit `633944c`. Single exposed rater Claude (claude-fable-5-2). R1 hashes not re-verified this session. No measured effort, independent rating or accepted-count increment.
+
+
+## Cycle v3/nav_quick_wins
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/nav_quick_wins` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.30 (intake 0.30; entry 0.30; retrospective 0.25) | [One-shot record](./nav_quick_wins/nav_quick_wins_one_shot.md#study-history) | Nav speed checklist cycle 2; one-shot |
+
+2026-11-17T05:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.30**; retrospective scope assessment **0.25**; no revisions. Baseline `c010efca`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
+
+## Cycle v3/nav_cached_copy
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/nav_cached_copy` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.40 (intake 0.40; entry 0.40; retrospective 0.40) | [One-shot record](./nav_cached_copy/nav_cached_copy_one_shot.md#study-history) | Predecessor `v3/nav_quick_wins` (unmerged); one-shot |
+
+2026-11-17T06:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.40**; retrospective scope assessment **0.40**; no revisions. Baseline `e7babc06`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.

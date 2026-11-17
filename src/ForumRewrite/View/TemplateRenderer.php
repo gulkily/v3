@@ -336,6 +336,8 @@ final class TemplateRenderer
             'tabBarScrollScriptPath' => $this->assetPath('/assets/tab_bar_scroll.js'),
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
             'usageLogScriptPath' => $this->assetPath('/assets/usage_log.js'),
+            'fastNavigationScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::FAST_NAVIGATION_ENABLED) ? $this->assetPath('/assets/fast_navigation.js') : null,
+            'navCachedCopyScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED) ? $this->assetPath('/assets/nav_cached_copy.js') : null,
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
             'deployCelebrateScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_celebrate.js') : null,

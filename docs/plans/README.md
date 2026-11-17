@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Nav speed checklist](nav_speed_checklist.md) — cutting click-to-done time on navbar links, in five cycles. Cycle 2: [nav quick wins](nav_quick_wins/nav_quick_wins_one_shot.md) — navigation preload, an early fetch on tap, and an immediate highlight. Cycle 3: [nav cached copy](nav_cached_copy/nav_cached_copy_one_shot.md) — navbar pages from the last copy, refreshed in the background.
+
 [Import review summary one-shot](import_review_summary/import_review_summary_one_shot.md) — Tools → Import groups review causes by state and reason instead of listing every path.
 
 [Import-instance GUI](import_instance_gui/import_instance_gui_step1_solution_assessment.md) — root-only Tools → Import page: import from a remembered or typed source, watch progress, resume or cancel, read the result.
