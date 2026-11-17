@@ -21,7 +21,9 @@ import { chromium } from 'playwright-core';
 // arrow keys on its button; text selection and links inside windows still
 // work; Reset puts windows back; Float off and theme switches clear positions.
 // Preferences' Window controls Off removes every button at once and On brings
-// them back, both without a reload.
+// them back, both without a reload. The board's visitor intro keeps its close
+// box beside the collapse button. With JavaScript off, Bubblegum looks as it
+// does with the flag off, and Gloss and Word97 look the same either way.
 // Usage: node tests/browser/draggable_windows.mjs [screenshot-dir]
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
@@ -264,11 +266,26 @@ try {
   assert.ok(await height(rootId) < 40, 'back in bubblegum: saved collapse restored');
 
   // Other pages: every window gets a button.
-  for (const path of ['/tools/', '/tools/preferences/', '/about/']) {
+  for (const path of ['/?view=liked', '/tools/', '/tools/preferences/', '/about/']) {
     await page.goto(on.base + path);
     await page.waitForFunction(() => window.forumThemeScripts && window.forumThemeScripts.active() === 'bubblegum' && document.querySelector('[data-window]'));
     assert.equal(await page.locator('.card > [data-window-titlebar]').count(), await page.locator('.card').count(), `${path}: every window has a title bar`);
   }
+  // The visitor intro (board, fresh browser): collapse button and close box side by side.
+  await setUp('bubblegum', null, null);
+  // The board's default view; under ./v3 start a bare / is the local development page.
+  await page.goto(on.base + '/?view=liked');
+  await page.waitForSelector('.visitor-intro > [data-window-titlebar]', { state: 'attached' });
+  const intro = page.locator('.visitor-intro');
+  const collapseBox = await intro.locator('> [data-window-titlebar] > [data-window-collapse]').boundingBox();
+  const closeBox = await intro.locator('> [data-visitor-intro-hide]').boundingBox();
+  assert.ok(collapseBox.x + collapseBox.width <= closeBox.x, 'collapse button sits left of the close box');
+  assert.ok(Math.abs(collapseBox.y - closeBox.y) <= 3, 'both on the title bar');
+  if (shots) await intro.screenshot({ path: join(shots, 'bubblegum-visitor-intro.png') });
+  await intro.locator('> [data-window-titlebar] > [data-window-collapse]').click();
+  assert.equal(await intro.locator('> [data-visitor-intro-hide]').isVisible(), true, 'close box stays when collapsed');
+  if (shots) await page.screenshot({ path: join(shots, 'bubblegum-board.png') });
+
   // Preferences: Off removes the buttons now, On brings them back now.
   await page.goto(on.base + '/tools/preferences/');
   await page.waitForSelector('[data-window-titlebar]', { state: 'attached' });
@@ -295,6 +312,19 @@ try {
   assert.equal(await phonePage.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false, 'no sideways scroll on a phone');
   if (shots) await phonePage.screenshot({ path: join(shots, 'bubblegum-buttons-phone.png'), fullPage: true });
   await phone.close();
+
+  // Screenshots to compare with the flag off below.
+  const still = {};
+  for (const [theme, js] of [['bubblegum', false], ['gloss', true], ['word97', true]]) {
+    const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 }, javaScriptEnabled: js, reducedMotion: 'reduce' });
+    await ctx.addInitScript(([key, theme]) => localStorage.setItem(key, theme), [runtime.themeStorageKey, theme]);
+    if (!js) await ctx.addCookies([{ name: 'theme-hint', value: theme, url: on.base }]);
+    const p = await ctx.newPage();
+    await p.goto(url);
+    if (js) await p.waitForTimeout(300);
+    still[theme] = await p.screenshot();
+    await ctx.close();
+  }
   on.stop();
 
   // Flag off: nothing is written before paint.
@@ -307,6 +337,17 @@ try {
   assert.ok(await height(rootId) > 60, 'flag off: not collapsed');
   assert.equal(await page.evaluate(() => 'bubblegum' in (window.forumThemeScriptPaths || {})), false, 'flag off: script not offered');
   assert.equal(await page.locator('[data-window-titlebar]').count(), 0, 'flag off: no title bars');
+  for (const [theme, js] of [['bubblegum', false], ['gloss', true], ['word97', true]]) {
+    const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 }, javaScriptEnabled: js, reducedMotion: 'reduce' });
+    await ctx.addInitScript(([key, theme]) => localStorage.setItem(key, theme), [runtime.themeStorageKey, theme]);
+    if (!js) await ctx.addCookies([{ name: 'theme-hint', value: theme, url: off.base }]);
+    const p = await ctx.newPage();
+    await p.goto(off.base + '/threads/root-001');
+    if (js) await p.waitForTimeout(300);
+    const shot = await p.screenshot();
+    assert.ok(shot.equals(still[theme]), `${theme}${js ? '' : ' with JavaScript off'}: flag on looks the same as flag off`);
+    await ctx.close();
+  }
   assert.deepEqual(errors, [], 'no page errors');
   console.log('draggable_windows: ok');
 } finally {

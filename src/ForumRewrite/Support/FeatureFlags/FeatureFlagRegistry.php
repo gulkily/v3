@@ -388,7 +388,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::DRAGGABLE_WINDOWS_ENABLED,
                 'Draggable windows',
-                'In the Bubblegum theme, give every window a working collapse button, keep posts a reader collapsed collapsed after a reload, and let desktop readers turn on Float mode to drag windows around. Readers can turn it off in Preferences.',
+                'In the Bubblegum theme, give every window a working collapse button, keep a post collapsed after a reload once a reader collapses it, and let desktop readers turn on Float mode to drag windows around. Readers can turn it off in Preferences.',
                 false,
                 self::DRAGGABLE_WINDOWS_ENABLED,
                 siteMutable: true,

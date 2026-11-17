@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/draggable_windows`; [host ledger](../effo
 
 Extended estimates: enabled, inherited from Step 3.
 
-Status: Step 4 in progress on `feat/draggable_windows`, branched from `origin/main` at `4a6c8bd`. Planning commit `44dd8b3`.
+Status: Step 4 technically complete on `feat/draggable_windows`, branched from `origin/main` at `4a6c8bd`. Planning commit `44dd8b3`.
 
 **Cycle estimate: 0.70**
 
@@ -119,7 +119,43 @@ Ledger note: Step 3 said this cycle's ledger row would go into the planning comm
 ## Stage 6 - Docs and final review
 
 **Original estimate: 0.07**
+**Retrospective stage work: 0.10**
 
-- Status: not started.
+- Status: complete.
+- Changes:
+  - New `docs/concepts/window_controls.md`. `docs/concepts/theme_script.md` now points to it: Bubblegum's script is offered only while the flag is on.
+  - `docs/runbooks/theme_development_guide.md`: a paragraph on Bubblegum's script, its flag gate, the last-child title bar, and the before-paint rules to keep in step with the CSS.
+  - Flag description reworded ("keep a post collapsed after a reload once a reader collapses it").
+  - `tests/browser/draggable_windows.mjs`: the board with the visitor intro (collapse button left of the close box, on the bar, close box kept when collapsed); `/?view=liked`, Tools, Preferences and About each give every window a title bar; with JavaScript off, Bubblegum with the flag on matches the flag off pixel for pixel, as do Gloss and Word97 with JavaScript on.
+  - Fix found on the way, in `tests/browser/reading_margins.mjs`: it failed on unmodified `4a6c8bd` ("light /: saved choice shown"). Under `./v3 start` a bare `/` is now the local development page (`LocalDevelopmentImport::isEntry`), and without git history the board is "Temporarily Unavailable". The test now uses `/?view=liked`, the board's default view, as our test does.
+- Verification:
+  - `node tests/browser/draggable_windows.mjs`: passes.
+  - `node tests/browser/reading_margins.mjs`: passes ("18 themes at 1280px on a thread and 13 other pages, plus phone"); failed the same way on unmodified main before the fix.
+  - `node tests/browser/preferences.mjs` and `node tests/browser/theme_scripts.cjs`: pass.
+  - `./v3 test --smoke FeatureFlagsBehaviorTest FeatureFlagEvaluatorTest SiteProfileRegistryTest PreferencesPageTest ThemeRegistryTest`: 491 run, 491 passed. `./v3 test --smoke LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled LocalAppSmokeTest::testLayoutUsesOnlyAValidatedThemeHintForTheInitialStylesheet LocalAppSmokeTest::testPageThemeIsMarkedOnItsOwnPageOnly PreferencesPageTest ThemeRegistryTest`: 477 run, 477 passed. The full suite was not run (the maintainer runs it).
+  - `git diff --check` from the planning commit: clean.
+  - Concept links in `window_controls.md` resolve.
+  - Screenshots checked by eye: the board with the visitor intro collapsed, the intro's title bar, and earlier the thread at 1280px and 380px, Float mode and Preferences.
+  - Final diff read through for duplication and scope. The one deliberate repeat is the two collapsed rules in `layout.php` and `theme-bubblegum.css`, with comments in both and in the theme guide. No file outside the plan's list changed except the two fixes recorded above.
+- Notes: none beyond the fixes.
+- Estimate details: original scope as Step 3; retrospective 0.10, over by the reading margins test fix. No revisions.
+
+## Completion Contract status
+
+- Normal entry, end-to-end outcome and recovery: done and covered by `tests/browser/draggable_windows.mjs` and `tests/browser/preferences.mjs`.
+- Deployment: CSS, JavaScript, templates and PHP only; no schema change, migration or rebuild. Turn on `FORUM_DRAGGABLE_WINDOWS_ENABLED` under Tools, Feature flags after deploying.
+- Release condition: pending. Needs merge, deploy to zenmemes.com, the flag turned on, and the maintainer's check on desktop and on his iPhone SE.
+
+## Findings for later
+
+- In Bubblegum, posts that start a run (including every thread's root) had no title bar on main. Fixed in Stage 1.
+- `tests/browser/reading_margins.mjs` failed on main because `./v3 start` serves the local development page at `/`. Fixed in Stage 6.
+- Not fixed: a run's first post shows its byline while focused, so moving focus out of it by pointer can shift a button just below between pointerdown and pointerup, and that click is lost. It affects any button below such a post. Worth its own cycle.
+
+## Cycle retrospective
+
+**Retrospective scope assessment: 0.75**
+
+Against the 0.70 projection, the extra came from two existing bugs fixed on the way, the title bar on run-starting posts and the reading margins test, plus the Float control's move to a corner bar after screenshot review. Stage retrospectives 0.12, 0.20, 0.08, 0.20, 0.06, 0.10, not summed. Measured effort unknown. Maintainer comfortable-fit judgment pending. Single exposed rater Claude (claude-opus-5-5), R1/P2; R1 hashes not re-verified.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
