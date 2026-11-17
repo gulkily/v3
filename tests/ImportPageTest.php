@@ -190,11 +190,16 @@ $base = sys_get_temp_dir() . '/import-result-' . bin2hex(random_bytes(6));
 $run = $base . '/repo/.git/instance-import/20261116UTC120000-aaaaaaaaaaaa';
 mkdir($run, 0700, true);
 $entries = ['records/posts/a.txt' => ['state' => 'import']];
+for ($i = 0; $i < 600; $i++) $entries['records/a-excluded/e' . $i . '.txt'] = ['state' => 'excluded', 'reason' => 'private record'];
 for ($i = 0; $i < 10000; $i++) $entries['records/posts/c' . $i . '.txt'] = ['state' => 'conflict', 'reason' => 'local <b>differs</b>'];
 file_put_contents($run . '/report.json', json_encode([
     'status' => 'partial', 'source' => 'https://forum.example', 'review_path' => $run,
     'counts' => ['import' => 1, 'duplicate' => 0, 'conflict' => 10000, 'invalid' => 0, 'unsupported' => 0, 'excluded' => 0],
-    'review_causes' => [['path' => 'records/posts/c0.txt', 'state' => 'conflict', 'reason' => 'local <b>differs</b>', 'affected_count' => 3]],
+    'review_causes' => array_merge(
+        [['path' => 'records/posts/c0.txt', 'state' => 'conflict', 'reason' => 'local <b>differs</b>', 'affected_count' => 3]],
+        array_map(static fn (int $i): array => ['path' => 'records/thread-labels/l' . $i . '.txt', 'state' => 'invalid', 'reason' => 'Missing dependency: post thread-' . $i, 'affected_count' => 1], range(1, 193)),
+        array_map(static fn (int $i): array => ['path' => 'records/post-formats/f' . $i . '.txt', 'state' => 'unsupported', 'reason' => 'Unsupported record family or path', 'affected_count' => 1], range(1, 31)),
+    ),
     'exclusion_reasons' => ['private record' => 2],
     'entries' => $entries,
 ]));
@@ -217,11 +222,16 @@ try {
     $page = (new ImportController($routeServices, $base . '/repo', $queuePath))->render();
     $seconds = (hrtime(true) - $started) / 1e9;
     foreach (['<strong>needs review</strong>', 'from https://forum.example', 'imported 1 · conflict 10000', 'images partial', '<th scope="row">Review</th>',
-        '<code>records/posts/c0.txt</code> conflict: local &lt;b&gt;differs&lt;/b&gt; <span class="meta">(3 affected)</span>', 'excluded: private record',
-        '<details class="import-advanced">', '<summary>Advanced</summary>', '9500 more in <code>' . $run . '/report.json</code>'] as $needle) {
+        '<li>invalid: Missing dependency <span class="meta">(193)</span></li>', '<li>unsupported: Unsupported record family or path <span class="meta">(31)</span></li>',
+        '<li>conflict: local &lt;b&gt;differs&lt;/b&gt; <span class="meta">(3)</span></li>', 'excluded: private record',
+        '<details class="import-advanced">', '<summary>Advanced</summary>', '10100 more in <code>' . $run . '/report.json</code>'] as $needle) {
         if (!str_contains($page, $needle)) throw new RuntimeException('Result page missing: ' . $needle);
     }
     if (str_contains($page, '<details class="import-advanced" open')) throw new RuntimeException('Advanced must start closed.');
+    $review = substr($page, (int) strpos($page, '<th scope="row">Review</th>'), (int) strpos($page, 'Task worker') - (int) strpos($page, '<th scope="row">Review</th>'));
+    if (str_contains($review, '<code>') || substr_count($review, '<li>') !== 4) throw new RuntimeException('Review row should list grouped causes only: ' . $review);
+    if (strpos($review, 'Missing dependency') > strpos($review, 'Unsupported record')) throw new RuntimeException('Largest group first.');
+    if (str_contains($page, 'records/a-excluded/')) throw new RuntimeException('Exclusions should be hidden before conflicts.');
     if (substr_count(substr($page, (int) strpos($page, '<summary>Advanced')), '<li><code>records/posts/c') !== 500) throw new RuntimeException('Per-file list should stop at 500.');
     if ($seconds > 3) throw new RuntimeException('Large report rendered slowly: ' . $seconds);
 } finally {

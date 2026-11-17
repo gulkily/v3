@@ -16,3 +16,4 @@ With the Import page flag on, a root-approved operator on zenmemes.com can pick 
 
 Notes:
 2026-11-16: staged cycle on feat/import_instance_gui (docs/plans/import_instance_gui/); verified locally with the worker and in Chromium; awaiting PR review, deployment, flag enable and one real import on zenmemes.com.
+2026-11-17: production screenshot after a real import showed the Review row listing every cause path; grouped by state and reason in fix/import_review_summary (record docs/plans/import_review_summary/import_review_summary_one_shot.md).
