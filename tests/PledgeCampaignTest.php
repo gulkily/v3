@@ -1123,6 +1123,43 @@ final class PledgeCampaignTest
         pledgeAssertContains('data-post-byline>by ', $card($other, $plainReply));
     }
 
+    public function testBoardRowsGetTheThreadPagesTotalsAndOnlyCampaignsAreRead(): void
+    {
+        $post = static fn (string $id, string $body, array $more = []): array => $more + [
+            'post_id' => $id, 'thread_id' => 'camp', 'body' => $body, 'retracted_at' => null,
+            'author_identity_id' => self::MEMBER, 'attribution_counted' => 1, 'author_is_approved' => 1,
+        ];
+        $posts = [
+            $post('camp', "Coffee.\ngoal: 1000 coffees"),
+            $post('a', 'pledge: 620'),
+            $post('waits', 'pledge: 12', ['author_is_approved' => 0]),
+            $post('gone', 'pledge: 50'),
+            $post('w', 'withdraw', ['parent_id' => 'gone']),
+        ];
+        $rows = [
+            ['root_post_id' => 'plain', 'root_post_body' => 'Just talking.', 'retracted_at' => null],
+            ['root_post_id' => 'camp', 'root_post_body' => "Coffee.\ngoal: 1000 coffees", 'retracted_at' => null],
+            ['root_post_id' => 'quoted', 'root_post_body' => '> goal: 5 hours', 'retracted_at' => null],
+        ];
+        $read = [];
+        $loader = static function (string $threadId) use (&$read, $posts): array {
+            $read[] = $threadId;
+            return $posts;
+        };
+
+        $result = PledgeCampaign::forRows($rows, $loader);
+        // Only the campaign's posts are loaded, and its row gets exactly the thread page's result.
+        pledgeAssertSame(['camp'], $read);
+        pledgeAssertSame(PledgeCampaign::fromPosts($posts, 'camp'), $result[1]['pledge_campaign']);
+        pledgeAssertSame('620', $result[1]['pledge_campaign']['pledged']);
+        pledgeAssertSame(false, isset($result[0]['pledge_campaign']));
+        pledgeAssertSame(false, isset($result[2]['pledge_campaign']));
+        // A board with no campaign reads nothing.
+        $read = [];
+        PledgeCampaign::forRows([$rows[0], $rows[2]], $loader);
+        pledgeAssertSame([], $read);
+    }
+
     private function environment(): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-pledge-repo-' . bin2hex(random_bytes(6));

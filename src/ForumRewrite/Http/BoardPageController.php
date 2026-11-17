@@ -26,11 +26,13 @@ final class BoardPageController
 {
     /**
      * @param \Closure(): (array<string, mixed>|null) $resolveViewerProfileFromIdentityHint
+     * @param (\Closure(string): array<int, array<string, mixed>>)|null $fetchThreadPosts the thread page's post loader, for campaign rows
      */
     public function __construct(
         private readonly RouteServices $routeServices,
         private readonly string $repositoryRoot,
         private readonly \Closure $resolveViewerProfileFromIdentityHint,
+        private readonly ?\Closure $fetchThreadPosts = null,
     ) {
     }
 
@@ -148,6 +150,12 @@ final class BoardPageController
         $imagesEnabled = $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED);
         $pinned = \ForumRewrite\Images\ListThumbnails::attach($this->routeServices->pdo(), $this->repositoryRoot, $imagesEnabled, $pinned, 'root_post_id', true);
         $items = \ForumRewrite\Images\ListThumbnails::attach($this->routeServices->pdo(), $this->repositoryRoot, $imagesEnabled, $items, 'root_post_id', true);
+        if ($this->fetchThreadPosts !== null && $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::PLEDGES_ENABLED)) {
+            // A campaign row shows the thread page's totals; only campaigns on this page are read.
+            $isOperator = fn (string $identityId): bool => \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->repositoryRoot, $identityId);
+            $pinned = \ForumRewrite\View\PledgeCampaign::forRows($pinned, $this->fetchThreadPosts, $isOperator);
+            $items = \ForumRewrite\View\PledgeCampaign::forRows($items, $this->fetchThreadPosts, $isOperator);
+        }
 
         return $this->routeServices->renderPageTemplate(
             'board_list.php',
