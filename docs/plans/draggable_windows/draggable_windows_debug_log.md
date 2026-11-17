@@ -56,3 +56,24 @@
 **Uncertain assessments**
 - The Preferences request came with the approval itself. It was treated as approved scope (v2) rather than sending Step 2 back for a second approval.
 - Where the Float toggle sits in the header is left to a Step 4 screenshot review rather than decided here.
+
+## 2026-11-17T09:10Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md` Planning Docs Commit Gate: kept the ledger and summary out of the planning commit; the ledger row Step 3 had placed in the planning commit moved to Stage 1, recorded in the summary. Retain.
+- `step4_implementation_do.md` Stage Boundary Protocol: one commit per stage with its summary update; seven commits for six stages. Retain.
+- The maintainer's rule, via `AGENTS.md`, to fix a test that also fails on the base commit: led to fixing `tests/browser/reading_margins.mjs` after confirming the failure on unmodified `4a6c8bd`. Retain.
+- `implementation_standards.md` "Inspect existing implementations": checking the hidden title bar on unmodified main before fixing it kept the fix honest (an existing bug, not ours). Retain.
+- `step3_development_plan_do.md` leaving the Float toggle's place to screenshot review: the first screenshot showed it colliding with the Board tab, which led to the corner bar. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Known-user replay: none was named in Step 2.
+- Documentation-only verification: this is an application change.
+
+**Uncertain assessments**
+- Reset keeping Float on differs from Step 3's wording; it is recorded as a small deviation for the maintainer rather than returned to Step 2, since it removes a duplicate action rather than adding scope.
+- The two existing-bug fixes (Bubblegum title bars on run-starting posts; the reading margins test) were done inside stages rather than as separate cycles. The first blocked the feature; the second falls under the maintainer's fix-failing-tests rule. Both are recorded in the summary.
+- The lost-click focus shift was recorded as a finding and not fixed, as it is outside this cycle and affects every button under a run-starting post.
