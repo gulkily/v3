@@ -42,7 +42,9 @@ Found on a first read at `9e5aa010`. Each cycle re-checks its own part before pl
   - Found and fixed: `WithdrawLeafFilterTest` from cycle 2 was never on the runner's list in `tests/run.php`, so it had never run.
   - Left out: no buttons on the separate Reply page or in paned layouts; the text output and agent API do not report fills (cycle 6).
 - [ ] **8. `pledge_fill_review`** — the author confirms or disputes a pledger's "Delivered"; a disputed fill stops counting and both stay visible. Added 2026-11-16 at cycle 3 Step 1 (Option B). Numbered 8 so the other numbers stay stable; it runs straight after cycle 3.
-  - Open: Released, an author's or operator's way to stop someone else's pledge counting without deleting it.
+  - Status: building on `feat/pledge-fill-review` from `origin/main` at `6bdc52d7`. The maintainer approved Step 1 (Option A) on 2026-11-16, and Steps 2 and 3 on 2026-11-17. The maintainer approves every step. [Step 1](./pledge_fill_review/pledge_fill_review_step1_solution_assessment.md) · [Step 2](./pledge_fill_review/pledge_fill_review_step2_feature_description.md) · [Step 3](./pledge_fill_review/pledge_fill_review_step3_development_plan.md) · [Step 4](./pledge_fill_review/pledge_fill_review_step4_implementation_summary.md)
+  - Scope (Option A): `confirm` and `dispute` reply lines from the author or an operator, answering a pledger's fill reply. Buttons sit on the pledge's fill line, since a bare fill reply is folded.
+  - Released: dropped by the maintainer at Step 1 approval; not planned for the near future.
 - [ ] **4. `pledge_stages`** — Open, Fully pledged, Cushioned and Complete in the header; the Fully pledged celebration that still shows the pledge box; marker posts; the optional `cushion:` line.
   - Open: what the celebration looks like; it must work without JavaScript.
 - [ ] **5. `pledge_board_rows`** — campaign rows on the board show the bar and "1300 / 1000 coffees".
@@ -77,10 +79,15 @@ Cycles 2 and 3 need 1. Cycle 8 needs 3. Cycle 4 needs 3 only, not 8. Cycles 5 an
 - 2026-11-16: cycle 2 Step 1 written and pushed on `plan/pledge-withdraw` for a new session to resume. Cycle 1's delegated approval does not apply to cycle 2.
 - 2026-11-16: new session. PR #268 checked: open, not merged, so `plan/pledge-withdraw` needed no update (0 commits behind `origin/main`). Maintainer approved cycle 2 Step 1 (Option A). Step 2 written and shared as a file; awaiting `Approved Step 2`. Spec's withdrawal lines reworded.
 - 2026-11-16: maintainer cut Step 2's part-filled groundwork by review comment, then approved Step 2. Step 3 written in four stages and shared as a file; awaiting `Approved Step 3`.
+- 2026-11-17: maintainer approved cycle 8 Step 3. Plans moved into `docs/plans/pledge_fill_review/`; building on `feat/pledge-fill-review` from `origin/main` at `6bdc52d7`.
 - 2026-11-16: maintainer approved cycle 2 Step 3. PR #268 had merged by then, so cycle 2 was built in four stages on a new branch from `origin/main` and pushed as a PR. Release check on zenmemes.com pending.
 - 2026-11-16: PR #275 merged. Cycle 3 Step 1 written and pushed on `plan/pledge-fills` for a new session to resume.
 - 2026-11-16: new session. `plan/pledge-fills` was 0 commits behind `origin/main`, so it needed no update. Maintainer approved cycle 3 Step 1 (Option B). Cycle 8 `pledge_fill_review` added. Step 2 written and shared as a file; awaiting `Approved Step 2`.
+- 2026-11-17: maintainer approved cycle 8 Step 2. Plan moved onto `origin/main` at `4a6c8bd0` (unrelated PRs only). Step 3 written in four stages and shared as a file; awaiting `Approved Step 3`.
 - 2026-11-16: maintainer approved cycle 3 Step 3. Built in five stages on `feat/pledge-fills` from a fresh `origin/main` and pushed as a PR. Release check on zenmemes.com pending.
 - 2026-11-16: maintainer approved cycle 3 Step 2. Two unrelated PRs had landed, so `plan/pledge-fills` was rebased onto `origin/main` locally. Step 3 written in five stages and shared as a file; awaiting `Approved Step 3`.
+- 2026-11-16: PR #282 merged. New session on a fresh `origin/main` (`f13ed676`); `plan/pledge-fills` is stale and not used. Cycle 8 Step 1 written (recommends Option A) and shared as a file; awaiting `Approved Step 1`. Cycle 2's Withdrawn noted as a reply line, not a reaction.
+- 2026-11-16: maintainer approved cycle 8 Step 1 (Option A) and dropped Released. Step 2 written and shared as a file; awaiting `Approved Step 2`.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Fable 5.2*
+*— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5 (cycle 8 entries)*
