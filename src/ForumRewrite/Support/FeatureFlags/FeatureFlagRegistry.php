@@ -18,6 +18,7 @@ final class FeatureFlagRegistry
     public const EMOJI_AUTHORED_TEXT = 'FORUM_EMOJI_AUTHORED_TEXT';
     public const EVENT_SUPPORT_ENABLED = 'FORUM_EVENT_SUPPORT_ENABLED';
     public const EVENT_WHEN_ENABLED = 'FORUM_EVENT_WHEN_ENABLED';
+    public const CALENDAR_FEED_ENABLED = 'FORUM_CALENDAR_FEED_ENABLED';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const READING_MARGINS_ENABLED = 'FORUM_READING_MARGINS_ENABLED';
@@ -68,7 +69,8 @@ final class FeatureFlagRegistry
             self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
             self::VERIFIED_ATTRIBUTION, self::SESSION_KEY_BOOTSTRAP_ENABLED, self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED],
         'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
-            self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED],
+            self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED,
+            self::CALENDAR_FEED_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
@@ -281,6 +283,16 @@ final class FeatureFlagRegistry
                 'Let posters type when an event happens, such as "next Friday at 7", to fill its date and time, and show their words with the event.',
                 false,
                 self::EVENT_WHEN_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::EVENT_SUPPORT_ENABLED,
+                group: 'AUTHORING',
+            ),
+            new FeatureFlagDefinition(
+                self::CALENDAR_FEED_ENABLED,
+                'Calendar feed',
+                'Publish the calendar as iCal feeds that calendar apps can subscribe to, and offer each event as a file to add to a calendar.',
+                true,
+                self::CALENDAR_FEED_ENABLED,
                 siteMutable: true,
                 requiresEnabledFlag: self::EVENT_SUPPORT_ENABLED,
                 group: 'AUTHORING',

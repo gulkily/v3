@@ -1,0 +1,159 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ForumRewrite\Calendar;
+
+use ForumRewrite\Support\EventStatusDirective;
+
+/**
+ * Writes calendar events as an iCalendar (RFC 5545) document, for the calendar
+ * feeds and the one-event file. Times carry no zone ("floating"), so a calendar
+ * app shows them as written. Each event's UID is its thread ID, so a subscriber's
+ * copy updates in place when the thread changes.
+ */
+final class CalendarIcs
+{
+    private const LINE_OCTETS = 75;
+    private const TIMED_EVENT_MINUTES = 60;
+
+    /**
+     * @param list<array<string, mixed>> $events rows shaped like CalendarQuery::eventsBetween
+     * @param array<string, ?string> $states thread ID => EventStatus state (null while open)
+     */
+    public static function document(
+        array $events,
+        array $states,
+        string $siteUrl,
+        string $name,
+        ?\DateTimeImmutable $now = null,
+    ): string {
+        $siteUrl = rtrim($siteUrl, '/');
+        $host = parse_url($siteUrl, PHP_URL_HOST);
+        $host = is_string($host) && $host !== '' ? $host : 'localhost';
+        $stamp = ($now ?? new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format('Ymd\THis\Z');
+
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//v3//Calendar feed//EN',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            'X-WR-CALNAME:' . self::text($name),
+            'X-PUBLISHED-TTL:PT1H',
+        ];
+        foreach ($events as $event) {
+            $threadId = (string) ($event['root_post_id'] ?? '');
+            if ($threadId === '' || !isset($event['event_date'])) {
+                continue;
+            }
+            array_push($lines, ...self::event($event, $states[$threadId] ?? null, $siteUrl, $host, $stamp));
+        }
+        $lines[] = 'END:VCALENDAR';
+
+        return implode("\r\n", array_map(self::fold(...), $lines)) . "\r\n";
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     * @return list<string>
+     */
+    private static function event(array $event, ?string $state, string $siteUrl, string $host, string $stamp): array
+    {
+        $threadId = (string) $event['root_post_id'];
+        $threadUrl = $siteUrl . '/threads/' . rawurlencode($threadId);
+        $first = self::date((string) $event['event_date']);
+        $last = self::date((string) ($event['event_end_date'] ?? '')) ?? $first;
+        if ($first === null) {
+            return [];
+        }
+        if ($last < $first) {
+            $last = $first;
+        }
+
+        $lines = ['BEGIN:VEVENT', 'UID:' . self::text($threadId . '@' . $host), 'DTSTAMP:' . $stamp];
+        $time = self::time((string) ($event['event_time'] ?? ''));
+        if ($time === null) {
+            $lines[] = 'DTSTART;VALUE=DATE:' . $first->format('Ymd');
+            $lines[] = 'DTEND;VALUE=DATE:' . $last->modify('+1 day')->format('Ymd');
+        } else {
+            [$hour, $minute] = $time;
+            $start = $first->setTime($hour, $minute);
+            $end = $last->setTime($hour, $minute)->modify('+' . self::TIMED_EVENT_MINUTES . ' minutes');
+            $lines[] = 'DTSTART:' . $start->format('Ymd\THis');
+            $lines[] = 'DTEND:' . $end->format('Ymd\THis');
+        }
+
+        $lines[] = 'SUMMARY:' . self::text(trim((string) ($event['subject'] ?? '')) ?: 'Event');
+        $location = trim((string) ($event['event_location'] ?? ''));
+        if ($location !== '') {
+            $lines[] = 'LOCATION:' . self::text($location);
+        }
+        $lines[] = 'STATUS:' . ($state === EventStatusDirective::CONFIRMED ? 'CONFIRMED' : 'TENTATIVE');
+        $lines[] = 'URL:' . self::text($threadUrl);
+
+        $description = [];
+        $when = trim((string) ($event['event_when'] ?? ''));
+        if ($when !== '') {
+            $description[] = $when;
+        }
+        $link = trim((string) ($event['event_link'] ?? ''));
+        if ($link !== '') {
+            $description[] = $link;
+        }
+        $description[] = $threadUrl;
+        $lines[] = 'DESCRIPTION:' . self::text(implode("\n", $description));
+        $lines[] = 'END:VEVENT';
+
+        return $lines;
+    }
+
+    private static function date(string $value): ?\DateTimeImmutable
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value, new \DateTimeZone('UTC'));
+
+        return $date !== false && $date->format('Y-m-d') === $value ? $date : null;
+    }
+
+    /** @return array{int, int}|null */
+    private static function time(string $value): ?array
+    {
+        if (preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $value, $match) !== 1) {
+            return null;
+        }
+
+        return [(int) $match[1], (int) $match[2]];
+    }
+
+    /** Escapes a TEXT value (RFC 5545 section 3.3.11). */
+    private static function text(string $value): string
+    {
+        $value = str_replace(["\r\n", "\r"], "\n", $value);
+
+        return strtr($value, ['\\' => '\\\\', ';' => '\\;', ',' => '\\,', "\n" => '\\n']);
+    }
+
+    /** Folds a content line at 75 octets without splitting a UTF-8 character. */
+    private static function fold(string $line): string
+    {
+        if (strlen($line) <= self::LINE_OCTETS) {
+            return $line;
+        }
+        $parts = [];
+        $current = '';
+        $limit = self::LINE_OCTETS;
+        foreach (mb_str_split($line, 1, 'UTF-8') as $character) {
+            if (strlen($current) + strlen($character) > $limit) {
+                $parts[] = $current;
+                $current = '';
+                $limit = self::LINE_OCTETS - 1;
+            }
+            $current .= $character;
+        }
+        $parts[] = $current;
+
+        return implode("\r\n ", $parts);
+    }
+}
