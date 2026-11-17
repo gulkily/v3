@@ -151,6 +151,7 @@
   }
 
   function start() {
+    bindKeyLossTest();
     if (hasKey()) {
       recordDevice().catch(function () { /* the next page load tries again */ });
       return;
@@ -159,6 +160,32 @@
     if (hint !== "") {
       bootstrapKey(hint).catch(function () { /* the member can still restore a backup or ask for approval */ });
     }
+  }
+
+  // Account → Key's "Test lost-key recovery": does what Safari's seven-day rule does.
+  // Script storage goes; cookies and the session stay. The browser is recorded first,
+  // so the session can match it on reload.
+  function bindKeyLossTest() {
+    var open = document.querySelector('[data-action="test-key-loss"]');
+    var dialog = document.querySelector('[data-role="key-loss-dialog"]');
+    if (!open || !dialog) return;
+    open.addEventListener("click", function () {
+      if (typeof dialog.showModal === "function") dialog.showModal(); else dialog.setAttribute("open", "");
+    });
+    // Save a copy first closes this dialog before the copy sheet opens.
+    var saveFirst = dialog.querySelector("[data-backup-open]");
+    if (saveFirst) saveFirst.addEventListener("click", function () { dialog.close(); }, true);
+    var confirm = dialog.querySelector('[data-action="confirm-key-loss"]');
+    confirm.addEventListener("click", function (event) {
+      event.preventDefault();
+      confirm.disabled = true;
+      var ready = hasKey() ? recordDevice() : Promise.resolve();
+      ready.catch(function () {}).then(function () {
+        try { window.localStorage.clear(); } catch (error) { /* storage unavailable */ }
+        try { window.sessionStorage.clear(); } catch (error) { /* storage unavailable */ }
+        window.location.reload();
+      });
+    });
   }
 
   window.ForumKeyBootstrap = { loadIdentityScripts: loadIdentityScripts };

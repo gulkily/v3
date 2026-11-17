@@ -131,7 +131,6 @@ final class ThreadAndPostPageController
             ? \ForumRewrite\View\PledgeCampaign::fromPosts(
                 $posts,
                 $threadId,
-                $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED),
                 fn (string $identityId): bool => \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->routeServices->repositoryRoot(), $identityId),
             )
             : null;
