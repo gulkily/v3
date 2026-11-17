@@ -2224,8 +2224,8 @@ PHP;
         assertStringNotContains('class="nav tools-nav"', $tools);
         assertStringNotContains('tool-launcher-description', $tools);
         foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
-            // The usage tools appear only while the "Usage reports" flag is on (off by default).
-            if (in_array($tool['key'], ['usage-log', 'usage-reports'], true)) {
+            // The usage tools and Import appear only while their flags are on (off by default).
+            if (in_array($tool['key'], ['usage-log', 'usage-reports', 'import'], true)) {
                 assertSame(0, substr_count($tools, 'href="' . $tool['href'] . '"'), $tool['href']);
                 continue;
             }
@@ -4652,6 +4652,31 @@ PHP;
         }
     }
 
+    public function testFrontControllerServesTourSnapshotsFromTheirFolder(): void
+    {
+        ['controller' => $controller, 'staticHtmlRoot' => $staticHtmlRoot, 'publicRoot' => $publicRoot] = $this->buildFrontController();
+        mkdir($publicRoot . '/assets/tour', 0777, true);
+        file_put_contents($publicRoot . '/assets/tour/index.html', '<!doctype html><title>Tour page</title>');
+        file_put_contents($publicRoot . '/assets/tour/board.html', '<!doctype html><title>Board snapshot</title>');
+        file_put_contents($publicRoot . '/assets/secret.html', 'must not be served as a snapshot');
+
+        try {
+            foreach (['/assets/tour/' => 'Tour page', '/assets/tour/board.html' => 'Board snapshot'] as $requestUri => $expected) {
+                http_response_code(200);
+                $response = $this->renderFrontController($controller, 'GET', $requestUri, []);
+                assertStringContains($expected, $response);
+                assertSame(200, http_response_code());
+            }
+            foreach (['/assets/tour/missing.html', '/assets/tour/../secret.html', '/assets/tour/Board.html'] as $requestUri) {
+                $response = $this->renderFrontController($controller, 'GET', $requestUri, []);
+                assertStringNotContains('snapshot', $response);
+            }
+        } finally {
+            $this->deleteTree($staticHtmlRoot);
+            $this->deleteTree($publicRoot);
+        }
+    }
+
     public function testFrontControllerServesStaticArtifactForBackupAlias(): void
     {
         @unlink($this->databasePath);
@@ -5534,28 +5559,36 @@ PHP;
 
     public function testApplicationRebuildsWhenRepositoryHeadMetadataIsStale(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
-        $application = new Application(
-            dirname(__DIR__),
-            $repositoryRoot,
-            $databasePath,
-        );
+        // A fresh worker or a queued rebuild left by another test would turn the in-request
+        // rebuild these assertions expect into "rebuild queued"; use an empty queue.
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . sys_get_temp_dir() . '/forum-rewrite-empty-queue-' . bin2hex(random_bytes(6)) . '/tasks.sqlite3');
+        try {
+            [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+            $application = new Application(
+                dirname(__DIR__),
+                $repositoryRoot,
+                $databasePath,
+            );
 
-        $this->render($application, '/');
+            $this->render($application, '/');
 
-        $pdo = new PDO('sqlite:' . $databasePath);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $stmt = $pdo->prepare('UPDATE metadata SET value = :value WHERE key = :key');
-        $stmt->execute([
-            'key' => 'repository_head',
-            'value' => 'stale-head',
-        ]);
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $stmt = $pdo->prepare('UPDATE metadata SET value = :value WHERE key = :key');
+            $stmt->execute([
+                'key' => 'repository_head',
+                'value' => 'stale-head',
+            ]);
 
-        $status = $this->render($application, '/api/read_model_status');
+            $status = $this->render($application, '/api/read_model_status');
 
-        assertStringContains('status=ready', $status);
-        assertStringContains('rebuild_reason=repository_head_mismatch', $status);
-        assertStringNotContains('repository_head=stale-head', $status);
+            assertStringContains('status=ready', $status);
+            assertStringContains('rebuild_reason=repository_head_mismatch', $status);
+            assertStringNotContains('repository_head=stale-head', $status);
+        } finally {
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+        }
     }
 
     public function testReadModelStatusReportsLockedWhenExecutionLockIsHeld(): void
@@ -5581,28 +5614,36 @@ PHP;
 
     public function testApplicationClearsStaleMarkerOnNextSuccessfulRead(): void
     {
-        [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
-        $application = new Application(
-            dirname(__DIR__),
-            $repositoryRoot,
-            $databasePath,
-        );
+        // A fresh worker or a queued rebuild left by another test would turn the in-request
+        // rebuild these assertions expect into "rebuild queued"; use an empty queue.
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . sys_get_temp_dir() . '/forum-rewrite-empty-queue-' . bin2hex(random_bytes(6)) . '/tasks.sqlite3');
+        try {
+            [$repositoryRoot, $databasePath] = $this->createGitBackedEnvironment();
+            $application = new Application(
+                dirname(__DIR__),
+                $repositoryRoot,
+                $databasePath,
+            );
 
-        $this->render($application, '/');
-        file_put_contents(
-            dirname($databasePath) . '/read_model_stale.json',
-            json_encode(['reason' => 'write_refresh_failed', 'commit_sha' => 'abc123'], JSON_THROW_ON_ERROR)
-        );
+            $this->render($application, '/');
+            file_put_contents(
+                dirname($databasePath) . '/read_model_stale.json',
+                json_encode(['reason' => 'write_refresh_failed', 'commit_sha' => 'abc123'], JSON_THROW_ON_ERROR)
+            );
 
-        $status = $this->render($application, '/api/read_model_status');
-        $codebase = $this->render($application, '/tools/codebase/');
+            $status = $this->render($application, '/api/read_model_status');
+            $codebase = $this->render($application, '/tools/codebase/');
 
-        assertStringContains('status=ready', $status);
-        assertStringContains('stale_marker=absent', $status);
-        assertStringContains('rebuild_reason=stale_marker', $status);
-        assertStringContains('System status', $codebase);
-        assertStringContains('Stale marker', $codebase);
-        assertStringContains('absent', $codebase);
+            assertStringContains('status=ready', $status);
+            assertStringContains('stale_marker=absent', $status);
+            assertStringContains('rebuild_reason=stale_marker', $status);
+            assertStringContains('System status', $codebase);
+            assertStringContains('Stale marker', $codebase);
+            assertStringContains('absent', $codebase);
+        } finally {
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+        }
     }
 
     public function testExecutionLockTimesOutWhenAlreadyHeld(): void

@@ -1,0 +1,6 @@
+# Local development import
+
+Purpose: Make a fresh local instance explorable and bring public content into it through the browser.
+Scenario: Run `./v3 start`, open its loopback homepage, browse sample threads or documentation, then import from the prefilled production source. Browse imported threads opens the existing All view. A failed download retains its source for retry; a pending import journal offers Resume. The existing CLI owns validation, conflict handling, public-content exclusions and publication.
+Boundary: Controls require the development launcher marker, PHP's development server, a loopback peer and Host, no proxy headers, and a valid token plus origin checks for POST. Deployed servers and remote clients retain normal pages. Existing query-bearing root URLs retain their board behavior. Imports merge public content rather than mirror or delete local content.
+Sources: [request guard and CLI runner](../../src/ForumRewrite/Support/LocalDevelopmentImport.php), [controller](../../src/ForumRewrite/Http/LocalDevelopmentPageController.php), [page](../../templates/pages/local_development.php), [importer](../../scripts/import_instance.php), [HTTP recovery checks](../../tests/LocalDevelopmentImportTest.php), [fresh-start browser check](../../tests/browser/local_development.py).

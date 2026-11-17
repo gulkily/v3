@@ -110,7 +110,7 @@ Same unit as the goal. With no cushion line, the Cushioned stage is skipped.
 1. **Nothing is rejected.** A pledge line that can't be read as a number ("pledge: a few") is kept as an ordinary reply and the pledger sees a note that it was not counted. A pledge posted in a non-campaign thread is also just a reply.
 2. **Records add up; they don't overwrite.** Changing a pledge means withdrawing it and posting a new one. A second fill on the same pledge adds to the first, up to the pledge amount.
 3. **A fill can be undone** by retracting the fill record, the same way any record is retracted.
-4. **Withdrawing a filled pledge** only withdraws the unfilled part. What was delivered stays counted.
+4. **Withdrawing a filled pledge** only withdraws the unfilled part. What was delivered stays counted. A fully filled pledge cannot be withdrawn. Fills are read before withdrawals, so reply order does not change the result. (Added 2026-11-16 with [pledge_fills](./pledge_fills/pledge_fills_step3_development_plan.md).)
 5. **Who may pledge:** anyone who may reply in the thread.
 6. **Who may fill:** the pledger, for their own pledge; the campaign author and operators, for any pledge. Only the author and operators may confirm or dispute.
 7. **The goal line can't be silently changed.** A changed goal is a new visible record in the thread, so pledgers can see what they signed up for.
