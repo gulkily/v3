@@ -184,9 +184,10 @@
   }
 
   // A thread page lists its own replies that are still on this device, above its reply composer.
+  // A campaign's pledge form is also a reply composer; the list stays with the reply box.
   function showUnsentReplies() {
     if (typeof document.querySelector !== "function") return Promise.resolve();
-    var form = document.querySelector('[data-compose-form][data-compose-kind="reply"]');
+    var form = document.querySelector('[data-compose-form][data-compose-kind="reply"]:not([data-pledge-form])');
     var threadField = form && form.querySelector('[name="thread_id"]');
     if (!threadField || !threadField.value || !window.forumOutboxStorage) return Promise.resolve();
     var threadId = threadField.value;

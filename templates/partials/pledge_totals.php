@@ -2,7 +2,8 @@
 /**
  * A campaign's totals, under the thread title: the pledged sum against the goal, one status
  * word once the goal is reached, a bar with the delivered part drawn over the pledged part,
- * and the count line. The same for every reader, so thread pages stay static.
+ * the count line, and the pledge form: the reply composer with an amount field, posting a reply
+ * to the opening post. The same for every reader, so thread pages stay static.
  *
  * @var array<string, mixed>|null $pledgeCampaign from ForumRewrite\View\PledgeCampaign::fromPosts()
  */
@@ -35,5 +36,22 @@ $pledgeCount = (int) $pledgeCampaign['count'];
 <?php endif; ?>
   </div>
   <p class="meta pledge-totals__count"><?= $pledgeCount ?> <?= $pledgeCount === 1 ? 'pledge' : 'pledges' ?><?php if ($pledgeDelivered !== '0'): ?> · <?= $e($pledgeDelivered) ?> delivered<?php if ($pledgeConfirmed !== '0' && $pledgeConfirmed !== $pledgeDelivered): ?> (<?= $e($pledgeConfirmed) ?> confirmed)<?php endif; ?><?php endif; ?></p>
+<?php if (isset($thread['root_post_id'])): ?>
+  <div class="pledge-form" data-compose-root data-unicode-authored-text="<?= ($unicodeAuthoredTextEnabled ?? false) ? '1' : '0' ?>" data-emoji-authored-text="<?= ($emojiAuthoredTextEnabled ?? false) ? '1' : '0' ?>">
+    <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
+<?= $indent($partial('partials/reply_form.php', [
+    'threadId' => $thread['root_post_id'],
+    'parentId' => $thread['root_post_id'],
+    'boardTags' => 'general',
+    'body' => '',
+    'submitLabel' => 'Post pledge',
+    'bodyRows' => 2,
+    'bodyPlaceholder' => 'Note (optional)',
+    'showBodyLabel' => false,
+    'phoneReplyEnabled' => false,
+    'pledgePlacement' => true,
+]), 2) ?>
+  </div>
+<?php endif; ?>
 </div>
 <?php endif; ?>

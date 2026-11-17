@@ -243,6 +243,18 @@ final class PledgeCampaignTest
             pledgeAssertContains('<label class="pledge-field">Pledge<input type="text" name="pledge_amount" inputmode="decimal"', $page);
             pledgeAssertContains('<span class="pledge-field__unit">coffees</span>', $page);
             pledgeAssertContains('/assets/pledge_field.', $page);
+            // The field lives in the pledge form in the totals block, which has its own draft and button;
+            // the reply box at the bottom no longer carries it.
+            pledgeAssertSame(1, substr_count($page, 'name="pledge_amount"'));
+            pledgeAssertContains('data-compose-kind="reply" data-pledge-form data-compose-draft-scope="pledge">', $page);
+            $pledgeForm = substr($page, (int) strpos($page, 'data-pledge-form'), 6000);
+            pledgeAssertContains('name="pledge_amount"', $pledgeForm);
+            pledgeAssertContains('placeholder="Note (optional)"', $pledgeForm);
+            pledgeAssertContains('Post pledge', $pledgeForm);
+            pledgeAssertNotContains('data-compose-disclosure="options"', substr($pledgeForm, 0, (int) strpos($pledgeForm, '</form>')));
+            $bottom = substr($page, (int) strpos($page, 'data-inline-reply-compose'));
+            pledgeAssertNotContains('name="pledge_amount"', $bottom);
+            pledgeAssertNotContains('data-pledge-form', $bottom);
             $other = $this->render($application(), '/threads/' . rawurlencode($plain));
             pledgeAssertNotContains('name="pledge_amount"', $other);
             pledgeAssertNotContains('pledge_field.', $other);

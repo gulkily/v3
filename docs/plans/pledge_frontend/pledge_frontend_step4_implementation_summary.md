@@ -87,3 +87,29 @@ Status: Steps 1 (Option C), 2 and 3 approved by the maintainer 2026-11-17. Step 
   - Estimate details: original scope as in Step 3; no revision. Retrospective lower: splitting the partial needed no change to the buttons or `pledge_withdraw.js`.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - A pledge form in the totals block
+
+**Original estimate: 0.20**
+
+**Retrospective: 0.18**
+
+- Changes:
+  - `templates/partials/pledge_totals.php`: under the count line, a compose root holding `reply_form.php` as the pledge placement: the amount field with the unit, a two-row "Note (optional)" box and "Post pledge". It replies to the opening post, has no phone dock and sits outside the inline-reply wrapper.
+  - `templates/partials/reply_form.php`: the amount field now appears only with `pledgePlacement`, which also marks the form `data-pledge-form`, gives it draft scope `pledge`, and leaves out Options. The bottom reply box loses its Pledge field.
+  - `templates/partials/composer.php`: a placement may leave out the Options row (`composerShowOptions`); the post is then plain, as an unticked Markdown box makes it. Every other placement is unchanged.
+  - `public/assets/outbox_compose.js`: `showUnsentReplies()` skips the pledge form, so replies saved on the device list by the reply box.
+  - `public/assets/site.css`: spacing for the form.
+  - Tests: the amount-field test checks the field appears once, in the pledge form with its draft scope, note box, button and no Options, and not in the bottom box. The browser check pledges from the new form throughout and adds four checks (below).
+- Verification:
+  - Passed: `./v3 test PledgeCampaignTest WithdrawLeafFilterTest OfflineOutboxComposeTest` (33 tests).
+  - Passed: the browser check, all 34 theme and width passes. New in it: the bottom box has no amount field; text in the reply box does not reach the pledge form; the opening post's Reply link focuses the reply box; a failed first press shows the error in the pledge form, keeps the amount and note, and a second press posts; an unsent reply in the Outbox lists above the reply box, not in the totals block. The signed pledges, the second visitor's two pledges and the no-JavaScript pledge ("Not counted: no name") all go through the pledge form.
+  - Passed: light, Gloss, Word97, Arena, Bubblegum and Console at 375 pixels, looked at. The first screen holds the title, the sum, the status, the bar and the form; the pitch follows.
+  - Passed: `./v3 test --smoke PledgeCampaignTest WithdrawLeafFilterTest OfflineOutboxComposeTest`. The full suite was not run.
+  - Not exercised: sending a pledge through the Outbox while offline; the offline reader, which has no pledge form (accepted in Step 2).
+- Notes:
+  - Refinement within scope, found in the screenshots: the composer's Options row (Markdown, theme) pushed the pitch below the first screen and means nothing for a pledge, so the placement leaves it out. This adds one switch to the shared composer.
+  - While a signed pledge posts, the composer's "Posting…" card appears briefly above the pledge form, inside the totals block, until the page moves to the new reply. It is the composer's usual behaviour and was left alone.
+  - Estimate details: original scope as in Step 3; no revision. Retrospective slightly lower: the composer already worked per form, so only one lookup changed.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

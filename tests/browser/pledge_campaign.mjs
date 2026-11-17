@@ -58,8 +58,12 @@ try {
   await settled(writer.page);
   assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '0 of 1000 coffees pledged');
 
-  // The amount field keeps a first line "pledge: N" in the body, both ways.
-  const reply = writer.page.locator('[data-compose-kind="reply"]');
+  // The pledge form in the totals block keeps a first line "pledge: N" in the note, both ways.
+  // The reply box at the bottom has no amount field.
+  const reply = writer.page.locator('[data-pledge-form]');
+  const bottom = writer.page.locator('[data-inline-reply-compose] [data-compose-kind="reply"]');
+  assert.equal(await bottom.locator('[data-role="pledge-amount"]').count(), 0);
+  assert.equal(await writer.page.locator('[data-pledge-totals] [data-pledge-form]').count(), 1);
   const amount = reply.locator('[data-role="pledge-amount"]');
   const body = reply.locator('textarea[name="body"]');
   assert.equal((await reply.locator('.pledge-field').textContent()).trim(), 'Pledgecoffees');
@@ -72,8 +76,22 @@ try {
   assert.equal(await body.inputValue(), 'I can order these myself.');
   await body.fill('pledge: 300\n\nI can order these myself.');
   assert.equal(await amount.inputValue(), '300', 'a typed line shows in the field');
+  // The two composers keep separate drafts: text in the reply box does not reach the pledge form.
+  await bottom.locator('textarea[name="body"]').fill('Just a question.');
+  assert.equal(await body.inputValue(), 'pledge: 300\n\nI can order these myself.');
+  await bottom.locator('textarea[name="body"]').fill('');
+  // The opening post's Reply link goes to the reply box, not the pledge form.
+  await writer.page.locator('[data-inline-reply-link]').first().click();
+  assert.equal(await bottom.locator('textarea[name="body"]').evaluate(el => el === document.activeElement), true);
+  // A failed first press keeps the amount and note, and a second press posts the pledge.
+  await writer.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await reply.getByRole('button', { name: 'Post pledge' }).click();
+  await writer.page.locator('.pledge-form [data-role="compose-identity-status"][data-kind="error"]').waitFor({ state: 'visible', timeout: 30000 });
+  assert.equal(await amount.inputValue(), '300');
+  assert.equal(await body.inputValue(), 'pledge: 300\n\nI can order these myself.');
+  assert.equal(await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').count(), 0);
   const replied = writer.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
-  await reply.getByRole('button', { name: 'Post reply' }).click();
+  await reply.getByRole('button', { name: 'Post pledge' }).click();
   assert.equal((await replied).status(), 200);
   await settled(writer.page);
   await writer.page.goto(base + '/threads/' + threadId);
@@ -82,12 +100,24 @@ try {
   assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '1 pledge');
   assert.equal((await writer.page.locator('.pledge-amount[data-pledge-state="counted"]').textContent()).trim(), '300 coffees Open');
   assert.equal(await writer.page.locator('.pledge-bar__fill').evaluate(e => e.style.width), '30%');
+  // A reply saved on this device is listed by the reply box at the bottom, not by the pledge form.
+  const unsentBesideReplyBox = await writer.page.evaluate(async (thread) => {
+    const item = window.forumOutboxCompose.replyItem({ threadId: thread, parentId: thread, body: 'Saved for later' });
+    await window.forumOutboxStorage.save(item);
+    await window.forumOutboxCompose.showUnsentReplies();
+    const list = document.querySelector('[data-role="outbox-unsent-replies"]');
+    const beside = !!list && !list.closest('[data-pledge-totals]') && list.nextElementSibling === document.querySelector('[data-inline-reply-compose]').closest('[data-compose-root]');
+    await window.forumOutboxStorage.remove(item.id);
+    await window.forumOutboxCompose.showUnsentReplies();
+    return beside;
+  }, threadId);
+  assert.equal(unsentBesideReplyBox, true);
 
   // Past the goal the bar shows a goal mark.
   await settled(writer.page);
   await amount.fill('1,000');
   const second = writer.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
-  await reply.getByRole('button', { name: 'Post reply' }).click();
+  await reply.getByRole('button', { name: 'Post pledge' }).click();
   assert.equal((await second).status(), 200);
   await settled(writer.page);
   await writer.page.goto(base + '/threads/' + threadId);
@@ -99,7 +129,7 @@ try {
   await body.fill('Half a tray more.');
   await amount.fill('5');
   const third = writer.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
-  await reply.getByRole('button', { name: 'Post reply' }).click();
+  await reply.getByRole('button', { name: 'Post pledge' }).click();
   assert.equal((await third).status(), 200);
   await settled(writer.page);
   await writer.page.goto(base + '/threads/' + threadId);
@@ -172,9 +202,9 @@ try {
   // Without JavaScript the server writes the line. The post has no name, so it counts only with --count-unnamed.
   const plain = await open(false);
   await plain.page.goto(base + '/threads/' + threadId);
-  await plain.page.locator('[data-compose-kind="reply"] [data-role="pledge-amount"]').fill('12.5');
-  await plain.page.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('Decaf, then.');
-  await plain.page.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]').click();
+  await plain.page.locator('[data-pledge-form] [data-role="pledge-amount"]').fill('12.5');
+  await plain.page.locator('[data-pledge-form] textarea[name="body"]').fill('Decaf, then.');
+  await plain.page.locator('[data-pledge-form] .compose-form-actions > button[type="submit"]').click();
   await plain.page.waitForLoadState('load');
   await plain.page.goto(base + '/threads/' + threadId);
   if (countUnnamed) {
@@ -190,8 +220,8 @@ try {
   assert.equal(await plain.page.getByText('pledge: 12.5').count(), 0);
   assert.equal(await plain.page.getByText('Decaf, then.').first().isVisible(), true);
   // A line that is not a number stays a reply and says why.
-  await plain.page.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('pledge: a few');
-  await plain.page.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]').click();
+  await plain.page.locator('[data-inline-reply-compose] textarea[name="body"]').fill('pledge: a few');
+  await plain.page.locator('[data-inline-reply-compose] .compose-form-actions > button[type="submit"]').click();
   await plain.page.waitForLoadState('load');
   await plain.page.goto(base + '/threads/' + threadId);
   assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unreadable"]').textContent()).trim(), 'Not counted: “a few” is not a number');
@@ -203,9 +233,9 @@ try {
   await pledger.page.goto(base + '/threads/' + threadId);
   await settled(pledger.page);
   for (const n of ['20', '30']) {
-    await pledger.page.locator('[data-compose-kind="reply"] [data-role="pledge-amount"]').fill(n);
+    await pledger.page.locator('[data-pledge-form] [data-role="pledge-amount"]').fill(n);
     const posted = pledger.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
-    await pledger.page.locator('[data-compose-kind="reply"]').getByRole('button', { name: 'Post reply' }).click();
+    await pledger.page.locator('[data-pledge-form]').getByRole('button', { name: 'Post pledge' }).click();
     assert.equal((await posted).status(), 200);
     await settled(pledger.page);
     await pledger.page.goto(base + '/threads/' + threadId);
