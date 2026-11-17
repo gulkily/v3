@@ -16,19 +16,10 @@ final class QdbPage
     /** @return array{threads:array,count:int,page:int} */
     public static function page(PDO $pdo, string $section, int $page, string $term = ''): array
     {
-        if (!in_array($section, ['latest', 'top', 'leetness', 'search'], true)) {
+        if (!in_array($section, ['latest', 'top', 'leetness', 'search', 'queue'], true)) {
             throw new \InvalidArgumentException('Unknown QDB page section.');
         }
-        // Reuse PHP policies, including malformed legacy lists and exact ID suffixes.
-        $pdo->sqliteCreateFunction('qdb_page_eligible', static fn ($id, $tags): bool =>
-            QdbQuoteNumbers::fromThreadId((string) $id) !== null
-            && !ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $tags), 2);
-        $pdo->sqliteCreateFunction('qdb_page_pinned', static fn ($labels): bool =>
-            in_array('pinned', ThreadRowSupport::decodeStringList((string) $labels), true), 1);
-        $base = ' FROM threads JOIN posts ON posts.post_id = threads.root_post_id
-            WHERE threads.retracted_at IS NULL
-            AND ' . ScoreVisibility::listedSql() . '
-            AND qdb_page_eligible(threads.root_post_id, threads.board_tags_json)';
+        $base = self::base($pdo, $section);
         $scoreOrder = match ($section) {
             'top' => 'CAST(threads.score_total AS INTEGER) DESC, ',
             'leetness' => 'ABS(1337 - CAST(threads.score_total AS INTEGER)) ASC, ',
@@ -69,5 +60,34 @@ final class QdbPage
             }
             throw $error;
         }
+    }
+
+    /** Quotes listed on Latest (`latest`) or waiting on the Queue page (`queue`), without loading rows. */
+    public static function count(PDO $pdo, string $section): int
+    {
+        if (!in_array($section, ['latest', 'queue'], true)) {
+            throw new \InvalidArgumentException('Unknown QDB count section.');
+        }
+        $statement = $pdo->query('SELECT COUNT(*)' . self::base($pdo, $section));
+        $count = (int) $statement->fetchColumn();
+        $statement->closeCursor();
+
+        return $count;
+    }
+
+    private static function base(PDO $pdo, string $section): string
+    {
+        // Reuse PHP policies, including malformed legacy lists and exact ID suffixes.
+        $pdo->sqliteCreateFunction('qdb_page_eligible', static fn ($id, $tags): bool =>
+            QdbQuoteNumbers::fromThreadId((string) $id) !== null
+            && !ThreadRowSupport::isHiddenBootstrapBoardTagsJson((string) $tags), 2);
+        $pdo->sqliteCreateFunction('qdb_page_pinned', static fn ($labels): bool =>
+            in_array('pinned', ThreadRowSupport::decodeStringList((string) $labels), true), 1);
+        return ' FROM threads JOIN posts ON posts.post_id = threads.root_post_id
+            WHERE threads.retracted_at IS NULL
+            AND ' . ($section === 'queue'
+                ? ScoreVisibility::scoreSql() . ' AND ' . \ForumRewrite\Qdb\QdbModeration::current()->queueSql()
+                : ScoreVisibility::listedSql()) . '
+            AND qdb_page_eligible(threads.root_post_id, threads.board_tags_json)';
     }
 }

@@ -44,8 +44,8 @@ final class BoardPageController
         $view = $defaultView ? 'liked' : BoardViewOptions::normalizeView($view);
         $sort = BoardViewOptions::normalizeSort($sort);
         $fellBackToAll = false;
-        if ($qdbPolicy !== null && $view === 'all' && in_array($activeSection, ['latest', 'top', 'leetness'], true)
-            && $sort === ($activeSection === 'latest' ? 'newest' : $activeSection)) {
+        if ($qdbPolicy !== null && $view === 'all' && in_array($activeSection, ['latest', 'top', 'leetness', 'queue'], true)
+            && $sort === (in_array($activeSection, ['latest', 'queue'], true) ? 'newest' : $activeSection)) {
             $selected = \ForumRewrite\ReadModel\QdbPage::page($this->routeServices->pdo(), $activeSection, $page);
             $threads = $selected['threads'];
             $qdbQuoteCount = $selected['count'];
@@ -64,6 +64,15 @@ final class BoardPageController
         }
         $viewOptions = BoardViewOptions::viewOptions($view, $sort);
         $sortOptions = BoardViewOptions::sortOptions($view, $sort);
+        $qdbPendingCount = null;
+        if ($qdbPolicy !== null && \ForumRewrite\Qdb\QdbModeration::current()->isActive()) {
+            // The footer counts approved and pending quotes, as the original did, on every board page.
+            $pdo = $this->routeServices->pdo();
+            $qdbPendingCount = $activeSection === 'queue' ? $qdbQuoteCount : \ForumRewrite\ReadModel\QdbPage::count($pdo, 'queue');
+            if ($activeSection === 'queue') {
+                $qdbQuoteCount = \ForumRewrite\ReadModel\QdbPage::count($pdo, 'latest');
+            }
+        }
         $viewerReactionState = $qdbPolicy?->viewerReactionState($threads) ?? ['voted' => [], 'flagged' => []];
         $voteCaptionPair = $qdbPolicy?->selectCaptionPair();
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
@@ -90,12 +99,14 @@ final class BoardPageController
                     'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
                     'voteCaptionPair' => $voteCaptionPair,
                     'qdbVoteTags' => $qdbVoteTags,
+                    'qdbModerationActors' => $activeSection === 'queue' ? \ForumRewrite\Qdb\QdbModeration::current()->operatorFingerprints() : [],
                 ] : ['showPinnedMarker' => true],
                 'boardFooterPartial' => $qdbPolicy === null ? null : 'partials/qdb_footer.php',
                 'viewerVotedThreadIds' => $viewerReactionState['voted'],
                 'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
                 'qdbVoteTags' => $qdbVoteTags,
                 'qdbQuoteCount' => $qdbQuoteCount,
+                'qdbPendingCount' => $qdbPendingCount,
                 'pagination' => $pagination,
                 'showGettingStarted' => $fellBackToAll,
             ],
@@ -103,6 +114,7 @@ final class BoardPageController
                 'latest' => 'Latest Quotes',
                 'top' => 'Top Quotes',
                 'leetness' => '1337 Quotes',
+                'queue' => 'Queue',
                 default => 'Quotes',
             } : 'Board',
             $activeSection,

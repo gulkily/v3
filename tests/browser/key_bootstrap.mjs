@@ -55,9 +55,15 @@ try {
   await page.reload();
   await waitFor(async () => (await stored(page, 'forum_session_device_recorded')) === fingerprint.toLowerCase(), 'device recorded');
 
-  // 2. Safari's wipe: script storage gone, cookies kept. The next load bootstraps a key.
-  await page.evaluate(() => localStorage.clear());
-  await page.reload();
+  // 2. Safari's wipe, through Account → Key's test button: script storage gone, cookies kept.
+  //    The reload bootstraps a key.
+  await page.goto(base + '/account/key/');
+  await page.click('#key-advanced > summary');
+  await page.click('#key-technical > summary');
+  await page.click('[data-action="test-key-loss"]');
+  await page.waitForSelector('[data-role="key-loss-dialog"][open]');
+  if (process.env.KEY_BOOTSTRAP_DIALOG_SCREENSHOT) await page.screenshot({ path: process.env.KEY_BOOTSTRAP_DIALOG_SCREENSHOT });
+  await Promise.all([page.waitForNavigation(), page.click('[data-action="confirm-key-loss"]')]);
   await page.waitForSelector('[data-role="key-bootstrap-notice"]', { timeout: 15000 });
   assert.equal((await page.textContent('[data-role="key-bootstrap-notice"] .app-version-banner__text')).trim(), 'This browser lost its key and has a new one.');
   // Optional: KEY_BOOTSTRAP_SCREENSHOT=/tmp/notice.png saves the notice for a look at the layout.
@@ -82,6 +88,17 @@ try {
     }
     await page.evaluate(() => localStorage.removeItem(window.forumBrowserRuntime.themeStorageKey));
     await page.goto(base + '/');
+  }
+
+  // Cancel leaves the key where it is.
+  {
+    const kept = await stored(page, 'forum_pki_fingerprint');
+    await page.goto(base + '/account/key/');
+    await page.click('#key-advanced > summary');
+    await page.click('#key-technical > summary');
+    await page.click('[data-action="test-key-loss"]');
+    await page.click('[data-role="key-loss-dialog"] button[value="cancel"]');
+    assert.equal(await stored(page, 'forum_pki_fingerprint'), kept);
   }
 
   // 3. Reloading keeps the key and shows no second notice.

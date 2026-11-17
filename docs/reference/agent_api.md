@@ -516,6 +516,10 @@ record carries, and `author_notice` appears only on a guest post. The lines are
 read back from the stored post; on a busy instance they can be missing, in
 which case use `get_post`.
 
+On qdb with the quote queue on, `create_quote` also answers `moderation=pending`
+when the quote waits for an operator, or `moderation=approved` when it is listed
+at once. A pending quote shows on `/queue` and at its own address until approved.
+
 ## Tags and checking a post
 
 `board_tags` is a list of lowercase tags (`a-z`, `0-9`, `-`) separated by

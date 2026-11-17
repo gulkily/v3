@@ -5752,6 +5752,95 @@ NODE;
         }
     }
 
+    public function testQdbQueueHoldsANewQuoteOffListingsButOnItsPermalink(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        \ForumRewrite\Qdb\QdbModeration::override(new \ForumRewrite\Qdb\QdbModeration('2000-01-01T00:00:00Z'));
+        try {
+            [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+            $response = $this->renderMethod($application, 'POST', '/api/create_quote?board_tags=general&subject=&body=Waiting%20quote');
+            assertSame('pending', $this->extractValue($response, 'moderation'));
+            $threadId = $this->extractValue($response, 'thread_id');
+
+            $latest = $this->renderMethod($application, 'GET', '/latest');
+            assertStringNotContains('Waiting quote', $latest);
+            assertStringContains('0 quotes approved; <a href="/queue">1 pending</a>', $latest);
+            $queue = $this->renderMethod($application, 'GET', '/queue');
+            assertStringContains('Waiting quote', $queue);
+            assertStringContains('0 quotes approved; <a href="/queue">1 pending</a>', $queue);
+            assertStringNotContains('Waiting quote', $this->renderMethod($application, 'GET', '/recent/'));
+            $permalink = $this->renderMethod($application, 'GET', '/threads/' . $threadId);
+            assertStringContains('Waiting quote', $permalink);
+            assertStringContains('data-qdb-moderation="pending"', $permalink);
+
+            \ForumRewrite\Qdb\QdbModeration::override(\ForumRewrite\Qdb\QdbModeration::inactive());
+            $permalink = $this->renderMethod($application, 'GET', '/threads/' . $threadId);
+            assertStringNotContains('data-qdb-moderation', $permalink);
+            assertStringContains('Waiting quote', $this->renderMethod($application, 'GET', '/latest'));
+            $response = $this->renderMethod($application, 'POST', '/api/create_quote?board_tags=general&subject=&body=Listed%20quote');
+            assertSame('approved', $this->extractValue($response, 'moderation'));
+        } finally {
+            \ForumRewrite\Qdb\QdbModeration::override(null);
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
+    public function testQdbQueueApprovalAndRejectionAreSignedOperatorDecisions(): void
+    {
+        putenv('FORUM_SITE_ID=qdb');
+        [$root, $database, $artifacts] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $root, $database, $artifacts);
+        $operator = $this->linkSigningIdentity($application, 'queue-operator');
+        $visitor = $this->linkSigningIdentity($application, 'queue-visitor');
+        $this->seedApprovedIdentity($root, $operator['identity_id']);
+        \ForumRewrite\Qdb\QdbModeration::override(new \ForumRewrite\Qdb\QdbModeration('2000-01-01T00:00:00Z', [$operator['identity_id']]));
+        try {
+            $create = fn (string $body): string => $this->extractValue(
+                $this->renderMethod($application, 'POST', '/api/create_quote?board_tags=general&subject=&body=' . rawurlencode($body)), 'thread_id');
+            $kept = $create('Approve me');
+            $dropped = $create('Reject me');
+            $writer = new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root));
+            $signed = function (array $key, string $threadId, string $tag): array {
+                $record = ReactionRecordParser::build('thread', 'thread-label-' . bin2hex(random_bytes(8)), gmdate('Y-m-d\\TH:i:s\\Z'), $threadId, [$tag], $key['identity_id']);
+                return ['thread_id' => $threadId, 'tag' => $tag, 'author_identity_id' => $key['identity_id'],
+                    'canonical_record' => $record, 'detached_signature' => $this->signCanonicalRecord($key['home'], $record)];
+            };
+            foreach ([
+                'unsigned operator' => ['thread_id' => $kept, 'tag' => 'approved', 'author_identity_id' => $operator['identity_id']],
+                'signed visitor' => $signed($visitor, $kept, 'approved'),
+                'not a quote' => $signed($operator, 'root-001', 'approved'),
+            ] as $case => $input) {
+                $rejected = false;
+                try { $writer->applyThreadTag($input); } catch (RuntimeException) { $rejected = true; }
+                assertTrue($rejected, $case);
+            }
+            assertStringContains('Approve me', $this->renderMethod($application, 'GET', '/queue'));
+
+            assertSame('yes', $writer->applyThreadTag($signed($operator, $kept, 'approved'))['wrote_record']);
+            assertSame('yes', $writer->applyThreadTag($signed($operator, $dropped, 'rejected'))['wrote_record']);
+            $latest = $this->renderMethod($application, 'GET', '/latest');
+            assertStringContains('Approve me', $latest);
+            assertStringNotContains('Reject me', $latest);
+            $queue = $this->renderMethod($application, 'GET', '/queue');
+            assertStringNotContains('Approve me', $queue);
+            assertStringNotContains('Reject me', $queue);
+            assertStringContains(substr($operator['identity_id'], 8), $queue);
+            assertStringContains('data-qdb-moderation-actions', $queue);
+            assertStringNotContains('data-qdb-moderation-actions', $latest);
+            $this->renderMethod($application, 'GET', '/threads/' . $dropped);
+            assertSame(404, http_response_code());
+            assertStringNotContains('data-qdb-moderation', $this->renderMethod($application, 'GET', '/threads/' . $kept));
+        } finally {
+            \ForumRewrite\Qdb\QdbModeration::override(null);
+            putenv('FORUM_SITE_ID');
+            $this->deleteTree($operator['home']);
+            $this->deleteTree($visitor['home']);
+            $this->deleteTree($root);
+        }
+    }
+
     public function testQdbPrepareQuoteContinuesSameQuoteNumberSequenceAsCreateQuote(): void
     {
         putenv('FORUM_SITE_ID=qdb');

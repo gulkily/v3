@@ -48,8 +48,14 @@ if ($threadActivityDrawerEnabled ?? false) {
 $replyContinuationFlags = [];
 $previousPost = $rootPost;
 $trueReplyCount = 0;
+// A pledge row (see post_card.php) stands alone: it never joins or extends a same-author run.
+$isPledgeRowPost = static fn (?array $candidate): bool => $candidate !== null && is_array($pledgeCampaign ?? null)
+    && ($candidate['retracted_at'] ?? null) === null
+    && (($pledgeCampaign['pledges'][(string) $candidate['post_id']]['amount'] ?? null) !== null);
 foreach ($replyPosts as $post) {
-    $isContinuation = ($collapseSameAuthorPostsEnabled ?? true) && $previousPost !== null && $isThreadPostContinuation($previousPost, $post, $continuationWindowSeconds);
+    $isContinuation = ($collapseSameAuthorPostsEnabled ?? true) && $previousPost !== null
+        && !$isPledgeRowPost($post) && !$isPledgeRowPost($previousPost)
+        && $isThreadPostContinuation($previousPost, $post, $continuationWindowSeconds);
     $replyContinuationFlags[] = $isContinuation;
     if (!$isContinuation) {
         $trueReplyCount++;
@@ -68,6 +74,9 @@ foreach ($replyContinuationFlags as $flagIndex => $flag) {
 }
 $rootMetaVisible = $rootRunTailIndex === -1;
 ?>
+<?php if (($qdbModerationState ?? 'approved') === 'pending'): ?>
+  <p class="meta qdb-pending" data-qdb-moderation="pending">Pending approval · <a href="/queue">Queue</a></p>
+<?php endif; ?>
 <?php if ($rootPost !== null): ?>
 <?php if ($siteGuestbookThreadId !== null && (string) $thread['root_post_id'] === $siteGuestbookThreadId): ?>
   <p class="meta guestbook-thread-link"><a href="/guestbook/">Open as a book</a></p>

@@ -2396,6 +2396,13 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 
 2026-11-17T06:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.40**; retrospective scope assessment **0.40**; no revisions. Baseline `e7babc06`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
 
+## Cycle v3/key_bootstrap_test_button
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/key_bootstrap_test_button` | One-shot technically complete; PR open; merge and maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; entry 0.08; retrospective 0.08) | [One-shot record](./key_bootstrap_test_button/key_bootstrap_test_button_one_shot.md#study-history) | Follow-up to `v3/session_key_bootstrap`; not accepted |
+
+2026-11-17: standing P2 enrollment; one-shot from Ilya's request for a button to test deleting local storage. Intake 0.08 after inspecting the key page and bootstrap script (no pristine intake). Single exposed rater Claude (claude-opus-5-5). R1 hashes not re-verified.
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
 | `v3/known_instances` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.10 | [One-shot record](./known_instances/known_instances_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
